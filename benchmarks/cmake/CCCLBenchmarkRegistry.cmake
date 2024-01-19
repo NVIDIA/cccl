@@ -1,25 +1,23 @@
 find_package(CUDAToolkit REQUIRED)
 
-find_package(Git REQUIRED)
+set(cccl_revision "")
+find_package(Git)
 if(GIT_FOUND)
-    execute_process(
-        COMMAND ${GIT_EXECUTABLE} describe
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE cccl_revision
-        OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    if(cccl_revision STREQUAL "")
-      # There's currently no tag
-      execute_process(
-          COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-          WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-          OUTPUT_VARIABLE cccl_revision
-          OUTPUT_STRIP_TRAILING_WHITESPACE)
-    endif()
-    message(STATUS "Git revision: ${cccl_revision}")
-else()
-    message(WARNING "Git not found. Unable to determine Git revision.")
+  execute_process(
+      COMMAND ${GIT_EXECUTABLE} describe
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE cccl_revision
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
+
+# Sometimes this script is used outside of a Git repository. 
+# In this case, we read the revision from cccl/cccl_version instead.
+if ("${cccl_revision}" STREQUAL "")
+  file(READ "${CMAKE_SOURCE_DIR}/cccl_version" cccl_revision)
+  string(STRIP "${cccl_revision}" cccl_revision)
+  string(REPLACE "\n" "" cccl_revision "${cccl_revision}")
+endif()
+message(STATUS "Git revision: ${cccl_revision}")
 
 function(get_meta_path meta_path)
   set(meta_path "${CMAKE_BINARY_DIR}/cccl_meta_bench.csv" PARENT_SCOPE)
