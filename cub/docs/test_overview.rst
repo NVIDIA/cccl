@@ -121,7 +121,7 @@ if absolutely necessary in tests of corner cases.
 
 Do not use ``assert`` in tests.
 We run CUB tests in release mode.
-Issue with ``assert`` is that it only works in debug mode.
+The issue with ``assert`` is that it only works in debug mode.
 
 If a custom type has to be tested, the following helper should be used:
 
