@@ -287,6 +287,8 @@ CUB_TEST("DeviceAdjacentDifference::SubtractLeftCopy works with large indexes", 
                                          thrust::discard_iterator<>{},
                                          num_items,
                                          check_difference{d_error});
+  const int h_error = error[0];
+  REQUIRE(h_error == 0);
 }
 
 struct invocation_counter {
