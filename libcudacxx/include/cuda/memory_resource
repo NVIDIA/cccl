@@ -82,14 +82,21 @@ class resource_ref {
 
 #ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
+// Needs to come first due to cuda_runtime_api
 #include <cuda/stream_ref>
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
-
-#include <cuda/std/detail/__config>
-
-#include <cuda/std/detail/__pragma_push>
 
 #if _CCCL_STD_VER > 2011
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -172,8 +179,7 @@ template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 /// class get_property
-/// \brief The \c get_property crtp temaplate simplifies the user facing side of forwarding properties
-///        We can always tell people to just derive from it to properly forward all properties
+/// \brief The \c get_property customization point ensures that `cuda::get_property` is always available
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
 struct __fn {
   _CCCL_EXEC_CHECK_DISABLE
@@ -622,10 +628,10 @@ struct device_accessible{};
 struct host_accessible{};
 
 } // namespace mr
-_LIBCUDACXX_END_NAMESPACE_CUDA
-#endif // _CCCL_STD_VER > 2011
 
-#include <cuda/std/detail/__pragma_pop>
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_STD_VER > 2011
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
