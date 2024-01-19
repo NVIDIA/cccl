@@ -119,11 +119,11 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
 
   if (items_in_tile == items_per_tile)
   {
-    agent_t{tile_base, op}.consume_tile<true>(items_per_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
   }
   else
   {
-    agent_t{tile_base, op}.consume_tile<false>(items_in_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
   }
 }
 
@@ -144,11 +144,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 
   if (items_in_tile == items_per_tile)
   {
-    agent_t{tile_base, op}.consume_tile<true>(items_per_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
   }
   else
   {
-    agent_t{tile_base, op}.consume_tile<false>(items_in_tile, block_threads);
+    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
   }
 }
 
