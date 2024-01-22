@@ -1,3 +1,9 @@
+---
+has_children: true
+has_toc: false
+nav_order: 4
+---
+
 ## PTX instructions
 
 The `cuda::ptx` namespace contains functions that map one-to-one to
