@@ -154,15 +154,17 @@ public:
 
 private:
     typedef typename Upstream::pointer void_ptr;
-    typedef typename thrust::detail::pointer_traits<void_ptr>::template rebind<char>::other char_ptr;
+    typedef thrust::detail::pointer_traits<void_ptr> void_ptr_traits;
+    typedef typename void_ptr_traits::template rebind<char>::other char_ptr;
 
     struct block_descriptor;
     struct chunk_descriptor;
     struct oversized_block_descriptor;
 
-    typedef typename thrust::detail::pointer_traits<void_ptr>::template rebind<block_descriptor>::other block_descriptor_ptr;
-    typedef typename thrust::detail::pointer_traits<void_ptr>::template rebind<chunk_descriptor>::other chunk_descriptor_ptr;
-    typedef typename thrust::detail::pointer_traits<void_ptr>::template rebind<oversized_block_descriptor>::other oversized_block_descriptor_ptr;
+    typedef typename void_ptr_traits::template rebind<block_descriptor>::other block_descriptor_ptr;
+    typedef typename void_ptr_traits::template rebind<chunk_descriptor>::other chunk_descriptor_ptr;
+    typedef typename void_ptr_traits::template rebind<oversized_block_descriptor>::other oversized_block_descriptor_ptr;
+    typedef thrust::detail::pointer_traits<oversized_block_descriptor_ptr> oversized_block_ptr_traits;
 
     struct block_descriptor
     {
@@ -245,7 +247,7 @@ public:
         }
 
         // deallocate cached oversized/overaligned memory
-        while (detail::pointer_traits<oversized_block_descriptor_ptr>::get(m_oversized))
+        while (oversized_block_ptr_traits::get(m_oversized))
         {
             oversized_block_descriptor_ptr alloc = m_oversized;
             m_oversized = thrust::raw_reference_cast(*m_oversized).next;
@@ -276,7 +278,7 @@ public:
             {
                 oversized_block_descriptor_ptr ptr = m_cached_oversized;
                 oversized_block_descriptor_ptr * previous = &m_cached_oversized;
-                while (detail::pointer_traits<oversized_block_descriptor_ptr>::get(ptr))
+                while (oversized_block_ptr_traits::get(ptr))
                 {
                     oversized_block_descriptor desc = *ptr;
                     bool is_good = desc.size >= bytes && desc.alignment >= alignment;
@@ -328,17 +330,13 @@ public:
                             ptr = static_cast<oversized_block_descriptor_ptr>(
                                 static_cast<void_ptr>(ret + bytes));
 
-                            if (detail::pointer_traits<
-                                    oversized_block_descriptor_ptr>::
-                                    get(desc.prev)) {
+                            if (oversized_block_ptr_traits::get(desc.prev)) {
                                 thrust::raw_reference_cast(*desc.prev).next = ptr;
                             } else {
                                 m_oversized = ptr;
                             }
 
-                            if (detail::pointer_traits<
-                                    oversized_block_descriptor_ptr>::
-                                    get(desc.next)) {
+                            if (oversized_block_ptr_traits::get(desc.next)) {
                                 thrust::raw_reference_cast(*desc.next).prev = ptr;
                             }
                         }
@@ -371,7 +369,7 @@ public:
             *block = desc;
             m_oversized = block;
 
-            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(desc.next))
+            if (oversized_block_ptr_traits::get(desc.next))
             {
                 oversized_block_descriptor next = *desc.next;
                 next.prev = block;
@@ -464,7 +462,7 @@ public:
         assert(detail::is_power_of_2(alignment));
 
         // verify that the pointer is at least as aligned as claimed
-        assert(reinterpret_cast<detail::intmax_t>(detail::pointer_traits<void_ptr>::get(p)) % alignment == 0);
+        assert(reinterpret_cast<detail::intmax_t>(void_ptr_traits::get(p)) % alignment == 0);
 
         // the deallocated block is oversized and/or overaligned
         if (n > m_options.largest_block_size || alignment > m_options.alignment)
@@ -488,15 +486,13 @@ public:
                     block = static_cast<oversized_block_descriptor_ptr>(
                         static_cast<void_ptr>(static_cast<char_ptr>(p) +
                                               desc.size));
-                    if (detail::pointer_traits<
-                            oversized_block_descriptor_ptr>::get(desc.prev)) {
+                    if (oversized_block_ptr_traits::get(desc.prev)) {
                         thrust::raw_reference_cast(*desc.prev).next = block;
                     } else {
                         m_oversized = block;
                     }
 
-                    if (detail::pointer_traits<
-                            oversized_block_descriptor_ptr>::get(desc.next)) {
+                    if (oversized_block_ptr_traits::get(desc.next)) {
                         thrust::raw_reference_cast(*desc.next).prev = block;
                     }
                 }
@@ -507,15 +503,14 @@ public:
                 return;
             }
 
-            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(
+            if (oversized_block_ptr_traits::get(
                     desc.prev)) {
                 thrust::raw_reference_cast(*desc.prev).next = desc.next;
             } else {
                 m_oversized = desc.next;
             }
 
-            if (detail::pointer_traits<oversized_block_descriptor_ptr>::get(
-                    desc.next)) {
+            if (oversized_block_ptr_traits::get(desc.next)) {
                 thrust::raw_reference_cast(*desc.next).prev = desc.prev;
             }
 
