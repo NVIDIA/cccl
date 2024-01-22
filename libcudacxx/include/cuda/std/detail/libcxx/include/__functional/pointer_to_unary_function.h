@@ -29,6 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+
 template <class _Arg, class _Result>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 pointer_to_unary_function
     : public __unary_function<_Arg, _Result>
@@ -46,6 +48,8 @@ _LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
 pointer_to_unary_function<_Arg,_Result>
 ptr_fun(_Result (*__f)(_Arg))
     {return pointer_to_unary_function<_Arg,_Result>(__f);}
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 #endif // _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 

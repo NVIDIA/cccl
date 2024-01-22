@@ -4159,7 +4159,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 sort(_Tp** __first, _Tp** __last)
 {
-    _CUDA_VSTD::sort((size_t*)__first, (size_t*)__last, __less<size_t>());
+    _CUDA_VSTD::sort((size_t*)__first, (size_t*)__last, __less{});
 }
 
 template <class _Tp>
@@ -4179,39 +4179,39 @@ sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
     _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<char>&, char*>(char*, char*, __less<char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<wchar_t>&, wchar_t*>(wchar_t*, wchar_t*, __less<wchar_t>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<signed char>&, signed char*>(signed char*, signed char*, __less<signed char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned char>&, unsigned char*>(unsigned char*, unsigned char*, __less<unsigned char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<short>&, short*>(short*, short*, __less<short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned short>&, unsigned short*>(unsigned short*, unsigned short*, __less<unsigned short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<int>&, int*>(int*, int*, __less<int>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned>&, unsigned*>(unsigned*, unsigned*, __less<unsigned>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long>&, long*>(long*, long*, __less<long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned long>&, unsigned long*>(unsigned long*, unsigned long*, __less<unsigned long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long long>&, long long*>(long long*, long long*, __less<long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<unsigned long long>&, unsigned long long*>(unsigned long long*, unsigned long long*, __less<unsigned long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<float>&, float*>(float*, float*, __less<float>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<double>&, double*>(double*, double*, __less<double>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less<long double>&, long double*>(long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, char*>(char*, char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, signed*>(signed*, signed*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, short*>(short*, short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, int*>(int*, int*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long*>(long*, long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long long*>(long long*, long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, unsigned long long*>(unsigned long long*, unsigned long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, float*>(float*, float*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, double*>(double*, double*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS void __sort<__less&, long double*>(long double*, long double*, __less&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<char>&, char*>(char*, char*, __less<char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<wchar_t>&, wchar_t*>(wchar_t*, wchar_t*, __less<wchar_t>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<signed char>&, signed char*>(signed char*, signed char*, __less<signed char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned char>&, unsigned char*>(unsigned char*, unsigned char*, __less<unsigned char>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<short>&, short*>(short*, short*, __less<short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned short>&, unsigned short*>(unsigned short*, unsigned short*, __less<unsigned short>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<int>&, int*>(int*, int*, __less<int>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned>&, unsigned*>(unsigned*, unsigned*, __less<unsigned>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long>&, long*>(long*, long*, __less<long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned long>&, unsigned long*>(unsigned long*, unsigned long*, __less<unsigned long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long long>&, long long*>(long long*, long long*, __less<long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<unsigned long long>&, unsigned long long*>(unsigned long long*, unsigned long long*, __less<unsigned long long>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<float>&, float*>(float*, float*, __less<float>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<double>&, double*>(double*, double*, __less<double>&))
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less<long double>&, long double*>(long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, char*>(char*, char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, wchar_t*>(wchar_t*, wchar_t*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, signed char*>(signed char*, signed char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned char*>(unsigned char*, unsigned char*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, short*>(short*, short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned short*>(unsigned short*, unsigned short*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, int*>(int*, int*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned*>(unsigned*, unsigned*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long*>(long*, long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned long*>(unsigned long*, unsigned long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long long*>(long long*, long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, unsigned long long*>(unsigned long long*, unsigned long long*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, float*>(float*, float*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, double*>(double*, double*, __less&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long double*>(long double*, long double*, __less&))
 
-_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less<long double>&, long double*>(long double*, long double*, long double*, long double*, long double*, __less<long double>&))
+_LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less&, long double*>(long double*, long double*, long double*, long double*, long double*, __less&))
 
 // lower_bound
 
@@ -4255,7 +4255,7 @@ _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::lower_bound(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{});
 }
 
 // upper_bound
@@ -4300,7 +4300,7 @@ _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::upper_bound(__first, __last, __value_,
-                             __less<_Tp, typename iterator_traits<_ForwardIterator>::value_type>());
+                             __less{});
 }
 
 // equal_range
@@ -4357,7 +4357,7 @@ pair<_ForwardIterator, _ForwardIterator>
 equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::equal_range(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{});
 }
 
 // binary_search
@@ -4388,7 +4388,7 @@ bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value_)
 {
     return _CUDA_VSTD::binary_search(__first, __last, __value_,
-                             __less<typename iterator_traits<_ForwardIterator>::value_type, _Tp>());
+                             __less{});
 }
 
 // merge
@@ -4435,7 +4435,7 @@ merge(_InputIterator1 __first1, _InputIterator1 __last1,
 {
     typedef typename iterator_traits<_InputIterator1>::value_type __v1;
     typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less<__v1, __v2>());
+    return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{});
 }
 
 // inplace_merge
@@ -4613,7 +4613,7 @@ void
 inplace_merge(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last)
 {
     _CUDA_VSTD::inplace_merge(__first, __middle, __last,
-                        __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                        __less{});
 }
 
 // stable_sort
@@ -5701,7 +5701,7 @@ bool
 next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
     return _CUDA_VSTD::next_permutation(__first, __last,
-                                  __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                                  __less{});
 }
 
 // prev_permutation
@@ -5749,7 +5749,7 @@ bool
 prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
     return _CUDA_VSTD::prev_permutation(__first, __last,
-                                  __less<typename iterator_traits<_BidirectionalIterator>::value_type>());
+                                  __less{});
 }
 
 #endif

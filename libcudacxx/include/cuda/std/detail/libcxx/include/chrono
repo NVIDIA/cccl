@@ -823,6 +823,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 }  // std
 */
 
+#include "__cccl_config"
 #ifndef __cuda_std__
 #include <__config>
 #else
@@ -3207,9 +3208,10 @@ constexpr hours make24(const hours& __h, bool __is_pm) noexcept
 #pragma GCC system_header
 #endif
 
-_LIBCUDACXX_DIAGNOSTIC_PUSH
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wliteral-suffix")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wuser-defined-literals")
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS_MSVC(4455)
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
 {
@@ -3302,7 +3304,8 @@ inline namespace literals
     }
 #endif //_LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 }}
-_LIBCUDACXX_DIAGNOSTIC_POP
+
+_CCCL_DIAG_POP
 
 namespace chrono { // hoist the literals into namespace std::chrono
    using namespace literals::chrono_literals;
