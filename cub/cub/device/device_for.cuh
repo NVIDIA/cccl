@@ -65,7 +65,7 @@ struct op_wrapper_t
   InputIteratorT input;
   OpT op;
 
-  _CCCL_DEVICE void operator()(OffsetT i)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
   {
     // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
     // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
@@ -93,7 +93,7 @@ struct op_wrapper_vectorized_t
   // Type of the vector that is used to load the input data
   using vector_t = typename CubVector<T, vec_size>::Type;
 
-  _CCCL_DEVICE void operator()(OffsetT i)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
   {
     // Surrounding `Bulk` call doesn't invoke this operator on invalid indices, so we don't need to
     // check for out-of-bounds access here.
