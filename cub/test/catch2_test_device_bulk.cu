@@ -28,6 +28,10 @@
 #include <cub/device/device_for.cuh>
 
 #include <thrust/count.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+
+#include <cuda/std/type_traits>
 
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
