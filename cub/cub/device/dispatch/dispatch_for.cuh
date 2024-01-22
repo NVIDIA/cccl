@@ -28,7 +28,6 @@
 #pragma once
 
 #include <cub/config.cuh>
-#include <cub/device/dispatch/tuning/tuning_for.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -39,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_for.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/thread/thread_load.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
