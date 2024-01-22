@@ -136,8 +136,9 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   using active_policy_t = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using agent_t         = agent_block_striped_t<active_policy_t, OffsetT, OpT>;
 
-  const auto block_threads  = active_policy_t::block_threads;
-  const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
+  constexpr auto block_threads  = active_policy_t::block_threads;
+  constexpr auto items_per_tile = active_policy_t::items_per_thread * block_threads;
+
   const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining  = num_items - tile_base;
   const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
