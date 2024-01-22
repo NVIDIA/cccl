@@ -282,7 +282,7 @@ public:
   //!   Number of elements to iterate over
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -352,7 +352,7 @@ public:
   //!   The end of the sequence
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -428,7 +428,7 @@ public:
   //!   Number of elements to iterate over
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to a copy of each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -501,7 +501,7 @@ public:
   //!   The end of the sequence
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to a copy of each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -615,7 +615,7 @@ public:
   //!   Number of elements to iterate over
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -674,7 +674,7 @@ public:
   //!   The end of the sequence
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -735,7 +735,7 @@ public:
   //!   Number of elements to iterate over
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to a copy of each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
@@ -795,7 +795,7 @@ public:
   //!   The end of the sequence
   //!
   //! @param[in] op
-  //!   Function object to apply to each index in the index space
+  //!   Function object to apply to a copy of each element in the range
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
