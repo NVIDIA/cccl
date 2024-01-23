@@ -223,143 +223,136 @@ void RunTest(BufferOffsetT num_buffers,
              BufferSizeT max_buffer_size,
              TestDataGen input_gen,
              TestDataGen output_gen)
-try
 {
-  using SrcPtrT = uint8_t *;
-
-  // Buffer segment data (their offsets and sizes)
-  c2h::host_vector<BufferSizeT> h_buffer_sizes(num_buffers);
-  c2h::host_vector<ByteOffsetT> h_buffer_src_offsets(num_buffers);
-  c2h::host_vector<ByteOffsetT> h_buffer_dst_offsets(num_buffers);
-
-  // Generate the buffer sizes
-  GenerateRandomData(h_buffer_sizes.data(), h_buffer_sizes.size(), min_buffer_size, max_buffer_size);
-
-  // Make sure buffer sizes are a multiple of the most granular unit (one AtomicT) being copied
-  // (round down)
-  for (BufferOffsetT i = 0; i < num_buffers; i++)
+  try
   {
-    h_buffer_sizes[i] = (h_buffer_sizes[i] / sizeof(AtomicT)) * sizeof(AtomicT);
-  }
+    using SrcPtrT = uint8_t*;
 
-  // Compute the total bytes to be copied
-  ByteOffsetT num_total_bytes = 0;
-  for (BufferOffsetT i = 0; i < num_buffers; i++)
-  {
-    if (input_gen == TestDataGen::CONSECUTIVE)
+    // Buffer segment data (their offsets and sizes)
+    c2h::host_vector<BufferSizeT> h_buffer_sizes(num_buffers);
+    c2h::host_vector<ByteOffsetT> h_buffer_src_offsets(num_buffers);
+    c2h::host_vector<ByteOffsetT> h_buffer_dst_offsets(num_buffers);
+
+    // Generate the buffer sizes
+    GenerateRandomData(h_buffer_sizes.data(), h_buffer_sizes.size(), min_buffer_size, max_buffer_size);
+
+    // Make sure buffer sizes are a multiple of the most granular unit (one AtomicT) being copied
+    // (round down)
+    for (BufferOffsetT i = 0; i < num_buffers; i++)
     {
-      h_buffer_src_offsets[i] = num_total_bytes;
+      h_buffer_sizes[i] = (h_buffer_sizes[i] / sizeof(AtomicT)) * sizeof(AtomicT);
     }
-    if (output_gen == TestDataGen::CONSECUTIVE)
+
+    // Compute the total bytes to be copied
+    ByteOffsetT num_total_bytes = 0;
+    for (BufferOffsetT i = 0; i < num_buffers; i++)
     {
-      h_buffer_dst_offsets[i] = num_total_bytes;
+      if (input_gen == TestDataGen::CONSECUTIVE)
+      {
+        h_buffer_src_offsets[i] = num_total_bytes;
+      }
+      if (output_gen == TestDataGen::CONSECUTIVE)
+      {
+        h_buffer_dst_offsets[i] = num_total_bytes;
+      }
+      num_total_bytes += h_buffer_sizes[i];
     }
-    num_total_bytes += h_buffer_sizes[i];
-  }
 
-  // Shuffle input buffer source-offsets
-  std::uint_fast32_t shuffle_seed = 320981U;
-  if (input_gen == TestDataGen::RANDOM)
-  {
-    h_buffer_src_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
-                                                                                shuffle_seed);
-    shuffle_seed += 42;
-  }
-
-  // Shuffle input buffer source-offsets
-  if (output_gen == TestDataGen::RANDOM)
-  {
-    h_buffer_dst_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes,
-                                                                                shuffle_seed);
-  }
-
-  // Populate the data source with random data
-  using RandomInitAliasT         = uint16_t;
-  std::size_t num_aliased_factor = sizeof(RandomInitAliasT) / sizeof(uint8_t);
-  std::size_t num_aliased_units  = CUB_QUOTIENT_CEILING(num_total_bytes, num_aliased_factor);
-
-  c2h::host_vector<std::uint8_t> h_in(num_aliased_units * num_aliased_factor);
-  c2h::host_vector<std::uint8_t> h_out(num_total_bytes);
-  c2h::host_vector<std::uint8_t> h_gpu_results(num_total_bytes);
-
-  // Generate random offsets into the random-bits data buffer
-  GenerateRandomData(reinterpret_cast<RandomInitAliasT *>(thrust::raw_pointer_cast(h_in.data())),
-                     num_aliased_units);
-
-  c2h::device_vector<std::uint8_t> d_in(h_in);
-  c2h::device_vector<std::uint8_t> d_out(num_total_bytes);
-  c2h::device_vector<ByteOffsetT> d_buffer_src_offsets(h_buffer_src_offsets);
-  c2h::device_vector<ByteOffsetT> d_buffer_dst_offsets(h_buffer_dst_offsets);
-  c2h::device_vector<BufferSizeT> d_buffer_sizes(h_buffer_sizes);
-
-  // Prepare d_buffer_srcs
-  OffsetToPtrOp<SrcPtrT> src_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_in.data()))};
-  cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT *> d_buffer_srcs(
-    thrust::raw_pointer_cast(d_buffer_src_offsets.data()),
-    src_transform_op);
-
-  // Prepare d_buffer_dsts
-  OffsetToPtrOp<SrcPtrT> dst_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_out.data()))};
-  cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT *> d_buffer_dsts(
-    thrust::raw_pointer_cast(d_buffer_dst_offsets.data()),
-    dst_transform_op);
-
-  // Get temporary storage requirements
-  std::size_t temp_storage_bytes = 0;
-  CubDebugExit(cub::DeviceMemcpy::Batched(nullptr,
-                                          temp_storage_bytes,
-                                          d_buffer_srcs,
-                                          d_buffer_dsts,
-                                          d_buffer_sizes.cbegin(),
-                                          num_buffers));
-
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
-
-  c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
-
-  // Invoke device-side algorithm being under test
-  CubDebugExit(cub::DeviceMemcpy::Batched(thrust::raw_pointer_cast(d_temp_storage.data()),
-                                          temp_storage_bytes,
-                                          d_buffer_srcs,
-                                          d_buffer_dsts,
-                                          d_buffer_sizes.begin(),
-                                          num_buffers,
-                                          stream));
-
-  // Copy back the output buffer
-  h_gpu_results = d_out;
-  CubDebugExit(cudaStreamSynchronize(stream));
-
-  // CPU-side result generation for verification
-  for (BufferOffsetT i = 0; i < num_buffers; i++)
-  {
-    std::memcpy(thrust::raw_pointer_cast(h_out.data()) + h_buffer_dst_offsets[i],
-                thrust::raw_pointer_cast(h_in.data()) + h_buffer_src_offsets[i],
-                h_buffer_sizes[i]);
-  }
-
-  for (ByteOffsetT i = 0; i < num_total_bytes; i++)
-  {
-    if (h_gpu_results[i] != h_out[i])
+    // Shuffle input buffer source-offsets
+    std::uint_fast32_t shuffle_seed = 320981U;
+    if (input_gen == TestDataGen::RANDOM)
     {
-      std::cout << "Mismatch at index " << i
-                << ", CPU vs. GPU: "
-                << static_cast<uint16_t>(h_gpu_results[i]) << ", "
-                << static_cast<uint16_t>(h_out[i]) << "\n";
+      h_buffer_src_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes, shuffle_seed);
+      shuffle_seed += 42;
     }
-    AssertEquals(h_out[i], h_gpu_results[i]);
+
+    // Shuffle input buffer source-offsets
+    if (output_gen == TestDataGen::RANDOM)
+    {
+      h_buffer_dst_offsets = GetShuffledBufferOffsets<BufferOffsetT, ByteOffsetT>(h_buffer_sizes, shuffle_seed);
+    }
+
+    // Populate the data source with random data
+    using RandomInitAliasT         = uint16_t;
+    std::size_t num_aliased_factor = sizeof(RandomInitAliasT) / sizeof(uint8_t);
+    std::size_t num_aliased_units  = CUB_QUOTIENT_CEILING(num_total_bytes, num_aliased_factor);
+
+    c2h::host_vector<std::uint8_t> h_in(num_aliased_units * num_aliased_factor);
+    c2h::host_vector<std::uint8_t> h_out(num_total_bytes);
+    c2h::host_vector<std::uint8_t> h_gpu_results(num_total_bytes);
+
+    // Generate random offsets into the random-bits data buffer
+    GenerateRandomData(reinterpret_cast<RandomInitAliasT*>(thrust::raw_pointer_cast(h_in.data())), num_aliased_units);
+
+    c2h::device_vector<std::uint8_t> d_in(h_in);
+    c2h::device_vector<std::uint8_t> d_out(num_total_bytes);
+    c2h::device_vector<ByteOffsetT> d_buffer_src_offsets(h_buffer_src_offsets);
+    c2h::device_vector<ByteOffsetT> d_buffer_dst_offsets(h_buffer_dst_offsets);
+    c2h::device_vector<BufferSizeT> d_buffer_sizes(h_buffer_sizes);
+
+    // Prepare d_buffer_srcs
+    OffsetToPtrOp<SrcPtrT> src_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_in.data()))};
+    cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT*> d_buffer_srcs(
+      thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
+
+    // Prepare d_buffer_dsts
+    OffsetToPtrOp<SrcPtrT> dst_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_out.data()))};
+    cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT*> d_buffer_dsts(
+      thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
+
+    // Get temporary storage requirements
+    std::size_t temp_storage_bytes = 0;
+    CubDebugExit(cub::DeviceMemcpy::Batched(
+      nullptr, temp_storage_bytes, d_buffer_srcs, d_buffer_dsts, d_buffer_sizes.cbegin(), num_buffers));
+
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+
+    c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
+
+    // Invoke device-side algorithm being under test
+    CubDebugExit(cub::DeviceMemcpy::Batched(
+      thrust::raw_pointer_cast(d_temp_storage.data()),
+      temp_storage_bytes,
+      d_buffer_srcs,
+      d_buffer_dsts,
+      d_buffer_sizes.begin(),
+      num_buffers,
+      stream));
+
+    // Copy back the output buffer
+    h_gpu_results = d_out;
+    CubDebugExit(cudaStreamSynchronize(stream));
+
+    // CPU-side result generation for verification
+    for (BufferOffsetT i = 0; i < num_buffers; i++)
+    {
+      std::memcpy(thrust::raw_pointer_cast(h_out.data()) + h_buffer_dst_offsets[i],
+                  thrust::raw_pointer_cast(h_in.data()) + h_buffer_src_offsets[i],
+                  h_buffer_sizes[i]);
+    }
+
+    for (ByteOffsetT i = 0; i < num_total_bytes; i++)
+    {
+      if (h_gpu_results[i] != h_out[i])
+      {
+        std::cout << "Mismatch at index " << i << ", CPU vs. GPU: " << static_cast<uint16_t>(h_gpu_results[i]) << ", "
+                  << static_cast<uint16_t>(h_out[i]) << "\n";
+      }
+      AssertEquals(h_out[i], h_gpu_results[i]);
+    }
   }
-}
-catch (std::bad_alloc &e)
-{
-    std::cout << "Skipping test 'RunTest("
-            << num_buffers << ", "
-            << min_buffer_size << ", "
-            << max_buffer_size << ", "
-            << TestDataGenToString(input_gen) << ", "
-            << TestDataGenToString(output_gen) << ")"
-            << "' due to insufficient memory: " << e.what() << "\n";
+  catch (std::bad_alloc& e)
+  {
+    std::cout
+      << "Skipping test 'RunTest(" //
+      << num_buffers << ", " //
+      << min_buffer_size << ", " //
+      << max_buffer_size << ", " //
+      << TestDataGenToString(input_gen) << ", " //
+      << TestDataGenToString(output_gen) << ")" //
+      << "' due to insufficient memory: " << e.what() << "\n";
+  }
 }
 
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
