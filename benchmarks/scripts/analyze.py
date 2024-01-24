@@ -2,6 +2,7 @@
 
 import os
 import re
+import json
 import cccl
 import math
 import argparse
@@ -730,6 +731,28 @@ def file_exists(value):
     return value
 
 
+def case_offload(algname, ct_point_name, case_dfs):
+    for subbench in case_dfs:
+        df = case_dfs[subbench]
+        for rt_point in extract_rt_space(df):
+            point_df = df
+            for rt_kv in rt_point:
+                key, value = rt_kv.split('=')
+                point_df = point_df[point_df[key] == value]
+            point_name = ct_point_name + " " + " ".join(rt_point)
+            point_name = point_name.replace(',', '')
+            bench_name = "{}.{}-{}".format(algname, subbench, point_name)
+            bench_name = bench_name.replace(' ', '___')
+            bench_name = "".join(c if c.isalnum() else "_" for c in bench_name)
+            with open(bench_name + '.json', 'w') as f:
+                obj = json.loads(point_df.to_json(orient='records'))
+                json.dump(obj, f, indent=2)
+
+
+def offload(args):
+    iterate_case_dfs(args, case_offload)
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Analyze benchmark results.")
     parser.add_argument(
@@ -754,6 +777,8 @@ def parse_arguments():
         '--variants-ratio', type=str, help="Show matching variants data.")
     parser.add_argument('-a', '--args', action='append',
                         type=str, help="Parameter in the format `Param=Value`.")
+    parser.add_argument(
+        '-o', '--offload', action=argparse.BooleanOptionalAction, help="Offload samples")
     return parser.parse_args()
 
 
@@ -782,6 +807,10 @@ def main():
 
     if args.variants_ratio:
         variants(args, 'ratio')
+        return
+    
+    if args.offload:
+        offload(args)
         return
 
     top(args)
