@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,53 +25,34 @@
  *
  ******************************************************************************/
 
-/******************************************************************************
- * Test of DeviceMergeSort utilities using large user types (i.e., with vsmem utilities)
- ******************************************************************************/
-
-// Ensure printing of CUDA runtime errors to console
-#define CUB_STDERR
-
-#include <cstdio>
-#include <new> // for std::bad_alloc
-
-#include "test_device_merge_sort.cuh"
-#include "test_util.h"
-
-int main(int argc, char** argv)
+struct custom_less_op_t
 {
-  CommandLineArgs args(argc, argv);
-
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
-
-  using DataType = int64_t;
-
-  thrust::default_random_engine rng;
-  for (unsigned int pow2 = 9; pow2 < 22; pow2 += 2)
+  template <typename T>
+  __host__ __device__ bool operator()(const T& lhs, const T& rhs)
   {
-    try
-    {
-      const unsigned int num_items = 1 << pow2;
-      // Testing vsmem facility with a fallback policy
-      TestHelper<true>::AllocateAndTest<HugeDataType<128>, DataType>(rng, num_items);
-      // Testing vsmem facility with virtual shared memory
-      TestHelper<true>::AllocateAndTest<HugeDataType<256>, DataType>(rng, num_items);
-    }
-    catch (std::bad_alloc& e)
-    {
-      if (pow2 > 20)
-      { // Some cards don't have enough memory for large allocations, these
-        // can be skipped.
-        printf("Skipping large memory test. (num_items=2^%u): %s\n", pow2, e.what());
-      }
-      else
-      { // For smaller problem sizes, treat as an error:
-        printf("Error (num_items=2^%u): %s", pow2, e.what());
-        throw;
-      }
-    }
+    return lhs < rhs;
   }
+};
 
-  return 0;
-}
+struct compare_first_lt_op_t
+{
+  /**
+   * We need to be able to have two different types for lhs and rhs, as the call to std::stable_sort with a
+   * zip-iterator, will pass a thrust::tuple for lhs and a tuple_of_iterator_references for rhs.
+   */
+  template <typename LhsT, typename RhsT>
+  __host__ __device__ bool operator()(const LhsT& lhs, const RhsT& rhs) const
+  {
+    return thrust::get<0>(lhs) < thrust::get<0>(rhs);
+  }
+};
+
+template <typename T>
+struct mod_op_t
+{
+  T mod;
+  __host__ __device__ T operator()(T val) const
+  {
+    return val % mod;
+  }
+};
