@@ -74,7 +74,9 @@ using checked_cuda_allocator =
 using device_policy_t = typename std::remove_reference<decltype(thrust::device(checked_cuda_allocator<char>{}))>::type;
 inline device_policy_t device_policy()
 {
-  return thrust::device(checked_cuda_allocator<char>{});
+  // Storing this in a function-scoped static WARs some spurious errors when CUB_SEPARATE_CATCH2=OFF.
+  static auto exec_pol = thrust::device(checked_cuda_allocator<char>{});
+  return exec_pol;
 }
 
 template <typename T>
