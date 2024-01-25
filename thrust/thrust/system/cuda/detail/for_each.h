@@ -37,7 +37,6 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <iterator>
 #include <thrust/system/cuda/config.h>
 
 #include <cub/device/device_for.cuh>
@@ -92,7 +91,7 @@ namespace cuda_cub {
     typedef typename iterator_traits<Input>::difference_type size_type;
     size_type count = static_cast<size_type>(thrust::distance(first,last));
 
-    return for_each_n(policy, first, count, op);
+    return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
   }
 } // namespace cuda_cub
 
