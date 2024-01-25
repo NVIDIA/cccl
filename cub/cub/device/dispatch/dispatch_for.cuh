@@ -74,6 +74,9 @@ struct first_parameter<R (C::*)(A) const>
   using type = A;
 };
 
+template <class Fn>
+using first_parameter_t = typename first_parameter<decltype(&Fn::operator())>::type;
+
 template <class Value, class Fn, class = void>
 struct has_unique_value_overload : ::cuda::std::false_type
 {};
@@ -84,8 +87,8 @@ struct has_unique_value_overload<
   Value,
   Fn,
   typename ::cuda::std::enable_if<
-              !::cuda::std::is_reference<typename first_parameter<decltype(&Fn::operator())>::type>::value && 
-              ::cuda::std::is_convertible<Value, typename first_parameter<decltype(&Fn::operator())>::type
+              !::cuda::std::is_reference<first_parameter_t<Fn>>::value && 
+              ::cuda::std::is_convertible<Value, first_parameter_t<Fn>
              >::value>::type>
     : ::cuda::std::true_type
 {};
