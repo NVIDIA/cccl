@@ -59,10 +59,10 @@ namespace for_each
 /**
  * `op_wrapper_t` turns bulk into a for-each operation by wrapping the user-provided unary operator.
  */
-template <class OffsetT, class OpT, class InputIteratorT>
+template <class OffsetT, class OpT, class RandomAccessIteratorT>
 struct op_wrapper_t
 {
-  InputIteratorT input;
+  RandomAccessIteratorT input;
   OpT op;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(OffsetT i)
@@ -132,24 +132,25 @@ private:
     return (reinterpret_cast<std::size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
   }
 
-  template <class InputIteratorT, class OffsetT, class OpT>
+  template <class RandomAccessIteratorT, class OffsetT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    InputIteratorT first,
+    RandomAccessIteratorT first,
     OffsetT num_items,
     OpT op,
     cudaStream_t stream,
     ::cuda::std::false_type /* do_not_vectorize */)
   {
-    using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, InputIteratorT>;
+    using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
     return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
   }
 
-  template <class InputIteratorT, class OffsetT, class OpT>
+  template <class RandomAccessIteratorT, class OffsetT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t for_each_n(
-    InputIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, ::cuda::std::true_type /* vectorize */)
+    RandomAccessIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, ::cuda::std::true_type /* vectorize */)
   {
     auto unwrapped_first = THRUST_NS_QUALIFIER::raw_pointer_cast(&*first);
-    using wrapped_op_t   = detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::value_t<InputIteratorT>>;
+    using wrapped_op_t =
+      detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::value_t<RandomAccessIteratorT>>;
 
     if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
     { // Vectorize loads
@@ -259,7 +260,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam NumItemsT
@@ -286,11 +287,11 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class NumItemsT, class OpT>
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachN(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    InputIteratorT first,
+    RandomAccessIteratorT first,
     NumItemsT num_items,
     OpT op,
     cudaStream_t stream = {})
@@ -332,7 +333,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam OpT
@@ -356,12 +357,12 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class OpT>
+  template <class RandomAccessIteratorT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEach(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    InputIteratorT first,
-    InputIteratorT last,
+    RandomAccessIteratorT first,
+    RandomAccessIteratorT last,
     OpT op,
     cudaStream_t stream = {})
   {
@@ -405,7 +406,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam NumItemsT
@@ -432,11 +433,11 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class NumItemsT, class OpT>
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachCopyN(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    InputIteratorT first,
+    RandomAccessIteratorT first,
     NumItemsT num_items,
     OpT op,
     cudaStream_t stream = {})
@@ -481,7 +482,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam OpT
@@ -505,12 +506,12 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class OpT>
+  template <class RandomAccessIteratorT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t ForEachCopy(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
-    InputIteratorT first,
-    InputIteratorT last,
+    RandomAccessIteratorT first,
+    RandomAccessIteratorT last,
     OpT op,
     cudaStream_t stream = {})
   {
@@ -599,7 +600,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam NumItemsT
@@ -619,19 +620,19 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class NumItemsT, class OpT>
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachN(InputIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
     using offset_t            = NumItemsT;
     using use_vectorization_t = ::cuda::std::integral_constant<bool, false>;
 
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::value_t<InputIteratorT>, OpT>::value
-    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<InputIteratorT>::value;
+    //   detail::for_each::can_regain_copy_freedom<detail::value_t<RandomAccessIteratorT>, OpT>::value
+    //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
 
-    return for_each_n<InputIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
   }
 
   //! @rst
@@ -661,7 +662,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam OpT
@@ -678,11 +679,11 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class OpT>
+  template <class RandomAccessIteratorT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEach(InputIteratorT first, InputIteratorT last, OpT op, cudaStream_t stream = {})
+  ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<InputIteratorT>::difference_type;
+    using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<RandomAccessIteratorT>::difference_type;
 
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
 
@@ -719,7 +720,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam NumItemsT
@@ -739,17 +740,17 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class NumItemsT, class OpT>
+  template <class RandomAccessIteratorT, class NumItemsT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopyN(InputIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
+  ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<InputIteratorT>::value,
-                  "Input iterator must be contiguous");
+    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value,
+                  "Iterator must be contiguous");
 
     using offset_t            = NumItemsT;
     using use_vectorization_t = ::cuda::std::integral_constant<bool, true>;
 
-    return for_each_n<InputIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
+    return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
   }
 
   //! @rst
@@ -782,7 +783,7 @@ public:
   //!
   //! @endrst
   //!
-  //! @tparam InputIteratorT
+  //! @tparam RandomAccessIteratorT
   //!   is a model of Random Access Iterator whose value type is convertible to `op`'s argument type.
   //!
   //! @tparam OpT
@@ -799,14 +800,14 @@ public:
   //!
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
-  template <class InputIteratorT, class OpT>
+  template <class RandomAccessIteratorT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachCopy(InputIteratorT first, InputIteratorT last, OpT op, cudaStream_t stream = {})
+  ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<InputIteratorT>::value,
-                  "Input iterator must be contiguous");
+    static_assert(THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value,
+                  "Iterator must be contiguous");
 
-    using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<InputIteratorT>::difference_type;
+    using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<RandomAccessIteratorT>::difference_type;
 
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
 
