@@ -68,7 +68,7 @@ public:
   }
 };
 
-struct bad_operator_t
+struct referencing_operator_t
 {
   const std::size_t* d_input;
   const std::size_t magic_value;
@@ -126,7 +126,7 @@ CUB_TEST("Device for each works with bad operators", "[for][device]")
   thrust::device_vector<std::size_t> input(num_items, magic_value);
   const std::size_t* d_input = thrust::raw_pointer_cast(input.data());
 
-  device_for_each(input.begin(), input.end(), bad_operator_t{d_input, magic_value});
+  device_for_each(input.begin(), input.end(), referencing_operator_t{d_input, magic_value});
 
   REQUIRE(thrust::equal(input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
 }
@@ -206,7 +206,7 @@ CUB_TEST("Device for each n works with bad operators", "[for][device]", offset_t
   thrust::device_vector<std::size_t> input(num_items, magic_value);
   const std::size_t* d_input = thrust::raw_pointer_cast(input.data());
 
-  device_for_each_n(input.begin(), num_items, bad_operator_t{d_input, magic_value});
+  device_for_each_n(input.begin(), num_items, referencing_operator_t{d_input, magic_value});
 
   REQUIRE(thrust::equal(input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
 }
