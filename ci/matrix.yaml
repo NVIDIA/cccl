@@ -56,12 +56,12 @@ oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 # Configurations that will run for every PR
 pull_request:
   nvcc:
-    linux:
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc6,     std: [11, 14],         jobs: ['build']}
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
@@ -78,9 +78,6 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
-    windows:
-    - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
