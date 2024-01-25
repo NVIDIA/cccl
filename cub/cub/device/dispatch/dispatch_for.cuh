@@ -115,7 +115,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(OffsetT num_items, OpT op)
   const auto items_per_tile = active_policy_t::items_per_thread * block_threads;
   const auto tile_base      = static_cast<OffsetT>(blockIdx.x) * items_per_tile;
   const auto num_remaining  = num_items - tile_base;
-  const auto items_in_tile  = num_remaining < items_per_tile ? num_remaining : items_per_tile;
+  const auto items_in_tile  = static_cast<OffsetT>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
 
   if (items_in_tile == items_per_tile)
   {
