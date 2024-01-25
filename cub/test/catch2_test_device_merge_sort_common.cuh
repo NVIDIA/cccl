@@ -25,6 +25,11 @@
  *
  ******************************************************************************/
 
+#pragma once
+
+/**
+ * Custom comparator that simply uses `operator <` of the given type.
+ */
 struct custom_less_op_t
 {
   template <typename T>
@@ -34,6 +39,9 @@ struct custom_less_op_t
   }
 };
 
+/**
+ * Custom comparator that compares a tuple type's first element using `operator <`.
+ */
 struct compare_first_lt_op_t
 {
   /**
@@ -47,6 +55,10 @@ struct compare_first_lt_op_t
   }
 };
 
+/**
+ * Function object to computes the modulo of a given value. Used within sort tests to reduce the value-range of sort
+ * keys and, hence, cause more ties between sort keys.
+ */
 template <typename T>
 struct mod_op_t
 {

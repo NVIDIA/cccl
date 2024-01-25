@@ -34,7 +34,7 @@
 
 #include <algorithm>
 
-#include "catch2_device_merge_sort_common.cuh"
+#include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
