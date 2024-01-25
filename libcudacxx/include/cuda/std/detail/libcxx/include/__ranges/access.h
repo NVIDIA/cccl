@@ -35,7 +35,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class _Tp>
   _LIBCUDACXX_CONCEPT __can_borrow =
@@ -95,7 +95,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__begin)
 
   struct __fn {
     // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
-#if (!defined(_LIBCUDACXX_COMPILER_GCC) || __GNUC__ >= 11)
+#if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11)
     _LIBCUDACXX_TEMPLATE(class _Tp)
       _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
     _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
@@ -290,7 +290,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 inline namespace __cpo {
   _LIBCUDACXX_CPO_ACCESSIBILITY auto cend = __cend::__fn{};
 } // namespace __cpo
-#endif // _CCCL_STD_VER > 2014 && !_LIBCUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -113,7 +113,7 @@ _CCCL_HOST_DEVICE
   for(; first != last; ++first, ++result)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);
@@ -136,7 +136,7 @@ _CCCL_HOST_DEVICE
   for(; n > Size(0); ++first, ++result, --n)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);

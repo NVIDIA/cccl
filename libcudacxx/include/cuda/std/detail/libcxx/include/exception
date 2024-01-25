@@ -193,13 +193,13 @@ make_exception_ptr(_Ep __e) noexcept
 
 class _LIBCUDACXX_EXCEPTION_ABI exception_ptr
 {
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_CLANG)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-private-field"
 #endif
     void* __ptr1_;
     void* __ptr2_;
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_CLANG)
 #pragma clang diagnostic pop
 #endif
 public:
@@ -317,11 +317,11 @@ void
 rethrow_if_nested(const _Ep& __e,
                   typename enable_if< __can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
 {
-#if !defined(_LIBCUDACXX_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_MSVC)
     const nested_exception* __nep = dynamic_cast<const nested_exception*>(_CUDA_VSTD::addressof(__e));
     if (__nep)
         __nep->rethrow_nested();
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 }
 
 template <class _Ep>

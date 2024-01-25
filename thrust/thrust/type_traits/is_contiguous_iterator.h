@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <utility>
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC && _MSC_VER < 1916 // MSVC 2017 version 15.9
+#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1916 // MSVC 2017 version 15.9
   #include <vector>
   #include <string>
   #include <array>

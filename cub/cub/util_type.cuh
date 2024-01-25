@@ -55,11 +55,11 @@
 // cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
 #  if _LIBCUDACXX_CUDACC_VER >= 1108000
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
-#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#    if defined(_CCCL_COMPILER_MSVC)
 #      pragma warning(push)
 #    endif
 #    include <cuda_fp8.h>
-#    if CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#    if defined(_CCCL_COMPILER_MSVC)
 #      pragma warning(pop)
 #    endif
 #  endif
@@ -69,7 +69,7 @@
 
 #include <cuda/std/type_traits>
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  include <iterator>
 #else
 #  include <cuda/std/iterator>
@@ -84,9 +84,10 @@ CUB_NAMESPACE_BEGIN
 #endif // !defined(__CUDACC_RTC_INT128__)
 #else  // !defined(__CUDACC_RTC__)
 #if _LIBCUDACXX_CUDACC_VER >= 1105000
-#if (CUB_HOST_COMPILER == CUB_HOST_COMPILER_GCC) || \
-    (CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG) || \
-    defined(__ICC) || defined(_NVHPC_CUDA)
+#if defined(_CCCL_COMPILER_GCC) || \
+    defined(_CCCL_COMPILER_CLANG) || \
+    defined(_CCCL_COMPILER_ICC) || \
+    defined(_CCCL_COMPILER_NVHPC)
 #define CUB_IS_INT128_ENABLED 1
 #endif // GCC || CLANG || ICC || NVHPC
 #endif // CTK >= 11.5
@@ -108,11 +109,11 @@ using conditional_t = typename ::cuda::std::conditional<Test, T1, T2>::type;
 
 template <typename Iterator>
 using value_t =
-#  if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   typename std::iterator_traits<Iterator>::value_type;
-#  else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  else // defined(_CCCL_COMPILER_NVRTC)
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  endif // defined(_CCCL_COMPILER_NVRTC)
 
 template <typename It,
           typename FallbackT,

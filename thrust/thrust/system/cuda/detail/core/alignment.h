@@ -84,7 +84,7 @@ struct aligned_type;
 
 // implementing aligned_type portably is tricky:
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 // implement aligned_type with specialization because MSVC
 // requires literals as arguments to declspec(align(n))
 template <>
@@ -170,7 +170,7 @@ struct aligned_type<8192>
 {
   struct __align__(8192) type{};
 };
-#elif (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#elif defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
 // implement aligned_type with specialization because gcc 4.2
 // requires literals as arguments to __attribute__(aligned(n))
 template <>
@@ -229,7 +229,7 @@ struct aligned_type
 {
   struct __align__(Align) type{};
 };
-#endif    // THRUST_HOST_COMPILER
+#endif    // _CCCL_COMPILER
 #else
 template <std::size_t Align>
 struct aligned_type

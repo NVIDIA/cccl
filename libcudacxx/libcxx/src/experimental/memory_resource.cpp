@@ -77,8 +77,8 @@ union ResourceInitHelper {
 };
 
 // Detect if the init_priority attribute is supported.
-#if (defined(_LIBCUDACXX_COMPILER_GCC) && defined(__APPLE__)) \
-  || defined(_LIBCUDACXX_COMPILER_MSVC)
+#if (defined(_CCCL_COMPILER_GCC) && defined(__APPLE__)) \
+  || defined(_CCCL_COMPILER_MSVC)
 // GCC on Apple doesn't support the init priority attribute,
 // and MSVC doesn't support any GCC attributes.
 # define _LIBCUDACXX_INIT_PRIORITY_MAX

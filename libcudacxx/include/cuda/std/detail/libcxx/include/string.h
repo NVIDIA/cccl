@@ -63,9 +63,9 @@ size_t strlen(const char* s);
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC) && !defined(_LIBCUDACXX_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_NVRTC) && !defined(_CCCL_COMPILER_MSVC)
 #include_next <string.h>
-#endif // !_LIBCUDACXX_COMPILER_NVRTC && !_LIBCUDACXX_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_NVRTC && !_CCCL_COMPILER_MSVC
 
 // MSVCRT, GNU libc and its derivates may already have the correct prototype in
 // <string.h>. This macro can be defined by users if their C library provides

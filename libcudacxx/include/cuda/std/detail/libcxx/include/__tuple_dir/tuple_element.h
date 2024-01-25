@@ -55,7 +55,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_cv<__tuple_element_t<_Ip, _Tp>>::type type;
 };
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 
 namespace __indexer_detail {
 

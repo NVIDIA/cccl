@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <utility>
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC && _MSC_VER == 1900)
+#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER == 1900
 #define THRUST_OPTIONAL_MSVC2015
 #endif
 
@@ -338,7 +338,7 @@ using enable_assign_from_other = detail::enable_if_t<
     !std::is_assignable<T &, const optional<U> &>::value &&
     !std::is_assignable<T &, const optional<U> &&>::value>;
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 // TODO make a version which works with MSVC
 template <class T, class U = T> struct is_swappable : std::true_type {};
 

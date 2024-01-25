@@ -28,34 +28,31 @@
 #include <thrust/detail/config.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
+#pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
+#pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
+#pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/detail/preprocessor.h>
+#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace detail
-{
+namespace detail {
 
-template <typename, bool x>
-struct depend_on_instantiation
-{
+template <typename, bool x> struct depend_on_instantiation {
   THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT bool value = x;
 };
 
 #if _CCCL_STD_VER >= 2011
 
-#  if _CCCL_STD_VER >= 2017
-#    define THRUST_STATIC_ASSERT(B)        static_assert(B)
-#  else
-#    define THRUST_STATIC_ASSERT(B)        static_assert(B, "static assertion failed")
-#  endif
-#  define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
+#if _CCCL_STD_VER >= 2017
+#define THRUST_STATIC_ASSERT(B) static_assert(B)
+#else
+#define THRUST_STATIC_ASSERT(B) static_assert(B, "static assertion failed")
+#endif
+#define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
 
 #else // Older than C++11.
 
@@ -67,25 +64,20 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 // HP aCC cannot deal with missing names for template value parameters.
 template <int x> struct static_assert_test {};
 
-#if    (  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                  \
-       && (THRUST_GCC_VERSION >= 40800))                                      \
-    || (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG)
-  // Clang and GCC 4.8+ will complain about this typedef being unused unless we
-  // annotate it as such.
-#  define THRUST_STATIC_ASSERT(B)                                             \
-    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
-      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
-    >                                                                         \
-      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
-      __attribute__((unused))                                                 \
-    /**/
+#if (defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION >= 40800)) ||          \
+    defined(_CCCL_COMPILER_CLANG)
+// Clang and GCC 4.8+ will complain about this typedef being unused unless we
+// annotate it as such.
+#define THRUST_STATIC_ASSERT(B)                                                \
+  typedef THRUST_NS_QUALIFIER::detail::static_assert_test<sizeof(              \
+      THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)>       \
+  THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                      \
+      __attribute__((unused)) /**/
 #else
-#  define THRUST_STATIC_ASSERT(B)                                             \
-    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
-      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
-    >                                                                         \
-      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
-    /**/
+#define THRUST_STATIC_ASSERT(B)                                                \
+  typedef THRUST_NS_QUALIFIER::detail::static_assert_test<sizeof(              \
+      THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)>       \
+  THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__) /**/
 #endif
 
 #define THRUST_STATIC_ASSERT_MSG(B, msg) THRUST_STATIC_ASSERT(B)
@@ -95,5 +87,3 @@ template <int x> struct static_assert_test {};
 } // namespace detail
 
 THRUST_NAMESPACE_END
-
-

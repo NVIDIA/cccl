@@ -34,7 +34,7 @@
 #include "../__cuda/ptx.h"           // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
 
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
 #else
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
@@ -634,7 +634,7 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
     // memcpy_async when compiling with GCC 4.8.
     // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+#if !defined(_CCCL_COMPILER_GCC) || _GNUC_VER > 408
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #endif
     static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");

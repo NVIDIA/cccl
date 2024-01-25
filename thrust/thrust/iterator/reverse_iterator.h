@@ -187,14 +187,14 @@ template<typename BidirectionalIterator>
     reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const &r
 // XXX msvc screws this up
 // XXX remove these guards when we have static_assert
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if !defined(_CCCL_COMPILER_MSVC)
                      , typename thrust::detail::enable_if<
                          thrust::detail::is_convertible<
                            OtherBidirectionalIterator,
                            BidirectionalIterator
                          >::value
                        >::type * = 0
-#endif // MSVC
+#endif // !_CCCL_COMPILER_MSVC
                      );
 
   /*! \cond

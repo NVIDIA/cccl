@@ -267,11 +267,11 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
     {
       return do_assign(other,
       // XXX gcc 4.2.1 crashes on is_copy_assignable; just assume the functor is assignable as a WAR
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION <= 40201)
+#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION <= 40201)
           thrust::detail::true_type()
 #else
           typename thrust::detail::is_copy_assignable<AdaptableUnaryFunction>::type()
-#endif // THRUST_HOST_COMPILER
+#endif // _CCCL_COMPILER
       );
     }
 

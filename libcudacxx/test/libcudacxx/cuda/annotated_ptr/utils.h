@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(TEST_COMPILER_MSVC)
 #pragma warning(disable: 4505)
 #endif
 

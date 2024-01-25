@@ -271,7 +271,7 @@ struct is_trivially_copyable_impl
         #if _CCCL_STD_VER >= 2011
             #if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
                 __is_trivially_copyable(T)
-            #elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC && THRUST_GCC_VERSION >= 50000
+            #elif defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 50000
                 std::is_trivially_copyable<T>::value
             #else
                 has_trivial_assign<T>::value

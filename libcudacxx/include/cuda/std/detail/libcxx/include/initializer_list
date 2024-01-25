@@ -118,7 +118,7 @@ end(initializer_list<_Ep> __il) noexcept
 
 #else
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #include <initializer_list>
 #endif
 

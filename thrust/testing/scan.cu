@@ -31,7 +31,7 @@ void TestScanSimple(void)
     // The issue doesn't happen with opts disabled, or on other compilers.
     // Printing the intermediate sum each iteration "fixes" the issue,
     // so likely a bad optimization.
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_INTEL
+#if defined(_CCCL_COMPILER_ICC)
     if (std::is_same<T, custom_numeric>::value)
     {
       return;

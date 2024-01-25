@@ -34,11 +34,7 @@
 #if defined(_CCCL_COMPILER_MSVC)
 #  if _MSC_VER < 1917
 #    define _CCCL_COMPILER_MSVC_2017
-#  elif _MSC_VER < 1930
-#    define _CCCL_COMPILER_MSVC_2019
-#  else // _MSC_VER < 1940
-#    define _CCCL_COMPILER_MSVC_2022
-#  endif // _MSC_VER < 1940
+#  endif
 #endif // _CCCL_COMPILER_MSVC
 
 // Determine the cuda compiler
