@@ -85,13 +85,13 @@ fi
 matrix_json=$(yq -o json ${MATRIX_FILE})
 
 # Exclude Windows environments
-readonly matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc.windows)')
+readonly matrix_json=$(echo "$matrix_json" | jq 'del(.pull_request.nvcc[] | select(.os | contains("windows")))')
 
 # Get the devcontainer image version and define image tag root
 readonly DEVCONTAINER_VERSION=$(echo "$matrix_json" | jq -r '.devcontainer_version')
 
 # Get unique combinations of cuda version, compiler name/version, and Ubuntu version
-readonly combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc.linux[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]')
+readonly combinations=$(echo "$matrix_json" | jq -c '[.pull_request.nvcc[] | {cuda: .cuda, compiler_name: .compiler.name, compiler_exe: .compiler.exe, compiler_version: .compiler.version, os: .os}] | unique | .[]')
 
 # Update the base devcontainer with the default values
 # The root devcontainer.json file is used as the default container as well as a template for all
