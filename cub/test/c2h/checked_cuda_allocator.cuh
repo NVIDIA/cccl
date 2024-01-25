@@ -52,7 +52,9 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
     return status;
   }
 
-  if (free_bytes < bytes)
+  // Avoid allocating all available memory:
+  constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
+  if (free_bytes < (bytes + padding))
   {
     return cudaErrorMemoryAllocation;
   }
