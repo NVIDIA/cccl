@@ -168,7 +168,7 @@ struct dispatch_t : PolicyHubT
   {}
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t Invoke(::cuda::std::false_type /* block size is not known at compile time */)
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
@@ -225,7 +225,7 @@ struct dispatch_t : PolicyHubT
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     cudaError_t Invoke(::cuda::std::true_type /* block size is known at compile time */)
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
@@ -270,7 +270,7 @@ struct dispatch_t : PolicyHubT
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     constexpr bool static_block_size = ActivePolicyT::for_policy_t::block_threads > 0;
     return Invoke<ActivePolicyT>(::cuda::std::integral_constant<bool, static_block_size>{});
