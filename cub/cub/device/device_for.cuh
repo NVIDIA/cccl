@@ -69,7 +69,7 @@ struct op_wrapper_t
   {
     // Dereferencing `thrust::device_vector<T>` iterators returns a `thrust::device_reference<T>`
     // instead of `T`. Since user-provided operator expects `T` as an argument, we need to unwrap.
-    op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
+    (void)op(THRUST_NS_QUALIFIER::raw_reference_cast(*(input + i)));
   }
 };
 
@@ -104,14 +104,14 @@ struct op_wrapper_vectorized_t
 #pragma unroll
       for (int j = 0; j < vec_size; j++)
       {
-        op(*(reinterpret_cast<const T*>(&vec) + j));
+        (void)op(*(reinterpret_cast<const T*>(&vec) + j));
       }
     }
     else
     { // Case of partially filled vector
       for (OffsetT j = i * vec_size; j < num_items; j++)
       {
-        op(input[j]);
+        (void)op(input[j]);
       }
     }
   }
