@@ -48,7 +48,11 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __cccl_config
+  __cccl/compiler.h
+  __cccl/diagnostic.h
   __cccl/dialect.h
+  __cccl/execution_space.h
+  __cccl/system_header.h
   __cccl/version.h
   __cccl/visibility.h
   __concepts/__concept_macros.h
