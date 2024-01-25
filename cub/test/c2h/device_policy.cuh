@@ -27,19 +27,22 @@
 
 #pragma once
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/execution_policy.h>
+
+#include <type_traits>
 
 #include <c2h/checked_cuda_allocator.cuh>
-
-#include <memory>
 
 namespace c2h
 {
 
-template <typename T>
-using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
+using device_policy_t = typename std::remove_reference<decltype(thrust::device(checked_cuda_allocator<char>{}))>::type;
 
-template <typename T>
-using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
+inline device_policy_t device_policy()
+{
+  // Storing this in a function-scoped static WARs some spurious errors when CUB_SEPARATE_CATCH2=OFF.
+  static auto exec_pol = thrust::device(checked_cuda_allocator<char>{});
+  return exec_pol;
+}
 
 } // namespace c2h

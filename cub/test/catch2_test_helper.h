@@ -35,8 +35,9 @@
 #include <cub/util_compiler.cuh>
 #include "test_util_vec.h"
 
-#include "c2h/utility.cuh"
-#include "c2h/vector.cuh"
+#include <c2h/device_policy.cuh>
+#include <c2h/utility.cuh>
+#include <c2h/vector.cuh>
 
 #include "catch2_main.cuh"
 #include "test_warning_suppression.cuh"

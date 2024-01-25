@@ -43,7 +43,9 @@
 #include <type_traits>
 #include <vector>
 
-#include "c2h/vector.cuh"
+#include <c2h/device_policy.cuh>
+#include <c2h/vector.cuh>
+
 #include "test_util.h"
 
 /**

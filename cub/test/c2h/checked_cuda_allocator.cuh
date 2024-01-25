@@ -27,19 +27,44 @@
 
 #pragma once
 
-#include <thrust/detail/vector_base.h>
+#include <thrust/device_allocator.h>
+#include <thrust/system/cuda/memory.h>
+#include <thrust/system/cuda/memory_resource.h>
+#include <thrust/system/cuda/pointer.h>
 
-#include <c2h/checked_cuda_allocator.cuh>
-
-#include <memory>
+#include <cuda_runtime_api.h>
 
 namespace c2h
 {
+namespace detail
+{
 
-template <typename T>
-using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
+// Check available memory prior to calling cudaMalloc.
+// This avoids hangups and slowdowns from allocating swap / non-device memory
+// on some platforms, namely tegra.
+inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
+{
+  std::size_t free_bytes{};
+  std::size_t total_bytes{};
+  cudaError_t status = cudaMemGetInfo(&free_bytes, &total_bytes);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
 
+  if (free_bytes < bytes)
+  {
+    return cudaErrorMemoryAllocation;
+  }
+
+  return cudaMalloc(ptr, bytes);
+}
+} // namespace detail
+
+using checked_cuda_memory_resource =
+  thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
 template <typename T>
-using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
+using checked_cuda_allocator =
+  thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
 
 } // namespace c2h
