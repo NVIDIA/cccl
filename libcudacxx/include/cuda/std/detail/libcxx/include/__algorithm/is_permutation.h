@@ -14,12 +14,6 @@
 #  include <__config>
 #endif // __cuda_std__
 
-#include "../__algorithm/comp.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/next.h"
-#include "../__type_traits/add_lvalue_reference.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -27,6 +21,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__algorithm/comp.h"
+#include "../__iterator/distance.h"
+#include "../__iterator/iterator_traits.h"
+#include "../__iterator/next.h"
+#include "../__type_traits/add_lvalue_reference.h"
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>

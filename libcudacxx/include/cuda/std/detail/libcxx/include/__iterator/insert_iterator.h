@@ -15,12 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/iterator.h"
-#include "../__memory/addressof.h"
-#include "../__utility/move.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,6 +22,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__iterator/iterator_traits.h"
+#include "../__iterator/iterator.h"
+#include "../__memory/addressof.h"
+#include "../__utility/move.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

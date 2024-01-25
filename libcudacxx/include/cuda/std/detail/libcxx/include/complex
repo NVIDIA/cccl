@@ -233,9 +233,16 @@ template<class T> complex<T> tanh (const complex<T>&);
 */
 
 #ifndef __cuda_std__
-#include <__config>
-#include <stdexcept>
+#  include <__config>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__type_traits/enable_if.h"
@@ -249,6 +256,10 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include "cstdint"
 #include "type_traits"
 #include "version"
+
+#ifndef __cuda_std__
+#include <stdexcept>
+#endif // __cuda_std__
 
 #if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)
@@ -266,14 +277,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 # if _LIBCUDACXX_CUDA_ABI_VERSION > 3
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS(V) _ALIGNAS(V)

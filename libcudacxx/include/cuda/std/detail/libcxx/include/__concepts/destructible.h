@@ -14,14 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_destructible.h"
-#include "../__type_traits/is_object.h"
-#include "../__type_traits/is_nothrow_destructible.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +21,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__concepts/__concept_macros.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_destructible.h"
+#include "../__type_traits/is_object.h"
+#include "../__type_traits/is_nothrow_destructible.h"
+#include "../__type_traits/void_t.h"
+#include "../__utility/declval.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

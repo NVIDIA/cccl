@@ -15,11 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__functional/identity.h"
-#include "../__functional/ranges_operations.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/projected.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -27,6 +22,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__functional/identity.h"
+#include "../__functional/ranges_operations.h"
+#include "../__iterator/concepts.h"
+#include "../__iterator/projected.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

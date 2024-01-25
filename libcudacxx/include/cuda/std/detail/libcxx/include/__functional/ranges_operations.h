@@ -14,10 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/totally_ordered.h"
-#include "../__utility/forward.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +21,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__concepts/equality_comparable.h"
+#include "../__concepts/totally_ordered.h"
+#include "../__utility/forward.h"
 
 #if _CCCL_STD_VER > 2014
 
