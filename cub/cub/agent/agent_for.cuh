@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,9 +24,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+
 #pragma once
 
-#include <thrust/detail/config.h>
+#include <cub/config.cuh>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -36,64 +37,48 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <thrust/system/cuda/config.h>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
-#include <cub/device/device_for.cuh>
+CUB_NAMESPACE_BEGIN
 
-#include <thrust/system/cuda/detail/cdp_dispatch.h>
-#include <thrust/system/cuda/detail/util.h>
-#include <thrust/system/cuda/detail/parallel_for.h>
-#include <thrust/detail/function.h>
-#include <thrust/distance.h>
+namespace detail
+{
+namespace for_each
+{
 
-THRUST_NAMESPACE_BEGIN
+template <int BlockThreads, int ItemsPerThread>
+struct policy_t
+{
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = ItemsPerThread;
+};
 
-namespace cuda_cub {
+template <class PolicyT, class OffsetT, class OpT>
+struct agent_block_striped_t
+{
+  static constexpr int items_per_thread = PolicyT::items_per_thread;
 
-  // for_each_n
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class Derived,
-            class Input,
-            class Size,
-            class UnaryOp>
-  Input THRUST_FUNCTION
-  for_each_n(execution_policy<Derived> &policy,
-             Input                      first,
-             Size                       count,
-             UnaryOp                    op)
+  OffsetT tile_base;
+  OpT op;
+
+  template <bool IsFullTile>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int block_threads)
   {
-    THRUST_CDP_DISPATCH(
-      (cudaStream_t stream = cuda_cub::stream(policy);
-       cudaError_t  status = cub::DeviceFor::ForEachN(first, count, op, stream);
-       cuda_cub::throw_on_error(status, "parallel_for failed");
-       status = cuda_cub::synchronize_optional(policy);
-       cuda_cub::throw_on_error(status, "parallel_for: failed to synchronize");),
-       (for (Size idx = 0; idx != count; ++idx)
-        {
-          op(raw_reference_cast(*(first + idx)));
-        }
-    ));
+#pragma unroll
+    for (int item = 0; item < items_per_thread; item++)
+    {
+      const auto idx = static_cast<OffsetT>(block_threads * item + threadIdx.x);
 
-    return first + count;
+      if (IsFullTile || idx < items_in_tile)
+      {
+        (void)op(tile_base + idx);
+      }
+    }
   }
+};
 
-  // for_each
-  template <class Derived,
-            class Input,
-            class UnaryOp>
-  Input THRUST_FUNCTION
-  for_each(execution_policy<Derived> &policy,
-           Input                      first,
-           Input                      last,
-           UnaryOp                    op)
-  {
-    typedef typename iterator_traits<Input>::difference_type size_type;
-    size_type count = static_cast<size_type>(thrust::distance(first,last));
+} // namespace for_each
+} // namespace detail
 
-    return THRUST_NS_QUALIFIER::cuda_cub::for_each_n(policy, first, count, op);
-  }
-} // namespace cuda_cub
-
-THRUST_NAMESPACE_END
-#endif
+CUB_NAMESPACE_END

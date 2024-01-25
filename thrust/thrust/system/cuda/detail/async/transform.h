@@ -53,6 +53,8 @@
 #include <thrust/distance.h>
 #include <thrust/advance.h>
 
+#include <cub/device/device_for.cuh>
+
 #include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -126,7 +128,7 @@ unique_eager_event async_transform_n(
   );
 
   thrust::cuda_cub::throw_on_error(
-    thrust::cuda_cub::__parallel_for::parallel_for(
+    cub::DeviceFor::Bulk(
       n, std::move(wrapped), e.stream().native_handle()
     )
   , "after transform launch"
