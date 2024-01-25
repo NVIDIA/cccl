@@ -19,13 +19,19 @@ explode_libs() {
 extract_matrix() {
   local file="$1"
   local type="$2"
-  local matrix=$(yq -o=json "$file" | jq -cr ".$type")
+
   write_output "DEVCONTAINER_VERSION" "$(yq -o json "$file" | jq -cr '.devcontainer_version')"
 
-  local nvcc_full_matrix="$(echo "$matrix" | jq -cr '.nvcc' | explode_std_versions )"
-  local per_cuda_compiler_matrix="$(echo "$nvcc_full_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
-  write_output "PER_CUDA_COMPILER_MATRIX"  "$per_cuda_compiler_matrix"
-  write_output "PER_CUDA_COMPILER_KEYS" "$(echo "$per_cuda_compiler_matrix" | jq -r 'keys | @json')"
+  local matrix=$(yq -o=json "$file" | jq -cr ".$type")
+  local nvcc_full_linux_matrix="$(echo "$matrix" | jq -cr '.nvcc.linux' | explode_std_versions )"
+  local linux_per_cuda_compiler_matrix="$(echo "$nvcc_full_linux_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
+  write_output "LINUX_PER_CUDA_COMPILER_MATRIX"  "$linux_per_cuda_compiler_matrix"
+  write_output "LINUX_PER_CUDA_COMPILER_KEYS" "$(echo "$linux_per_cuda_compiler_matrix" | jq -r 'keys | @json')"
+
+  local nvcc_full_windows_matrix="$(echo "$matrix" | jq -cr '.nvcc.windows' | explode_std_versions )"
+  local windows_per_cuda_compiler_matrix="$(echo "$nvcc_full_windows_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
+  write_output "WINDOWS_PER_CUDA_COMPILER_MATRIX"  "$windows_per_cuda_compiler_matrix"
+  write_output "WINDOWS_PER_CUDA_COMPILER_KEYS" "$(echo "$windows_per_cuda_compiler_matrix" | jq -r 'keys | @json')"
 
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
 
