@@ -43,6 +43,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/meta.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -149,21 +150,6 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
-
-template <bool... Bs>
-struct logic_helper_t;
-
-template <bool>
-struct true_t
-{
-  static constexpr bool value = true;
-};
-
-template <bool... Bs>
-using all_t = //
-  ::cuda::std::is_same< //
-    logic_helper_t<Bs...>, //
-    logic_helper_t<true_t<Bs>::value...>>;
 
 struct identity_decomposer_t
 {
