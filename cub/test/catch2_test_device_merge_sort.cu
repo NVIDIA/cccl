@@ -106,12 +106,6 @@ void get_key_ranks(thrust::device_vector<OffsetT>& key_ranks, c2h::seed_t seed)
   thrust::shuffle(
     key_ranks.begin(), key_ranks.end(), thrust::default_random_engine{static_cast<unsigned int>(seed.get())});
 }
-template <typename OffsetT>
-void get_key_ranks(thrust::device_vector<OffsetT>& key_ranks)
-{
-  thrust::sequence(key_ranks.begin(), key_ranks.end());
-  thrust::shuffle(key_ranks.begin(), key_ranks.end(), thrust::default_random_engine{});
-}
 
 CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_key_types)
 {
