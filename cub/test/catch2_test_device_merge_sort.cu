@@ -68,7 +68,7 @@ using value_types =
   c2h::type_list<std::uint8_t, float, c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>>;
 
 /**
- * Function object that maps a the targeted sorted rank of an item to a key.
+ * Function object that maps the targeted sorted rank of an item to a key.
 
  * E.g., `OffsetT` is `int32_t` and `KeyT` is `float`:
  * [  4,   2,   3,   1,   0] <= targeted key ranks
@@ -100,11 +100,13 @@ struct rank_to_key_op_t<OffsetT, c2h::custom_type_t<c2h::equal_comparable_t, c2h
  * Generates a shuffled array of key ranks. E.g., for a vector of size 5: [4, 2, 3, 1, 0]
  */
 template <typename OffsetT>
-void get_key_ranks(thrust::device_vector<OffsetT>& key_ranks, c2h::seed_t seed)
+thrust::device_vector<OffsetT> make_shuffled_key_ranks_vector(OffsetT num_items, c2h::seed_t seed)
 {
+  thrust::device_vector<OffsetT> key_ranks(num_items);
   thrust::sequence(key_ranks.begin(), key_ranks.end());
   thrust::shuffle(
     key_ranks.begin(), key_ranks.end(), thrust::default_random_engine{static_cast<unsigned int>(seed.get())});
+  return key_ranks;
 }
 
 CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_key_types)
@@ -115,8 +117,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_ke
   // Prepare input
   // const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   const offset_t num_items = GENERATE_COPY(values({500}));
-  thrust::device_vector<offset_t> key_ranks(num_items);
-  get_key_ranks(key_ranks, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   thrust::device_vector<key_t> keys_in(num_items);
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
@@ -141,8 +142,7 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  thrust::device_vector<offset_t> key_ranks(num_items);
-  get_key_ranks(key_ranks, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   thrust::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
@@ -222,8 +222,7 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  thrust::device_vector<offset_t> key_ranks(num_items);
-  get_key_ranks(key_ranks, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   thrust::device_vector<key_t> keys_in(num_items);
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
@@ -258,9 +257,7 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  thrust::device_vector<offset_t> key_ranks(num_items);
-  get_key_ranks(key_ranks, CUB_SEED(2));
-  ;
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   thrust::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
