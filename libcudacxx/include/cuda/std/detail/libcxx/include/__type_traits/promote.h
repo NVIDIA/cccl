@@ -24,7 +24,14 @@
 #include <cuda_fp16.h>
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#ifdef _LIBCUDACXX_COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
 #include <cuda_bf16.h>
+#ifdef _LIBCUDACXX_COMPILER_CLANG
+#pragma clang diagnostic pop
+#endif
 #endif
 #endif
 
