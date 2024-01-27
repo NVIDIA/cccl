@@ -20,7 +20,9 @@
 #include "../cstddef"
 
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 #include <cuda_fp16.h>
+#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 #include <cuda_bf16.h>
 #endif
@@ -41,7 +43,9 @@ struct __numeric_type
 {
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
+#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
 #endif

@@ -1152,8 +1152,14 @@ typedef __char32_t char32_t;
 #endif
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#if !__has_include(<cuda_fp16.h>)
+#  define _LIBCUDACXX_HAS_NO_NVFP16
+#endif
+#endif
+
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
-#if defined(CUB_DISABLE_BF16_SUPPORT)
+#if defined(CUB_DISABLE_BF16_SUPPORT) || !__has_include(<cuda_bf16.h>)
 #  define _LIBCUDACXX_HAS_NO_NVBF16
 #endif
 #endif // _LIBCUDACXX_HAS_NO_NVBF16

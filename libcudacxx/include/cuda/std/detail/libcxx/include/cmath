@@ -321,7 +321,9 @@ long double    truncl(long double x);
 #endif // __cuda_std__
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 #include <cuda_fp16.h>
+#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 #include <cuda_bf16.h>
 #endif
@@ -621,6 +623,7 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 
 #ifdef __cuda_std__
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sin(__half __v)
 {
@@ -651,6 +654,7 @@ __half sin(__half __v)
         })
     )
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -663,11 +667,13 @@ __nv_bfloat16 sin(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sinh(__half __v)
 {
     return __half(_CUDA_VSTD::sinh(float(__v)));
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -677,6 +683,7 @@ __nv_bfloat16 sinh(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cos(__half __v)
 {
@@ -702,6 +709,7 @@ __half cos(__half __v)
         })
     )
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -714,11 +722,13 @@ __nv_bfloat16 cos(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cosh(__half __v)
 {
     return __half(_CUDA_VSTD::cosh(float(__v)));
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -728,6 +738,7 @@ __nv_bfloat16 cosh(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half exp(__half __v)
 {
@@ -753,6 +764,7 @@ __half exp(__half __v)
         })
     )
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -765,11 +777,13 @@ __nv_bfloat16 exp(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__half __v)
 {
     return ::signbit(__half2float(__v));
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -779,11 +793,13 @@ bool signbit(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half atan2(__half __x, __half __y)
 {
     return __half(_CUDA_VSTD::atan2(float(__x), float(__y)));
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -793,6 +809,7 @@ __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half log(__half __x)
 {
@@ -817,6 +834,7 @@ __half log(__half __x)
         })
     )
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -829,6 +847,7 @@ __nv_bfloat16 log(__nv_bfloat16 __x)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sqrt(__half __x)
 {
@@ -837,6 +856,7 @@ __half sqrt(__half __x)
         (return __half(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -873,6 +893,7 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 }
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isnan(__half __x) noexcept
 {
@@ -884,6 +905,7 @@ bool isnan(__half __v)
 {
     return __constexpr_isnan(__v);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -925,6 +947,7 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 }
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isinf(__half __x) noexcept {
 #if _LIBCUDACXX_STD_VER >= 20
@@ -935,6 +958,7 @@ bool __constexpr_isinf(__half __x) noexcept {
     return __hisinf(__x) != 0;
 #endif
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -949,11 +973,13 @@ bool __constexpr_isinf(__nv_bfloat16 __x) noexcept {
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool isinf(__half __v)
 {
     return __constexpr_isinf(__v);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -963,11 +989,13 @@ bool isinf(__nv_bfloat16 __v)
 }
 #endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half hypot(__half __x, __half __y)
 {
     return __half(_CUDA_VSTD::hypot(float(__x), float(__y)));
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1001,6 +1029,7 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 }
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isfinite(__half __x) noexcept {
     return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
@@ -1011,6 +1040,7 @@ bool isfinite(__half __v)
 {
     return __constexpr_isfinite(__v);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1061,6 +1091,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 typename __enable_if_t<is_arithmetic<_A1>::val
 #endif // !_MSC_VER
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
@@ -1072,6 +1103,7 @@ __half copysign(__half __x, __half __y)
 {
     return __constexpr_copysign(__x, __y);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1119,6 +1151,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(_Tp __x) noexcept {
 #endif // !_MSC_VER
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_fabs(__half __x) noexcept
 {
@@ -1136,6 +1169,7 @@ __half abs(__half __x)
 {
     return __constexpr_fabs(__x);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1218,11 +1252,13 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
 #endif // !_MSC_VER
 
 #ifdef __cuda_std__
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_fmax(__half __x, __half __y) noexcept
 {
     return __hmax(__x, __y);
 }
+#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
