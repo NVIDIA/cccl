@@ -322,7 +322,9 @@ long double    truncl(long double x);
 
 #ifdef __cuda_std__
 #include <cuda_fp16.h>
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 #include <cuda_bf16.h>
+#endif
 #endif
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -650,6 +652,7 @@ __half sin(__half __v)
     )
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 sin(__nv_bfloat16 __v)
 {
@@ -658,6 +661,7 @@ __nv_bfloat16 sin(__nv_bfloat16 __v)
         (return __nv_bfloat16(_CUDA_VSTD::sin(float(__v)));)
     )
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sinh(__half __v)
@@ -665,11 +669,13 @@ __half sinh(__half __v)
     return __half(_CUDA_VSTD::sinh(float(__v)));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 sinh(__nv_bfloat16 __v)
 {
     return __nv_bfloat16(_CUDA_VSTD::sinh(float(__v)));
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cos(__half __v)
@@ -697,6 +703,7 @@ __half cos(__half __v)
     )
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 cos(__nv_bfloat16 __v)
 {
@@ -705,6 +712,7 @@ __nv_bfloat16 cos(__nv_bfloat16 __v)
         (return __nv_bfloat16(_CUDA_VSTD::cos(float(__v)));)
     )
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cosh(__half __v)
@@ -712,11 +720,13 @@ __half cosh(__half __v)
     return __half(_CUDA_VSTD::cosh(float(__v)));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 cosh(__nv_bfloat16 __v)
 {
     return __nv_bfloat16(_CUDA_VSTD::cosh(float(__v)));
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half exp(__half __v)
@@ -744,6 +754,7 @@ __half exp(__half __v)
     )
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 exp(__nv_bfloat16 __v)
 {
@@ -752,6 +763,7 @@ __nv_bfloat16 exp(__nv_bfloat16 __v)
         (return __nv_bfloat16(_CUDA_VSTD::exp(float(__v)));)
     )
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__half __v)
@@ -759,11 +771,13 @@ bool signbit(__half __v)
     return ::signbit(__half2float(__v));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__nv_bfloat16 __v)
 {
     return ::signbit(__bfloat162float(__v));
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half atan2(__half __x, __half __y)
@@ -771,11 +785,13 @@ __half atan2(__half __x, __half __y)
     return __half(_CUDA_VSTD::atan2(float(__x), float(__y)));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
     return __nv_bfloat16(_CUDA_VSTD::atan2(float(__x), float(__y)));
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half log(__half __x)
@@ -802,6 +818,7 @@ __half log(__half __x)
     )
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 log(__nv_bfloat16 __x)
 {
@@ -810,6 +827,7 @@ __nv_bfloat16 log(__nv_bfloat16 __x)
         (return __nv_bfloat16(_CUDA_VSTD::log(float(__x)));)
     )
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sqrt(__half __x)
@@ -820,6 +838,7 @@ __half sqrt(__half __x)
     )
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 sqrt(__nv_bfloat16 __x)
 {
@@ -828,6 +847,7 @@ __nv_bfloat16 sqrt(__nv_bfloat16 __x)
         (return __nv_bfloat16(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
+#endif
 #endif
 
 template <class _A1>
@@ -865,17 +885,21 @@ bool isnan(__half __v)
     return __constexpr_isnan(__v);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isnan(__nv_bfloat16 __x) noexcept
 {
     return __hisnan(__x);
 }
+#endif
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool isnan(__nv_bfloat16 __v)
 {
     return __constexpr_isnan(__v);
 }
+#endif
 #endif
 
 template <class _A1>
@@ -912,6 +936,7 @@ bool __constexpr_isinf(__half __x) noexcept {
 #endif
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isinf(__nv_bfloat16 __x) noexcept {
 #if _LIBCUDACXX_STD_VER >= 20
@@ -922,6 +947,7 @@ bool __constexpr_isinf(__nv_bfloat16 __x) noexcept {
     return __hisinf(__x) != 0;
 #endif
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool isinf(__half __v)
@@ -929,11 +955,13 @@ bool isinf(__half __v)
     return __constexpr_isinf(__v);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool isinf(__nv_bfloat16 __v)
 {
     return __constexpr_isinf(__v);
 }
+#endif
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half hypot(__half __x, __half __y)
@@ -941,11 +969,13 @@ __half hypot(__half __x, __half __y)
     return __half(_CUDA_VSTD::hypot(float(__x), float(__y)));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
     return __nv_bfloat16(_CUDA_VSTD::hypot(float(__x), float(__y)));
 }
+#endif
 #endif
 
 template <class _A1>
@@ -982,6 +1012,7 @@ bool isfinite(__half __v)
     return __constexpr_isfinite(__v);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isfinite(__nv_bfloat16 __x) noexcept {
     return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
@@ -992,6 +1023,7 @@ bool isfinite(__nv_bfloat16 __v)
 {
     return __constexpr_isfinite(__v);
 }
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
@@ -1041,6 +1073,7 @@ __half copysign(__half __x, __half __y)
     return __constexpr_copysign(__x, __y);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
@@ -1052,6 +1085,7 @@ __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
     return __constexpr_copysign(__x, __y);
 }
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
@@ -1103,6 +1137,7 @@ __half abs(__half __x)
     return __constexpr_fabs(__x);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
 {
@@ -1120,6 +1155,7 @@ __nv_bfloat16 abs(__nv_bfloat16 __x)
 {
     return __constexpr_fabs(__x);
 }
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
@@ -1188,11 +1224,13 @@ __half __constexpr_fmax(__half __x, __half __y) noexcept
     return __hmax(__x, __y);
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
     return __hmax(__x, __y);
 }
+#endif
 #endif
 
 #if defined(_MSC_VER) || defined(__CUDACC_RTC__) || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)

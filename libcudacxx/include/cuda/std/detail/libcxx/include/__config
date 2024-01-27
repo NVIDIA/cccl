@@ -1152,6 +1152,12 @@ typedef __char32_t char32_t;
 #endif
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#if defined(CUB_DISABLE_BF16_SUPPORT)
+#  define _LIBCUDACXX_HAS_NO_NVBF16
+#endif
+#endif // _LIBCUDACXX_HAS_NO_NVBF16
+
 #ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #if __has_cpp_attribute(msvc::no_unique_address)
 // MSVC implements [[no_unique_address]] as a silent no-op currently.

@@ -21,7 +21,9 @@
 
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
 #include <cuda_fp16.h>
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 #include <cuda_bf16.h>
+#endif
 #endif
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -40,7 +42,9 @@ struct __numeric_type
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
+#endif
 #endif
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);
