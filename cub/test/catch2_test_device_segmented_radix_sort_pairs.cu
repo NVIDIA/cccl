@@ -226,8 +226,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
     c2h::gen(CUB_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = thrust::make_constant_iterator(key_t{0});
     auto end = begin + num_empty_segments;
-    thrust::scatter(c2h::device_policy(), begin, end, indices.cbegin(), begin_offsets.begin());
-    thrust::scatter(c2h::device_policy(), begin, end, indices.cbegin(), end_offsets.begin());
+    thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
+    thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), end_offsets.begin());
   }
 
   const bool is_descending = GENERATE(false, true);

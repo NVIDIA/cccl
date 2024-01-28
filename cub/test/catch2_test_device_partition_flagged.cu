@@ -148,7 +148,7 @@ CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flag
                     num_items);
 
   // The false partition is in reverse order
-  thrust::reverse(c2h::device_policy(), out.begin(), out.end());
+  thrust::reverse(c2h::device_policy, out.begin(), out.end());
 
   REQUIRE(num_selected_out[0] == 0);
   REQUIRE(out == in);
@@ -166,7 +166,7 @@ CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_f
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -197,7 +197,7 @@ CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
@@ -226,7 +226,7 @@ CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_fl
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
@@ -255,7 +255,7 @@ CUB_TEST("DevicePartition::Flagged works with pointers", "[device][partition_fla
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
@@ -296,7 +296,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool
   c2h::gen(CUB_SEED(1), iflags, 0, 1);
 
   c2h::device_vector<convertible_to_bool> flags = iflags;
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
@@ -323,7 +323,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device]
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(flags, flags);
 
   // Needs to be device accessible
@@ -365,7 +365,7 @@ CUB_TEST("DevicePartition::Flagged works with different output type", "[device][
   c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy(), flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible

@@ -115,7 +115,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     input_t default_constant{};
     init_default_constant(default_constant);
-    thrust::fill(c2h::device_policy(), in_items.begin(), in_items.end(), default_constant);
+    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 

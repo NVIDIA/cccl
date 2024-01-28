@@ -302,7 +302,7 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
   c2h::device_vector<int> d_ok_count(1);
 
   auto index_it = thrust::make_counting_iterator(0);
-  thrust::transform(c2h::device_policy(),
+  thrust::transform(c2h::device_policy,
                     index_it,
                     index_it + num_items,
                     d_output.begin(),

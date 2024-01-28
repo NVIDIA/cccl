@@ -407,8 +407,8 @@ void TestVectorizedCopy()
         const std::size_t alloc_size_out = out_offset + copy_size;
         c2h::device_vector<char> data_in(alloc_size_in);
         c2h::device_vector<char> data_out(alloc_size_out);
-        thrust::sequence(c2h::device_policy(), data_in.begin(), data_in.end(), static_cast<char>(0));
-        thrust::fill_n(c2h::device_policy(), data_out.begin(), alloc_size_out, static_cast<char>(0x42));
+        thrust::sequence(c2h::device_policy, data_in.begin(), data_in.end(), static_cast<char>(0));
+        thrust::fill_n(c2h::device_policy, data_out.begin(), alloc_size_out, static_cast<char>(0x42));
 
         auto d_in  = thrust::raw_pointer_cast(data_in.data());
         auto d_out = thrust::raw_pointer_cast(data_out.data());
@@ -420,7 +420,7 @@ void TestVectorizedCopy()
         auto zip_it = thrust::make_zip_iterator(data_in.begin() + in_offset,
                                                 data_out.begin() + out_offset);
 
-        bool success = thrust::all_of(c2h::device_policy(), zip_it, zip_it + copy_size, TupleMemberEqualityOp{});
+        bool success = thrust::all_of(c2h::device_policy, zip_it, zip_it + copy_size, TupleMemberEqualityOp{});
         AssertTrue(success);
       }
     }

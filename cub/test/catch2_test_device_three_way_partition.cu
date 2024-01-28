@@ -195,7 +195,7 @@ three_way_partition_result_t<T> thrust_partition(FirstPartSelectionOp first_sele
 
   c2h::device_vector<T> intermediate_result(num_items);
 
-  auto intermediate_iterators = thrust::partition_copy(c2h::device_policy(),
+  auto intermediate_iterators = thrust::partition_copy(c2h::device_policy,
                                                        in.begin(),
                                                        in.end(),
                                                        result.first_part.begin(),
@@ -205,7 +205,7 @@ three_way_partition_result_t<T> thrust_partition(FirstPartSelectionOp first_sele
   result.num_items_in_first_part =
     static_cast<int>(thrust::distance(result.first_part.begin(), intermediate_iterators.first));
 
-  auto final_iterators = thrust::partition_copy(c2h::device_policy(),
+  auto final_iterators = thrust::partition_copy(c2h::device_policy,
                                                 intermediate_result.begin(),
                                                 intermediate_result.begin() +
                                                   (num_items - result.num_items_in_first_part),
@@ -230,7 +230,7 @@ CUB_TEST("Device three-way partition is stable", "[partition][device]", types)
   const int num_items = GENERATE_COPY(take(10, random(1, 1000000)));
   c2h::device_vector<pair_type> in(num_items);
 
-  thrust::tabulate(c2h::device_policy(), in.begin(), in.end(), count_to_pair_t<type>{});
+  thrust::tabulate(c2h::device_policy, in.begin(), in.end(), count_to_pair_t<type>{});
 
   pair_type first_unselected_val = cuda::std::make_pair(static_cast<type>(num_items / 3),
                                                         std::uint32_t{});
@@ -253,7 +253,7 @@ CUB_TEST("Device three-way partition handles empty first part", "[partition][dev
 
   const int num_items = GENERATE_COPY(take(10, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  thrust::sequence(c2h::device_policy(), in.begin(), in.end());
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
   type first_unselected_val     = type{0};
   type first_val_of_second_part = static_cast<type>(num_items / 2);
@@ -274,7 +274,7 @@ CUB_TEST("Device three-way partition handles empty second part", "[partition][de
 
   const int num_items = GENERATE_COPY(take(10, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  thrust::sequence(c2h::device_policy(), in.begin(), in.end());
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
   type first_unselected_val     = static_cast<type>(num_items / 2);
   type first_val_of_second_part = type{0}; // empty set for unsigned types
@@ -295,7 +295,7 @@ CUB_TEST("Device three-way partition handles empty unselected part", "[partition
 
   const int num_items = GENERATE_COPY(take(10, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  thrust::sequence(c2h::device_policy(), in.begin(), in.end());
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
   type first_unselected_val = static_cast<type>(num_items / 2);
 
@@ -315,7 +315,7 @@ CUB_TEST("Device three-way partition handles only unselected items", "[partition
 
   const int num_items = GENERATE_COPY(take(10, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  thrust::sequence(c2h::device_policy(), in.begin(), in.end());
+  thrust::sequence(c2h::device_policy, in.begin(), in.end());
 
   type first_unselected_val = type{0};
 
@@ -343,10 +343,10 @@ CUB_TEST("Device three-way partition handles reverse iterator", "[partition][dev
   type unselected_part_val{2};
 
   c2h::device_vector<type> in(num_items, second_part_val);
-  thrust::fill_n(c2h::device_policy(), in.begin(), num_items_in_first_part, first_part_val);
-  thrust::fill_n(c2h::device_policy(), in.begin() + num_items_in_first_part, num_unselected_items, unselected_part_val);
+  thrust::fill_n(c2h::device_policy, in.begin(), num_items_in_first_part, first_part_val);
+  thrust::fill_n(c2h::device_policy, in.begin() + num_items_in_first_part, num_unselected_items, unselected_part_val);
 
-  thrust::shuffle(c2h::device_policy(), in.begin(), in.end(), thrust::default_random_engine{});
+  thrust::shuffle(c2h::device_policy, in.begin(), in.end(), thrust::default_random_engine{});
 
   c2h::device_vector<type> first_and_unselected_part(num_items);
 
@@ -369,7 +369,7 @@ CUB_TEST("Device three-way partition handles reverse iterator", "[partition][dev
   REQUIRE(h_num_selected_out[0] == num_items_in_first_part);
 
   const auto actual_num_unselected_items =
-    thrust::count(c2h::device_policy(),
+    thrust::count(c2h::device_policy,
                   first_and_unselected_part.rbegin(),
                   first_and_unselected_part.rbegin() + num_unselected_items,
                   unselected_part_val);
@@ -377,7 +377,7 @@ CUB_TEST("Device three-way partition handles reverse iterator", "[partition][dev
   REQUIRE(actual_num_unselected_items == num_unselected_items);
 
   const auto actual_num_items_in_first_part =
-    thrust::count(c2h::device_policy(),
+    thrust::count(c2h::device_policy,
                   first_and_unselected_part.begin(),
                   first_and_unselected_part.begin() + num_items_in_first_part,
                   first_part_val);
@@ -399,10 +399,10 @@ CUB_TEST("Device three-way partition handles single output", "[partition][device
   type unselected_part_val{2};
 
   c2h::device_vector<type> in(num_items, second_part_val);
-  thrust::fill_n(c2h::device_policy(), in.begin(), num_items_in_first_part, first_part_val);
-  thrust::fill_n(c2h::device_policy(), in.begin() + num_items_in_first_part, num_unselected_items, unselected_part_val);
+  thrust::fill_n(c2h::device_policy, in.begin(), num_items_in_first_part, first_part_val);
+  thrust::fill_n(c2h::device_policy, in.begin() + num_items_in_first_part, num_unselected_items, unselected_part_val);
 
-  thrust::shuffle(c2h::device_policy(), in.begin(), in.end(), thrust::default_random_engine{});
+  thrust::shuffle(c2h::device_policy, in.begin(), in.end(), thrust::default_random_engine{});
 
   c2h::device_vector<type> output(num_items);
 
@@ -426,15 +426,15 @@ CUB_TEST("Device three-way partition handles single output", "[partition][device
   REQUIRE(h_num_selected_out[1] == num_items_in_second_part);
 
   const auto actual_num_unselected_items =
-    thrust::count(c2h::device_policy(), output.rbegin(), output.rbegin() + num_unselected_items, unselected_part_val);
+    thrust::count(c2h::device_policy, output.rbegin(), output.rbegin() + num_unselected_items, unselected_part_val);
   REQUIRE(actual_num_unselected_items == num_unselected_items);
 
   const auto actual_num_items_in_first_part =
-    thrust::count(c2h::device_policy(), output.begin(), output.begin() + num_items_in_first_part, first_part_val);
+    thrust::count(c2h::device_policy, output.begin(), output.begin() + num_items_in_first_part, first_part_val);
   REQUIRE(actual_num_items_in_first_part == num_items_in_first_part);
 
   const auto actual_num_items_in_second_part =
-    thrust::count(c2h::device_policy(),
+    thrust::count(c2h::device_policy,
                   output.begin() + num_items_in_first_part,
                   output.begin() + num_items_in_first_part + num_items_in_second_part,
                   second_part_val);

@@ -73,7 +73,7 @@ CUB_TEST("Device bulk works", "[bulk][device]", offset_type)
 
   device_bulk(num_items, incrementer_t<offset_t>{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy(), counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }

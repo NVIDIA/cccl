@@ -143,7 +143,7 @@ CUB_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
                always_false_t{});
 
   // The false partition is in reverse order
-  thrust::reverse(c2h::device_policy(), out.begin(), out.end());
+  thrust::reverse(c2h::device_policy, out.begin(), out.end());
 
   REQUIRE(num_selected_out[0] == 0);
   REQUIRE(out == in);

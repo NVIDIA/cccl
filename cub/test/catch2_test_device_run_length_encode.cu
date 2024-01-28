@@ -125,7 +125,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
                     num_items);
 
   c2h::device_vector<type> reference_unique(num_items);
-  thrust::sequence(c2h::device_policy(), reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ..., num_items -1]
+  thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ..., num_items -1]
   c2h::device_vector<int> reference_counts(num_items, 1);                  // [1, 1, ..., 1]
   c2h::device_vector<int> reference_num_runs(1, num_items);                // [num_items]
 
@@ -257,7 +257,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
 
   constexpr int num_items = 10;
   c2h::device_vector<type> in(num_items);
-  thrust::sequence(c2h::device_policy(), in.begin(), in.end(), 0.0);
+  thrust::sequence(c2h::device_policy, in.begin(), in.end(), 0.0);
   c2h::device_vector<type> out_unique(num_items);
   c2h::device_vector<int>  out_counts(num_items);
   c2h::device_vector<int>  out_num_runs(1);

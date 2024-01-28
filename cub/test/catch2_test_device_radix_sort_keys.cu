@@ -206,7 +206,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
       c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
       auto begin = thrust::make_constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
-      thrust::scatter(c2h::device_policy(), begin, end, indices.cbegin(), in_keys.begin());
+      thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
     }
   }
 
@@ -265,7 +265,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
         c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
         auto begin = thrust::make_constant_iterator(nan_val);
         auto end   = begin + num_indices;
-        thrust::scatter(c2h::device_policy(), begin, end, indices.cbegin(), in_keys.begin());
+        thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
       }
     }
     if (!has_nans)
@@ -321,7 +321,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
     for (int i = 0; i < entropy_reduction; ++i)
     {
       c2h::gen(CUB_SEED(1), tmp);
-      thrust::transform(c2h::device_policy(), in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
+      thrust::transform(c2h::device_policy, in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
     }
   }
 

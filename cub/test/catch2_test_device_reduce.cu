@@ -118,7 +118,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   {
     item_t default_constant{};
     init_default_constant(default_constant);
-    thrust::fill(c2h::device_policy(), in_items.begin(), in_items.end(), default_constant);
+    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 

@@ -98,13 +98,13 @@ CUB_TEST("Device for each works", "[for][device]")
     }));
 
   c2h::device_vector<offset_proxy_t<offset_t>> input(num_items, offset_t{});
-  thrust::sequence(c2h::device_policy(), input.begin(), input.end(), offset_t{});
+  thrust::sequence(c2h::device_policy, input.begin(), input.end(), offset_t{});
   c2h::device_vector<int> counts(num_items);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
 
   device_for_each(input.begin(), input.end(), incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy(), counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -127,7 +127,7 @@ CUB_TEST("Device for each works with bad operators", "[for][device]")
 
   device_for_each(input.begin(), input.end(), referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy(), input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
 }
 
 CUB_TEST("Device for each works with unaligned vectors", "[for][device]")
@@ -146,14 +146,14 @@ CUB_TEST("Device for each works with unaligned vectors", "[for][device]")
 
   c2h::device_vector<int> counts(num_items);
   c2h::device_vector<int> input(num_items + offset);
-  thrust::sequence(c2h::device_policy(), input.begin() + offset, input.end());
+  thrust::sequence(c2h::device_policy, input.begin() + offset, input.end());
 
   int* d_counts = thrust::raw_pointer_cast(counts.data());
   int* d_input  = thrust::raw_pointer_cast(input.data()) + offset;
 
   device_for_each(d_input, d_input + num_items, incrementer_t{d_counts});
 
-  const int num_of_once_marked_items = static_cast<int>(thrust::count(c2h::device_policy(), counts.begin(), counts.end(), 1));
+  const int num_of_once_marked_items = static_cast<int>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -175,14 +175,14 @@ CUB_TEST("Device for each n works", "[for][device]", offset_type)
     })));
 
   c2h::device_vector<offset_proxy_t<offset_t>> input(num_items, offset_t{});
-  thrust::sequence(c2h::device_policy(), input.begin(), input.end(), offset_t{});
+  thrust::sequence(c2h::device_policy, input.begin(), input.end(), offset_t{});
 
   c2h::device_vector<int> counts(num_items);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
 
   device_for_each_n(input.begin(), num_items, incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy(), counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -207,7 +207,7 @@ CUB_TEST("Device for each n works with bad operators", "[for][device]", offset_t
 
   device_for_each_n(input.begin(), num_items, referencing_operator_t{d_input, magic_value});
 
-  REQUIRE(thrust::equal(c2h::device_policy(), input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
+  REQUIRE(thrust::equal(c2h::device_policy, input.begin(), input.end(), thrust::make_counting_iterator(std::size_t{})));
 }
 
 CUB_TEST("Device for each n works with unaligned vectors", "[for][device]", offset_type)
@@ -228,14 +228,14 @@ CUB_TEST("Device for each n works with unaligned vectors", "[for][device]", offs
 
   c2h::device_vector<int> counts(num_items);
   c2h::device_vector<int> input(num_items + offset);
-  thrust::sequence(c2h::device_policy(), input.begin() + offset, input.end());
+  thrust::sequence(c2h::device_policy, input.begin() + offset, input.end());
 
   int* d_counts = thrust::raw_pointer_cast(counts.data());
   int* d_input  = thrust::raw_pointer_cast(input.data()) + offset;
 
   device_for_each_n(d_input, num_items, incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy(), counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
