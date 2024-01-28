@@ -65,8 +65,34 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
 
 using checked_cuda_memory_resource =
   thrust::system::cuda::detail::cuda_memory_resource<detail::checked_cuda_malloc, cudaFree, thrust::cuda::pointer<void>>;
+
 template <typename T>
-using checked_cuda_allocator =
-  thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
+class checked_cuda_allocator
+    : public thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>
+{
+  using base = thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
+
+public:
+  template <typename U>
+  struct rebind
+  {
+    typedef checked_cuda_allocator<U> other;
+  };
+
+  _CCCL_HOST_DEVICE checked_cuda_allocator() {}
+
+  _CCCL_HOST_DEVICE checked_cuda_allocator(const checked_cuda_allocator& other)
+      : base(other)
+  {}
+
+  template <typename U>
+  _CCCL_HOST_DEVICE checked_cuda_allocator(const checked_cuda_allocator<U>& other)
+      : base(other)
+  {}
+
+  checked_cuda_allocator& operator=(const checked_cuda_allocator&) = default;
+
+  _CCCL_HOST_DEVICE ~checked_cuda_allocator() {}
+};
 
 } // namespace c2h
