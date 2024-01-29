@@ -29,7 +29,6 @@
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
-#include <thrust/fill.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
@@ -66,8 +65,7 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][de
   auto keys_in_it          = thrust::make_reverse_iterator(keys_counting_it + num_items);
 
   // Perform sort
-  thrust::device_vector<key_t> keys_out(num_items);
-  thrust::fill(keys_out.begin(), keys_out.end(), static_cast<key_t>(42));
+  thrust::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
   sort_keys_copy(keys_in_it, keys_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
@@ -89,10 +87,8 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable
   auto keys_in_it  = thrust::make_zip_iterator(sort_key_it, key_idx_it);
 
   // Perform sort
-  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_out(num_items);
-  thrust::fill(keys_out.begin(),
-               keys_out.end(),
-               thrust::tuple<key_t, offset_t>{static_cast<key_t>(42), static_cast<offset_t>(42)});
+  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_out(
+    num_items, thrust::tuple<key_t, offset_t>{static_cast<key_t>(42), static_cast<offset_t>(42)});
   stable_sort_keys_copy(keys_in_it, keys_out.begin(), num_items, compare_first_lt_op_t{});
 
   // Verify results
@@ -160,10 +156,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][d
   auto values_in           = thrust::make_counting_iterator(data_t{}) + num_items;
 
   // Perform sort
-  thrust::device_vector<key_t> keys_out(num_items);
-  thrust::device_vector<data_t> values_out(num_items);
-  thrust::fill(keys_out.begin(), keys_out.end(), static_cast<key_t>(42));
-  thrust::fill(values_out.begin(), values_out.end(), static_cast<data_t>(42));
+  thrust::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
+  thrust::device_vector<data_t> values_out(num_items, static_cast<data_t>(42));
   sort_pairs_copy(keys_in, values_in, keys_out.begin(), values_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results

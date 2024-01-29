@@ -30,7 +30,6 @@
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
-#include <thrust/fill.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -115,15 +114,13 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_ke
   using offset_t = std::int32_t;
 
   // Prepare input
-  // const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const offset_t num_items = GENERATE_COPY(values({500}));
+  const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   thrust::device_vector<key_t> keys_in(num_items);
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  thrust::device_vector<key_t> keys_out(num_items);
-  thrust::fill(keys_out.begin(), keys_out.end(), static_cast<key_t>(42));
+  thrust::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
   sort_keys_copy(
     thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
@@ -175,10 +172,8 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   thrust::copy(keys_in_it, keys_in_it + num_items, keys_in.begin());
 
   // Perform sort
-  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_out(num_items);
-  thrust::fill(keys_out.begin(),
-               keys_out.end(),
-               thrust::tuple<key_t, offset_t>{rank_to_key_op_t<offset_t, key_t>{}(42), static_cast<offset_t>(42)});
+  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_out(
+    num_items, thrust::tuple<key_t, offset_t>{rank_to_key_op_t<offset_t, key_t>{}(42), static_cast<offset_t>(42)});
   stable_sort_keys_copy(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(keys_out.data()),
@@ -227,10 +222,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
   thrust::transform(key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
-  thrust::device_vector<key_t> keys_out(num_items);
-  thrust::device_vector<offset_t> values_out(num_items);
-  thrust::fill(keys_out.begin(), keys_out.end(), static_cast<key_t>(42));
-  thrust::fill(values_out.begin(), values_out.end(), static_cast<offset_t>(42));
+  thrust::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
+  thrust::device_vector<offset_t> values_out(num_items, static_cast<offset_t>(42));
   sort_pairs_copy(
     thrust::raw_pointer_cast(keys_in.data()),
     thrust::raw_pointer_cast(key_ranks.data()),
