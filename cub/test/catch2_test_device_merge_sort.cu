@@ -30,6 +30,7 @@
 #include <thrust/copy.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -125,11 +126,10 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_ke
     thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  auto key_ranks_it = thrust::make_counting_iterator(offset_t{});
-  thrust::transform(key_ranks_it, key_ranks_it + num_items, keys_expected.begin(), rank_to_key_op_t<offset_t, key_t>{});
-
-  REQUIRE(keys_expected == keys_out);
+  auto key_ranks_it     = thrust::make_counting_iterator(offset_t{});
+  auto keys_expected_it = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  bool results_equal    = thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  REQUIRE(results_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_types)
@@ -147,11 +147,10 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
   sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  auto key_ranks_it = thrust::make_counting_iterator(offset_t{});
-  thrust::transform(key_ranks_it, key_ranks_it + num_items, keys_expected.begin(), rank_to_key_op_t<offset_t, key_t>{});
-
-  REQUIRE(keys_expected == keys_in_out);
+  auto key_ranks_it     = thrust::make_counting_iterator(offset_t{});
+  auto keys_expected_it = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  bool results_equal    = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  REQUIRE(results_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort when there are a lot sort-keys that "
@@ -233,14 +232,13 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
     custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::host_vector<offset_t> values_expected(num_items);
-  auto key_ranks_it = thrust::make_counting_iterator(offset_t{});
-  thrust::transform(key_ranks_it, key_ranks_it + num_items, keys_expected.begin(), rank_to_key_op_t<offset_t, key_t>{});
-  thrust::sequence(values_expected.begin(), values_expected.end());
-
-  REQUIRE(keys_expected == keys_out);
-  REQUIRE(values_expected == values_out);
+  auto key_ranks_it       = thrust::make_counting_iterator(offset_t{});
+  auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto values_expected_it = thrust::make_counting_iterator(offset_t{});
+  bool keys_equal         = thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  bool values_equal       = thrust::equal(values_out.cbegin(), values_out.cend(), values_expected_it);
+  REQUIRE(keys_equal == true);
+  REQUIRE(values_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_types)
@@ -261,14 +259,13 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
              custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::host_vector<offset_t> values_expected(num_items);
-  auto key_ranks_it = thrust::make_counting_iterator(offset_t{});
-  thrust::transform(key_ranks_it, key_ranks_it + num_items, keys_expected.begin(), rank_to_key_op_t<offset_t, key_t>{});
-  thrust::sequence(values_expected.begin(), values_expected.end());
-
-  REQUIRE(keys_expected == keys_in_out);
-  REQUIRE(values_expected == key_ranks);
+  auto key_ranks_it       = thrust::make_counting_iterator(offset_t{});
+  auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
+  auto values_expected_it = thrust::make_counting_iterator(offset_t{});
+  bool keys_equal         = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  bool values_equal       = thrust::equal(key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
+  REQUIRE(keys_equal == true);
+  REQUIRE(values_equal == true);
 }
 
 CUB_TEST(

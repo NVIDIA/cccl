@@ -29,6 +29,7 @@
 
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
+#include <thrust/equal.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
@@ -69,10 +70,9 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works with iterators", "[merge][sort][de
   sort_keys_copy(keys_in_it, keys_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::copy(keys_counting_it, keys_counting_it + num_items, keys_expected.begin());
-
-  REQUIRE(keys_expected == keys_out);
+  auto keys_expected_it = keys_counting_it;
+  bool keys_equal       = thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  REQUIRE(keys_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::StableSortKeysCopy works with iterators and is stable", "[merge][sort][device]")
@@ -114,11 +114,10 @@ CUB_TEST("DeviceMergeSort::SortKeys works with iterators", "[merge][sort][device
   sort_keys(keys_in_it, num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::sequence(keys_expected.begin(), keys_expected.end());
-  thrust::reverse(keys_expected.begin(), keys_expected.end());
-
-  REQUIRE(keys_expected == keys_in_out);
+  auto keys_counting_it = thrust::make_counting_iterator(key_t{});
+  auto keys_expected_it = thrust::make_reverse_iterator(keys_counting_it + num_items);
+  bool keys_equal       = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  REQUIRE(keys_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][device]")
@@ -136,11 +135,10 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works with iterators", "[merge][sort][
   stable_sort_keys(keys_in_it, num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::sequence(keys_expected.begin(), keys_expected.end());
-  thrust::reverse(keys_expected.begin(), keys_expected.end());
-
-  REQUIRE(keys_expected == keys_in_out);
+  auto keys_counting_it = thrust::make_counting_iterator(key_t{});
+  auto keys_expected_it = thrust::make_reverse_iterator(keys_counting_it + num_items);
+  bool keys_equal       = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  REQUIRE(keys_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][device]")
@@ -161,14 +159,12 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works with iterators", "[merge][sort][d
   sort_pairs_copy(keys_in, values_in, keys_out.begin(), values_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::host_vector<data_t> values_expected(num_items);
+  auto keys_expected_it   = key_counting_it;
   auto values_expected_it = thrust::make_reverse_iterator(values_in + num_items);
-  thrust::copy(key_counting_it, key_counting_it + num_items, keys_expected.begin());
-  thrust::copy(values_expected_it, values_expected_it + num_items, values_expected.begin());
-
-  REQUIRE(keys_expected == keys_out);
-  REQUIRE(values_expected == values_out);
+  bool keys_equal         = thrust::equal(keys_out.cbegin(), keys_out.cend(), keys_expected_it);
+  bool values_equal       = thrust::equal(values_out.cbegin(), values_out.cend(), values_expected_it);
+  REQUIRE(keys_equal == true);
+  REQUIRE(values_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][device]")
@@ -190,14 +186,13 @@ CUB_TEST("DeviceMergeSort::SortPairs works with iterators", "[merge][sort][devic
   sort_pairs(keys_in_it, values_in_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::host_vector<data_t> values_expected(num_items);
-  thrust::sequence(keys_expected.begin(), keys_expected.end());
-  thrust::reverse(keys_expected.begin(), keys_expected.end());
-  thrust::sequence(values_expected.begin(), values_expected.end());
-
-  REQUIRE(keys_expected == keys_in_out);
-  REQUIRE(values_expected == values_in_out);
+  auto keys_counting_it   = thrust::make_counting_iterator(key_t{});
+  auto keys_expected_it   = thrust::make_reverse_iterator(keys_counting_it + num_items);
+  auto values_expected_it = thrust::make_counting_iterator(data_t{});
+  bool keys_equal         = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  bool values_equal       = thrust::equal(values_in_out.cbegin(), values_in_out.cend(), values_expected_it);
+  REQUIRE(keys_equal == true);
+  REQUIRE(values_equal == true);
 }
 
 CUB_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort][device]")
@@ -219,12 +214,11 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works with iterators", "[merge][sort]
   stable_sort_pairs(keys_in_it, values_in_out.begin(), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<key_t> keys_expected(num_items);
-  thrust::host_vector<data_t> values_expected(num_items);
-  thrust::sequence(keys_expected.begin(), keys_expected.end());
-  thrust::reverse(keys_expected.begin(), keys_expected.end());
-  thrust::sequence(values_expected.begin(), values_expected.end());
-
-  REQUIRE(keys_expected == keys_in_out);
-  REQUIRE(values_expected == values_in_out);
+  auto keys_counting_it   = thrust::make_counting_iterator(key_t{});
+  auto keys_expected_it   = thrust::make_reverse_iterator(keys_counting_it + num_items);
+  auto values_expected_it = thrust::make_counting_iterator(data_t{});
+  bool keys_equal         = thrust::equal(keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  bool values_equal       = thrust::equal(values_in_out.cbegin(), values_in_out.cend(), values_expected_it);
+  REQUIRE(keys_equal == true);
+  REQUIRE(values_equal == true);
 }
