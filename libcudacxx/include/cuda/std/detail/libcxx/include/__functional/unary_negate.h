@@ -29,6 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER <= 17 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+
 template <class _Predicate>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate
     : public __unary_function<typename _Predicate::argument_type, bool>
@@ -48,6 +50,8 @@ template <class _Predicate>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
 unary_negate<_Predicate>
 not1(const _Predicate& __pred) {return unary_negate<_Predicate>(__pred);}
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 #endif // _LIBCUDACXX_STD_VER <= 17 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_NEGATORS)
 

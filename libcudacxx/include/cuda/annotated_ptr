@@ -188,6 +188,8 @@ void discard_memory(volatile void* __ptr, std::size_t __nbytes) noexcept {
       asm volatile ("discard.global.L2 [%0], 128;" ::"l"(__p + (__i * _LINE_SIZE)) :);
     }
   ))
+  (void)__ptr;
+  (void)__nbytes;
 }
 
 template<class _Tp, class _Property>

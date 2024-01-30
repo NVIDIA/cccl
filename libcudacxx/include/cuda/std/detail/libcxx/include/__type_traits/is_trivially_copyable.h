@@ -42,7 +42,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_copyable_v = _LIBCUDACXX_IS_T
 #else
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copyable
-    : integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>::type>::value>
+    : integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value>
     {};
 
 #if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

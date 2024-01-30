@@ -15,6 +15,7 @@
 #endif // __cuda_std__
 
 #include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_class.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -51,7 +52,7 @@ struct __is_empty2
     double __lx;
 };
 
-template <class _Tp, bool = is_class<_Tp>::value>
+template <class _Tp, bool = _LIBCUDACXX_TRAIT(is_class, _Tp)>
 struct __libcpp_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)> {};
 
 template <class _Tp> struct __libcpp_empty<_Tp, false> : public false_type {};

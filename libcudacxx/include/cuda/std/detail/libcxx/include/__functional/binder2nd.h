@@ -29,6 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+
 template <class __Operation>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 binder2nd
     : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
@@ -55,6 +57,8 @@ _LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
 binder2nd<__Operation>
 bind2nd(const __Operation& __op, const _Tp& __x)
     {return binder2nd<__Operation>(__op, __x);}
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 #endif // _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
