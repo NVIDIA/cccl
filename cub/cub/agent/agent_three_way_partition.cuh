@@ -48,6 +48,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
