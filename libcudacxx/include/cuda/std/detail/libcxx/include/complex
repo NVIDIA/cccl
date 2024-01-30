@@ -1833,6 +1833,12 @@ operator>>(::std::basic_istream<charT, traits>& is, complex<ValueType>& z)
 
 #if _LIBCUDACXX_STD_VER > 11 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
 // Literal suffix for complex number literals [complex.literals]
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS_MSVC(4455)
+
 inline namespace literals
 {
   inline namespace complex_literals
@@ -1901,6 +1907,9 @@ inline namespace literals
 #endif
   } // namespace complex_literals
 } // namespace literals
+
+_CCCL_DIAG_POP
+
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
