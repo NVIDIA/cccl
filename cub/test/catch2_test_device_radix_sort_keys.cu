@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <new> // bad_alloc
 
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
@@ -459,4 +460,56 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
   auto& keys = key_buffer.selector == 0 ? in_keys : out_keys;
 
   REQUIRE(ref_keys == keys);
+}
+
+CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
+{
+  using key_t       = c2h::get<0, TestType>;
+  using num_items_t = ::cuda::std::uint64_t;
+
+  constexpr std::size_t min_num_items = num_items_t{1} << 32;
+  constexpr std::size_t max_num_items = num_items_t{1} << 34;
+  const std::size_t num_items         = GENERATE_COPY(
+    std::size_t{min_num_items - 1}, take(2, random(min_num_items, max_num_items)), std::size_t{max_num_items});
+
+  CAPTURE(num_items);
+
+  try
+  {
+    c2h::device_vector<key_t> in_keys(num_items);
+    c2h::device_vector<key_t> out_keys(num_items);
+
+    const int num_key_seeds = 3;
+    c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+
+    const bool is_descending = GENERATE(false, true);
+
+    if (is_descending)
+    {
+      sort_keys_descending(
+        thrust::raw_pointer_cast(in_keys.data()),
+        thrust::raw_pointer_cast(out_keys.data()),
+        num_items,
+        begin_bit<key_t>(),
+        end_bit<key_t>());
+    }
+    else
+    {
+      sort_keys(thrust::raw_pointer_cast(in_keys.data()),
+                thrust::raw_pointer_cast(out_keys.data()),
+                num_items,
+                begin_bit<key_t>(),
+                end_bit<key_t>());
+    }
+
+    auto ref_keys = radix_sort_reference(in_keys, is_descending);
+
+    REQUIRE(ref_keys == out_keys);
+  }
+  catch (std::bad_alloc& e)
+  {
+    const num_items_t num_bytes = num_items * static_cast<num_items_t>(sizeof(key_t));
+    std::cerr
+      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes):" << e.what() << "\n";
+  }
 }
