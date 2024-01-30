@@ -86,6 +86,9 @@
 #if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
 #define _LIBCUDACXX_CUDACC_BELOW_11_8
 #endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
+#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1202000
+#define _LIBCUDACXX_CUDACC_BELOW_12_2
+#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 #if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 #define _LIBCUDACXX_CUDACC_BELOW_12_3
 #endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
@@ -1153,13 +1156,17 @@ typedef __char32_t char32_t;
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
-#if !__has_include(<cuda_fp16.h>)
+#if !__has_include(<cuda_fp16.h>)                                               \
+  || defined(_LIBCUDACXX_CUDACC_BELOW_12_2)                                     \
+  || (!defined(_LIBCUDACXX_CUDACC) && !defined(_LIBCUDACXX_ENABLE_HOST_NVFP16))
 #  define _LIBCUDACXX_HAS_NO_NVFP16
 #endif
-#endif
+#endif // _LIBCUDACXX_HAS_NO_NVFP16
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
-#if defined(CUB_DISABLE_BF16_SUPPORT) || !__has_include(<cuda_bf16.h>)
+#if defined(CUB_DISABLE_BF16_SUPPORT)                                           \
+  || defined(_LIBCUDACXX_HAS_NO_NVFP16)                                         \
+  || !__has_include(<cuda_bf16.h>)
 #  define _LIBCUDACXX_HAS_NO_NVBF16
 #endif
 #endif // _LIBCUDACXX_HAS_NO_NVBF16

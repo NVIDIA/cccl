@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc
+// UNSUPPORTED: nvrtc, nvcc-11, nvcc-12.0, nvcc-12.1
 
 #include "host_device_comparison.h"
 

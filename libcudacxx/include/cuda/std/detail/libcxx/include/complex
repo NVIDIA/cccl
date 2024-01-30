@@ -298,9 +298,9 @@ struct __is_complex_float {
 #ifdef __cuda_std__
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
         || is_same<_Tp, __half>::value
-#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
         || is_same<_Tp, __nv_bfloat16>::value
+#endif
 #endif
 #endif
     ;
@@ -521,7 +521,6 @@ public:
             return *this;
         }
 };
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 template<>
@@ -625,6 +624,7 @@ public:
 };
 #endif
 #endif
+#endif
 
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) complex<float>
@@ -640,10 +640,10 @@ public:
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
+#endif
 #endif
 #endif
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -747,10 +747,10 @@ public:
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
+#endif
 #endif
 #endif
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -1089,10 +1089,10 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
 template<>
 struct __type_to_vector<__half> { using __type = __half2; };
-#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 template<>
 struct __type_to_vector<__nv_bfloat16> { using __type = __nv_bfloat162; };
+#endif
 #endif
 
 template<class _Tp>
@@ -1497,7 +1497,6 @@ struct __libcpp_complex_overload_traits<__half, false, false>
     typedef __half _ValueType;
     typedef complex<__half> _ComplexType;
 };
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 template <>
@@ -1506,6 +1505,7 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
     typedef __nv_bfloat16 _ValueType;
     typedef complex<__nv_bfloat16> _ComplexType;
 };
+#endif
 #endif
 #endif
 
@@ -1614,7 +1614,6 @@ arg(_Tp __re)
 {
     return _CUDA_VSTD::atan2f(__half(0), __re);
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 template <class _Tp>
@@ -1627,6 +1626,7 @@ arg(_Tp __re)
 {
     return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
 }
+#endif
 #endif
 #endif
 

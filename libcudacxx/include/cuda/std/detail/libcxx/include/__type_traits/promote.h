@@ -52,9 +52,9 @@ struct __numeric_type
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
 #ifndef _LIBCUDACXX_HAS_NO_NVFP16
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
-#endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
+#endif
 #endif
 #endif
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);

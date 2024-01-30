@@ -36,22 +36,30 @@ template <class T>
 __host__ __device__ double
 promote(T, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0);
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 __host__ __device__ __half promote(__half);
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 __host__ __device__ __nv_bfloat16 promote(__nv_bfloat16);
+#endif
+#endif
 __host__ __device__ float promote(float);
 __host__ __device__ double promote(double);
 __host__ __device__ long double promote(long double);
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 // This is a workaround for __half's conversions being just bad.
-// This is a workaround for __nv_bfloat16's conversions being just bad.
 __host__ __device__ float operator+(float, __half);
-__host__ __device__ float operator+(float, __nv_bfloat16);
 __host__ __device__ float operator+(__half, float);
-__host__ __device__ float operator+(__nv_bfloat16, float);
 __host__ __device__ double operator+(double, __half);
-__host__ __device__ double operator+(double, __nv_bfloat16);
 __host__ __device__ double operator+(__half, double);
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+// This is a workaround for __nv_bfloat16's conversions being just bad.
+__host__ __device__ float operator+(float, __nv_bfloat16);
+__host__ __device__ float operator+(__nv_bfloat16, float);
+__host__ __device__ double operator+(double, __nv_bfloat16);
 __host__ __device__ double operator+(__nv_bfloat16, double);
+#endif
+#endif
 
 template <class T, class U>
 __host__ __device__ void
@@ -121,16 +129,20 @@ int main(int, char**)
 //  test<long double, float>();
 //  test<long double, double>();
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
     test<__half, float>();
-    test<__nv_bfloat16, float>();
     test<__half, double>();
-    test<__nv_bfloat16, double>();
     test<int, __half>();
-    test<int, __nv_bfloat16>();
     test<unsigned, __half>();
-    test<unsigned, __nv_bfloat16>();
     test<long long, __half>();
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+    test<__nv_bfloat16, float>();
+    test<__nv_bfloat16, double>();
+    test<int, __nv_bfloat16>();
+    test<unsigned, __nv_bfloat16>();
     test<long long, __nv_bfloat16>();
+#endif
+#endif
 
   return 0;
 }

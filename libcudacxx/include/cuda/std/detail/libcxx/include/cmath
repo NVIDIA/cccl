@@ -662,7 +662,6 @@ __half sin(__half __v)
         })
     )
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -675,13 +674,11 @@ __nv_bfloat16 sin(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sinh(__half __v)
 {
     return __half(_CUDA_VSTD::sinh(float(__v)));
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -691,7 +688,6 @@ __nv_bfloat16 sinh(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cos(__half __v)
 {
@@ -717,7 +713,6 @@ __half cos(__half __v)
         })
     )
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -730,13 +725,11 @@ __nv_bfloat16 cos(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cosh(__half __v)
 {
     return __half(_CUDA_VSTD::cosh(float(__v)));
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -746,7 +739,6 @@ __nv_bfloat16 cosh(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half exp(__half __v)
 {
@@ -772,7 +764,6 @@ __half exp(__half __v)
         })
     )
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -785,13 +776,11 @@ __nv_bfloat16 exp(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__half __v)
 {
     return ::signbit(__half2float(__v));
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -801,13 +790,11 @@ bool signbit(__nv_bfloat16 __v)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half atan2(__half __x, __half __y)
 {
     return __half(_CUDA_VSTD::atan2(float(__x), float(__y)));
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -817,7 +804,6 @@ __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half log(__half __x)
 {
@@ -842,7 +828,6 @@ __half log(__half __x)
         })
     )
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -855,7 +840,6 @@ __nv_bfloat16 log(__nv_bfloat16 __x)
 }
 #endif
 
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sqrt(__half __x)
 {
@@ -864,7 +848,6 @@ __half sqrt(__half __x)
         (return __half(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
-#endif
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -875,6 +858,7 @@ __nv_bfloat16 sqrt(__nv_bfloat16 __x)
         (return __nv_bfloat16(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
+#endif
 #endif
 #endif
 

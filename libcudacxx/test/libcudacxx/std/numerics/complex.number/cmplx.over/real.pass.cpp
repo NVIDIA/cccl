@@ -88,8 +88,12 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
     test_nonconstexpr<__half>();
+#endif
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
     test_nonconstexpr<__nv_bfloat16>();
+#endif
     test<int>();
     test<unsigned>();
     test<long long>();

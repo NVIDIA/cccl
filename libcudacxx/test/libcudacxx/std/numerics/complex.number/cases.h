@@ -290,14 +290,18 @@ __host__ __device__ void is_about(long double x, long double y)
 }
 */
 
+#ifndef _LIBCUDACXX_HAS_NO_NVFP16
 __host__ __device__ void is_about(__half x, __half y)
 {
     assert(cuda::std::fabs((x-y)/(x+y)) <= __half(1e-3));
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_NVBF16
 __host__ __device__ void is_about(__nv_bfloat16 x, __nv_bfloat16 y)
 {
     assert(cuda::std::fabs((x-y)/(x+y)) <= __nv_bfloat16(5e-3));
 }
+#endif
+#endif
 
 #endif // CASES_H
