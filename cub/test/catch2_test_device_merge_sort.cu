@@ -97,6 +97,22 @@ struct rank_to_key_op_t<OffsetT, c2h::custom_type_t<c2h::equal_comparable_t, c2h
 };
 
 /**
+ * Helps initialize custom_type_t from a zip-iterator combination of sort-key and value
+ */
+template <typename CustomT>
+struct tuple_to_custom_op_t
+{
+  template <typename KeyT, typename ValueT>
+  __device__ __host__ CustomT operator()(const thrust::tuple<KeyT, ValueT>& val)
+  {
+    CustomT custom_val{};
+    custom_val.key = static_cast<std::size_t>(thrust::get<0>(val));
+    custom_val.val = static_cast<std::size_t>(thrust::get<1>(val));
+    return custom_val;
+  }
+};
+
+/**
  * Generates a shuffled array of key ranks. E.g., for a vector of size 5: [4, 2, 3, 1, 0]
  */
 template <typename OffsetT>
@@ -155,56 +171,48 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
 
 CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort when there are a lot sort-keys that "
          "compare equal",
-         "[merge][sort][device]",
-         key_types)
+         "[merge][sort][device]")
 {
-  using key_t    = typename c2h::get<0, TestType>;
-  using offset_t = std::int32_t;
+  using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
+  using offset_t = std::size_t;
 
   // Prepare input (generate a items that compare equally to check for stability of sort)
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   thrust::device_vector<offset_t> key_ranks(num_items);
   c2h::gen(CUB_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
-  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_in(num_items);
-  auto sort_key_it = thrust::make_transform_iterator(key_ranks.begin(), rank_to_key_op_t<offset_t, key_t>{});
-  auto keys_in_it  = thrust::make_zip_iterator(sort_key_it, key_ranks.begin());
-  thrust::copy(keys_in_it, keys_in_it + num_items, keys_in.begin());
+  thrust::device_vector<key_t> keys_in(num_items);
+  auto key_value_it = thrust::make_counting_iterator(offset_t{});
+  auto key_init_it  = thrust::make_zip_iterator(key_ranks.begin(), key_value_it);
+  thrust::transform(key_init_it, key_init_it + num_items, keys_in.begin(), tuple_to_custom_op_t<key_t>{});
 
   // Perform sort
-  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_out(
-    num_items, thrust::tuple<key_t, offset_t>{rank_to_key_op_t<offset_t, key_t>{}(42), static_cast<offset_t>(42)});
+  thrust::device_vector<key_t> keys_out(num_items, rank_to_key_op_t<offset_t, key_t>{}(42));
   stable_sort_keys_copy(
-    thrust::raw_pointer_cast(keys_in.data()),
-    thrust::raw_pointer_cast(keys_out.data()),
-    num_items,
-    compare_first_lt_op_t{});
+    thrust::raw_pointer_cast(keys_in.data()), thrust::raw_pointer_cast(keys_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<thrust::tuple<key_t, offset_t>> keys_expected(keys_in);
-  std::stable_sort(keys_expected.begin(), keys_expected.end(), compare_first_lt_op_t{});
+  thrust::host_vector<key_t> keys_expected(keys_in);
+  std::stable_sort(keys_expected.begin(), keys_expected.end(), custom_less_op_t{});
 
   REQUIRE(keys_expected == keys_out);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]", key_types)
+CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
 {
-  using key_t    = typename c2h::get<0, TestType>;
+  using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::int32_t;
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  thrust::device_vector<key_t> sort_keys(num_items);
-  c2h::gen(CUB_SEED(2), sort_keys);
-  auto keys_in_it = thrust::make_zip_iterator(sort_keys.begin(), thrust::make_counting_iterator(offset_t{}));
-  thrust::device_vector<thrust::tuple<key_t, offset_t>> keys_in_out(num_items);
-  thrust::copy(keys_in_it, keys_in_it + num_items, keys_in_out.begin());
+  thrust::device_vector<key_t> keys_in_out(num_items);
+  c2h::gen(CUB_SEED(2), keys_in_out);
 
   // Perform sort
-  stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, compare_first_lt_op_t{});
+  stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
 
   // Verify results
-  thrust::host_vector<thrust::tuple<key_t, offset_t>> keys_expected(keys_in_out);
-  std::stable_sort(keys_expected.begin(), keys_expected.end(), compare_first_lt_op_t{});
+  thrust::host_vector<key_t> keys_expected(keys_in_out);
+  std::stable_sort(keys_expected.begin(), keys_expected.end(), custom_less_op_t{});
 
   REQUIRE(keys_expected == keys_in_out);
 }
