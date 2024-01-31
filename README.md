@@ -370,9 +370,7 @@ The deprecation period will depend on the impact of the change, but will usually
 
 ## Mapping to CTK Versions
 
-// Links to old CCCL mapping tables
-// Add new CCCL version to a new table
-
+Coming soon!
 
 ## CI Pipeline Overview
 
