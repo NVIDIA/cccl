@@ -501,6 +501,15 @@ basic_string<char32_t> operator "" s( const char32_t *str, size_t len ); // C++1
 */
 
 #include <__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <string_view>
 #include <iosfwd>
 #include <cstring>
