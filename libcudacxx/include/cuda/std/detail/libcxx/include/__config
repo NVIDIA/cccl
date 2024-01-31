@@ -477,8 +477,8 @@ extern "C++" {
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via __check_builtin
 #if __check_builtin(builtin_addressof)                       \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVHPC)
 #define _LIBCUDACXX_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // __check_builtin(builtin_addressof)
@@ -489,18 +489,18 @@ extern "C++" {
 #endif // __check_builtin(builtin_bit_cast)
 
 #if __check_builtin(builtin_is_constant_evaluated)           \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 900) \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 900)       \
  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER  > 1924 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // __check_builtin(builtin_is_constant_evaluated)
 
 // NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
 #if _CCCL_STD_VER < 2014              \
- && (defined(_CCCL_COMPILER_NVCC)   \
- ||  defined(_CCCL_COMPILER_NVRTC)  \
+ && (defined(_CCCL_COMPILER_NVCC)     \
+ ||  defined(_CCCL_COMPILER_NVRTC)    \
  ||  defined(_CCCL_COMPILER_NVHPC))
 #undef _LIBCUDACXX_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && defined(_CCCL_COMPILER_NVCC)
+#endif // _CCCL_STD_VER < 2014 && _CCCL_COMPILER_NVCC
 
 #if __check_builtin(builtin_launder)                         \
  || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700)
@@ -513,36 +513,36 @@ extern "C++" {
 #endif // __check_builtin(decay)
 
 #if __check_builtin(has_nothrow_assign)                      \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
 #endif // __check_builtin(has_nothrow_assign)
 
 #if __check_builtin(has_nothrow_constructor)                 \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
 #endif // __check_builtin(has_nothrow_constructor)
 
 #if __check_builtin(has_nothrow_copy)                        \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // __check_builtin(has_nothrow_copy)
 
 #if __check_builtin(has_trivial_constructor)                 \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
 #endif // __check_builtin(has_trivial_constructor)
 
 #if __check_builtin(has_trivial_destructor)                  \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // __check_builtin(has_trivial_destructor)
@@ -553,15 +553,15 @@ extern "C++" {
 #endif // __check_builtin(has_unique_object_representations)
 
 #if __check_builtin(has_virtual_destructor)                  \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
 #endif // __check_builtin(has_virtual_destructor)
 
 #if __check_builtin(is_aggregate)                            \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700) \
- || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER  > 1914) \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700)       \
+ || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER  > 1914)       \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
 #endif // __check_builtin(is_aggregate)
@@ -584,28 +584,28 @@ extern "C++" {
 #endif // __check_builtin(is_assignable)
 
 #if __check_builtin(is_base_of)                              \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
 #endif // __check_builtin(is_base_of)
 
 #if __check_builtin(is_class)                                \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_CLASS(...) __is_class(__VA_ARGS__)
 #endif // __check_builtin(is_class)
 
 #if __check_builtin(is_constructible)                       \
- || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 800) \
- || defined(_CCCL_COMPILER_MSVC)                      \
+ || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 800)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif // __check_builtin(is_constructible)
 
 #if __check_builtin(is_convertible_to) \
- || defined(_CCCL_COMPILER_MSVC) \
+ || defined(_CCCL_COMPILER_MSVC)       \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
 #endif // __check_builtin(is_convertible_to)
@@ -616,22 +616,22 @@ extern "C++" {
 #endif // __check_builtin(is_destructible)
 
 #if __check_builtin(is_empty)                                \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_EMPTY(...) __is_empty(__VA_ARGS__)
 #endif // __check_builtin(is_empty)
 
 #if __check_builtin(is_enum)                                 \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_ENUM(...) __is_enum(__VA_ARGS__)
 #endif // __check_builtin(is_enum)
 
 #if __check_builtin(is_final)                                \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 407) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 407)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_FINAL(...) __is_final(__VA_ARGS__)
 #endif // __check_builtin(is_final)
@@ -642,8 +642,8 @@ extern "C++" {
 #endif // __check_builtin(is_function)
 
 #if __check_builtin(is_literal_type)                         \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 406) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 406)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
 #endif // __check_builtin(is_literal_type)
@@ -659,19 +659,19 @@ extern "C++" {
 #endif // !_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 
 #if __check_builtin(is_nothrow_assignable) \
- || defined(_CCCL_COMPILER_MSVC)     \
+ || defined(_CCCL_COMPILER_MSVC)           \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
 #endif // __check_builtin(is_nothrow_assignable)
 
 #if __check_builtin(is_nothrow_constructible) \
- || defined(_CCCL_COMPILER_MSVC)        \
+ || defined(_CCCL_COMPILER_MSVC)              \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
 #endif // __check_builtin(is_nothrow_constructible)
 
 #if __check_builtin(is_nothrow_destructible) \
- || defined(_CCCL_COMPILER_MSVC)       \
+ || defined(_CCCL_COMPILER_MSVC)             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
 #endif // __check_builtin(is_nothrow_destructible)
@@ -687,8 +687,8 @@ extern "C++" {
 #endif // !_LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 
 #if __check_builtin(is_pod)                                  \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_POD(...) __is_pod(__VA_ARGS__)
 #endif // __check_builtin(is_pod)
@@ -699,8 +699,8 @@ extern "C++" {
 #endif // __check_builtin(is_pointer)
 
 #if __check_builtin(is_polymorphic)                          \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
 #endif // __check_builtin(is_polymorphic)
@@ -718,8 +718,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_rvalue_reference)
 
-#if __check_builtin(is_same)            \
- && !defined(_CCCL_COMPILER_NVCC)
+#if __check_builtin(is_same) && !defined(_CCCL_COMPILER_NVCC)
 #define _LIBCUDACXX_IS_SAME(...) __is_same(__VA_ARGS__)
 #endif // __check_builtin(is_same)
 
@@ -734,36 +733,36 @@ extern "C++" {
 #endif // __check_builtin(is_signed)
 
 #if __check_builtin(is_standard_layout)                      \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 407) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 407)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
 #endif // __check_builtin(is_standard_layout)
 
 #if __check_builtin(is_trivial)                              \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 405) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 405)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
 #endif // __check_builtin(is_trivial)
 
 #if __check_builtin(is_trivially_assignable)                 \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
 #endif // __check_builtin(is_trivially_assignable)
 
 #if __check_builtin(is_trivially_constructible)              \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
 #endif // __check_builtin(is_trivially_constructible)
 
 #if __check_builtin(is_trivially_copyable)                   \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 501)       \
+ || defined(_CCCL_COMPILER_MSVC)                             \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #endif // __check_builtin(is_trivially_copyable)
@@ -774,8 +773,8 @@ extern "C++" {
 #endif // __check_builtin(is_trivially_destructible)
 
 #if __check_builtin(is_union)                                \
- || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403) \
- || defined(_CCCL_COMPILER_MSVC)                       \
+ || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 403)       \
+ || defined(_CCCL_COMPILER_MSVC)                              \
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_IS_UNION(...) __is_union(__VA_ARGS__)
 #endif // __check_builtin(is_union)
@@ -2171,7 +2170,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 // with these classes.
 #if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ > 6) \
  && _CCCL_STD_VER >= 2017
-#  define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName)                                                                \
+#  define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName)                                                              \
       template <class ..._Tag>                                                                                         \
       _ClassName(typename _Tag::__allow_ctad...) -> _ClassName<_Tag...>
 #else

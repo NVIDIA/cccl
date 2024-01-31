@@ -229,7 +229,7 @@ struct aligned_type
 {
   struct __align__(Align) type{};
 };
-#endif    // _CCCL_COMPILER
+#endif    // THRUST_HOST_COMPILER
 #else
 template <std::size_t Align>
 struct aligned_type

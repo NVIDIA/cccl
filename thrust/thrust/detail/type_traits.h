@@ -111,7 +111,7 @@ template<typename T> struct is_pod
 #if (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)
        || __is_pod(T)
 #endif // GCC VERSION
-#endif // _CCCL_COMPILER
+#endif // THRUST_HOST_COMPILER
      >
  {};
 

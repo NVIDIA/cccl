@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "test_macros.h"
 #if defined(TEST_COMPILER_MSVC)
 #pragma warning(disable: 4505)
 #endif

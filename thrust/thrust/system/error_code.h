@@ -261,7 +261,7 @@ class error_code
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
         , typename thrust::detail::enable_if<is_error_code_enum<ErrorCodeEnum>::value>::type * = 0
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         );
 
     // [19.5.2.3] modifiers:
@@ -278,7 +278,7 @@ class error_code
       typename thrust::detail::enable_if<is_error_code_enum<ErrorCodeEnum>::value, error_code>::type &
 #else
       error_code &
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         operator=(ErrorCodeEnum e);
 
     /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
@@ -377,7 +377,7 @@ class error_condition
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
         , typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value>::type * = 0
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
                      );
 
     // [19.5.3.3] modifiers
@@ -402,7 +402,7 @@ class error_condition
       typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>::type &
 #else
       error_condition &
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         operator=(ErrorConditionEnum e);
 
     /*! Clears this \p error_code object.

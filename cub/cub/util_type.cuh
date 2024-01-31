@@ -84,10 +84,8 @@ CUB_NAMESPACE_BEGIN
 #endif // !defined(__CUDACC_RTC_INT128__)
 #else  // !defined(__CUDACC_RTC__)
 #if _LIBCUDACXX_CUDACC_VER >= 1105000
-#if defined(_CCCL_COMPILER_GCC) || \
-    defined(_CCCL_COMPILER_CLANG) || \
-    defined(_CCCL_COMPILER_ICC) || \
-    defined(_CCCL_COMPILER_NVHPC)
+#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) ||            \
+    defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_NVHPC)
 #define CUB_IS_INT128_ENABLED 1
 #endif // GCC || CLANG || ICC || NVHPC
 #endif // CTK >= 11.5

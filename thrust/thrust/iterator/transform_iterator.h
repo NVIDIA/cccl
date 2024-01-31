@@ -271,7 +271,7 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
           thrust::detail::true_type()
 #else
           typename thrust::detail::is_copy_assignable<AdaptableUnaryFunction>::type()
-#endif // _CCCL_COMPILER
+#endif // THRUST_HOST_COMPILER
       );
     }
 

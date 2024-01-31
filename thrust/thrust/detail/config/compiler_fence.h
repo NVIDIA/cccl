@@ -62,7 +62,7 @@
 // unknown case
 #elif defined(_CCCL_COMPILER_CLANG)
 #define __thrust_compiler_fence() __sync_synchronize()
-#else
+#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_UNKNOWN
 
 // allow the code to compile without any guarantees
 #define __thrust_compiler_fence() do {} while (0)

@@ -65,7 +65,7 @@
 #endif
 #else
 #define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_UNKNOWN
-#endif // _TRUST_HOST_COMPILER
+#endif // TRUST_HOST_COMPILER
 
 // figure out which device compiler we're using
 #if defined(__CUDACC__) || defined(_NVHPC_CUDA)
