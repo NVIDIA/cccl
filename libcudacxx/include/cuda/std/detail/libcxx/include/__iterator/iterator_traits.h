@@ -78,19 +78,15 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __can_reference = _LIBCUDACXX_FRAGMENT(__can_reference_, _Tp);
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __dereferenceable_,
   requires(_Tp& __t)(
     requires(__can_reference<decltype(*__t)>)
   ));
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __dereferenceable = _LIBCUDACXX_FRAGMENT(__dereferenceable_, _Tp);

@@ -145,9 +145,9 @@ struct __has_rebind
 {
 private:
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
-    _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Xp::template rebind<_Up>* = 0);
-    _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+    _CCCL_SUPPRESS_DEPRECATED_POP
 public:
     static const bool value = decltype(__test<_Tp>(0))::value;
 };

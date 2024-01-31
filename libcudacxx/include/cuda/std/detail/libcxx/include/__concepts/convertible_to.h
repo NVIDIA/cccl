@@ -41,10 +41,9 @@ concept convertible_to =
 
 #elif _CCCL_STD_VER >= 2014 // ^^^ C++20 ^^^ / vvv C++14/17 vvv
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 _CCCL_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
-#endif // _CCCL_COMPILER_MSVC
-_CCCL_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
 template<class _From, class _To>
@@ -68,10 +67,9 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _From, class _To>
 _LIBCUDACXX_CONCEPT convertible_to = _LIBCUDACXX_FRAGMENT(__convertible_to_, _From, _To);
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
 _CCCL_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
-#endif // _CCCL_COMPILER_MSVC
-_CCCL_NV_DIAG_DEFAULT(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 #endif // _CCCL_STD_VER >= 2014
 

@@ -197,18 +197,14 @@ protected:
     static constexpr float_round_style round_style = round_toward_zero;
 };
 
-#if defined(_CCCL_COMPILER_MSVC)
-#  pragma warning(push)
-#  pragma warning(disable : 4309)
-#endif // _CCCL_COMPILER_MSVC
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4309)
 template <class _Tp, int __digits, bool _IsSigned>
 struct __libcpp_compute_min
 {
     static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
 };
-#if defined(_CCCL_COMPILER_MSVC)
-#  pragma warning(pop)
-#endif // _CCCL_COMPILER_MSVC
+_CCCL_DIAG_POP
 
 template <class _Tp, int __digits>
 struct __libcpp_compute_min<_Tp, __digits, false>

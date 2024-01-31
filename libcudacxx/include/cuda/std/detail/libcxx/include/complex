@@ -232,6 +232,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 
 */
 
+#include "__cccl/diagnostic.h"
 #ifndef __cuda_std__
 #  include <__config>
 #endif // __cuda_std__
@@ -696,11 +697,8 @@ public:
 };
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
-  // MSVC complains about narrowing conversions on these copy constructors regardless if they are used
-  #pragma warning(push)
-  #pragma warning(disable : 4244)
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
 
 inline constexpr
 complex<float>::complex(const complex<double>& __c)
@@ -728,9 +726,7 @@ complex<long double>::complex(const complex<double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_MSVC_WARNING)
-  #pragma warning(pop)
-#endif
+_CCCL_DIAG_POP
 
 // 26.3.6 operators:
 
