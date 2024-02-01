@@ -222,7 +222,7 @@ extern "C++" {
 #define __has_include(...) 0
 #endif
 
-#if !defined(_CCCL_COMPILER_NVCC) && !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_COMPILER_NVRTC)
 // If NVCC is not being used <complex> can safely use `long double` without warnings
 #  define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 // NVCC does not have a way of silencing non '_' prefixed UDLs
@@ -496,11 +496,11 @@ extern "C++" {
 
 // NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
 #if _CCCL_STD_VER < 2014              \
- && (defined(_CCCL_COMPILER_NVCC)     \
+ && (defined(_CCCL_CUDA_COMPILER_NVCC)     \
  ||  defined(_CCCL_COMPILER_NVRTC)    \
  ||  defined(_CCCL_COMPILER_NVHPC))
 #undef _LIBCUDACXX_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && _CCCL_COMPILER_NVCC
+#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
 
 #if __check_builtin(builtin_launder)                         \
  || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 700)
@@ -637,7 +637,7 @@ extern "C++" {
 #endif // __check_builtin(is_final)
 
 #if __check_builtin(is_function)       \
- && !defined(_CCCL_COMPILER_NVCC)
+ && !defined(_CCCL_CUDA_COMPILER_NVCC)
 #define _LIBCUDACXX_IS_FUNCTION(...) __is_function(__VA_ARGS__)
 #endif // __check_builtin(is_function)
 
@@ -718,7 +718,7 @@ extern "C++" {
 #define _LIBCUDACXX_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
 #endif // __check_builtin(is_rvalue_reference)
 
-#if __check_builtin(is_same) && !defined(_CCCL_COMPILER_NVCC)
+#if __check_builtin(is_same) && !defined(_CCCL_CUDA_COMPILER_NVCC)
 #define _LIBCUDACXX_IS_SAME(...) __is_same(__VA_ARGS__)
 #endif // __check_builtin(is_same)
 
@@ -985,7 +985,7 @@ typedef __char32_t char32_t;
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
 #if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
-#if defined(_CCCL_COMPILER_NVCC) && _CCCL_STD_VER == 2017
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER == 2017
 #define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #endif
 #endif
@@ -1139,7 +1139,7 @@ typedef __char32_t char32_t;
 #ifndef _LIBCUDACXX_HAS_NO_INT128
 #if defined(_CCCL_COMPILER_MSVC)                                          \
  || (defined(_CCCL_COMPILER_NVRTC) && !defined(__CUDACC_RTC_INT128__))    \
- || (defined(_CCCL_COMPILER_NVCC)  && (_LIBCUDACXX_CUDACC_VER < 1105000)) \
+ || (defined(_CCCL_CUDA_COMPILER_NVCC)  && (_LIBCUDACXX_CUDACC_VER < 1105000)) \
  || !defined(__SIZEOF_INT128__)
 #  define _LIBCUDACXX_HAS_NO_INT128
 #endif
@@ -1956,7 +1956,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#if defined(_CCCL_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) || defined(_LIBCUDACXX_CUDACC)
+#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) || defined(_LIBCUDACXX_CUDACC)
 #  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #endif
 
