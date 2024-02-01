@@ -80,7 +80,7 @@
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_GCC
 #elif defined(_CCCL_COMPILER_CLANG)
 // CUDA-capable clang should behave similar to NVCC.
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  if defined(_CCCL_CUDA_COMPILER_NVCC)
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
 #  else
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_CLANG
