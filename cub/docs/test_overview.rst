@@ -59,16 +59,16 @@ Say there's no need to cover many types with your test.
       constexpr int num_items = threads_per_block;
 
       // 1) Allocate device input
-      thrust::device_vector<type> d_input(num_items);
+      c2h::device_vector<type> d_input(num_items);
 
       // 2) Generate 3 random input arrays using Catch2 helper
       c2h::gen(CUB_SEED(3), d_input);
 
       // 3) Allocate output array
-      thrust::device_vector<type> d_output(d_input.size());
+      c2h::device_vector<type> d_output(d_input.size());
 
       // 4) Copy device input to host
-      thrust::host_vector<key_t> h_reference = d_input;
+      c2h::host_vector<key_t> h_reference = d_input;
 
       // 5) Compute reference output
       std::ALGORITHM(
@@ -77,8 +77,8 @@ Say there's no need to cover many types with your test.
 
       // 6) Compute CUB output
       SCOPE_ALGORITHM<threads_per_block>(d_input.data(),
-                                        d_output.data(),
-                                        d_input.size());
+                                         d_output.data(),
+                                         d_input.size());
 
       // 7) Compare device and host results
       REQUIRE( d_input == d_output );
@@ -86,7 +86,13 @@ Say there's no need to cover many types with your test.
 
 We introduce test cases with the ``CUB_TEST`` macro in (0).
 This macro always takes two string arguments - a free-form test name and
-one or more tags. Then, in (1), we allocate device memory using ``thrust::device_vector``.
+one or more tags. Then, in (1), we allocate device memory using ``c2h::device_vector``.
+``c2h::device_vector`` and ``c2h::host_vector`` behave similarly to their Thrust counterparts,
+but are modified to provide more stable behavior in some testing edge cases.
+These must be used in place of Thrust vectors and manual allocations, unless the test code is
+being used for documentation examples.
+Similarly, any thrust algorithms that executed on the device must be invoked with the
+`c2h::device_policy`` execution policy (not shown here) to support the same edge cases.
 The memory is filled with random data in (2).
 
 Generator ``c2h::gen`` takes two parameters.
@@ -249,21 +255,27 @@ Let's consider the final test that illustrates all of the tools we discussed abo
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
       constexpr int max_num_items = threads_per_block;
 
-      thrust::device_vector<type> d_input(
+      c2h::device_vector<type> d_input(
         GENERATE_COPY(take(2, random(0, max_num_items))));
       c2h::gen(CUB_SEED(3), d_input);
 
-      thrust::device_vector<type> d_output(d_input.size());
+      c2h::device_vector<type> d_output(d_input.size());
 
       SCOPE_ALGORITHM<threads_per_block>(d_input.data(),
                                         d_output.data(),
                                         d_input.size());
 
       REQUIRE( d_input == d_output );
+
+      const type expected_sum = 4;
+      const type sum = thrust::reduce(c2h::device_policy, d_output.cbegin(), d_output.cend());
+      REQUIRE( sum == expected_sum);
     }
 
-Apart from discussed tools, here we also rely on ``Catch2`` to generate random input sizes in ``[0, max_num_items]`` range.
+Apart from discussed tools, here we also rely on ``Catch2`` to generate random input sizes
+in ``[0, max_num_items]`` range.
 Overall, the test will produce two executables.
 Each of these executables is going to generate ``2`` input problem sizes.
 For each problem size, ``3`` random vectors are generated.
 As a result, we have ``12`` different tests.
+This also demonstrates the syntax and usage of ``c2h::device_policy`` with a Thrust alorithm.
