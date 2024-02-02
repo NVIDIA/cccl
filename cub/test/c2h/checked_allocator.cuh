@@ -56,6 +56,16 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
   constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
   if (free_bytes < (bytes + padding))
   {
+    const double total_GiB     = static_cast<double>(total_bytes) / (1024 * 1024 * 1024);
+    const double free_GiB      = static_cast<double>(free_bytes) / (1024 * 1024 * 1024);
+    const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
+    const double padded_GiB    = static_cast<double>(bytes + padding) / (1024 * 1024 * 1024);
+
+    std::cerr
+      << "Total device mem:     " << total_GiB << " GiB\n" //
+      << "Free device mem:      " << free_GiB << " GiB\n" //
+      << "Requested device mem: " << requested_GiB << " GiB\n" //
+      << "Padded device mem:    " << padded_GiB << " GiB\n";
     return cudaErrorMemoryAllocation;
   }
 
