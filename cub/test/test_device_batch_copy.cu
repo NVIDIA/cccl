@@ -258,8 +258,6 @@ try
 
   c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
 
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
 
   c2h::host_vector<AtomicT> h_out(num_total_items);
   c2h::host_vector<AtomicT> h_gpu_results(num_total_items);
@@ -270,8 +268,7 @@ try
                                         d_range_srcs,
                                         d_range_dsts,
                                         d_range_sizes.cbegin(),
-                                        num_ranges,
-                                        stream));
+                                        num_ranges));
 
   // Copy back the output range
   h_gpu_results = d_out;
