@@ -1,23 +1,20 @@
 CUB Testing Overview
 ###########################
 
-.. warning:: 
+.. warning::
     CUB is in the progress of migrating to [Catch2](https://github.com/catchorg/Catch2) framework.
 
-CUB tests rely on `CPM <https://github.com/cpm-cmake/CPM.cmake>`_ to fetch 
+CUB tests rely on `CPM <https://github.com/cpm-cmake/CPM.cmake>`_ to fetch
 `Catch2 <https://github.com/catchorg/Catch2>`_ that's used as our main testing framework
 along with `metal <https://github.com/brunocodutra/metal>`_ that's used as template metaprogramming
 backend for some of the test macro implementation.
 
-Currently, 
-legacy tests coexist with Catch2 ones. 
+Currently,
+legacy tests coexist with Catch2 ones.
 This guide is focused on new tests.
 
 .. important::
-    Instead of including ``<catch2/catch.hpp>`` directly, use ``catch2_test_helper.h``. 
-    Also, 
-    the helper header has to be included after all CUB headers, 
-    otherwise the test won't catch some of the warnings in CUB kernels:
+    Instead of including ``<catch2/catch.hpp>`` directly, use ``catch2_test_helper.h``.
 
 .. code-block:: c++
 
@@ -28,7 +25,7 @@ This guide is focused on new tests.
 Directory and File Naming
 *************************************
 
-Our tests can be found in the ``test`` directory. 
+Our tests can be found in the ``test`` directory.
 Legacy tests have the following naming scheme: ``test_SCOPE_FACILITY.cu``.
 For instance, here are the reduce tests:
 
@@ -40,7 +37,7 @@ For instance, here are the reduce tests:
 
 Catch2-based tests have a different naming scheme: ``catch2_test_SCOPE_FACILITY.cu``.
 
-The prefix is essential since that's how CMake finds tests 
+The prefix is essential since that's how CMake finds tests
 and distinguishes new tests from legacy ones.
 
 Test Structure
@@ -48,14 +45,14 @@ Test Structure
 
 Base case
 =====================================
-Let's start with a simple example. 
+Let's start with a simple example.
 Say there's no need to cover many types with your test.
 
 .. code-block:: c++
 
     // 0) Define test name and tags
     CUB_TEST("SCOPE FACILITY works with CONDITION",
-            "[FACILITY][SCOPE]") 
+            "[FACILITY][SCOPE]")
     {
       using type = std::int32_t;
       constexpr int threads_per_block = 256;
@@ -75,7 +72,7 @@ Say there's no need to cover many types with your test.
 
       // 5) Compute reference output
       std::ALGORITHM(
-          thrust::raw_pointer_cast(h_reference.data()), 
+          thrust::raw_pointer_cast(h_reference.data()),
           thrust::raw_pointer_cast(h_reference.data()) + h_reference.size());
 
       // 6) Compute CUB output
@@ -87,36 +84,36 @@ Say there's no need to cover many types with your test.
       REQUIRE( d_input == d_output );
     }
 
-We introduce test cases with the ``CUB_TEST`` macro in (0). 
+We introduce test cases with the ``CUB_TEST`` macro in (0).
 This macro always takes two string arguments - a free-form test name and
 one or more tags. Then, in (1), we allocate device memory using ``thrust::device_vector``.
 The memory is filled with random data in (2).
 
-Generator ``c2h::gen`` takes two parameters. 
-The first one is a random generator seed. 
+Generator ``c2h::gen`` takes two parameters.
+The first one is a random generator seed.
 Instead of providing a single value, we use the ``CUB_SEED`` macro.
-The macro expects a number of seeds that has to be generated. 
+The macro expects a number of seeds that has to be generated.
 In the example above, we require three random seeds to be generated.
-This leads to the whole test being executed three times 
-with different seed values. 
+This leads to the whole test being executed three times
+with different seed values.
 
-Later, 
+Later,
 in (3) and (4),
 we allocate device output and host reference.
-Then, in (4), 
+Then, in (4),
 we populate host input data and perform reference computation on the host in (5).
-Then launch the CUB algorithm in (6). 
+Then launch the CUB algorithm in (6).
 At this point, we have a reference solution on CPU and CUB solution on GPU.
-The two can be compared with ``REQUIRE`` assert. 
+The two can be compared with ``REQUIRE`` assert.
 
 .. warning::
     Standard algorithms (``std::``) have to be used as much as possible when computing reference solutions.
 
-If your test has to cover floating point types, 
+If your test has to cover floating point types,
 it's sufficient to replace ``REQUIRE( a == b )`` with ``REQUIRE_APPROX_EQ(a, b)``.
 
 It's strongly advised to always use ``c2h::gen`` to produce input data.
-Other data generation methods might be used 
+Other data generation methods might be used
 if absolutely necessary in tests of corner cases.
 
 Do not use ``assert`` in tests.
@@ -132,18 +129,18 @@ If a custom type has to be tested, the following helper should be used:
 
 Here we enumerate all the type properties that we are interested in.
 The produced type ends up having ``operator==`` and ``operator+``.
-There are more properties implemented. 
-If some property is missing, 
-it'd be better to add one in ``c2h`` 
+There are more properties implemented.
+If some property is missing,
+it'd be better to add one in ``c2h``
 instead of writing a custom type from scratch.
 
 
 Type Lists
 =====================================
 
-Since CUB is a generic library, 
-it's often required to test CUB algorithms against many types. 
-To do so, 
+Since CUB is a generic library,
+it's often required to test CUB algorithms against many types.
+To do so,
 it's sufficient to define a type list and provide it to the ``CUB_TEST`` macro.
 
 .. code-block:: c++
@@ -161,7 +158,7 @@ it's sufficient to define a type list and provide it to the ``CUB_TEST`` macro.
     }
 
 This will lead to the test running two times.
-The first run will cause the ``type`` to be ``std::uint8_t``. 
+The first run will cause the ``type`` to be ``std::uint8_t``.
 The second one will cause ``type`` to be ``std::uint32_t``.
 
 .. warning::
@@ -171,8 +168,8 @@ Multidimensional Configuration Spaces
 =====================================
 
 In most cases, the input data type is not the only compile-time parameter we want to vary.
-For instance, you might need to test a block algorithm for different data types 
-**and** different thread block sizes. 
+For instance, you might need to test a block algorithm for different data types
+**and** different thread block sizes.
 To do so, you can add another type list as follows:
 
 .. code-block:: c++
@@ -183,7 +180,7 @@ To do so, you can add another type list as follows:
     CUB_TEST("SCOPE FACILITY works with CONDITION",
             "[FACILITY][SCOPE]",
             types,
-            block_sizes) 
+            block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
@@ -201,9 +198,9 @@ The code above leads to the following combinations being compiled:
 Speedup Compilation Time
 =====================================
 
-Since type lists in the ``CUB_TEST`` form a Cartesian product, 
+Since type lists in the ``CUB_TEST`` form a Cartesian product,
 compilation time grows quickly with every new dimension.
-To keep the compilation process parallelized, 
+To keep the compilation process parallelized,
 it's possible to rely on ``%PARAM%`` machinery:
 
 .. code-block:: c++
@@ -215,14 +212,14 @@ it's possible to rely on ``%PARAM%`` machinery:
     CUB_TEST("SCOPE FACILITY works with CONDITION",
             "[FACILITY][SCOPE]",
             types,
-            block_sizes) 
+            block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
       // ...
     }
 
-The comment with ``%PARAM%`` is recognized at CMake level. 
+The comment with ``%PARAM%`` is recognized at CMake level.
 It leads to multiple executables being produced from a single test source.
 
 .. code-block:: bash
@@ -230,12 +227,12 @@ It leads to multiple executables being produced from a single test source.
     bin/cub.test.scope_algorithm.bs_128
     bin/cub.test.scope_algorithm.bs_256
 
-Multiple ``%PARAM%`` comments can be specified forming another Cartesian product. 
+Multiple ``%PARAM%`` comments can be specified forming another Cartesian product.
 
 Final Test
 =====================================
 
-Let's consider the final test that illustrates all of the tools we discussed above: 
+Let's consider the final test that illustrates all of the tools we discussed above:
 
 .. code-block:: c++
 
@@ -246,7 +243,7 @@ Let's consider the final test that illustrates all of the tools we discussed abo
     CUB_TEST("SCOPE FACILITY works with CONDITION",
             "[FACILITY][SCOPE]",
             types,
-            block_sizes) 
+            block_sizes)
     {
       using type = typename c2h::get<0, TestType>;
       constexpr int threads_per_block = c2h::get<1, TestType>::value;
@@ -266,7 +263,7 @@ Let's consider the final test that illustrates all of the tools we discussed abo
     }
 
 Apart from discussed tools, here we also rely on ``Catch2`` to generate random input sizes in ``[0, max_num_items]`` range.
-Overall, the test will produce two executables. 
-Each of these executables is going to generate ``2`` input problem sizes. 
-For each problem size, ``3`` random vectors are generated. 
-As a result, we have ``12`` different tests. 
+Overall, the test will produce two executables.
+Each of these executables is going to generate ``2`` input problem sizes.
+For each problem size, ``3`` random vectors are generated.
+As a result, we have ``12`` different tests.
