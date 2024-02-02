@@ -29,6 +29,7 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
+#include "thrust/sequence.h"
 #include <thrust/transform.h>
 
 #include <cub/device/device_radix_sort.cuh>
@@ -462,6 +463,25 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
   REQUIRE(ref_keys == keys);
 }
 
+#include <chrono>
+
+class cpu_timer
+{
+  std::chrono::high_resolution_clock::time_point m_start;
+
+public:
+  cpu_timer()
+  : m_start(std::chrono::high_resolution_clock::now())
+  {}
+
+  int elapsed_ms() const
+  {
+    auto duration = std::chrono::high_resolution_clock::now() - m_start;
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+    return static_cast<int>(ms.count());
+  }
+};
+
 CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
@@ -479,10 +499,13 @@ CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort]
     c2h::device_vector<key_t> in_keys(num_items);
     c2h::device_vector<key_t> out_keys(num_items);
 
-    const int num_key_seeds = 3;
-    c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+    // const int num_key_seeds = 1;
+    // c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+    thrust::sequence(c2h::device_policy, in_keys.begin(), in_keys.end());
 
     const bool is_descending = GENERATE(false, true);
+
+    cpu_timer device_time;
 
     if (is_descending)
     {
@@ -502,9 +525,20 @@ CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort]
                 end_bit<key_t>());
     }
 
+    std::cout << "Device sort: " << device_time.elapsed_ms() / 1000.f << "s.\n";
+
+    cpu_timer host_time;
+
     auto ref_keys = radix_sort_reference(in_keys, is_descending);
 
+    std::cout << "Host sort: " << host_time.elapsed_ms() / 1000.f << "s.\n";
+
+    cpu_timer val_time;
+
     REQUIRE(ref_keys == out_keys);
+
+    std::cout << "Validation: " << val_time.elapsed_ms() / 1000.f << "s.\n";
+
   }
   catch (std::bad_alloc& e)
   {
