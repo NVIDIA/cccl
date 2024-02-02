@@ -307,9 +307,6 @@ void RunTest(BufferOffsetT num_buffers,
     CubDebugExit(cub::DeviceMemcpy::Batched(
       nullptr, temp_storage_bytes, d_buffer_srcs, d_buffer_dsts, d_buffer_sizes.cbegin(), num_buffers));
 
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-
     c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
 
     // Invoke device-side algorithm being under test
@@ -319,12 +316,11 @@ void RunTest(BufferOffsetT num_buffers,
       d_buffer_srcs,
       d_buffer_dsts,
       d_buffer_sizes.begin(),
-      num_buffers,
-      stream));
+      num_buffers));
 
     // Copy back the output buffer
+    CubDebugExit(cudaDeviceSynchronize());
     h_gpu_results = d_out;
-    CubDebugExit(cudaStreamSynchronize(stream));
 
     // CPU-side result generation for verification
     for (BufferOffsetT i = 0; i < num_buffers; i++)
