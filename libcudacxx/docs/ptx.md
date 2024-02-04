@@ -260,29 +260,29 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
 ### [9.7.8. Data Movement and Conversion Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`mov`]                                  | No                   |
-| [`mov`]                                  | No                   |
-| [`shfl (deprecated)`]                    | No                   |
-| [`shfl.sync`]                            | No                   |
-| [`prmt`]                                 | No                   |
-| [`ld`]                                   | No                   |
-| [`ld.global.nc`]                         | No                   |
-| [`ldu`]                                  | No                   |
-| [`st`]                                   | No                   |
-| [`st.async`]                             | No                   |
-| [`multimem.ld_reduce, multimem.st, multimem.red`] | No                   |
-| [`prefetch, prefetchu`]                  | No                   |
-| [`applypriority`]                        | No                   |
-| [`discard`]                              | No                   |
-| [`createpolicy`]                         | No                   |
-| [`isspacep`]                             | No                   |
-| [`cvta`]                                 | No                   |
-| [`cvt`]                                  | No                   |
-| [`cvt.pack`]                             | No                   |
-| [`mapa`]                                 | No                   |
-| [`getctarank`]                           | No                   |
+| Instruction                                       | Available in libcu++    |
+|---------------------------------------------------|-------------------------|
+| [`mov`]                                           | No                      |
+| [`mov`]                                           | No                      |
+| [`shfl (deprecated)`]                             | No                      |
+| [`shfl.sync`]                                     | No                      |
+| [`prmt`]                                          | No                      |
+| [`ld`]                                            | No                      |
+| [`ld.global.nc`]                                  | No                      |
+| [`ldu`]                                           | No                      |
+| [`st`]                                            | No                      |
+| [`st.async`]                                      | CTK-FUTURE, CCCL v2.3.0 |
+| [`multimem.ld_reduce, multimem.st, multimem.red`] | No                      |
+| [`prefetch, prefetchu`]                           | No                      |
+| [`applypriority`]                                 | No                      |
+| [`discard`]                                       | No                      |
+| [`createpolicy`]                                  | No                      |
+| [`isspacep`]                                      | No                      |
+| [`cvta`]                                          | No                      |
+| [`cvt`]                                           | No                      |
+| [`cvt.pack`]                                      | No                      |
+| [`mapa`]                                          | No                      |
+| [`getctarank`]                                    | No                      |
 
 [`mov`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
 [`shfl (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated
@@ -337,6 +337,7 @@ __device__ static inline void st_async(
   const B32 (&value)[4],
   uint64_t* remote_bar);
 ```
+
 
 **Usage**:
 ```cuda
@@ -677,6 +678,7 @@ __device__ static inline void red_async(
   int64_t* remote_bar);
 ```
 
+
 ### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
 | Instruction                              | Available in libcu++    |
@@ -709,6 +711,7 @@ __device__ static inline void red_async(
 
 -  PTX ISA: [`mbarrier.arrive`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
 
+**mbarrier_arrive**:
 ```cuda
 // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
 template <typename=void>
@@ -768,6 +771,8 @@ __device__ static inline void mbarrier_arrive(
   const uint32_t& count);
 ```
 
+
+**mbarrier_arrive_no_complete**:
 ```cuda
 // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.  PTX ISA 70, SM_80
 template <typename=void>
@@ -776,6 +781,8 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   const uint32_t& count);
 ```
 
+
+**mbarrier_arrive_expect_tx**:
 ```cuda
 // mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64 state, [addr], tx_count; // 8.  PTX ISA 80, SM_90
 // .sem       = { .release }
@@ -801,6 +808,7 @@ __device__ static inline void mbarrier_arrive_expect_tx(
   uint64_t* addr,
   const uint32_t& tx_count);
 ```
+
 
 Usage:
 ```cuda
@@ -865,6 +873,7 @@ __device__ static inline bool mbarrier_test_wait(
   const uint64_t& state);
 ```
 
+
 **mbarrier_test_wait_parity**:
 ```cuda
 // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
@@ -883,6 +892,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
   uint64_t* addr,
   const uint32_t& phaseParity);
 ```
+
 
 **mbarrier_try_wait**:
 ```cuda
@@ -920,6 +930,7 @@ __device__ static inline bool mbarrier_try_wait(
   const uint64_t& state,
   const uint32_t& suspendTimeHint);
 ```
+
 
 **mbarrier_try_wait_parity**:
 ```cuda
