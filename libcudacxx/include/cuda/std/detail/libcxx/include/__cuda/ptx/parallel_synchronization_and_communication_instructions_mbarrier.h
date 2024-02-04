@@ -315,7 +315,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
       :
-      : "r"(__as_ptr_smem(__addr))
+      : "r"(__as_ptr_remote_dsmem(__addr))
       : "memory"
     );
 
@@ -357,7 +357,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
       :
-      : "r"(__as_ptr_smem(__addr)),
+      : "r"(__as_ptr_remote_dsmem(__addr)),
         "r"(__count)
       : "memory"
     );
@@ -486,7 +486,7 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
     asm (
       "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
       :
-      : "r"(__as_ptr_smem(__addr)),
+      : "r"(__as_ptr_remote_dsmem(__addr)),
         "r"(__tx_count)
       : "memory"
     );
