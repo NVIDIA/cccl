@@ -49,7 +49,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 700
   NV_IF_TARGET(NV_PROVIDES_SM_80, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1. 
+      // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.
       auto overload = static_cast<uint64_t (*)(uint64_t* )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -59,7 +59,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 780
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2. 
+      // mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2.
       auto overload = static_cast<uint64_t (*)(uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -69,12 +69,12 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cta.shared.b64                   state,  [addr];           // 3a. 
+      // mbarrier.arrive.release.cta.shared.b64                   state,  [addr];           // 3a.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr];           // 3a. 
+      // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr];           // 3a.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -84,12 +84,12 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cta.shared.b64                   state,  [addr], count;    // 3b. 
+      // mbarrier.arrive.release.cta.shared.b64                   state,  [addr], count;    // 3b.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr], count;    // 3b. 
+      // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr], count;    // 3b.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -99,7 +99,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [addr];                // 4a. 
+      // mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [addr];                // 4a.
       auto overload = static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t* )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -109,7 +109,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [addr], count;         // 4b. 
+      // mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [addr], count;         // 4b.
       auto overload = static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -119,7 +119,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 700
   NV_IF_TARGET(NV_PROVIDES_SM_80, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5. 
+      // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.
       auto overload = static_cast<uint64_t (*)(uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_no_complete);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -129,12 +129,12 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.expect_tx.release.cta.shared.b64 state, [addr], tx_count; // 8. 
+      // mbarrier.arrive.expect_tx.release.cta.shared.b64 state, [addr], tx_count; // 8.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_expect_tx);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
     if (non_eliminated_false()) {
-      // mbarrier.arrive.expect_tx.release.cluster.shared.b64 state, [addr], tx_count; // 8. 
+      // mbarrier.arrive.expect_tx.release.cluster.shared.b64 state, [addr], tx_count; // 8.
       auto overload = static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_expect_tx);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
@@ -144,7 +144,7 @@ __global__ void test_compilation() {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     if (non_eliminated_false()) {
-      // mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [addr], tx_count; // 9. 
+      // mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [addr], tx_count; // 9.
       auto overload = static_cast<void (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_cluster_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_expect_tx);
       fn_ptr = reinterpret_cast<void*>(overload);
     }
