@@ -205,7 +205,6 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -257,7 +256,6 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -309,7 +307,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
@@ -351,7 +348,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
@@ -425,7 +421,6 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -479,7 +474,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
@@ -495,9 +489,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   ));
 }
 #endif // __cccl_ptx_isa >= 800
-
-
-
 
 // 9.7.12.15.14. Parallel Synchronization and Communication Instructions: mbarrier.arrive_drop
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
@@ -564,7 +555,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -654,7 +644,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -781,7 +770,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -839,7 +827,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -968,7 +955,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -1026,7 +1012,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -1061,7 +1046,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   ));
 }
 #endif // __cccl_ptx_isa >= 800
-
 
 // 9.7.12.15.17. Parallel Synchronization and Communication Instructions: mbarrier.pending_count
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count

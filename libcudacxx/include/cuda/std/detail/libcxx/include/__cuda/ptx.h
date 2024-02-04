@@ -403,7 +403,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
       asm (
@@ -450,7 +449,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
       asm (
@@ -498,7 +496,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
@@ -595,7 +592,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 
 // 9.7.8.25. Data Movement and Conversion Instructions: tensormap.replace
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
-
 
 /*
  *  9.7.9. Texture Instructions
@@ -712,7 +708,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_inc (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
@@ -752,7 +747,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_dec (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
@@ -792,7 +786,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_min (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
@@ -832,7 +825,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_max (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
@@ -872,7 +864,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
@@ -1030,7 +1021,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
@@ -1071,7 +1061,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
@@ -1112,7 +1101,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
@@ -1152,7 +1140,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u64 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
@@ -1190,7 +1177,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   _CUDA_VSTD::int64_t* __remote_bar)
 {
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 intentional"
