@@ -525,7 +525,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
         "l"(__state)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
@@ -580,7 +580,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
@@ -614,7 +614,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
         "r"(__phaseParity)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
@@ -669,7 +669,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
@@ -703,7 +703,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         "l"(__state)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
@@ -740,7 +740,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         "r"(__suspendTimeHint)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
@@ -795,7 +795,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
@@ -854,7 +854,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
@@ -888,7 +888,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         "r"(__phaseParity)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
@@ -925,7 +925,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         "r"(__suspendTimeHint)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
@@ -980,7 +980,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
@@ -1039,7 +1039,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
