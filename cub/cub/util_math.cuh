@@ -54,15 +54,21 @@ using is_integral_or_enum =
   ::cuda::std::integral_constant<bool,
                          ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr  ::cuda::std::size_t
-VshmemSize(::cuda::std::size_t max_shmem,
-           ::cuda::std::size_t shmem_per_block,
-           ::cuda::std::size_t num_blocks)
+/**
+ * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition would
+ * overflow. Note, lhs must be non-negative.
+ *
+ * Effectively performs `min((lhs + rhs), ::cuda::std::numeric_limits<OffsetT>::max())`, but is robust against the case
+ * where `(lhs + rhs)` would overflow.
+ */
+template <typename OffsetT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr OffsetT SafeAddBoundToMax(OffsetT lhs, OffsetT rhs)
 {
-  return shmem_per_block > max_shmem ? shmem_per_block * num_blocks : 0;
+  auto const capped_operand_rhs = (cub::min)(rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
+  return lhs + capped_operand_rhs;
 }
 
-}
+} // namespace detail
 
 /**
  * Divide n by d, round up if any remainder, and return the result.
