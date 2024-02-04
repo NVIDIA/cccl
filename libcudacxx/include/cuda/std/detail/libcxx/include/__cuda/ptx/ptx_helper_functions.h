@@ -13,6 +13,7 @@
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
 #include "../../cstdint"        // uint32_t
+#include "../../__type_traits/integral_constant.h" // std::integral_constant
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,6 +24,9 @@
 #endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
+
+template <int __n>
+using n32_t = _CUDA_VSTD::integral_constant<int, __n>;
 
 /*************************************************************
  *
