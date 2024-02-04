@@ -1369,6 +1369,9 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 // 9.7.17.5. Miscellaneous Instructions: setmaxnreg
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
 
+// 10. Special Registers
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
 #endif // _LIBCUDACXX___CUDA_PTX_H
