@@ -313,6 +313,7 @@ struct AgentPartition
   CompareOpT compare_op;
   OffsetT target_merged_tiles_number;
   int items_per_tile;
+  OffsetT num_partitions;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(bool ping,
                                             KeyIteratorT keys_ping,
@@ -322,7 +323,8 @@ struct AgentPartition
                                             OffsetT *merge_partitions,
                                             CompareOpT compare_op,
                                             OffsetT target_merged_tiles_number,
-                                            int items_per_tile)
+                                            int items_per_tile,
+                                            OffsetT num_partitions)
       : ping(ping)
       , keys_ping(keys_ping)
       , keys_pong(keys_pong)
@@ -332,6 +334,7 @@ struct AgentPartition
       , compare_op(compare_op)
       , target_merged_tiles_number(target_merged_tiles_number)
       , items_per_tile(items_per_tile)
+      , num_partitions(num_partitions)
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
@@ -352,20 +355,29 @@ struct AgentPartition
     OffsetT local_tile_idx = mask & partition_idx;
 
     OffsetT keys1_beg = (cub::min)(keys_count, start);
-    OffsetT keys1_end = (cub::min)(keys_count, start + size);
+    OffsetT keys1_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(start, size));
     OffsetT keys2_beg = keys1_end;
-    OffsetT keys2_end = (cub::min)(keys_count, keys2_beg + size);
+    OffsetT keys2_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(keys2_beg, size));
 
-    OffsetT partition_at = (cub::min)(keys2_end - keys1_beg,
-                                      items_per_tile * local_tile_idx);
+    // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
+    if (partition_idx + 1 == num_partitions)
+    {
+      merge_partitions[partition_idx] = keys1_end;
+    }
+    else
+    {
+      OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
-    OffsetT partition_diag = ping ? MergePath<KeyT>(keys_ping + keys1_beg,
+      OffsetT partition_diag =
+        ping ? MergePath<KeyT>(
+          keys_ping + keys1_beg,
                                                     keys_ping + keys2_beg,
                                                     keys1_end - keys1_beg,
                                                     keys2_end - keys2_beg,
                                                     partition_at,
                                                     compare_op)
-                                  : MergePath<KeyT>(keys_pong + keys1_beg,
+             : MergePath<KeyT>(
+               keys_pong + keys1_beg,
                                                     keys_pong + keys2_beg,
                                                     keys1_end - keys1_beg,
                                                     keys2_end - keys2_beg,
@@ -373,6 +385,7 @@ struct AgentPartition
                                                     compare_op);
 
     merge_partitions[partition_idx] = keys1_beg + partition_diag;
+    }
   }
 };
 
