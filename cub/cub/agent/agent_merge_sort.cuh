@@ -540,14 +540,38 @@ struct AgentMerge
 
     OffsetT keys1_beg = partition_beg;
     OffsetT keys1_end = partition_end;
-    OffsetT keys2_beg = (cub::min)(keys_count, 2 * start + size + diag - partition_beg);
-    OffsetT keys2_end = (cub::min)(keys_count, 2 * start + size + diag + ITEMS_PER_TILE - partition_end);
+
+    // We have the following invariants:
+    // (1) start + diag is overflow safe,
+    // because we only launch as many thread blocks as needed for num_items (and num_items is of OffsetT)
+    // -> We can safely compute (start + diag)
+    // (2) (partition_beg - start) is at most size,
+    // because partition_beg is between start and start + size. It marks the beginning of key1's component of the merge
+    // path
+    // -> We can safely compute (size - (partition_beg - start))
+    OffsetT keys2_beg =
+      (cub::min)(keys_count, detail::SafeAddBoundToMax(start + diag, (size - (partition_beg - start))));
+
+
+    OffsetT keys2_end{};
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (cub::min)(keys_count, start + size);
-      keys2_end = (cub::min)(keys_count, start + size * 2);
+      keys1_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(start, size));
+      keys2_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(start, detail::SafeAddBoundToMax(size, size)));
+    }
+    else
+    {
+      // If this is not the last tile in the tile group, partition_end is a valid value and therefore the following
+      // invariants hold:
+      // (1) (partition_end - start) is at most size,
+      // because partition_end is between start and start + size. It marks the end of key1's component of the merge path
+      // -> We can safely compute (size - (partition_end - start))
+      keys2_end = (cub::min)(
+        keys_count,
+        detail::SafeAddBoundToMax(detail::SafeAddBoundToMax(start + diag, static_cast<OffsetT>(ITEMS_PER_TILE)),
+                                  (size - (partition_end - start))));
     }
 
     // number of keys per tile
