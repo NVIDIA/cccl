@@ -13,7 +13,7 @@
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
 #include "../../cstdint"        // uint32_t
-#include "../../__type_traits/integral_constant.h" // std::integral_constant
+#include "../../__type_traits/integral_constant.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -43,14 +43,14 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+  return __as_ptr_smem(__ptr);
 }
 
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint32_t __as_ptr_remote_dsmem(const void* __ptr)
 {
   // No difference in implementation to __as_ptr_smem.
   // Consider adding debug asserts here.
-  return static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__ptr));
+  return __as_ptr_smem(__ptr);
 }
 
 inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
@@ -76,14 +76,14 @@ template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_dsmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(__ptr));
+  return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
 inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_remote_dsmem(_CUDA_VSTD::size_t __ptr)
 {
   // Consider adding debug asserts here.
-  return reinterpret_cast<_Tp*>(__cvta_shared_to_generic(__ptr));
+  return __from_ptr_smem<_Tp>(__ptr);
 }
 
 template <typename _Tp>
