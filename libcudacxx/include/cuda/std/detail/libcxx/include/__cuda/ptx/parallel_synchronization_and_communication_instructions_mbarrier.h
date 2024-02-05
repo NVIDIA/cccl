@@ -211,14 +211,14 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.release.cta.shared.b64                   %0,  [%1];           // 3a. "
+        "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr))
         : "memory"
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.release.cluster.shared.b64                   %0,  [%1];           // 3a. "
+        "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr))
         : "memory"
@@ -263,7 +263,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.release.cta.shared.b64                   %0,  [%1], %2;    // 3b. "
+        "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__count)
@@ -271,7 +271,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.release.cluster.shared.b64                   %0,  [%1], %2;    // 3b. "
+        "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__count)
@@ -432,7 +432,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.expect_tx.release.cta.shared.b64 %0, [%1], %2; // 8. "
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__tx_count)
@@ -440,7 +440,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.expect_tx.release.cluster.shared.b64 %0, [%1], %2; // 8. "
+        "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__tx_count)

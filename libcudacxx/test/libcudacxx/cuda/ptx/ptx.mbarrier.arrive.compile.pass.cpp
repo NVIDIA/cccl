@@ -48,18 +48,18 @@ __global__ void test_mbarrier_arrive(void ** fn_ptr) {
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // mbarrier.arrive.release.cta.shared.b64                   state,  [addr];           // 3a.
+    // mbarrier.arrive.release.cta.shared::cta.b64                   state,  [addr];           // 3a.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* )>(cuda::ptx::mbarrier_arrive));
-    // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr];           // 3a.
+    // mbarrier.arrive.release.cluster.shared::cta.b64                   state,  [addr];           // 3a.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* )>(cuda::ptx::mbarrier_arrive));
   ));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // mbarrier.arrive.release.cta.shared.b64                   state,  [addr], count;    // 3b.
+    // mbarrier.arrive.release.cta.shared::cta.b64                   state,  [addr], count;    // 3b.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive));
-    // mbarrier.arrive.release.cluster.shared.b64                   state,  [addr], count;    // 3b.
+    // mbarrier.arrive.release.cluster.shared::cta.b64                   state,  [addr], count;    // 3b.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive));
   ));
 #endif // __cccl_ptx_isa >= 800
@@ -91,9 +91,9 @@ __global__ void test_mbarrier_arrive_no_complete(void ** fn_ptr) {
 __global__ void test_mbarrier_arrive_expect_tx(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // mbarrier.arrive.expect_tx.release.cta.shared.b64 state, [addr], tx_count; // 8.
+    // mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 state, [addr], tx_count; // 8.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cta_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_expect_tx));
-    // mbarrier.arrive.expect_tx.release.cluster.shared.b64 state, [addr], tx_count; // 8.
+    // mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 state, [addr], tx_count; // 8.
     *fn_ptr++ = reinterpret_cast<void*>(static_cast<uint64_t (*)(cuda::ptx::sem_release_t, cuda::ptx::scope_cluster_t, cuda::ptx::space_shared_t, uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_arrive_expect_tx));
   ));
 #endif // __cccl_ptx_isa >= 800
@@ -105,7 +105,6 @@ __global__ void test_mbarrier_arrive_expect_tx(void ** fn_ptr) {
   ));
 #endif // __cccl_ptx_isa >= 800
 }
-
 
 int main(int, char**)
 {
