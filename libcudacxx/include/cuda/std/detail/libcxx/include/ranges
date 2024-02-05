@@ -317,6 +317,7 @@ namespace std {
 #include "__ranges/enable_view.h"
 #include "__ranges/rbegin.h"
 #include "__ranges/rend.h"
+#include "__ranges/size.h"
 
 // standard-mandated includes
 #include "version"
