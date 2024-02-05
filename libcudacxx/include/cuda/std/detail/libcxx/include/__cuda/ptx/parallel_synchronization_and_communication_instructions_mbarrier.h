@@ -538,7 +538,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 700
@@ -594,7 +594,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -629,7 +629,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 710
@@ -685,7 +685,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -720,7 +720,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -758,7 +758,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -814,7 +814,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -874,7 +874,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -909,7 +909,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -947,7 +947,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -1003,7 +1003,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1063,7 +1063,7 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
-    return static_cast<bool>(0);
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
