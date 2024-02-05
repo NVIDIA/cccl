@@ -13,6 +13,7 @@
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
 #include "../../cstdint"        // uint32_t
+#include "../../cstddef"        // size_t
 #include "../../__type_traits/integral_constant.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
