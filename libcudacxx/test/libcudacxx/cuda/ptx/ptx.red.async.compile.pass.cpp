@@ -124,7 +124,6 @@ __global__ void test_red_async(void ** fn_ptr) {
 #endif // __cccl_ptx_isa >= 810
 }
 
-
 int main(int, char**)
 {
     return 0;

@@ -135,7 +135,6 @@ __global__ void test_mbarrier_try_wait_parity(void ** fn_ptr) {
 #endif // __cccl_ptx_isa >= 800
 }
 
-
 int main(int, char**)
 {
     return 0;
