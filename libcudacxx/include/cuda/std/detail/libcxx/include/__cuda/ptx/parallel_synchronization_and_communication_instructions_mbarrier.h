@@ -318,7 +318,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
       : "r"(__as_ptr_remote_dsmem(__addr))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
@@ -361,7 +360,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
         "r"(__count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
@@ -490,7 +488,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
         "r"(__tx_count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();

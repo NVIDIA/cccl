@@ -423,7 +423,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
@@ -472,7 +471,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
@@ -510,7 +508,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
@@ -740,7 +737,6 @@ _LIBCUDACXX_DEVICE static inline void fence(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_is_not_supported_before_SM_70__();
@@ -783,7 +779,6 @@ _LIBCUDACXX_DEVICE static inline void fence(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_is_not_supported_before_SM_90__();
@@ -816,7 +811,6 @@ _LIBCUDACXX_DEVICE static inline void fence_mbarrier_init(
       :
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
@@ -841,7 +835,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_alias()
       :
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
@@ -866,7 +859,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_async()
       :
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
@@ -912,7 +904,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_async(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
@@ -968,7 +959,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
@@ -1033,7 +1023,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
         : "memory"
       );
     }
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
@@ -1082,7 +1071,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1122,7 +1110,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1162,7 +1149,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1202,7 +1188,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1242,7 +1227,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1282,7 +1266,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1322,7 +1305,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1362,7 +1344,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1403,7 +1384,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1444,7 +1424,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1485,7 +1464,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1525,7 +1503,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
@@ -1563,7 +1540,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
         "r"(__as_ptr_remote_dsmem(__remote_bar))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
