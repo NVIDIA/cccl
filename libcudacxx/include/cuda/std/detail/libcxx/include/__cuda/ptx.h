@@ -395,7 +395,7 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _LIBCUDACXX_DEVICE static inline void st_async(
   _Type* __addr,
@@ -403,7 +403,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
       asm (
@@ -427,7 +426,8 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -442,7 +442,7 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
 _LIBCUDACXX_DEVICE static inline void st_async(
   _Type* __addr,
@@ -450,7 +450,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
       asm (
@@ -476,7 +475,8 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -490,7 +490,7 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _B32>
 _LIBCUDACXX_DEVICE static inline void st_async(
   _B32* __addr,
@@ -498,7 +498,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   _CUDA_VSTD::uint64_t* __remote_bar)
 {
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
@@ -514,11 +513,11 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
-
 
 // 9.7.8.13. Data Movement and Conversion Instructions: multimem.ld_reduce, multimem.st, multimem.red
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red
@@ -595,7 +594,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 
 // 9.7.8.25. Data Movement and Conversion Instructions: tensormap.replace
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
-
 
 /*
  *  9.7.9. Texture Instructions
@@ -702,7 +700,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_inc_t,
@@ -712,7 +710,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_inc (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
@@ -725,7 +722,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -742,7 +740,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_dec_t,
@@ -752,7 +750,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_dec (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
@@ -765,7 +762,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -782,7 +780,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_min_t,
@@ -792,7 +790,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_min (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
@@ -805,7 +802,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -822,7 +820,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_max_t,
@@ -832,7 +830,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_max (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
@@ -845,7 +842,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -862,7 +860,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
@@ -872,7 +870,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u32 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
@@ -885,7 +882,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -902,7 +900,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_min_t,
@@ -924,7 +922,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -941,7 +940,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_max_t,
@@ -963,7 +962,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -980,7 +980,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
@@ -1002,7 +1002,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1019,7 +1020,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_and_op_t,
@@ -1030,7 +1031,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_and_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
@@ -1043,7 +1043,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1060,7 +1061,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_or_op_t,
@@ -1071,7 +1072,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_or_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
@@ -1084,7 +1084,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1101,7 +1102,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_xor_op_t,
@@ -1112,7 +1113,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   // __type == type_b32 (due to parameter type constraint)
   // __op == op_xor_op (due to parameter type constraint)
   static_assert(sizeof(_B32) == 4, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
@@ -1125,7 +1125,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1142,7 +1143,7 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
@@ -1152,7 +1153,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 {
   // __type == type_u64 (due to parameter type constraint)
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
@@ -1165,7 +1165,8 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1181,7 +1182,7 @@ __device__ static inline void red_async(
   int64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void red_async(
   op_add_t,
@@ -1190,7 +1191,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   _CUDA_VSTD::int64_t* __remote_bar)
 {
   // __op == op_add (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 intentional"
@@ -1203,11 +1203,11 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
-
 
 // 9.7.12.8. Parallel Synchronization and Communication Instructions: vote (deprecated)
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
@@ -1368,6 +1368,9 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 
 // 9.7.17.5. Miscellaneous Instructions: setmaxnreg
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
+
+// 10. Special Registers
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
