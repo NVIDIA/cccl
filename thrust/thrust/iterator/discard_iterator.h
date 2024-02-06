@@ -52,7 +52,7 @@ THRUST_NAMESPACE_BEGIN
  *  \p discard_iterator may also be used to count the size of an algorithm's output which
  *  may not be known a priori.
  *
- *  The following code snippet demonstrates how to use \p discard_iterator to ignore
+ *  The following code snippet demonstrates how to use \p discard_iterator to
  *  ignore one of the output ranges of reduce_by_key
  *
  *  \code
