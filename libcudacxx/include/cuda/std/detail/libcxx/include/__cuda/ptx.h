@@ -546,6 +546,42 @@ _LIBCUDACXX_DEVICE static inline void st_async(
 // 9.7.8.22. Data Movement and Conversion Instructions: mapa
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
 
+/*
+// mapa{.space}.u32  dest, addr, target_cta; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename Tp>
+__device__ static inline Tp* mapa(
+  cuda::ptx::space_cluster_t,
+  const Tp* addr,
+  uint32_t target_cta);
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mapa_is_not_supported_before_SM_90__();
+template <typename _Tp>
+_LIBCUDACXX_DEVICE static inline _Tp* mapa(
+  space_cluster_t,
+  const _Tp* __addr,
+  _CUDA_VSTD::uint32_t __target_cta)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __dest;
+    asm (
+      "mapa.shared::cluster.u32  %0, %1, %2;"
+      : "=r"(__dest)
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__target_cta)
+      :
+    );
+    return __from_ptr_dsmem<_Tp>(__dest);
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mapa_is_not_supported_before_SM_90__();
+    return __from_ptr_dsmem<_Tp>(0);
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
 // 9.7.8.23. Data Movement and Conversion Instructions: getctarank
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
 
