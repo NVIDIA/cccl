@@ -12,12 +12,17 @@
 
 #include <cuda/std/cmath>
 
-void test() {
-  compare_host_device<__half>([] __host__ __device__(cuda::std::size_t i) {
+struct func {
+  __host__ __device__
+  __half operator()(cuda::std::size_t i) const {
     auto raw = __half_raw();
     raw.x = (unsigned int)i;
     return cuda::std::sqrt(__half(raw));
-  });
+  }
+};
+
+void test() {
+  compare_host_device<__half>(func());
 }
 
 int main(int argc, char** argv) {

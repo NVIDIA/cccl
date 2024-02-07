@@ -12,12 +12,17 @@
 
 #include <cuda/std/cmath>
 
-void test() {
-  compare_host_device<__nv_bfloat16>([] __host__ __device__(cuda::std::size_t i) {
+struct func {
+  __host__ __device__
+  __nv_bfloat16 operator()(cuda::std::size_t i) const {
     auto raw = __nv_bfloat16_raw();
     raw.x = (unsigned int)i;
     return cuda::std::exp(__nv_bfloat16(raw));
-  });
+  }
+};
+
+void test() {
+  compare_host_device<__nv_bfloat16>(func());
 }
 
 int main(int argc, char** argv) {
