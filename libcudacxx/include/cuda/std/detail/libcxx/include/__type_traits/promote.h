@@ -24,14 +24,10 @@
 #include <cuda_fp16.h>
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
-#ifdef _LIBCUDACXX_COMPILER_CLANG
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-function"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #include <cuda_bf16.h>
-#ifdef _LIBCUDACXX_COMPILER_CLANG
-#pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP
 #endif
 #endif
 
@@ -54,9 +50,9 @@ struct __numeric_type
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
-#endif
-#endif
-#endif
+#endif // !defined(_LIBCUDACXX_HAS_NO_NVBF16)
+#endif // !defined(_LIBCUDACXX_HAS_NO_NVFP16)
+#endif // defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(int);
