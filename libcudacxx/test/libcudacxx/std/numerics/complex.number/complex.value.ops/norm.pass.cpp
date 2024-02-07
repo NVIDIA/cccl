@@ -19,8 +19,6 @@
 #include "test_macros.h"
 #include "../cases.h"
 
-#include <iostream>
-
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()

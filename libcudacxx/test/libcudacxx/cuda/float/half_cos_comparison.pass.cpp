@@ -15,7 +15,7 @@
 void test() {
   compare_host_device<__half>([] __host__ __device__(cuda::std::size_t i) {
     auto raw = __half_raw();
-    raw.x = i;
+    raw.x = (unsigned int)i;
     return cuda::std::cos(__half(raw));
   });
 }

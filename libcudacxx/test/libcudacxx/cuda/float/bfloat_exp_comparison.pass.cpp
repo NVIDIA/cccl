@@ -15,7 +15,7 @@
 void test() {
   compare_host_device<__nv_bfloat16>([] __host__ __device__(cuda::std::size_t i) {
     auto raw = __nv_bfloat16_raw();
-    raw.x = i;
+    raw.x = (unsigned int)i;
     return cuda::std::exp(__nv_bfloat16(raw));
   });
 }

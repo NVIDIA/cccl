@@ -47,7 +47,7 @@ void generate(const F& f, T* buffer, cuda::std::size_t size, Head head, Args... 
 }
 
 template <typename T, typename F, typename... Args>
-__global__ void generate_kernel(F f, T* buffer, cuda::std::size_t,
+__global__ void generate_kernel(const F & f, T* buffer, cuda::std::size_t,
                                 Args... args) {
   cuda::std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
   buffer[index] = f(args..., index);

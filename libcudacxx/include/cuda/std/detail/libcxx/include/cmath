@@ -1087,7 +1087,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 typename __enable_if_t<is_arithmetic<_A1>::val
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
-    return __half(_CUDA_VSTD::copysign(float(__x), float(__y)));
+    return __half(__constexpr_copysign(float(__x), float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1101,7 +1101,7 @@ __half copysign(__half __x, __half __y)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-    return __nv_bfloat16(_CUDA_VSTD::copysign(float(__x), float(__y)));
+    return __nv_bfloat16(__constexpr_copysign(float(__x), float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY

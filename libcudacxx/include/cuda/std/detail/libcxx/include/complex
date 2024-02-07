@@ -1683,7 +1683,7 @@ proj(const complex<_Tp>& __c)
 {
     complex<_Tp> __r = __c;
     if (_CUDA_VSTD::__constexpr_isinf(__c.real()) || _CUDA_VSTD::__constexpr_isinf(__c.imag()))
-        __r = complex<_Tp>(INFINITY, copysign(_Tp(0), __c.imag()));
+        __r = complex<_Tp>(INFINITY, __constexpr_copysign(_Tp(0), __c.imag()));
     return __r;
 }
 
@@ -1774,8 +1774,8 @@ sqrt(const complex<_Tp>& __x)
     if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
     {
         if (__x.real() > _Tp(0))
-            return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_isnan(__x.imag()) ? __x.imag() : copysign(_Tp(0), __x.imag()));
-        return complex<_Tp>(_CUDA_VSTD::__constexpr_isnan(__x.imag()) ? __x.imag() : _Tp(0), copysign(__x.real(), __x.imag()));
+            return complex<_Tp>(__x.real(), _CUDA_VSTD::__constexpr_isnan(__x.imag()) ? __x.imag() : __constexpr_copysign(_Tp(0), __x.imag()));
+        return complex<_Tp>(_CUDA_VSTD::__constexpr_isnan(__x.imag()) ? __x.imag() : _Tp(0), __constexpr_copysign(__x.real(), __x.imag()));
     }
     return _CUDA_VSTD::polar(_CUDA_VSTD::sqrt(_CUDA_VSTD::abs(__x)), _CUDA_VSTD::arg(__x) / _Tp(2));
 }
@@ -1788,7 +1788,7 @@ exp(const complex<_Tp>& __x)
 {
     _Tp __i = __x.imag();
     if (__i == _Tp(0)) {
-        return complex<_Tp>(_CUDA_VSTD::exp(__x.real()), copysign(_Tp(0), __x.imag()));
+        return complex<_Tp>(_CUDA_VSTD::exp(__x.real()), __constexpr_copysign(_Tp(0), __x.imag()));
     }
     if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
     {
@@ -1876,8 +1876,8 @@ asinh(const complex<_Tp>& __x)
         if (_CUDA_VSTD::__constexpr_isnan(__x.imag()))
             return __x;
         if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
-            return complex<_Tp>(__x.real(), copysign(__pi * _Tp(0.25), __x.imag()));
-        return complex<_Tp>(__x.real(), copysign(_Tp(0), __x.imag()));
+            return complex<_Tp>(__x.real(), __constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
+        return complex<_Tp>(__x.real(), __constexpr_copysign(_Tp(0), __x.imag()));
     }
     if (_CUDA_VSTD::__constexpr_isnan(__x.real()))
     {
@@ -1888,9 +1888,9 @@ asinh(const complex<_Tp>& __x)
         return complex<_Tp>(__x.real(), __x.real());
     }
     if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
-        return complex<_Tp>(copysign(__x.imag(), __x.real()), copysign(__pi/_Tp(2), __x.imag()));
+        return complex<_Tp>(__constexpr_copysign(__x.imag(), __x.real()), __constexpr_copysign(__pi/_Tp(2), __x.imag()));
     complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) + _Tp(1)));
-    return complex<_Tp>(copysign(__z.real(), __x.real()), copysign(__z.imag(), __x.imag()));
+    return complex<_Tp>(__constexpr_copysign(__z.real(), __x.real()), __constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // acosh
@@ -1907,13 +1907,13 @@ acosh(const complex<_Tp>& __x)
         if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
         {
             if (__x.real() > _Tp(0))
-                return complex<_Tp>(__x.real(), copysign(__pi * _Tp(0.25), __x.imag()));
+                return complex<_Tp>(__x.real(), __constexpr_copysign(__pi * _Tp(0.25), __x.imag()));
             else
-                return complex<_Tp>(-__x.real(), copysign(__pi * _Tp(0.75), __x.imag()));
+                return complex<_Tp>(-__x.real(), __constexpr_copysign(__pi * _Tp(0.75), __x.imag()));
         }
         if (__x.real() < _Tp(0))
-            return complex<_Tp>(-__x.real(), copysign(__pi, __x.imag()));
-        return complex<_Tp>(__x.real(), copysign(_Tp(0), __x.imag()));
+            return complex<_Tp>(-__x.real(), __constexpr_copysign(__pi, __x.imag()));
+        return complex<_Tp>(__x.real(), __constexpr_copysign(_Tp(0), __x.imag()));
     }
     if (_CUDA_VSTD::__constexpr_isnan(__x.real()))
     {
@@ -1922,9 +1922,9 @@ acosh(const complex<_Tp>& __x)
         return complex<_Tp>(__x.real(), __x.real());
     }
     if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
-        return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()), copysign(__pi/_Tp(2), __x.imag()));
+        return complex<_Tp>(_CUDA_VSTD::abs(__x.imag()), __constexpr_copysign(__pi/_Tp(2), __x.imag()));
     complex<_Tp> __z = _CUDA_VSTD::log(__x + _CUDA_VSTD::sqrt(_CUDA_VSTD::__sqr(__x) - _Tp(1)));
-    return complex<_Tp>(copysign(__z.real(), _Tp(0)), copysign(__z.imag(), __x.imag()));
+    return complex<_Tp>(__constexpr_copysign(__z.real(), _Tp(0)), __constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // atanh
@@ -1936,12 +1936,12 @@ atanh(const complex<_Tp>& __x)
     const _Tp __pi(static_cast<_Tp>(atan2(+0., -0.)));
     if (_CUDA_VSTD::__constexpr_isinf(__x.imag()))
     {
-        return complex<_Tp>(copysign(_Tp(0), __x.real()), copysign(__pi/_Tp(2), __x.imag()));
+        return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __constexpr_copysign(__pi/_Tp(2), __x.imag()));
     }
     if (_CUDA_VSTD::__constexpr_isnan(__x.imag()))
     {
         if (_CUDA_VSTD::__constexpr_isinf(__x.real()) || __x.real() == _Tp(0))
-            return complex<_Tp>(copysign(_Tp(0), __x.real()), __x.imag());
+            return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __x.imag());
         return complex<_Tp>(__x.imag(), __x.imag());
     }
     if (_CUDA_VSTD::__constexpr_isnan(__x.real()))
@@ -1950,14 +1950,14 @@ atanh(const complex<_Tp>& __x)
     }
     if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
     {
-        return complex<_Tp>(copysign(_Tp(0), __x.real()), copysign(__pi/_Tp(2), __x.imag()));
+        return complex<_Tp>(__constexpr_copysign(_Tp(0), __x.real()), __constexpr_copysign(__pi/_Tp(2), __x.imag()));
     }
     if (_CUDA_VSTD::abs(__x.real()) == _Tp(1) && __x.imag() == _Tp(0))
     {
-        return complex<_Tp>(copysign(_Tp(INFINITY), __x.real()), copysign(_Tp(0), __x.imag()));
+        return complex<_Tp>(__constexpr_copysign(_Tp(INFINITY), __x.real()), __constexpr_copysign(_Tp(0), __x.imag()));
     }
     complex<_Tp> __z = _CUDA_VSTD::log((_Tp(1) + __x) / (_Tp(1) - __x)) / _Tp(2);
-    return complex<_Tp>(copysign(__z.real(), __x.real()), copysign(__z.imag(), __x.imag()));
+    return complex<_Tp>(__constexpr_copysign(__z.real(), __x.real()), __constexpr_copysign(__z.imag(), __x.imag()));
 }
 
 // sinh
@@ -2001,8 +2001,8 @@ tanh(const complex<_Tp>& __x)
     if (_CUDA_VSTD::__constexpr_isinf(__x.real()))
     {
         if (!_CUDA_VSTD::__constexpr_isfinite(__x.imag()))
-            return complex<_Tp>(copysign(_Tp(1), __x.real()), _Tp(0));
-        return complex<_Tp>(copysign(_Tp(1), __x.real()), copysign(_Tp(0), _CUDA_VSTD::sin(_Tp(2) * __x.imag())));
+            return complex<_Tp>(__constexpr_copysign(_Tp(1), __x.real()), _Tp(0));
+        return complex<_Tp>(__constexpr_copysign(_Tp(1), __x.real()), __constexpr_copysign(_Tp(0), _CUDA_VSTD::sin(_Tp(2) * __x.imag())));
     }
     if (_CUDA_VSTD::__constexpr_isnan(__x.real()) && __x.imag() == _Tp(0))
         return __x;
