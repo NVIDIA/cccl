@@ -507,23 +507,17 @@ CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort]
 
     cpu_timer device_time;
 
-    if (is_descending)
-    {
-      sort_keys_descending(
-        thrust::raw_pointer_cast(in_keys.data()),
-        thrust::raw_pointer_cast(out_keys.data()),
-        num_items,
-        begin_bit<key_t>(),
-        end_bit<key_t>());
-    }
-    else
-    {
-      sort_keys(thrust::raw_pointer_cast(in_keys.data()),
-                thrust::raw_pointer_cast(out_keys.data()),
-                num_items,
-                begin_bit<key_t>(),
-                end_bit<key_t>());
-    }
+    cub::DoubleBuffer<key_t> key_buffer(
+      thrust::raw_pointer_cast(in_keys.data()), thrust::raw_pointer_cast(out_keys.data()));
+
+    double_buffer_sort_t action(is_descending);
+    action.initialize();
+    launch(action, key_buffer, num_items, begin_bit<key_t>(), end_bit<key_t>());
+
+    key_buffer.selector = action.selector();
+    action.finalize();
+
+    auto& keys = key_buffer.selector == 0 ? in_keys : out_keys;
 
     std::cout << "Device sort: " << device_time.elapsed_ms() / 1000.f << "s.\n";
 
@@ -535,10 +529,9 @@ CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort]
 
     cpu_timer val_time;
 
-    REQUIRE(ref_keys == out_keys);
+    REQUIRE(ref_keys == keys);
 
     std::cout << "Validation: " << val_time.elapsed_ms() / 1000.f << "s.\n";
-
   }
   catch (std::bad_alloc& e)
   {
