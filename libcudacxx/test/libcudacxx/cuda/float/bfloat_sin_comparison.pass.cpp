@@ -16,7 +16,7 @@ struct func {
   __host__ __device__
   __nv_bfloat16 operator()(cuda::std::size_t i) const {
     auto raw = __nv_bfloat16_raw();
-    raw.x = (unsigned int)i;
+    raw.x = (unsigned short)i;
     return cuda::std::sin(__nv_bfloat16(raw));
   }
 };

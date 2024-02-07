@@ -16,7 +16,7 @@ struct func {
   __host__ __device__
   __half operator()(cuda::std::size_t i) const {
     auto raw = __half_raw();
-    raw.x = (unsigned int)i;
+    raw.x = (unsigned short)i;
     return cuda::std::cos(__half(raw));
   }
 };
