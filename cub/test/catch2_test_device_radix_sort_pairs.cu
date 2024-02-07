@@ -25,16 +25,18 @@
  *
  ******************************************************************************/
 
-#include <thrust/memory.h>
-
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/util_type.cuh>
+
+#include <thrust/memory.h>
 
 #include <cuda/std/type_traits>
 
 #include <algorithm>
 #include <limits>
+#include <new> // bad_alloc
 
+#include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
@@ -44,16 +46,18 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
 
-using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
-using value_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
+using custom_value_t      = c2h::custom_type_t<c2h::equal_comparable_t>;
+using value_types         = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
 
+using num_items_32bit_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t>;
+using num_items_64bit_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t>;
 using num_items_types =
   c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, cuda::std::uint64_t, cuda::std::int64_t>;
 
 CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
 {
-  using key_t = cuda::std::uint32_t;
-  using value_t = c2h::get<0, TestType>;
+  using key_t       = cuda::std::uint32_t;
+  using value_t     = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
 
   constexpr num_items_t min_num_items = 1 << 5;
@@ -67,7 +71,7 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
   c2h::device_vector<value_t> in_values(num_items);
   c2h::device_vector<value_t> out_values(num_items);
 
-  const int num_key_seeds = 1;
+  const int num_key_seeds   = 1;
   const int num_value_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
@@ -96,9 +100,9 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
                end_bit<key_t>());
   }
 
-  auto refs = radix_sort_reference(in_keys, in_values, is_descending);
-  auto &ref_keys = refs.first;
-  auto &ref_values = refs.second;
+  auto refs        = radix_sort_reference(in_keys, in_values, is_descending);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
 
   REQUIRE(ref_keys == out_keys);
   REQUIRE(ref_values == out_values);
@@ -106,11 +110,11 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
 
 CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", value_types)
 {
-  using key_t = cuda::std::uint32_t;
+  using key_t   = cuda::std::uint32_t;
   using value_t = c2h::get<0, TestType>;
 
   constexpr std::size_t max_num_items = 1 << 18;
-  const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
+  const std::size_t num_items         = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
@@ -118,7 +122,7 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   c2h::device_vector<value_t> in_values(num_items);
   c2h::device_vector<value_t> out_values(num_items);
 
-  const int num_key_seeds = 1;
+  const int num_key_seeds   = 1;
   const int num_value_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
   c2h::gen(CUB_SEED(num_value_seeds), in_values);
@@ -132,24 +136,86 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
 
   double_buffer_sort_t action(is_descending);
   action.initialize();
-  launch(action,
-         key_buffer,
-         value_buffer,
-         num_items,
-         begin_bit<key_t>(),
-         end_bit<key_t>());
+  launch(action, key_buffer, value_buffer, num_items, begin_bit<key_t>(), end_bit<key_t>());
 
-  key_buffer.selector = action.selector();
+  key_buffer.selector   = action.selector();
   value_buffer.selector = action.selector();
   action.finalize();
 
-  auto refs = radix_sort_reference(in_keys, in_values, is_descending);
-  auto &ref_keys = refs.first;
-  auto &ref_values = refs.second;
+  auto refs        = radix_sort_reference(in_keys, in_values, is_descending);
+  auto& ref_keys   = refs.first;
+  auto& ref_values = refs.second;
 
-  auto& keys = key_buffer.selector == 0 ? in_keys : out_keys;
+  auto& keys   = key_buffer.selector == 0 ? in_keys : out_keys;
   auto& values = value_buffer.selector == 0 ? in_values : out_values;
 
   REQUIRE(ref_keys == keys);
   REQUIRE(ref_values == values);
+}
+
+template <typename key_t, typename value_t, typename num_items_t>
+void do_large_offset_test(std::size_t num_items)
+{
+  const bool is_descending = GENERATE(false, true);
+
+  CAPTURE(num_items, is_descending);
+
+  try
+  {
+    large_array_sort_helper<key_t, value_t> arrays;
+    arrays.initialize_for_stable_key_value_sort(num_items, is_descending);
+
+    TIME(c2h::cpu_timer timer);
+
+    double_buffer_sort_t action(is_descending);
+    action.initialize();
+    const num_items_t typed_num_items = static_cast<num_items_t>(num_items);
+    launch(action, arrays.keys_buffer, arrays.values_buffer, typed_num_items, begin_bit<key_t>(), end_bit<key_t>());
+
+    TIME(timer.print_elapsed_seconds_and_reset("Device sort"));
+
+    arrays.keys_buffer.selector   = action.selector();
+    arrays.values_buffer.selector = action.selector();
+    action.finalize();
+
+    auto& keys   = arrays.keys_buffer.selector == 0 ? arrays.keys_in : arrays.keys_out;
+    auto& values = arrays.values_buffer.selector == 0 ? arrays.values_in : arrays.values_out;
+
+    arrays.verify_stable_key_value_sort(num_items, is_descending, keys, values);
+  }
+  catch (std::bad_alloc& e)
+  {
+    const std::size_t num_bytes = num_items * (sizeof(key_t) + sizeof(value_t));
+    std::cerr
+      << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
+  }
+}
+
+CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
+         "[large][pairs][radix][sort][device]",
+         num_items_32bit_types)
+{
+  using key_t       = std::uint8_t;
+  using value_t     = std::uint8_t;
+  using num_items_t = c2h::get<0, TestType>;
+
+  // Test problem size at the maximum offset value to ensure that internal calculations do not overflow.
+  const std::size_t num_items = std::numeric_limits<num_items_t>::max();
+
+  do_large_offset_test<key_t, value_t, num_items_t>(num_items);
+}
+
+CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets",
+         "[large][pairs][radix][sort][device]",
+         num_items_64bit_types)
+{
+  using key_t       = cuda::std::uint8_t;
+  using value_t     = cuda::std::uint8_t;
+  using num_items_t = c2h::get<0, TestType>;
+
+  constexpr std::size_t min_num_items = std::size_t{1} << 32;
+  constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 30);
+  const std::size_t num_items         = GENERATE_COPY(take(1, random(min_num_items, max_num_items)));
+
+  do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
