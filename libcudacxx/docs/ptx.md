@@ -281,8 +281,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`cvta`]                                          | No                      |
 | [`cvt`]                                           | No                      |
 | [`cvt.pack`]                                      | No                      |
-| [`getctarank`]                                    | No                      |
 | [`mapa`]                                          | CTK-FUTURE, CCCL v2.4.0 |
+| [`getctarank`]                                    | CTK-FUTURE, CCCL v2.4.0 |
 
 [`mov`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
 [`shfl (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated
@@ -302,8 +302,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`cvta`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta
 [`cvt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt
 [`cvt.pack`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack
-[`getctarank`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
 [`mapa`]: #mapa
+[`getctarank`]: #getctarank
 
 #### `st.async`
 
@@ -431,6 +431,21 @@ __device__ static inline Tp* mapa(
   cuda::ptx::space_cluster_t,
   const Tp* addr,
   uint32_t target_cta);
+```
+
+
+#### `getctarank`
+
+- PTX ISA: [`getctarank`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank)
+
+**getctarank**:
+```cuda
+// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename=void>
+__device__ static inline uint32_t getctarank(
+  cuda::ptx::space_cluster_t,
+  const void* addr);
 ```
 
 
