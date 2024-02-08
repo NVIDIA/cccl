@@ -1245,195 +1245,195 @@ __device__ static inline bool mbarrier_try_wait_parity(
 
 **get_sreg**:
 ```cuda
-// mov.u32 out, %%tid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_x();
 
-// mov.u32 out, %%tid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_y();
 
-// mov.u32 out, %%tid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_z();
 
-// mov.u32 out, %%ntid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_x();
 
-// mov.u32 out, %%ntid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_y();
 
-// mov.u32 out, %%ntid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_z();
 
-// mov.u32 out, %%laneid; // PTX ISA 13
+// mov.u32 sreg_value, %%laneid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_laneid();
 
-// mov.u32 out, %%warpid; // PTX ISA 13
+// mov.u32 sreg_value, %%warpid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_warpid();
 
-// mov.u32 out, %%nwarpid; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%nwarpid; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nwarpid();
 
-// mov.u32 out, %%ctaid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_x();
 
-// mov.u32 out, %%ctaid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_y();
 
-// mov.u32 out, %%ctaid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_z();
 
-// mov.u32 out, %%nctaid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_x();
 
-// mov.u32 out, %%nctaid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_y();
 
-// mov.u32 out, %%nctaid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_z();
 
-// mov.u32 out, %%smid; // PTX ISA 13
+// mov.u32 sreg_value, %%smid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_smid();
 
-// mov.u32 out, %%nsmid; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%nsmid; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nsmid();
 
-// mov.u64 out, %%gridid; // PTX ISA 30
+// mov.u64 sreg_value, %%gridid; // PTX ISA 30
 template <typename=void>
 __device__ static inline uint64_t get_sreg_gridid();
 
-// mov.pred out, %%is_explicit_cluster; // PTX ISA 78, SM_90
+// mov.pred sreg_value, %%is_explicit_cluster; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline bool get_sreg_is_explicit_cluster();
 
-// mov.u32 out, %%clusterid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_x();
 
-// mov.u32 out, %%clusterid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_y();
 
-// mov.u32 out, %%clusterid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_z();
 
-// mov.u32 out, %%nclusterid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_x();
 
-// mov.u32 out, %%nclusterid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_y();
 
-// mov.u32 out, %%nclusterid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_z();
 
-// mov.u32 out, %%cluster_ctaid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_x();
 
-// mov.u32 out, %%cluster_ctaid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_y();
 
-// mov.u32 out, %%cluster_ctaid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_z();
 
-// mov.u32 out, %%cluster_nctaid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_x();
 
-// mov.u32 out, %%cluster_nctaid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_y();
 
-// mov.u32 out, %%cluster_nctaid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_z();
 
-// mov.u32 out, %%cluster_ctarank; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctarank; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctarank();
 
-// mov.u32 out, %%cluster_nctarank; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctarank; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctarank();
 
-// mov.u32 out, %%lanemask_eq; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_eq; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_eq();
 
-// mov.u32 out, %%lanemask_le; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_le; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_le();
 
-// mov.u32 out, %%lanemask_lt; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_lt; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_lt();
 
-// mov.u32 out, %%lanemask_ge; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_ge; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_ge();
 
-// mov.u32 out, %%lanemask_gt; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_gt; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_gt();
 
-// mov.u32 out, %%clock; // PTX ISA 10
+// mov.u32 sreg_value, %%clock; // PTX ISA 10
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clock();
 
-// mov.u32 out, %%clock_hi; // PTX ISA 50, SM_35
+// mov.u32 sreg_value, %%clock_hi; // PTX ISA 50, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clock_hi();
 
-// mov.u64 out, %%clock64; // PTX ISA 20, SM_35
+// mov.u64 sreg_value, %%clock64; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint64_t get_sreg_clock64();
 
-// mov.u64 out, %%globaltimer; // PTX ISA 31, SM_35
+// mov.u64 sreg_value, %%globaltimer; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint64_t get_sreg_globaltimer();
 
-// mov.u32 out, %%globaltimer_lo; // PTX ISA 31, SM_35
+// mov.u32 sreg_value, %%globaltimer_lo; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_lo();
 
-// mov.u32 out, %%globaltimer_hi; // PTX ISA 31, SM_35
+// mov.u32 sreg_value, %%globaltimer_hi; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_hi();
 
-// mov.u32 out, %%total_smem_size; // PTX ISA 41, SM_35
+// mov.u32 sreg_value, %%total_smem_size; // PTX ISA 41, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_total_smem_size();
 
-// mov.u32 out, %%aggr_smem_size; // PTX ISA 81, SM_90
+// mov.u32 sreg_value, %%aggr_smem_size; // PTX ISA 81, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_aggr_smem_size();
 
-// mov.u32 out, %%dynamic_smem_size; // PTX ISA 41, SM_35
+// mov.u32 sreg_value, %%dynamic_smem_size; // PTX ISA 41, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_dynamic_smem_size();
 
-// mov.u64 out, %%current_graph_exec; // PTX ISA 80, SM_50
+// mov.u64 sreg_value, %%current_graph_exec; // PTX ISA 80, SM_50
 template <typename=void>
 __device__ static inline uint64_t get_sreg_current_graph_exec();
 ```

@@ -1779,7 +1779,7 @@ _LIBCUDACXX_DEVICE static inline void red_async(
 // 10. Special Registers
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
 /*
-// mov.u32 out, %%tid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_x();
 */
@@ -1787,19 +1787,19 @@ __device__ static inline uint32_t get_sreg_tid_x();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_x()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%tid.x;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%tid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_y();
 */
@@ -1807,19 +1807,19 @@ __device__ static inline uint32_t get_sreg_tid_y();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_y()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%tid.y;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%tid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%tid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_tid_z();
 */
@@ -1827,19 +1827,19 @@ __device__ static inline uint32_t get_sreg_tid_z();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_z()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%tid.z;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ntid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_x();
 */
@@ -1847,19 +1847,19 @@ __device__ static inline uint32_t get_sreg_ntid_x();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_x()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
     "mov.u32 %0, %%ntid.x;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ntid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_y();
 */
@@ -1867,19 +1867,19 @@ __device__ static inline uint32_t get_sreg_ntid_y();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_y()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
     "mov.u32 %0, %%ntid.y;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ntid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%ntid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ntid_z();
 */
@@ -1887,19 +1887,19 @@ __device__ static inline uint32_t get_sreg_ntid_z();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_z()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
     "mov.u32 %0, %%ntid.z;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%laneid; // PTX ISA 13
+// mov.u32 sreg_value, %%laneid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_laneid();
 */
@@ -1907,19 +1907,19 @@ __device__ static inline uint32_t get_sreg_laneid();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_laneid()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%laneid;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
 
 /*
-// mov.u32 out, %%warpid; // PTX ISA 13
+// mov.u32 sreg_value, %%warpid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_warpid();
 */
@@ -1927,19 +1927,19 @@ __device__ static inline uint32_t get_sreg_warpid();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_warpid()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
     "mov.u32 %0, %%warpid;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
 
 /*
-// mov.u32 out, %%nwarpid; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%nwarpid; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nwarpid();
 */
@@ -1949,14 +1949,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm volatile (
       "mov.u32 %0, %%nwarpid;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
@@ -1966,7 +1966,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ctaid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_x();
 */
@@ -1974,19 +1974,19 @@ __device__ static inline uint32_t get_sreg_ctaid_x();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_x()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%ctaid.x;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ctaid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_y();
 */
@@ -1994,19 +1994,19 @@ __device__ static inline uint32_t get_sreg_ctaid_y();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_y()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%ctaid.y;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%ctaid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%ctaid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_ctaid_z();
 */
@@ -2014,19 +2014,19 @@ __device__ static inline uint32_t get_sreg_ctaid_z();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_z()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%ctaid.z;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%nctaid.x; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.x; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_x();
 */
@@ -2034,19 +2034,19 @@ __device__ static inline uint32_t get_sreg_nctaid_x();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_x()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%nctaid.x;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%nctaid.y; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.y; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_y();
 */
@@ -2054,19 +2054,19 @@ __device__ static inline uint32_t get_sreg_nctaid_y();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_y()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%nctaid.y;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%nctaid.z; // PTX ISA 20
+// mov.u32 sreg_value, %%nctaid.z; // PTX ISA 20
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nctaid_z();
 */
@@ -2074,19 +2074,19 @@ __device__ static inline uint32_t get_sreg_nctaid_z();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_z()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%nctaid.z;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%smid; // PTX ISA 13
+// mov.u32 sreg_value, %%smid; // PTX ISA 13
 template <typename=void>
 __device__ static inline uint32_t get_sreg_smid();
 */
@@ -2094,19 +2094,19 @@ __device__ static inline uint32_t get_sreg_smid();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_smid()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm (
     "mov.u32 %0, %%smid;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 130
 
 /*
-// mov.u32 out, %%nsmid; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%nsmid; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nsmid();
 */
@@ -2116,14 +2116,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm volatile (
       "mov.u32 %0, %%nsmid;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
@@ -2133,7 +2133,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u64 out, %%gridid; // PTX ISA 30
+// mov.u64 sreg_value, %%gridid; // PTX ISA 30
 template <typename=void>
 __device__ static inline uint64_t get_sreg_gridid();
 */
@@ -2141,19 +2141,19 @@ __device__ static inline uint64_t get_sreg_gridid();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_gridid()
 {
-  _CUDA_VSTD::uint64_t __out;
+  _CUDA_VSTD::uint64_t __sreg_value;
   asm (
     "mov.u64 %0, %%gridid;"
-    : "=l"(__out)
+    : "=l"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 300
 
 /*
-// mov.pred out, %%is_explicit_cluster; // PTX ISA 78, SM_90
+// mov.pred sreg_value, %%is_explicit_cluster; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline bool get_sreg_is_explicit_cluster();
 */
@@ -2163,17 +2163,17 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool get_sreg_is_explicit_cluster()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "{\n\t .reg .pred P_OUT; \n\t"
       "mov.pred P_OUT, %%is_explicit_cluster;\n\t"
       "selp.b32 %0, 1, 0, P_OUT; \n"
       "}"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return static_cast<bool>(__out);
+    return static_cast<bool>(__sreg_value);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_is_explicit_cluster_is_not_supported_before_SM_90__();
@@ -2183,7 +2183,7 @@ _LIBCUDACXX_DEVICE static inline bool get_sreg_is_explicit_cluster()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%clusterid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_x();
 */
@@ -2193,14 +2193,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%clusterid.x;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
@@ -2210,7 +2210,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%clusterid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_y();
 */
@@ -2220,14 +2220,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%clusterid.y;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
@@ -2237,7 +2237,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%clusterid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%clusterid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_z();
 */
@@ -2247,14 +2247,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%clusterid.z;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
@@ -2264,7 +2264,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%nclusterid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_x();
 */
@@ -2274,14 +2274,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%nclusterid.x;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
@@ -2291,7 +2291,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%nclusterid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_y();
 */
@@ -2301,14 +2301,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%nclusterid.y;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
@@ -2318,7 +2318,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%nclusterid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%nclusterid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_z();
 */
@@ -2328,14 +2328,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%nclusterid.z;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
@@ -2345,7 +2345,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_ctaid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_x();
 */
@@ -2355,14 +2355,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_ctaid.x;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
@@ -2372,7 +2372,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_ctaid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_y();
 */
@@ -2382,14 +2382,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_ctaid.y;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
@@ -2399,7 +2399,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_ctaid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctaid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_z();
 */
@@ -2409,14 +2409,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_ctaid.z;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
@@ -2426,7 +2426,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_nctaid.x; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.x; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_x();
 */
@@ -2436,14 +2436,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_nctaid.x;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
@@ -2453,7 +2453,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x(
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_nctaid.y; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.y; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_y();
 */
@@ -2463,14 +2463,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_nctaid.y;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
@@ -2480,7 +2480,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y(
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_nctaid.z; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctaid.z; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_z();
 */
@@ -2490,14 +2490,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_nctaid.z;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
@@ -2507,7 +2507,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z(
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_ctarank; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_ctarank; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctarank();
 */
@@ -2517,14 +2517,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_ctarank;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
@@ -2534,7 +2534,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%cluster_nctarank; // PTX ISA 78, SM_90
+// mov.u32 sreg_value, %%cluster_nctarank; // PTX ISA 78, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctarank();
 */
@@ -2544,14 +2544,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%cluster_nctarank;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
@@ -2561,7 +2561,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank(
 #endif // __cccl_ptx_isa >= 780
 
 /*
-// mov.u32 out, %%lanemask_eq; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_eq; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_eq();
 */
@@ -2571,14 +2571,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%lanemask_eq;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
@@ -2588,7 +2588,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%lanemask_le; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_le; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_le();
 */
@@ -2598,14 +2598,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%lanemask_le;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
@@ -2615,7 +2615,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%lanemask_lt; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_lt; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_lt();
 */
@@ -2625,14 +2625,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%lanemask_lt;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
@@ -2642,7 +2642,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%lanemask_ge; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_ge; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_ge();
 */
@@ -2652,14 +2652,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%lanemask_ge;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
@@ -2669,7 +2669,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%lanemask_gt; // PTX ISA 20, SM_35
+// mov.u32 sreg_value, %%lanemask_gt; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_gt();
 */
@@ -2679,14 +2679,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%lanemask_gt;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
@@ -2696,7 +2696,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u32 out, %%clock; // PTX ISA 10
+// mov.u32 sreg_value, %%clock; // PTX ISA 10
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clock();
 */
@@ -2704,19 +2704,19 @@ __device__ static inline uint32_t get_sreg_clock();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock()
 {
-  _CUDA_VSTD::uint32_t __out;
+  _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
     "mov.u32 %0, %%clock;"
-    : "=r"(__out)
+    : "=r"(__sreg_value)
     :
     :
   );
-  return __out;
+  return __sreg_value;
 }
 #endif // __cccl_ptx_isa >= 100
 
 /*
-// mov.u32 out, %%clock_hi; // PTX ISA 50, SM_35
+// mov.u32 sreg_value, %%clock_hi; // PTX ISA 50, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_clock_hi();
 */
@@ -2726,14 +2726,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm volatile (
       "mov.u32 %0, %%clock_hi;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
@@ -2743,7 +2743,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
 #endif // __cccl_ptx_isa >= 500
 
 /*
-// mov.u64 out, %%clock64; // PTX ISA 20, SM_35
+// mov.u64 sreg_value, %%clock64; // PTX ISA 20, SM_35
 template <typename=void>
 __device__ static inline uint64_t get_sreg_clock64();
 */
@@ -2753,14 +2753,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint64_t __out;
+    _CUDA_VSTD::uint64_t __sreg_value;
     asm volatile (
       "mov.u64 %0, %%clock64;"
-      : "=l"(__out)
+      : "=l"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
@@ -2770,7 +2770,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
 #endif // __cccl_ptx_isa >= 200
 
 /*
-// mov.u64 out, %%globaltimer; // PTX ISA 31, SM_35
+// mov.u64 sreg_value, %%globaltimer; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint64_t get_sreg_globaltimer();
 */
@@ -2780,14 +2780,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint64_t __out;
+    _CUDA_VSTD::uint64_t __sreg_value;
     asm volatile (
       "mov.u64 %0, %%globaltimer;"
-      : "=l"(__out)
+      : "=l"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
@@ -2797,7 +2797,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
 #endif // __cccl_ptx_isa >= 310
 
 /*
-// mov.u32 out, %%globaltimer_lo; // PTX ISA 31, SM_35
+// mov.u32 sreg_value, %%globaltimer_lo; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_lo();
 */
@@ -2807,14 +2807,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm volatile (
       "mov.u32 %0, %%globaltimer_lo;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
@@ -2824,7 +2824,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
 #endif // __cccl_ptx_isa >= 310
 
 /*
-// mov.u32 out, %%globaltimer_hi; // PTX ISA 31, SM_35
+// mov.u32 sreg_value, %%globaltimer_hi; // PTX ISA 31, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_hi();
 */
@@ -2834,14 +2834,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm volatile (
       "mov.u32 %0, %%globaltimer_hi;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
@@ -2851,7 +2851,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
 #endif // __cccl_ptx_isa >= 310
 
 /*
-// mov.u32 out, %%total_smem_size; // PTX ISA 41, SM_35
+// mov.u32 sreg_value, %%total_smem_size; // PTX ISA 41, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_total_smem_size();
 */
@@ -2861,14 +2861,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%total_smem_size;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
@@ -2878,7 +2878,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
 #endif // __cccl_ptx_isa >= 410
 
 /*
-// mov.u32 out, %%aggr_smem_size; // PTX ISA 81, SM_90
+// mov.u32 sreg_value, %%aggr_smem_size; // PTX ISA 81, SM_90
 template <typename=void>
 __device__ static inline uint32_t get_sreg_aggr_smem_size();
 */
@@ -2888,14 +2888,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%aggr_smem_size;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
@@ -2905,7 +2905,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
 #endif // __cccl_ptx_isa >= 810
 
 /*
-// mov.u32 out, %%dynamic_smem_size; // PTX ISA 41, SM_35
+// mov.u32 sreg_value, %%dynamic_smem_size; // PTX ISA 41, SM_35
 template <typename=void>
 __device__ static inline uint32_t get_sreg_dynamic_smem_size();
 */
@@ -2915,14 +2915,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
-    _CUDA_VSTD::uint32_t __out;
+    _CUDA_VSTD::uint32_t __sreg_value;
     asm (
       "mov.u32 %0, %%dynamic_smem_size;"
-      : "=r"(__out)
+      : "=r"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
@@ -2932,7 +2932,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size
 #endif // __cccl_ptx_isa >= 410
 
 /*
-// mov.u64 out, %%current_graph_exec; // PTX ISA 80, SM_50
+// mov.u64 sreg_value, %%current_graph_exec; // PTX ISA 80, SM_50
 template <typename=void>
 __device__ static inline uint64_t get_sreg_current_graph_exec();
 */
@@ -2942,14 +2942,14 @@ template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_current_graph_exec()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_50,(
-    _CUDA_VSTD::uint64_t __out;
+    _CUDA_VSTD::uint64_t __sreg_value;
     asm (
       "mov.u64 %0, %%current_graph_exec;"
-      : "=l"(__out)
+      : "=l"(__sreg_value)
       :
       :
     );
-    return __out;
+    return __sreg_value;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
