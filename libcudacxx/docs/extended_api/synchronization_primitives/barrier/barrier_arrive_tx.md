@@ -51,9 +51,7 @@ below.
 ## Example
 
 Below example shows only `cuda::device::barrier_arrive_tx`. A more extensive
-example can be found in the
-[`cuda::device::memcpy_async_tx`](../../../asynchronous_operations/memcpy_async_tx.md)
-documentation.
+example can be found in the [`cuda::device::memcpy_async_tx`] documentation.
 
 ```cuda
 #include <cuda/barrier>
@@ -83,3 +81,4 @@ __global__ void example_kernel() {
 [Tracking asynchronous operations by the mbarrier object]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object
 [thread.barrier.class paragraph 12]: https://eel.is/c++draft/thread.barrier.class#12
 
+[`cuda::device::memcpy_async_tx`]: ../../asynchronous_operations/memcpy_async_tx.md

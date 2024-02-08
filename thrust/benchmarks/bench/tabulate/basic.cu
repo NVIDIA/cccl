@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,53 +25,52 @@
  *
  ******************************************************************************/
 
-/******************************************************************************
- * Test of DeviceMergeSort utilities using large user types (i.e., with vsmem utilities)
- ******************************************************************************/
+#include "thrust/detail/raw_pointer_cast.h"
+#include <nvbench_helper.cuh>
 
-// Ensure printing of CUDA runtime errors to console
-#define CUB_STDERR
+#include <thrust/tabulate.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 
-#include <cstdio>
-#include <new> // for std::bad_alloc
-
-#include "test_device_merge_sort.cuh"
-#include "test_util.h"
-
-int main(int argc, char** argv)
+template <class T>
+struct seg_size_t
 {
-  CommandLineArgs args(argc, argv);
+  T* d_offsets{};
 
-  // Initialize device
-  CubDebugExit(args.DeviceInit());
-
-  using DataType = int64_t;
-
-  thrust::default_random_engine rng;
-  for (unsigned int pow2 = 9; pow2 < 22; pow2 += 2)
+  template <class OffsetT>
+  __device__ T operator()(OffsetT i)
   {
-    try
-    {
-      const unsigned int num_items = 1 << pow2;
-      // Testing vsmem facility with a fallback policy
-      TestHelper<true>::AllocateAndTest<HugeDataType<128>, DataType>(rng, num_items);
-      // Testing vsmem facility with virtual shared memory
-      TestHelper<true>::AllocateAndTest<HugeDataType<256>, DataType>(rng, num_items);
-    }
-    catch (std::bad_alloc& e)
-    {
-      if (pow2 > 20)
-      { // Some cards don't have enough memory for large allocations, these
-        // can be skipped.
-        printf("Skipping large memory test. (num_items=2^%u): %s\n", pow2, e.what());
-      }
-      else
-      { // For smaller problem sizes, treat as an error:
-        printf("Error (num_items=2^%u): %s", pow2, e.what());
-        throw;
-      }
-    }
+    return d_offsets[i + 1] - d_offsets[i];
   }
+};
 
-  return 0;
+template <typename T>
+static void basic(nvbench::state &state,
+                  nvbench::type_list<T>)
+{
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
+
+  thrust::device_vector<T> input(elements + 1);
+  thrust::device_vector<T> output(elements);
+
+  state.add_element_count(elements);
+  state.add_global_memory_reads<T>(elements + 1);
+  state.add_global_memory_writes<T>(elements);
+
+  caching_allocator_t alloc;
+  seg_size_t<T> op{thrust::raw_pointer_cast(input.data())};
+  thrust::tabulate(policy(alloc), output.begin(), output.end(), op);
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
+             });
 }
+
+using types = nvbench::type_list<nvbench::uint32_t,
+                                 nvbench::uint64_t>;
+
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
+  .set_name("base")
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("Elements", nvbench::range(16, 28, 4));

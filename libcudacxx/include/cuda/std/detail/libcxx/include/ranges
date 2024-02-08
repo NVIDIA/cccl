@@ -312,10 +312,12 @@ namespace std {
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__ranges/access.h"
+#include "__ranges/data.h"
 #include "__ranges/enable_borrowed_range.h"
 #include "__ranges/enable_view.h"
 #include "__ranges/rbegin.h"
 #include "__ranges/rend.h"
+#include "__ranges/size.h"
 
 // standard-mandated includes
 #include "version"

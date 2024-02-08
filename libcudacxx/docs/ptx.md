@@ -260,29 +260,29 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
 ### [9.7.8. Data Movement and Conversion Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`mov`]                                  | No                   |
-| [`mov`]                                  | No                   |
-| [`shfl (deprecated)`]                    | No                   |
-| [`shfl.sync`]                            | No                   |
-| [`prmt`]                                 | No                   |
-| [`ld`]                                   | No                   |
-| [`ld.global.nc`]                         | No                   |
-| [`ldu`]                                  | No                   |
-| [`st`]                                   | No                   |
-| [`st.async`]                             | No                   |
-| [`multimem.ld_reduce, multimem.st, multimem.red`] | No                   |
-| [`prefetch, prefetchu`]                  | No                   |
-| [`applypriority`]                        | No                   |
-| [`discard`]                              | No                   |
-| [`createpolicy`]                         | No                   |
-| [`isspacep`]                             | No                   |
-| [`cvta`]                                 | No                   |
-| [`cvt`]                                  | No                   |
-| [`cvt.pack`]                             | No                   |
-| [`mapa`]                                 | No                   |
-| [`getctarank`]                           | No                   |
+| Instruction                                       | Available in libcu++    |
+|---------------------------------------------------|-------------------------|
+| [`mov`]                                           | No                      |
+| [`mov`]                                           | No                      |
+| [`shfl (deprecated)`]                             | No                      |
+| [`shfl.sync`]                                     | No                      |
+| [`prmt`]                                          | No                      |
+| [`ld`]                                            | No                      |
+| [`ld.global.nc`]                                  | No                      |
+| [`ldu`]                                           | No                      |
+| [`st`]                                            | No                      |
+| [`st.async`]                                      | CTK-FUTURE, CCCL v2.3.0 |
+| [`multimem.ld_reduce, multimem.st, multimem.red`] | No                      |
+| [`prefetch, prefetchu`]                           | No                      |
+| [`applypriority`]                                 | No                      |
+| [`discard`]                                       | No                      |
+| [`createpolicy`]                                  | No                      |
+| [`isspacep`]                                      | No                      |
+| [`cvta`]                                          | No                      |
+| [`cvt`]                                           | No                      |
+| [`cvt.pack`]                                      | No                      |
+| [`mapa`]                                          | CTK-FUTURE, CCCL v2.4.0 |
+| [`getctarank`]                                    | CTK-FUTURE, CCCL v2.4.0 |
 
 [`mov`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
 [`shfl (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated
@@ -302,8 +302,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`cvta`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta
 [`cvt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt
 [`cvt.pack`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack
-[`mapa`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
-[`getctarank`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+[`mapa`]: #mapa
+[`getctarank`]: #getctarank
 
 #### `st.async`
 
@@ -416,6 +416,36 @@ int main() {
   cudaDeviceSynchronize();
 }
 ```
+
+#### `mapa`
+
+- PTX ISA: [`mapa`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa)
+
+**mapa**:
+```cuda
+// mapa{.space}.u32  dest, addr, target_cta; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename Tp>
+__device__ static inline Tp* mapa(
+  cuda::ptx::space_cluster_t,
+  const Tp* addr,
+  uint32_t target_cta);
+```
+
+#### `getctarank`
+
+- PTX ISA: [`getctarank`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank)
+
+**getctarank**:
+```cuda
+// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename=void>
+__device__ static inline uint32_t getctarank(
+  cuda::ptx::space_cluster_t,
+  const void* addr);
+```
+
 ### [9.7.8.24. Data Movement and Conversion Instructions: Asynchronous copy](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy)
 
 | Instruction                              | Available in libcu++ |
@@ -501,7 +531,8 @@ int main() {
 | [`bar, barrier`]      | No                      |
 | [`bar.warp.sync`]     | No                      |
 | [`barrier.cluster`]   | No                      |
-| [`membar/fence`]      | No                      |
+| [`membar`]            | No                      |
+| [`fence`]             | CTK-FUTURE, CCCL v2.4.0 |
 | [`atom`]              | No                      |
 | [`red`]               | No                      |
 | [`red.async`]         | CTK-FUTURE, CCCL v2.3.0 |
@@ -516,7 +547,8 @@ int main() {
 [`bar, barrier`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
 [`bar.warp.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
 [`barrier.cluster`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
-[`membar/fence`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+[`membar`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+[`fence`]: #fence
 [`atom`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
 [`red`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
 [`red.async`]: #redasync
@@ -527,6 +559,77 @@ int main() {
 [`redux.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
 [`griddepcontrol`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
 [`elect.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+
+#### `fence`
+
+- PTX ISA: [`fence`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence)
+
+**fence**:
+```cuda
+// fence{.sem}.scope; // 1. PTX ISA 60, SM_70
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cta, .gpu, .sys }
+template <cuda::ptx::dot_sem Sem, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_t<Scope> scope);
+
+// fence{.sem}.scope; // 2. PTX ISA 78, SM_90
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cluster }
+template <cuda::ptx::dot_sem Sem>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_cluster_t);
+```
+**fence_mbarrier_init**:
+```cuda
+// fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
+// .sem       = { .release }
+// .scope     = { .cluster }
+template <typename=void>
+__device__ static inline void fence_mbarrier_init(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cluster_t);
+```
+**fence_proxy_alias**:
+```cuda
+// fence.proxy.alias; // 4. PTX ISA 75, SM_70
+template <typename=void>
+__device__ static inline void fence_proxy_alias();
+```
+**fence_proxy_async**:
+```cuda
+// fence.proxy.async; // 5. PTX ISA 80, SM_90
+template <typename=void>
+__device__ static inline void fence_proxy_async();
+
+// fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+// .space     = { .global, .shared::cluster, .shared::cta }
+template <cuda::ptx::dot_space Space>
+__device__ static inline void fence_proxy_async(
+  cuda::ptx::space_t<Space> space);
+```
+**fence_proxy_tensormap_generic**:
+```cuda
+// fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
+// .sem       = { .release }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_t<Scope> scope);
+
+// fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <int N32, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  const void* addr,
+  cuda::ptx::n32_t<N32> size);
+```
 
 #### `red.async`
 
@@ -709,6 +812,7 @@ __device__ static inline void red_async(
 
 -  PTX ISA: [`mbarrier.arrive`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
 
+**mbarrier_arrive**:
 ```cuda
 // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
 template <typename=void>
@@ -768,6 +872,7 @@ __device__ static inline void mbarrier_arrive(
   const uint32_t& count);
 ```
 
+**mbarrier_arrive_no_complete**:
 ```cuda
 // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.  PTX ISA 70, SM_80
 template <typename=void>
@@ -776,6 +881,7 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   const uint32_t& count);
 ```
 
+**mbarrier_arrive_expect_tx**:
 ```cuda
 // mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64 state, [addr], tx_count; // 8.  PTX ISA 80, SM_90
 // .sem       = { .release }

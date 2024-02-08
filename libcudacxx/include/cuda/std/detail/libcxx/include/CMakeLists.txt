@@ -48,7 +48,11 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __cccl_config
+  __cccl/compiler.h
+  __cccl/diagnostic.h
   __cccl/dialect.h
+  __cccl/execution_space.h
+  __cccl/system_header.h
   __cccl/version.h
   __cccl/visibility.h
   __concepts/__concept_macros.h
@@ -187,10 +191,12 @@ set(files
   __node_handle
   __nullptr
   __ranges/access.h
+  __ranges/data.h
   __ranges/enable_borrowed_range.h
   __ranges/enable_view.h
   __ranges/rbegin.h
   __ranges/rend.h
+  __ranges/size.h
   __split_buffer
   __sso_allocator
   __std_stream

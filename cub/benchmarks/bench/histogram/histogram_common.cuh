@@ -29,6 +29,8 @@
 
 #include <cub/device/device_histogram.cuh>
 
+#include <cuda/std/type_traits>
+
 #if !TUNE_BASE
 
 #if TUNE_LOAD == 0
@@ -37,7 +39,7 @@
 #define TUNE_LOAD_MODIFIER cub::LOAD_LDG
 #else // TUNE_LOAD == 2
 #define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#endif // TUNE_LOAD 
+#endif // TUNE_LOAD
 
 #define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
@@ -51,11 +53,11 @@ constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
 
 #if TUNE_LOAD_ALGORITHM_ID == 0
 #define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#elif TUNE_LOAD_ALGORITHM_ID == 1 
+#elif TUNE_LOAD_ALGORITHM_ID == 1
 #define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#else 
+#else
 #define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
-#endif // TUNE_LOAD_ALGORITHM_ID 
+#endif // TUNE_LOAD_ALGORITHM_ID
 
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
 struct policy_hub_t

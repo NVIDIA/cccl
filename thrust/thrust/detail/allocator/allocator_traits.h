@@ -29,6 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/has_member_function.h>
@@ -79,6 +80,8 @@ template<typename Alloc, typename U>
 
   typedef thrust::detail::integral_constant<bool, value> type;
 };
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
@@ -185,6 +188,8 @@ template<typename Alloc>
   typedef typename has_member_system_impl<Alloc, system_type&(void)>::type type;
   static const bool value = type::value;
 };
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 template<class Alloc, class U, bool = has_rebind<Alloc, U>::value>
   struct rebind_alloc

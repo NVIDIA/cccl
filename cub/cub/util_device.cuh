@@ -56,6 +56,7 @@
 
 #include <cuda/discard_memory>
 #include <cuda/std/utility>
+#include <cuda/std/type_traits>
 
 #include <nv/target>
 

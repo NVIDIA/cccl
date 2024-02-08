@@ -45,8 +45,10 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+#include <cuda/std/functional>
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
-
 
 CUB_NAMESPACE_BEGIN
 namespace detail {
