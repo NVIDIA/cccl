@@ -10,7 +10,7 @@ on:
 jobs:
   prepare:
     name: Build ${{inputs.test_name}}
-    runs-on: windows-2022
+    runs-on: windows-amd64-cpu16
     permissions:
       id-token: write
       contents: read
