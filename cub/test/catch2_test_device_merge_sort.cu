@@ -123,6 +123,11 @@ struct tuple_to_custom_op_t
   }
 };
 
+/**
+ * @brief In combination with a counting iterator, this function object generates a sequence that wraps around after
+ * reaching `UnsignedIntegralKeyT`'s maximum value. E.g., for a uint8_t this maps the sequence of indexes [0, ..., 254,
+ * 255, 256, 256] -> [0, ..., 254, 255, 0, 1]
+ */
 template <typename UnsignedIntegralKeyT>
 struct index_to_key_value_op
 {
@@ -138,6 +143,16 @@ struct index_to_key_value_op
   }
 };
 
+/**
+ * @brief In combination with a counting iterator, this function object helps generate the expected sorted order for a
+ * sequence generated with `index_to_key_value_op`. It respects how many remainder items there are following the last
+ * occurrence of `UnsignedIntegralKeyT`'s max value. E.g., when we use `num_total_items` of `260` with an `uint8_t`, the
+ * input sequence was:
+ * [0, ..., 254, 255, 256, 257, 258, 259] <= index
+ * [0, ..., 254, 255,   0,   1,   2,   3] <= input
+ * -----------------
+ * [0, 0, 1, 1, 2, 2, 3, 3, 4, 5, 6, ..., 255] <= expected sorted order (note, [0, 3] occur twice)
+ */
 template <typename UnsignedIntegralKeyT>
 class index_to_expected_key_op
 {
