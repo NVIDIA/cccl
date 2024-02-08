@@ -62,7 +62,7 @@ using is_integral_or_enum =
  * where `(lhs + rhs)` would overflow.
  */
 template <typename OffsetT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr OffsetT SafeAddBoundToMax(OffsetT lhs, OffsetT rhs)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT SafeAddBoundToMax(OffsetT lhs, OffsetT rhs)
 {
   auto const capped_operand_rhs = (cub::min)(rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
   return lhs + capped_operand_rhs;
