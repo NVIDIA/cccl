@@ -11,6 +11,17 @@
 #ifndef __CCCL_DIALECT_H
 #define __CCCL_DIALECT_H
 
+#include "../__cccl/compiler.h"
+#include "../__cccl/system_header.h"
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if defined(_CCCL_COMPILER_MSVC)
 #  if _MSVC_LANG <= 201103L
 #    define _CCCL_STD_VER 2011
