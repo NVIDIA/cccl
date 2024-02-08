@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -112,10 +112,8 @@ struct BeginEndSizedSentinel {
   __host__ __device__ constexpr int *begin() const { return nullptr; }
   __host__ __device__ constexpr auto end() const { return sized_sentinel<int*>(nullptr); }
 };
-#ifdef _LIBCUDACXX_HAS_RANGES
 static_assert(cuda::std::ranges::forward_range<BeginEndSizedSentinel>);
 static_assert(cuda::std::ranges::sized_range<BeginEndSizedSentinel>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 __host__ __device__ constexpr bool testUsingRangesSize() {
   SizeMember a{1};
@@ -138,10 +136,8 @@ struct BeginEndNotSizedSentinel {
   __host__ __device__ constexpr int *begin() const { return nullptr; }
   __host__ __device__ constexpr auto end() const { return sentinel_wrapper<int*>(nullptr); }
 };
-#ifdef _LIBCUDACXX_HAS_RANGES
 static_assert( cuda::std::ranges::forward_range<BeginEndNotSizedSentinel>);
 static_assert(!cuda::std::ranges::sized_range<BeginEndNotSizedSentinel>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 // size is disabled here, so we have to compare begin and end.
 struct DisabledSizeRangeWithBeginEnd {
@@ -151,10 +147,8 @@ struct DisabledSizeRangeWithBeginEnd {
 };
 template<>
 inline constexpr bool cuda::std::ranges::disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
-#ifdef _LIBCUDACXX_HAS_RANGES
 static_assert(cuda::std::ranges::contiguous_range<DisabledSizeRangeWithBeginEnd>);
 static_assert(!cuda::std::ranges::sized_range<DisabledSizeRangeWithBeginEnd>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 struct BeginEndAndEmpty {
   __host__ __device__ constexpr int *begin() const { return nullptr; }
