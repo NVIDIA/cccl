@@ -30,7 +30,7 @@
 
 //#include <stdint.h> // for intmax_t (not provided on MSVS 2005)
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 namespace detail
 {
@@ -134,4 +134,4 @@ numeric_distance(Number x, Number y)
 
 } // end detail
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END

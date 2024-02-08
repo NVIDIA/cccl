@@ -38,7 +38,7 @@
 
 #include <stdexcept>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 namespace detail
 {
@@ -1373,5 +1373,5 @@ bool operator!=(const std::vector<T1,Alloc1>&         lhs,
     return !(lhs == rhs);
 }
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 

@@ -32,7 +32,7 @@
 
 #include <cuda/std/utility>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 /*! \addtogroup utility
  *  \{
@@ -87,4 +87,4 @@ using ::cuda::std::make_pair;
 /*! \} // utility
  */
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END

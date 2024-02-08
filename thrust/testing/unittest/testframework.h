@@ -229,7 +229,7 @@ private:
     }
 };
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 template <>
 struct numeric_limits<custom_numeric> : numeric_limits<int> {};
@@ -245,7 +245,7 @@ class integer_traits<custom_numeric>
 
 } // namespace detail
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 
 typedef unittest::type_list<char,
                             signed char,

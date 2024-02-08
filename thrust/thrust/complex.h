@@ -35,7 +35,7 @@
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 /*! \addtogroup numerics
  *  \{
@@ -604,7 +604,7 @@ template <typename T>
 struct is_complex<::std::complex<T>> : public thrust::true_type
 {};
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 
 /*! \} // complex_numbers
  */

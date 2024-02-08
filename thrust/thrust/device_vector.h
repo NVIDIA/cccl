@@ -38,7 +38,7 @@
 #include <vector>
 #include <utility>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 /*! \addtogroup containers Containers
  *  \{
@@ -516,4 +516,4 @@ template<typename T, typename Alloc>
 /*! \} // containres
  */
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END

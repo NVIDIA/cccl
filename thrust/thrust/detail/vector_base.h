@@ -41,7 +41,7 @@
 #include <initializer_list>
 #include <vector>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 namespace detail
 {
@@ -630,7 +630,7 @@ template<typename T1, typename Alloc1,
 bool operator!=(const std::vector<T1,Alloc1>&         lhs,
                 const detail::vector_base<T2,Alloc2>& rhs);
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 
 #include <thrust/detail/vector_base.inl>
 

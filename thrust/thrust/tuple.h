@@ -44,7 +44,7 @@
 
 #include <tuple>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 
 // define null_type for backwards compatability
@@ -154,7 +154,7 @@ using ::cuda::std::tie;
 /*! \} // utility
  */
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

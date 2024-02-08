@@ -92,7 +92,6 @@ THRUST_NAMESPACE_BEGIN
           : std::is_trivially_copy_constructible<T>{};
 #endif
   }
-THRUST_NAMESPACE_END
 #endif
 
 #define THRUST_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)                                     \
@@ -171,7 +170,7 @@ THRUST_NAMESPACE_END
 #define THRUST_OPTIONAL_CPP11_CONSTEXPR constexpr
 #endif
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
 #define THRUST_MONOSTATE_INPLACE_MUTEX
@@ -2864,7 +2863,7 @@ private:
   T *m_value;
 };
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
 
 namespace std {
 // TODO SFINAE

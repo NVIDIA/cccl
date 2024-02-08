@@ -20,9 +20,9 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/type_traits.h>
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 template <typename T>
 struct numeric_limits : std::numeric_limits<T> {};
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END

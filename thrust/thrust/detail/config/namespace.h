@@ -198,6 +198,27 @@
   } /* end namespace thrust */                                                 \
   THRUST_NS_POSTFIX
 
+/**
+ * \def THRUST_PLAIN_NAMESPACE_BEGIN
+ * This macro is used to open a `thrust::` namespace block, without the
+ * inline namespace requested by THRUST_DETAIL_ABI_NS_BEGIN.
+ * This macro is defined by Thrust and may not be overridden.
+ */
+#define THRUST_PLAIN_NAMESPACE_BEGIN \
+  THRUST_NS_PREFIX                   \
+  namespace thrust                   \
+  {
+
+/**
+ * \def THRUST_PLAIN_NAMESPACE_END
+ * This macro is used to close a `thrust::` namespace block, without the
+ * inline namespace requested by THRUST_DETAIL_ABI_NS_END.
+ * This macro is defined by Thrust and may not be overridden.
+ */
+#define THRUST_PLAIN_NAMESPACE_END   \
+  } /* end namespace thrust */       \
+  THRUST_NS_POSTFIX
+
 // The following is just here to add docs for the thrust namespace:
 
 THRUST_NS_PREFIX

@@ -37,7 +37,7 @@
 #include __THRUST_DEVICE_SYSTEM_VECTOR_HEADER
 #undef __THRUST_DEVICE_SYSTEM_VECTOR_HEADER
 
-THRUST_NAMESPACE_BEGIN
+THRUST_PLAIN_NAMESPACE_BEGIN
 
 /*! \addtogroup containers Containers
  *  \{
@@ -60,4 +60,4 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_vector;
 /*! \} // containers
  */
 
-THRUST_NAMESPACE_END
+THRUST_PLAIN_NAMESPACE_END
