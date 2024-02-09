@@ -10,6 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: nvcc-11.1
 
 // <cuda/barrier>
 

@@ -795,6 +795,7 @@ struct __memcpy_completion_impl {
                 // bulk group to be used with shared memory barriers.
                 _LIBCUDACXX_UNREACHABLE();
             case __completion_mechanism::__mbarrier_complete_tx:
+#ifdef __cccl_lib_local_barrier_arrive_tx
                 // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
                 NV_IF_TARGET(NV_PROVIDES_SM_90, (
                     // Only perform the expect_tx operation with the leader thread
@@ -802,6 +803,7 @@ struct __memcpy_completion_impl {
                         ::cuda::device::barrier_expect_tx(__barrier, __size);
                     }
                 ));
+#endif // __cccl_lib_local_barrier_arrive_tx
                 return async_contract_fulfillment::async;
             case __completion_mechanism::__sync:
                 // sync: In this case, we do not need to do anything. The user will have
