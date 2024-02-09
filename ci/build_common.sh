@@ -306,7 +306,7 @@ function test_preset()
     local PRESET=$2
     local GROUP_NAME="🚀  Test ${BUILD_NAME}"
 
-    fail_if_no_gpu()
+    fail_if_no_gpu
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" ctest --preset=$PRESET
