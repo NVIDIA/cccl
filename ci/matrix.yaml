@@ -30,8 +30,9 @@ llvm13: &llvm13 { name: 'llvm', version: '13', exe: 'clang++' }
 llvm14: &llvm14 { name: 'llvm', version: '14', exe: 'clang++' }
 llvm15: &llvm15 { name: 'llvm', version: '15', exe: 'clang++' }
 llvm16: &llvm16 { name: 'llvm', version: '16', exe: 'clang++' }
+llvm16: &llvm17 { name: 'llvm', version: '17', exe: 'clang++' }
 llvm-oldest: &llvm-oldest { name: 'llvm', version: '9', exe: 'clang++' }
-llvm-newest: &llvm-newest { name: 'llvm', version: '16', exe: 'clang++' }
+llvm-newest: &llvm-newest { name: 'llvm', version: '17', exe: 'clang++' }
 
 # MSVC configs
 msvc2017: &msvc2017 { name: 'cl', version: '14.16', exe: 'cl++' }
@@ -76,8 +77,9 @@ pull_request:
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm13,   std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm14,   std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm17,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
+    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm17,   std: [11, 14, 17, 20], jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
     - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
     - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
