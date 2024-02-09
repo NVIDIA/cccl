@@ -95,10 +95,16 @@
 // depending on PTX ISA. This permits checking for the feature in host code.
 // When __CUDA_MINIMUM_ARCH__ is available, we only enable the feature when the
 // hardware supports it.
+#if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) \
+ && __cccl_isa_ptx >= 700
+# define __cccl_lib_cp_async_available
+#endif
+
 #if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) \
  && __cccl_isa_ptx >= 800
 # define __cccl_lib_local_barrier_arrive_tx
 # define __cccl_lib_experimental_ctk12_cp_async_exposure
+# define __cccl_lib_cp_async_bulk_available
 #endif
 
 #endif // __CCCL_PTX_ISA_H_

@@ -648,7 +648,7 @@ void barrier_expect_tx(
 }
 #endif // __cccl_lib_local_barrier_arrive_tx
 
-#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
+#ifdef __cccl_lib_cp_async_bulk_available
 template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
 _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _Tp* __dest,
@@ -688,7 +688,7 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 
     return async_contract_fulfillment::async;
 }
-#endif // __cccl_lib_local_barrier_arrive_tx
+#endif // __cccl_lib_cp_async_bulk_available
 #endif // _CCCL_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
@@ -928,7 +928,7 @@ struct __memcpy_completion_impl {
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
 
-#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
+#ifdef __cccl_lib_cp_async_bulk_available
 template <typename _Group>
 inline __device__
 void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char * __src, size_t __size, uint64_t *__bar_handle) {
@@ -944,9 +944,9 @@ void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char 
             : "memory");
     }
 }
-#endif // __cccl_lib_experimental_ctk12_cp_async_exposure
+#endif // __cccl_lib_cp_async_bulk_available
 
-#if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+#ifdef __cccl_lib_cp_async_available
 template <size_t _Copy_size>
 inline __device__
 void __cp_async_shared_global(char * __dest, const char * __src) {
@@ -1001,7 +1001,7 @@ void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * 
         __cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
     }
 }
-#endif // __CUDA_MINIMUM_ARCH__
+#endif // __cccl_lib_cp_async_available
 
 template <size_t _Copy_size>
 struct __copy_chunk {
@@ -1082,7 +1082,7 @@ __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group
 template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
-#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
+#ifdef __cccl_lib_cp_async_bulk_available
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
         _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
@@ -1094,8 +1094,9 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         }
         // Fallthrough to SM 80..
     ));
-#endif // __cccl_lib_experimental_ctk12_cp_async_exposure
+#endif // __cccl_lib_cp_async_bulk_available
 
+#ifdef __cccl_lib_cp_async_available
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
             const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
@@ -1106,6 +1107,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         }
         // Fallthrough..
     ));
+#endif // __cccl_lib_cp_async_available
 
     __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;
