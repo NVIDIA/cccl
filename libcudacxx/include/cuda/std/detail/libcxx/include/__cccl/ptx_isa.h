@@ -32,6 +32,8 @@
  */
 
 // PTX ISA 8.3 is available from CUDA 12.3, driver r545
+// The first define is for future major versions of CUDACC.
+// We make sure that these get the highest known PTX ISA version.
 #if   (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ > 12)) || (!defined(__CUDACC_VER_MAJOR__))
 #  define __cccl_ptx_isa 830ULL
 #elif (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) \
