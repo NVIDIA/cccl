@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
+// UNSUPPORTED: clang && !nvcc
 
 // <cuda/ptx>
 
