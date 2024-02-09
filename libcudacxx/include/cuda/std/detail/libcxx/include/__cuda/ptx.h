@@ -26,7 +26,6 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-#include "../__cuda/ptx/ptx_isa_target_macros.h"
 #include "../__cuda/ptx/ptx_dot_variants.h"
 #include "../__cuda/ptx/ptx_helper_functions.h"
 #include "../__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"

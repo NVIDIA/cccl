@@ -14,7 +14,6 @@
 
 #include "ptx_dot_variants.h"
 #include "ptx_helper_functions.h"
-#include "ptx_isa_target_macros.h"
 #include "../../cstdint"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
