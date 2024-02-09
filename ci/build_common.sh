@@ -240,6 +240,13 @@ print_environment_details() {
   end_group "⚙️ Environment Details"
 }
 
+fail_if_no_gpu() {
+    if ! nvidia-smi &> /dev/null; then
+        echo "Error: No NVIDIA GPU detected. Please ensure you have an NVIDIA GPU installed and the drivers are properly configured." >&2
+        exit 1
+    fi
+}
+
 function configure_preset()
 {
     local BUILD_NAME=$1
