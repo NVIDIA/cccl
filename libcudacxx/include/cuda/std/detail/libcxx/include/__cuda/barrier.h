@@ -572,10 +572,7 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
 
 #if defined(_CCCL_CUDA_COMPILER)
 
-// Hide arrive_tx when CUDA architecture is insufficient. Note the
-// (!defined(__CUDA_MINIMUM_ARCH__)). This is required to make sure the function
-// does not get removed by cudafe, which does not define __CUDA_MINIMUM_ARCH__.
-#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+#ifdef __cccl_lib_local_barrier_arrive_tx
 
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
@@ -624,6 +621,34 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     return __token;
 }
 
+_LIBCUDACXX_DEVICE inline
+void barrier_expect_tx(
+    barrier<thread_scope_block> & __b,
+    _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
+
+    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
+    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
+
+    // We do not check for the statespace of the barrier here. This is
+    // on purpose. This allows debugging tools like memcheck/racecheck
+    // to detect that we are passing a pointer with the wrong state
+    // space to mbarrier.arrive. If we checked for the state space here,
+    // and __trap() if wrong, then those tools would not be able to help
+    // us in release builds. In debug builds, the error would be caught
+    // by the asserts at the top of this function.
+    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
+    asm (
+        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
+        :
+        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
+          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
+        : "memory");
+}
+#endif // __cccl_lib_local_barrier_arrive_tx
+
+#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
 template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
 _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _Tp* __dest,
@@ -663,33 +688,7 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 
     return async_contract_fulfillment::async;
 }
-
-_LIBCUDACXX_DEVICE inline
-void barrier_expect_tx(
-    barrier<thread_scope_block> & __b,
-    _CUDA_VSTD::ptrdiff_t __transaction_count_update) {
-
-    _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
-    // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-    _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
-
-    // We do not check for the statespace of the barrier here. This is
-    // on purpose. This allows debugging tools like memcheck/racecheck
-    // to detect that we are passing a pointer with the wrong state
-    // space to mbarrier.arrive. If we checked for the state space here,
-    // and __trap() if wrong, then those tools would not be able to help
-    // us in release builds. In debug builds, the error would be caught
-    // by the asserts at the top of this function.
-    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
-    asm (
-        "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
-        :
-        : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
-          "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
-        : "memory");
-}
-#endif // __CUDA_MINIMUM_ARCH__
+#endif // __cccl_lib_local_barrier_arrive_tx
 #endif // _CCCL_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
@@ -929,7 +928,7 @@ struct __memcpy_completion_impl {
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
 
-#if (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
+#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
 template <typename _Group>
 inline __device__
 void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char * __src, size_t __size, uint64_t *__bar_handle) {
@@ -945,7 +944,7 @@ void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char 
             : "memory");
     }
 }
-#endif // __CUDA_MINIMUM_ARCH__
+#endif // __cccl_lib_experimental_ctk12_cp_async_exposure
 
 #if (defined(__CUDA_MINIMUM_ARCH__) && 800 <= __CUDA_MINIMUM_ARCH__) || (!defined(__CUDA_MINIMUM_ARCH__))
 template <size_t _Copy_size>
@@ -1083,6 +1082,7 @@ __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group
 template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
+#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
         _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
@@ -1094,6 +1094,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         }
         // Fallthrough to SM 80..
     ));
+#endif // __cccl_lib_experimental_ctk12_cp_async_exposure
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {

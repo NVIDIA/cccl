@@ -90,10 +90,11 @@
 
 // We define certain feature test macros depending on availability. When
 // __CUDA_MINIMUM_ARCH__ is not available, we define the following features
-// unconditionally. This permits checking for the feature in host code.
+// depending on PTX ISA. This permits checking for the feature in host code.
 // When __CUDA_MINIMUM_ARCH__ is available, we only enable the feature when the
 // hardware supports it.
 #if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__) \
+ && __cccl_isa_ptx >= 800
 # define __cccl_lib_local_barrier_arrive_tx
 # define __cccl_lib_experimental_ctk12_cp_async_exposure
 #endif
