@@ -32,7 +32,9 @@
  */
 
 // PTX ISA 8.3 is available from CUDA 12.3, driver r545
-#if (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) \
+#if   (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ > 12)) || (!defined(__CUDACC_VER_MAJOR__))
+#  define __cccl_ptx_isa 830ULL
+#elif (defined(__CUDACC_VER_MAJOR__) && (__CUDACC_VER_MAJOR__ >= 12 && __CUDACC_VER_MINOR__ >= 3)) \
   || (!defined(__CUDACC_VER_MAJOR__))
 #  define __cccl_ptx_isa 830ULL
 // PTX ISA 8.2 is available from CUDA 12.2, driver r535
