@@ -184,7 +184,6 @@ template<typename BidirectionalIterator>
      *  \param r A \p reverse_iterator to copy from.
      */
     template <typename OtherBidirectionalIterator,
-              detail::enable_if_different_t<OtherBidirectionalIterator, BidirectionalIterator, int>   = 0,
               detail::enable_if_convertible_t<OtherBidirectionalIterator, BidirectionalIterator, int> = 0>
     _CCCL_HOST_DEVICE reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const& rhs)
         : super_t(rhs.base())

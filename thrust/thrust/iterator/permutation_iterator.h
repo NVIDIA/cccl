@@ -161,8 +161,6 @@ template <typename ElementIterator,
      */
     template <typename OtherElementIterator,
               typename OtherIndexIterator,
-              detail::enable_if_different_t<OtherElementIterator, ElementIterator, int>   = 0,
-              detail::enable_if_different_t<OtherIndexIterator, IndexIterator, int>       = 0,
               detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
               detail::enable_if_convertible_t<OtherIndexIterator, IndexIterator, int>     = 0>
     _CCCL_HOST_DEVICE permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)

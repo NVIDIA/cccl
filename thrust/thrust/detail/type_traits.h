@@ -455,9 +455,6 @@ template<typename T1, typename T2, typename Result = void>
     : enable_if<is_different<T1,T2>::value, Result>
 {};
 
-template<typename T1, typename T2, typename Result = void>
-using enable_if_different_t = typename enable_if_different<T1, T2, Result>::type;
-
 template<typename T>
   struct is_numeric
     : and_<

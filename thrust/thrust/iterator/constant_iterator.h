@@ -130,7 +130,6 @@ template<typename Value,
      *  \param rhs The \p constant_iterator to copy.
      */
     template <class OtherSystem,
-              detail::enable_if_different_t<OtherSystem, System, int> = 0,
               detail::enable_if_convertible_t<
                 typename thrust::iterator_system<constant_iterator<Value, Incrementable, OtherSystem>>::type,
                 typename thrust::iterator_system<super_t>::type,

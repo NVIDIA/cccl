@@ -166,7 +166,6 @@ template <typename IteratorTuple>
      *  \param other The \p zip_iterator to copy.
      */
     template <typename OtherIteratorTuple,
-              detail::enable_if_different_t<OtherIteratorTuple, IteratorTuple, int>   = 0,
               detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
     inline _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
         : m_iterator_tuple(other.get_iterator_tuple())

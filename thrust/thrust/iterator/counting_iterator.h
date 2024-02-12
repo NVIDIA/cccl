@@ -172,7 +172,6 @@ template<typename Incrementable,
      */
     template <
       class OtherSystem,
-      detail::enable_if_different_t<OtherSystem, System, int> = 0,
       detail::enable_if_convertible_t<
         typename thrust::iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference>>::type,
         typename thrust::iterator_system<super_t>::type,
