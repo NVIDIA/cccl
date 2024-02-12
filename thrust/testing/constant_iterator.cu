@@ -4,6 +4,8 @@
 #include <thrust/transform.h>
 #include <thrust/reduce.h>
 
+#include <cuda/std/type_traits>
+
 void TestConstantIteratorConstructFromConvertibleSystem(void)
 {
   using namespace thrust;
@@ -30,21 +32,23 @@ void TestConstantIteratorIncrement(void)
     lhs++;
 
     ASSERT_EQUAL(1, lhs - rhs);
-    
+
     lhs++;
     lhs++;
-    
+
     ASSERT_EQUAL(3, lhs - rhs);
 
     lhs += 5;
-    
+
     ASSERT_EQUAL(8, lhs - rhs);
 
     lhs -= 10;
-    
+
     ASSERT_EQUAL(-2, lhs - rhs);
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrement);
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::constant_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copyable<thrust::constant_iterator<int>>::value, "");
 
 void TestConstantIteratorIncrementBig(void)
 {
@@ -68,15 +72,15 @@ void TestConstantIteratorComparison(void)
     ASSERT_EQUAL(true, iter1 == iter2);
 
     iter1++;
-    
+
     ASSERT_EQUAL(1, iter1 - iter2);
     ASSERT_EQUAL(false, iter1 == iter2);
-   
+
     iter2++;
 
     ASSERT_EQUAL(0, iter1 - iter2);
     ASSERT_EQUAL(true, iter1 == iter2);
-  
+
     iter1 += 100;
     iter2 += 100;
 
@@ -146,7 +150,7 @@ void TestConstantIteratorTransform(void)
   ASSERT_EQUAL(-7, result[1]);
   ASSERT_EQUAL(-7, result[2]);
   ASSERT_EQUAL(-7, result[3]);
-  
+
   thrust::transform(first1, last1, first2, result.begin(), thrust::plus<T>());
 
   ASSERT_EQUAL(10, result[0]);

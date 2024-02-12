@@ -163,22 +163,23 @@ template<typename Incrementable,
      *
      *  \p rhs The \p counting_iterator to copy.
      */
-    _CCCL_HOST_DEVICE
-    counting_iterator(counting_iterator const &rhs):super_t(rhs.base()){}
+    counting_iterator(counting_iterator const&) = default;
 
     /*! Copy constructor copies the value of another counting_iterator
      *  with related System type.
      *
      *  \param rhs The \p counting_iterator to copy.
      */
-    template<typename OtherSystem>
-    _CCCL_HOST_DEVICE
-    counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const &rhs,
-                      typename thrust::detail::enable_if_convertible<
-                        typename thrust::iterator_system<counting_iterator<Incrementable,OtherSystem,Traversal,Difference> >::type,
-                        typename thrust::iterator_system<super_t>::type
-                      >::type * = 0)
-      : super_t(rhs.base()){}
+    template <
+      class OtherSystem,
+      detail::enable_if_different_t<OtherSystem, System, int> = 0,
+      detail::enable_if_convertible_t<
+        typename thrust::iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference>>::type,
+        typename thrust::iterator_system<super_t>::type,
+        int> = 0>
+    _CCCL_HOST_DEVICE counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const& rhs)
+        : super_t(rhs.base())
+    {}
 
     /*! This \c explicit constructor copies the value of an \c Incrementable
      *  into a new \p counting_iterator's \c Incrementable counter.

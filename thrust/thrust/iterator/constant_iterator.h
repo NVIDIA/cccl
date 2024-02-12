@@ -120,35 +120,25 @@ template<typename Value,
     /*! \endcond
      */
 
-    /*! Null constructor initializes this \p constant_iterator's constant using its
-     *  null constructor.
+    /*! Default constructor initializes this \p constant_iterator's constant using its default constructor
      */
-    _CCCL_HOST_DEVICE
-    constant_iterator()
-      : super_t(), m_value() {}
-
-    /*! Copy constructor copies the value of another \p constant_iterator into this
-     *  \p constant_iterator.
-     *
-     *  \p rhs The constant_iterator to copy.
-     */
-    _CCCL_HOST_DEVICE
-    constant_iterator(constant_iterator const &rhs)
-      : super_t(rhs.base()), m_value(rhs.m_value) {}
+    constant_iterator() = default;
 
     /*! Copy constructor copies the value of another \p constant_iterator with related
      *  System type.
      *
      *  \param rhs The \p constant_iterator to copy.
      */
-    template<typename OtherSystem>
-    _CCCL_HOST_DEVICE
-    constant_iterator(constant_iterator<Value,Incrementable,OtherSystem> const &rhs,
-                      typename thrust::detail::enable_if_convertible<
-                        typename thrust::iterator_system<constant_iterator<Value,Incrementable,OtherSystem> >::type,
-                        typename thrust::iterator_system<super_t>::type
-                      >::type * = 0)
-      : super_t(rhs.base()), m_value(rhs.value()) {}
+    template <class OtherSystem,
+              detail::enable_if_different_t<OtherSystem, System, int> = 0,
+              detail::enable_if_convertible_t<
+                typename thrust::iterator_system<constant_iterator<Value, Incrementable, OtherSystem>>::type,
+                typename thrust::iterator_system<super_t>::type,
+                int> = 0>
+    _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
+        : super_t(rhs.base())
+        , m_value(rhs.value())
+    {}
 
     /*! This constructor receives a value to use as the constant value of this
      *  \p constant_iterator and an index specifying the location of this
@@ -203,7 +193,7 @@ template<typename Value,
     }
 
   private:
-    Value m_value;
+    Value m_value{};
 
     /*! \endcond
      */

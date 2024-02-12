@@ -150,8 +150,7 @@ template <typename IteratorTuple>
   public:
     /*! Null constructor does nothing.
      */
-    inline _CCCL_HOST_DEVICE
-    zip_iterator();
+    zip_iterator() = default;
 
     /*! This constructor creates a new \p zip_iterator from a
      *  \p tuple of iterators.
@@ -166,13 +165,12 @@ template <typename IteratorTuple>
      *
      *  \param other The \p zip_iterator to copy.
      */
-    template<typename OtherIteratorTuple>
-    inline _CCCL_HOST_DEVICE
-    zip_iterator(const zip_iterator<OtherIteratorTuple> &other,
-                 typename thrust::detail::enable_if_convertible<
-                   OtherIteratorTuple,
-                   IteratorTuple
-                 >::type * = 0);
+    template <typename OtherIteratorTuple,
+              detail::enable_if_different_t<OtherIteratorTuple, IteratorTuple, int>   = 0,
+              detail::enable_if_convertible_t<OtherIteratorTuple, IteratorTuple, int> = 0>
+    inline _CCCL_HOST_DEVICE zip_iterator(const zip_iterator<OtherIteratorTuple>& other)
+        : m_iterator_tuple(other.get_iterator_tuple())
+    {}
 
     /*! This method returns a \c const reference to this \p zip_iterator's
      *  \p tuple of iterators.
