@@ -29,6 +29,7 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
 
 #include "catch2_test_helper.h"
 
