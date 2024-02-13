@@ -158,13 +158,6 @@ template<typename Incrementable,
     _CCCL_HOST_DEVICE
     counting_iterator() : super_t(Incrementable{}) {}
 
-    /*! Copy constructor copies the value of another \p counting_iterator into a
-     *  new \p counting_iterator.
-     *
-     *  \p rhs The \p counting_iterator to copy.
-     */
-    counting_iterator(counting_iterator const&) = default;
-
     /*! Copy constructor copies the value of another counting_iterator
      *  with related System type.
      *
