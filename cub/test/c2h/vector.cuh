@@ -29,7 +29,7 @@
 
 #include <thrust/detail/vector_base.h>
 
-#include <c2h/checked_cuda_allocator.cuh>
+#include <c2h/checked_allocator.cuh>
 
 #include <memory>
 
@@ -37,7 +37,7 @@ namespace c2h
 {
 
 template <typename T>
-using host_vector = thrust::detail::vector_base<T, std::allocator<T>>;
+using host_vector = thrust::detail::vector_base<T, c2h::checked_host_allocator<T>>;
 
 template <typename T>
 using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;

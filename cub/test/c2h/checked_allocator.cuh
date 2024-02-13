@@ -28,21 +28,21 @@
 #pragma once
 
 #include <thrust/device_allocator.h>
+#include <thrust/mr/new.h>
 #include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
 
 #include <cuda_runtime_api.h>
 
+#include <new>
+
 namespace c2h
 {
 namespace detail
 {
 
-// Check available memory prior to calling cudaMalloc.
-// This avoids hangups and slowdowns from allocating swap / non-device memory
-// on some platforms, namely tegra.
-inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
+inline cudaError_t check_free_device_memory(std::size_t bytes)
 {
   std::size_t free_bytes{};
   std::size_t total_bytes{};
@@ -59,6 +59,20 @@ inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
     return cudaErrorMemoryAllocation;
   }
 
+  return cudaSuccess;
+}
+
+// Check available memory prior to calling cudaMalloc.
+// This avoids hangups and slowdowns from allocating swap / non-device memory
+// on some platforms, namely tegra.
+inline cudaError_t checked_cuda_malloc(void** ptr, std::size_t bytes)
+{
+  auto status = check_free_device_memory(bytes);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+
   return cudaMalloc(ptr, bytes);
 }
 } // namespace detail
@@ -70,7 +84,8 @@ template <typename T>
 class checked_cuda_allocator
     : public thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>
 {
-  using base = thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
+  using base =
+    thrust::mr::stateless_resource_allocator<T, thrust::device_ptr_memory_resource<checked_cuda_memory_resource>>;
 
 public:
   template <typename U>
@@ -94,5 +109,32 @@ public:
 
   _CCCL_HOST_DEVICE ~checked_cuda_allocator() {}
 };
+
+struct checked_host_memory_resource final : public thrust::mr::new_delete_resource_base
+{
+  void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) final
+  {
+    // Some systems with integrated host/device memory have issues with allocating more memory
+    // than is available. Check the amount of free memory before attempting to allocate on
+    // integrated systems.
+    int device = 0;
+    CubDebugExit(cudaGetDevice(&device));
+    cudaDeviceProp prop;
+    CubDebugExit(cudaGetDeviceProperties(&prop, device));
+    if (prop.integrated)
+    {
+      auto status = detail::check_free_device_memory(bytes + alignment + sizeof(std::size_t));
+      if (status != cudaSuccess)
+      {
+        throw std::bad_alloc{};
+      }
+    }
+
+    return this->new_delete_resource_base::do_allocate(bytes, alignment);
+  }
+};
+
+template <typename T>
+using checked_host_allocator = thrust::mr::stateless_resource_allocator<T, checked_host_memory_resource>;
 
 } // namespace c2h

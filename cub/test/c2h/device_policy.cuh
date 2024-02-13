@@ -31,7 +31,7 @@
 
 #include <type_traits>
 
-#include <c2h/checked_cuda_allocator.cuh>
+#include <c2h/checked_allocator.cuh>
 
 namespace c2h
 {
