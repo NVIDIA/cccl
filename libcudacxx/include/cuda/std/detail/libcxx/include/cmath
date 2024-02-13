@@ -636,7 +636,7 @@ __half sin(__half __v)
         ({
             float __vf = __v;
             __vf = _CUDA_VSTD::sin(__vf);
-            __half_raw __ret_repr = __float2half_rn(__vf);
+            __half_raw __ret_repr = ::__float2half_rn(__vf);
 
             uint16_t __repr = __half_raw(__v).x;
             switch (__repr) {
@@ -664,7 +664,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 sin(__nv_bfloat16 __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hsin(__v);),
+        (return ::hsin(__v);),
         (return __nv_bfloat16(_CUDA_VSTD::sin(float(__v)));)
     )
 }
@@ -688,11 +688,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __half cos(__half __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hcos(__v);),
+        (return ::hcos(__v);),
         ({
             float __vf = __v;
             __vf = _CUDA_VSTD::cos(__vf);
-            __half_raw __ret_repr = __float2half_rn(__vf);
+            __half_raw __ret_repr = ::__float2half_rn(__vf);
 
             uint16_t __repr = __half_raw(__v).x;
             switch (__repr) {
@@ -739,11 +739,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __half exp(__half __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hexp(__v);),
+        (return ::hexp(__v);),
         ({
             float __vf = __v;
             __vf = _CUDA_VSTD::exp(__vf);
-            __half_raw __ret_repr = __float2half_rn(__vf);
+            __half_raw __ret_repr = ::__float2half_rn(__vf);
 
             uint16_t __repr = __half_raw(__v).x;
             switch (__repr) {
@@ -766,7 +766,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 exp(__nv_bfloat16 __v)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hexp(__v);),
+        (return ::hexp(__v);),
         (return __nv_bfloat16(_CUDA_VSTD::exp(float(__v)));)
     )
 }
@@ -775,14 +775,14 @@ __nv_bfloat16 exp(__nv_bfloat16 __v)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__half __v)
 {
-    return ::signbit(__half2float(__v));
+    return ::signbit(::__half2float(__v));
 }
 
 #ifndef _LIBCUDACXX_HAS_NO_NVBF16
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool signbit(__nv_bfloat16 __v)
 {
-    return ::signbit(__bfloat162float(__v));
+    return ::signbit(::__bfloat162float(__v));
 }
 #endif
 
@@ -804,11 +804,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __half log(__half __x)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hlog(__x);),
+        (return ::hlog(__x);),
         ({
             float __vf = __x;
             __vf = _CUDA_VSTD::log(__vf);
-            __half_raw __ret_repr = __float2half_rn(__vf);
+            __half_raw __ret_repr = ::__float2half_rn(__vf);
 
             uint16_t __repr = __half_raw(__x).x;
             switch (__repr) {
@@ -830,7 +830,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 log(__nv_bfloat16 __x)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hlog(__x);),
+        (return ::hlog(__x);),
         (return __nv_bfloat16(_CUDA_VSTD::log(float(__x)));)
     )
 }
@@ -840,7 +840,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __half sqrt(__half __x)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hsqrt(__x);),
+        (return ::hsqrt(__x);),
         (return __half(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
@@ -850,7 +850,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 sqrt(__nv_bfloat16 __x)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-        (return hsqrt(__x);),
+        (return ::hsqrt(__x);),
         (return __nv_bfloat16(_CUDA_VSTD::sqrt(float(__x)));)
     )
 }
@@ -885,7 +885,7 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isnan(__half __x) noexcept
 {
-    return __hisnan(__x);
+    return ::__hisnan(__x);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -899,7 +899,7 @@ bool isnan(__half __v)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 bool __constexpr_isnan(__nv_bfloat16 __x) noexcept
 {
-    return __hisnan(__x);
+    return ::__hisnan(__x);
 }
 #endif
 
@@ -941,9 +941,9 @@ bool __constexpr_isinf(__half __x) noexcept {
 #if _LIBCUDACXX_STD_VER >= 20
     // There's some sort of a bug with C++20 here.
     // XXX nvbug number pending
-    return !__hisnan(__x) && __hisnan(__x - __x);
+    return !::__hisnan(__x) && ::__hisnan(__x - __x);
 #else
-    return __hisinf(__x) != 0;
+    return ::__hisinf(__x) != 0;
 #endif
 }
 #endif
@@ -954,9 +954,9 @@ bool __constexpr_isinf(__nv_bfloat16 __x) noexcept {
 #if _LIBCUDACXX_STD_VER >= 20
     // There's some sort of a bug with C++20 here.
     // XXX nvbug number pending
-    return !__hisnan(__x) && __hisnan(__x - __x);
+    return !::__hisnan(__x) && ::__hisnan(__x - __x);
 #else
-    return __hisinf(__x) != 0;
+    return ::__hisinf(__x) != 0;
 #endif
 }
 #endif
@@ -1143,7 +1143,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 double __constexpr_fabs(_Tp __x) noexcept {
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_fabs(__half __x) noexcept
 {
-    return __habs(__x);
+    return ::__habs(__x);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1163,7 +1163,7 @@ __half abs(__half __x)
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
 {
-    return __habs(__x);
+    return ::__habs(__x);
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -1244,7 +1244,7 @@ __constexpr_fmax(_Tp __x, _Up __y) noexcept {
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __half __constexpr_fmax(__half __x, __half __y) noexcept
 {
-    return __hmax(__x, __y);
+    return ::__hmax(__x, __y);
 }
 #endif
 
@@ -1252,7 +1252,7 @@ __half __constexpr_fmax(__half __x, __half __y) noexcept
 inline _LIBCUDACXX_INLINE_VISIBILITY
 __nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
-    return __hmax(__x, __y);
+    return ::__hmax(__x, __y);
 }
 #endif
 #endif
