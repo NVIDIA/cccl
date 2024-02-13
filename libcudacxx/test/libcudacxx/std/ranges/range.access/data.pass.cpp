@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -88,10 +88,8 @@ __host__ __device__ constexpr bool testReturnTypes() {
     static_assert(!cuda::std::is_invocable_v<RangeCDataT, const D&&>);
   }
   {
-#if _LIBCUDACXX_HAS_RANGES
     static_assert(!cuda::std::ranges::contiguous_range<NC>);
     static_assert( cuda::std::ranges::contiguous_range<const NC>);
-#endif
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<NC&>())), int*);
     static_assert(!cuda::std::is_invocable_v<RangeDataT, NC&&>);
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::data(cuda::std::declval<const NC&>())), char*);
