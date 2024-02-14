@@ -28,8 +28,6 @@
 #include <cub/device/device_merge_sort.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 
 #include <algorithm>
@@ -54,11 +52,11 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort]
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 10000)));
-  thrust::device_vector<key_t> keys_in_out(num_items);
+  c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::gen(CUB_SEED(2), keys_in_out);
 
   // Prepare host data for verification
-  thrust::host_vector<key_t> keys_expected(keys_in_out);
+  c2h::host_vector<key_t> keys_expected(keys_in_out);
   std::stable_sort(keys_expected.begin(), keys_expected.end(), custom_less_op_t{});
 
   // Perform sort
@@ -76,14 +74,14 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large types", "[merge][sort
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 10000)));
-  thrust::device_vector<key_t> keys_in_out(num_items);
-  thrust::device_vector<data_t> values_in_out(num_items);
+  c2h::device_vector<key_t> keys_in_out(num_items);
+  c2h::device_vector<data_t> values_in_out(num_items);
   c2h::gen(CUB_SEED(2), keys_in_out);
   c2h::gen(CUB_SEED(1), values_in_out);
 
   // Prepare host data for verification
-  thrust::host_vector<key_t> keys_expected(keys_in_out);
-  thrust::host_vector<data_t> values_expected(values_in_out);
+  c2h::host_vector<key_t> keys_expected(keys_in_out);
+  c2h::host_vector<data_t> values_expected(values_in_out);
   auto zipped_expected_it = thrust::make_zip_iterator(keys_expected.begin(), values_expected.begin());
   std::stable_sort(zipped_expected_it, zipped_expected_it + num_items, compare_first_lt_op_t{});
 
