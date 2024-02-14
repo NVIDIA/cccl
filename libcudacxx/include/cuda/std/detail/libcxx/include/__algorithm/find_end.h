@@ -25,6 +25,7 @@
 #include "../__algorithm/comp.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/add_lvalue_reference.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>

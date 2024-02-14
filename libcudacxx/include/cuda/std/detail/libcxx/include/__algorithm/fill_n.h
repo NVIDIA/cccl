@@ -24,6 +24,7 @@
 
 #include "../__iterator/iterator_traits.h"
 #include "../__utility/convert_to_integral.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _OutputIterator, class _Size, class _Tp>

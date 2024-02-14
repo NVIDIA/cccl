@@ -31,6 +31,7 @@
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/enable_if.h"
 #include "../__utility/pair.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>

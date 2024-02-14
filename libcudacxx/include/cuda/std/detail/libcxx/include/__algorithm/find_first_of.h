@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include "../__algorithm/comp.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>

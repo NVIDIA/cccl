@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include "../__utility/convert_to_integral.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Size, class _Function>

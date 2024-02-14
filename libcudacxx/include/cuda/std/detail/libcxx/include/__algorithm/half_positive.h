@@ -25,6 +25,7 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_integral.h"
 #include "../__type_traits/make_unsigned.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Perform division by two quickly for positive integers (llvm.org/PR39129)

@@ -24,6 +24,7 @@
 
 #include "../__debug"
 #include "../__utility/declval.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Compare>

@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include "../__functional/invoke.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // generic implementation

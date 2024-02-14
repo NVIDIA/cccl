@@ -23,6 +23,7 @@
 #endif // no system header
 
 #include "../__iterator/iterator_traits.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp>

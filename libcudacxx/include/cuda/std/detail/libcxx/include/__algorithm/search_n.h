@@ -26,6 +26,7 @@
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__utility/convert_to_integral.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp>

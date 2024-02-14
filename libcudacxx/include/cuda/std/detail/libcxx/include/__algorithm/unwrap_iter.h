@@ -29,6 +29,7 @@
 #include "../__type_traits/is_copy_constructible.h"
 #include "../__utility/declval.h"
 #include "../__utility/move.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // TODO: Change the name of __unwrap_iter_impl to something more appropriate

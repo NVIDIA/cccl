@@ -25,6 +25,7 @@
 #include "../__algorithm/comp.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__utility/pair.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>

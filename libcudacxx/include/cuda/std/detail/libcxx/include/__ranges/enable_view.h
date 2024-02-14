@@ -29,6 +29,7 @@
 #include "../__type_traits/is_class.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/void_t.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_STD_VER >= 2017

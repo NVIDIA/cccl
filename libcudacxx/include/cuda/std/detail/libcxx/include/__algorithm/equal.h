@@ -26,6 +26,7 @@
 #include "../__iterator/distance.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/add_lvalue_reference.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>

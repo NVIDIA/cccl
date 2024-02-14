@@ -25,6 +25,7 @@
 #include "../__algorithm/comp.h"
 #include "../__algorithm/comp_ref_type.h"
 #include "../__iterator/iterator_traits.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Compare, class _InputIterator1, class _InputIterator2>
