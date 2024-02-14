@@ -182,10 +182,6 @@ template<typename Incrementable,
     _CCCL_HOST_DEVICE
     explicit counting_iterator(Incrementable x):super_t(x){}
 
-#if _CCCL_STD_VER >= 2011
-    counting_iterator & operator=(const counting_iterator &) = default;
-#endif
-
     /*! \cond
      */
   private:

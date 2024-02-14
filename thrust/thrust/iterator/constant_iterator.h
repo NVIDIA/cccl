@@ -122,14 +122,8 @@ template<typename Value,
 
     /*! Default constructor initializes this \p constant_iterator's constant using its default constructor
      */
-#if defined(_CCCL_COMPILER_MSVC_2017)
     _CCCL_HOST_DEVICE constant_iterator()
-        : super_t()
-        , m_value()
-    {}
-#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
-    constant_iterator() = default;
-#endif // !_CCCL_COMPILER_MSVC_2017
+        : super_t(), m_value() {}
 
     /*! Copy constructor copies the value of another \p constant_iterator with related
      *  System type.
@@ -199,7 +193,7 @@ template<typename Value,
     }
 
   private:
-    Value m_value{};
+    Value m_value;
 
     /*! \endcond
      */
