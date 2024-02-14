@@ -67,7 +67,7 @@ namespace detail
 {
 
 template <typename Derived, typename InputIt, typename Size, typename UnaryOp, typename T, typename BinaryOp>
-THRUST_RUNTIME_FUNCTION T   (
+THRUST_RUNTIME_FUNCTION T transform_reduce_n_impl(
   execution_policy<Derived>& policy, InputIt first, Size num_items, UnaryOp unary_op, T init, BinaryOp binary_op)
 {
   cudaStream_t stream = cuda_cub::stream(policy);
