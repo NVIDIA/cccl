@@ -13,7 +13,7 @@ CCCL uses [Development Containers](https://containers.dev/) to provide consisten
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [Remote - Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-
+- [Docker](https://docs.docker.com/engine/install/)
 
 ### Steps
 
