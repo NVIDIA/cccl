@@ -200,6 +200,7 @@ set(files
   __ranges/rbegin.h
   __ranges/rend.h
   __ranges/size.h
+  __ranges/view_interface.h
   __split_buffer
   __sso_allocator
   __std_stream
