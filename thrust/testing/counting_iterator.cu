@@ -5,6 +5,7 @@
 #include <thrust/distance.h>
 #include <thrust/detail/cstdint.h>
 
+#include <cuda/std/type_traits>
 
 THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 
@@ -33,6 +34,8 @@ void TestCountingIteratorCopyConstructor(void)
     ASSERT_EQUAL(*iter0, *d_iter);
 }
 DECLARE_UNITTEST(TestCountingIteratorCopyConstructor);
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::counting_iterator<int>>::value, "");
+static_assert(cuda::std::is_trivially_copyable<thrust::counting_iterator<int>>::value, "");
 
 
 void TestCountingIteratorIncrement(void)
@@ -44,18 +47,18 @@ void TestCountingIteratorIncrement(void)
     iter++;
 
     ASSERT_EQUAL(*iter, 1);
-    
+
     iter++;
     iter++;
-    
+
     ASSERT_EQUAL(*iter, 3);
 
     iter += 5;
-    
+
     ASSERT_EQUAL(*iter, 8);
 
     iter -= 10;
-    
+
     ASSERT_EQUAL(*iter, -2);
 }
 DECLARE_UNITTEST(TestCountingIteratorIncrement);
@@ -70,15 +73,15 @@ void TestCountingIteratorComparison(void)
     ASSERT_EQUAL(iter1 == iter2, true);
 
     iter1++;
-    
+
     ASSERT_EQUAL(iter1 - iter2, 1);
     ASSERT_EQUAL(iter1 == iter2, false);
-   
+
     iter2++;
 
     ASSERT_EQUAL(iter1 - iter2, 0);
     ASSERT_EQUAL(iter1 == iter2, true);
-  
+
     iter1 += 100;
     iter2 += 100;
 
@@ -99,19 +102,19 @@ void TestCountingIteratorFloatComparison(void)
     ASSERT_EQUAL(iter2 <  iter1, false);
 
     iter1++;
-    
+
     ASSERT_EQUAL(iter1 - iter2, 1);
     ASSERT_EQUAL(iter1 == iter2, false);
-    ASSERT_EQUAL(iter2 < iter1, true); 
-    ASSERT_EQUAL(iter1 < iter2, false); 
-   
+    ASSERT_EQUAL(iter2 < iter1, true);
+    ASSERT_EQUAL(iter1 < iter2, false);
+
     iter2++;
 
     ASSERT_EQUAL(iter1 - iter2, 0);
     ASSERT_EQUAL(iter1 == iter2, true);
     ASSERT_EQUAL(iter1 < iter2, false);
     ASSERT_EQUAL(iter2 < iter1, false);
-  
+
     iter1 += 100;
     iter2 += 100;
 
@@ -130,12 +133,12 @@ void TestCountingIteratorFloatComparison(void)
     ASSERT_EQUAL(iter4 < iter3, false);
 
     iter3++; // iter3 = 1.0, iter4 = 0.5
-    
+
     ASSERT_EQUAL(iter3 - iter4, 0);
     ASSERT_EQUAL(iter3 == iter4, true);
     ASSERT_EQUAL(iter3 < iter4, false);
     ASSERT_EQUAL(iter4 < iter3, false);
-   
+
     iter4++; // iter3 = 1.0, iter4 = 1.5
 
     ASSERT_EQUAL(iter3 - iter4, 0);
@@ -162,9 +165,9 @@ void TestCountingIteratorDistance(void)
     ASSERT_EQUAL(thrust::distance(iter1, iter2), 5);
 
     iter1++;
-    
+
     ASSERT_EQUAL(thrust::distance(iter1, iter2), 4);
-   
+
     iter2 += 100;
 
     ASSERT_EQUAL(thrust::distance(iter1, iter2), 104);

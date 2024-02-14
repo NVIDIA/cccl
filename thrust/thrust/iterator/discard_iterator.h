@@ -115,18 +115,6 @@ template<typename System = use_default>
     /*! \endcond
      */
 
-    /*! Copy constructor copies from a source discard_iterator.
-     *
-     *  \p rhs The discard_iterator to copy.
-     */
-    _CCCL_HOST_DEVICE
-    discard_iterator(discard_iterator const &rhs)
-      : super_t(rhs.base()) {}
-
-#if _CCCL_STD_VER >= 2011
-    discard_iterator & operator=(const discard_iterator &) = default;
-#endif
-
     /*! This constructor receives an optional index specifying the position of this
      *  \p discard_iterator in a range.
      *

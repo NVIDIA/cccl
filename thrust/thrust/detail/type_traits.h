@@ -441,6 +441,8 @@ template<typename T1, typename T2, typename T = void>
     : enable_if< is_convertible<T1,T2>::value, T >
 {};
 
+template<typename T1, typename T2, typename T = void>
+using enable_if_convertible_t = typename enable_if_convertible<T1, T2, T>::type;
 
 template<typename T1, typename T2, typename T = void>
   struct disable_if_convertible
@@ -452,7 +454,6 @@ template<typename T1, typename T2, typename Result = void>
   struct enable_if_different
     : enable_if<is_different<T1,T2>::value, Result>
 {};
-
 
 template<typename T>
   struct is_numeric
