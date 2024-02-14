@@ -199,7 +199,6 @@ __launch_bounds__(int(
   // Static shared memory allocation
   __shared__ typename VsmemHelperT::static_temp_storage_t static_temp_storage;
 
-  // Shared memory for AgentSelectIf
   // Get temporary storage
   typename AgentSelectIfT::TempStorage& temp_storage = VsmemHelperT::get_temp_storage(static_temp_storage, vsmem);
 
