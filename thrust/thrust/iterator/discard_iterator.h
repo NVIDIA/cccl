@@ -52,7 +52,7 @@ THRUST_NAMESPACE_BEGIN
  *  \p discard_iterator may also be used to count the size of an algorithm's output which
  *  may not be known a priori.
  *
- *  The following code snippet demonstrates how to use \p discard_iterator to ignore
+ *  The following code snippet demonstrates how to use \p discard_iterator to
  *  ignore one of the output ranges of reduce_by_key
  *
  *  \code
@@ -114,18 +114,6 @@ template<typename System = use_default>
 
     /*! \endcond
      */
-
-    /*! Copy constructor copies from a source discard_iterator.
-     *
-     *  \p rhs The discard_iterator to copy.
-     */
-    _CCCL_HOST_DEVICE
-    discard_iterator(discard_iterator const &rhs)
-      : super_t(rhs.base()) {}
-
-#if _CCCL_STD_VER >= 2011
-    discard_iterator & operator=(const discard_iterator &) = default;
-#endif
 
     /*! This constructor receives an optional index specifying the position of this
      *  \p discard_iterator in a range.

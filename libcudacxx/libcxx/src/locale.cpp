@@ -155,7 +155,7 @@ class _LIBCUDACXX_HIDDEN locale::__imp
     : public facet
 {
     enum {N = 28};
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 // FIXME: MSVC doesn't support aligned parameters by value.
 // I can't get the __sso_allocator to work here
 // for MSVC I think for this reason.

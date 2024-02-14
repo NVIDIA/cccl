@@ -43,7 +43,7 @@ template <class _T1, class _T2>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2);
 #endif
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Ty>
 struct is_convertible<_Ty&, volatile _Ty&> : true_type {};
 
@@ -67,7 +67,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&
 
 template <class _Ty>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #else  // __has_builtin(__is_convertible_to) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 

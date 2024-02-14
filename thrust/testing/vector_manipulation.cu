@@ -18,7 +18,7 @@ void TestVectorManipulation(size_t n)
     ASSERT_EQUAL(test1.size(), n);
     ASSERT_EQUAL((test1 == std::vector<T>(n, T(3))), true);
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC) && (_MSC_VER <= 1400)
+#if defined(_CCCL_COMPILER_MSVC) && (_MSC_VER <= 1400)
     // XXX MSVC 2005's STL unintentionally uses adl to dispatch advance which
     //     produces an ambiguity between std::advance & thrust::advance
     //     don't produce a KNOWN_FAILURE, just ignore the issue

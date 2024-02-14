@@ -52,16 +52,16 @@ noexcept(noexcept(static_cast<common_type_t<ptrdiff_t, make_signed_t<decltype(__
 
 // GCC complains about the implicit conversion from ptrdiff_t to size_t in
 // the array bound.
-# if defined(_LIBCUDACXX_COMPILER_GCC)
+# if defined(_CCCL_COMPILER_GCC)
 #   pragma GCC diagnostic push
 #   pragma GCC diagnostic ignored "-Wsign-conversion"
-# endif // _LIBCUDACXX_COMPILER_GCC
+# endif // _CCCL_COMPILER_GCC
 template <class _Tp, ptrdiff_t _Sz>
 _LIBCUDACXX_INLINE_VISIBILITY
 constexpr ptrdiff_t ssize(const _Tp (&)[_Sz]) noexcept { return _Sz; }
-# if defined(_LIBCUDACXX_COMPILER_GCC)
+# if defined(_CCCL_COMPILER_GCC)
 #   pragma GCC diagnostic pop
-# endif // _LIBCUDACXX_COMPILER_GCC
+# endif // _CCCL_COMPILER_GCC
 #endif  // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD

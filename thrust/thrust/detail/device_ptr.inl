@@ -57,7 +57,7 @@ template<typename T>
 {
 }; // end is_device_ptr
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC) && (_MSC_VER <= 1400)
+#if defined(_CCCL_COMPILER_MSVC) && (_MSC_VER <= 1400)
 // XXX WAR MSVC 2005 problem with correctly implementing
 //     pointer_raw_pointer for device_ptr by specializing it here
 template<typename T>

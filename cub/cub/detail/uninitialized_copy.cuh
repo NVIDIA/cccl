@@ -37,8 +37,8 @@
 #  pragma system_header
 #endif // no system header
 
-
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 

@@ -53,7 +53,7 @@ using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _OrImpl<sizeof...(_Args) != 0>::te
 
 #if _CCCL_STD_VER > 2011
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 template <class... _Args>
 struct disjunction : false_type {};
 

@@ -50,6 +50,7 @@
 
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 

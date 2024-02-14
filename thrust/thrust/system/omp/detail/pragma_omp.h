@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 // MSVC ICEs when using the standard C++11 `_Pragma` operator with OpenMP
 // directives.
 // WAR this by using the MSVC-extension `__pragma`. See this link for more info:

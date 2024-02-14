@@ -61,7 +61,7 @@ class cuda_timer
     }
 };
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 #include <windows.h>
 
 class steady_timer

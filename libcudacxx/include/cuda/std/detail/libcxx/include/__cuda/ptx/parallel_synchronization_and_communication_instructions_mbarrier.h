@@ -133,7 +133,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 700
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   _CUDA_VSTD::uint64_t* __addr)
@@ -149,7 +149,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 700
@@ -162,7 +163,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   _CUDA_VSTD::uint64_t* __addr,
@@ -180,7 +181,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -198,7 +200,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   sem_release_t,
@@ -209,19 +211,18 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.release.cta.shared.b64                   %0,  [%1];           // 3a. "
+        "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr))
         : "memory"
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.release.cluster.shared.b64                   %0,  [%1];           // 3a. "
+        "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr))
         : "memory"
@@ -230,7 +231,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -249,7 +251,7 @@ __device__ static inline uint64_t mbarrier_arrive(
   const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   sem_release_t,
@@ -261,12 +263,11 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.release.cta.shared.b64                   %0,  [%1], %2;    // 3b. "
+        "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__count)
@@ -274,7 +275,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.release.cluster.shared.b64                   %0,  [%1], %2;    // 3b. "
+        "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__count)
@@ -284,7 +285,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -302,7 +304,7 @@ __device__ static inline void mbarrier_arrive(
   uint64_t* addr);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   sem_release_t,
@@ -313,18 +315,17 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
       :
-      : "r"(__as_ptr_smem(__addr))
+      : "r"(__as_ptr_remote_dsmem(__addr))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -343,7 +344,7 @@ __device__ static inline void mbarrier_arrive(
   const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   sem_release_t,
@@ -355,19 +356,18 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
       :
-      : "r"(__as_ptr_smem(__addr)),
+      : "r"(__as_ptr_remote_dsmem(__addr)),
         "r"(__count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -380,7 +380,7 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   const uint32_t& count);
 */
 #if __cccl_ptx_isa >= 700
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_no_complete_is_not_supported_before_SM_80__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_no_complete_is_not_supported_before_SM_80__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complete(
   _CUDA_VSTD::uint64_t* __addr,
@@ -398,7 +398,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_no_complet
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_no_complete_is_not_supported_before_SM_80__();
+    __cuda_ptx_mbarrier_arrive_no_complete_is_not_supported_before_SM_80__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 700
@@ -417,7 +418,7 @@ __device__ static inline uint64_t mbarrier_arrive_expect_tx(
   const uint32_t& tx_count);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   sem_release_t,
@@ -429,12 +430,11 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
   // __space == space_shared (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
       asm (
-        "mbarrier.arrive.expect_tx.release.cta.shared.b64 %0, [%1], %2; // 8. "
+        "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__tx_count)
@@ -442,7 +442,7 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
       );
     } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
       asm (
-        "mbarrier.arrive.expect_tx.release.cluster.shared.b64 %0, [%1], %2; // 8. "
+        "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr)),
           "r"(__tx_count)
@@ -452,7 +452,8 @@ _LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
     return __state;
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return ___cuda_vstd_uint64_t__cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    return 0;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -471,7 +472,7 @@ __device__ static inline void mbarrier_arrive_expect_tx(
   const uint32_t& tx_count);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __void__cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   sem_release_t,
@@ -483,25 +484,21 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm (
       "mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64   _, [%0], %1; // 9. "
       :
-      : "r"(__as_ptr_smem(__addr)),
+      : "r"(__as_ptr_remote_dsmem(__addr)),
         "r"(__tx_count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __void__cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
+    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
-
-
-
 
 // 9.7.12.15.14. Parallel Synchronization and Communication Instructions: mbarrier.arrive_drop
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
@@ -520,7 +517,7 @@ __device__ static inline bool mbarrier_test_wait(
   const uint64_t& state);
 */
 #if __cccl_ptx_isa >= 700
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
   _CUDA_VSTD::uint64_t* __addr,
@@ -538,10 +535,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
         "l"(__state)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
+    __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_80__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 700
@@ -558,7 +556,7 @@ __device__ static inline bool mbarrier_test_wait(
   const uint64_t& state);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
   sem_acquire_t,
@@ -568,7 +566,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -594,10 +591,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -610,7 +608,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
   const uint32_t& phaseParity);
 */
 #if __cccl_ptx_isa >= 710
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
   _CUDA_VSTD::uint64_t* __addr,
@@ -628,10 +626,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
         "r"(__phaseParity)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
+    __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_80__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 710
@@ -648,7 +647,7 @@ __device__ static inline bool mbarrier_test_wait_parity(
   const uint32_t& phaseParity);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
   sem_acquire_t,
@@ -658,7 +657,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -684,10 +682,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_test_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -700,7 +699,7 @@ __device__ static inline bool mbarrier_try_wait(
   const uint64_t& state);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   _CUDA_VSTD::uint64_t* __addr,
@@ -718,10 +717,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         "l"(__state)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -735,7 +735,7 @@ __device__ static inline bool mbarrier_try_wait(
   const uint32_t& suspendTimeHint);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   _CUDA_VSTD::uint64_t* __addr,
@@ -755,10 +755,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         "r"(__suspendTimeHint)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -775,7 +776,7 @@ __device__ static inline bool mbarrier_try_wait(
   const uint64_t& state);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   sem_acquire_t,
@@ -785,7 +786,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -811,10 +811,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -832,7 +833,7 @@ __device__ static inline bool mbarrier_try_wait(
   const uint32_t& suspendTimeHint);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
   sem_acquire_t,
@@ -843,7 +844,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -871,10 +871,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -887,7 +888,7 @@ __device__ static inline bool mbarrier_try_wait_parity(
   const uint32_t& phaseParity);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   _CUDA_VSTD::uint64_t* __addr,
@@ -905,10 +906,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         "r"(__phaseParity)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -922,7 +924,7 @@ __device__ static inline bool mbarrier_try_wait_parity(
   const uint32_t& suspendTimeHint);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
 template <typename=void>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   _CUDA_VSTD::uint64_t* __addr,
@@ -942,10 +944,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         "r"(__suspendTimeHint)
       : "memory"
     );
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -962,7 +965,7 @@ __device__ static inline bool mbarrier_try_wait_parity(
   const uint32_t& phaseParity);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   sem_acquire_t,
@@ -972,7 +975,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -998,10 +1000,11 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1019,7 +1022,7 @@ __device__ static inline bool mbarrier_try_wait_parity(
   const uint32_t& suspendTimeHint);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE bool __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
 _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
   sem_acquire_t,
@@ -1030,7 +1033,6 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
 {
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster, "");
-
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __waitComplete;
     if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
@@ -1058,14 +1060,14 @@ _LIBCUDACXX_DEVICE static inline bool mbarrier_try_wait_parity(
         : "memory"
       );
     }
-    return static_cast<bool>(__waitComplete); // Deliberate downcast.
+    return static_cast<bool>(__waitComplete);
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
-    return __bool__cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__();
+    return false;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
-
 
 // 9.7.12.15.17. Parallel Synchronization and Communication Instructions: mbarrier.pending_count
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count

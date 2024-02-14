@@ -48,10 +48,11 @@
 #include <thrust/system/cuda/config.h>
 
 #include <thrust/system/cuda/detail/async/customization.h>
-#include <thrust/system/cuda/detail/parallel_for.h>
 #include <thrust/system/cuda/future.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/distance.h>
+
+#include <cub/device/device_for.cuh>
 
 #include <type_traits>
 
@@ -124,7 +125,7 @@ unique_eager_event async_for_each_n(
   );
 
   thrust::cuda_cub::throw_on_error(
-    thrust::cuda_cub::__parallel_for::parallel_for(
+    cub::DeviceFor::Bulk(
       n, std::move(wrapped), e.stream().native_handle()
     )
   , "after for_each launch"

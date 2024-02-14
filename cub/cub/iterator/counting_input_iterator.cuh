@@ -46,7 +46,7 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  include <iostream>
 #  include <iterator>
 #else
@@ -120,7 +120,7 @@ public:
     /// The type of a reference to an element the iterator can point to
     typedef ValueType reference;
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
     using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
@@ -131,9 +131,9 @@ public:
 #  else // THRUST_VERSION < 100700
     using iterator_category = std::random_access_iterator_tag;
 #  endif // THRUST_VERSION
-#else // defined(_LIBCUDACXX_COMPILER_NVRTC)
+#else // defined(_CCCL_COMPILER_NVRTC)
     using iterator_category = ::cuda::std::random_access_iterator_tag;
-#endif // defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(_CCCL_COMPILER_NVRTC)
 
 private:
 
@@ -233,7 +233,7 @@ public:
     }
 
     /// ostream operator
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
     friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
     {
         os << "[" << itr.val << "]";
