@@ -159,18 +159,17 @@ template <typename ElementIterator,
     /*! Copy constructor accepts a related \p permutation_iterator.
      *  \param r A compatible \p permutation_iterator to copy from.
      */
-    template<typename OtherElementIterator, typename OtherIndexIterator>
-    _CCCL_HOST_DEVICE
-    permutation_iterator(permutation_iterator<OtherElementIterator,OtherIndexIterator> const &r
-    // XXX remove these guards when we have static_assert
-    , typename detail::enable_if_convertible<OtherElementIterator, ElementIterator>::type* = 0
-    , typename detail::enable_if_convertible<OtherIndexIterator, IndexIterator>::type* = 0
-    )
-      : super_t(r.base()), m_element_iterator(r.m_element_iterator)
+    template <typename OtherElementIterator,
+              typename OtherIndexIterator,
+              detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
+              detail::enable_if_convertible_t<OtherIndexIterator, IndexIterator, int>     = 0>
+    _CCCL_HOST_DEVICE permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)
+        : super_t(rhs.base())
+        , m_element_iterator(rhs.m_element_iterator)
     {}
 
-  /*! \cond
-   */
+    /*! \cond
+     */
   private:
     // MSVC 2013 and 2015 incorrectly warning about returning a reference to
     // a local/temporary here.

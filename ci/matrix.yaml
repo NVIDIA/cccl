@@ -8,7 +8,7 @@ gpus:
   - 'v100'
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '24.02'
+devcontainer_version: '24.04'
 
 # gcc compiler configurations
 gcc6: &gcc6 { name: 'gcc', version: '6', exe: 'g++' }
