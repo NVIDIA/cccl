@@ -20,7 +20,7 @@
 # include <new>
 #endif
 
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
+#ifdef _CCCL_COMPILER_NVRTC
 #define LAMBDA [=]
 #else
 #define LAMBDA [=] __host__ __device__

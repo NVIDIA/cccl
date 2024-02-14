@@ -67,9 +67,8 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 // HP aCC cannot deal with missing names for template value parameters.
 template <int x> struct static_assert_test {};
 
-#if    (  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                  \
-       && (THRUST_GCC_VERSION >= 40800))                                      \
-    || (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG)
+#  if (defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION >= 40800))          \
+      || defined(_CCCL_COMPILER_CLANG)
   // Clang and GCC 4.8+ will complain about this typedef being unused unless we
   // annotate it as such.
 #  define THRUST_STATIC_ASSERT(B)                                             \
@@ -95,5 +94,3 @@ template <int x> struct static_assert_test {};
 } // namespace detail
 
 THRUST_NAMESPACE_END
-
-

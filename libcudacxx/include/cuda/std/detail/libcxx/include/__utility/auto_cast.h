@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER < 2020 && defined(_LIBCUDACXX_COMPILER_MSVC)
+#if _CCCL_STD_VER < 2020 && defined(_CCCL_COMPILER_MSVC)
 #define _LIBCUDACXX_AUTO_CAST(expr) (_CUDA_VSTD::decay_t<decltype((expr))>)(expr)
 #else
 #define _LIBCUDACXX_AUTO_CAST(expr) static_cast<_CUDA_VSTD::decay_t<decltype((expr))>>(expr)

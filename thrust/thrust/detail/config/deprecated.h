@@ -41,11 +41,11 @@
 #  define THRUST_DEPRECATED
 #elif _CCCL_STD_VER >= 2014
 #  define THRUST_DEPRECATED [[deprecated]]
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#elif defined(_CCCL_COMPILER_MSVC)
 #  define THRUST_DEPRECATED __declspec(deprecated)
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG
+#elif defined(_CCCL_COMPILER_CLANG)
 #  define THRUST_DEPRECATED __attribute__((deprecated))
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 #  define THRUST_DEPRECATED __attribute__((deprecated))
 #else
 #  define THRUST_DEPRECATED

@@ -106,24 +106,22 @@ template <std::size_t Align>
 struct aligned_type;
 
 #if _CCCL_STD_VER >= 2011                                                     \
-  && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
-  && (THRUST_GCC_VERSION >= 40800)
+  && defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION >= 40800)
     // C++11 implementation, excluding GCC 4.7, which doesn't have `alignas`.
     template <std::size_t Align>
     struct aligned_type
     {
         struct alignas(Align) type {};
     };
-#elif  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)                    \
-    || (   (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                 \
-        && (THRUST_GCC_VERSION < 40600))
+#elif defined(_CCCL_COMPILER_MSVC) \
+    || (defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40600))
     // C++03 implementation for MSVC and GCC <= 4.5.
     //
     // We have to implement `aligned_type` with specializations for MSVC
     // and GCC 4.2.x and older because they require literals as arguments to
     // their alignment attribute.
 
-    #if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+    #if defined(_CCCL_COMPILER_MSVC)
         // MSVC implementation.
         #define THRUST_DEFINE_ALIGNED_TYPE_SPECIALIZATION(X)                  \
             template <>                                                       \
@@ -167,7 +165,7 @@ struct aligned_type;
 ///
 /// It is an implementation of C++11's \p std::max_align_t.
 #if _CCCL_STD_VER >= 2011                                                     \
-  && (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                        \
+  && defined(_CCCL_COMPILER_GCC)                                              \
   && (THRUST_GCC_VERSION >= 40900)
     // GCC 4.7 and 4.8 don't have `std::max_align_t`.
     using max_align_t = std::max_align_t;

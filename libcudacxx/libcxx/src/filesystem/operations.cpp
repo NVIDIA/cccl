@@ -48,7 +48,7 @@
 #pragma comment(lib, "rt")
 #endif
 
-#if defined(_LIBCUDACXX_COMPILER_GCC)
+#if defined(_CCCL_COMPILER_GCC)
 #if _GNUC_VER < 500
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
@@ -348,7 +348,7 @@ struct FileDescriptor {
   file_status get_status() const { return m_status; }
   StatT const& get_stat() const { return m_stat; }
 
-#ifndef _LIBCUDACXX_COMPILER_NVHPC
+#ifndef _CCCL_COMPILER_NVHPC
   // NVC++ doesn't like static / unnamed namespace functions that aren't used, rather aggresively.
   bool status_known() const { return _CUDA_VSTD_FS::status_known(m_status); }
 #endif

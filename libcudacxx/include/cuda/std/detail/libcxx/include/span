@@ -240,8 +240,8 @@ public:
         { (void)__count; _LIBCUDACXX_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)"); }
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 span(pointer __f, pointer __l) : __data{__f}
         { (void)__l;     _LIBCUDACXX_ASSERT(_Extent == distance(__f, __l), "size mismatch in span's constructor (ptr, ptr)"); }
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if defined(_CCCL_COMPILER_NVRTC) \
+ || defined(_CCCL_COMPILER_MSVC_2017)
     template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept : __data{__arr} {}
 #else
@@ -257,9 +257,9 @@ public:
     span(const array<_OtherElementType, _Extent>& __arr) noexcept : __data{__arr.data()} {}
 
     template <class _OtherElementType,
-#ifdef _LIBCUDACXX_COMPILER_MSVC_2017
+#ifdef _CCCL_COMPILER_MSVC_2017
               size_t _Extent2 = _Extent, enable_if_t< _Extent2 != dynamic_extent, int> = 0,
-#endif // _LIBCUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_COMPILER_MSVC_2017
               enable_if_t<!_LIBCUDACXX_TRAIT(is_same, _OtherElementType, _Tp), int> = 0,
               enable_if_t< _LIBCUDACXX_TRAIT(is_convertible, _OtherElementType(*)[], element_type (*)[]), int> = 0>
     _LIBCUDACXX_INLINE_VISIBILITY

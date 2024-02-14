@@ -45,7 +45,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER > 2011
 
 // Let COND_RES(X, Y) be:
-#ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 

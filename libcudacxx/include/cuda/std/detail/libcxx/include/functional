@@ -500,9 +500,9 @@ POLICY:  For non-variadic implementations, the number of arguments is limited
 #ifndef __cuda_std__
 #include <__config>
 #else
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef _CCCL_COMPILER_NVRTC
 #include <errno.h>
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #include "__functional_base"

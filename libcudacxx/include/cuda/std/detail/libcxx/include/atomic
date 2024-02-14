@@ -613,7 +613,7 @@ void atomic_signal_fence(memory_order m) noexcept;
 #  include <intrin.h>
 #endif
 
-#if !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  include <string.h>
 #endif
 
@@ -688,9 +688,7 @@ typedef enum memory_order {
 
 template <typename _Tp> _LIBCUDACXX_INLINE_VISIBILITY
 bool __cxx_nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs) {
-#if defined(_LIBCUDACXX_COMPILER_NVCC) \
- || defined(_LIBCUDACXX_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_COMPILER_CLANG_CUDA)
+#if defined(_CCCL_CUDA_COMPILER)
     return __lhs == __rhs;
 #else
     return memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;

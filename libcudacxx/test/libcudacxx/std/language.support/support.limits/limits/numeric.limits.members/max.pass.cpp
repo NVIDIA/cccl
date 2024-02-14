@@ -34,7 +34,7 @@ test(T expected)
 
 int main(int, char**)
 {
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef TEST_COMPILER_NVRTC
     test<wchar_t>(WCHAR_MAX);
 #endif
     test<bool>(true);
