@@ -148,9 +148,13 @@ template <typename IteratorTuple>
     : public detail::zip_iterator_base<IteratorTuple>::type
 {
   public:
-    /*! Null constructor does nothing.
+    /*! Default constructor does nothing.
      */
+#if defined(_CCCL_COMPILER_MSVC_2017)
+    inline _CCCL_HOST_DEVICE zip_iterator() {}
+#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
     zip_iterator() = default;
+#endif // !_CCCL_COMPILER_MSVC_2017
 
     /*! This constructor creates a new \p zip_iterator from a
      *  \p tuple of iterators.
