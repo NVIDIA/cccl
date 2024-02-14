@@ -2,12 +2,12 @@
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 #include <thrust/reduce.h>
-#include <thrust/inner_product.h>
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/random.h>
+#include <thrust/unique.h>
 
 #include <iostream>
 #include <iterator>
@@ -31,7 +31,7 @@ int main(void)
 
     // transfer data to device
     thrust::device_vector<int> d_data(h_data);
-    
+
     // print the initial data
     std::cout << "initial data" << std::endl;
     thrust::copy(d_data.begin(), d_data.end(), std::ostream_iterator<int>(std::cout, " "));
@@ -39,18 +39,14 @@ int main(void)
 
     // sort data to bring equal elements together
     thrust::sort(d_data.begin(), d_data.end());
-    
+
     // print the sorted data
     std::cout << "sorted data" << std::endl;
     thrust::copy(d_data.begin(), d_data.end(), std::ostream_iterator<int>(std::cout, " "));
     std::cout << std::endl;
 
     // count number of unique keys
-    size_t num_unique = thrust::inner_product(d_data.begin(), d_data.end() - 1,
-                                              d_data.begin() + 1,
-                                              0,
-                                              thrust::plus<int>(),
-                                              thrust::not_equal_to<int>()) + 1;
+    size_t num_unique = thrust::unique_count(d_data.begin(), d_data.end());
 
     // count multiplicity of each key
     thrust::device_vector<int> d_output_keys(num_unique);
@@ -59,7 +55,7 @@ int main(void)
                           thrust::constant_iterator<int>(1),
                           d_output_keys.begin(),
                           d_output_counts.begin());
-    
+
     // print the counts
     std::cout << "values" << std::endl;
     thrust::copy(d_output_keys.begin(), d_output_keys.end(), std::ostream_iterator<int>(std::cout, " "));
@@ -76,9 +72,9 @@ int main(void)
 
     int mode = d_output_keys[mode_iter - d_output_counts.begin()];
     int occurances = *mode_iter;
-    
+
     std::cout << "Modal value " << mode << " occurs " << occurances << " times " << std::endl;
-    
+
     return 0;
 }
 

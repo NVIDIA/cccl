@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,7 +19,6 @@
 
 using range = cuda::std::span<int>;
 
-#ifdef _LIBCUDACXX_HAS_RANGES
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<range>, range::iterator>);
 static_assert(cuda::std::ranges::common_range<range>);
 static_assert(cuda::std::ranges::random_access_range<range>);
@@ -37,7 +36,6 @@ static_assert(!cuda::std::ranges::view<range const> && !cuda::std::ranges::enabl
 static_assert(cuda::std::ranges::sized_range<range const>);
 static_assert(cuda::std::ranges::borrowed_range<range const>);
 static_assert(cuda::std::ranges::viewable_range<range const>);
-#endif // _LIBCUDACXX_HAS_RANGES
 
 int main(int, char**)
 {

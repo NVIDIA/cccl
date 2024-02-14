@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,11 +18,9 @@
 #include "../__iterator/concepts.h"
 #include "../__iterator/incrementable_traits.h"
 #include "../__iterator/iterator_traits.h"
-#ifdef _LIBCUDACXX_HAS_RANGES
-#  include "../__ranges/access.h"
-#  include "../__ranges/concepts.h"
-#  include "../__ranges/size.h"
-#endif // _LIBCUDACXX_HAS_RANGES
+#include "../__ranges/access.h"
+#include "../__ranges/concepts.h"
+#include "../__ranges/size.h"
 #include "../__type_traits/decay.h"
 #include "../__type_traits/remove_cvref.h"
 
@@ -66,7 +64,6 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#ifdef _LIBCUDACXX_HAS_RANGES
 #  if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 // [range.iter.op.distance]
@@ -129,6 +126,5 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto distance = __distance::__fn{};
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 #  endif // _CCCL_STD_VER > 2014  && !defined(_CCCL_COMPILER_MSVC_2017)
-#endif // _LIBCUDACXX_HAS_RANGES
 
 #endif // _LIBCUDACXX___ITERATOR_DISTANCE_H
