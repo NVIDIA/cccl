@@ -35,33 +35,10 @@ THRUST_NAMESPACE_BEGIN
 template<typename IteratorTuple>
 _CCCL_HOST_DEVICE
   zip_iterator<IteratorTuple>
-    ::zip_iterator()
-{
-} // end zip_iterator::zip_iterator()
-
-
-template<typename IteratorTuple>
-_CCCL_HOST_DEVICE
-  zip_iterator<IteratorTuple>
     ::zip_iterator(IteratorTuple iterator_tuple)
       :m_iterator_tuple(iterator_tuple)
 {
 } // end zip_iterator::zip_iterator()
-
-
-template<typename IteratorTuple>
-  template<typename OtherIteratorTuple>
-  _CCCL_HOST_DEVICE
-    zip_iterator<IteratorTuple>
-      ::zip_iterator(const zip_iterator<OtherIteratorTuple> &other,
-                     typename thrust::detail::enable_if_convertible<
-                       OtherIteratorTuple,
-                       IteratorTuple
-                     >::type *)
-        :m_iterator_tuple(other.get_iterator_tuple())
-{
-} // end zip_iterator::zip_iterator()
-
 
 template<typename IteratorTuple>
 _CCCL_HOST_DEVICE

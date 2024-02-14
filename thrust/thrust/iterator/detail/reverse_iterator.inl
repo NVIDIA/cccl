@@ -46,33 +46,6 @@ template<typename Iterator>
 
 template<typename BidirectionalIterator>
   _CCCL_HOST_DEVICE
-  reverse_iterator<BidirectionalIterator>
-    ::reverse_iterator(BidirectionalIterator x)
-      :super_t(x)
-{
-} // end reverse_iterator::reverse_iterator()
-
-template<typename BidirectionalIterator>
-  template<typename OtherBidirectionalIterator>
-    _CCCL_HOST_DEVICE
-    reverse_iterator<BidirectionalIterator>
-      ::reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const &r
-// XXX msvc screws this up
-#if !defined(_CCCL_COMPILER_MSVC)
-                     , typename thrust::detail::enable_if<
-                         thrust::detail::is_convertible<
-                           OtherBidirectionalIterator,
-                           BidirectionalIterator
-                         >::value
-                       >::type *
-#endif // !_CCCL_COMPILER_MSVC
-                     )
-        :super_t(r.base())
-{
-} // end reverse_iterator::reverse_iterator()
-
-template<typename BidirectionalIterator>
-  _CCCL_HOST_DEVICE
   typename reverse_iterator<BidirectionalIterator>::super_t::reference
     reverse_iterator<BidirectionalIterator>
       ::dereference() const
