@@ -572,8 +572,8 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
 
 #if defined(_CCCL_CUDA_COMPILER)
 
-#ifdef __cccl_lib_local_barrier_arrive_tx
-
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     barrier<thread_scope_block> & __b,
@@ -588,7 +588,7 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
     _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
     barrier<thread_scope_block>::arrival_token __token = {};
-    NV_IF_TARGET(
+    NV_IF_ELSE_TARGET(
         // On architectures pre-sm90, arrive_tx is not supported.
         NV_PROVIDES_SM_90, (
             // We do not check for the statespace of the barrier here. This is
@@ -616,11 +616,14 @@ barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
                     _CUDA_VPTX::sem_release, _CUDA_VPTX::scope_cta, _CUDA_VPTX::space_shared, __native_handle, __arrive_count_update
                 );
             }
+        ),(
+            __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
         )
     );
     return __token;
 }
 
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
 _LIBCUDACXX_DEVICE inline
 void barrier_expect_tx(
     barrier<thread_scope_block> & __b,
@@ -638,6 +641,9 @@ void barrier_expect_tx(
     // and __trap() if wrong, then those tools would not be able to help
     // us in release builds. In debug builds, the error would be caught
     // by the asserts at the top of this function.
+    NV_IF_ELSE_TARGET(
+        // On architectures pre-sm90, arrive_tx is not supported.
+        NV_PROVIDES_SM_90, (
     auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
     asm (
         "mbarrier.expect_tx.relaxed.cta.shared::cta.b64 [%0], %1;"
@@ -645,10 +651,12 @@ void barrier_expect_tx(
         : "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh)),
           "r"(static_cast<_CUDA_VSTD::uint32_t>(__transaction_count_update))
         : "memory");
+    ),(
+        __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
+    ));
 }
-#endif // __cccl_lib_local_barrier_arrive_tx
 
-#ifdef __cccl_lib_cp_async_bulk_available
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
 template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
 _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _Tp* __dest,
@@ -668,6 +676,7 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
     _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
 
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
     if (__isShared(__dest) && __isGlobal(__src)) {
         asm volatile(
@@ -685,10 +694,13 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // is not yet implemented. So we trap in this case as well.
         _LIBCUDACXX_UNREACHABLE();
     }
+  ),(
+    __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
+  ));
 
     return async_contract_fulfillment::async;
 }
-#endif // __cccl_lib_cp_async_bulk_available
+#endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
@@ -762,6 +774,7 @@ _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUD
 // The user is still responsible for arriving and waiting on (or otherwise
 // synchronizing with) the barrier or pipeline barrier to see the results of
 // copies from other threads participating in the synchronization object.
+extern "C" _LIBCUDACXX_HOST_DEVICE void __cuda_ptx_mbarrier_complete_tx_is_not_supported_before_SM_90__();
 struct __memcpy_completion_impl {
 
     template<typename _Group>
@@ -795,15 +808,17 @@ struct __memcpy_completion_impl {
                 // bulk group to be used with shared memory barriers.
                 _LIBCUDACXX_UNREACHABLE();
             case __completion_mechanism::__mbarrier_complete_tx:
-#ifdef __cccl_lib_local_barrier_arrive_tx
+#if __cccl_isa_ptx >= 800
                 // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
                 NV_IF_TARGET(NV_PROVIDES_SM_90, (
                     // Only perform the expect_tx operation with the leader thread
                     if (__group.thread_rank() == 0) {
                         ::cuda::device::barrier_expect_tx(__barrier, __size);
                     }
+                ),(
+                    __cuda_ptx_mbarrier_complete_tx_is_not_supported_before_SM_90__();
                 ));
-#endif // __cccl_lib_local_barrier_arrive_tx
+#endif // __cccl_isa_ptx >= 800
                 return async_contract_fulfillment::async;
             case __completion_mechanism::__sync:
                 // sync: In this case, we do not need to do anything. The user will have
@@ -930,11 +945,13 @@ struct __memcpy_completion_impl {
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
 
-#ifdef __cccl_lib_cp_async_bulk_available
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
 template <typename _Group>
 inline __device__
 void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char * __src, size_t __size, uint64_t *__bar_handle) {
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if (__g.thread_rank() == 0) {
         asm volatile(
             "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
@@ -945,10 +962,13 @@ void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char 
               "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
             : "memory");
     }
+  ),(
+    __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
+  ));
 }
-#endif // __cccl_lib_cp_async_bulk_available
+#endif // __cccl_ptx_isa >= 800
 
-#ifdef __cccl_lib_cp_async_available
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
 template <size_t _Copy_size>
 inline __device__
 void __cp_async_shared_global(char * __dest, const char * __src) {
@@ -960,6 +980,7 @@ void __cp_async_shared_global(char * __dest, const char * __src) {
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
 #endif // _CCCL_STD_VER >= 2017
 
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
     asm volatile(
         "cp.async.ca.shared.global [%0], [%1], %2, %2;"
         :
@@ -967,6 +988,9 @@ void __cp_async_shared_global(char * __dest, const char * __src) {
           "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
           "n"(_Copy_size)
         : "memory");
+  ),(
+    __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
+  ));
 }
 
 template <>
@@ -974,6 +998,7 @@ inline __device__
 void __cp_async_shared_global<16>(char * __dest, const char * __src) {
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
     // When copying 16 bytes, it is possible to skip L1 cache (.cg).
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
     asm volatile(
         "cp.async.cg.shared.global [%0], [%1], %2, %2;"
         :
@@ -981,6 +1006,9 @@ void __cp_async_shared_global<16>(char * __dest, const char * __src) {
           "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
           "n"(16)
         : "memory");
+  ),(
+    __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
+  ));
 }
 
 template <size_t _Alignment, typename _Group>
@@ -1003,7 +1031,6 @@ void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * 
         __cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
     }
 }
-#endif // __cccl_lib_cp_async_available
 
 template <size_t _Copy_size>
 struct __copy_chunk {
@@ -1084,7 +1111,7 @@ __completion_mechanism __dispatch_memcpy_async_any_to_any(_Group const & __group
 template<_CUDA_VSTD::size_t _Align, typename _Group>
 _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_DEVICE inline
 __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & __group, char * __dest_char, char const * __src_char, _CUDA_VSTD::size_t __size, uint32_t __allowed_completions, uint64_t* __bar_handle) {
-#ifdef __cccl_lib_cp_async_bulk_available
+#if __cccl_ptx_isa >= 800
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
         _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
@@ -1096,10 +1123,9 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         }
         // Fallthrough to SM 80..
     ));
-#endif // __cccl_lib_cp_async_bulk_available
+#endif // __cccl_ptx_isa >= 800
 
-#ifdef __cccl_lib_cp_async_available
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
             const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
@@ -1108,8 +1134,9 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
             }
         }
         // Fallthrough..
+    ),(
+        __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
     ));
-#endif // __cccl_lib_cp_async_available
 
     __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
     return __completion_mechanism::__sync;

@@ -11,7 +11,6 @@
 // UNSUPPORTED: libcpp-has-no-threads
 
 // UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: nvcc-11.1
 
 // <cuda/barrier>
 
