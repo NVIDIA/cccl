@@ -70,10 +70,33 @@ namespace detail
 template <bool KeepRejects>
 struct agent_select_if_wrapper_t
 {
-  template <typename... Ts>
-  struct agent_t : public AgentSelectIf<Ts..., KeepRejects>
+  // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
+  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects>`
+  template <typename AgentSelectIfPolicyT,
+            typename InputIteratorT,
+            typename FlagsInputIteratorT,
+            typename SelectedOutputIteratorT,
+            typename SelectOpT,
+            typename EqualityOpT,
+            typename OffsetT>
+  struct agent_t
+      : public AgentSelectIf< AgentSelectIfPolicyT,
+                              InputIteratorT,
+                              FlagsInputIteratorT,
+                              SelectedOutputIteratorT,
+                              SelectOpT,
+                              EqualityOpT,
+                              OffsetT,
+                              KeepRejects>
   {
-    using AgentSelectIf<Ts..., KeepRejects>::AgentSelectIf;
+    using AgentSelectIf< AgentSelectIfPolicyT,
+                         InputIteratorT,
+                         FlagsInputIteratorT,
+                         SelectedOutputIteratorT,
+                         SelectOpT,
+                         EqualityOpT,
+                         OffsetT,
+                         KeepRejects>::AgentSelectIf;
   };
 };
 } // namespace detail
@@ -162,7 +185,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(int(
   cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -183,7 +206,7 @@ __launch_bounds__(int(
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
-    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::agent_t,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
     InputIteratorT,
     FlagsInputIteratorT,
     SelectedOutputIteratorT,
@@ -378,7 +401,7 @@ struct DispatchSelectIf : SelectedPolicy
 
       using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
         Policy,
-        detail::agent_select_if_wrapper_t<KEEP_REJECTS>::agent_t,
+        detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
         InputIteratorT,
         FlagsInputIteratorT,
         SelectedOutputIteratorT,
