@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include <thrust/gather.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scan.h>
@@ -45,6 +44,7 @@
 
 #include "c2h/generators.cuh"
 #include "c2h/utility.cuh"
+#include "c2h/vector.cuh"
 #include "catch2_test_helper.h"
 
 // The launchers defined in catch2_test_launch_helper.h do not support
@@ -179,12 +179,12 @@ constexpr int end_bit()
 }
 
 template <class KeyT>
-thrust::host_vector<KeyT>
-get_striped_keys(const thrust::host_vector<KeyT> &h_keys,
+c2h::host_vector<KeyT>
+get_striped_keys(const c2h::host_vector<KeyT> &h_keys,
                  int begin_bit,
                  int end_bit)
 {
-  thrust::host_vector<KeyT> h_striped_keys(h_keys);
+  c2h::host_vector<KeyT> h_striped_keys(h_keys);
   KeyT *h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
 
   using traits_t                    = cub::Traits<KeyT>;
@@ -246,8 +246,8 @@ struct indirect_binary_comparator_t
 };
 
 template <class KeyT, class SegBeginIterT, class SegEndIterT>
-thrust::host_vector<std::size_t>
-get_permutation(const thrust::host_vector<KeyT> &h_keys,
+c2h::host_vector<std::size_t>
+get_permutation(const c2h::host_vector<KeyT> &h_keys,
                 bool is_descending,
                 std::size_t num_segments,
                 SegBeginIterT h_seg_begin_it,
@@ -255,10 +255,10 @@ get_permutation(const thrust::host_vector<KeyT> &h_keys,
                 int begin_bit,
                 int end_bit)
 {
-  thrust::host_vector<KeyT> h_striped_keys =
+  c2h::host_vector<KeyT> h_striped_keys =
     get_striped_keys(h_keys, begin_bit, end_bit);
 
-  thrust::host_vector<std::size_t> h_permutation(h_keys.size());
+  c2h::host_vector<std::size_t> h_permutation(h_keys.size());
   thrust::sequence(h_permutation.begin(), h_permutation.end());
 
   using traits_t = cub::Traits<KeyT>;
@@ -278,41 +278,41 @@ get_permutation(const thrust::host_vector<KeyT> &h_keys,
 }
 
 template <class KeyT>
-thrust::host_vector<KeyT>
-radix_sort_reference(const thrust::device_vector<KeyT> &d_keys,
+c2h::host_vector<KeyT>
+radix_sort_reference(const c2h::device_vector<KeyT> &d_keys,
                      bool is_descending,
                      int begin_bit = 0,
                      int end_bit = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  thrust::host_vector<KeyT> h_keys(d_keys);
+  c2h::host_vector<KeyT> h_keys(d_keys);
   std::array<std::size_t, 2> segments{0, d_keys.size()};
-  thrust::host_vector<std::size_t> h_permutation =
+  c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, 1, segments.cbegin(), segments.cbegin() + 1, begin_bit, end_bit);
-  thrust::host_vector<KeyT> result(d_keys.size());
+  c2h::host_vector<KeyT> result(d_keys.size());
   thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
 
   return result;
 }
 
 template <class KeyT, class ValueT>
-std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>>
-radix_sort_reference(const thrust::device_vector<KeyT> &d_keys,
-                     const thrust::device_vector<ValueT> &d_values,
+std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>>
+radix_sort_reference(const c2h::device_vector<KeyT> &d_keys,
+                     const c2h::device_vector<ValueT> &d_values,
                      bool is_descending,
                      int begin_bit = 0,
                      int end_bit = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> result;
+  std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> result;
   result.first.resize(d_keys.size());
   result.second.resize(d_keys.size());
 
   std::array<std::size_t, 2> segments{0, d_keys.size()};
 
-  thrust::host_vector<KeyT> h_keys(d_keys);
-  thrust::host_vector<std::size_t> h_permutation =
+  c2h::host_vector<KeyT> h_keys(d_keys);
+  c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, 1, segments.cbegin(), segments.cbegin() + 1, begin_bit, end_bit);
 
-  thrust::host_vector<ValueT> h_values(d_values);
+  c2h::host_vector<ValueT> h_values(d_values);
   thrust::gather(h_permutation.cbegin(),
                  h_permutation.cend(),
                  thrust::make_zip_iterator(h_keys.cbegin(), h_values.cbegin()),
@@ -322,8 +322,8 @@ radix_sort_reference(const thrust::device_vector<KeyT> &d_keys,
 }
 
 template <class KeyT, class SegBeginIterT, class SegEndIterT>
-thrust::host_vector<KeyT> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
+c2h::host_vector<KeyT> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
   bool is_descending,
   std::size_t num_segments,
   SegBeginIterT h_seg_begin_it,
@@ -331,19 +331,19 @@ thrust::host_vector<KeyT> segmented_radix_sort_reference(
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  thrust::host_vector<KeyT> h_keys(d_keys);
-  thrust::host_vector<std::size_t> h_permutation =
+  c2h::host_vector<KeyT> h_keys(d_keys);
+  c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, num_segments, h_seg_begin_it, h_seg_end_it, begin_bit, end_bit);
-  thrust::host_vector<KeyT> result(d_keys.size());
+  c2h::host_vector<KeyT> result(d_keys.size());
   thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
 
   return result;
 }
 
 template <class KeyT, class ValueT, class SegBeginIterT, class SegEndIterT>
-std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
-  const thrust::device_vector<ValueT>& d_values,
+std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
+  const c2h::device_vector<ValueT>& d_values,
   bool is_descending,
   std::size_t num_segments,
   SegBeginIterT h_seg_begin_it,
@@ -351,15 +351,15 @@ std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radi
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> result;
+  std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> result;
   result.first.resize(d_keys.size());
   result.second.resize(d_keys.size());
 
-  thrust::host_vector<KeyT> h_keys(d_keys);
-  thrust::host_vector<std::size_t> h_permutation =
+  c2h::host_vector<KeyT> h_keys(d_keys);
+  c2h::host_vector<std::size_t> h_permutation =
     get_permutation(h_keys, is_descending, num_segments, h_seg_begin_it, h_seg_end_it, begin_bit, end_bit);
 
-  thrust::host_vector<ValueT> h_values(d_values);
+  c2h::host_vector<ValueT> h_values(d_values);
   thrust::gather(h_permutation.cbegin(),
                  h_permutation.cend(),
                  thrust::make_zip_iterator(h_keys.cbegin(), h_values.cbegin()),
@@ -369,14 +369,14 @@ std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radi
 }
 
 template <class KeyT, class OffsetT>
-thrust::host_vector<KeyT> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
+c2h::host_vector<KeyT> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
   bool is_descending,
-  const thrust::device_vector<OffsetT>& d_offsets,
+  const c2h::device_vector<OffsetT>& d_offsets,
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  const thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const std::size_t num_segments = h_offsets.size() - 1;
   auto h_seg_begin_it            = h_offsets.cbegin();
   auto h_seg_end_it              = h_offsets.cbegin() + 1;
@@ -385,16 +385,16 @@ thrust::host_vector<KeyT> segmented_radix_sort_reference(
 }
 
 template <class KeyT, class OffsetT>
-thrust::host_vector<KeyT> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
+c2h::host_vector<KeyT> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
   bool is_descending,
-  const thrust::device_vector<OffsetT>& d_offsets_begin,
-  const thrust::device_vector<OffsetT>& d_offsets_end,
+  const c2h::device_vector<OffsetT>& d_offsets_begin,
+  const c2h::device_vector<OffsetT>& d_offsets_end,
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  const thrust::host_vector<OffsetT> h_offsets_begin(d_offsets_begin);
-  const thrust::host_vector<OffsetT> h_offsets_end(d_offsets_end);
+  const c2h::host_vector<OffsetT> h_offsets_begin(d_offsets_begin);
+  const c2h::host_vector<OffsetT> h_offsets_end(d_offsets_end);
   const std::size_t num_segments = h_offsets_begin.size();
   auto h_seg_begin_it            = h_offsets_begin.cbegin();
   auto h_seg_end_it              = h_offsets_end.cbegin();
@@ -403,15 +403,15 @@ thrust::host_vector<KeyT> segmented_radix_sort_reference(
 }
 
 template <class KeyT, class ValueT, class OffsetT>
-std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
-  const thrust::device_vector<ValueT>& d_values,
+std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
+  const c2h::device_vector<ValueT>& d_values,
   bool is_descending,
-  const thrust::device_vector<OffsetT>& d_offsets,
+  const c2h::device_vector<OffsetT>& d_offsets,
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  const thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  const c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const std::size_t num_segments = h_offsets.size() - 1;
   auto h_seg_begin_it            = h_offsets.cbegin();
   auto h_seg_end_it              = h_offsets.cbegin() + 1;
@@ -420,17 +420,17 @@ std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radi
 }
 
 template <class KeyT, class ValueT, class OffsetT>
-std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> segmented_radix_sort_reference(
-  const thrust::device_vector<KeyT>& d_keys,
-  const thrust::device_vector<ValueT>& d_values,
+std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort_reference(
+  const c2h::device_vector<KeyT>& d_keys,
+  const c2h::device_vector<ValueT>& d_values,
   bool is_descending,
-  const thrust::device_vector<OffsetT>& d_offsets_begin,
-  const thrust::device_vector<OffsetT>& d_offsets_end,
+  const c2h::device_vector<OffsetT>& d_offsets_begin,
+  const c2h::device_vector<OffsetT>& d_offsets_end,
   int begin_bit = 0,
   int end_bit   = static_cast<int>(sizeof(KeyT) * CHAR_BIT))
 {
-  const thrust::host_vector<OffsetT> h_offsets_begin(d_offsets_begin);
-  const thrust::host_vector<OffsetT> h_offsets_end(d_offsets_end);
+  const c2h::host_vector<OffsetT> h_offsets_begin(d_offsets_begin);
+  const c2h::host_vector<OffsetT> h_offsets_end(d_offsets_end);
   const std::size_t num_segments = h_offsets_begin.size();
   auto h_seg_begin_it            = h_offsets_begin.cbegin();
   auto h_seg_end_it              = h_offsets_end.cbegin();
@@ -452,12 +452,17 @@ struct offset_scan_op_t
 };
 
 template <class OffsetT>
-void generate_segment_offsets(c2h::seed_t seed, thrust::device_vector<OffsetT>& offsets, std::size_t num_items)
+void generate_segment_offsets(c2h::seed_t seed, c2h::device_vector<OffsetT>& offsets, std::size_t num_items)
 {
   const std::size_t num_segments        = offsets.size() - 1;
   const OffsetT expected_segment_length = static_cast<OffsetT>(cub::DivideAndRoundUp(num_items, num_segments));
   const OffsetT max_segment_length      = (expected_segment_length * 2) + 1;
   c2h::gen(seed, offsets, OffsetT{0}, max_segment_length);
   thrust::exclusive_scan(
-    offsets.begin(), offsets.end(), offsets.begin(), OffsetT{0}, offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
+    c2h::device_policy,
+    offsets.begin(),
+    offsets.end(),
+    offsets.begin(),
+    OffsetT{0},
+    offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
 }

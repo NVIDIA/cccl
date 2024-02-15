@@ -25,9 +25,7 @@
  *
  ******************************************************************************/
 
-#include <thrust/device_vector.h>
 #include <thrust/functional.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
@@ -101,8 +99,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   constexpr std::size_t max_num_items = 1 << 20;
   const std::size_t num_items = GENERATE_COPY(std::size_t{0}, std::size_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 3;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -149,8 +147,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
     return;
   }
 
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -193,8 +191,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -202,13 +200,13 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   // Sprinkle some positive and negative zeros randomly throughout the keys:
   {
     const size_t num_indices = num_items / 128;
-    thrust::device_vector<std::size_t> indices(num_indices);
+    c2h::device_vector<std::size_t> indices(num_indices);
     for (int i = 0; i < 2; ++i)
     {
       c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
       auto begin = thrust::make_constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
-      thrust::scatter(begin, end, indices.cbegin(), in_keys.begin());
+      thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
     }
   }
 
@@ -245,8 +243,8 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -254,7 +252,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
   // Sprinkle some NaNs randomly throughout the keys:
   {
     const size_t num_indices = num_items / 128;
-    thrust::device_vector<std::size_t> indices(num_indices);
+    c2h::device_vector<std::size_t> indices(num_indices);
     bool has_nans = false;
     for (int i = 0; i < 2; ++i)
     {
@@ -267,7 +265,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
         c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
         auto begin = thrust::make_constant_iterator(nan_val);
         auto end   = begin + num_indices;
-        thrust::scatter(begin, end, indices.cbegin(), in_keys.begin());
+        thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
       }
     }
     if (!has_nans)
@@ -310,7 +308,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -319,11 +317,11 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   // of duplicate keys.
   const int entropy_reduction = GENERATE(1, 3, 9, 15);
   {
-    thrust::device_vector<key_t> tmp(num_items);
+    c2h::device_vector<key_t> tmp(num_items);
     for (int i = 0; i < entropy_reduction; ++i)
     {
       c2h::gen(CUB_SEED(1), tmp);
-      thrust::transform(in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
+      thrust::transform(c2h::device_policy, in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
     }
   }
 
@@ -331,7 +329,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
 
   auto ref_keys = radix_sort_reference(in_keys, is_descending);
 
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
     sort_keys_descending(
@@ -359,13 +357,13 @@ CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][devic
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  thrust::device_vector<key_t> in_keys(num_items, key_t(4));
+  c2h::device_vector<key_t> in_keys(num_items, key_t(4));
 
   const bool is_descending = GENERATE(false, true);
 
   auto ref_keys = radix_sort_reference(in_keys, is_descending);
 
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
     sort_keys_descending(
@@ -397,7 +395,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
   const num_items_t num_items =
     GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(8, random(min_num_items, max_num_items)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -406,7 +404,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
 
   auto ref_keys = radix_sort_reference(in_keys, is_descending);
 
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
   if (is_descending)
   {
     sort_keys_descending(
@@ -434,7 +432,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
 
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
-  thrust::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
   c2h::gen(CUB_SEED(num_key_seeds), in_keys);
@@ -443,7 +441,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
 
   auto ref_keys = radix_sort_reference(in_keys, is_descending);
 
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
   cub::DoubleBuffer<key_t> key_buffer(
     thrust::raw_pointer_cast(in_keys.data()), thrust::raw_pointer_cast(out_keys.data()));
 

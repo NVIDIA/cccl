@@ -27,9 +27,6 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cuda/std/limits>
 
 #include "catch2_test_device_reduce.cuh"
@@ -107,7 +104,7 @@ CUB_TEST("Device reduce works with all device interfaces",
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
@@ -116,7 +113,7 @@ CUB_TEST("Device reduce works with all device interfaces",
   auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Generate input data
-  thrust::device_vector<input_t> in_items(num_items);
+  c2h::device_vector<input_t> in_items(num_items);
   c2h::gen(CUB_SEED(2), in_items);
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
@@ -129,7 +126,7 @@ CUB_TEST("Device reduce works with all device interfaces",
 
     // Prepare verification data
     using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
-    thrust::host_vector<output_t> expected_result(num_segments);
+    c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         reduction_op,
@@ -137,7 +134,7 @@ CUB_TEST("Device reduce works with all device interfaces",
                                         expected_result.begin());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     device_segmented_reduce(unwrap_it(d_in_it),
@@ -161,7 +158,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     using accum_t = cub::detail::accumulator_t<op_t, output_t, input_t>;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_segments);
+    c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
@@ -169,7 +166,7 @@ CUB_TEST("Device reduce works with all device interfaces",
                                         expected_result.begin());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
     device_segmented_sum(d_in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1);
 
@@ -183,7 +180,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     using op_t = cub::Min;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_segments);
+    c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
@@ -191,7 +188,7 @@ CUB_TEST("Device reduce works with all device interfaces",
                                         expected_result.begin());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_segmented_min(unwrap_it(d_in_it),
                          unwrap_it(d_out_it),
@@ -208,7 +205,7 @@ CUB_TEST("Device reduce works with all device interfaces",
     using op_t = cub::Max;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_segments);
+    c2h::host_vector<output_t> expected_result(num_segments);
     compute_segmented_problem_reference(in_items,
                                         segment_offsets,
                                         op_t{},
@@ -216,7 +213,7 @@ CUB_TEST("Device reduce works with all device interfaces",
                                         expected_result.begin());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_segmented_max(unwrap_it(d_in_it),
                          unwrap_it(d_out_it),
@@ -233,11 +230,11 @@ CUB_TEST("Device reduce works with all device interfaces",
     using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
-    thrust::host_vector<result_t> expected_result(num_segments);
+    c2h::host_vector<result_t> expected_result(num_segments);
     compute_segmented_argmax_reference(in_items, segment_offsets, expected_result.begin());
 
     // Run test
-    thrust::device_vector<result_t> out_result(num_segments);
+    c2h::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_max(d_in_it,
                              thrust::raw_pointer_cast(out_result.data()),
                              num_segments,
@@ -253,12 +250,12 @@ CUB_TEST("Device reduce works with all device interfaces",
     using result_t = cub::KeyValuePair<int, output_t>;
 
     // Prepare verification data
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<result_t> expected_result(num_segments);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<result_t> expected_result(num_segments);
     compute_segmented_argmin_reference(in_items, segment_offsets, expected_result.begin());
 
     // Run test
-    thrust::device_vector<result_t> out_result(num_segments);
+    c2h::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_min(d_in_it,
                              thrust::raw_pointer_cast(out_result.data()),
                              num_segments,

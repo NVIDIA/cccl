@@ -31,8 +31,6 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/device_vector.h>
-
 #include "catch2/catch.hpp"
 #include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
@@ -418,8 +416,8 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   const offset_t num_items       = target_size / sizeof(item_t);
 
   // Prepare input and output buffers for a simple copy algorithm test
-  thrust::device_vector<uint8_t> in(num_items * sizeof(item_t));
-  thrust::device_vector<uint8_t> out(num_items * sizeof(item_t));
+  c2h::device_vector<uint8_t> in(num_items * sizeof(item_t));
+  c2h::device_vector<uint8_t> out(num_items * sizeof(item_t));
   auto const in_ptr  = reinterpret_cast<item_t*>(thrust::raw_pointer_cast(in.data()));
   auto const out_ptr = reinterpret_cast<item_t*>(thrust::raw_pointer_cast(out.data()));
 
@@ -449,7 +447,7 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   // Setup vsmem test
   launch_config_test_info_t* launch_config_info = nullptr;
   cudaMallocHost(&launch_config_info, sizeof(launch_config_test_info_t));
-  thrust::device_vector<kernel_test_info_t> device_kernel_test_info(1);
+  c2h::device_vector<kernel_test_info_t> device_kernel_test_info(1);
   dummy_algorithm(
     in_ptr, out_ptr, num_items, thrust::raw_pointer_cast(device_kernel_test_info.data()), launch_config_info);
 
@@ -457,7 +455,7 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   REQUIRE(in == out);
 
   // Make sure the kernel information retrieved from the vsmem helper is correct
-  thrust::host_vector<kernel_test_info_t> kernel_test_info = device_kernel_test_info;
+  c2h::host_vector<kernel_test_info_t> kernel_test_info = device_kernel_test_info;
   REQUIRE(kernel_test_info[0].uses_vsmem_ptr == expected_needs_vsmem);
   REQUIRE(kernel_test_info[0].uses_fallback_agent == expected_to_use_fallback);
   REQUIRE(kernel_test_info[0].uses_fallback_policy == expected_to_use_fallback);
