@@ -1262,20 +1262,12 @@ template<typename T, typename Alloc>
   } // end catch
 } // end vector_base::allocate_and_copy()
 
-
-} // end detail
-
 template<typename T, typename Alloc>
-  void swap(detail::vector_base<T,Alloc> &a,
-            detail::vector_base<T,Alloc> &b)
+  void swap(vector_base<T,Alloc> &a,
+            vector_base<T,Alloc> &b)
 {
   a.swap(b);
 } // end swap()
-
-
-
-namespace detail
-{
 
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
@@ -1320,22 +1312,17 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1,
     thrust::detail::is_same<system1,system2>());
 }
 
-} // end namespace detail
-
-
-
-
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs)
+bool operator==(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs)
 {
     return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator==(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs)
 {
     return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
@@ -1344,22 +1331,22 @@ bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator==(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs)
+                const vector_base<T2,Alloc2>& rhs)
 {
     return lhs.size() == rhs.size() && detail::vector_equal(lhs.begin(), lhs.end(), rhs.begin());
 }
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs)
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs)
 {
     return !(lhs == rhs);
 }
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs)
 {
     return !(lhs == rhs);
@@ -1368,10 +1355,11 @@ bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs)
+                const vector_base<T2,Alloc2>& rhs)
 {
     return !(lhs == rhs);
 }
 
-THRUST_NAMESPACE_END
+} // end namespace detail
 
+THRUST_NAMESPACE_END

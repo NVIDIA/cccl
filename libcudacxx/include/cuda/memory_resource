@@ -82,10 +82,9 @@ class resource_ref {
 
 #ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
-// Needs to come first due to cuda_runtime_api
-#include <cuda/stream_ref>
+#include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 
-#include <cuda/__cccl_config>
+#include "__cccl_config"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -95,8 +94,9 @@ class resource_ref {
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/concepts>
-#include <cuda/std/type_traits>
+#include "std/concepts"
+#include "std/type_traits"
+#include "stream_ref"
 
 #if _CCCL_STD_VER > 2011
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA

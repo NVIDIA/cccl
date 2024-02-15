@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include <thrust/device_vector.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
 #include "catch2_test_helper.h"
@@ -63,12 +62,12 @@
 //! ```
 //! // %PARAM% TEST_LAUNCH lid 0:1:2
 //! ```
-//! 
+//!
 //! Graph capture backend of launch helper will add extra parameter to each call,
-//! so `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device)` implicitly turns 
+//! so `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device)` implicitly turns
 //! into `cub_reduce_sum(d_in, d_out, n, should_be_invoked_on_device, stream)`.
 //!
-//! If the wrapped API contains default parameters before stream, you'd want to explicitly 
+//! If the wrapped API contains default parameters before stream, you'd want to explicitly
 //! specify those at all invocations.
 //!
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
@@ -92,7 +91,7 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == error);
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cudaGraph_t graph{};
@@ -124,7 +123,7 @@ void cuda_graph_api_launch(ActionT action, Args... args)
     {                                                                                              \
       return API(d_temp_storage, temp_storage_bytes, args...);                                     \
     }                                                                                              \
-  };                                                                                               
+  };
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
@@ -132,7 +131,7 @@ void cuda_graph_api_launch(ActionT action, Args... args)
   static void WRAPPED_API_NAME(As... args)                                                         \
   {                                                                                                \
     cuda_graph_api_launch(WRAPPED_API_NAME##_cuda_graph_invocable_t{}, args...);                   \
-  }                                                                                                
+  }
 
 #elif TEST_LAUNCH == 1
 
@@ -152,8 +151,8 @@ template <class ActionT, class... Args>
 void device_side_api_launch(ActionT action, Args... args)
 {
   std::uint8_t *d_temp_storage = nullptr;
-  thrust::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
-  thrust::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
+  c2h::device_vector<cudaError_t> d_error(1, cudaErrorInvalidValue);
+  c2h::device_vector<std::size_t> d_temp_storage_bytes(1, 0);
   device_side_api_launch_kernel<<<1, 1>>>(d_temp_storage,
                                           thrust::raw_pointer_cast(d_temp_storage_bytes.data()),
                                           thrust::raw_pointer_cast(d_error.data()),
@@ -163,7 +162,7 @@ void device_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == d_error[0]);
 
-  thrust::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0]);
+  c2h::device_vector<std::uint8_t> temp_storage(d_temp_storage_bytes[0]);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   device_side_api_launch_kernel<<<1, 1>>>(d_temp_storage,
@@ -188,7 +187,7 @@ void device_side_api_launch(ActionT action, Args... args)
     {                                                                                              \
       return API(d_temp_storage, temp_storage_bytes, args...);                                     \
     }                                                                                              \
-  };                                                                                               
+  };
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
@@ -196,7 +195,7 @@ void device_side_api_launch(ActionT action, Args... args)
   static void WRAPPED_API_NAME(As... args)                                                         \
   {                                                                                                \
     launch(WRAPPED_API_NAME##_device_invocable_t{}, args...);                                      \
-  }                                                                                                
+  }
 
 #else // TEST_LAUNCH == 0
 
@@ -210,7 +209,7 @@ void host_side_api_launch(ActionT action, Args... args)
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(cudaSuccess == error);
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   error = action(d_temp_storage, temp_storage_bytes, args...);
@@ -231,7 +230,7 @@ void host_side_api_launch(ActionT action, Args... args)
     {                                                                                              \
       return API(d_temp_storage, temp_storage_bytes, args...);                                     \
     }                                                                                              \
-  };                                                                                               
+  };
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                              \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME);                                                        \
@@ -239,6 +238,6 @@ void host_side_api_launch(ActionT action, Args... args)
   static void WRAPPED_API_NAME(As... args)                                                         \
   {                                                                                                \
     launch(WRAPPED_API_NAME##_host_invocable_t{}, args...);                                        \
-  }                                                                                                
+  }
 
 #endif // TEST_LAUNCH == 0

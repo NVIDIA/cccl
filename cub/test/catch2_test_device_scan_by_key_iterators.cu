@@ -27,9 +27,6 @@
 
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -108,17 +105,17 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
                                        std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = segment_keys.begin();
-  thrust::host_vector<key_t> h_segment_keys(segment_keys);
+  c2h::host_vector<key_t> h_segment_keys(segment_keys);
 
   // Prepare input data
   value_t default_constant{};
@@ -130,7 +127,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(values_in_it,
                                             h_segment_keys.cbegin(),
                                             expected_result.begin(),
@@ -139,7 +136,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
                                             num_items);
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     device_inclusive_sum_by_key(d_keys_it, values_in_it, out_values.begin(), num_items, eq_op_t{});
 
     // Verify result
@@ -151,7 +148,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(values_in_it,
                                             h_segment_keys.cbegin(),
                                             expected_result.begin(),
@@ -161,7 +158,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
                                             num_items);
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     device_exclusive_sum_by_key(d_keys_it, values_in_it, out_values.begin(), num_items, eq_op_t{});
 
     // Verify result
@@ -173,7 +170,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
     using op_t = cub::Min;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(values_in_it,
                                             h_segment_keys.cbegin(),
                                             expected_result.begin(),
@@ -182,7 +179,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
                                             num_items);
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     device_inclusive_scan_by_key(d_keys_it,
                                  values_in_it,
                                  out_values.begin(),
@@ -202,7 +199,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
     auto scan_op = op_t{};
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(values_in_it,
                                             h_segment_keys.cbegin(),
                                             expected_result.begin(),
@@ -212,7 +209,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
                                             num_items);
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     using init_t = value_t;
     device_exclusive_scan_by_key(d_keys_it,
                                  values_in_it,

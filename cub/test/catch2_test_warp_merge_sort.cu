@@ -29,8 +29,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <algorithm>
@@ -306,8 +304,8 @@ template <int ITEMS_PER_THREAD,
           typename T,
           typename SegmentSizesItT,
           typename ActionT>
-void warp_merge_sort(thrust::device_vector<T> &in,
-                     thrust::device_vector<T> &out,
+void warp_merge_sort(c2h::device_vector<T> &in,
+                     c2h::device_vector<T> &out,
                      SegmentSizesItT segment_sizes,
                      T oob_default,
                      ActionT action)
@@ -333,10 +331,10 @@ template <int ITEMS_PER_THREAD,
           typename ValueT,
           typename SegmentSizesItT,
           typename ActionT>
-void warp_merge_sort(thrust::device_vector<KeyT> &keys_in,
-                     thrust::device_vector<KeyT> &keys_out,
-                     thrust::device_vector<ValueT> &values_in,
-                     thrust::device_vector<ValueT> &values_out,
+void warp_merge_sort(c2h::device_vector<KeyT> &keys_in,
+                     c2h::device_vector<KeyT> &keys_out,
+                     c2h::device_vector<ValueT> &values_in,
+                     c2h::device_vector<ValueT> &values_out,
                      SegmentSizesItT segment_sizes,
                      KeyT oob_default,
                      ActionT action)
@@ -426,8 +424,8 @@ CUB_TEST("Warp sort on keys-only works",
     cub::detail::conditional_t<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
   auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
   const auto oob_default = std::numeric_limits<type>::max();
   c2h::gen(CUB_SEED(10), d_in);
@@ -441,7 +439,7 @@ CUB_TEST("Warp sort on keys-only works",
     warp_sort_delegate{});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in_out = d_in;
+  c2h::host_vector<type> h_in_out = d_in;
   compute_host_reference(h_in_out.begin(),
                          segment_sizes,
                          params::total_warps,
@@ -465,9 +463,9 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
     conditional_t<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<int> d_segment_sizes(params::total_warps);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<int> d_segment_sizes(params::total_warps);
   const auto oob_default = std::numeric_limits<type>::max();
   c2h::gen(CUB_SEED(5), d_in);
   c2h::gen(CUB_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
@@ -481,8 +479,8 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
     warp_sort_delegate{});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in_out     = d_in;
-  thrust::host_vector<int> segment_sizes = d_segment_sizes;
+  c2h::host_vector<type> h_in_out     = d_in;
+  c2h::host_vector<int> segment_sizes = d_segment_sizes;
   compute_host_reference(h_in_out.begin(),
                          segment_sizes,
                          params::total_warps,
@@ -508,10 +506,10 @@ CUB_TEST("Warp sort on keys-value pairs works",
     cub::detail::conditional_t<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
 
   // Prepare test data
-  thrust::device_vector<key_type> d_keys_in(params::tile_size);
-  thrust::device_vector<key_type> d_keys_out(params::tile_size);
-  thrust::device_vector<value_type> d_values_in(params::tile_size);
-  thrust::device_vector<value_type> d_values_out(params::tile_size);
+  c2h::device_vector<key_type> d_keys_in(params::tile_size);
+  c2h::device_vector<key_type> d_keys_out(params::tile_size);
+  c2h::device_vector<value_type> d_values_in(params::tile_size);
+  c2h::device_vector<value_type> d_values_out(params::tile_size);
   auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
   const auto oob_default = std::numeric_limits<key_type>::max();
   c2h::gen(CUB_SEED(10), d_keys_in);
@@ -527,8 +525,8 @@ CUB_TEST("Warp sort on keys-value pairs works",
     warp_stable_sort_pairs_t{});
 
   // Prepare verification data
-  thrust::host_vector<key_type> h_keys_in_out     = d_keys_in;
-  thrust::host_vector<value_type> h_values_in_out = d_values_in;
+  c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
+  c2h::host_vector<value_type> h_values_in_out = d_values_in;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
   compute_host_reference(cpu_kv_pairs,
                          segment_sizes,
@@ -556,11 +554,11 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
 
   // Prepare test data
-  thrust::device_vector<key_type> d_keys_in(params::tile_size);
-  thrust::device_vector<key_type> d_keys_out(params::tile_size);
-  thrust::device_vector<value_type> d_values_in(params::tile_size);
-  thrust::device_vector<value_type> d_values_out(params::tile_size);
-  thrust::device_vector<int> d_segment_sizes(params::total_warps);
+  c2h::device_vector<key_type> d_keys_in(params::tile_size);
+  c2h::device_vector<key_type> d_keys_out(params::tile_size);
+  c2h::device_vector<value_type> d_values_in(params::tile_size);
+  c2h::device_vector<value_type> d_values_out(params::tile_size);
+  c2h::device_vector<int> d_segment_sizes(params::total_warps);
   const auto oob_default = std::numeric_limits<key_type>::max();
   c2h::gen(CUB_SEED(5), d_keys_in);
   c2h::gen(CUB_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
@@ -576,9 +574,9 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     warp_sort_delegate{});
 
   // Prepare verification data
-  thrust::host_vector<key_type> h_keys_in_out     = d_keys_in;
-  thrust::host_vector<value_type> h_values_in_out = d_values_in;
-  thrust::host_vector<int> segment_sizes          = d_segment_sizes;
+  c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
+  c2h::host_vector<value_type> h_values_in_out = d_values_in;
+  c2h::host_vector<int> segment_sizes          = d_segment_sizes;
   auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
   compute_host_reference(cpu_kv_pairs,
                          segment_sizes,

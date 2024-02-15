@@ -42,7 +42,7 @@ private:
 #include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 // clang-format on
 
-#include <cuda/__cccl_config>
+#include "__cccl_config"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -52,8 +52,8 @@ private:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/array>
-#include <cuda/std/type_traits>
+#include "std/array"
+#include "std/type_traits"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

@@ -25,8 +25,6 @@
  *
  ******************************************************************************/
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/memory.h>
 
 #include <cub/device/device_radix_sort.cuh>
@@ -63,11 +61,11 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
   const num_items_t num_items =
     GENERATE_COPY(num_items_t{0}, num_items_t{1}, take(5, random(min_num_items, max_num_items)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
-  thrust::device_vector<value_t> in_values(num_items);
-  thrust::device_vector<value_t> out_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> out_values(num_items);
 
   const int num_key_seeds = 1;
   const int num_value_seeds = 1;
@@ -114,11 +112,11 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
   constexpr std::size_t max_num_items = 1 << 18;
   const std::size_t num_items = GENERATE_COPY(take(1, random(max_num_items / 2, max_num_items)));
 
-  thrust::device_vector<key_t> in_keys(num_items);
-  thrust::device_vector<key_t> out_keys(num_items);
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
 
-  thrust::device_vector<value_t> in_values(num_items);
-  thrust::device_vector<value_t> out_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> out_values(num_items);
 
   const int num_key_seeds = 1;
   const int num_value_seeds = 1;
