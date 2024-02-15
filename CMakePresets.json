@@ -500,12 +500,7 @@
     {
       "name": "cub-base",
       "hidden": true,
-      "inherits": "base",
-      "filter": {
-        "exclude": {
-          "name": "device_radix_sort"
-        }
-      }
+      "inherits": "base"
     },
     {
       "name": "cub-cpp11",
