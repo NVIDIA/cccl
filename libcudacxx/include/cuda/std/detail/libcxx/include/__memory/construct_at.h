@@ -40,7 +40,7 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#ifdef _CCCL_COMPILER_CLANG_CUDA
+#ifdef _CCCL_CUDA_COMPILER_CLANG
 #  include <new>
 #endif // _CCCL_CUDA_COMPILER_CLANG
 

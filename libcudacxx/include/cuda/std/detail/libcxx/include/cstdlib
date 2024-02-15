@@ -105,7 +105,7 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_CCCL_COMPILER_CLANG_CUDA)
+#if defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _LIBCUDACXX_UNREACHABLE() __builtin_unreachable()
 #elif defined(__CUDA_ARCH__)
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
