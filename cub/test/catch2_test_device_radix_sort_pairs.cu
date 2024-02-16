@@ -33,6 +33,7 @@
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <new> // bad_alloc
 
@@ -46,13 +47,11 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_descending);
 
-using custom_value_t      = c2h::custom_type_t<c2h::equal_comparable_t>;
-using value_types         = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
+using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
+using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
 
-using num_items_32bit_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t>;
-using num_items_64bit_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t>;
-using num_items_types =
-  c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, cuda::std::uint64_t, cuda::std::int64_t>;
+// cub::detail::ChooseOffsetsT only selected 32/64 bit unsigned types:
+using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
 CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
 {
@@ -191,13 +190,11 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
-         "[large][pairs][radix][sort][device]",
-         num_items_32bit_types)
+CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check", "[large][pairs][radix][sort][device]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
-  using num_items_t = c2h::get<0, TestType>;
+  using num_items_t = std::uint32_t;
 
   // Test problem size at the maximum offset value to ensure that internal calculations do not overflow.
   const std::size_t num_items = std::numeric_limits<num_items_t>::max();
@@ -205,13 +202,11 @@ CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check",
   do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
 
-CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets",
-         "[large][pairs][radix][sort][device]",
-         num_items_64bit_types)
+CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets", "[large][pairs][radix][sort][device]")
 {
-  using key_t       = cuda::std::uint8_t;
-  using value_t     = cuda::std::uint8_t;
-  using num_items_t = c2h::get<0, TestType>;
+  using key_t       = std::uint8_t;
+  using value_t     = std::uint8_t;
+  using num_items_t = std::uint64_t;
 
   constexpr std::size_t min_num_items = std::size_t{1} << 32;
   constexpr std::size_t max_num_items = min_num_items + (std::size_t{1} << 30);

@@ -37,6 +37,7 @@
 #include <cuda/std/type_traits>
 
 #include <algorithm>
+#include <cstdint>
 #include <limits>
 #include <new> // bad_alloc
 
@@ -89,11 +90,8 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-// Index types used for NumItemsT testing
-using num_items_32bit_types = c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t>;
-using num_items_64bit_types = c2h::type_list<cuda::std::uint64_t, cuda::std::int64_t>;
-using num_items_types =
-  c2h::type_list<cuda::std::uint32_t, cuda::std::int32_t, cuda::std::uint64_t, cuda::std::int64_t>;
+// Index types used for NumItemsT testing. cub::detail::ChooseOffsetT only selects 32/64 bit unsigned types:
+using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
 CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)
 {
@@ -501,11 +499,10 @@ void do_large_offset_test(std::size_t num_items)
 
 CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
          "[large][keys][radix][sort][device]",
-         single_key_type,
-         num_items_32bit_types)
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
-  using num_items_t = c2h::get<1, TestType>;
+  using num_items_t = std::uint32_t;
 
   // Test problem sizes near and at the maximum offset value to ensure that internal calculations
   // do not overflow.
@@ -519,11 +516,10 @@ CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
 
 CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets",
          "[large][keys][radix][sort][device]",
-         single_key_type,
-         num_items_64bit_types)
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
-  using num_items_t = c2h::get<1, TestType>;
+  using num_items_t = std::uint64_t;
 
   constexpr std::size_t min_num_items = std::size_t{1} << 32;
   constexpr std::size_t max_num_items = std::size_t{1} << 33;
