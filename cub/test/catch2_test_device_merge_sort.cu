@@ -407,7 +407,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
-  thrust::device_vector<key_t> keys_in_out(num_items);
+  c2h::device_vector<key_t> keys_in_out(num_items);
 
   // TODO this will build on common functionality in https://github.com/NVIDIA/cccl/pull/1349
   // SECTION("Random")
