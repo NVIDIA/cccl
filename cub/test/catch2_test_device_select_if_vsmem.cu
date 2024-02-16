@@ -65,20 +65,16 @@ CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 10000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  // just pick one of the input elements as boundary
+  // Just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
-  // Needs to be device accessible
+  // Run test
   thrust::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
-
   select_if(in.begin(), out.begin(), num_selected_out.begin(), num_items, le);
-
-  std::cout << "Selected: " << num_selected_out[0] << "/" << num_items << "\n";
 
   // Ensure that we create the same output as std
   thrust::host_vector<type> reference = in;

@@ -52,7 +52,6 @@
 #include <thrust/type_traits/remove_cvref.h>
 
 #include <cub/device/device_adjacent_difference.cuh>
-#include <cub/device/device_select.cuh>
 #include <cub/util_math.cuh>
 
 THRUST_NAMESPACE_BEGIN
