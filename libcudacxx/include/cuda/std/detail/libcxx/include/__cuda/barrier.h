@@ -1125,7 +1125,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
     ));
 #endif // __cccl_ptx_isa >= 800
 
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (
         if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
             const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
@@ -1134,8 +1134,6 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
             }
         }
         // Fallthrough..
-    ),(
-        __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
     ));
 
     __cp_async_fallback_mechanism<_Align>(__group, __dest_char, __src_char, __size);
