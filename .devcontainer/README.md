@@ -117,17 +117,15 @@ For more information, see the `.devcontainer/make_devcontainers.sh --help` messa
 
 **Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
 
-## Installing Devcontainers on WSL
+## Dev Containers on WSL
 
-[!NOTE]
-
-_Make sure you have the Nvidia driver installed in your Windows host before moving further_. Type in `nvidia-smi` for verification.
+> [!NOTE]
+> _Make sure you have the Nvidia driver installed on your Windows host before moving further_. Type in `nvidia-smi` for verification.
 
 ### Install WSL on your Windows host
 
-[!WARNING] 
-
-Dsiclaimer: This guide was developed for WSL 2 on Windows 11.
+> [!WARNING]
+> Dsiclaimer: This guide was developed for WSL 2 on Windows 11.
 
 1. Launch a Windows terminal (_e.g. Powershell_) as an administrator.
 
@@ -169,7 +167,7 @@ This should probably install Ubuntu distro as a default.
 }
 ```
 
-and run `sudo systemctl restart docker.service`.
+then run `sudo systemctl restart docker.service`.
 
 ---
 ### Build CCCL in WSL using Dev Containers
@@ -185,7 +183,7 @@ and run `sudo systemctl restart docker.service`.
 
 12. Verify that Dev Container was configured properly by running `./nvidia-smi` in your Dev Container terminal. For a proper configuration set up it is important for the steps in [Install prerequisites and VS Code extensions](#prereqs) to be followed in a precise order.
 
-From that point on, the guide aligns with our [existing Dev Containers native Linux guide](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md) with just one minor potential alteration.
+From that point on, the guide aligns with our [existing Dev Containers native Linux guide](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md) with just one minor potential alteration:
 
 13. If WSL was launched without the X-server enabled, when asked to "authenticate Git with your Github credentials", if you answer **Yes**, the browser might not open automatically, with the following error message. 
 
