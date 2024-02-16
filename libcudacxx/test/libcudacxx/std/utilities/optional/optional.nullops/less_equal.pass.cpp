@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
     using cuda::std::optional;
     using cuda::std::nullopt_t;

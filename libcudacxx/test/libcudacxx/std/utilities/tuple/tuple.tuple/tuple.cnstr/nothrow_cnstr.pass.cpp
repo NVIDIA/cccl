@@ -23,7 +23,7 @@
 
 struct NothrowConstruct
 {
-    __host__ __device__ constexpr NothrowConstruct(int) noexcept {};
+    TEST_HOST_DEVICE constexpr NothrowConstruct(int) noexcept {};
 };
 
 

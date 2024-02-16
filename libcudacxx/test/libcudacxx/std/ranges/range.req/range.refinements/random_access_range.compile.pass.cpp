@@ -21,7 +21,7 @@
 namespace ranges = cuda::std::ranges;
 
 template <template <class...> class I>
-__host__ __device__ constexpr bool check_range() {
+TEST_HOST_DEVICE constexpr bool check_range() {
   constexpr bool result = ranges::random_access_range<test_range<I> >;
   static_assert(ranges::random_access_range<test_range<I> const> == result);
   static_assert(ranges::random_access_range<test_non_const_common_range<I> > == result);

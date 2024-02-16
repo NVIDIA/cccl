@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_constructible()
 {
     static_assert(( cuda::std::is_trivially_constructible<T>::value), "");
@@ -25,7 +25,7 @@ void test_is_trivially_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_constructible()
 {
     static_assert(( cuda::std::is_trivially_constructible<T, A0>::value), "");
@@ -35,7 +35,7 @@ void test_is_trivially_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T>::value), "");
@@ -45,7 +45,7 @@ void test_is_not_trivially_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T, A0>::value), "");
@@ -55,7 +55,7 @@ void test_is_not_trivially_constructible()
 }
 
 template <class T, class A0, class A1>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_constructible()
 {
     static_assert((!cuda::std::is_trivially_constructible<T, A0, A1>::value), "");
@@ -66,9 +66,9 @@ void test_is_not_trivially_constructible()
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit A(int);
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(int, double);
 };
 

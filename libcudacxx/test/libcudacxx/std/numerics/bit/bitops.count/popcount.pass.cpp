@@ -33,7 +33,7 @@ enum       E1 : unsigned char { rEd };
 enum class E2 : unsigned char { red };
 
 template <typename T>
-__host__ __device__ constexpr bool constexpr_test()
+TEST_HOST_DEVICE constexpr bool constexpr_test()
 {
 	return cuda::std::popcount(T(0)) == 0
 	   &&  cuda::std::popcount(T(1)) == 1
@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool constexpr_test()
 
 
 template <typename T>
-__host__ __device__ void runtime_test()
+TEST_HOST_DEVICE void runtime_test()
 {
 	ASSERT_SAME_TYPE(int, decltype(cuda::std::popcount(T(0))));
 	ASSERT_NOEXCEPT(               cuda::std::popcount(T(0)));

@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_member_function_pointer_imp()
 {
     static_assert(!cuda::std::is_void<T>::value, "");
@@ -38,7 +38,7 @@ void test_member_function_pointer_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_member_function_pointer()
 {
     test_member_function_pointer_imp<T>();

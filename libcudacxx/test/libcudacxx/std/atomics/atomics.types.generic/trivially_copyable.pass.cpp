@@ -61,13 +61,13 @@
 #include "test_macros.h"
 
 struct TriviallyCopyable {
-    __host__ __device__
+    TEST_HOST_DEVICE
     TriviallyCopyable ( int i ) : i_(i) {}
     int i_;
 };
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test ( T t ) {
     cuda::std::atomic<T> t0(t);
     cuda::std::atomic_ref<T> t1(t);

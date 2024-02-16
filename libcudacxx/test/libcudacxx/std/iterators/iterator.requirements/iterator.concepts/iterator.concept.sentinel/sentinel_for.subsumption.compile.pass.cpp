@@ -17,14 +17,16 @@
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 
+#include "test_macros.h"
+
 // clang-format off
 template<cuda::std::input_or_output_iterator, cuda::std::semiregular>
-__host__ __device__ constexpr bool check_sentinel_subsumption() {
+TEST_HOST_DEVICE constexpr bool check_sentinel_subsumption() {
   return false;
 }
 
 template<class I, cuda::std::sentinel_for<I> >
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_HOST_DEVICE constexpr bool check_subsumption() {
   return true;
 }
 // clang-format on

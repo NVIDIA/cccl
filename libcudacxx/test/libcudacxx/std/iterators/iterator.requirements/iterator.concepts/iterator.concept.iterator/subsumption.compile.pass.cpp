@@ -18,12 +18,12 @@
 
 // clang-format off
 template<cuda::std::weakly_incrementable>
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_HOST_DEVICE constexpr bool check_subsumption() {
   return false;
 }
 
 template<cuda::std::input_or_output_iterator>
-__host__ __device__ constexpr bool check_subsumption() {
+TEST_HOST_DEVICE constexpr bool check_subsumption() {
   return true;
 }
 // clang-format on

@@ -14,15 +14,17 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 template<class I, class O>
   requires cuda::std::indirectly_copyable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_storable_subsumption() {
+TEST_HOST_DEVICE constexpr bool indirectly_copyable_storable_subsumption() {
   return false;
 }
 
 template<class I, class O>
   requires cuda::std::indirectly_copyable_storable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_storable_subsumption() {
+TEST_HOST_DEVICE constexpr bool indirectly_copyable_storable_subsumption() {
   return true;
 }
 

@@ -37,7 +37,7 @@ union U { int i; float f;};
 #endif
 
 template <typename T, typename Expected>
-__host__ __device__
+TEST_HOST_DEVICE
 void check()
 {
     ASSERT_SAME_TYPE(Expected, typename cuda::std::underlying_type<T>::type);

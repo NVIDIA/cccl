@@ -13,8 +13,9 @@
 // struct indirectly_readable_traits;
 
 #include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+
+#include "test_macros.h"
 
 #if TEST_STD_VER > 2017
 template <class T>
@@ -49,7 +50,7 @@ _LIBCUDACXX_CONCEPT value_type_matches = _LIBCUDACXX_FRAGMENT(value_type_matches
 #endif
 
 template <class T>
-__host__ __device__ constexpr bool check_pointer() {
+TEST_HOST_DEVICE constexpr bool check_pointer() {
   constexpr bool result = value_type_matches<T*, T>;
   static_assert(value_type_matches<T const*, T> == result);
   static_assert(value_type_matches<T volatile*, T> == result);
@@ -64,7 +65,7 @@ __host__ __device__ constexpr bool check_pointer() {
 }
 
 template <class T>
-__host__ __device__ constexpr bool check_array() {
+TEST_HOST_DEVICE constexpr bool check_array() {
   static_assert(value_type_matches<T[], T>);
   static_assert(value_type_matches<T const[], T>);
   static_assert(value_type_matches<T volatile[], T>);
@@ -77,7 +78,7 @@ __host__ __device__ constexpr bool check_array() {
 }
 
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_member() {
+TEST_HOST_DEVICE constexpr bool check_member() {
   static_assert(value_type_matches<T, Expected>);
   static_assert(value_type_matches<T const, Expected>);
   static_assert(value_type_matches<T volatile, Expected>);

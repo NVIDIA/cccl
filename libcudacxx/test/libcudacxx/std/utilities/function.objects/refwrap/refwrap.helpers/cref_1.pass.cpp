@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test()
 {
   int i = 0;
   cuda::std::reference_wrapper<const int> r = cuda::std::cref(i);

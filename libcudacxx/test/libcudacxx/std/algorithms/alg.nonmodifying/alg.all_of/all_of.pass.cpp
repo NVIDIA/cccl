@@ -21,7 +21,7 @@
 
 struct test1
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr bool operator()(const int& i) const
     {
         return i % 2 == 0;
@@ -29,7 +29,7 @@ struct test1
 };
 
 #if TEST_STD_VER > 2011
-__host__ __device__ constexpr bool test_constexpr() {
+TEST_HOST_DEVICE constexpr bool test_constexpr() {
     int ia[] = {2, 4, 6, 8};
     int ib[] = {2, 4, 5, 8};
     return  cuda::std::all_of(cuda::std::begin(ia), cuda::std::end(ia), test1())

@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_destructible()
 {
     static_assert( cuda::std::is_trivially_destructible<T>::value, "");
@@ -36,7 +36,7 @@ void test_is_trivially_destructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_destructible()
 {
     static_assert(!cuda::std::is_trivially_destructible<T>::value, "");
@@ -51,17 +51,17 @@ void test_is_not_trivially_destructible()
 #endif
 }
 
-struct PublicDestructor           { public:     __host__ __device__ ~PublicDestructor() {}};
-struct ProtectedDestructor        { protected:  __host__ __device__ ~ProtectedDestructor() {}};
-struct PrivateDestructor          { private:    __host__ __device__ ~PrivateDestructor() {}};
+struct PublicDestructor           { public:     TEST_HOST_DEVICE ~PublicDestructor() {}};
+struct ProtectedDestructor        { protected:  TEST_HOST_DEVICE ~ProtectedDestructor() {}};
+struct PrivateDestructor          { private:    TEST_HOST_DEVICE ~PrivateDestructor() {}};
 
-struct VirtualPublicDestructor           { public:    __host__ __device__ virtual ~VirtualPublicDestructor() {}};
-struct VirtualProtectedDestructor        { protected: __host__ __device__ virtual ~VirtualProtectedDestructor() {}};
-struct VirtualPrivateDestructor          { private:   __host__ __device__ virtual ~VirtualPrivateDestructor() {}};
+struct VirtualPublicDestructor           { public:    TEST_HOST_DEVICE virtual ~VirtualPublicDestructor() {}};
+struct VirtualProtectedDestructor        { protected: TEST_HOST_DEVICE virtual ~VirtualProtectedDestructor() {}};
+struct VirtualPrivateDestructor          { private:   TEST_HOST_DEVICE virtual ~VirtualPrivateDestructor() {}};
 
-struct PurePublicDestructor              { public:    __host__ __device__ virtual ~PurePublicDestructor() = 0; };
-struct PureProtectedDestructor           { protected: __host__ __device__ virtual ~PureProtectedDestructor() = 0; };
-struct PurePrivateDestructor             { private:   __host__ __device__ virtual ~PurePrivateDestructor() = 0; };
+struct PurePublicDestructor              { public:    TEST_HOST_DEVICE virtual ~PurePublicDestructor() = 0; };
+struct PureProtectedDestructor           { protected: TEST_HOST_DEVICE virtual ~PureProtectedDestructor() = 0; };
+struct PurePrivateDestructor             { private:   TEST_HOST_DEVICE virtual ~PurePrivateDestructor() = 0; };
 
 
 class Empty
@@ -77,19 +77,19 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual void foo() = 0;
 };
 
 class AbstractDestructor
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~AbstractDestructor() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~A();
 };
 

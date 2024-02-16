@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_assignable()
 {
     static_assert(( cuda::std::is_trivially_assignable<T, U>::value), "");
@@ -26,7 +26,7 @@ void test_is_trivially_assignable()
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_assignable()
 {
     static_assert((!cuda::std::is_trivially_assignable<T, U>::value), "");
@@ -41,13 +41,13 @@ struct A
 
 struct B
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator=(A);
 };
 
 struct C
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator=(C&);  // not const
 };
 

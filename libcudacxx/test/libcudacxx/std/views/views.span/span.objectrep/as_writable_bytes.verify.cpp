@@ -26,7 +26,7 @@ STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int iArr2[] = { 0,  1,  2,  3,  4, 
 
 struct A {};
 
-__host__ __device__ void f() {
+TEST_HOST_DEVICE void f() {
   cuda::std::as_writable_bytes(cuda::std::span<const int>());            // expected-error {{no matching function for call to 'as_writable_bytes'}}
   cuda::std::as_writable_bytes(cuda::std::span<const long>());           // expected-error {{no matching function for call to 'as_writable_bytes'}}
   cuda::std::as_writable_bytes(cuda::std::span<const double>());         // expected-error {{no matching function for call to 'as_writable_bytes'}}

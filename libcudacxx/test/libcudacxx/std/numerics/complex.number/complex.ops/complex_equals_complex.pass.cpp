@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test_constexpr()
 {
 #if TEST_STD_VER > 2011
@@ -45,7 +45,7 @@ test_constexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool
 test()
 {
     {

@@ -25,7 +25,7 @@ struct A {
 };
 static_assert(sizeof(A) == 0); // an extension supported by GCC and Clang
 
-__device__ static A a[10];
+STATIC_TEST_GLOBAL_VAR static A a[10];
 
 int main(int, char**)
 {

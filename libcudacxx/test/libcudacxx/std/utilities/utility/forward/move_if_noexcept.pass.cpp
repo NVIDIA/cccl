@@ -26,18 +26,18 @@
 
 class A
 {
-    __host__ __device__ A(const A&);
-    __host__ __device__ A& operator=(const A&);
+    TEST_HOST_DEVICE A(const A&);
+    TEST_HOST_DEVICE A& operator=(const A&);
 public:
 
-    __host__ __device__ A() {}
-    __host__ __device__ A(A&&) {}
+    TEST_HOST_DEVICE A() {}
+    TEST_HOST_DEVICE A(A&&) {}
 };
 
 struct legacy
 {
-    __host__ __device__ legacy() {}
-    __host__ __device__ legacy(const legacy&);
+    TEST_HOST_DEVICE legacy() {}
+    TEST_HOST_DEVICE legacy(const legacy&);
 };
 
 int main(int, char**)

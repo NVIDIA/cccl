@@ -39,7 +39,7 @@ bool X::throw_now = false;
 #endif
 
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool assign_empty(optional<Tp>&& lhs) {
     const optional<Tp> rhs;
     lhs = rhs;
@@ -47,7 +47,7 @@ constexpr bool assign_empty(optional<Tp>&& lhs) {
 }
 
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool assign_value(optional<Tp>&& lhs) {
     const optional<Tp> rhs(101);
     lhs = rhs;

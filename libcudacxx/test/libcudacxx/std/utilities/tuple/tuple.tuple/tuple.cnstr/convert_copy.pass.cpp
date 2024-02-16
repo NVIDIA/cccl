@@ -24,34 +24,34 @@
 
 struct Explicit {
   int value;
-  __host__ __device__ explicit Explicit(int x) : value(x) {}
+  TEST_HOST_DEVICE explicit Explicit(int x) : value(x) {}
 };
 
 struct Implicit {
   int value;
-  __host__ __device__ Implicit(int x) : value(x) {}
+  TEST_HOST_DEVICE Implicit(int x) : value(x) {}
 };
 
 struct ExplicitTwo {
-    __host__ __device__ ExplicitTwo() {}
-    __host__ __device__ ExplicitTwo(ExplicitTwo const&) {}
-    __host__ __device__ ExplicitTwo(ExplicitTwo &&) {}
+    TEST_HOST_DEVICE ExplicitTwo() {}
+    TEST_HOST_DEVICE ExplicitTwo(ExplicitTwo const&) {}
+    TEST_HOST_DEVICE ExplicitTwo(ExplicitTwo &&) {}
 
     template <class T, class = typename cuda::std::enable_if<!cuda::std::is_same<T, ExplicitTwo>::value>::type>
-    __host__ __device__ explicit ExplicitTwo(T) {}
+    TEST_HOST_DEVICE explicit ExplicitTwo(T) {}
 };
 
 struct B
 {
     int id_;
 
-    __host__ __device__ explicit B(int i) : id_(i) {}
+    TEST_HOST_DEVICE explicit B(int i) : id_(i) {}
 };
 
 struct D
     : B
 {
-    __host__ __device__ explicit D(int i) : B(i) {}
+    TEST_HOST_DEVICE explicit D(int i) : B(i) {}
 };
 
 #if TEST_STD_VER > 2011
@@ -60,16 +60,16 @@ struct A
 {
     int id_;
 
-    __host__ __device__ constexpr A(int i) : id_(i) {}
-    __host__ __device__ friend constexpr bool operator==(const A& x, const A& y) {return x.id_ == y.id_;}
+    TEST_HOST_DEVICE constexpr A(int i) : id_(i) {}
+    TEST_HOST_DEVICE friend constexpr bool operator==(const A& x, const A& y) {return x.id_ == y.id_;}
 };
 
 struct C
 {
     int id_;
 
-    __host__ __device__ constexpr explicit C(int i) : id_(i) {}
-    __host__ __device__ friend constexpr bool operator==(const C& x, const C& y) {return x.id_ == y.id_;}
+    TEST_HOST_DEVICE constexpr explicit C(int i) : id_(i) {}
+    TEST_HOST_DEVICE friend constexpr bool operator==(const C& x, const C& y) {return x.id_ == y.id_;}
 };
 
 #endif

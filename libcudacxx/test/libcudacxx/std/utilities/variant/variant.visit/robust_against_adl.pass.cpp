@@ -22,15 +22,15 @@ template<class T> struct Holder { T t; };
 
 struct empty_visitor {
     template<class T>
-    __host__ __device__ constexpr void operator()(T)const noexcept {}
+    TEST_HOST_DEVICE constexpr void operator()(T)const noexcept {}
 };
 
 struct holder_visitor {
     template<class T>
-    __host__ __device__ constexpr Holder<Incomplete>* operator()(T)const noexcept { return nullptr; }
+    TEST_HOST_DEVICE constexpr Holder<Incomplete>* operator()(T)const noexcept { return nullptr; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test(bool do_it)
 {
     if (do_it) {

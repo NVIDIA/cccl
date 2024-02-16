@@ -22,7 +22,7 @@
 using cuda::std::optional;
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX14 void test(optional<U>&& rhs, bool is_going_to_throw = false)
 {
     static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
@@ -49,24 +49,24 @@ class X
 {
     int i_;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr explicit X(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr X(X&& x) : i_(x.i_) { x.i_ = 0; }
-    __host__ __device__
+    TEST_HOST_DEVICE
     TEST_CONSTEXPR_CXX20 ~X() {i_ = 0;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const X& x, const X& y) {return x.i_ == y.i_;}
 };
 
 class Z
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit Z(int) { TEST_THROW(6); }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX14 bool test()
 {
     {

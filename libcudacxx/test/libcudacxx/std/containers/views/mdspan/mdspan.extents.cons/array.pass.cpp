@@ -20,7 +20,7 @@
 
 // TYPED_TEST(TestExtents, array_ctor)
 template<class T>
-__host__ __device__ void test_array_con()
+TEST_HOST_DEVICE void test_array_con()
 {
     using TestFixture = TestExtents<T>;
     TestFixture t;

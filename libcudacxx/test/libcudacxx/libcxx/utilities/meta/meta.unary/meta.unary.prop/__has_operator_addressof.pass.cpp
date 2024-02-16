@@ -26,7 +26,7 @@ struct A
 
 struct B
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr B* operator&() const;
 };
 
@@ -35,31 +35,31 @@ struct D;
 struct C
 {
     template <class U>
-    __host__ __device__
+    TEST_HOST_DEVICE
     D operator,(U&&);
 };
 
 struct E
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr C operator&() const;
 };
 
 struct F {};
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr F* operator&(F const &) { return nullptr; }
 
 struct G {};
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr G* operator&(G &&) { return nullptr; }
 
 struct H {};
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr H* operator&(H const &&) { return nullptr; }
 
 struct J
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr J* operator&() const &&;
 };
 

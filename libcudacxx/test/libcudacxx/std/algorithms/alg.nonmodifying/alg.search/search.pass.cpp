@@ -37,7 +37,7 @@
 
 struct MySearcherC {
     template <typename Iterator>
-    __host__ __device__ cuda::std::pair<Iterator, Iterator>
+    TEST_HOST_DEVICE cuda::std::pair<Iterator, Iterator>
     TEST_CONSTEXPR_CXX14 operator() (Iterator b, Iterator e) const
     {
         return cuda::std::make_pair(b, e);
@@ -45,10 +45,10 @@ struct MySearcherC {
 };
 
 struct MySearcher {
-    __host__ __device__ TEST_CONSTEXPR_CXX14 MySearcher(int& searcher_called) noexcept : searcher_called(searcher_called) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 MySearcher(int& searcher_called) noexcept : searcher_called(searcher_called) {}
 
     template <typename Iterator>
-    __host__ __device__ cuda::std::pair<Iterator, Iterator>
+    TEST_HOST_DEVICE cuda::std::pair<Iterator, Iterator>
     TEST_CONSTEXPR_CXX14 operator() (Iterator b, Iterator e) const
     {
         ++searcher_called;
@@ -60,8 +60,8 @@ struct MySearcher {
 
 namespace User {
 struct S {
-    __host__ __device__ constexpr S(int x) : x_(x) {}
-    __host__ __device__ friend constexpr bool operator==(S lhs, S rhs) noexcept { return lhs.x_ == rhs.x_; }
+    TEST_HOST_DEVICE constexpr S(int x) : x_(x) {}
+    TEST_HOST_DEVICE friend constexpr bool operator==(S lhs, S rhs) noexcept { return lhs.x_ == rhs.x_; }
     int x_;
 };
 
@@ -70,7 +70,7 @@ void make_pair(T&&, U&&) = delete;
 } // namespace User
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test()
 {
     int ia[] = {0, 1, 2, 3, 4, 5};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);
@@ -108,14 +108,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 adl_test()
 {
     User::S ua[] = {1};
     assert(cuda::std::search(Iter(ua), Iter(ua), Iter(ua), Iter(ua)) == Iter(ua));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     test<forward_iterator<const int*>, forward_iterator<const int*> >();
     test<forward_iterator<const int*>, bidirectional_iterator<const int*> >();
     test<forward_iterator<const int*>, random_access_iterator<const int*> >();

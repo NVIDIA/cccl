@@ -19,7 +19,7 @@ union U1 { };
 union U2 final { };
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_final()
 {
     static_assert( cuda::std::is_final<T>::value, "");
@@ -35,7 +35,7 @@ void test_is_final()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_final()
 {
     static_assert(!cuda::std::is_final<T>::value, "");

@@ -22,22 +22,22 @@ struct S1 {};
 struct S2 {};
 
 struct R {
-  __host__ __device__ bool operator()(S1, S1) const;
-  __host__ __device__ bool operator()(S1, S2) const;
-  __host__ __device__ bool operator()(S2, S1) const;
-  __host__ __device__ bool operator()(S2, S2) const;
+  TEST_HOST_DEVICE bool operator()(S1, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S2) const;
+  TEST_HOST_DEVICE bool operator()(S2, S1) const;
+  TEST_HOST_DEVICE bool operator()(S2, S2) const;
 };
 
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::relation<F, T, U>
-__host__ __device__ constexpr bool check_equivalence_relation_subsumes_relation() {
+TEST_HOST_DEVICE constexpr bool check_equivalence_relation_subsumes_relation() {
   return false;
 }
 
 template<class F, class T, class U>
 requires cuda::std::equivalence_relation<F, T, U> && true
-__host__ __device__ constexpr bool check_equivalence_relation_subsumes_relation() {
+TEST_HOST_DEVICE constexpr bool check_equivalence_relation_subsumes_relation() {
   return true;
 }
 // clang-format on
@@ -50,13 +50,13 @@ static_assert(check_equivalence_relation_subsumes_relation<R, S1, S2>(), "");
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::relation<F, T, U> && true
-__host__ __device__ constexpr bool check_relation_subsumes_equivalence_relation() {
+TEST_HOST_DEVICE constexpr bool check_relation_subsumes_equivalence_relation() {
   return true;
 }
 
 template<class F, class T, class U>
 requires cuda::std::equivalence_relation<F, T, U>
-__host__ __device__ constexpr bool check_relation_subsumes_equivalence_relation() {
+TEST_HOST_DEVICE constexpr bool check_relation_subsumes_equivalence_relation() {
   return false;
 }
 // clang-format on
@@ -69,13 +69,13 @@ static_assert(check_relation_subsumes_equivalence_relation<R, S1, S2>(), "");
 // clang-format off
 template<class F, class T, class U>
 requires cuda::std::equivalence_relation<F, T, T> && cuda::std::equivalence_relation<F, U, U>
-__host__ __device__ constexpr bool check_equivalence_relation_subsumes_itself() {
+TEST_HOST_DEVICE constexpr bool check_equivalence_relation_subsumes_itself() {
   return false;
 }
 
 template<class F, class T, class U>
 requires cuda::std::equivalence_relation<F, T, U>
-__host__ __device__ constexpr bool check_equivalence_relation_subsumes_itself() {
+TEST_HOST_DEVICE constexpr bool check_equivalence_relation_subsumes_itself() {
   return true;
 }
 // clang-format on

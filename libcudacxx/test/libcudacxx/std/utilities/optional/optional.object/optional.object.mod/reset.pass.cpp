@@ -24,11 +24,11 @@ using cuda::std::optional;
 struct X
 {
     STATIC_MEMBER_VAR(dtor_called, bool)
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~X() {dtor_called() = true;}
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_reset()
 {
     {

@@ -18,16 +18,18 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 // ensure that we allow `__device__` functions too
 struct with_device_op
 {
     using first_argument_type  = int;
     using second_argument_type = int;
     using result_type          = bool;
-    __device__ constexpr bool operator()(const int& lhs, const int& rhs) const {return lhs && rhs;}
+    TEST_DEVICE constexpr bool operator()(const int& lhs, const int& rhs) const {return lhs && rhs;}
 };
 
-__global__
+TEST_GLOBAL
 void test_global_kernel() {
     const cuda::std::binary_negate<with_device_op> f{with_device_op{}};
     assert(!f(36, 36));

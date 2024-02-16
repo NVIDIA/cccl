@@ -18,14 +18,14 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ constexpr void check(int* first, int* expected) {
+TEST_HOST_DEVICE constexpr void check(int* first, int* expected) {
   It it(first);
   decltype(auto) result = cuda::std::ranges::prev(cuda::std::move(it));
   static_assert(cuda::std::same_as<decltype(result), It>);
   assert(base(result) == expected);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   for (int n = 1; n != 10; ++n) {

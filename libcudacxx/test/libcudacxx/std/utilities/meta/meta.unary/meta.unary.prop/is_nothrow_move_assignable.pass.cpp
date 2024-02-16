@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_nothrow_assign()
 {
     static_assert( cuda::std::is_nothrow_move_assignable<T>::value, "");
@@ -25,7 +25,7 @@ void test_has_nothrow_assign()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_nothrow_assign()
 {
     static_assert(!cuda::std::is_nothrow_move_assignable<T>::value, "");
@@ -40,7 +40,7 @@ class Empty
 
 struct NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -53,7 +53,7 @@ struct bit_zero
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A& operator=(const A&);
 };
 

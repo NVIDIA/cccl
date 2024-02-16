@@ -21,16 +21,16 @@
 template <class ConstructFrom>
 struct ConstructibleFromT {
   ConstructibleFromT() = default;
-  __host__ __device__ ConstructibleFromT(ConstructFrom v) : value(v) {}
+  TEST_HOST_DEVICE ConstructibleFromT(ConstructFrom v) : value(v) {}
   ConstructFrom value;
 };
 
 template <class AssertOn>
 struct CtorAssertsT {
   bool defaulted;
-  __host__ __device__ CtorAssertsT() : defaulted(true) {}
+  TEST_HOST_DEVICE CtorAssertsT() : defaulted(true) {}
   template <class T>
-  __host__ __device__ constexpr CtorAssertsT(T) : defaulted(false) {
+  TEST_HOST_DEVICE constexpr CtorAssertsT(T) : defaulted(false) {
       static_assert(!cuda::std::is_same<T, AssertOn>::value, "");
   }
 };
@@ -38,9 +38,9 @@ struct CtorAssertsT {
 template <class AllowT, class AssertT>
 struct AllowAssertT {
   AllowAssertT() = default;
-  __host__ __device__ AllowAssertT(AllowT) {}
+  TEST_HOST_DEVICE AllowAssertT(AllowT) {}
   template <class U>
-  __host__ __device__ constexpr AllowAssertT(U) {
+  TEST_HOST_DEVICE constexpr AllowAssertT(U) {
       static_assert(!cuda::std::is_same<U, AssertT>::value, "");
   }
 };
@@ -54,7 +54,7 @@ struct AllowAssertT {
 // The point of this test is to ensure that the consideration of (1)
 // short circuits before evaluating is_constructible<T2, int>, which
 // will cause a static assertion.
-__host__ __device__ void test_tuple_like_lazy_sfinae() {
+TEST_HOST_DEVICE void test_tuple_like_lazy_sfinae() {
 #if defined(_LIBCUDACXX_VERSION)
     // This test requires libc++'s reduced arity initialization.
     using T1 = ConstructibleFromT<cuda::std::pair<int, int>>;
@@ -69,7 +69,7 @@ __host__ __device__ void test_tuple_like_lazy_sfinae() {
 
 struct NonConstCopyable {
   NonConstCopyable() = default;
-  __host__ __device__ explicit NonConstCopyable(int v) : value(v) {}
+  TEST_HOST_DEVICE explicit NonConstCopyable(int v) : value(v) {}
   NonConstCopyable(NonConstCopyable&) = default;
   NonConstCopyable(NonConstCopyable const&) = delete;
   int value;
@@ -78,7 +78,7 @@ struct NonConstCopyable {
 template <class T>
 struct BlowsUpOnConstCopy {
   BlowsUpOnConstCopy() = default;
-  __host__ __device__ constexpr BlowsUpOnConstCopy(BlowsUpOnConstCopy const&) {
+  TEST_HOST_DEVICE constexpr BlowsUpOnConstCopy(BlowsUpOnConstCopy const&) {
       static_assert(!cuda::std::is_same<T, T>::value, "");
   }
   BlowsUpOnConstCopy(BlowsUpOnConstCopy&) = default;
@@ -89,7 +89,7 @@ struct BlowsUpOnConstCopy {
 // (2) tuple(UTypes&&...)
 // Test that (1) short circuits before evaluating the copy constructor of the
 // second argument. Constructor (2) should be selected.
-__host__ __device__ void test_const_Types_lazy_sfinae()
+TEST_HOST_DEVICE void test_const_Types_lazy_sfinae()
 {
     NonConstCopyable v(42);
     BlowsUpOnConstCopy<int> b;

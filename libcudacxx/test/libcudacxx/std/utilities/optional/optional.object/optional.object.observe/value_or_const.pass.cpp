@@ -24,7 +24,7 @@ struct Y
 {
     int i_;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y(int i) : i_(i) {}
 };
 
@@ -32,13 +32,13 @@ struct X
 {
     int i_;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr X(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr X(const Y& y) : i_(y.i_) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr X(Y&& y) : i_(y.i_+1) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const X& x, const X& y)
         {return x.i_ == y.i_;}
 };

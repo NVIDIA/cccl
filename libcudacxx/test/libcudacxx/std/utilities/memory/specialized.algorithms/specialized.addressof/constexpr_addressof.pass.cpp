@@ -20,14 +20,14 @@
 
 #if defined(_LIBCUDACXX_ADDRESSOF) || defined(__NVCOMPILER)
 struct Pointer {
-  __host__ __device__ constexpr Pointer(void* v) : value(v) {}
+  TEST_HOST_DEVICE constexpr Pointer(void* v) : value(v) {}
   void* value;
 };
 
 struct A
 {
-    __host__ __device__ constexpr A() : n(42) {}
-    __host__ __device__ void operator&() const { }
+    TEST_HOST_DEVICE constexpr A() : n(42) {}
+    TEST_HOST_DEVICE void operator&() const { }
     int n;
 };
 

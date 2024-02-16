@@ -30,7 +30,7 @@
 struct A {};
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test2()
 {
@@ -43,7 +43,7 @@ test2()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test3()
 {
@@ -56,7 +56,7 @@ test3()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test4()
 {
@@ -69,7 +69,7 @@ test4()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test5()
 {

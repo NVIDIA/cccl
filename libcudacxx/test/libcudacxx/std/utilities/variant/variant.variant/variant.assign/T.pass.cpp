@@ -32,23 +32,23 @@ struct Dummy {
 };
 
 struct ThrowsCtorT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorT(int) noexcept(false) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorT &operator=(int) noexcept { return *this; }
 };
 
 struct ThrowsAssignT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsAssignT(int) noexcept {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsAssignT &operator=(int) noexcept(false) { return *this; }
 };
 
 struct NoThrowT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT(int) noexcept {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT &operator=(int) noexcept { return *this; }
 };
 
@@ -59,11 +59,11 @@ namespace RuntimeHelpers {
 
 struct ThrowsCtorT {
   int value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorT() : value(0) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorT(int) noexcept(false) { throw 42; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorT &operator=(int v) noexcept {
     value = v;
     return *this;
@@ -72,13 +72,13 @@ struct ThrowsCtorT {
 
 struct MoveCrashes {
   int value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveCrashes(int v = 0) noexcept : value{v} {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveCrashes(MoveCrashes &&) noexcept { assert(false); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveCrashes &operator=(MoveCrashes &&) noexcept { assert(false); return *this; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveCrashes &operator=(int v) noexcept {
     value = v;
     return *this;
@@ -87,13 +87,13 @@ struct MoveCrashes {
 
 struct ThrowsCtorTandMove {
   int value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorTandMove() : value(0) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorTandMove(int) noexcept(false) { throw 42; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorTandMove(ThrowsCtorTandMove &&) noexcept(false) { assert(false); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsCtorTandMove &operator=(int v) noexcept {
     value = v;
     return *this;
@@ -102,21 +102,21 @@ struct ThrowsCtorTandMove {
 
 struct ThrowsAssignT {
   int value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsAssignT() : value(0) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsAssignT(int v) noexcept : value(v) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsAssignT &operator=(int) noexcept(false) { throw 42; }
 };
 
 struct NoThrowT {
   int value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT() : value(0) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT(int v) noexcept : value(v) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT &operator=(int v) noexcept {
     value = v;
     return *this;
@@ -126,7 +126,7 @@ struct NoThrowT {
 #endif // !defined(TEST_HAS_NO_EXCEPTIONS)
 } // namespace RuntimeHelpers
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_assignment_noexcept() {
   using namespace MetaHelpers;
   {
@@ -145,7 +145,7 @@ void test_T_assignment_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_assignment_sfinae() {
   {
     using V = cuda::std::variant<long, long long>;
@@ -181,7 +181,7 @@ void test_T_assignment_sfinae() {
     // eventually, except... https://www.godbolt.org/z/oanheq7bv
     struct X { X() = default; };
     struct Y {
-      __host__ __device__ operator X();
+      TEST_HOST_DEVICE operator X();
     };
     using V = cuda::std::variant<X>;
     static_assert(cuda::std::is_assignable<V, Y>::value,
@@ -199,7 +199,7 @@ void test_T_assignment_sfinae() {
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_assignment_basic() {
   {
     cuda::std::variant<int> v(43);
@@ -260,7 +260,7 @@ void test_T_assignment_basic() {
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_assignment_performs_construction() {
   using namespace RuntimeHelpers;
 #ifndef TEST_HAS_NO_EXCEPTIONS
@@ -285,7 +285,7 @@ void test_T_assignment_performs_construction() {
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_assignment_performs_assignment() {
   using namespace RuntimeHelpers;
 #ifndef TEST_HAS_NO_EXCEPTIONS

@@ -30,16 +30,16 @@ struct CustomIt {
   using pointer = int*;
   using iterator_category = cuda::std::input_iterator_tag;
   CustomIt() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 explicit CustomIt(int* p) : p_(p) {}
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ CustomIt& operator++();
-  __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ TEST_CONSTEXPR_CXX14 friend bool operator<=(const CustomIt& a, const CustomIt& b) { return a.p_ <= b.p_; }
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 explicit CustomIt(int* p) : p_(p) {}
+  TEST_HOST_DEVICE int& operator*() const;
+  TEST_HOST_DEVICE CustomIt& operator++();
+  TEST_HOST_DEVICE CustomIt operator++(int);
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 friend bool operator<=(const CustomIt& a, const CustomIt& b) { return a.p_ <= b.p_; }
   int *p_ = nullptr;
 };
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test_one()
 {
   int a[] = {3, 1, 4};
   const cuda::std::move_iterator<It> r1 = cuda::std::move_iterator<It>(It(a));
@@ -50,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
   assert(!(r2 <= r1));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
   test_one<CustomIt>();
   test_one<int*>();

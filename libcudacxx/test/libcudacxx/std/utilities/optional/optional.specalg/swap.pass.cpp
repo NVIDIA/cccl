@@ -29,14 +29,14 @@ class X
     int i_;
 public:
     STATIC_MEMBER_VAR(dtor_called, unsigned)
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int i) : i_(i) {}
     X(X&& x) = default;
     X& operator=(X&&) = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~X() {++dtor_called();}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const X& x, const X& y) {return x.i_ == y.i_;}
 };
 
@@ -45,15 +45,15 @@ class Y
     int i_;
 public:
     STATIC_MEMBER_VAR(dtor_called, unsigned)
-    __host__ __device__
+    TEST_HOST_DEVICE
     Y(int i) : i_(i) {}
     Y(Y&&) = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Y() {++dtor_called();}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const Y& x, const Y& y) {return x.i_ == y.i_;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend void swap(Y& x, Y& y) {cuda::std::swap(x.i_, y.i_);}
 };
 
@@ -61,14 +61,14 @@ class Z
 {
     int i_;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(Z&&) { TEST_THROW(7);}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const Z& x, const Z& y) {return x.i_ == y.i_;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend void swap(Z&, Z&) { TEST_THROW(6);}
 };
 
@@ -76,10 +76,10 @@ public:
 struct NonSwappable {
     NonSwappable(NonSwappable const&) = delete;
 };
-__host__ __device__ // what in the world, nvrtc?!
+TEST_HOST_DEVICE // what in the world, nvrtc?!
 void swap(NonSwappable&, NonSwappable&) = delete;
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_swap_sfinae() {
     using cuda::std::optional;
     {

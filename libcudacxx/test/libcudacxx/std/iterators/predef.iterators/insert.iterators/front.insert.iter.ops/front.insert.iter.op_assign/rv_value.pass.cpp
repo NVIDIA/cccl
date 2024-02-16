@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(C c)
 {

@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_enum_imp()
 {
     static_assert(!cuda::std::is_void<T>::value, "");
@@ -36,7 +36,7 @@ void test_enum_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_enum()
 {
     test_enum_imp<T>();

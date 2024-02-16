@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <class Rat1, class Rat2, bool result>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     static_assert((result == cuda::std::ratio_equal<Rat1, Rat2>::value), "");

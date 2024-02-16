@@ -20,7 +20,7 @@
 #include "../../rep.h"
 
 template <class D, class R>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(R r)
 {

@@ -25,7 +25,7 @@
 #include "cuda_space_selector.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_not_copy_constructible() {
   static_assert(!cuda::std::is_constructible<T, T&&>(), "");
   static_assert(!cuda::std::is_constructible<T, const T&>(), "");
@@ -34,7 +34,7 @@ void test_not_copy_constructible() {
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_copy_constructible() {
   static_assert(cuda::std::is_constructible<T, T&&>(), "");
   static_assert(cuda::std::is_constructible<T, const T&>(), "");
@@ -43,7 +43,7 @@ void test_copy_constructible() {
 }
 
 template <class T, class A>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_atomic_ref_copy_ctor() {
   SHARED A val;
   val = 0;
@@ -58,7 +58,7 @@ void test_atomic_ref_copy_ctor() {
 }
 
 template <class T, class A>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_atomic_ref_move_ctor() {
   SHARED A val;
   val = 0;

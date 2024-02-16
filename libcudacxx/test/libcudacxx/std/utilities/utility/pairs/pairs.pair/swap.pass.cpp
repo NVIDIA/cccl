@@ -19,11 +19,11 @@
 
 struct S {
     int i;
-    __host__ __device__ S() : i(0) {}
-    __host__ __device__ S(int j) : i(j) {}
-    __host__ __device__ S * operator& () { assert(false); return this; }
-    __host__ __device__ S const * operator& () const { assert(false); return this; }
-    __host__ __device__ bool operator==(int x) const { return i == x; }
+    TEST_HOST_DEVICE S() : i(0) {}
+    TEST_HOST_DEVICE S(int j) : i(j) {}
+    TEST_HOST_DEVICE S * operator& () { assert(false); return this; }
+    TEST_HOST_DEVICE S const * operator& () const { assert(false); return this; }
+    TEST_HOST_DEVICE bool operator==(int x) const { return i == x; }
 };
 
 int main(int, char**)

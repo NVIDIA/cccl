@@ -19,11 +19,11 @@
 #include "test_macros.h"
 
 struct NoDefault {
-    __host__ __device__ TEST_CONSTEXPR NoDefault(int) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NoDefault(int) { }
 };
 
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;

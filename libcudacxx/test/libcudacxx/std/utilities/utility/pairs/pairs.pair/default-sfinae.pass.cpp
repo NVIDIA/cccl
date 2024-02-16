@@ -25,8 +25,8 @@
 struct DeletedDefault {
     // A class with a deleted default constructor. Used to test the SFINAE
     // on cuda::std::pair's default constructor.
-    __host__ __device__ constexpr explicit DeletedDefault(int x) : value(x) {}
-    __host__ __device__ constexpr DeletedDefault() = delete;
+    TEST_HOST_DEVICE constexpr explicit DeletedDefault(int x) : value(x) {}
+    TEST_HOST_DEVICE constexpr DeletedDefault() = delete;
     int value;
 };
 
@@ -42,18 +42,18 @@ struct DefaultSFINAES {
              DependantIsDefault<T, Dummy>::value
                 >::type
             >
-    __host__ __device__ constexpr DefaultSFINAES() : value() {}
-    __host__ __device__ constexpr explicit DefaultSFINAES(T const& x) : value(x) {}
+    TEST_HOST_DEVICE constexpr DefaultSFINAES() : value() {}
+    TEST_HOST_DEVICE constexpr explicit DefaultSFINAES(T const& x) : value(x) {}
     T value;
 };
 
 struct NoDefault {
-    __host__ __device__ constexpr NoDefault(int v) : value(v) {}
+    TEST_HOST_DEVICE constexpr NoDefault(int v) : value(v) {}
     int value;
 };
 
 template <class Tp>
-__host__ __device__ void test_not_is_default_constructible()
+TEST_HOST_DEVICE void test_not_is_default_constructible()
 {
     {
         typedef cuda::std::pair<int, Tp> P;
@@ -73,7 +73,7 @@ __host__ __device__ void test_not_is_default_constructible()
 }
 
 template <class Tp>
-__host__ __device__ void test_is_default_constructible()
+TEST_HOST_DEVICE void test_is_default_constructible()
 {
     {
         typedef cuda::std::pair<int, Tp> P;
@@ -91,8 +91,8 @@ __host__ __device__ void test_is_default_constructible()
 
 template <class T>
 struct IllFormedDefaultImp {
-  __host__ __device__ constexpr explicit IllFormedDefaultImp(int v) : value(v) {}
-  __host__ __device__ constexpr IllFormedDefaultImp() : value(T::DoesNotExistAndShouldNotCompile) {}
+  TEST_HOST_DEVICE constexpr explicit IllFormedDefaultImp(int v) : value(v) {}
+  TEST_HOST_DEVICE constexpr IllFormedDefaultImp() : value(T::DoesNotExistAndShouldNotCompile) {}
   int value;
 };
 
@@ -108,7 +108,7 @@ typedef IllFormedDefaultImp<int> IllFormedDefault;
 // compile. In C++14 and greater evaluate each test is evaluated as a constant
 // expression.
 // See LWG issue #2367
-__host__ __device__ void test_illformed_default()
+TEST_HOST_DEVICE void test_illformed_default()
 {
     {
     typedef cuda::std::pair<IllFormedDefault, int> P;

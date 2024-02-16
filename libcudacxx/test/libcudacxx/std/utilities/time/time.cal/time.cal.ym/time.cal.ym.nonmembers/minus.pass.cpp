@@ -31,6 +31,10 @@
 
 #include <iostream>
 
+#ifndef _CCCL_CUDA_COMPILER
+static_assert(false, "We currently cannot filter host only tests, so just fail as the normal ones do.");
+#endif // !_CCCL_CUDA_COMPILER
+
 int main(int, char**)
 {
     using year       = cuda::std::chrono::year;

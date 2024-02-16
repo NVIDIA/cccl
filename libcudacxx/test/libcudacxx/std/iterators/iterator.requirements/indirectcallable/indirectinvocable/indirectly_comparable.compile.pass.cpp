@@ -17,8 +17,10 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 struct Deref {
-    __host__ __device__ int operator()(int*) const;
+    TEST_HOST_DEVICE int operator()(int*) const;
 };
 
 static_assert(!cuda::std::indirectly_comparable<int, int, cuda::std::less<int>>);  // not dereferenceable

@@ -20,7 +20,7 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> z(3, 4);
@@ -29,7 +29,7 @@ test()
     return true;
 }
 
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE void test_edges()
 {
     auto testcases = get_testcases();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

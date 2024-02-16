@@ -19,8 +19,10 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 template <class Duration>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(const Duration& f, const Duration& d)
 {

@@ -13,13 +13,15 @@
 #include <cuda/std/functional>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 struct A
 {
     double data_;
 };
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(F f)
 {

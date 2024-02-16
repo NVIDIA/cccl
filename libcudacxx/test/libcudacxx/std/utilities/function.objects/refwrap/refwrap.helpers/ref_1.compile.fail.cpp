@@ -20,7 +20,7 @@
 
 struct A {};
 
-__host__ __device__ const A source() {return A();}
+TEST_HOST_DEVICE const A source() {return A();}
 
 int main(int, char**)
 {

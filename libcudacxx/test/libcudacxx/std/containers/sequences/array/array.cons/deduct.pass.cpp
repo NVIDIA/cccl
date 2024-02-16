@@ -23,7 +23,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_HOST_DEVICE constexpr bool tests()
 {
     //  Test the explicit deduction guides
     {

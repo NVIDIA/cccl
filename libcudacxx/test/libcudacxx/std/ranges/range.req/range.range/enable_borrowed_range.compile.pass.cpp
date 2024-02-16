@@ -25,7 +25,7 @@
 
 struct S {};
 
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   using cuda::std::ranges::enable_borrowed_range;
   static_assert(!enable_borrowed_range<char>);
   static_assert(!enable_borrowed_range<int>);

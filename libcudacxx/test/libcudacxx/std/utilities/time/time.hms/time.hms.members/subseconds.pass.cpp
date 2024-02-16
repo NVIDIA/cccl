@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename Duration>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr auto check_subseconds(Duration d)
 {
     using HMS = cuda::std::chrono::hh_mm_ss<Duration>;

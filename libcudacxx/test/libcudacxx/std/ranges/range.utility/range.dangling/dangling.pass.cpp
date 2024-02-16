@@ -27,7 +27,7 @@ static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling,
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling, S<0>, S<1>>);
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::dangling, S<0>, S<1>, S<2>>);
 
-__host__ __device__ constexpr bool test_dangling() {
+TEST_HOST_DEVICE constexpr bool test_dangling() {
   auto a = cuda::std::ranges::dangling();
   auto b = cuda::std::ranges::dangling(S<0>());
   auto c = cuda::std::ranges::dangling(S<0>(), S<1>());

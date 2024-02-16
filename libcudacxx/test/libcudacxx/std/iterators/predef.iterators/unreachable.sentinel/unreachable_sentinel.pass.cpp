@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   static_assert(cuda::std::is_empty_v<cuda::std::unreachable_sentinel_t>);
   static_assert(cuda::std::semiregular<cuda::std::unreachable_sentinel_t>);
 

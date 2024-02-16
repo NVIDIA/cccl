@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, unsigned A>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_extent()
 {
     static_assert((cuda::std::extent<T>::value == A), "");
@@ -31,7 +31,7 @@ void test_extent()
 }
 
 template <class T, unsigned A>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_extent1()
 {
     static_assert((cuda::std::extent<T, 1>::value == A), "");
@@ -49,7 +49,7 @@ void test_extent1()
 class Class
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Class();
 };
 

@@ -22,7 +22,7 @@
 using cuda::std::regular_invocable;
 
 template <class R, class... Args>
-__host__ __device__ constexpr bool check_invocable() {
+TEST_HOST_DEVICE constexpr bool check_invocable() {
   constexpr bool result = regular_invocable<R(Args...), Args...>;
   static_assert(regular_invocable<R(Args...) noexcept, Args...> == result, "");
   static_assert(regular_invocable<R (*)(Args...), Args...> == result, "");
@@ -65,7 +65,7 @@ static_assert(!regular_invocable<int&&>, "");
 
 namespace function_objects {
 struct function_object {
-  __host__ __device__ void operator()();
+  TEST_HOST_DEVICE void operator()();
 };
 static_assert(regular_invocable<function_object>, "");
 static_assert(!regular_invocable<function_object const>, "");
@@ -77,7 +77,7 @@ static_assert(!regular_invocable<function_object volatile&>, "");
 static_assert(!regular_invocable<function_object const volatile&>, "");
 
 struct const_function_object {
-  __host__ __device__ void operator()(int) const;
+  TEST_HOST_DEVICE void operator()(int) const;
 };
 static_assert(regular_invocable<const_function_object, int>, "");
 static_assert(regular_invocable<const_function_object const, int>, "");
@@ -91,7 +91,7 @@ static_assert(
     !regular_invocable<const_function_object const volatile&, int>, "");
 
 struct volatile_function_object {
-  __host__ __device__ void operator()(int, int) volatile;
+  TEST_HOST_DEVICE void operator()(int, int) volatile;
 };
 static_assert(regular_invocable<volatile_function_object, int, int>, "");
 static_assert(
@@ -109,7 +109,7 @@ static_assert(!regular_invocable<volatile_function_object const volatile&,
                                       int, int>, "");
 
 struct cv_function_object {
-  __host__ __device__ void operator()(int[]) const volatile;
+  TEST_HOST_DEVICE void operator()(int[]) const volatile;
 };
 static_assert(regular_invocable<cv_function_object, int*>, "");
 static_assert(regular_invocable<cv_function_object const, int*>, "");
@@ -121,7 +121,7 @@ static_assert(regular_invocable<cv_function_object volatile&, int*>, "");
 static_assert(regular_invocable<cv_function_object const volatile&, int*>, "");
 
 struct lvalue_function_object {
-  __host__ __device__ void operator()() &;
+  TEST_HOST_DEVICE void operator()() &;
 };
 static_assert(!regular_invocable<lvalue_function_object>, "");
 static_assert(!regular_invocable<lvalue_function_object const>, "");
@@ -133,7 +133,7 @@ static_assert(!regular_invocable<lvalue_function_object volatile&>, "");
 static_assert(!regular_invocable<lvalue_function_object const volatile&>, "");
 
 struct lvalue_const_function_object {
-  __host__ __device__ void operator()(int) const&;
+  TEST_HOST_DEVICE void operator()(int) const&;
 };
 static_assert(regular_invocable<lvalue_const_function_object, int>, "");
 static_assert(regular_invocable<lvalue_const_function_object const, int>, "");
@@ -149,7 +149,7 @@ static_assert(
     !regular_invocable<lvalue_const_function_object const volatile&, int>, "");
 
 struct lvalue_volatile_function_object {
-  __host__ __device__ void operator()(int, int) volatile&;
+  TEST_HOST_DEVICE void operator()(int, int) volatile&;
 };
 static_assert(
     !regular_invocable<lvalue_volatile_function_object, int, int>, "");
@@ -169,7 +169,7 @@ static_assert(!regular_invocable<
               lvalue_volatile_function_object const volatile&, int, int>, "");
 
 struct lvalue_cv_function_object {
-  __host__ __device__ void operator()(int[]) const volatile&;
+  TEST_HOST_DEVICE void operator()(int[]) const volatile&;
 };
 static_assert(!regular_invocable<lvalue_cv_function_object, int*>, "");
 static_assert(!regular_invocable<lvalue_cv_function_object const, int*>, "");
@@ -185,7 +185,7 @@ static_assert(
     regular_invocable<lvalue_cv_function_object const volatile&, int*>, "");
 //
 struct rvalue_function_object {
-  __host__ __device__ void operator()() &&;
+  TEST_HOST_DEVICE void operator()() &&;
 };
 static_assert(regular_invocable<rvalue_function_object>, "");
 static_assert(!regular_invocable<rvalue_function_object const>, "");
@@ -197,7 +197,7 @@ static_assert(!regular_invocable<rvalue_function_object volatile&>, "");
 static_assert(!regular_invocable<rvalue_function_object const volatile&>, "");
 
 struct rvalue_const_function_object {
-  __host__ __device__ void operator()(int) const&&;
+  TEST_HOST_DEVICE void operator()(int) const&&;
 };
 static_assert(regular_invocable<rvalue_const_function_object, int>, "");
 static_assert(regular_invocable<rvalue_const_function_object const, int>, "");
@@ -214,7 +214,7 @@ static_assert(
     !regular_invocable<rvalue_const_function_object const volatile&, int>, "");
 
 struct rvalue_volatile_function_object {
-  __host__ __device__ void operator()(int, int) volatile&&;
+  TEST_HOST_DEVICE void operator()(int, int) volatile&&;
 };
 static_assert(
     regular_invocable<rvalue_volatile_function_object, int, int>, "");
@@ -234,7 +234,7 @@ static_assert(!regular_invocable<
               rvalue_volatile_function_object const volatile&, int, int>, "");
 
 struct rvalue_cv_function_object {
-  __host__ __device__ void operator()(int[]) const volatile&&;
+  TEST_HOST_DEVICE void operator()(int[]) const volatile&&;
 };
 static_assert(regular_invocable<rvalue_cv_function_object, int*>, "");
 static_assert(regular_invocable<rvalue_cv_function_object const, int*>, "");
@@ -250,11 +250,11 @@ static_assert(
 
 struct multiple_overloads {
   struct A {};
-  struct B { __host__ __device__ B(int); };
+  struct B { TEST_HOST_DEVICE B(int); };
   struct AB : A, B {};
   struct O {};
-  __host__ __device__ void operator()(A) const;
-  __host__ __device__ void operator()(B) const;
+  TEST_HOST_DEVICE void operator()(A) const;
+  TEST_HOST_DEVICE void operator()(B) const;
 };
 static_assert(regular_invocable<multiple_overloads, multiple_overloads::A>, "");
 static_assert(regular_invocable<multiple_overloads, multiple_overloads::B>, "");
@@ -265,7 +265,7 @@ static_assert(!regular_invocable<multiple_overloads, multiple_overloads::O>, "")
 
 namespace pointer_to_member_functions {
   template<class Member, class T, class... Args>
-  __host__ __device__ constexpr bool check_member_is_invocable()
+  TEST_HOST_DEVICE constexpr bool check_member_is_invocable()
   {
     constexpr bool result = regular_invocable<Member, T&&, Args...>;
     using uncv_t = cuda::std::remove_cvref_t<T>;
@@ -443,24 +443,24 @@ static_assert(regular_invocable<rvalue_cv_unqualified, S const volatile&&>, "");
 // Check the concept with closure types (and also check for subsumption)
 #if TEST_STD_VER > 2017
 template<class F, class... Args>
-__host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
+TEST_HOST_DEVICE constexpr bool is_regular_invocable(F, Args&&...) {
   return false;
 }
 
 template<class F, class... Args>
 requires cuda::std::invocable<F, Args...>
-__host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
+TEST_HOST_DEVICE constexpr bool is_regular_invocable(F, Args&&...) {
   return false;
 }
 
 template<class F, class... Args>
 requires cuda::std::regular_invocable<F, Args...> && true
-__host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
+TEST_HOST_DEVICE constexpr bool is_regular_invocable(F, Args&&...) {
   return true;
 }
 #else
 template<class F, class... Args>
-__host__ __device__ constexpr bool is_regular_invocable(F, Args&&...) {
+TEST_HOST_DEVICE constexpr bool is_regular_invocable(F, Args&&...) {
   return regular_invocable<F, Args...>;
 }
 #endif // TEST_STD_VER > 2017

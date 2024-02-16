@@ -24,11 +24,11 @@
 
 struct Foo {
   int x;
-  __host__ __device__ TEST_CONSTEXPR bool operator==(Foo const& other) const { return x == other.x; }
+  TEST_HOST_DEVICE TEST_CONSTEXPR bool operator==(Foo const& other) const { return x == other.x; }
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
   Foo array[]                           = {Foo{40}, Foo{41}, Foo{42}, Foo{43}, Foo{44}};
   Foo* b                                = array + 0;
   Foo* e                                = array + 5;
@@ -50,7 +50,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
 }
 
 template <class Iter>
-__host__ __device__ void test_death() {
+TEST_HOST_DEVICE void test_death() {
   Foo array[]                          = {Foo{0}, Foo{1}, Foo{2}, Foo{3}, Foo{4}};
   Foo* b                               = array + 0;
   Foo* e                               = array + 5;

@@ -16,6 +16,8 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
+#include "test_macros.h"
+
 #if TEST_STD_VER > 2017
 #define TEST_IF_CONSTEXPR if constexpr
 #else
@@ -36,7 +38,7 @@ struct Derived4 : DerivedProtected {};
 struct Derived5 : Derived4 {};
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromPointer() {
+TEST_HOST_DEVICE constexpr void CheckNotDerivedFromPointer() {
   { // From as pointer
     static_assert(!derived_from<From*, To>, "");
     static_assert(!derived_from<From*, const To>, "");
@@ -199,7 +201,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromPointer() {
 }
 
 template <typename From, typename To>
-__host__ __device__ constexpr void CheckNotDerivedFromReference() {
+TEST_HOST_DEVICE constexpr void CheckNotDerivedFromReference() {
   TEST_IF_CONSTEXPR (!cuda::std::same_as<To, void>) {
     static_assert(!derived_from<From, To&>, "");
     static_assert(!derived_from<From, const To&>, "");
@@ -331,7 +333,7 @@ __host__ __device__ constexpr void CheckNotDerivedFromReference() {
 }
 
 template <typename From, typename To>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void CheckDerivedFrom() {
   static_assert(derived_from<From, To>, "");
 
@@ -356,7 +358,7 @@ constexpr void CheckDerivedFrom() {
 }
 
 template <typename From, typename To>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void CheckNotDerivedFrom() {
   static_assert(!derived_from<From, To>, "");
 

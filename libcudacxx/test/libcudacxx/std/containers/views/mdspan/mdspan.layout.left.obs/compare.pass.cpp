@@ -12,11 +12,13 @@
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+
 #include "../mdspan.layout.util/layout_util.hpp"
+#include "test_macros.h"
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-__host__ __device__ void typed_test_compare_left()
+TEST_HOST_DEVICE void typed_test_compare_left()
 {
     typed_test_compare< test_left_type_pair<_exts<dyn         >, _sizes<10    >, _exts< 10          >, _sizes<          >> >();
     typed_test_compare< test_left_type_pair<_exts<dyn,  10    >, _sizes< 5    >, _exts<  5, dyn     >, _sizes<10        >> >();

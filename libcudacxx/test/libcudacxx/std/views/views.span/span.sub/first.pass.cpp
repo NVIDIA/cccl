@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <typename Span, size_t Count>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprSpan(Span sp)
 {
     ASSERT_NOEXCEPT(sp.template first<Count>());
@@ -44,7 +44,7 @@ constexpr bool testConstexprSpan(Span sp)
 
 
 template <typename Span, size_t Count>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan(Span sp)
 {
     ASSERT_NOEXCEPT(sp.template first<Count>());
@@ -62,7 +62,7 @@ void testRuntimeSpan(Span sp)
 }
 
 STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int carr1[] = {1,2,3,4};
-__device__           int   arr[] = {5,6,7};
+STATIC_TEST_GLOBAL_VAR int   arr[] = {5,6,7};
 
 int main(int, char**)
 {

@@ -50,7 +50,7 @@
 TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
 struct NonCopyable {
-    __host__ __device__
+    TEST_HOST_DEVICE
     NonCopyable() {}
 private:
     NonCopyable(NonCopyable const&) = delete;
@@ -58,25 +58,25 @@ private:
 };
 
 struct TestClass {
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit TestClass(int x) : data(x) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     int& operator()(NonCopyable&&) & { return data; }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int const& operator()(NonCopyable&&) const & { return data; }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int volatile& operator()(NonCopyable&&) volatile & { return data; }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int const volatile& operator()(NonCopyable&&) const volatile & { return data; }
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     int&& operator()(NonCopyable&&) && { return cuda::std::move(data); }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int const&& operator()(NonCopyable&&) const && { return cuda::std::move(data); }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int volatile&& operator()(NonCopyable&&) volatile && { return cuda::std::move(data); }
-    __host__ __device__
+    TEST_HOST_DEVICE
     int const volatile&& operator()(NonCopyable&&) const volatile && { return cuda::std::move(data); }
 
     int data;
@@ -86,18 +86,18 @@ private:
 };
 
 struct DerivedFromTestClass : public TestClass {
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit DerivedFromTestClass(int x) : TestClass(x) {}
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 int& foo(NonCopyable&&) {
     static int data = 42;
     return data;
 }
 
 template <class Signature,  class Expect, class Functor>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_b12(Functor&& f) {
     // Create the callable object.
     typedef Signature TestClass::*ClassFunc;
@@ -124,7 +124,7 @@ void test_b12(Functor&& f) {
 }
 
 template <class Expect, class Functor>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_b34(Functor&& f) {
     // Create the callable object.
     typedef int TestClass::*ClassFunc;
@@ -148,7 +148,7 @@ void test_b34(Functor&& f) {
 }
 
 template <class Expect, class Functor>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_b5(Functor&& f) {
     NonCopyable arg;
 
@@ -168,7 +168,7 @@ void test_b5(Functor&& f) {
     assert(ret == 42);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void bullet_one_two_tests() {
     {
         TestClass cl(42);
@@ -241,7 +241,7 @@ void bullet_one_two_tests() {
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void bullet_three_four_tests() {
     {
         typedef TestClass Fn;
@@ -308,7 +308,7 @@ void bullet_three_four_tests() {
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void bullet_five_tests() {
     using FooType = int&(NonCopyable&&);
     {
@@ -335,23 +335,23 @@ void bullet_five_tests() {
 }
 
 struct CopyThrows {
-  __host__ __device__
+  TEST_HOST_DEVICE
   CopyThrows() {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   CopyThrows(CopyThrows const&) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   CopyThrows(CopyThrows&&) noexcept {}
 };
 
 struct NoThrowCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   void operator()() noexcept {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   void operator()(CopyThrows) noexcept {}
 };
 
 struct ThrowsCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   void operator()() {}
 };
 
@@ -359,7 +359,7 @@ struct MemberObj {
   int x;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void noexcept_test() {
     {
         NoThrowCallable obj; unused(obj); // suppress unused warning

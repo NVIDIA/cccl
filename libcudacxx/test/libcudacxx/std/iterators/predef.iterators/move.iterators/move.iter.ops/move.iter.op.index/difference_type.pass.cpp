@@ -27,7 +27,7 @@
 #endif // TEST_COMPILER_MSVC
 
 template <class It>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(It i, typename cuda::std::iterator_traits<It>::difference_type n,
      typename cuda::std::iterator_traits<It>::value_type x)
@@ -40,7 +40,7 @@ test(It i, typename cuda::std::iterator_traits<It>::difference_type n,
 
 struct do_nothing
 {
-__host__ __device__
+TEST_HOST_DEVICE
     void operator()(void*) const {}
 };
 

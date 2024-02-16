@@ -26,7 +26,7 @@
 
 struct Base
 {
-    __host__ __device__ virtual ~Base() {}
+    TEST_HOST_DEVICE virtual ~Base() {}
 };
 
 struct Derived

@@ -30,34 +30,34 @@
 //  Look ma - I'm a container!
 template <typename T>
 struct IsAContainer {
-    __host__ __device__ constexpr IsAContainer() : v_{} {}
-    __host__ __device__ constexpr size_t size() const {return 1;}
-    __host__ __device__ constexpr       T *data() {return &v_;}
-    __host__ __device__ constexpr const T *data() const {return &v_;}
+    TEST_HOST_DEVICE constexpr IsAContainer() : v_{} {}
+    TEST_HOST_DEVICE constexpr size_t size() const {return 1;}
+    TEST_HOST_DEVICE constexpr       T *data() {return &v_;}
+    TEST_HOST_DEVICE constexpr const T *data() const {return &v_;}
 
-    __host__ __device__ constexpr const T *getV() const {return &v_;} // for checking
+    TEST_HOST_DEVICE constexpr const T *getV() const {return &v_;} // for checking
     T v_;
 };
 
 template <typename T>
 struct NotAContainerNoData {
-    __host__ __device__ size_t size() const {return 0;}
+    TEST_HOST_DEVICE size_t size() const {return 0;}
 };
 
 template <typename T>
 struct NotAContainerNoSize {
-    __host__ __device__ const T *data() const {return nullptr;}
+    TEST_HOST_DEVICE const T *data() const {return nullptr;}
 };
 
 template <typename T>
 struct NotAContainerPrivate {
 private:
-    __host__ __device__ size_t size() const {return 0;}
-    __host__ __device__ const T *data() const {return nullptr;}
+    TEST_HOST_DEVICE size_t size() const {return 0;}
+    TEST_HOST_DEVICE const T *data() const {return nullptr;}
 };
 
 template<class T, size_t extent, class container>
-__host__ __device__ cuda::std::span<T, extent> createImplicitSpan(container c) {
+TEST_HOST_DEVICE cuda::std::span<T, extent> createImplicitSpan(container c) {
     return {c}; // expected-error-re {{no matching constructor for initialization of 'cuda::std::span<{{.+}}>'}}
 }
 

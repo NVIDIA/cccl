@@ -16,8 +16,10 @@
 
 #include <cuda/std/chrono>
 
+#include "test_macros.h"
+
 template <class D1, class D2, class De>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test()
 {

@@ -43,7 +43,7 @@ _LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, T, E);
 static_assert(HasMemberSwap<int, int>, "");
 
 struct NotSwappable {};
-__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
+TEST_HOST_DEVICE void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<T>
 static_assert(!HasMemberSwap<NotSwappable, int>, "");
@@ -53,7 +53,7 @@ static_assert(!HasMemberSwap<int, NotSwappable>, "");
 
 struct NotMoveContructible {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
+  TEST_HOST_DEVICE friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<T>
@@ -63,8 +63,8 @@ static_assert(!HasMemberSwap<NotMoveContructible, int>, "");
 static_assert(!HasMemberSwap<int, NotMoveContructible>, "");
 
 struct MoveMayThrow {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
-  __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) noexcept(false);
+  TEST_HOST_DEVICE friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 
 // !is_nothrow_move_constructible_v<T> && is_nothrow_move_constructible_v<E>
@@ -95,7 +95,7 @@ static_assert(!MemberSwapNoexcept<MoveMayThrow, int>, "");
 static_assert(!MemberSwapNoexcept<int, MoveMayThrow>, "");
 
 struct SwapMayThrow {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
+  TEST_HOST_DEVICE friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 
 // !is_nothrow_swappable_v<T>
@@ -105,7 +105,7 @@ static_assert(!MemberSwapNoexcept<SwapMayThrow, int>, "");
 static_assert(!MemberSwapNoexcept<int, SwapMayThrow>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()
   {
     cuda::std::expected<ADLSwap, int> x(cuda::std::in_place, 5);
@@ -213,7 +213,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   // !e1.has_value() && e2.has_value()
   {

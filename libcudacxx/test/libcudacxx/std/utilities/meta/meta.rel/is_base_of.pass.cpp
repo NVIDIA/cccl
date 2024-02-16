@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_base_of()
 {
     static_assert((cuda::std::is_base_of<T, U>::value), "");
@@ -31,7 +31,7 @@ void test_is_base_of()
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_base_of()
 {
     static_assert((!cuda::std::is_base_of<T, U>::value), "");

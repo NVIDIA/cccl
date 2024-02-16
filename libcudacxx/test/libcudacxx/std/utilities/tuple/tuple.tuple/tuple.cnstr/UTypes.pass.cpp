@@ -32,7 +32,7 @@ struct Empty {};
 struct A
 {
     int id_;
-    __host__ __device__ explicit constexpr A(int i) : id_(i) {}
+    TEST_HOST_DEVICE explicit constexpr A(int i) : id_(i) {}
 };
 
 #endif
@@ -43,7 +43,7 @@ struct NoDefault { NoDefault() = delete; };
 // are not explicitly initialized are not all default constructible.
 // Otherwise, cuda::std::is_constructible would return true but instantiating
 // the constructor would fail.
-__host__ __device__ void test_default_constructible_extension_sfinae()
+TEST_HOST_DEVICE void test_default_constructible_extension_sfinae()
 {
     {
         typedef cuda::std::tuple<MoveOnly, NoDefault> Tuple;

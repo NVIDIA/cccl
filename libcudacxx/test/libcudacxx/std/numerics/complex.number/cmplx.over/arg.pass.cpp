@@ -21,7 +21,7 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
 {
     static_assert((cuda::std::is_same<decltype(cuda::std::arg(x)), double>::value), "");
@@ -29,7 +29,7 @@ test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type*
 }
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(T x, typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
 {
     static_assert((cuda::std::is_same<decltype(cuda::std::arg(x)), T>::value), "");
@@ -37,7 +37,7 @@ test(T x, typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type
 }
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     test<T>(0);
     test<T>(1);

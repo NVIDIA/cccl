@@ -34,13 +34,13 @@ struct NonCopyable {
 
 struct CopyableNonTrivial {
   int i;
-  __host__ __device__ constexpr CopyableNonTrivial(int ii) : i(ii) {}
-  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o) : i(o.i) {}
+  TEST_HOST_DEVICE constexpr CopyableNonTrivial(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr CopyableNonTrivial(const CopyableNonTrivial& o) : i(o.i) {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
+  TEST_HOST_DEVICE friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i != rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i != rhs.i; }
 #endif // TEST_STD_VER > 2017
 };
 
@@ -53,7 +53,7 @@ static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<void, NonC
 static_assert(cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, CopyableNonTrivial>>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // copy the error non-trivial
   {
     const cuda::std::expected<void, CopyableNonTrivial> e1(cuda::std::unexpect, 5);
@@ -72,13 +72,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct Throwing {
     Throwing() = default;
-    __host__ __device__ Throwing(const Throwing&) { throw Except{}; }
+    TEST_HOST_DEVICE Throwing(const Throwing&) { throw Except{}; }
   };
 
   // throw on copying error

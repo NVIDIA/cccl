@@ -27,16 +27,16 @@
 
 struct Arg {
   int i;
-  __host__ __device__ constexpr Arg(int ii) : i(ii) {}
-  __host__ __device__ constexpr Arg(const Arg& other) : i(other.i) {}
-  __host__ __device__ constexpr Arg(Arg&& other) : i(other.i) { other.i = 0; }
+  TEST_HOST_DEVICE constexpr Arg(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr Arg(const Arg& other) : i(other.i) {}
+  TEST_HOST_DEVICE constexpr Arg(Arg&& other) : i(other.i) { other.i = 0; }
 };
 
 struct Error {
   cuda::std::initializer_list<int> list;
   Arg arg;
-  __host__ __device__ constexpr explicit Error(cuda::std::initializer_list<int> l, const Arg& a) : list(l), arg(a) {}
-  __host__ __device__ constexpr explicit Error(cuda::std::initializer_list<int> l, Arg&& a) : list(l), arg(cuda::std::move(a)) {}
+  TEST_HOST_DEVICE constexpr explicit Error(cuda::std::initializer_list<int> l, const Arg& a) : list(l), arg(a) {}
+  TEST_HOST_DEVICE constexpr explicit Error(cuda::std::initializer_list<int> l, Arg&& a) : list(l), arg(cuda::std::move(a)) {}
 };
 
 // Test Constraints:
@@ -48,7 +48,7 @@ static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Error>, cuda:
 
 // test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_HOST_DEVICE void conversion_test(T);
 
 template <class T, class... Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -63,7 +63,7 @@ constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstruc
 static_assert(ImplicitlyConstructible<int, int>, "");
 static_assert(!ImplicitlyConstructible<cuda::std::unexpected<Error>, cuda::std::in_place_t, cuda::std::initializer_list<int>, Arg>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // lvalue
   {
     Arg a{5};
@@ -95,7 +95,7 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 

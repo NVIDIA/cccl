@@ -22,7 +22,7 @@
 
 #if TEST_STD_VER > 2011
 template <class It>
-__host__ __device__ void test_single_pass(It i, It x) {
+TEST_HOST_DEVICE void test_single_pass(It i, It x) {
   cuda::std::move_iterator<It> r(cuda::std::move(i));
   r++;
   assert(cuda::std::move(r).base() == x);
@@ -30,7 +30,7 @@ __host__ __device__ void test_single_pass(It i, It x) {
 #endif
 
 template <class It>
-__host__ __device__ void test(It i, It x) {
+TEST_HOST_DEVICE void test(It i, It x) {
     cuda::std::move_iterator<It> r(i);
     cuda::std::move_iterator<It> rr = r++;
     assert(r.base() == x);

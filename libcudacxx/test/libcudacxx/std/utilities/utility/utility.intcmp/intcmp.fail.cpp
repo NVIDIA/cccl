@@ -39,10 +39,10 @@
 
 struct NonEmptyT {
   int val;
-  __host__ __device__ NonEmptyT() : val(0) {}
-  __host__ __device__ NonEmptyT(int val) : val(val) {}
-  __host__ __device__ operator int&() { return val; }
-  __host__ __device__ operator int() const { return val; }
+  TEST_HOST_DEVICE NonEmptyT() : val(0) {}
+  TEST_HOST_DEVICE NonEmptyT(int val) : val(val) {}
+  TEST_HOST_DEVICE operator int&() { return val; }
+  TEST_HOST_DEVICE operator int() const { return val; }
 };
 
 enum ColorT { red, green, blue };
@@ -50,7 +50,7 @@ enum ColorT { red, green, blue };
 struct EmptyT {};
 
 template <class T>
-__host__ __device__ constexpr void test() {
+TEST_HOST_DEVICE constexpr void test() {
   cuda::std::cmp_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
@@ -74,7 +74,7 @@ __host__ __device__ constexpr void test() {
 }
 #ifndef TEST_HAS_NO_CHAR8_T
 template <class T>
-__host__ __device__ constexpr void test_char8t() {
+TEST_HOST_DEVICE constexpr void test_char8t() {
   cuda::std::cmp_equal(T(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
@@ -99,7 +99,7 @@ __host__ __device__ constexpr void test_char8t() {
 #endif // TEST_HAS_NO_CHAR8_T
 
 template <class T>
-__host__ __device__ constexpr void test_uchars() {
+TEST_HOST_DEVICE constexpr void test_uchars() {
   cuda::std::cmp_equal(T(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(int(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}

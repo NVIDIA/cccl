@@ -48,7 +48,7 @@
 // (8)  tuple(tuple&& t) -> decltype(t)
 // (9)  tuple(AT, A const&, tuple const& t) -> decltype(t)
 // (10) tuple(AT, A const&, tuple&& t) -> decltype(t)
-__host__ __device__ void test_primary_template()
+TEST_HOST_DEVICE void test_primary_template()
 {
   // cuda::std::allocator not supported
   // const cuda::std::allocator<int> A;
@@ -184,7 +184,7 @@ __host__ __device__ void test_primary_template()
 // (4)  tuple(tuple&&) -> tuple<>
 // (5)  tuple(AT, A const&, tuple const&) -> tuple<>
 // (6)  tuple(AT, A const&, tuple&&) -> tuple<>
-__host__ __device__ void test_empty_specialization()
+TEST_HOST_DEVICE void test_empty_specialization()
 {
   // cuda::std::allocator not supported
   // cuda::std::allocator<int> A;

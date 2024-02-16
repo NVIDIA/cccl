@@ -24,25 +24,25 @@
 
 struct Counted {
     int* counter_;
-    __host__ __device__ TEST_CONSTEXPR Counted(int* counter) : counter_(counter) { ++*counter_; }
-    __host__ __device__ TEST_CONSTEXPR_CXX20 ~Counted() { --*counter_; }
-    __host__ __device__ friend void operator&(Counted) = delete;
+    TEST_HOST_DEVICE TEST_CONSTEXPR Counted(int* counter) : counter_(counter) { ++*counter_; }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 ~Counted() { --*counter_; }
+    TEST_HOST_DEVICE friend void operator&(Counted) = delete;
 };
 
 struct VirtualCounted {
     int* counter_;
-    __host__ __device__ TEST_CONSTEXPR VirtualCounted(int* counter) : counter_(counter) { ++*counter_; }
-    __host__ __device__ TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted() { --*counter_; }
-    __host__ __device__ void operator&() const = delete;
+    TEST_HOST_DEVICE TEST_CONSTEXPR VirtualCounted(int* counter) : counter_(counter) { ++*counter_; }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 virtual ~VirtualCounted() { --*counter_; }
+    TEST_HOST_DEVICE void operator&() const = delete;
 };
 
 struct DerivedCounted : VirtualCounted {
-    __host__ __device__ TEST_CONSTEXPR DerivedCounted(int* counter) : VirtualCounted(counter) { }
-    __host__ __device__ TEST_CONSTEXPR_CXX20 ~DerivedCounted() override { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR DerivedCounted(int* counter) : VirtualCounted(counter) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 ~DerivedCounted() override { }
 };
 
 #if TEST_STD_VER > 2017
-__host__ __device__ constexpr bool test_arrays() {
+TEST_HOST_DEVICE constexpr bool test_arrays() {
     {
         int counter = 0;
         Counted arr[3] = {{&counter}, {&counter}, {&counter} };
@@ -71,7 +71,7 @@ __host__ __device__ constexpr bool test_arrays() {
 }
 #endif
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
     {
         int counter = 0;
         Counted first{&counter};

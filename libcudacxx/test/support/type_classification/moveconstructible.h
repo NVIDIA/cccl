@@ -9,10 +9,12 @@
 #ifndef TEST_SUPPORT_TYPE_CLASSIFICATION_MOVECONSTRUCTIBLE_H
 #define TEST_SUPPORT_TYPE_CLASSIFICATION_MOVECONSTRUCTIBLE_H
 
+#include "test_macros.h"
+
 struct HasDefaultOps {};
 
 struct CustomMoveCtor {
-  __host__ __device__ CustomMoveCtor(CustomMoveCtor&&) noexcept;
+  TEST_HOST_DEVICE CustomMoveCtor(CustomMoveCtor&&) noexcept;
 };
 
 struct MoveOnly {
@@ -23,8 +25,8 @@ struct MoveOnly {
 };
 
 struct CustomMoveAssign {
-  __host__ __device__ CustomMoveAssign(CustomMoveAssign&&) noexcept;
-  __host__ __device__ CustomMoveAssign& operator=(CustomMoveAssign&&) noexcept;
+  TEST_HOST_DEVICE CustomMoveAssign(CustomMoveAssign&&) noexcept;
+  TEST_HOST_DEVICE CustomMoveAssign& operator=(CustomMoveAssign&&) noexcept;
 };
 
 struct DeletedMoveCtor {
@@ -46,7 +48,7 @@ struct ImplicitlyDeletedMoveAssign {
 
 class MemberLvalueReference {
 public:
-  __host__ __device__ MemberLvalueReference(int&);
+  TEST_HOST_DEVICE MemberLvalueReference(int&);
 
 private:
   int& X;
@@ -54,7 +56,7 @@ private:
 
 class MemberRvalueReference {
 public:
-  __host__ __device__ MemberRvalueReference(int&&);
+  TEST_HOST_DEVICE MemberRvalueReference(int&&);
 
 private:
   int&& X;

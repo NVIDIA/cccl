@@ -29,20 +29,20 @@
 //  Look ma - I'm a container!
 template <typename T>
 struct IsAContainer {
-    __host__ __device__ constexpr IsAContainer() : v_{} {}
-    __host__ __device__ constexpr size_t size() const {return 1;}
-    __host__ __device__ constexpr       T *data() {return &v_;}
-    __host__ __device__ constexpr const T *data() const {return &v_;}
-    __host__ __device__ constexpr       T *begin() {return &v_;}
-    __host__ __device__ constexpr const T *begin() const {return &v_;}
-    __host__ __device__ constexpr       T *end() {return &v_ + 1;}
-    __host__ __device__ constexpr const T *end() const {return &v_ + 1;}
+    TEST_HOST_DEVICE constexpr IsAContainer() : v_{} {}
+    TEST_HOST_DEVICE constexpr size_t size() const {return 1;}
+    TEST_HOST_DEVICE constexpr       T *data() {return &v_;}
+    TEST_HOST_DEVICE constexpr const T *data() const {return &v_;}
+    TEST_HOST_DEVICE constexpr       T *begin() {return &v_;}
+    TEST_HOST_DEVICE constexpr const T *begin() const {return &v_;}
+    TEST_HOST_DEVICE constexpr       T *end() {return &v_ + 1;}
+    TEST_HOST_DEVICE constexpr const T *end() const {return &v_ + 1;}
 
-    __host__ __device__ constexpr T const *getV() const {return &v_;} // for checking
+    TEST_HOST_DEVICE constexpr T const *getV() const {return &v_;} // for checking
     T v_;
 };
 
-__host__ __device__ void checkCV()
+TEST_HOST_DEVICE void checkCV()
 {
     IsAContainer<int> v{};
 
@@ -73,7 +73,7 @@ __host__ __device__ void checkCV()
 
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpan()
+TEST_HOST_DEVICE constexpr bool testConstexprSpan()
 {
     constexpr IsAContainer<const T> val{};
     cuda::std::span<const T> s1{val};
@@ -81,7 +81,7 @@ __host__ __device__ constexpr bool testConstexprSpan()
 }
 
 template <typename T>
-__host__ __device__ constexpr bool testConstexprSpanStatic()
+TEST_HOST_DEVICE constexpr bool testConstexprSpanStatic()
 {
     constexpr IsAContainer<const T> val{};
     cuda::std::span<const T, 1> s1{val};
@@ -89,7 +89,7 @@ __host__ __device__ constexpr bool testConstexprSpanStatic()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpan()
+TEST_HOST_DEVICE void testRuntimeSpan()
 {
     IsAContainer<T> val{};
     const IsAContainer<T> cVal;
@@ -100,7 +100,7 @@ __host__ __device__ void testRuntimeSpan()
 }
 
 template <typename T>
-__host__ __device__ void testRuntimeSpanStatic()
+TEST_HOST_DEVICE void testRuntimeSpanStatic()
 {
     IsAContainer<T> val{};
     const IsAContainer<T> cVal;

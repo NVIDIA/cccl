@@ -29,7 +29,7 @@ struct MoveOnly {
     MoveOnly(const MoveOnly&) = delete;
     MoveOnly& operator=(const MoveOnly&) = delete;
 
-    __host__ __device__ constexpr MoveOnly(const double val) noexcept : val_(val) {}
+    TEST_HOST_DEVICE constexpr MoveOnly(const double val) noexcept : val_(val) {}
 };
 
 int main(int, char**)

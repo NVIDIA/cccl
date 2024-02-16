@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_remove_cvref()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::remove_cvref<T>::type);

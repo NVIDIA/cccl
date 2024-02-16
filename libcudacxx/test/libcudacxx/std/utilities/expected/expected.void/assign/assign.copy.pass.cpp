@@ -51,7 +51,7 @@ static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopy
 // !is_copy_constructible_v<E>
 static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopyConstructible>>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // If this->has_value() && rhs.has_value() is true, no effects.
   {
     cuda::std::expected<void, int> e1;
@@ -106,7 +106,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<void, ThrowOnCopyConstruct> e1(cuda::std::in_place);
   cuda::std::expected<void, ThrowOnCopyConstruct> e2(cuda::std::unexpect);

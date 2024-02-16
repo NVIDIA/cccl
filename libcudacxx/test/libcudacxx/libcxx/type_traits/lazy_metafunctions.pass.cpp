@@ -49,10 +49,10 @@ const int NextInt<Value>::value;
 template <class Type>
 struct HasTypeImp {
     template <class Up, class = typename Up::type>
-    __host__ __device__
+    TEST_HOST_DEVICE
     static TrueT test(int);
     template <class>
-    __host__ __device__
+    TEST_HOST_DEVICE
     static FalseT test(...);
 
     typedef decltype(test<Type>(0)) type;
@@ -63,7 +63,7 @@ struct HasTypeImp {
 template <class Type>
 struct HasType : HasTypeImp<Type>::type {};
 
-__host__ __device__
+TEST_HOST_DEVICE
 void LazyNotTest() {
     {
         typedef cuda::std::_Not<LazyTrueT> NotT;
@@ -84,7 +84,7 @@ void LazyNotTest() {
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void LazyAndTest() {
     { // Test that it acts as the identity function for a single value
         static_assert(cuda::std::_And<LazyFalseT>::value == false, "");
@@ -103,7 +103,7 @@ void LazyAndTest() {
 }
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 void LazyOrTest() {
     { // Test that it acts as the identity function for a single value
         static_assert(cuda::std::_Or<LazyFalseT>::value == false, "");

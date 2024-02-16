@@ -46,7 +46,7 @@ static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, int>, cud
 
 // test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_HOST_DEVICE void conversion_test(T);
 
 template <class T, class... Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -70,7 +70,7 @@ struct Data {
   cuda::std::tuple<Ts...> tuple_;
 
   template <class... Us>
-  __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us) : tuple_(cuda::std::forward<Us>(us)...) {
+  TEST_HOST_DEVICE constexpr Data(cuda::std::initializer_list<int> il, Us&&... us) : tuple_(cuda::std::forward<Us>(us)...) {
       auto ibegin = il.begin();
       for (cuda::std::size_t i = 0; ibegin != il.end(); ++ibegin, ++i) {
         vec_[i] = *ibegin;
@@ -79,7 +79,7 @@ struct Data {
 };
 
 template<class Range1, class Range2>
-__host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs) {
+TEST_HOST_DEVICE constexpr bool equal(Range1&& lhs, Range2&& rhs) {
   auto* left = lhs.begin();
   auto* right = rhs.begin();
 
@@ -90,7 +90,7 @@ __host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs) {
   return true;
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // no arg
   {
     cuda::std::expected<void, Data<3>> e(cuda::std::unexpect, {1, 2, 3});
@@ -126,12 +126,12 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct Throwing {
-    __host__ __device__ Throwing(cuda::std::initializer_list<int>, int) { throw Except{}; };
+    TEST_HOST_DEVICE Throwing(cuda::std::initializer_list<int>, int) { throw Except{}; };
   };
 
   try {

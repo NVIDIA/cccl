@@ -29,7 +29,7 @@ using cuda::std::equality_comparable_with;
 using cuda::std::nullptr_t;
 
 template <class T, class U>
-__host__ __device__ constexpr bool check_totally_ordered_with() noexcept {
+TEST_HOST_DEVICE constexpr bool check_totally_ordered_with() noexcept {
   constexpr bool result = totally_ordered_with<T, U>;
   static_assert(totally_ordered_with<U, T> == result, "");
   static_assert(totally_ordered_with<T, U const> == result, "");

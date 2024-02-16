@@ -22,19 +22,19 @@ using cuda::std::optional;
 
 struct X
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr int test() const& {return 3;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     int test() & {return 4;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr int test() const&& {return 5;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     int test() && {return 6;}
 };
 
 struct Y
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     int test() const && {return 2;}
 };
 

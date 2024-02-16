@@ -21,7 +21,7 @@ enum Enum1 {};
 enum class Enum2 : int {};
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     static_assert(!cuda::std::is_void<T>::value, "");

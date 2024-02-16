@@ -31,7 +31,7 @@
 #endif
 
 template <typename D, typename Ds>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexpr()
 {
     D d{23};

@@ -25,14 +25,14 @@
 
 struct Counted {
     int* counter_ = nullptr;
-    __host__ __device__ TEST_CONSTEXPR Counted(int* counter) : counter_(counter) { ++*counter_; }
-    __host__ __device__ TEST_CONSTEXPR Counted(Counted const& other) : counter_(other.counter_) { ++*counter_; }
-    __host__ __device__ TEST_CONSTEXPR_CXX20 ~Counted() { --*counter_; }
-    __host__ __device__ friend void operator&(Counted) = delete;
+    TEST_HOST_DEVICE TEST_CONSTEXPR Counted(int* counter) : counter_(counter) { ++*counter_; }
+    TEST_HOST_DEVICE TEST_CONSTEXPR Counted(Counted const& other) : counter_(other.counter_) { ++*counter_; }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 ~Counted() { --*counter_; }
+    TEST_HOST_DEVICE friend void operator&(Counted) = delete;
 };
 
 #if TEST_STD_VER > 2017
-__host__ __device__ constexpr bool test_arrays() {
+TEST_HOST_DEVICE constexpr bool test_arrays() {
     {
         int counter = 0;
         Counted pool[3] = {{&counter}, {&counter}, {&counter} };
@@ -64,7 +64,7 @@ __host__ __device__ constexpr bool test_arrays() {
 #endif
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX20 void test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 void test() {
     int counter = 0;
     Counted pool[5] = {{&counter}, {&counter}, {&counter}, {&counter}, {&counter} };
     assert(counter == 5);
@@ -77,7 +77,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 void test() {
     for (int i = 0; i < 5; ++i) { cuda::std::__construct_at(pool + i, &counter); }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool tests() {
     test<Counted*>();
     test<forward_iterator<Counted*>>();
     return true;

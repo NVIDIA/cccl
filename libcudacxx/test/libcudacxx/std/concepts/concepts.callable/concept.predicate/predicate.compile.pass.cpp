@@ -47,7 +47,7 @@ static_assert(!predicate<bool(S&), S const&>, "");
 static_assert(predicate<bool(S&), S&>, "");
 
 struct Predicate {
-  __host__ __device__ bool operator()(int, double, char);
+  TEST_HOST_DEVICE bool operator()(int, double, char);
 };
 static_assert(predicate<Predicate, int, double, char>, "");
 static_assert(predicate<Predicate&, int, double, char>, "");
@@ -56,19 +56,19 @@ static_assert(!predicate<const Predicate&, int, double, char>, "");
 
 #if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
 template<class Fun>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_lambda(Fun) { return predicate<Fun>; }
 
 static_assert(check_lambda([] { return cuda::std::true_type(); }), "");
 static_assert(check_lambda([]() -> int* { return nullptr; }), "");
 
 struct boolean {
-  __host__ __device__ operator bool() const noexcept;
+  TEST_HOST_DEVICE operator bool() const noexcept;
 };
 static_assert(check_lambda([] { return boolean(); }), "");
 
 struct explicit_bool {
-  __host__ __device__ explicit operator bool() const noexcept;
+  TEST_HOST_DEVICE explicit operator bool() const noexcept;
 };
 static_assert(!check_lambda([] { return explicit_bool(); }), "");
 #endif // TEST_STD_VER > 2014

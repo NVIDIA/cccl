@@ -21,7 +21,7 @@
 #include "../../rep.h"
 
 template <class D>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test()
 {

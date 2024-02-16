@@ -63,7 +63,7 @@ enum class foo_bar_enum : uint8_t {
 };
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     Selector<A, constructor_initializer> sel;
     A & obj = *sel.construct(T(0));

@@ -25,7 +25,7 @@
 
 TEST_EXEC_CHECK_DISABLE
 template<class Fun>
-__host__ __device__
+TEST_HOST_DEVICE
 void execute_on_main_thread(Fun&& fun) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
         if (threadIdx.x == 0) {
@@ -38,7 +38,7 @@ void execute_on_main_thread(Fun&& fun) {
 }
 
 template<typename... Fs>
-__host__ __device__
+TEST_HOST_DEVICE
 void concurrent_agents_launch(Fs ...fs)
 {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,(

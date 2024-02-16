@@ -25,7 +25,7 @@
 template<template<typename> typename Barrier,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
   global_memory_selector<int> int_sel;

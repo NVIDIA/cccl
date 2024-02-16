@@ -39,7 +39,7 @@ static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, foo>, cuda
 
 // test explicit
 template <class T>
-__host__ __device__ void conversion_test(T);
+TEST_HOST_DEVICE void conversion_test(T);
 
 template <class T, class... Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -57,24 +57,24 @@ static_assert(!ImplicitlyConstructible<cuda::std::expected<int, int>, cuda::std:
 
 struct CopyOnly {
   int i;
-  __host__ __device__ constexpr CopyOnly(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr CopyOnly(int ii) : i(ii) {}
   CopyOnly(const CopyOnly&) = default;
-  __host__ __device__ CopyOnly(CopyOnly&&)      = delete;
-  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
+  TEST_HOST_DEVICE CopyOnly(CopyOnly&&)      = delete;
+  TEST_HOST_DEVICE friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
 #endif // TEST_STD_VER < 2020
 };
 
 template <class T>
-__host__ __device__ constexpr void testInt() {
+TEST_HOST_DEVICE constexpr void testInt() {
   cuda::std::expected<int, T> e(cuda::std::unexpect, 5);
   assert(!e.has_value());
   assert(e.error() == 5);
 }
 
 template <class T>
-__host__ __device__ constexpr void testLValue() {
+TEST_HOST_DEVICE constexpr void testLValue() {
   T t(5);
   cuda::std::expected<int, T> e(cuda::std::unexpect, t);
   assert(!e.has_value());
@@ -82,13 +82,13 @@ __host__ __device__ constexpr void testLValue() {
 }
 
 template <class T>
-__host__ __device__ constexpr void testRValue() {
+TEST_HOST_DEVICE constexpr void testRValue() {
   cuda::std::expected<int, T> e(cuda::std::unexpect, T(5));
   assert(!e.has_value());
   assert(e.error() == 5);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   testInt<int>();
   testInt<CopyOnly>();
   testInt<MoveOnly>();
@@ -121,12 +121,12 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct Throwing {
-    __host__ __device__ Throwing(int) { throw Except{}; };
+    TEST_HOST_DEVICE Throwing(int) { throw Except{}; };
   };
 
   try {

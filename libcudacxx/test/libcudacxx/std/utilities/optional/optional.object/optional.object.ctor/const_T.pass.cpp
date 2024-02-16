@@ -35,7 +35,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<T>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(const T&) {}
         };
 
@@ -50,7 +50,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<T>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(const T&) {}
         };
 
@@ -93,7 +93,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<T>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(const T&) {}
         };
     }
@@ -108,7 +108,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<T>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(const T&) {}
         };
 

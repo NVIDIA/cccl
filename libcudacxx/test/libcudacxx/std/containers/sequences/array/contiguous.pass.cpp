@@ -19,13 +19,13 @@
 #include "test_macros.h"
 
 template <class Container>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void assert_contiguous(Container const& c)
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void assert_contiguous(Container const& c)
 {
     for (cuda::std::size_t i = 0; i < c.size(); ++i)
         assert(*(c.begin() + i) == *(cuda::std::addressof(*c.begin()) + i));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests()
 {
     assert_contiguous(cuda::std::array<double, 0>());
     assert_contiguous(cuda::std::array<double, 1>());

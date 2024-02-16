@@ -25,7 +25,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
   using M = cuda::std::monostate;
   constexpr M m1{};

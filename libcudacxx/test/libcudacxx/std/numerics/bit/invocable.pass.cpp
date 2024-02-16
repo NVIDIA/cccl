@@ -12,6 +12,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/bit>
 
+#include "test_macros.h"
+
 #if (defined(__cplusplus) && __cplusplus >= 201703L) || \
     (defined(_MSC_VER) && _MSVC_LANG >= 201703L)
 #  define CPP17_PERFORM_INVOCABLE_TEST
@@ -24,71 +26,71 @@ enum class E2 : unsigned char { red };
 // rotr
 struct i_rotr {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::rotr(x, 1U));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::rotr(x, 1U));
 };
 
 // rotl
 struct i_rotl {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::rotl(x, 1U));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::rotl(x, 1U));
 };
 
 // popcount
 struct i_popcount {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::popcount(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::popcount(x));
 };
 
 // countr_zero
 struct i_countr_zero {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::countr_zero(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::countr_zero(x));
 };
 
 // countr_one
 struct i_countr_one {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::countr_one(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::countr_one(x));
 };
 
 // countl_zero
 struct i_countl_zero {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::countl_zero(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::countl_zero(x));
 };
 
 // countl_one
 struct i_countl_one {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::countl_one(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::countl_one(x));
 };
 
 // bit_width
 struct i_bit_width {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::bit_width(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::bit_width(x));
 };
 
 // has_single_bit
 struct i_has_single_bit {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::has_single_bit(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::has_single_bit(x));
 };
 
 // bit_floor
 struct i_bit_floor {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::bit_floor(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::bit_floor(x));
 };
 
 // bit_ceil
 struct i_bit_ceil {
     template <typename T>
-    __host__ __device__ constexpr auto operator()(T x) const -> decltype(cuda::std::bit_ceil(x));
+    TEST_HOST_DEVICE constexpr auto operator()(T x) const -> decltype(cuda::std::bit_ceil(x));
 };
 
 template <typename L>
-__host__ __device__ void test_invocable() {
+TEST_HOST_DEVICE void test_invocable() {
 #if defined(CPP17_PERFORM_INVOCABLE_TEST)
     static_assert( cuda::std::is_invocable_v<L, unsigned char>, "");
     static_assert( cuda::std::is_invocable_v<L, unsigned int>, "");

@@ -19,11 +19,11 @@
 #include <cuda/std/tuple>
 
 struct ExplicitCopy {
-  __host__ __device__ explicit ExplicitCopy(int) {}
-  __host__ __device__ explicit ExplicitCopy(ExplicitCopy const&) {}
+  TEST_HOST_DEVICE explicit ExplicitCopy(int) {}
+  TEST_HOST_DEVICE explicit ExplicitCopy(ExplicitCopy const&) {}
 };
 
-__host__ __device__  cuda::std::tuple<ExplicitCopy> explicit_move_test() {
+TEST_HOST_DEVICE  cuda::std::tuple<ExplicitCopy> explicit_move_test() {
     cuda::std::tuple<int> t1(42);
     return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, cuda::std::move(t1)};
     // expected-error@-1 {{chosen constructor is explicit in copy-initialization}}

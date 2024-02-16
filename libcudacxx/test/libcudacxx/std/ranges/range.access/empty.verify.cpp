@@ -18,7 +18,7 @@
 extern int arr[];
 
 // Verify that for an array of unknown bound `ranges::empty` is ill-formed.
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   cuda::std::ranges::empty(arr);
   // expected-error-re@-1 {{{{no matching function for call to object of type 'const (std::ranges::)?__empty::__fn'}}}}
 }

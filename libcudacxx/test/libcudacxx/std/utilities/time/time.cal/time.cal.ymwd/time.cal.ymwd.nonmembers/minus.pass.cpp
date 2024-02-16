@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprYears ()
 {
     cuda::std::chrono::year_month_weekday ym0{cuda::std::chrono::year{1234}, cuda::std::chrono::January, cuda::std::chrono::weekday_indexed{cuda::std::chrono::Tuesday, 1}};
@@ -37,7 +37,7 @@ constexpr bool testConstexprYears ()
         ;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprMonths ()
 {
     cuda::std::chrono::year_month_weekday ym0{cuda::std::chrono::year{1234}, cuda::std::chrono::November, cuda::std::chrono::weekday_indexed{cuda::std::chrono::Tuesday, 1}};

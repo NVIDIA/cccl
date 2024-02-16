@@ -24,7 +24,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__ __noinline__
+TEST_HOST_DEVICE TEST_NOINLINE
 void do_test() {
     Selector<T, constructor_initializer> sel;
     T & val = *sel.construct(T(0));
@@ -77,7 +77,7 @@ void do_test() {
 }
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__ __noinline__
+TEST_HOST_DEVICE TEST_NOINLINE
 void test()
 {
     do_test<A, T, Selector>();
@@ -85,7 +85,7 @@ void test()
 }
 
 template<template<typename, cuda::thread_scope> typename Atomic, cuda::thread_scope Scope, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_for_all_types()
 {
     test<Atomic<float, Scope>, float, Selector>();

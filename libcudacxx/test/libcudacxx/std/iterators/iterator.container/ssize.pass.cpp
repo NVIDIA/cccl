@@ -35,13 +35,13 @@
 #include "test_macros.h"
 
 struct short_container {
-__host__ __device__
+TEST_HOST_DEVICE
     uint16_t size() const { return 60000; } // not noexcept
 };
 
 
 template<typename C>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_container(C& c)
 {
 //  Can't say noexcept here because the container might not be
@@ -50,7 +50,7 @@ void test_container(C& c)
 }
 
 template<typename C>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_const_container(const C& c)
 {
 //  Can't say noexcept here because the container might not be
@@ -59,7 +59,7 @@ void test_const_container(const C& c)
 }
 
 template<typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_const_container(const cuda::std::initializer_list<T>& c)
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::ssize(c)); // our cuda::std::ssize is conditionally noexcept
@@ -68,7 +68,7 @@ void test_const_container(const cuda::std::initializer_list<T>& c)
 }
 
 template<typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_container(cuda::std::initializer_list<T>& c)
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::ssize(c)); // our cuda::std::ssize is conditionally noexcept
@@ -77,7 +77,7 @@ void test_container(cuda::std::initializer_list<T>& c)
 }
 
 template<typename T, size_t Sz>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_const_array(const T (&array)[Sz])
 {
     ASSERT_NOEXCEPT(cuda::std::ssize(array));

@@ -18,8 +18,8 @@
 
 class A
 {
-    __host__ __device__ A(const A&);
-    __host__ __device__ A& operator=(const A&);
+    TEST_HOST_DEVICE A(const A&);
+    TEST_HOST_DEVICE A& operator=(const A&);
 };
 
 int main(int, char**)

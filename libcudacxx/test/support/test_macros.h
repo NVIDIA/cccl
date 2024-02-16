@@ -97,6 +97,18 @@
 #  define TEST_COMPILER_CLANG_CUDA
 #endif
 
+#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVHPC_CUDA) || defined(TEST_COMPILER_CLANG_CUDA)
+#define TEST_DEVICE __device__
+#define TEST_HOST __host__
+#define TEST_HOST_DEVICE __host__ __device__
+#define TEST_GLOBAL __global__
+#else // ^^^ __cuda_std__ ^^^ / vvv !__cuda_std__ vvv
+#define TEST_DEVICE
+#define TEST_HOST
+#define TEST_HOST_DEVICE
+#define TEST_GLOBAL
+#endif // !__cuda_std__
+
 #if defined(__apple_build_version__)
 #define TEST_APPLE_CLANG_VER (__clang_major__ * 100) + __clang_minor__
 #elif defined(__clang_major__)
@@ -341,14 +353,14 @@ struct is_same<T, T> { enum {value = 1}; };
 
 #if defined(__GNUC__) || defined(__clang__) || defined(__CUDACC_RTC__)
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 inline
 void DoNotOptimize(Tp const& value) {
     asm volatile("" : : "r,m"(value) : "memory");
 }
 
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 inline
 void DoNotOptimize(Tp& value) {
 #if defined(__clang__)
@@ -401,13 +413,13 @@ inline void DoNotOptimize(Tp const& value) {
 #define TEST_EXEC_CHECK_DISABLE _CCCL_EXEC_CHECK_DISABLE
 
 #define STATIC_MEMBER_VAR(name, type) \
-  __host__ __device__ static type& name() { \
+  TEST_HOST_DEVICE static type& name() { \
     _STATIC_MEMBER_IMPL(type); \
     return v; \
   }
 
 template <class... T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool unused(T&&...) {return true;}
 
 // Define a helper macro to properly suppress warnings

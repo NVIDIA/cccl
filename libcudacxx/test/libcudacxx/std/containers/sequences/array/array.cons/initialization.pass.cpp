@@ -17,7 +17,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 struct NoDefault {
-    __host__ __device__ TEST_CONSTEXPR NoDefault(int) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NoDefault(int) { }
 };
 
 // Test default initialization
@@ -25,7 +25,7 @@ struct NoDefault {
 // isn't valid in a constexpr context.
 struct test_default_initialization {
     template <typename T>
-    __host__ __device__ void operator()() const
+    TEST_HOST_DEVICE void operator()() const
     {
         cuda::std::array<T, 0> a0; unused(a0);
         cuda::std::array<T, 1> a1; unused(a1);
@@ -38,7 +38,7 @@ struct test_default_initialization {
 
 struct test_nondefault_initialization {
     template <typename T>
-    __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() const
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void operator()() const
     {
         // Check direct-list-initialization syntax (introduced in C++11)
         {
@@ -116,7 +116,7 @@ struct test_nondefault_initialization {
 };
 
 // Test construction from an initializer-list
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_initializer_list()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test_initializer_list()
 {
     {
         cuda::std::array<double, 3> const a3_0 = {};
@@ -149,17 +149,17 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_initializer_list()
 struct Empty { };
 struct Trivial { int i; int j; };
 struct NonTrivial {
-    __host__ __device__ TEST_CONSTEXPR NonTrivial() { }
-    __host__ __device__ TEST_CONSTEXPR NonTrivial(NonTrivial const&) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonTrivial() { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonTrivial(NonTrivial const&) { }
 };
 struct NonEmptyNonTrivial {
     int i; int j;
-    __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial() : i(22), j(33) { }
-    __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial(NonEmptyNonTrivial const&) : i(22), j(33) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonEmptyNonTrivial() : i(22), j(33) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonEmptyNonTrivial(NonEmptyNonTrivial const&) : i(22), j(33) { }
 };
 
 template <typename F>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool with_all_types()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool with_all_types()
 {
     F().template operator()<char>();
     F().template operator()<int>();

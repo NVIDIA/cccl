@@ -30,34 +30,34 @@ struct TracedBase {
   bool movedFromTmp  = false;
   int data_;
 
-  __host__ __device__ constexpr TracedBase(const int& ii) noexcept(convertNoexcept) : data_(ii) { copiedFromInt = true; }
-  __host__ __device__ constexpr TracedBase(int&& ii) noexcept(convertNoexcept) : data_(ii) { movedFromInt = true; }
-  __host__ __device__ constexpr TracedBase(state& s, int ii) noexcept : state_(&s), data_(ii) {}
-  __host__ __device__ constexpr TracedBase(const TracedBase& other) noexcept(copyMoveNoexcept) : state_(other.state_), data_(other.data_) {
+  TEST_HOST_DEVICE constexpr TracedBase(const int& ii) noexcept(convertNoexcept) : data_(ii) { copiedFromInt = true; }
+  TEST_HOST_DEVICE constexpr TracedBase(int&& ii) noexcept(convertNoexcept) : data_(ii) { movedFromInt = true; }
+  TEST_HOST_DEVICE constexpr TracedBase(state& s, int ii) noexcept : state_(&s), data_(ii) {}
+  TEST_HOST_DEVICE constexpr TracedBase(const TracedBase& other) noexcept(copyMoveNoexcept) : state_(other.state_), data_(other.data_) {
     if (state_) {
       state_->copyCtorCalled = true;
     } else {
       copiedFromTmp = true;
     }
   }
-  __host__ __device__ constexpr TracedBase(TracedBase&& other) noexcept(copyMoveNoexcept) : state_(other.state_), data_(other.data_) {
+  TEST_HOST_DEVICE constexpr TracedBase(TracedBase&& other) noexcept(copyMoveNoexcept) : state_(other.state_), data_(other.data_) {
     if (state_) {
       state_->moveCtorCalled = true;
     } else {
       movedFromTmp = true;
     }
   }
-  __host__ __device__ constexpr TracedBase& operator=(const TracedBase& other) noexcept(copyMoveNoexcept) {
+  TEST_HOST_DEVICE constexpr TracedBase& operator=(const TracedBase& other) noexcept(copyMoveNoexcept) {
     data_                    = other.data_;
     state_->copyAssignCalled = true;
     return *this;
   }
-  __host__ __device__ constexpr TracedBase& operator=(TracedBase&& other) noexcept(copyMoveNoexcept) {
+  TEST_HOST_DEVICE constexpr TracedBase& operator=(TracedBase&& other) noexcept(copyMoveNoexcept) {
     data_                    = other.data_;
     state_->moveAssignCalled = true;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TracedBase() {
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 ~TracedBase() {
     if (state_) {
       state_->dtorCalled = true;
     }
@@ -75,8 +75,8 @@ using BothNoexcept          = TracedBase<true, true>;
 struct ADLSwap {
   int i;
   bool adlSwapCalled = false;
-  __host__ __device__ constexpr ADLSwap(int ii) : i(ii) {}
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) {
+  TEST_HOST_DEVICE constexpr ADLSwap(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr friend void swap(ADLSwap& x, ADLSwap& y) {
     cuda::std::swap(x.i, y.i);
     x.adlSwapCalled = true;
     y.adlSwapCalled = true;
@@ -89,13 +89,13 @@ struct TrackedMove {
   int numberOfMoves = 0;
   bool swapCalled   = false;
 
-  __host__ __device__ constexpr TrackedMove(int ii) : i(ii) {}
-  __host__ __device__ constexpr TrackedMove(TrackedMove&& other) noexcept(Noexcept)
+  TEST_HOST_DEVICE constexpr TrackedMove(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr TrackedMove(TrackedMove&& other) noexcept(Noexcept)
       : i(other.i), numberOfMoves(other.numberOfMoves), swapCalled(other.swapCalled) {
     ++numberOfMoves;
   }
 
-  __host__ __device__ constexpr friend void swap(TrackedMove& x, TrackedMove& y) {
+  TEST_HOST_DEVICE constexpr friend void swap(TrackedMove& x, TrackedMove& y) {
     cuda::std::swap(x.i, y.i);
     cuda::std::swap(x.numberOfMoves, y.numberOfMoves);
     x.swapCalled = true;
@@ -108,33 +108,33 @@ struct Except {};
 
 struct ThrowOnCopyConstruct {
   ThrowOnCopyConstruct() = default;
-  __host__ __device__ ThrowOnCopyConstruct(const ThrowOnCopyConstruct&) { throw Except{}; }
-  __host__ __device__ ThrowOnCopyConstruct& operator=(const ThrowOnCopyConstruct&) = default;
+  TEST_HOST_DEVICE ThrowOnCopyConstruct(const ThrowOnCopyConstruct&) { throw Except{}; }
+  TEST_HOST_DEVICE ThrowOnCopyConstruct& operator=(const ThrowOnCopyConstruct&) = default;
 };
 
 struct ThrowOnMoveConstruct {
   ThrowOnMoveConstruct() = default;
-  __host__ __device__ ThrowOnMoveConstruct(ThrowOnMoveConstruct&&) { throw Except{}; }
-  __host__ __device__ ThrowOnMoveConstruct& operator=(ThrowOnMoveConstruct&&) = default;
+  TEST_HOST_DEVICE ThrowOnMoveConstruct(ThrowOnMoveConstruct&&) { throw Except{}; }
+  TEST_HOST_DEVICE ThrowOnMoveConstruct& operator=(ThrowOnMoveConstruct&&) = default;
 };
 
 struct ThrowOnConvert {
   ThrowOnConvert() = default;
-  __host__ __device__ ThrowOnConvert(const int&) { throw Except{}; }
-  __host__ __device__ ThrowOnConvert(int&&) { throw Except{}; }
-  __host__ __device__ ThrowOnConvert(const ThrowOnConvert&) noexcept(false) {}
+  TEST_HOST_DEVICE ThrowOnConvert(const int&) { throw Except{}; }
+  TEST_HOST_DEVICE ThrowOnConvert(int&&) { throw Except{}; }
+  TEST_HOST_DEVICE ThrowOnConvert(const ThrowOnConvert&) noexcept(false) {}
   ThrowOnConvert& operator=(const ThrowOnConvert&) = default;
-  __host__ __device__ ThrowOnConvert(ThrowOnConvert&&) noexcept(false) {}
+  TEST_HOST_DEVICE ThrowOnConvert(ThrowOnConvert&&) noexcept(false) {}
   ThrowOnConvert& operator=(ThrowOnConvert&&) = default;
 };
 
 struct ThrowOnMove {
   bool* destroyed = nullptr;
   ThrowOnMove()   = default;
-  __host__ __device__ ThrowOnMove(bool& d) : destroyed(&d) {}
-  __host__ __device__ ThrowOnMove(ThrowOnMove&&) { throw Except{}; };
-  __host__ __device__ ThrowOnMove& operator=(ThrowOnMove&&) = default;
-  __host__ __device__ ~ThrowOnMove() {
+  TEST_HOST_DEVICE ThrowOnMove(bool& d) : destroyed(&d) {}
+  TEST_HOST_DEVICE ThrowOnMove(ThrowOnMove&&) { throw Except{}; };
+  TEST_HOST_DEVICE ThrowOnMove& operator=(ThrowOnMove&&) = default;
+  TEST_HOST_DEVICE ~ThrowOnMove() {
     if (destroyed) {
       *destroyed = true;
     }
@@ -144,15 +144,15 @@ struct ThrowOnMove {
 #endif // TEST_HAS_NO_EXCEPTIONS
 
 struct TestError {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr TestError(const int err) noexcept : err_(err) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const TestError& lhs, const TestError& rhs) noexcept {
         return lhs.err_ == rhs.err_;
     }
 #if TEST_STD_VER < 2020
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator!=(const TestError& lhs, const TestError& rhs) noexcept {
         return lhs.err_ != rhs.err_;
     }

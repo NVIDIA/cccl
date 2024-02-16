@@ -61,24 +61,24 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::s
 
 // !is_constructible_v<T, U>
 struct NoCtorFromInt {
-  __host__ __device__ NoCtorFromInt(int) = delete;
-  __host__ __device__ NoCtorFromInt& operator=(int);
+  TEST_HOST_DEVICE NoCtorFromInt(int) = delete;
+  TEST_HOST_DEVICE NoCtorFromInt& operator=(int);
 };
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoCtorFromInt, int>&, int>, "");
 
 // !is_assignable_v<T&, U>
 struct NoAssignFromInt {
-  __host__ __device__ explicit NoAssignFromInt(int);
-  __host__ __device__ NoAssignFromInt& operator=(int) = delete;
+  TEST_HOST_DEVICE explicit NoAssignFromInt(int);
+  TEST_HOST_DEVICE NoAssignFromInt& operator=(int) = delete;
 };
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoAssignFromInt, int>&, int>, "");
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept {
-  __host__ __device__ explicit MaybeNoexcept(int) noexcept(convertNoexcept);
-  __host__ __device__ MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
+  TEST_HOST_DEVICE explicit MaybeNoexcept(int) noexcept(convertNoexcept);
+  TEST_HOST_DEVICE MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
   MaybeNoexcept& operator=(MaybeNoexcept&&) = default;
-  __host__ __device__ MaybeNoexcept& operator=(int);
+  TEST_HOST_DEVICE MaybeNoexcept& operator=(int);
 };
 
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
@@ -99,7 +99,7 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true,
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&, int>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // If has_value() is true, equivalent to: val = cuda::std::forward<U>(v);
   // Copy
   {
@@ -307,7 +307,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     struct Bar {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj) : i(ii), j(jj) {}
+      TEST_HOST_DEVICE constexpr Bar(int ii, int jj) : i(ii), j(jj) {}
     };
 
     cuda::std::expected<Bar, int> e({5, 6});
@@ -319,7 +319,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<ThrowOnConvert, int> e1(cuda::std::unexpect, 5);
   try {

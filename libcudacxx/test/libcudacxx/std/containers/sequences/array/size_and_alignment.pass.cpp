@@ -38,7 +38,7 @@ struct MyArray {
 };
 
 template <class T, cuda::std::size_t Size>
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   typedef T CArrayT[Size == 0 ? 1 : Size];
   typedef cuda::std::array<T, Size> ArrayT;
   typedef MyArray<T, Size == 0 ? 1 : Size> MyArrayT;
@@ -48,7 +48,7 @@ __host__ __device__ void test() {
 }
 
 template <class T>
-__host__ __device__ void test_type() {
+TEST_HOST_DEVICE void test_type() {
   test<T, 1>();
   test<T, 42>();
   test<T, 0>();

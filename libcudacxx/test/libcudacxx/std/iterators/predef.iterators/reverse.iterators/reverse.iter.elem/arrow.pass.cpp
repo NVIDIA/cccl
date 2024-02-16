@@ -34,17 +34,17 @@ class A
 {
     int data_;
 public:
-    __host__ __device__ A() : data_(1) {}
-    __host__ __device__ ~A() {data_ = -1;}
+    TEST_HOST_DEVICE A() : data_(1) {}
+    TEST_HOST_DEVICE ~A() {data_ = -1;}
 
-    __host__ __device__ int get() const {return data_;}
+    TEST_HOST_DEVICE int get() const {return data_;}
 
-    __host__ __device__ friend bool operator==(const A& x, const A& y)
+    TEST_HOST_DEVICE friend bool operator==(const A& x, const A& y)
         {return x.data_ == y.data_;}
 };
 
 template <class It>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(It i, typename cuda::std::iterator_traits<It>::value_type x)
 {
     cuda::std::reverse_iterator<It> r(i);
@@ -55,26 +55,26 @@ class B
 {
     int data_;
 public:
-    __host__ __device__ B(int d=1) : data_(d) {}
-    __host__ __device__ ~B() {data_ = -1;}
+    TEST_HOST_DEVICE B(int d=1) : data_(d) {}
+    TEST_HOST_DEVICE ~B() {data_ = -1;}
 
-    __host__ __device__ int get() const {return data_;}
+    TEST_HOST_DEVICE int get() const {return data_;}
 
-    __host__ __device__ friend bool operator==(const B& x, const B& y)
+    TEST_HOST_DEVICE friend bool operator==(const B& x, const B& y)
         {return x.data_ == y.data_;}
-    __host__ __device__ const B *operator&() const { return nullptr; }
-    __host__ __device__ B       *operator&()       { return nullptr; }
+    TEST_HOST_DEVICE const B *operator&() const { return nullptr; }
+    TEST_HOST_DEVICE B       *operator&()       { return nullptr; }
 };
 
 class C
 {
     int data_;
 public:
-    __host__ __device__ TEST_CONSTEXPR C() : data_(1) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR C() : data_(1) {}
 
-    __host__ __device__ TEST_CONSTEXPR int get() const {return data_;}
+    TEST_HOST_DEVICE TEST_CONSTEXPR int get() const {return data_;}
 
-    __host__ __device__ friend TEST_CONSTEXPR bool operator==(const C& x, const C& y)
+    TEST_HOST_DEVICE friend TEST_CONSTEXPR bool operator==(const C& x, const C& y)
         {return x.data_ == y.data_;}
 };
 

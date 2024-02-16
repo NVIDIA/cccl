@@ -20,7 +20,7 @@
 #include <cuda/std/stdexcept>
 #endif // TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;
@@ -40,7 +40,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-__host__ __device__ void test_exceptions()
+TEST_HOST_DEVICE void test_exceptions()
 {
     {
         cuda::std::array<int, 4> array = {1, 2, 3, 4};

@@ -14,12 +14,14 @@
 
 #include <cuda/std/iterator>
 
+#include "test_macros.h"
+
 static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<int*>, int&&>);
 static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<const int*>, const int&&>);
 
-__host__ __device__ void test_undefined_internal() {
+TEST_HOST_DEVICE void test_undefined_internal() {
   struct A {
-    __host__ __device__ int& operator*() const;
+    TEST_HOST_DEVICE int& operator*() const;
   };
   static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<A>, int&&>);
 }

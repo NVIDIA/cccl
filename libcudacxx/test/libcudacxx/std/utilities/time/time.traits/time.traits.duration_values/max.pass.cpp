@@ -18,9 +18,6 @@
 #include "../../rep.h"
 
 #include <cuda/std/cstdint>
-#ifndef __device__
-#error whomp whomp
-#endif
 
 int main(int, char**)
 {

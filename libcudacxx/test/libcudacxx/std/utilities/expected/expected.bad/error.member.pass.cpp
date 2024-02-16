@@ -32,7 +32,7 @@ static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int>&&>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&&>);
 
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   // &
   {
     cuda::std::bad_expected_access<int> e(5);

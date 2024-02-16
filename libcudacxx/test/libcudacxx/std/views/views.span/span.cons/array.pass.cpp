@@ -24,12 +24,12 @@
 
 #include "test_macros.h"
 
-__device__                int   arr[] = {1,2,3};
-__device__ const          int  carr[] = {4,5,6};
-__device__       volatile int  varr[] = {7,8,9};
-__device__ const volatile int cvarr[] = {1,3,5};
+STATIC_TEST_GLOBAL_VAR                int   arr[] = {1,2,3};
+STATIC_TEST_GLOBAL_VAR const          int  carr[] = {4,5,6};
+STATIC_TEST_GLOBAL_VAR       volatile int  varr[] = {7,8,9};
+STATIC_TEST_GLOBAL_VAR const volatile int cvarr[] = {1,3,5};
 
-__host__ __device__ void checkCV()
+TEST_HOST_DEVICE void checkCV()
 {
 //  Types the same (dynamic sized)
     {
@@ -74,7 +74,7 @@ __host__ __device__ void checkCV()
 }
 
 template<class T>
-__host__ __device__ constexpr bool testSpan()
+TEST_HOST_DEVICE constexpr bool testSpan()
 {
     T val[2] = {};
 

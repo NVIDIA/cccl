@@ -16,7 +16,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
   {
     using iterator = cuda::std::move_iterator<cpp17_input_iterator<int*>>;

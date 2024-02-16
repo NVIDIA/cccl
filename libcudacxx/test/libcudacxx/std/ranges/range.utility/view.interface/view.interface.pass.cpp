@@ -45,8 +45,8 @@ using InputIter = cpp20_input_iterator<const int*>;
 
 struct InputRange : cuda::std::ranges::view_interface<InputRange> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr InputIter begin() const { return InputIter(buff); }
-  __host__ __device__ constexpr InputIter end() const { return InputIter(buff + 8); }
+  TEST_HOST_DEVICE constexpr InputIter begin() const { return InputIter(buff); }
+  TEST_HOST_DEVICE constexpr InputIter end() const { return InputIter(buff + 8); }
 };
 
 struct NotSizedSentinel {
@@ -55,13 +55,13 @@ struct NotSizedSentinel {
   using iterator_concept = cuda::std::forward_iterator_tag;
 
   explicit NotSizedSentinel() = default;
-  __host__ __device__ explicit NotSizedSentinel(int*);
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ NotSizedSentinel& operator++();
-  __host__ __device__ NotSizedSentinel operator++(int);
-  __host__ __device__ bool operator==(NotSizedSentinel const&) const;
+  TEST_HOST_DEVICE explicit NotSizedSentinel(int*);
+  TEST_HOST_DEVICE int& operator*() const;
+  TEST_HOST_DEVICE NotSizedSentinel& operator++();
+  TEST_HOST_DEVICE NotSizedSentinel operator++(int);
+  TEST_HOST_DEVICE bool operator==(NotSizedSentinel const&) const;
 #if TEST_STD_VER < 2020
-  __host__ __device__ bool operator!=(NotSizedSentinel const&) const;
+  TEST_HOST_DEVICE bool operator!=(NotSizedSentinel const&) const;
 #endif
 };
 static_assert(cuda::std::forward_iterator<NotSizedSentinel>);
@@ -69,14 +69,14 @@ static_assert(cuda::std::forward_iterator<NotSizedSentinel>);
 using ForwardIter = forward_iterator<int*>;
 
 // So that we conform to sized_sentinel_for.
-__host__ __device__ constexpr cuda::std::ptrdiff_t operator-(const ForwardIter& x, const ForwardIter& y) {
+TEST_HOST_DEVICE constexpr cuda::std::ptrdiff_t operator-(const ForwardIter& x, const ForwardIter& y) {
     return base(x) - base(y);
 }
 
 struct ForwardRange : cuda::std::ranges::view_interface<ForwardRange> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
 };
 static_assert(cuda::std::ranges::view<ForwardRange>);
 
@@ -86,8 +86,8 @@ struct MoveOnlyForwardRange : cuda::std::ranges::view_interface<MoveOnlyForwardR
   MoveOnlyForwardRange(MoveOnlyForwardRange &&) = default;
   MoveOnlyForwardRange& operator=(MoveOnlyForwardRange &&) = default;
   MoveOnlyForwardRange() = default;
-  __host__ __device__ constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
 };
 static_assert(cuda::std::ranges::view<MoveOnlyForwardRange>);
 
@@ -98,17 +98,17 @@ static_assert(!cuda::std::ranges::view<MI>);
 
 struct EmptyIsTrue : cuda::std::ranges::view_interface<EmptyIsTrue> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
-  __host__ __device__ constexpr bool empty() const { return true; }
+  TEST_HOST_DEVICE constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr bool empty() const { return true; }
 };
 static_assert(cuda::std::ranges::view<EmptyIsTrue>);
 
 struct SizeIsTen : cuda::std::ranges::view_interface<SizeIsTen> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
-  __host__ __device__ constexpr size_t size() const { return 10; }
+  TEST_HOST_DEVICE constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr ForwardIter end() const { return ForwardIter(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr size_t size() const { return 10; }
 };
 static_assert(cuda::std::ranges::view<SizeIsTen>);
 
@@ -116,8 +116,8 @@ using RAIter = random_access_iterator<int*>;
 
 struct RARange : cuda::std::ranges::view_interface<RARange> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr RAIter begin() const { return RAIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr RAIter end() const { return RAIter(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr RAIter begin() const { return RAIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr RAIter end() const { return RAIter(const_cast<int*>(buff) + 8); }
 };
 static_assert(cuda::std::ranges::view<RARange>);
 
@@ -125,38 +125,38 @@ using ContIter = contiguous_iterator<const int*>;
 
 struct ContRange : cuda::std::ranges::view_interface<ContRange> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ContIter begin() const { return ContIter(buff); }
-  __host__ __device__ constexpr ContIter end() const { return ContIter(buff + 8); }
+  TEST_HOST_DEVICE constexpr ContIter begin() const { return ContIter(buff); }
+  TEST_HOST_DEVICE constexpr ContIter end() const { return ContIter(buff + 8); }
 };
 static_assert(cuda::std::ranges::view<ContRange>);
 
 struct DataIsNull : cuda::std::ranges::view_interface<DataIsNull> {
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ContIter begin() const { return ContIter(buff); }
-  __host__ __device__ constexpr ContIter end() const { return ContIter(buff + 8); }
-  __host__ __device__ constexpr const int *data() const { return nullptr; }
+  TEST_HOST_DEVICE constexpr ContIter begin() const { return ContIter(buff); }
+  TEST_HOST_DEVICE constexpr ContIter end() const { return ContIter(buff + 8); }
+  TEST_HOST_DEVICE constexpr const int *data() const { return nullptr; }
 };
 static_assert(cuda::std::ranges::view<DataIsNull>);
 
 struct BoolConvertibleComparison : cuda::std::ranges::view_interface<BoolConvertibleComparison> {
   struct ResultType {
     bool value;
-    __host__ __device__ constexpr operator bool() const { return value; }
+    TEST_HOST_DEVICE constexpr operator bool() const { return value; }
   };
 
   struct SentinelType {
     int *base_;
     explicit SentinelType() = default;
-    __host__ __device__ constexpr explicit SentinelType(int *base) : base_(base) {}
-    __host__ __device__ friend constexpr ResultType operator==(ForwardIter const& iter, SentinelType const& sent) noexcept { return {base(iter) == sent.base_}; }
-    __host__ __device__ friend constexpr ResultType operator==(SentinelType const& sent, ForwardIter const& iter) noexcept { return {base(iter) == sent.base_}; }
-    __host__ __device__ friend constexpr ResultType operator!=(ForwardIter const& iter, SentinelType const& sent) noexcept { return {base(iter) != sent.base_}; }
-    __host__ __device__ friend constexpr ResultType operator!=(SentinelType const& sent, ForwardIter const& iter) noexcept { return {base(iter) != sent.base_}; }
+    TEST_HOST_DEVICE constexpr explicit SentinelType(int *base) : base_(base) {}
+    TEST_HOST_DEVICE friend constexpr ResultType operator==(ForwardIter const& iter, SentinelType const& sent) noexcept { return {base(iter) == sent.base_}; }
+    TEST_HOST_DEVICE friend constexpr ResultType operator==(SentinelType const& sent, ForwardIter const& iter) noexcept { return {base(iter) == sent.base_}; }
+    TEST_HOST_DEVICE friend constexpr ResultType operator!=(ForwardIter const& iter, SentinelType const& sent) noexcept { return {base(iter) != sent.base_}; }
+    TEST_HOST_DEVICE friend constexpr ResultType operator!=(SentinelType const& sent, ForwardIter const& iter) noexcept { return {base(iter) != sent.base_}; }
   };
 
   int buff[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-  __host__ __device__ constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
-  __host__ __device__ constexpr SentinelType end() const { return SentinelType(const_cast<int*>(buff) + 8); }
+  TEST_HOST_DEVICE constexpr ForwardIter begin() const { return ForwardIter(const_cast<int*>(buff)); }
+  TEST_HOST_DEVICE constexpr SentinelType end() const { return SentinelType(const_cast<int*>(buff) + 8); }
 };
 static_assert(cuda::std::ranges::view<BoolConvertibleComparison>);
 
@@ -178,7 +178,7 @@ template<class T>
 constexpr bool BoolOpInvocable<T, cuda::std::void_t<decltype(bool(cuda::std::declval<T const&>()))>> = true;
 #endif
 
-__host__ __device__ constexpr bool testEmpty() {
+TEST_HOST_DEVICE constexpr bool testEmpty() {
   static_assert(!EmptyInvocable<InputRange>);
   static_assert( EmptyInvocable<ForwardRange>);
 
@@ -241,7 +241,7 @@ template<class T>
 constexpr bool DataInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T const&>().data())>> = true;
 #endif
 
-__host__ __device__ constexpr bool testData() {
+TEST_HOST_DEVICE constexpr bool testData() {
   static_assert(!DataInvocable<ForwardRange>);
   static_assert( DataInvocable<ContRange>);
 
@@ -273,7 +273,7 @@ template<class T>
 constexpr bool SizeInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T const&>().size())>> = true;
 #endif
 
-__host__ __device__ constexpr bool testSize() {
+TEST_HOST_DEVICE constexpr bool testSize() {
   static_assert(!SizeInvocable<InputRange>);
   static_assert(!SizeInvocable<NotSizedSentinel>);
   static_assert( SizeInvocable<ForwardRange>);
@@ -316,7 +316,7 @@ template<class T>
 constexpr bool SubscriptInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T const&>()[cuda::std::declval<size_t>()])>> = true;
 #endif
 
-__host__ __device__ constexpr bool testSubscript() {
+TEST_HOST_DEVICE constexpr bool testSubscript() {
   static_assert(!SubscriptInvocable<ForwardRange>);
   static_assert( SubscriptInvocable<RARange>);
 
@@ -347,7 +347,7 @@ template<class T>
 constexpr bool BackInvocable<T, cuda::std::void_t<decltype(cuda::std::declval<T const&>().back())>> = true;
 #endif
 
-__host__ __device__ constexpr bool testFrontBack() {
+TEST_HOST_DEVICE constexpr bool testFrontBack() {
   static_assert(!FrontInvocable<InputRange>);
   static_assert( FrontInvocable<ForwardRange>);
   static_assert(!BackInvocable<ForwardRange>);

@@ -23,17 +23,17 @@
 #include "test_macros.h"
 
 struct LVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() { return 1; }
 };
 
 struct NOLVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() { return cuda::std::unexpected<TestError>{42}; }
 };
 
 struct RefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() & { return 1; }
   cuda::std::expected<int, TestError> operator()() const& = delete;
   cuda::std::expected<int, TestError> operator()() && = delete;
@@ -42,7 +42,7 @@ struct RefQual {
 
 struct CRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() const& { return 1; }
   cuda::std::expected<int, TestError> operator()() && = delete;
   cuda::std::expected<int, TestError> operator()() const&& = delete;
@@ -51,7 +51,7 @@ struct CRefQual {
 struct RVRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
   cuda::std::expected<int, TestError> operator()() const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() && { return 1; }
   cuda::std::expected<int, TestError> operator()() const&& = delete;
 };
@@ -60,12 +60,12 @@ struct RVCRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
   cuda::std::expected<int, TestError> operator()() const& = delete;
   cuda::std::expected<int, TestError> operator()() && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() const&& { return 1; }
 };
 
 struct NORefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() & { return cuda::std::unexpected<TestError>{42}; }
   cuda::std::expected<int, TestError> operator()() const& = delete;
   cuda::std::expected<int, TestError> operator()() && = delete;
@@ -74,7 +74,7 @@ struct NORefQual {
 
 struct NOCRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() const& { return cuda::std::unexpected<TestError>{42}; }
   cuda::std::expected<int, TestError> operator()() && = delete;
   cuda::std::expected<int, TestError> operator()() const&& = delete;
@@ -83,7 +83,7 @@ struct NOCRefQual {
 struct NORVRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
   cuda::std::expected<int, TestError> operator()() const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() && { return cuda::std::unexpected<TestError>{42}; }
   cuda::std::expected<int, TestError> operator()() const&& = delete;
 };
@@ -92,11 +92,11 @@ struct NORVCRefQual {
   cuda::std::expected<int, TestError> operator()() & = delete;
   cuda::std::expected<int, TestError> operator()() const& = delete;
   cuda::std::expected<int, TestError> operator()() && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() const&& { return cuda::std::unexpected<TestError>{42}; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_val_types() {
   const cuda::std::expected<int, TestError> expected_value{cuda::std::unexpect, 42};
   const cuda::std::expected<int, TestError> previous_error{cuda::std::unexpect, 1337};
@@ -204,7 +204,7 @@ constexpr void test_val_types() {
 // For a generic lambda, nvrtc appears to not know what to do and claims it needs an annotation (when normal lambdas don't).
 // This is an expanded lambda from the original test.
 struct NonConst {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> non_const() { return 1; }
 };
 
@@ -212,14 +212,14 @@ struct nvrtc_workaround {
   NonConst t{};
 
   template<class T = int>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() {
     return t.non_const();
   };
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_sfinae() {
   cuda::std::expected<void, TestError> expect{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -230,17 +230,17 @@ constexpr void test_sfinae() {
 // We need an indirection so the assert does not break the compilation
 template<class T>
 struct AlwaysFalse {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr AlwaysFalse() { assert(false); }
 };
 
 struct NeverCalled {
   template<class T = int>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()() const { return AlwaysFalse<T>{}, cuda::std::expected<int, TestError>{42}; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
   test_val_types();
   test_sfinae();

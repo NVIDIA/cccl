@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_ignore_constexpr()
 {
 // NVCC does not support constexpr non-integral types

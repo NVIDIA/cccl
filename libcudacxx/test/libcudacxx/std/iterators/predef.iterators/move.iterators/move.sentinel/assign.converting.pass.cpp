@@ -24,13 +24,13 @@
 #include "test_macros.h"
 
 struct NonAssignable {
-  __host__ __device__ NonAssignable& operator=(int i);
+  TEST_HOST_DEVICE NonAssignable& operator=(int i);
 };
 static_assert(cuda::std::semiregular<NonAssignable>);
 static_assert(cuda::std::is_assignable_v<NonAssignable, int>);
 static_assert(!cuda::std::assignable_from<NonAssignable, int>);
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
   // Assigning from an lvalue.
   {

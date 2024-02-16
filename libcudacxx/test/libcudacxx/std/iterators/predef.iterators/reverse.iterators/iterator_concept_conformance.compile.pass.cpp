@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template<class I1>
-__host__ __device__ constexpr bool common_reverse_iterator_checks() {
+TEST_HOST_DEVICE constexpr bool common_reverse_iterator_checks() {
   static_assert(cuda::std::indirectly_writable<I1, int>);
   static_assert(cuda::std::sentinel_for<I1, I1>);
   return true;

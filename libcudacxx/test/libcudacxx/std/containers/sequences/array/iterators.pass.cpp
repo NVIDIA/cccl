@@ -32,11 +32,11 @@
 #include "test_macros.h"
 
 struct NoDefault {
-    __host__ __device__ TEST_CONSTEXPR NoDefault(int) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NoDefault(int) { }
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c) {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void check_noexcept(T& c) {
     ASSERT_NOEXCEPT(c.begin());
     ASSERT_NOEXCEPT(c.end());
     ASSERT_NOEXCEPT(c.cbegin());
@@ -54,7 +54,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c) {
 }
 
 // gcc-7 and gcc-8 are really helpfull here
-__host__ __device__
+TEST_HOST_DEVICE
 #if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
 TEST_CONSTEXPR_CXX14
 #endif // TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)

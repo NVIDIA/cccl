@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2014
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_constexpr()
 {
     cuda::std::chrono::seconds s(11);

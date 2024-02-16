@@ -16,6 +16,10 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#ifndef _CCCL_CUDA_COMPILER
+#include <cstring> // memcpy
+#endif // !_CCCL_CUDA_COMPILER
+
 #include "test_macros.h"
 
 int main(int, char**) {

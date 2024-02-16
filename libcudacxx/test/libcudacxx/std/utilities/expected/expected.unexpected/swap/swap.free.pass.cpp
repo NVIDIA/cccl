@@ -25,11 +25,11 @@
 
 // test noexcept
 struct NoexceptSwap {
-  __host__ __device__ friend void swap(NoexceptSwap&, NoexceptSwap&) noexcept;
+  TEST_HOST_DEVICE friend void swap(NoexceptSwap&, NoexceptSwap&) noexcept;
 };
 
 struct MayThrowSwap {
-  __host__ __device__ friend void swap(MayThrowSwap&, MayThrowSwap&);
+  TEST_HOST_DEVICE friend void swap(MayThrowSwap&, MayThrowSwap&);
 };
 
 template<class T, class = void>
@@ -53,13 +53,13 @@ static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<MayThrowSwap>>, ""
 static_assert(!cuda::std::is_swappable_v<cuda::std::unexpected<NonSwappable>>, "");
 
 struct ADLSwap {
-  __host__ __device__ constexpr ADLSwap(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr ADLSwap(int ii) : i(ii) {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) { cuda::std::swap(x.i, y.i); }
+  TEST_HOST_DEVICE constexpr friend void swap(ADLSwap& x, ADLSwap& y) { cuda::std::swap(x.i, y.i); }
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   cuda::std::unexpected<ADLSwap> unex1(5);
   cuda::std::unexpected<ADLSwap> unex2(6);
   swap(unex1, unex2);

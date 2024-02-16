@@ -32,7 +32,7 @@
 #include "test_macros.h"
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool implies(bool p, bool q) {
     return !p || q;
 }
@@ -72,20 +72,20 @@ struct SpecialMemberTest {
         "trivially destructible.");
 };
 
-template <class ...Args> __host__ __device__ static void sink(Args&&...) {}
+template <class ...Args> TEST_HOST_DEVICE static void sink(Args&&...) {}
 
 template <class ...TestTypes>
 struct DoTestsMetafunction {
-    __host__ __device__
+    TEST_HOST_DEVICE
     DoTestsMetafunction() { sink(SpecialMemberTest<TestTypes>{}...); }
 };
 
 struct TrivialMoveNonTrivialCopy {
     TrivialMoveNonTrivialCopy() = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     TrivialMoveNonTrivialCopy(const TrivialMoveNonTrivialCopy&) {}
     TrivialMoveNonTrivialCopy(TrivialMoveNonTrivialCopy&&) = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     TrivialMoveNonTrivialCopy& operator=(const TrivialMoveNonTrivialCopy&) { return *this; }
     TrivialMoveNonTrivialCopy& operator=(TrivialMoveNonTrivialCopy&&) = default;
 };
@@ -93,10 +93,10 @@ struct TrivialMoveNonTrivialCopy {
 struct TrivialCopyNonTrivialMove {
     TrivialCopyNonTrivialMove() = default;
     TrivialCopyNonTrivialMove(const TrivialCopyNonTrivialMove&) = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     TrivialCopyNonTrivialMove(TrivialCopyNonTrivialMove&&) {}
     TrivialCopyNonTrivialMove& operator=(const TrivialCopyNonTrivialMove&) = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     TrivialCopyNonTrivialMove& operator=(TrivialCopyNonTrivialMove&&) { return *this; }
 };
 

@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
   {
     const int ia[] = {0};
     const int ib[] = {0};

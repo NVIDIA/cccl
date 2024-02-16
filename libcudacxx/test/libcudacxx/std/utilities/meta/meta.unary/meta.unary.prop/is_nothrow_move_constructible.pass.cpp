@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_nothrow_move_constructible()
 {
     static_assert( cuda::std::is_nothrow_move_constructible<T>::value, "");
@@ -26,7 +26,7 @@ void test_is_nothrow_move_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_nothrow_move_constructor()
 {
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
@@ -58,7 +58,7 @@ struct bit_zero
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(const A&);
 };
 

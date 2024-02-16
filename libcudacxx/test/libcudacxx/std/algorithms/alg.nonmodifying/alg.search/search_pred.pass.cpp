@@ -33,10 +33,10 @@
 
 struct count_equal
 {
-    __host__ __device__ TEST_CONSTEXPR_CXX14 count_equal(int& count) noexcept : count(count) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 count_equal(int& count) noexcept : count(count) {}
 
     template <class T>
-    __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) {
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) {
       ++count;
       return x == y;
     }
@@ -45,7 +45,7 @@ struct count_equal
 };
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test()
 {
     int ia[] = {0, 1, 2, 3, 4, 5};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);
@@ -111,7 +111,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
     assert(count_equal_count <= sh*3);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     test<forward_iterator<const int*>, forward_iterator<const int*> >();
     test<forward_iterator<const int*>, bidirectional_iterator<const int*> >();
     test<forward_iterator<const int*>, random_access_iterator<const int*> >();

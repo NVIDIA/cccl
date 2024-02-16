@@ -21,11 +21,11 @@
 #include "test_macros.h"
 
 template<class It, class Sent>
-__host__ __device__ constexpr void test_ordinary() {
+TEST_HOST_DEVICE constexpr void test_ordinary() {
   struct R {
     mutable int a[3] = {1, 2, 3};
-    __host__ __device__ constexpr It begin() const { return It(a); }
-    __host__ __device__ constexpr Sent end() const { return Sent(It(a + 3)); }
+    TEST_HOST_DEVICE constexpr It begin() const { return It(a); }
+    TEST_HOST_DEVICE constexpr Sent end() const { return Sent(It(a + 3)); }
   };
   R r;
   assert(cuda::std::ranges::distance(r) == 3);
@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test_ordinary() {
   ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(r)), cuda::std::ranges::range_difference_t<R>);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   {
     using R = int[3];
     int a[] = {1, 2, 3};

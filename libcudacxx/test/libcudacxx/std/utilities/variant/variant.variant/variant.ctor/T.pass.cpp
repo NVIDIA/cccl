@@ -29,21 +29,21 @@ struct Dummy {
 };
 
 struct ThrowsT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowsT(int) noexcept(false) {}
 };
 
 struct NoThrowT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoThrowT(int) noexcept(true) {}
 };
 
-struct AnyConstructible { template <typename T> __host__ __device__ AnyConstructible(T&&) {} };
+struct AnyConstructible { template <typename T> TEST_HOST_DEVICE AnyConstructible(T&&) {} };
 struct NoConstructible { NoConstructible() = delete; };
 template <class T>
-struct RValueConvertibleFrom { __host__ __device__ RValueConvertibleFrom(T&&) {} };
+struct RValueConvertibleFrom { TEST_HOST_DEVICE RValueConvertibleFrom(T&&) {} };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_ctor_noexcept() {
   {
     using V = cuda::std::variant<Dummy, NoThrowT>;
@@ -57,7 +57,7 @@ void test_T_ctor_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_ctor_sfinae() {
   {
     using V = cuda::std::variant<long, long long>;
@@ -82,7 +82,7 @@ void test_T_ctor_sfinae() {
     static_assert(!cuda::std::is_constructible<V, cuda::std::unique_ptr<char>>::value,
                   "no explicit bool in constructor");
     struct X {
-      __host__ __device__ operator void*();
+      TEST_HOST_DEVICE operator void*();
     };
     static_assert(!cuda::std::is_constructible<V, X>::value,
                   "no boolean conversion in constructor");
@@ -92,7 +92,7 @@ void test_T_ctor_sfinae() {
   {
     struct X {};
     struct Y {
-      __host__ __device__ operator X();
+      TEST_HOST_DEVICE operator X();
     };
     using V = cuda::std::variant<X>;
     static_assert(cuda::std::is_constructible<V, Y>::value,
@@ -121,7 +121,7 @@ void test_T_ctor_sfinae() {
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_T_ctor_basic() {
   {
     constexpr cuda::std::variant<int> v(42);
@@ -185,11 +185,11 @@ void test_T_ctor_basic() {
 
 struct BoomOnAnything {
   template <class T>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr BoomOnAnything(T) { static_assert(!cuda::std::is_same<T, T>::value, ""); }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_no_narrowing_check_for_class_types() {
   using V = cuda::std::variant<int, BoomOnAnything>;
   V v(42);
@@ -199,7 +199,7 @@ void test_no_narrowing_check_for_class_types() {
 
 struct Bar {};
 struct Baz {};
-__host__ __device__
+TEST_HOST_DEVICE
 void test_construction_with_repeated_types() {
   using V = cuda::std::variant<int, Bar, Baz, int, Baz, int, int>;
   static_assert(!cuda::std::is_constructible<V, int>::value, "");

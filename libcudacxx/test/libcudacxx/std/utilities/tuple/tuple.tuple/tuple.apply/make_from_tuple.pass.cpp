@@ -33,7 +33,7 @@
 template <class Tuple>
 struct ConstexprConstructibleFromTuple {
   template <class ...Args>
-  __host__ __device__ explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
+  TEST_HOST_DEVICE explicit constexpr ConstexprConstructibleFromTuple(Args&&... xargs)
       : args{cuda::std::forward<Args>(xargs)...} {}
   Tuple args;
 };
@@ -44,7 +44,7 @@ struct ConstructibleFromTuple;
 template <template <class ...> class Tuple, class ...Types>
 struct ConstructibleFromTuple<Tuple<Types...>> {
   template <class ...Args>
-  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
+  TEST_HOST_DEVICE explicit ConstructibleFromTuple(Args&&... xargs)
       : args(xargs...),
         arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -55,7 +55,7 @@ struct ConstructibleFromTuple<Tuple<Types...>> {
 template <class Tp, size_t N>
 struct ConstructibleFromTuple<cuda::std::array<Tp, N>> {
 template <class ...Args>
-  __host__ __device__ explicit ConstructibleFromTuple(Args&&... xargs)
+  TEST_HOST_DEVICE explicit ConstructibleFromTuple(Args&&... xargs)
       : args{xargs...},
         arg_types(&makeArgumentID<Args&&...>())
   {}
@@ -64,7 +64,7 @@ template <class ...Args>
 };
 
 template <class Tuple>
-__host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup) {
+TEST_HOST_DEVICE constexpr bool do_constexpr_test(Tuple&& tup) {
     using RawTuple = cuda::std::decay_t<Tuple>;
     using Tp = ConstexprConstructibleFromTuple<RawTuple>;
     return cuda::std::make_from_tuple<Tp>(cuda::std::forward<Tuple>(tup)).args == tup;
@@ -72,12 +72,12 @@ __host__ __device__ constexpr bool do_constexpr_test(Tuple&& tup) {
 
 // Needed by do_forwarding_test() since it compares pairs of different types.
 template <class T1, class T2, class U1, class U2>
-__host__ __device__ inline bool operator==(const cuda::std::pair<T1, T2>& lhs, const cuda::std::pair<U1, U2>& rhs) {
+TEST_HOST_DEVICE inline bool operator==(const cuda::std::pair<T1, T2>& lhs, const cuda::std::pair<U1, U2>& rhs) {
     return lhs.first == rhs.first && lhs.second == rhs.second;
 }
 
 template <class ...ExpectTypes, class Tuple>
-__host__ __device__ bool do_forwarding_test(Tuple&& tup) {
+TEST_HOST_DEVICE bool do_forwarding_test(Tuple&& tup) {
     using RawTuple = cuda::std::decay_t<Tuple>;
     using Tp = ConstructibleFromTuple<RawTuple>;
     const Tp value = cuda::std::make_from_tuple<Tp>(cuda::std::forward<Tuple>(tup));
@@ -85,7 +85,7 @@ __host__ __device__ bool do_forwarding_test(Tuple&& tup) {
         && value.arg_types == &makeArgumentID<ExpectTypes...>();
 }
 
-__host__ __device__ void test_constexpr_construction() {
+TEST_HOST_DEVICE void test_constexpr_construction() {
     {
         constexpr cuda::std::tuple<> tup;
         static_assert(do_constexpr_test(tup), "");
@@ -112,7 +112,7 @@ __host__ __device__ void test_constexpr_construction() {
     }
 }
 
-__host__ __device__ void test_perfect_forwarding() {
+TEST_HOST_DEVICE void test_perfect_forwarding() {
     {
         using Tup = cuda::std::tuple<>;
         Tup tup;
@@ -163,16 +163,16 @@ __host__ __device__ void test_perfect_forwarding() {
     }
 }
 
-__host__ __device__ void test_noexcept() {
+TEST_HOST_DEVICE void test_noexcept() {
     struct NothrowMoveable {
       NothrowMoveable() = default;
-      __host__ __device__ NothrowMoveable(NothrowMoveable const&) {}
-      __host__ __device__ NothrowMoveable(NothrowMoveable&&) noexcept {}
+      TEST_HOST_DEVICE NothrowMoveable(NothrowMoveable const&) {}
+      TEST_HOST_DEVICE NothrowMoveable(NothrowMoveable&&) noexcept {}
     };
     struct TestType {
-      __host__ __device__ TestType(int, NothrowMoveable) noexcept {}
-      __host__ __device__ TestType(int, int, int) noexcept(false) {}
-      __host__ __device__ TestType(long, long, long) noexcept {}
+      TEST_HOST_DEVICE TestType(int, NothrowMoveable) noexcept {}
+      TEST_HOST_DEVICE TestType(int, int, int) noexcept(false) {}
+      TEST_HOST_DEVICE TestType(long, long, long) noexcept {}
     };
     {
         using Tuple = cuda::std::tuple<int, NothrowMoveable>;

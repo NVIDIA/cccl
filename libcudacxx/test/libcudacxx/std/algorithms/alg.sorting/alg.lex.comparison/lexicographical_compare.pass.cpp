@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test()
 {
     int ia[] = {1, 2, 3, 4};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);
@@ -34,7 +34,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
     assert(!cuda::std::lexicographical_compare(Iter1(ib+1), Iter1(ib+3),  Iter2(ia),   Iter2(ia+sa)));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*> >();
     test<cpp17_input_iterator<const int*>, forward_iterator<const int*> >();
     test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*> >();

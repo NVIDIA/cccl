@@ -34,17 +34,17 @@ struct B {
 struct C {};
 struct D {};
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(A&, A&) {}
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(A&, B&) {}
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(B&, A&) {}
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(A&, C&) {} // missing swap(C, A)
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(D&, C&) {}
 
 struct M {
@@ -52,11 +52,11 @@ struct M {
   M& operator=(M const&) = delete;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(M&&, M&&) {}
 
 struct DeletedSwap {
-  __host__ __device__
+  TEST_HOST_DEVICE
   friend void swap(DeletedSwap&, DeletedSwap&) = delete;
 };
 
@@ -67,7 +67,7 @@ namespace MyNS2 {
 struct AmbiguousSwap {};
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(T&, T&) {}
 
 } // end namespace MyNS2

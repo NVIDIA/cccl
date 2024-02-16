@@ -25,8 +25,8 @@
 #include "../alloc_last.h"
 
 struct ImplicitCopy {
-  __host__ __device__ explicit ImplicitCopy(int) {}
-  __host__ __device__ ImplicitCopy(ImplicitCopy const&) {}
+  TEST_HOST_DEVICE explicit ImplicitCopy(int) {}
+  TEST_HOST_DEVICE ImplicitCopy(ImplicitCopy const&) {}
 };
 
 // cuda::std::allocator not supported

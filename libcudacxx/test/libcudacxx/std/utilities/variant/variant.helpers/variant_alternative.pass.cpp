@@ -28,7 +28,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-template <class V, size_t I, class E> __host__ __device__ void test() {
+template <class V, size_t I, class E> TEST_HOST_DEVICE void test() {
   static_assert(
       cuda::std::is_same_v<typename cuda::std::variant_alternative<I, V>::type, E>, "");
   static_assert(

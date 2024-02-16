@@ -40,10 +40,10 @@ struct MoveAssignable {
 struct CountAssign {
   STATIC_MEMBER_VAR(copied, int);
   STATIC_MEMBER_VAR(moved, int);
-  __host__ __device__ static void reset() { copied() = moved() = 0; }
+  TEST_HOST_DEVICE static void reset() { copied() = moved() = 0; }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&) { ++copied(); return *this; }
-  __host__ __device__ CountAssign& operator=(CountAssign&&) { ++moved(); return *this; }
+  TEST_HOST_DEVICE CountAssign& operator=(CountAssign const&) { ++copied(); return *this; }
+  TEST_HOST_DEVICE CountAssign& operator=(CountAssign&&) { ++moved(); return *this; }
 };
 
 int main(int, char**)

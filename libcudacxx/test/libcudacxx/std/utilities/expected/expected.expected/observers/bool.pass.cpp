@@ -35,7 +35,7 @@ static_assert(OpBoolNoexcept<const cuda::std::expected<int, int>>, "");
 // Test explicit
 static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // has_value
   {
     const cuda::std::expected<int, int> e(5);

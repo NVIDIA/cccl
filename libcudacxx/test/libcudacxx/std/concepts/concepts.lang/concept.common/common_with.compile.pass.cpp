@@ -21,7 +21,7 @@
 using cuda::std::common_with;
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool CheckCommonWith() noexcept {
   constexpr bool result = cuda::std::common_with<T, U>;
   static_assert(cuda::std::common_with<T, U&> == result, "");
@@ -53,7 +53,7 @@ constexpr bool CheckCommonWith() noexcept {
 }
 
 template <class T, class U>
-__host__ __device__ constexpr bool HasValidCommonType() noexcept {
+TEST_HOST_DEVICE constexpr bool HasValidCommonType() noexcept {
 #if TEST_STD_VER > 2017
   return requires { typename cuda::std::common_type_t<T, U>; }
 #else
@@ -352,7 +352,7 @@ static_assert(!CheckCommonWith<T1, int>(), "");
 
 #if TEST_STD_VER > 2017
 struct CommonTypeImplicitlyConstructibleFromInt {
-  __host__ __device__ explicit(false) CommonTypeImplicitlyConstructibleFromInt(int);
+  TEST_HOST_DEVICE explicit(false) CommonTypeImplicitlyConstructibleFromInt(int);
 };
 static_assert(requires {
   static_cast<CommonTypeImplicitlyConstructibleFromInt>(0);
@@ -379,7 +379,7 @@ static_assert(HasValidCommonType<T2, int>(), "");
 static_assert(!CheckCommonWith<T2, int>(), "");
 
 struct CommonTypeExplicitlyConstructibleFromInt {
-  __host__ __device__ explicit CommonTypeExplicitlyConstructibleFromInt(int);
+  TEST_HOST_DEVICE explicit CommonTypeExplicitlyConstructibleFromInt(int);
 };
 static_assert(requires {
   static_cast<CommonTypeExplicitlyConstructibleFromInt>(0);
@@ -407,7 +407,7 @@ static_assert(!CheckCommonWith<T3, int>(), "");
 
 struct T4 {};
 struct CommonTypeImplicitlyConstructibleFromT4 {
-  __host__ __device__ explicit(false) CommonTypeImplicitlyConstructibleFromT4(T4);
+  TEST_HOST_DEVICE explicit(false) CommonTypeImplicitlyConstructibleFromT4(T4);
 };
 static_assert(requires(T4 t4) {
   static_cast<CommonTypeImplicitlyConstructibleFromT4>(t4);
@@ -431,7 +431,7 @@ static_assert(!CheckCommonWith<T4, int>(), "");
 
 struct T5 {};
 struct CommonTypeExplicitlyConstructibleFromT5 {
-  __host__ __device__ explicit CommonTypeExplicitlyConstructibleFromT5(T5);
+  TEST_HOST_DEVICE explicit CommonTypeExplicitlyConstructibleFromT5(T5);
 };
 static_assert(requires(T5 t5) {
   static_cast<CommonTypeExplicitlyConstructibleFromT5>(t5);
@@ -456,8 +456,8 @@ static_assert(!CheckCommonWith<T5, int>(), "");
 
 struct T6 {};
 struct CommonTypeNoCommonReference {
-  __host__ __device__ CommonTypeNoCommonReference(T6);
-  __host__ __device__ CommonTypeNoCommonReference(int);
+  TEST_HOST_DEVICE CommonTypeNoCommonReference(T6);
+  TEST_HOST_DEVICE CommonTypeNoCommonReference(int);
 };
 
 namespace cuda {
@@ -571,7 +571,7 @@ struct common_type<const volatile int&, const volatile T6&> {};
 } // namespace cuda
 
 template <typename T, typename U>
-__host__ __device__ constexpr bool HasCommonReference() noexcept {
+TEST_HOST_DEVICE constexpr bool HasCommonReference() noexcept {
 #if TEST_STD_VER > 2017
   return requires { typename cuda::std::common_reference_t<T, U>; };
 #else
@@ -585,8 +585,8 @@ static_assert(!CheckCommonWith<T6, int>(), "");
 
 struct T7 {};
 struct CommonTypeNoMetaCommonReference {
-  __host__ __device__ CommonTypeNoMetaCommonReference(T7);
-  __host__ __device__ CommonTypeNoMetaCommonReference(int);
+  TEST_HOST_DEVICE CommonTypeNoMetaCommonReference(T7);
+  TEST_HOST_DEVICE CommonTypeNoMetaCommonReference(int);
 };
 
 namespace cuda {
@@ -773,7 +773,7 @@ static_assert(
 static_assert(!CheckCommonWith<T7, int>(), "");
 
 struct CommonWithInt {
-  __host__ __device__ operator int() const volatile;
+  TEST_HOST_DEVICE operator int() const volatile;
 };
 
 namespace cuda {
@@ -916,7 +916,7 @@ struct common_type<const volatile int&, const volatile CommonWithInt&>
 static_assert(CheckCommonWith<CommonWithInt, int>(), "");
 
 struct CommonWithIntButRefLong {
-  __host__ __device__ operator int() const volatile;
+  TEST_HOST_DEVICE operator int() const volatile;
 };
 
 namespace cuda {

@@ -19,11 +19,11 @@
 
 struct WithADL {
   WithADL() = default;
-  __host__ __device__ constexpr decltype(auto) operator*() const noexcept;
-  __host__ __device__ constexpr WithADL& operator++() noexcept;
-  __host__ __device__ constexpr void operator++(int) noexcept;
-  __host__ __device__ constexpr bool operator==(WithADL const&) const noexcept;
-  __host__ __device__ friend constexpr auto iter_move(WithADL&) { return 0; }
+  TEST_HOST_DEVICE constexpr decltype(auto) operator*() const noexcept;
+  TEST_HOST_DEVICE constexpr WithADL& operator++() noexcept;
+  TEST_HOST_DEVICE constexpr void operator++(int) noexcept;
+  TEST_HOST_DEVICE constexpr bool operator==(WithADL const&) const noexcept;
+  TEST_HOST_DEVICE friend constexpr auto iter_move(WithADL&) { return 0; }
 };
 
 int main(int, char**) {

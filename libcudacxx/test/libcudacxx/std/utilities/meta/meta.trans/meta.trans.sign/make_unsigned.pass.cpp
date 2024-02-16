@@ -30,7 +30,7 @@ enum HugeEnum : __int128_t
 #endif
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_make_unsigned()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::make_unsigned<T>::type);

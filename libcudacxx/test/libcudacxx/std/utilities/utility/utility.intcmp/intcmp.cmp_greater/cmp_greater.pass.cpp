@@ -24,7 +24,7 @@ struct Tuple {
   T min;
   T max;
   T mid;
-  __host__ __device__ constexpr Tuple() {
+  TEST_HOST_DEVICE constexpr Tuple() {
     min = cuda::std::numeric_limits<T>::min();
     max = cuda::std::numeric_limits<T>::max();
     if constexpr (cuda::std::is_signed_v<T>) {
@@ -36,7 +36,7 @@ struct Tuple {
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_cmp_greater1() {
+TEST_HOST_DEVICE constexpr void test_cmp_greater1() {
   constexpr Tuple<T> tup;
   assert(!cuda::std::cmp_greater(T(0), T(1)));
   assert(!cuda::std::cmp_greater(T(1), T(2)));
@@ -60,27 +60,27 @@ __host__ __device__ constexpr void test_cmp_greater1() {
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test_cmp_greater2() {
+TEST_HOST_DEVICE constexpr void test_cmp_greater2() {
   assert(!cuda::std::cmp_greater(T(0), U(1)));
   assert(cuda::std::cmp_greater(T(1), U(0)));
 }
 
 template <class... Ts>
-__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&) {
+TEST_HOST_DEVICE constexpr void test1(const cuda::std::tuple<Ts...>&) {
   (test_cmp_greater1<Ts>() , ...);
 }
 
 template <class T, class... Us>
-__host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&) {
+TEST_HOST_DEVICE constexpr void test2_impl(const cuda::std::tuple<Us...>&) {
   (test_cmp_greater2<T, Us>() , ...);
 }
 
 template <class... Ts, class UTuple>
-__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple) {
+TEST_HOST_DEVICE constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple) {
   (test2_impl<Ts>(utuple) , ...);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   cuda::std::tuple<
 #ifndef TEST_HAS_NO_INT128_T
       __int128_t, __uint128_t,

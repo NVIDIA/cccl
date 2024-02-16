@@ -37,36 +37,36 @@ STATIC_TEST_GLOBAL_VAR int count = 0;
 
 struct A_int_0
 {
-    __host__ __device__ A_int_0() : obj1(0){}
-    __host__ __device__ A_int_0(int x) : obj1(x) {}
-    __host__ __device__ int mem1() { return ++count; }
-    __host__ __device__ int mem2() const { return ++count; }
+    TEST_HOST_DEVICE A_int_0() : obj1(0){}
+    TEST_HOST_DEVICE A_int_0(int x) : obj1(x) {}
+    TEST_HOST_DEVICE int mem1() { return ++count; }
+    TEST_HOST_DEVICE int mem2() const { return ++count; }
     int const obj1;
 };
 
 struct A_int_1
 {
-    __host__ __device__ A_int_1() {}
-    __host__ __device__ A_int_1(int) {}
-    __host__ __device__ int mem1(int x) { return count += x; }
-    __host__ __device__ int mem2(int x) const { return count += x; }
+    TEST_HOST_DEVICE A_int_1() {}
+    TEST_HOST_DEVICE A_int_1(int) {}
+    TEST_HOST_DEVICE int mem1(int x) { return count += x; }
+    TEST_HOST_DEVICE int mem2(int x) const { return count += x; }
 };
 
 struct A_int_2
 {
-    __host__ __device__ A_int_2() {}
-    __host__ __device__ A_int_2(int) {}
-    __host__ __device__ int mem1(int x, int y) { return count += (x + y); }
-    __host__ __device__ int mem2(int x, int y) const { return count += (x + y); }
+    TEST_HOST_DEVICE A_int_2() {}
+    TEST_HOST_DEVICE A_int_2(int) {}
+    TEST_HOST_DEVICE int mem1(int x, int y) { return count += (x + y); }
+    TEST_HOST_DEVICE int mem2(int x, int y) const { return count += (x + y); }
 };
 
 template <class A>
 struct A_wrap
 {
-    __host__ __device__ A_wrap() {}
-    __host__ __device__ A_wrap(int x) : m_a(x) {}
-    __host__ __device__ A & operator*() { return m_a; }
-    __host__ __device__ A const & operator*() const { return m_a; }
+    TEST_HOST_DEVICE A_wrap() {}
+    TEST_HOST_DEVICE A_wrap(int x) : m_a(x) {}
+    TEST_HOST_DEVICE A & operator*() { return m_a; }
+    TEST_HOST_DEVICE A const & operator*() const { return m_a; }
     A m_a;
 };
 
@@ -78,8 +78,8 @@ typedef A_wrap<A_int_2> A_wrap_2;
 template <class A>
 struct A_base : public A
 {
-    __host__ __device__ A_base() : A() {}
-    __host__ __device__ A_base(int x) : A(x) {}
+    TEST_HOST_DEVICE A_base() : A() {}
+    TEST_HOST_DEVICE A_base(int x) : A(x) {}
 };
 
 typedef A_base<A_int_0> A_base_0;
@@ -93,7 +93,7 @@ template <
   , class TupleWrap, class ConstTupleWrap
   , class TupleBase, class ConstTupleBase
   >
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ext_int_0()
 {
     count = 0;
@@ -206,7 +206,7 @@ template <
   , class TupleWrap, class ConstTupleWrap
   , class TupleBase, class ConstTupleBase
   >
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ext_int_1()
 {
     count = 0;
@@ -292,7 +292,7 @@ template <
   , class TupleWrap, class ConstTupleWrap
   , class TupleBase, class ConstTupleBase
   >
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ext_int_2()
 {
     count = 0;

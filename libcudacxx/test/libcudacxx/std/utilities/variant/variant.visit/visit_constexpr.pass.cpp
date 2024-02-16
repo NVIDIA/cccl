@@ -23,7 +23,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_constexpr() {
   constexpr ReturnFirst obj{};
   constexpr ReturnArity aobj{};

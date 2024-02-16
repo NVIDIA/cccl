@@ -11,41 +11,41 @@
 template <class T>
 struct UserDefinedIntegral
 {
-    __host__ __device__ constexpr UserDefinedIntegral() : value(0) {}
-    __host__ __device__ constexpr UserDefinedIntegral(T v) : value(v) {}
-    __host__ __device__ constexpr operator T() const { return value; }
+    TEST_HOST_DEVICE constexpr UserDefinedIntegral() : value(0) {}
+    TEST_HOST_DEVICE constexpr UserDefinedIntegral(T v) : value(v) {}
+    TEST_HOST_DEVICE constexpr operator T() const { return value; }
     T value;
 };
 
 // Poison the arithmetic and comparison operations
 template <class T, class U>
-__host__ __device__ constexpr void operator+(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator+(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator-(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator-(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator*(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator*(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator/(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator/(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator==(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator==(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator!=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator!=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator<(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator<(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator>(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator>(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator<=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator<=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 template <class T, class U>
-__host__ __device__ constexpr void operator>=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
+TEST_HOST_DEVICE constexpr void operator>=(UserDefinedIntegral<T>, UserDefinedIntegral<U>);
 
 #endif // SUPPORT_USER_DEFINED_INTEGRAL_H

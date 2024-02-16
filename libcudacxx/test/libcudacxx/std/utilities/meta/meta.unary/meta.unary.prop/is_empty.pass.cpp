@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_empty()
 {
     static_assert( cuda::std::is_empty<T>::value, "");
@@ -38,7 +38,7 @@ void test_is_empty()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_empty()
 {
     static_assert(!cuda::std::is_empty<T>::value, "");
@@ -58,7 +58,7 @@ struct NotEmpty { int foo; };
 
 class VirtualFn
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~VirtualFn();
 };
 

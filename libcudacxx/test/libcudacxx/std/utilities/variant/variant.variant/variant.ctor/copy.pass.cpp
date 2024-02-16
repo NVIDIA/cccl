@@ -23,9 +23,9 @@
 #include "test_workarounds.h"
 
 struct NonT {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NonT(int v) : value(v) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   NonT(const NonT &o) : value(o.value) {}
   int value;
 };
@@ -42,14 +42,14 @@ struct MoveOnly {
 
 struct MoveOnlyNT {
   MoveOnlyNT(const MoveOnlyNT &) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveOnlyNT(MoveOnlyNT &&) {}
 };
 
 struct NTCopy {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr NTCopy(int v) : value(v) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   NTCopy(const NTCopy &that) : value(that.value) {}
   NTCopy(NTCopy &&) = delete;
   int value;
@@ -59,7 +59,7 @@ static_assert(!cuda::std::is_trivially_copy_constructible<NTCopy>::value, "");
 static_assert(cuda::std::is_copy_constructible<NTCopy>::value, "");
 
 struct TCopy {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr TCopy(int v) : value(v) {}
   TCopy(TCopy const &) = default;
   TCopy(TCopy &&) = delete;
@@ -69,10 +69,10 @@ struct TCopy {
 static_assert(cuda::std::is_trivially_copy_constructible<TCopy>::value, "");
 
 struct TCopyNTMove {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr TCopyNTMove(int v) : value(v) {}
   TCopyNTMove(const TCopyNTMove&) = default;
-  __host__ __device__
+  TEST_HOST_DEVICE
   TCopyNTMove(TCopyNTMove&& that) : value(that.value) { that.value = -1; }
   int value;
 };
@@ -82,26 +82,26 @@ static_assert(cuda::std::is_trivially_copy_constructible<TCopyNTMove>::value, ""
 #ifndef TEST_HAS_NO_EXCEPTIONS
 struct MakeEmptyT {
   static int alive;
-  __host__ __device__
+  TEST_HOST_DEVICE
   MakeEmptyT() { ++alive; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MakeEmptyT(const MakeEmptyT &) {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MakeEmptyT(MakeEmptyT &&) { throw 42; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MakeEmptyT &operator=(const MakeEmptyT &) { throw 42; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MakeEmptyT &operator=(MakeEmptyT &&) { throw 42; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ~MakeEmptyT() { --alive; }
 };
 
 int MakeEmptyT::alive = 0;
-__host__ __device__
+TEST_HOST_DEVICE
 template <class Variant> void makeEmpty(Variant &v) {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try {
@@ -113,7 +113,7 @@ template <class Variant> void makeEmpty(Variant &v) {
 }
 #endif // TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_copy_ctor_sfinae() {
   {
     using V = cuda::std::variant<int, long>;
@@ -152,7 +152,7 @@ void test_copy_ctor_sfinae() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_copy_ctor_basic() {
   {
     cuda::std::variant<int> v(cuda::std::in_place_index<0>, 42);
@@ -170,7 +170,6 @@ void test_copy_ctor_basic() {
     cuda::std::variant<NonT> v(cuda::std::in_place_index<0>, 42);
     assert(v.index() == 0);
     cuda::std::variant<NonT> v2(v);
-    printf("%d\n", (int)v2.index());
     assert(v2.index() == 0);
     //assert(cuda::std::get<0>(v2).value == 42);
   }
@@ -227,7 +226,7 @@ void test_copy_ctor_basic() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_copy_ctor_valueless_by_exception() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   using V = cuda::std::variant<int, MakeEmptyT>;
@@ -240,7 +239,7 @@ void test_copy_ctor_valueless_by_exception() {
 }
 
 template <size_t Idx>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, const int> const& v) {
   auto v2 = v;
   return v2.index() == v.index() &&
@@ -248,7 +247,7 @@ constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, cons
          cuda::std::get<Idx>(v2) == cuda::std::get<Idx>(v);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_constexpr_copy_ctor() {
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, const int>;

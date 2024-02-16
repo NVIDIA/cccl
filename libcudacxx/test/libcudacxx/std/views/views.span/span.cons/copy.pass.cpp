@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool doCopy(const T &rhs)
 {
     ASSERT_NOEXCEPT(T{rhs});
@@ -30,7 +30,7 @@ constexpr bool doCopy(const T &rhs)
 struct A{};
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 void testCV ()
 {
     int  arr[] = {1,2,3};

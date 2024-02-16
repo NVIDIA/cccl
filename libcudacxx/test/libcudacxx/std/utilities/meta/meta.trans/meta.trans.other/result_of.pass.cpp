@@ -24,15 +24,15 @@
 struct S
 {
     typedef short (*FreeFunc)(long);
-    __host__ __device__
+    TEST_HOST_DEVICE
     operator FreeFunc() const;
-    __host__ __device__
+    TEST_HOST_DEVICE
     double operator()(char, int&);
-    __host__ __device__
+    TEST_HOST_DEVICE
     double const& operator()(char, int&) const;
-    __host__ __device__
+    TEST_HOST_DEVICE
     double volatile& operator()(char, int&) volatile;
-    __host__ __device__
+    TEST_HOST_DEVICE
     double const volatile& operator()(char, int&) const volatile;
 };
 
@@ -59,7 +59,7 @@ struct test_invoke_result;
 template <typename Fn, typename ...Args, typename Ret>
 struct test_invoke_result<Fn(Args...), Ret>
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void call()
     {
         static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
@@ -70,7 +70,7 @@ struct test_invoke_result<Fn(Args...), Ret>
 #endif
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_result_of()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
@@ -86,7 +86,7 @@ struct test_invoke_no_result;
 template <typename Fn, typename ...Args>
 struct test_invoke_no_result<Fn(Args...)>
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void call()
     {
         static_assert(cuda::std::is_invocable<Fn, Args...>::value == false, "");
@@ -96,7 +96,7 @@ struct test_invoke_no_result<Fn(Args...)>
 #endif
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_no_result()
 {
     static_assert((!HasType<cuda::std::result_of<T> >::value), "");
@@ -107,7 +107,7 @@ void test_no_result()
 
 #if defined(__NVCC__)
 template <class Ret, class Fn>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_lambda(Fn &&)
 {
     ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
@@ -434,12 +434,12 @@ int main(int, char**)
 #if defined(TEST_COMPILER_NVCC)
     { // extended lambda
     NV_IF_TARGET(NV_IS_DEVICE,(
-        test_lambda<int>([] __host__ __device__ () -> int { return 42; });
-        test_lambda<double>([] __host__ __device__ () -> double { return 42.0; });
-        test_lambda<SD>([] __host__ __device__ () -> SD { return {}; });
+        test_lambda<int>([] TEST_HOST_DEVICE () -> int { return 42; });
+        test_lambda<double>([] TEST_HOST_DEVICE () -> double { return 42.0; });
+        test_lambda<SD>([] TEST_HOST_DEVICE () -> SD { return {}; });
     ))
     test_lambda<double>(cuda::proclaim_return_type<double>(
-        [] __device__ () -> double { return 42.0; }));
+        [] TEST_DEVICE () -> double { return 42.0; }));
     }
 #endif
 

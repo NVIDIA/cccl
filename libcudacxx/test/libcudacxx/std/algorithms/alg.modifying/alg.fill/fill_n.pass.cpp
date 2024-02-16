@@ -24,7 +24,7 @@ using UDI = UserDefinedIntegral<unsigned>;
 
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test_char()
 {
     char a[4] = {};
@@ -37,7 +37,7 @@ test_char()
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test_int()
 {
     int a[4] = {};
@@ -49,7 +49,7 @@ test_int()
     assert(a[3] == 1);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test_int_array()
 {
     int a[4] = {};
@@ -62,13 +62,13 @@ test_int_array()
 
 // nvcc does not support modification of mutable variables in a constexpr context
 struct source {
-    __host__ __device__ source() : i(0) { }
+    TEST_HOST_DEVICE source() : i(0) { }
 
-    __host__ __device__ operator int() const { return i++; }
+    TEST_HOST_DEVICE operator int() const { return i++; }
     mutable int i;
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_int_array_struct_source()
 {
     int a[4] = {};
@@ -80,12 +80,12 @@ test_int_array_struct_source()
 }
 
 struct test1 {
-    __host__ __device__ constexpr test1() : c(0) { }
-    __host__ __device__ constexpr test1(char xc) : c(xc + 1) { }
+    TEST_HOST_DEVICE constexpr test1() : c(0) { }
+    TEST_HOST_DEVICE constexpr test1(char xc) : c(xc + 1) { }
     char c;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test_struct_array()
 {
     test1 test1a[4] = {};
@@ -100,14 +100,14 @@ class A
 {
     char a_;
 public:
-    __host__ __device__ constexpr A() : a_() {}
-    __host__ __device__ explicit constexpr A(char a) : a_(a) {}
-    __host__ __device__ constexpr operator unsigned char() const {return 'b';}
+    TEST_HOST_DEVICE constexpr A() : a_() {}
+    TEST_HOST_DEVICE explicit constexpr A(char a) : a_(a) {}
+    TEST_HOST_DEVICE constexpr operator unsigned char() const {return 'b';}
 
-    __host__ __device__ constexpr friend bool operator==(const A& x, const A& y) {return x.a_ == y.a_;}
+    TEST_HOST_DEVICE constexpr friend bool operator==(const A& x, const A& y) {return x.a_ == y.a_;}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void
 test5()
 {
     A a[3];
@@ -126,13 +126,13 @@ struct Storage
   };
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test6()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test6()
 {
   Storage foo[5] = {};
   cuda::std::fill_n(&foo[0], UDI(5), Storage());
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     test_char<cpp17_output_iterator<char*> >();
     test_char<forward_iterator<char*> >();
     test_char<bidirectional_iterator<char*> >();

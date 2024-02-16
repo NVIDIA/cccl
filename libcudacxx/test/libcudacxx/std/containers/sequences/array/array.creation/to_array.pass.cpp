@@ -26,7 +26,7 @@
 #include "test_macros.h"
 #include "MoveOnly.h"
 
-__host__ __device__ constexpr bool tests()
+TEST_HOST_DEVICE constexpr bool tests()
 {
   //  Test deduced type.
   {

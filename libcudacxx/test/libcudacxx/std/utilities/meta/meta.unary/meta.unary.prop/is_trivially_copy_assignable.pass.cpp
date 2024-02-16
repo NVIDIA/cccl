@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_trivially_copy_assignable()
 {
     static_assert( cuda::std::is_trivially_copy_assignable<T>::value, "");
@@ -26,7 +26,7 @@ void test_has_trivially_copy_assignable()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_trivially_copy_assignable()
 {
     static_assert(!cuda::std::is_trivially_copy_assignable<T>::value, "");
@@ -41,7 +41,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -54,13 +54,13 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A& operator=(const A&);
 };
 

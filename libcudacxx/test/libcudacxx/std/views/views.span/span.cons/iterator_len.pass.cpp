@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <size_t Extent>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_constructibility() {
   struct Other {};
   static_assert(cuda::std::is_constructible<cuda::std::span<int, Extent>, int*, size_t>::value, "");
@@ -46,7 +46,7 @@ constexpr bool test_constructibility() {
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_ctor() {
   T val[2] = {};
   auto s1 = cuda::std::span<T>(val, 2);
@@ -56,7 +56,7 @@ constexpr bool test_ctor() {
   return true;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
   test_constructibility<cuda::std::dynamic_extent>();
   test_constructibility<3>();

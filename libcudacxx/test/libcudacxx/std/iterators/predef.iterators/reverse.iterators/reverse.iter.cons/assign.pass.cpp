@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <class It, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(U u) {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test(U u) {
     const cuda::std::reverse_iterator<U> r2(u);
     cuda::std::reverse_iterator<It> r1;
     cuda::std::reverse_iterator<It>& rr = r1 = r2;
@@ -39,28 +39,28 @@ struct ToIter {
     typedef char value_type;
     typedef value_type difference_type;
 
-    __host__ __device__ explicit TEST_CONSTEXPR_CXX14 ToIter() : m_value(0) {}
-    __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter(const ToIter &src) : m_value(src.m_value) {}
+    TEST_HOST_DEVICE explicit TEST_CONSTEXPR_CXX14 ToIter() : m_value(0) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 ToIter(const ToIter &src) : m_value(src.m_value) {}
     // Intentionally not defined, must not be called.
-    __host__ __device__ ToIter(char *src);
-    __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter &operator=(char *src) {
+    TEST_HOST_DEVICE ToIter(char *src);
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 ToIter &operator=(char *src) {
         m_value = src;
         return *this;
     }
-    __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter &operator=(const ToIter &src) {
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 ToIter &operator=(const ToIter &src) {
         m_value = src.m_value;
         return *this;
     }
     char *m_value;
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ ToIter& operator++();
-    __host__ __device__ ToIter& operator--();
-    __host__ __device__ ToIter operator++(int);
-    __host__ __device__ ToIter operator--(int);
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE ToIter& operator++();
+    TEST_HOST_DEVICE ToIter& operator--();
+    TEST_HOST_DEVICE ToIter operator++(int);
+    TEST_HOST_DEVICE ToIter operator--(int);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
     Derived d{};
     test<bidirectional_iterator<Base*> >(bidirectional_iterator<Derived*>(&d));
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));

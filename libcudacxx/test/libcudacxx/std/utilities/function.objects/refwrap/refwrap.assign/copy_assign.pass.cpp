@@ -25,12 +25,12 @@ class functor1
 
 struct convertible_to_int_ref {
     int val = 0;
-    __host__ __device__ operator int&() { return val; }
-    __host__ __device__ operator int const&() const { return val; }
+    TEST_HOST_DEVICE operator int&() { return val; }
+    TEST_HOST_DEVICE operator int const&() const { return val; }
 };
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(T& t)
 {
     cuda::std::reference_wrapper<T> r(t);
@@ -40,10 +40,10 @@ test(T& t)
     assert(&r2.get() == &t);
 }
 
-__host__ __device__ void f() {}
-__host__ __device__ void g() {}
+TEST_HOST_DEVICE void f() {}
+TEST_HOST_DEVICE void g() {}
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_function()
 {
     cuda::std::reference_wrapper<void ()> r(f);

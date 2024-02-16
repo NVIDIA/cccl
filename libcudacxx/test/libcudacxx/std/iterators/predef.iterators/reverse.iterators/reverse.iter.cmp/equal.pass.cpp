@@ -22,13 +22,13 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It l, It r, bool x) {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test(It l, It r, bool x) {
     const cuda::std::reverse_iterator<It> r1(l);
     const cuda::std::reverse_iterator<It> r2(r);
     assert((r1 == r2) == x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
     const char* s = "1234567890";
     test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s), true);
     test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s+1), false);

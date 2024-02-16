@@ -15,19 +15,19 @@ class Rep
 {
     int data_;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     TEST_CONSTEXPR Rep() : data_(-1) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit TEST_CONSTEXPR Rep(int i) : data_(i) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     bool TEST_CONSTEXPR operator==(int i) const {return data_ == i;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     bool TEST_CONSTEXPR operator==(const Rep& r) const {return data_ == r.data_;}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     Rep& operator*=(Rep x) {data_ *= x.data_; return *this;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     Rep& operator/=(Rep x) {data_ /= x.data_; return *this;}
 };
 

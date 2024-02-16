@@ -23,8 +23,8 @@ struct T { };
 
 // Satisfied when it's a range and has the right iterator
 struct GoodRange {
-    __host__ __device__ cpp17_output_iterator<T*> begin();
-    __host__ __device__ sentinel end();
+    TEST_HOST_DEVICE cpp17_output_iterator<T*> begin();
+    TEST_HOST_DEVICE sentinel end();
 };
 static_assert(cuda::std::ranges::range<GoodRange>);
 static_assert(cuda::std::output_iterator<cuda::std::ranges::iterator_t<GoodRange>, T>);
@@ -32,7 +32,7 @@ static_assert(cuda::std::ranges::output_range<GoodRange, T>);
 
 // Not satisfied when it's not a range
 struct NotRange {
-    __host__ __device__ cpp17_output_iterator<T*> begin();
+    TEST_HOST_DEVICE cpp17_output_iterator<T*> begin();
 };
 static_assert(!cuda::std::ranges::range<NotRange>);
 static_assert( cuda::std::output_iterator<cuda::std::ranges::iterator_t<NotRange>, T>);
@@ -40,8 +40,8 @@ static_assert(!cuda::std::ranges::output_range<NotRange, T>);
 
 // Not satisfied when the iterator is not an output_iterator
 struct RangeWithBadIterator {
-    __host__ __device__ cpp17_input_iterator<T const*> begin();
-    __host__ __device__ sentinel end();
+    TEST_HOST_DEVICE cpp17_input_iterator<T const*> begin();
+    TEST_HOST_DEVICE sentinel end();
 };
 static_assert( cuda::std::ranges::range<RangeWithBadIterator>);
 static_assert(!cuda::std::output_iterator<cuda::std::ranges::iterator_t<RangeWithBadIterator>, T>);

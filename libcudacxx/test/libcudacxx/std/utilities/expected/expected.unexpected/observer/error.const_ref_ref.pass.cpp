@@ -27,7 +27,7 @@ constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<co
 static_assert(!ErrorNoexcept<int>, "");
 static_assert(ErrorNoexcept<cuda::std::unexpected<int>>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   const cuda::std::unexpected<int> unex(5);
   decltype(auto) i = cuda::std::move(unex).error();
   static_assert(cuda::std::same_as<decltype(i), const int&&>, "");

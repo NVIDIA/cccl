@@ -42,7 +42,7 @@
 # pragma warning( disable: 4308 )
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 void RunTheExample()
 {
     using namespace cuda::std::chrono;

@@ -41,45 +41,45 @@ struct ConstructibleFromTupleAndInt {
   enum State { FromTuple, FromInt, Copied, Moved };
   State state;
 
-  __host__ __device__ ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt const&) : state(Copied) {}
-  __host__ __device__ ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt &&) : state(Moved) {}
+  TEST_HOST_DEVICE ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt const&) : state(Copied) {}
+  TEST_HOST_DEVICE ConstructibleFromTupleAndInt(ConstructibleFromTupleAndInt &&) : state(Moved) {}
 
   template <class Tuple, class = typename cuda::std::enable_if<IsTuple<Tuple>::value>::type>
-  __host__ __device__ explicit ConstructibleFromTupleAndInt(Tuple&&) : state(FromTuple) {}
+  TEST_HOST_DEVICE explicit ConstructibleFromTupleAndInt(Tuple&&) : state(FromTuple) {}
 
-  __host__ __device__ explicit ConstructibleFromTupleAndInt(int) : state(FromInt) {}
+  TEST_HOST_DEVICE explicit ConstructibleFromTupleAndInt(int) : state(FromInt) {}
 };
 
 struct ConvertibleFromTupleAndInt {
   enum State { FromTuple, FromInt, Copied, Moved };
   State state;
 
-  __host__ __device__ ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt const&) : state(Copied) {}
-  __host__ __device__ ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt &&) : state(Moved) {}
+  TEST_HOST_DEVICE ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt const&) : state(Copied) {}
+  TEST_HOST_DEVICE ConvertibleFromTupleAndInt(ConvertibleFromTupleAndInt &&) : state(Moved) {}
 
   template <class Tuple, class = typename cuda::std::enable_if<IsTuple<Tuple>::value>::type>
-  __host__ __device__ ConvertibleFromTupleAndInt(Tuple&&) : state(FromTuple) {}
+  TEST_HOST_DEVICE ConvertibleFromTupleAndInt(Tuple&&) : state(FromTuple) {}
 
-  __host__ __device__ ConvertibleFromTupleAndInt(int) : state(FromInt) {}
+  TEST_HOST_DEVICE ConvertibleFromTupleAndInt(int) : state(FromInt) {}
 };
 
 struct ConstructibleFromInt {
   enum State { FromInt, Copied, Moved };
   State state;
 
-  __host__ __device__ ConstructibleFromInt(ConstructibleFromInt const&) : state(Copied) {}
-  __host__ __device__ ConstructibleFromInt(ConstructibleFromInt &&) : state(Moved) {}
+  TEST_HOST_DEVICE ConstructibleFromInt(ConstructibleFromInt const&) : state(Copied) {}
+  TEST_HOST_DEVICE ConstructibleFromInt(ConstructibleFromInt &&) : state(Moved) {}
 
-  __host__ __device__ explicit ConstructibleFromInt(int) : state(FromInt) {}
+  TEST_HOST_DEVICE explicit ConstructibleFromInt(int) : state(FromInt) {}
 };
 
 struct ConvertibleFromInt {
   enum State { FromInt, Copied, Moved };
   State state;
 
-  __host__ __device__ ConvertibleFromInt(ConvertibleFromInt const&) : state(Copied) {}
-  __host__ __device__ ConvertibleFromInt(ConvertibleFromInt &&) : state(Moved) {}
-  __host__ __device__ ConvertibleFromInt(int) : state(FromInt) {}
+  TEST_HOST_DEVICE ConvertibleFromInt(ConvertibleFromInt const&) : state(Copied) {}
+  TEST_HOST_DEVICE ConvertibleFromInt(ConvertibleFromInt &&) : state(Moved) {}
+  TEST_HOST_DEVICE ConvertibleFromInt(int) : state(FromInt) {}
 };
 
 int main(int, char**)

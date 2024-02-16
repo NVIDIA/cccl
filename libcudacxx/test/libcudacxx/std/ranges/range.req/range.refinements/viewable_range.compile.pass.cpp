@@ -114,7 +114,7 @@ static_assert(!cuda::std::ranges::viewable_range<cuda::std::initializer_list<int
 
 // viewable_range<T> is not satisfied for (range=true, view=false, constructible_from=true, lvalue-or-movable=false)
 struct T6 : test_range<cpp20_input_iterator> {
-  __host__ __device__ T6(T6&&);
+  TEST_HOST_DEVICE T6(T6&&);
   T6& operator=(T6&&) = delete;
 };
 static_assert( cuda::std::ranges::range<T6>);

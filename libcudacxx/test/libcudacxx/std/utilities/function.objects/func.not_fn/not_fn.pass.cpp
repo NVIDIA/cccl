@@ -30,41 +30,41 @@ TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 //                       CALLABLE TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-__host__ __device__
+TEST_HOST_DEVICE
 bool returns_true() { return true; }
 
 template <class Ret = bool>
 struct MoveOnlyCallable {
   MoveOnlyCallable(MoveOnlyCallable const&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   MoveOnlyCallable(MoveOnlyCallable&& other)
       : value(other.value)
   { other.value = !other.value; }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   Ret operator()(Args&&...) { return Ret{value}; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit MoveOnlyCallable(bool x) : value(x) {}
   Ret value;
 };
 
 template <class Ret = bool>
 struct CopyCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   CopyCallable(CopyCallable const& other)
       : value(other.value) {}
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   CopyCallable(CopyCallable&& other)
       : value(other.value) { other.value = !other.value; }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   Ret operator()(Args&&...) { return Ret{value}; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit CopyCallable(bool x) : value(x)  {}
   Ret value;
 };
@@ -72,19 +72,19 @@ struct CopyCallable {
 
 template <class Ret = bool>
 struct ConstCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   ConstCallable(ConstCallable const& other)
       : value(other.value) {}
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   ConstCallable(ConstCallable&& other)
       : value(other.value) { other.value = !other.value; }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   Ret operator()(Args&&...) const { return Ret{value}; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit ConstCallable(bool x) : value(x)  {}
   Ret value;
 };
@@ -93,19 +93,19 @@ struct ConstCallable {
 
 template <class Ret = bool>
 struct NoExceptCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoExceptCallable(NoExceptCallable const& other)
       : value(other.value) {}
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   Ret operator()(Args&&...) noexcept { return Ret{value}; }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   Ret operator()(Args&&...) const noexcept { return Ret{value}; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit NoExceptCallable(bool x) : value(x)  {}
   Ret value;
 };
@@ -117,10 +117,10 @@ struct CopyAssignableWrapper {
   CopyAssignableWrapper& operator=(CopyAssignableWrapper &&) = default;
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) { return value; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit CopyAssignableWrapper(bool x) : value(x) {}
   bool value;
 };
@@ -133,21 +133,21 @@ struct MoveAssignableWrapper {
   MoveAssignableWrapper& operator=(MoveAssignableWrapper &&) = default;
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) { return value; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit MoveAssignableWrapper(bool x) : value(x) {}
   bool value;
 };
 
 struct MemFunCallable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit MemFunCallable(bool x) : value(x) {}
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool return_value() const { return value; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool return_value_nc() { return value; }
   bool value;
 };
@@ -160,7 +160,7 @@ enum CallType : unsigned {
   CT_RValue = 8
 };
 
-  __host__ __device__
+  TEST_HOST_DEVICE
 inline constexpr CallType operator|(CallType LHS, CallType RHS) {
     return static_cast<CallType>(static_cast<unsigned>(LHS) | static_cast<unsigned>(RHS));
 }
@@ -173,14 +173,14 @@ STATIC_TEST_GLOBAL_VAR TypeID const* ForwardingCallObject_last_call_args = nullp
 struct ForwardingCallObject {
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) & {
       set_call<Args&&...>(CT_NonConst | CT_LValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) const & {
       set_call<Args&&...>(CT_Const | CT_LValue);
       return true;
@@ -188,21 +188,21 @@ struct ForwardingCallObject {
 
   // Don't allow the call operator to be invoked as an rvalue.
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) && {
       set_call<Args&&...>(CT_NonConst | CT_RValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(Args&&...) const && {
       set_call<Args&&...>(CT_Const | CT_RValue);
       return true;
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   static void set_call(CallType type) {
       assert(ForwardingCallObject_last_call_type == CT_None);
       assert(ForwardingCallObject_last_call_args == nullptr);
@@ -211,7 +211,7 @@ struct ForwardingCallObject {
   }
 
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   static bool check_call(CallType type) {
       bool result =
            ForwardingCallObject_last_call_type == type
@@ -235,7 +235,7 @@ struct EvilBool {
   EvilBool(EvilBool const&) = default;
   EvilBool(EvilBool&&) = default;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   friend EvilBool operator!(EvilBool const& other) {
     ++EvilBool_bang_called;
     return EvilBool{!other.value};
@@ -246,7 +246,7 @@ private:
   friend struct CopyCallable<EvilBool>;
   friend struct NoExceptCallable<EvilBool>;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit EvilBool(bool x) : value(x) {}
   EvilBool& operator=(EvilBool const& other) = default;
 
@@ -258,16 +258,16 @@ struct ExplicitBool {
   ExplicitBool(ExplicitBool const&) = default;
   ExplicitBool(ExplicitBool&&) = default;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit operator bool() const { return value; }
 
 private:
   friend struct MoveOnlyCallable<ExplicitBool>;
   friend struct CopyCallable<ExplicitBool>;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit ExplicitBool(bool x) : value(x) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   ExplicitBool& operator=(bool x) {
       value = x;
       return *this;
@@ -282,10 +282,10 @@ struct NoExceptEvilBool {
   NoExceptEvilBool(NoExceptEvilBool&&) = default;
   NoExceptEvilBool& operator=(NoExceptEvilBool const& other) = default;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit NoExceptEvilBool(bool x) : value(x) {}
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   friend NoExceptEvilBool operator!(NoExceptEvilBool const& other) noexcept {
     return NoExceptEvilBool{!other.value};
   }
@@ -295,7 +295,7 @@ struct NoExceptEvilBool {
 
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 void constructor_tests()
 {
     {
@@ -378,7 +378,7 @@ void constructor_tests()
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void return_type_tests()
 {
     using cuda::std::is_same;
@@ -411,7 +411,7 @@ void return_type_tests()
 
 // Other tests only test using objects with call operators. Test various
 // other callable types here.
-__host__ __device__
+TEST_HOST_DEVICE
 void other_callable_types_test()
 {
     { // test with function pointer
@@ -453,7 +453,7 @@ void other_callable_types_test()
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void throws_in_constructor_test()
 {
 #ifndef TEST_HAS_NO_EXCEPTIONS
@@ -483,7 +483,7 @@ void throws_in_constructor_test()
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void call_operator_sfinae_test() {
 #ifndef TEST_COMPILER_ICC
     { // wrong number of arguments
@@ -518,7 +518,7 @@ void call_operator_sfinae_test() {
 }
 
 #if 0
-__host__ __device__
+TEST_HOST_DEVICE
 void call_operator_forwarding_test()
 {
     using Fn = ForwardingCallObject;
@@ -605,7 +605,7 @@ void call_operator_forwarding_test()
 }
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 void call_operator_noexcept_test()
 {
     {
@@ -671,12 +671,12 @@ void call_operator_noexcept_test()
 }
 
 #ifndef TEST_COMPILER_CLANG_CUDA // https://github.com/llvm/llvm-project/issues/67533
-__host__ __device__
+TEST_HOST_DEVICE
 void test_lwg2767() {
     // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
-    struct Abstract { __host__ __device__ virtual void f() const = 0; };
-    struct Derived : public Abstract { __host__ __device__ void f() const {} };
-    struct F { __host__ __device__ bool operator()(Abstract&&) { return false; } };
+    struct Abstract { TEST_HOST_DEVICE virtual void f() const = 0; };
+    struct Derived : public Abstract { TEST_HOST_DEVICE void f() const {} };
+    struct F { TEST_HOST_DEVICE bool operator()(Abstract&&) { return false; } };
     {
         Derived d;
         Abstract &a = d;

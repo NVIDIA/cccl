@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i,
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test(It i,
                                typename cuda::std::iterator_traits<It>::difference_type n,
                                typename cuda::std::iterator_traits<It>::value_type x) {
     typedef typename cuda::std::iterator_traits<It>::value_type value_type;
@@ -30,7 +30,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i,
     assert(rr == x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
     const char* s = "1234567890";
     test(random_access_iterator<const char*>(s+5), 4, '1');
     test(random_access_iterator<const char*>(s+5), 0, '5');

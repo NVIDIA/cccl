@@ -26,9 +26,9 @@
 
 struct Foo;
 
-__host__ __device__ Foo& get_foo();
+TEST_HOST_DEVICE Foo& get_foo();
 
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
     Foo& foo = get_foo();
     cuda::std::reference_wrapper<Foo> ref = cuda::std::ref(foo);
     assert(&ref.get() == &foo);
@@ -36,7 +36,7 @@ __host__ __device__ void test() {
 
 struct Foo { };
 
-__host__ __device__ Foo& get_foo() {
+TEST_HOST_DEVICE Foo& get_foo() {
     static Foo foo;
     return foo;
 }

@@ -95,7 +95,7 @@ enum CallType : unsigned {
   CT_RValue = 8
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr CallType operator|(CallType LHS, CallType RHS) {
   return static_cast<CallType>(static_cast<unsigned>(LHS) |
                                static_cast<unsigned>(RHS));
@@ -104,41 +104,41 @@ inline constexpr CallType operator|(CallType LHS, CallType RHS) {
 struct ForwardingCallObject {
 
   template <class... Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   ForwardingCallObject& operator()(Args&&...) & {
     set_call<Args &&...>(CT_NonConst | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   const ForwardingCallObject& operator()(Args&&...) const & {
     set_call<Args &&...>(CT_Const | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   ForwardingCallObject&& operator()(Args&&...) && {
     set_call<Args &&...>(CT_NonConst | CT_RValue);
     return cuda::std::move(*this);
   }
 
   template <class... Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   const ForwardingCallObject&& operator()(Args&&...) const && {
     set_call<Args &&...>(CT_Const | CT_RValue);
     return cuda::std::move(*this);
   }
 
-  template <class... Args> __host__ __device__ static void set_call(CallType type) {
+  template <class... Args> TEST_HOST_DEVICE static void set_call(CallType type) {
     assert(last_call_type() == CT_None);
     assert(last_call_args() == nullptr);
     last_call_type() = type;
     last_call_args() = cuda::std::addressof(makeArgumentID<Args...>());
   }
 
-  template <class... Args> __host__ __device__ static bool check_call(CallType type) {
+  template <class... Args> TEST_HOST_DEVICE static bool check_call(CallType type) {
     bool result = last_call_type() == type && last_call_args() &&
                   *last_call_args() == makeArgumentID<Args...>();
     last_call_type() = CT_None;
@@ -147,7 +147,7 @@ struct ForwardingCallObject {
   }
 
   // To check explicit return type for visit<R>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr operator int() const
   {
     return 0;
@@ -158,13 +158,13 @@ struct ForwardingCallObject {
 };
 
 struct ReturnFirst {
-  template <class... Args> __host__ __device__ constexpr int operator()(int f, Args &&...) const {
+  template <class... Args> TEST_HOST_DEVICE constexpr int operator()(int f, Args &&...) const {
     return f;
   }
 };
 
 struct ReturnArity {
-  template <class... Args> __host__ __device__ constexpr int operator()(Args &&...) const {
+  template <class... Args> TEST_HOST_DEVICE constexpr int operator()(Args &&...) const {
     return sizeof...(Args);
   }
 };

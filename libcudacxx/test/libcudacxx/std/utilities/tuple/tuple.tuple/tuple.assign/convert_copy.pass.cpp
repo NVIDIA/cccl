@@ -25,13 +25,13 @@ struct B
 {
     int id_;
 
-    __host__ __device__ explicit B(int i = 0) : id_(i) {}
+    TEST_HOST_DEVICE explicit B(int i = 0) : id_(i) {}
 };
 
 struct D
     : B
 {
-    __host__ __device__ explicit D(int i = 0) : B(i) {}
+    TEST_HOST_DEVICE explicit D(int i = 0) : B(i) {}
 };
 
 int main(int, char**)

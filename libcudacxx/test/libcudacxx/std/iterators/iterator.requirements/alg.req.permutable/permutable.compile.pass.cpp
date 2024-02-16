@@ -32,7 +32,7 @@ static_assert(!cuda::std::permutable<NotAForwardIterator>);
 struct NonCopyable {
   NonCopyable(const NonCopyable&) = delete;
   NonCopyable& operator=(const NonCopyable&) = delete;
-  __host__ __device__ friend void swap(NonCopyable&, NonCopyable&);
+  TEST_HOST_DEVICE friend void swap(NonCopyable&, NonCopyable&);
 };
 using NotIMS = forward_iterator<NonCopyable*>;
 

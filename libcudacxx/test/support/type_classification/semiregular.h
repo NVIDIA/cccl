@@ -12,7 +12,7 @@
 #include "copyable.h"
 
 struct no_default_ctor {
-  __host__ __device__ no_default_ctor(int);
+  TEST_HOST_DEVICE no_default_ctor(int);
 };
 struct derived_from_non_default_initializable : no_default_ctor {};
 struct has_non_default_initializable {

@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, unsigned A>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_alignment_of()
 {
     const unsigned AlignofResult = TEST_ALIGNOF(T);
@@ -37,7 +37,7 @@ void test_alignment_of()
 class Class
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Class();
 };
 

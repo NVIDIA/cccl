@@ -22,7 +22,7 @@
 using cuda::std::optional;
 
 template <class Opt>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_constexpr()
 {
     static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value, "");
@@ -35,7 +35,7 @@ constexpr bool test_constexpr()
     struct test_constexpr_ctor
         : public Opt
     {
-        __host__ __device__
+        TEST_HOST_DEVICE
         constexpr test_constexpr_ctor() {}
     };
 
@@ -43,7 +43,7 @@ constexpr bool test_constexpr()
 }
 
 template <class Opt>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test()
 {
     static_assert(cuda::std::is_nothrow_default_constructible<Opt>::value, "");
@@ -61,7 +61,7 @@ constexpr bool test()
     struct test_constexpr_ctor
         : public Opt
     {
-        __host__ __device__
+        TEST_HOST_DEVICE
         constexpr test_constexpr_ctor() {}
     };
 

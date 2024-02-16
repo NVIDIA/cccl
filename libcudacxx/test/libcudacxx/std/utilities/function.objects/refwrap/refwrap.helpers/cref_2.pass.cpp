@@ -21,10 +21,10 @@
 
 namespace adl {
   struct A {};
-  __host__ __device__ void cref(A) {}
+  TEST_HOST_DEVICE void cref(A) {}
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     const int i = 0;

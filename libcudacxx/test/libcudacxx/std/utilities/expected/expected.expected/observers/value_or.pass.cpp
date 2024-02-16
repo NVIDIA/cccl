@@ -21,7 +21,7 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // const &, has_value()
   {
     const cuda::std::expected<int, int> e(5);

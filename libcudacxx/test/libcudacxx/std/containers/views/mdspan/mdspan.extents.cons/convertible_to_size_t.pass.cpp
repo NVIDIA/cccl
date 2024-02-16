@@ -14,7 +14,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/array>
 
-__host__ __device__ void check( cuda::std::dextents<size_t,2> e )
+#include "test_macros.h"
+
+TEST_HOST_DEVICE void check( cuda::std::dextents<size_t,2> e )
 {
     static_assert( e.rank        () == 2, "" );
     static_assert( e.rank_dynamic() == 2, "" );

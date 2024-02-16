@@ -20,7 +20,7 @@
 template <class T>
 struct PointerTo {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_HOST_DEVICE T& operator*() const;
 };
 
 // Copying the underlying object between pointers (or dereferenceable classes) works. This is a non-exhaustive check
@@ -48,11 +48,11 @@ struct NoAssignment {
   // `ValueType` is convertible to `ReferenceType` but not assignable to it. This is implemented by explicitly deleting
   // `operator=(ValueType)` in `ReferenceType`.
   struct ValueType {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_HOST_DEVICE operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 // The case when `indirectly_writable<iter_rvalue_reference>` but not `indirectly_writable<iter_value>` (you can
@@ -78,16 +78,16 @@ struct InconsistentIterator {
   struct ValueType;
 
   struct ReferenceType {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&);
   };
 
   struct ValueType {
     ValueType() = default;
-    __host__ __device__ ValueType(const ReferenceType&);
+    TEST_HOST_DEVICE ValueType(const ReferenceType&);
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 // `ValueType` can be constructed with a `ReferenceType` and assigned to a `ReferenceType`, so it does model
@@ -99,16 +99,16 @@ struct NotConstructibleFromRefIn {
   struct CommonType { };
 
   struct ReferenceType {
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   struct ValueType {
     ValueType(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 template <template <class> class X, template <class> class Y>
@@ -128,7 +128,7 @@ static_assert(cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueT
 
 struct AssignableFromAnything {
   template<class T>
-  __host__ __device__ AssignableFromAnything& operator=(T&&);
+  TEST_HOST_DEVICE AssignableFromAnything& operator=(T&&);
 };
 
 // A type that can't be constructed from its own reference isn't `indirectly_movable_storable`, even when assigning it
@@ -141,17 +141,17 @@ struct NotAssignableFromRefIn {
   struct CommonType { };
 
   struct ReferenceType {
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   struct ValueType {
-    __host__ __device__ ValueType(ReferenceType);
+    TEST_HOST_DEVICE ValueType(ReferenceType);
     ValueType& operator=(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 template <template <class> class X, template <class> class Y>

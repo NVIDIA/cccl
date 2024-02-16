@@ -12,22 +12,23 @@
 // iter_common_reference_t
 
 #include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+
+#include "test_macros.h"
 
 struct X { };
 
 // value_type and dereferencing are the same
 struct T1 {
   using value_type = X;
-  __host__ __device__ X operator*() const;
+  TEST_HOST_DEVICE X operator*() const;
 };
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T1>, X>);
 
 // value_type and dereferencing are the same (modulo qualifiers)
 struct T2 {
   using value_type = X;
-  __host__ __device__ X& operator*() const;
+  TEST_HOST_DEVICE X& operator*() const;
 };
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>);
 
@@ -35,8 +36,8 @@ static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>);
 struct A { };
 struct B { };
 struct Common {
-  __host__ __device__ Common(A);
-  __host__ __device__ Common(B);
+  TEST_HOST_DEVICE Common(A);
+  TEST_HOST_DEVICE Common(B);
 };
 template <template <class> class TQual, template <class> class QQual>
 struct cuda::std::basic_common_reference<A, B, TQual, QQual> {
@@ -49,7 +50,7 @@ struct cuda::std::basic_common_reference<B, A, TQual, QQual>
 
 struct T3 {
   using value_type = A;
-  __host__ __device__ B&& operator*() const;
+  TEST_HOST_DEVICE B&& operator*() const;
 };
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
 

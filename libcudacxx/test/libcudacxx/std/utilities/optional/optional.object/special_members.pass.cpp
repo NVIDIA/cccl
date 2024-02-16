@@ -54,11 +54,11 @@ struct SpecialMemberTest {
         "move assignable, or both copy constructible and copy assignable.");
 };
 
-template <class ...Args> static __host__ __device__ void sink(Args&&...) {}
+template <class ...Args> static TEST_HOST_DEVICE void sink(Args&&...) {}
 
 template <class ...TestTypes>
 struct DoTestsMetafunction {
-    __host__ __device__
+    TEST_HOST_DEVICE
     DoTestsMetafunction() { sink(SpecialMemberTest<TestTypes>{}...); }
 };
 

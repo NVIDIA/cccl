@@ -34,17 +34,17 @@ template <class Traits>
 inline constexpr bool has_iterator_concept_v<Traits, cuda::std::void_t<typename Traits::iterator_concept>> = true;
 
 template <class It, class Traits, cuda::std::enable_if_t<cuda::std::is_pointer_v<It>, int> = 0>
-__host__ __device__ constexpr void test_iter_concept() {
+TEST_HOST_DEVICE constexpr void test_iter_concept() {
     static_assert(cuda::std::same_as<typename Traits::iterator_concept, cuda::std::contiguous_iterator_tag>);
 }
 
 template <class It, class Traits, cuda::std::enable_if_t<!cuda::std::is_pointer_v<It>, int> = 0>
-__host__ __device__ constexpr void test_iter_concept() {
+TEST_HOST_DEVICE constexpr void test_iter_concept() {
     static_assert(!has_iterator_concept_v<Traits>);
 }
 
 template <class Iter, class Category, class ValueType, class DiffType, class RefType, class PtrType>
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   using Traits = cuda::std::iterator_traits<Iter>;
   static_assert(cuda::std::same_as<typename Traits::iterator_category, Category>);
   static_assert(cuda::std::same_as<typename Traits::value_type, ValueType>);
@@ -58,17 +58,17 @@ __host__ __device__ constexpr bool test() {
 }
 
 template <class Iter, class Category>
-__host__ __device__ constexpr bool testIOIterator() {
+TEST_HOST_DEVICE constexpr bool testIOIterator() {
   return test<Iter, Category, void, cuda::std::ptrdiff_t, void, void>();
 }
 
 template <class Iter, class Category, class ValueType>
-__host__ __device__ constexpr bool testConst() {
+TEST_HOST_DEVICE constexpr bool testConst() {
   return test<Iter, Category, ValueType, cuda::std::ptrdiff_t, const ValueType&, const ValueType*>();
 }
 
 template <class Iter, class Category, class ValueType>
-__host__ __device__ constexpr bool testMutable() {
+TEST_HOST_DEVICE constexpr bool testMutable() {
   return test<Iter, Category, ValueType, cuda::std::ptrdiff_t, ValueType&, ValueType*>();
 }
 
@@ -104,7 +104,7 @@ struct NoPointerMember {
   struct difference_type {};
   struct reference {};
   // ignored, because NoPointerMember is not a LegacyInputIterator:
-  __host__ __device__ value_type* operator->() const;
+  TEST_HOST_DEVICE value_type* operator->() const;
 };
 using NoPointerMemberTraits = cuda::std::iterator_traits<NoPointerMember>;
 static_assert(cuda::std::same_as<NoPointerMemberTraits::iterator_category, NoPointerMember::iterator_category>);
@@ -134,15 +134,15 @@ static_assert(!has_iterator_concept_v<IterConceptTraits>);
 struct LegacyInput {
   struct iterator_category {};
   struct value_type {};
-  struct reference { __host__ __device__ operator value_type() const; };
+  struct reference { TEST_HOST_DEVICE operator value_type() const; };
 
-  __host__ __device__ friend bool operator==(LegacyInput, LegacyInput);
+  TEST_HOST_DEVICE friend bool operator==(LegacyInput, LegacyInput);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyInput, LegacyInput);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyInput, LegacyInput);
 #endif
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ LegacyInput& operator++();
-  __host__ __device__ LegacyInput operator++(int);
+  TEST_HOST_DEVICE reference operator*() const;
+  TEST_HOST_DEVICE LegacyInput& operator++();
+  TEST_HOST_DEVICE LegacyInput operator++(int);
 };
 template <>
 struct cuda::std::incrementable_traits<LegacyInput> {
@@ -159,15 +159,15 @@ static_assert(!has_iterator_concept_v<LegacyInputTraits>);
 struct LegacyInputNoValueType {
   struct not_value_type {};
   using difference_type = int; // or any signed integral type
-  struct reference { __host__ __device__ operator not_value_type&() const; };
+  struct reference { TEST_HOST_DEVICE operator not_value_type&() const; };
 
-  __host__ __device__ friend bool operator==(LegacyInputNoValueType, LegacyInputNoValueType);
+  TEST_HOST_DEVICE friend bool operator==(LegacyInputNoValueType, LegacyInputNoValueType);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyInputNoValueType, LegacyInputNoValueType);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyInputNoValueType, LegacyInputNoValueType);
 #endif
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ LegacyInputNoValueType& operator++();
-  __host__ __device__ LegacyInputNoValueType operator++(int);
+  TEST_HOST_DEVICE reference operator*() const;
+  TEST_HOST_DEVICE LegacyInputNoValueType& operator++();
+  TEST_HOST_DEVICE LegacyInputNoValueType operator++(int);
 };
 template <>
 struct cuda::std::indirectly_readable_traits<LegacyInputNoValueType> {
@@ -184,13 +184,13 @@ static_assert(!has_iterator_concept_v<LegacyInputNoValueTypeTraits>);
 struct LegacyForward {
   struct not_value_type {};
 
-  __host__ __device__ friend bool operator==(LegacyForward, LegacyForward);
+  TEST_HOST_DEVICE friend bool operator==(LegacyForward, LegacyForward);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyForward, LegacyForward);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyForward, LegacyForward);
 #endif
-  __host__ __device__ const not_value_type& operator*() const;
-  __host__ __device__ LegacyForward& operator++();
-  __host__ __device__ LegacyForward operator++(int);
+  TEST_HOST_DEVICE const not_value_type& operator*() const;
+  TEST_HOST_DEVICE LegacyForward& operator++();
+  TEST_HOST_DEVICE LegacyForward operator++(int);
 };
 template <>
 struct cuda::std::indirectly_readable_traits<LegacyForward> {
@@ -211,16 +211,16 @@ static_assert(!has_iterator_concept_v<LegacyForwardTraits>);
 struct LegacyBidirectional {
   struct value_type {};
 
-  __host__ __device__ friend bool operator==(LegacyBidirectional, LegacyBidirectional);
+  TEST_HOST_DEVICE friend bool operator==(LegacyBidirectional, LegacyBidirectional);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyBidirectional, LegacyBidirectional);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyBidirectional, LegacyBidirectional);
 #endif
-  __host__ __device__ const value_type& operator*() const;
-  __host__ __device__ LegacyBidirectional& operator++();
-  __host__ __device__ LegacyBidirectional operator++(int);
-  __host__ __device__ LegacyBidirectional& operator--();
-  __host__ __device__ LegacyBidirectional operator--(int);
-  __host__ __device__ friend short operator-(LegacyBidirectional, LegacyBidirectional);
+  TEST_HOST_DEVICE const value_type& operator*() const;
+  TEST_HOST_DEVICE LegacyBidirectional& operator++();
+  TEST_HOST_DEVICE LegacyBidirectional operator++(int);
+  TEST_HOST_DEVICE LegacyBidirectional& operator--();
+  TEST_HOST_DEVICE LegacyBidirectional operator--(int);
+  TEST_HOST_DEVICE friend short operator-(LegacyBidirectional, LegacyBidirectional);
 };
 using LegacyBidirectionalTraits = cuda::std::iterator_traits<LegacyBidirectional>;
 static_assert(cuda::std::same_as<LegacyBidirectionalTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
@@ -237,27 +237,27 @@ struct MinusNotDeclaredIter {
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   auto operator<=>(const MinusNotDeclaredIter&) const = default; // nvbug3908399
 #else
-  __host__ __device__ friend bool operator==(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
-  __host__ __device__ friend bool operator!=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
-  __host__ __device__ friend bool operator<(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
-  __host__ __device__ friend bool operator<=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
-  __host__ __device__ friend bool operator>(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
-  __host__ __device__ friend bool operator>=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator==(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator!=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>=(const MinusNotDeclaredIter&, const MinusNotDeclaredIter&) noexcept { return true;}
 #endif
 
-  __host__ __device__ const value_type& operator*() const;
-  __host__ __device__ const value_type& operator[](long) const;
-  __host__ __device__ MinusNotDeclaredIter& operator++();
-  __host__ __device__ MinusNotDeclaredIter operator++(int);
-  __host__ __device__ MinusNotDeclaredIter& operator--();
-  __host__ __device__ MinusNotDeclaredIter operator--(int);
-  __host__ __device__ MinusNotDeclaredIter& operator+=(long);
-  __host__ __device__ MinusNotDeclaredIter& operator-=(long);
+  TEST_HOST_DEVICE const value_type& operator*() const;
+  TEST_HOST_DEVICE const value_type& operator[](long) const;
+  TEST_HOST_DEVICE MinusNotDeclaredIter& operator++();
+  TEST_HOST_DEVICE MinusNotDeclaredIter operator++(int);
+  TEST_HOST_DEVICE MinusNotDeclaredIter& operator--();
+  TEST_HOST_DEVICE MinusNotDeclaredIter operator--(int);
+  TEST_HOST_DEVICE MinusNotDeclaredIter& operator+=(long);
+  TEST_HOST_DEVICE MinusNotDeclaredIter& operator-=(long);
 
   // Providing difference_type does not fully compensate for missing operator-(It, It).
-  __host__ __device__ friend MinusNotDeclaredIter operator-(MinusNotDeclaredIter, int);
-  __host__ __device__ friend MinusNotDeclaredIter operator+(MinusNotDeclaredIter, int);
-  __host__ __device__ friend MinusNotDeclaredIter operator+(int, MinusNotDeclaredIter);
+  TEST_HOST_DEVICE friend MinusNotDeclaredIter operator-(MinusNotDeclaredIter, int);
+  TEST_HOST_DEVICE friend MinusNotDeclaredIter operator+(MinusNotDeclaredIter, int);
+  TEST_HOST_DEVICE friend MinusNotDeclaredIter operator+(int, MinusNotDeclaredIter);
 };
 template <>
 struct cuda::std::incrementable_traits<MinusNotDeclaredIter> {
@@ -277,27 +277,27 @@ struct WrongSubscriptReturnType {
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   auto operator<=>(const WrongSubscriptReturnType&) const = default; // nvbug3908399
 #else
-  __host__ __device__ friend bool operator==(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
-  __host__ __device__ friend bool operator!=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
-  __host__ __device__ friend bool operator<(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
-  __host__ __device__ friend bool operator<=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
-  __host__ __device__ friend bool operator>(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
-  __host__ __device__ friend bool operator>=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator==(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator!=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>=(const WrongSubscriptReturnType&, const WrongSubscriptReturnType&) noexcept { return true;}
 #endif
 
   // The type of it[n] is not convertible to the type of *it; therefore, this is not random-access.
-  __host__ __device__ value_type& operator*() const;
-  __host__ __device__ const value_type& operator[](long) const;
-  __host__ __device__ WrongSubscriptReturnType& operator++();
-  __host__ __device__ WrongSubscriptReturnType operator++(int);
-  __host__ __device__ WrongSubscriptReturnType& operator--();
-  __host__ __device__ WrongSubscriptReturnType operator--(int);
-  __host__ __device__ WrongSubscriptReturnType& operator+=(long);
-  __host__ __device__ WrongSubscriptReturnType& operator-=(long);
-  __host__ __device__ friend short operator-(WrongSubscriptReturnType, WrongSubscriptReturnType);
-  __host__ __device__ friend WrongSubscriptReturnType operator-(WrongSubscriptReturnType, int);
-  __host__ __device__ friend WrongSubscriptReturnType operator+(WrongSubscriptReturnType, int);
-  __host__ __device__ friend WrongSubscriptReturnType operator+(int, WrongSubscriptReturnType);
+  TEST_HOST_DEVICE value_type& operator*() const;
+  TEST_HOST_DEVICE const value_type& operator[](long) const;
+  TEST_HOST_DEVICE WrongSubscriptReturnType& operator++();
+  TEST_HOST_DEVICE WrongSubscriptReturnType operator++(int);
+  TEST_HOST_DEVICE WrongSubscriptReturnType& operator--();
+  TEST_HOST_DEVICE WrongSubscriptReturnType operator--(int);
+  TEST_HOST_DEVICE WrongSubscriptReturnType& operator+=(long);
+  TEST_HOST_DEVICE WrongSubscriptReturnType& operator-=(long);
+  TEST_HOST_DEVICE friend short operator-(WrongSubscriptReturnType, WrongSubscriptReturnType);
+  TEST_HOST_DEVICE friend WrongSubscriptReturnType operator-(WrongSubscriptReturnType, int);
+  TEST_HOST_DEVICE friend WrongSubscriptReturnType operator+(WrongSubscriptReturnType, int);
+  TEST_HOST_DEVICE friend WrongSubscriptReturnType operator+(int, WrongSubscriptReturnType);
 };
 using WrongSubscriptReturnTypeTraits = cuda::std::iterator_traits<WrongSubscriptReturnType>;
 static_assert(cuda::std::same_as<WrongSubscriptReturnTypeTraits::iterator_category, cuda::std::bidirectional_iterator_tag>);
@@ -310,26 +310,26 @@ static_assert(!has_iterator_concept_v<WrongSubscriptReturnTypeTraits>);
 struct LegacyRandomAccess {
   struct value_type {};
 
-  __host__ __device__ friend bool operator==(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator==(LegacyRandomAccess, LegacyRandomAccess);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyRandomAccess, LegacyRandomAccess);
 #endif
-  __host__ __device__ friend bool operator<(LegacyRandomAccess, LegacyRandomAccess);
-  __host__ __device__ friend bool operator<=(LegacyRandomAccess, LegacyRandomAccess);
-  __host__ __device__ friend bool operator>(LegacyRandomAccess, LegacyRandomAccess);
-  __host__ __device__ friend bool operator>=(LegacyRandomAccess, LegacyRandomAccess);
-  __host__ __device__ const value_type& operator*() const;
-  __host__ __device__ const value_type& operator[](long) const;
-  __host__ __device__ LegacyRandomAccess& operator++();
-  __host__ __device__ LegacyRandomAccess operator++(int);
-  __host__ __device__ LegacyRandomAccess& operator--();
-  __host__ __device__ LegacyRandomAccess operator--(int);
-  __host__ __device__ LegacyRandomAccess& operator+=(long);
-  __host__ __device__ LegacyRandomAccess& operator-=(long);
-  __host__ __device__ friend short operator-(LegacyRandomAccess, LegacyRandomAccess);
-  __host__ __device__ friend LegacyRandomAccess operator-(LegacyRandomAccess, int);
-  __host__ __device__ friend LegacyRandomAccess operator+(LegacyRandomAccess, int);
-  __host__ __device__ friend LegacyRandomAccess operator+(int, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator<(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator<=(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator>(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend bool operator>=(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE const value_type& operator*() const;
+  TEST_HOST_DEVICE const value_type& operator[](long) const;
+  TEST_HOST_DEVICE LegacyRandomAccess& operator++();
+  TEST_HOST_DEVICE LegacyRandomAccess operator++(int);
+  TEST_HOST_DEVICE LegacyRandomAccess& operator--();
+  TEST_HOST_DEVICE LegacyRandomAccess operator--(int);
+  TEST_HOST_DEVICE LegacyRandomAccess& operator+=(long);
+  TEST_HOST_DEVICE LegacyRandomAccess& operator-=(long);
+  TEST_HOST_DEVICE friend short operator-(LegacyRandomAccess, LegacyRandomAccess);
+  TEST_HOST_DEVICE friend LegacyRandomAccess operator-(LegacyRandomAccess, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccess operator+(LegacyRandomAccess, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccess operator+(int, LegacyRandomAccess);
 };
 using LegacyRandomAccessTraits = cuda::std::iterator_traits<LegacyRandomAccess>;
 static_assert(cuda::std::same_as<LegacyRandomAccessTraits::iterator_category, cuda::std::random_access_iterator_tag>);
@@ -341,31 +341,31 @@ static_assert(!has_iterator_concept_v<LegacyRandomAccessTraits>);
 
 struct LegacyRandomAccessSpaceship {
   struct not_value_type {};
-  struct ReferenceConvertible { __host__ __device__ operator not_value_type&() const; };
+  struct ReferenceConvertible { TEST_HOST_DEVICE operator not_value_type&() const; };
 
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   auto operator<=>(const LegacyRandomAccessSpaceship&) const = default; // nvbug3908399
 #else
-  __host__ __device__ friend bool operator==(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
-  __host__ __device__ friend bool operator!=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
-  __host__ __device__ friend bool operator<(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
-  __host__ __device__ friend bool operator<=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
-  __host__ __device__ friend bool operator>(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
-  __host__ __device__ friend bool operator>=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator==(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator!=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>=(const LegacyRandomAccessSpaceship&, const LegacyRandomAccessSpaceship&) noexcept { return true;}
 #endif
 
-  __host__ __device__ not_value_type& operator*() const;
-  __host__ __device__ ReferenceConvertible operator[](long) const;
-  __host__ __device__ LegacyRandomAccessSpaceship& operator++();
-  __host__ __device__ LegacyRandomAccessSpaceship operator++(int);
-  __host__ __device__ LegacyRandomAccessSpaceship& operator--();
-  __host__ __device__ LegacyRandomAccessSpaceship operator--(int);
-  __host__ __device__ LegacyRandomAccessSpaceship& operator+=(long);
-  __host__ __device__ LegacyRandomAccessSpaceship& operator-=(long);
-  __host__ __device__ friend short operator-(LegacyRandomAccessSpaceship, LegacyRandomAccessSpaceship);
-  __host__ __device__ friend LegacyRandomAccessSpaceship operator-(LegacyRandomAccessSpaceship, int);
-  __host__ __device__ friend LegacyRandomAccessSpaceship operator+(LegacyRandomAccessSpaceship, int);
-  __host__ __device__ friend LegacyRandomAccessSpaceship operator+(int, LegacyRandomAccessSpaceship);
+  TEST_HOST_DEVICE not_value_type& operator*() const;
+  TEST_HOST_DEVICE ReferenceConvertible operator[](long) const;
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship& operator++();
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship operator++(int);
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship& operator--();
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship operator--(int);
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship& operator+=(long);
+  TEST_HOST_DEVICE LegacyRandomAccessSpaceship& operator-=(long);
+  TEST_HOST_DEVICE friend short operator-(LegacyRandomAccessSpaceship, LegacyRandomAccessSpaceship);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpaceship operator-(LegacyRandomAccessSpaceship, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpaceship operator+(LegacyRandomAccessSpaceship, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpaceship operator+(int, LegacyRandomAccessSpaceship);
 };
 template <>
 struct cuda::std::indirectly_readable_traits<LegacyRandomAccessSpaceship> {
@@ -386,9 +386,9 @@ static_assert(!has_iterator_concept_v<LegacyRandomAccessSpaceshipTraits>);
 // For output iterators, value_type, difference_type, and reference may be void.
 struct BareLegacyOutput {
   struct Empty {};
-  __host__ __device__ Empty operator*() const;
-  __host__ __device__ BareLegacyOutput& operator++();
-  __host__ __device__ BareLegacyOutput operator++(int);
+  TEST_HOST_DEVICE Empty operator*() const;
+  TEST_HOST_DEVICE BareLegacyOutput& operator++();
+  TEST_HOST_DEVICE BareLegacyOutput operator++(int);
 };
 using BareLegacyOutputTraits = cuda::std::iterator_traits<BareLegacyOutput>;
 static_assert(cuda::std::same_as<BareLegacyOutputTraits::iterator_category, cuda::std::output_iterator_tag>);
@@ -401,10 +401,10 @@ static_assert(!has_iterator_concept_v<BareLegacyOutputTraits>);
 // The operator- means we get difference_type.
 struct LegacyOutputWithMinus {
   struct Empty {};
-  __host__ __device__ Empty operator*() const;
-  __host__ __device__ LegacyOutputWithMinus& operator++();
-  __host__ __device__ LegacyOutputWithMinus operator++(int);
-  __host__ __device__ friend short operator-(LegacyOutputWithMinus, LegacyOutputWithMinus);
+  TEST_HOST_DEVICE Empty operator*() const;
+  TEST_HOST_DEVICE LegacyOutputWithMinus& operator++();
+  TEST_HOST_DEVICE LegacyOutputWithMinus operator++(int);
+  TEST_HOST_DEVICE friend short operator-(LegacyOutputWithMinus, LegacyOutputWithMinus);
   // Lacking operator==, this is a LegacyIterator but not a LegacyInputIterator.
 };
 using LegacyOutputWithMinusTraits = cuda::std::iterator_traits<LegacyOutputWithMinus>;
@@ -420,14 +420,14 @@ struct LegacyOutputWithMemberTypes {
   struct reference {};  // ignored
   using difference_type = long;
 
-  __host__ __device__ friend bool operator==(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
+  TEST_HOST_DEVICE friend bool operator==(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
+  TEST_HOST_DEVICE friend bool operator!=(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
 #endif
-  __host__ __device__ reference operator*() const;
-  __host__ __device__ LegacyOutputWithMemberTypes& operator++();
-  __host__ __device__ LegacyOutputWithMemberTypes operator++(int);
-  __host__ __device__ friend short operator-(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes); // ignored
+  TEST_HOST_DEVICE reference operator*() const;
+  TEST_HOST_DEVICE LegacyOutputWithMemberTypes& operator++();
+  TEST_HOST_DEVICE LegacyOutputWithMemberTypes operator++(int);
+  TEST_HOST_DEVICE friend short operator-(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes); // ignored
   // Since (*it) is not convertible to value_type, this is not a LegacyInputIterator.
 };
 using LegacyOutputWithMemberTypesTraits = cuda::std::iterator_traits<LegacyOutputWithMemberTypes>;
@@ -444,26 +444,26 @@ struct LegacyRandomAccessSpecialized {
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
   auto operator<=>(const LegacyRandomAccessSpecialized&) const = default; // nvbug3908399
 #else
-  __host__ __device__ friend bool operator==(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
-  __host__ __device__ friend bool operator!=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
-  __host__ __device__ friend bool operator<(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
-  __host__ __device__ friend bool operator<=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
-  __host__ __device__ friend bool operator>(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
-  __host__ __device__ friend bool operator>=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator==(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator!=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator<=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
+  TEST_HOST_DEVICE friend bool operator>=(const LegacyRandomAccessSpecialized&, const LegacyRandomAccessSpecialized&) noexcept { return true;}
 #endif
 
-  __host__ __device__ not_value_type& operator*() const;
-  __host__ __device__ not_value_type& operator[](long) const;
-  __host__ __device__ LegacyRandomAccessSpecialized& operator++();
-  __host__ __device__ LegacyRandomAccessSpecialized operator++(int);
-  __host__ __device__ LegacyRandomAccessSpecialized& operator--();
-  __host__ __device__ LegacyRandomAccessSpecialized operator--(int);
-  __host__ __device__ LegacyRandomAccessSpecialized& operator+=(long);
-  __host__ __device__ LegacyRandomAccessSpecialized& operator-=(long);
-  __host__ __device__ friend long operator-(LegacyRandomAccessSpecialized, LegacyRandomAccessSpecialized);
-  __host__ __device__ friend LegacyRandomAccessSpecialized operator-(LegacyRandomAccessSpecialized, int);
-  __host__ __device__ friend LegacyRandomAccessSpecialized operator+(LegacyRandomAccessSpecialized, int);
-  __host__ __device__ friend LegacyRandomAccessSpecialized operator+(int, LegacyRandomAccessSpecialized);
+  TEST_HOST_DEVICE not_value_type& operator*() const;
+  TEST_HOST_DEVICE not_value_type& operator[](long) const;
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized& operator++();
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized operator++(int);
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized& operator--();
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized operator--(int);
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized& operator+=(long);
+  TEST_HOST_DEVICE LegacyRandomAccessSpecialized& operator-=(long);
+  TEST_HOST_DEVICE friend long operator-(LegacyRandomAccessSpecialized, LegacyRandomAccessSpecialized);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpecialized operator-(LegacyRandomAccessSpecialized, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpecialized operator+(LegacyRandomAccessSpecialized, int);
+  TEST_HOST_DEVICE friend LegacyRandomAccessSpecialized operator+(int, LegacyRandomAccessSpecialized);
 };
 template <>
 struct cuda::std::iterator_traits<LegacyRandomAccessSpecialized>

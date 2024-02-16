@@ -23,16 +23,16 @@
 #endif // !TEST_COMPILER_MSVC_2017
 
 struct NoDefault {
-    __host__ __device__ TEST_CONSTEXPR_CXX14 NoDefault(int) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 NoDefault(int) { }
 };
 
 struct NonTrivialCopy {
-    __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy() { }
-    __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy(NonTrivialCopy const&) { }
-    __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialCopy& operator=(NonTrivialCopy const&) { return *this; }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 NonTrivialCopy() { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 NonTrivialCopy(NonTrivialCopy const&) { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 NonTrivialCopy& operator=(NonTrivialCopy const&) { return *this; }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
 {
     {
         typedef cuda::std::array<double, 3> Array;

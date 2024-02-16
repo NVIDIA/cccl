@@ -31,11 +31,11 @@
 
 template <class T = void>
 struct NonDefaultConstructible {
-  __host__ __device__ constexpr NonDefaultConstructible() {
+  TEST_HOST_DEVICE constexpr NonDefaultConstructible() {
       static_assert(!cuda::std::is_same<T, T>::value, "Default Ctor instantiated");
   }
 
-  __host__ __device__ explicit constexpr NonDefaultConstructible(int) {}
+  TEST_HOST_DEVICE explicit constexpr NonDefaultConstructible(int) {}
 };
 
 

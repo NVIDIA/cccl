@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_move_assignable()
 {
     static_assert(( cuda::std::is_move_assignable<T>::value), "");
@@ -24,7 +24,7 @@ void test_is_move_assignable()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_move_assignable()
 {
     static_assert((!cuda::std::is_move_assignable<T>::value), "");
@@ -40,7 +40,7 @@ class Empty
 class NotEmpty
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -53,7 +53,7 @@ struct bit_zero
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A();
 };
 

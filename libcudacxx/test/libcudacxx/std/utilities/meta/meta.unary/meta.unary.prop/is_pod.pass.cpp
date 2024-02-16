@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_pod()
 {
     static_assert( cuda::std::is_pod<T>::value, "");
@@ -30,7 +30,7 @@ void test_is_pod()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_pod()
 {
     static_assert(!cuda::std::is_pod<T>::value, "");
@@ -48,7 +48,7 @@ void test_is_not_pod()
 class Class
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Class();
 };
 

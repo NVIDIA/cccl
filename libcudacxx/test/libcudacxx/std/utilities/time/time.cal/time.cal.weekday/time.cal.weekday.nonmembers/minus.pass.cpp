@@ -27,7 +27,7 @@
 #include "../../euclidian.h"
 
 template <typename WD, typename Ds>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexpr()
 {
     {

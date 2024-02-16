@@ -18,7 +18,7 @@
 
 #include "test_iterators.h"
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
   // Pointer.
   {

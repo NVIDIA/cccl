@@ -18,7 +18,7 @@
 #include "test_range.h"
 
 template <template <class...> class I>
-__host__ __device__ constexpr bool check_bidirectional_range() {
+TEST_HOST_DEVICE constexpr bool check_bidirectional_range() {
   constexpr bool result = cuda::std::ranges::bidirectional_range<test_range<I> >;
   static_assert(cuda::std::ranges::bidirectional_range<test_range<I> const> == result);
   static_assert(cuda::std::ranges::bidirectional_range<test_non_const_common_range<I> > == result);

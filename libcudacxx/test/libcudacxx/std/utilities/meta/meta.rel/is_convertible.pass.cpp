@@ -13,7 +13,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_convertible()
 {
     static_assert((cuda::std::is_convertible<T, U>::value), "");
@@ -29,7 +29,7 @@ void test_is_convertible()
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_convertible()
 {
     static_assert((!cuda::std::is_convertible<T, U>::value), "");
@@ -49,12 +49,12 @@ typedef void ConstFunction() const;
 typedef char Array[1];
 
 struct StringType {
-  __host__ __device__
+  TEST_HOST_DEVICE
   StringType(const char*) {}
 };
 
 class NonCopyable {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NonCopyable(NonCopyable&);
 };
 

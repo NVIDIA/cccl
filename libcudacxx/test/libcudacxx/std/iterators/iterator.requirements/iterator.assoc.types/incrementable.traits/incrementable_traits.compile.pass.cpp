@@ -49,7 +49,7 @@ _LIBCUDACXX_CONCEPT check_difference_type_matches = _LIBCUDACXX_FRAGMENT(check_d
 
 
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_incrementable_traits() {
+TEST_HOST_DEVICE constexpr bool check_incrementable_traits() {
   constexpr bool result = check_difference_type_matches<T, Expected>;
   static_assert(check_difference_type_matches<T const, Expected> == result);
   return result;
@@ -101,7 +101,7 @@ struct non_integral_difference_type {
 static_assert(check_incrementable_traits<non_integral_difference_type, void>());
 
 struct int_subtraction {
-  __host__ __device__ friend int operator-(int_subtraction, int_subtraction);
+  TEST_HOST_DEVICE friend int operator-(int_subtraction, int_subtraction);
 };
 static_assert(check_incrementable_traits<int_subtraction, int>());
 #ifdef INVESTIGATE_VOLATILE_REFERENCES
@@ -110,13 +110,13 @@ static_assert(!check_incrementable_traits<int_subtraction const volatile&, int>(
 #endif
 
 struct char_subtraction {
-  __host__ __device__ friend char operator-(char_subtraction, char_subtraction);
+  TEST_HOST_DEVICE friend char operator-(char_subtraction, char_subtraction);
 };
 static_assert(check_incrementable_traits<char_subtraction, signed char>());
 
 struct unsigned_int_subtraction_with_cv {
-  __host__ __device__ friend unsigned int operator-(unsigned_int_subtraction_with_cv const&, unsigned_int_subtraction_with_cv const&);
-  __host__ __device__ friend unsigned int operator-(unsigned_int_subtraction_with_cv const volatile&, unsigned_int_subtraction_with_cv const volatile&);
+  TEST_HOST_DEVICE friend unsigned int operator-(unsigned_int_subtraction_with_cv const&, unsigned_int_subtraction_with_cv const&);
+  TEST_HOST_DEVICE friend unsigned int operator-(unsigned_int_subtraction_with_cv const volatile&, unsigned_int_subtraction_with_cv const volatile&);
 };
 static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv, int>());
 static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv volatile&, int>());
@@ -164,13 +164,13 @@ TEST_POINTER_TO_MEMBER_FUNCTION(empty, volatile);
 TEST_POINTER_TO_MEMBER_FUNCTION(empty, const volatile);
 
 struct void_subtraction {
-  __host__ __device__ friend void operator-(void_subtraction, void_subtraction);
+  TEST_HOST_DEVICE friend void operator-(void_subtraction, void_subtraction);
 };
 static_assert(!check_has_difference_type<void_subtraction>);
 
 #define TEST_NOT_DIFFERENCE_TYPE(S, qual1, qual2) \
   struct S {                                      \
-    __host__ __device__                           \
+    TEST_HOST_DEVICE                           \
     friend int operator-(S qual1, S qual2);       \
   };                                              \
   static_assert(!check_has_difference_type<S>, "")

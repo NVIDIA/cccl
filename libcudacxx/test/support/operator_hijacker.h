@@ -18,17 +18,17 @@
 ///
 /// The class has some additional operations to be usable in all containers.
 struct operator_hijacker {
-  __host__ __device__ bool operator<(const operator_hijacker&) const { return true; }
-  __host__ __device__ bool operator==(const operator_hijacker&) const { return true; }
+  TEST_HOST_DEVICE bool operator<(const operator_hijacker&) const { return true; }
+  TEST_HOST_DEVICE bool operator==(const operator_hijacker&) const { return true; }
 
   template <typename T>
-  __host__ __device__ friend void operator&(T&&) = delete;
+  TEST_HOST_DEVICE friend void operator&(T&&) = delete;
   template <class T, class U>
-  __host__ __device__ friend void operator,(T&&, U&&) = delete;
+  TEST_HOST_DEVICE friend void operator,(T&&, U&&) = delete;
   template <class T, class U>
-  __host__ __device__ friend void operator&&(T&&, U&&) = delete;
+  TEST_HOST_DEVICE friend void operator&&(T&&, U&&) = delete;
   template <class T, class U>
-  __host__ __device__ friend void operator||(T&&, U&&) = delete;
+  TEST_HOST_DEVICE friend void operator||(T&&, U&&) = delete;
 };
 
 static_assert(cuda::std::is_trivially_copyable<operator_hijacker>::value &&     //

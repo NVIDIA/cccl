@@ -17,7 +17,7 @@
 enum Enum {zero, one_};
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_remove_extent()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::remove_extent<T>::type);

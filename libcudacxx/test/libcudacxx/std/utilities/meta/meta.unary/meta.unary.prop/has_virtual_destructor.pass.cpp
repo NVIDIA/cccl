@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_virtual_destructor()
 {
     static_assert( cuda::std::has_virtual_destructor<T>::value, "");
@@ -31,7 +31,7 @@ void test_has_virtual_destructor()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_virtual_destructor()
 {
     static_assert(!cuda::std::has_virtual_destructor<T>::value, "");
@@ -52,7 +52,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -65,13 +65,13 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~A();
 };
 

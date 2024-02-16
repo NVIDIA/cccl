@@ -22,14 +22,14 @@ TEST_NV_DIAG_SUPPRESS(declared_but_not_referenced)
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit A(int);
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(int, double);
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(int, long, double);
 private:
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(char);
 };
 
@@ -38,46 +38,46 @@ struct Derived : public Base {};
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual void foo() = 0;
 };
 
 class AbstractDestructor
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~AbstractDestructor() = 0;
 };
 
 struct PrivateDtor {
-    __host__ __device__
+    TEST_HOST_DEVICE
   PrivateDtor(int) {}
 private:
-    __host__ __device__
+    TEST_HOST_DEVICE
   ~PrivateDtor() {}
 };
 
 struct S {
    template <class T>
-    __host__ __device__
+    TEST_HOST_DEVICE
    explicit
    operator T () const;
 };
 
 template <class To>
 struct ImplicitTo {
-    __host__ __device__
+    TEST_HOST_DEVICE
   operator To();
 };
 
 template <class To>
 struct ExplicitTo {
-    __host__ __device__
+    TEST_HOST_DEVICE
    explicit operator To ();
 };
 
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_constructible()
 {
     static_assert( (cuda::std::is_constructible<T>::value), "");
@@ -92,7 +92,7 @@ void test_is_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0>::value), "");
@@ -107,7 +107,7 @@ void test_is_constructible()
 }
 
 template <class T, class A0, class A1>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0, A1>::value), "");
@@ -122,7 +122,7 @@ void test_is_constructible()
 }
 
 template <class T, class A0, class A1, class A2>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_constructible()
 {
     static_assert(( cuda::std::is_constructible<T, A0, A1, A2>::value), "");
@@ -137,7 +137,7 @@ void test_is_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_constructible()
 {
     static_assert((!cuda::std::is_constructible<T>::value), "");
@@ -152,7 +152,7 @@ void test_is_not_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_constructible()
 {
     static_assert((!cuda::std::is_constructible<T, A0>::value), "");
@@ -169,10 +169,10 @@ void test_is_not_constructible()
 
 #if defined(TEST_CLANG_VER)
 template <class T = int, class = decltype(static_cast<T&&>(cuda::std::declval<double&>()))>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool  clang_disallows_valid_static_cast_test(int) { return false; };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool clang_disallows_valid_static_cast_test(long) { return true; }
 
 static constexpr bool clang_disallows_valid_static_cast_bug =

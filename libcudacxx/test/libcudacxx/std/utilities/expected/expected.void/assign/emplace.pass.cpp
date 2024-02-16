@@ -34,7 +34,7 @@ static_assert(!EmplaceNoexcept<int>, "");
 
 static_assert(EmplaceNoexcept<cuda::std::expected<void, int>>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // has_value
   {
     cuda::std::expected<void, int> e;

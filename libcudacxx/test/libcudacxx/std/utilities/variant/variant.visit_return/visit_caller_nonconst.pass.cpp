@@ -27,19 +27,19 @@
 struct A {};
 template<class ReturnType>
 struct Visitor {
-  __host__ __device__
+  TEST_HOST_DEVICE
   auto operator()(A&) {
       return ReturnType{};
   }
 };
 template<>
 struct Visitor<void> {
-  __host__ __device__
+  TEST_HOST_DEVICE
   void operator()(A&) {}
 };
 
 template <typename ReturnType>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_caller_accepts_nonconst() {
   cuda::std::variant<A> v;
   cuda::std::visit<ReturnType>(Visitor<ReturnType>{}, v);

@@ -26,16 +26,16 @@
 static_assert(cuda::std::is_swappable_v<cuda::std::expected<void, int>>, "");
 
 struct NotSwappable {
-  __host__ __device__ NotSwappable& operator=(const NotSwappable&) = delete;
+  TEST_HOST_DEVICE NotSwappable& operator=(const NotSwappable&) = delete;
 };
-__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
+TEST_HOST_DEVICE void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<E>
 static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotSwappable>>, "");
 
 struct NotMoveContructible {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
+  TEST_HOST_DEVICE friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<E>
@@ -43,8 +43,8 @@ static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotMoveContru
 
 // Test noexcept
 struct MoveMayThrow {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
-  __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) noexcept(false);
+  TEST_HOST_DEVICE friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>, "");
 
@@ -53,12 +53,12 @@ static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>,
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, MoveMayThrow>>, "");
 
 struct SwapMayThrow {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
+  TEST_HOST_DEVICE friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, SwapMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()
   {
     cuda::std::expected<void, int> x;
@@ -118,7 +118,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   // !e1.has_value() && e2.has_value()
   {

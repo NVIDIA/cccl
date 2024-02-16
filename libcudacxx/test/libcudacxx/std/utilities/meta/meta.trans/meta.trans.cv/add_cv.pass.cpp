@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_cv_imp()
 {
     ASSERT_SAME_TYPE(const volatile U, typename cuda::std::add_cv<T>::type);
@@ -25,7 +25,7 @@ void test_add_cv_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_cv()
 {
     test_add_cv_imp<T, const volatile T>();

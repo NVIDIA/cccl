@@ -19,12 +19,12 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test() {
     cuda::std::reverse_iterator<It> r;
     unused(r);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
     test<bidirectional_iterator<const char*> >();
     test<random_access_iterator<char*> >();
     test<char*>();

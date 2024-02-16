@@ -38,11 +38,11 @@ struct FooIter {
   using difference_type = void*;
   using pointer = void*;
   using reference = char&;
-  __host__ __device__ bool& operator*() const;
-  __host__ __device__ FooIter& operator++();
-  __host__ __device__ FooIter& operator--();
-  __host__ __device__ FooIter operator++(int);
-  __host__ __device__ FooIter operator--(int);
+  TEST_HOST_DEVICE bool& operator*() const;
+  TEST_HOST_DEVICE FooIter& operator++();
+  TEST_HOST_DEVICE FooIter& operator--();
+  TEST_HOST_DEVICE FooIter operator++(int);
+  TEST_HOST_DEVICE FooIter operator--(int);
 };
 
 #if TEST_STD_VER > 2014
@@ -72,11 +72,11 @@ struct DummyIt {
   typedef ValueType* pointer;
   typedef Reference reference;
 
-  __host__ __device__ Reference operator*() const;
+  TEST_HOST_DEVICE Reference operator*() const;
 };
 
 template <class It>
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   typedef cuda::std::move_iterator<It> R;
   typedef cuda::std::iterator_traits<It> T;
   static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");

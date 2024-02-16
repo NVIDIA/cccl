@@ -43,8 +43,8 @@ static_assert(!cuda::std::is_invocable_v<RangeCEndT, Incomplete(&&)[42]>);
 
 struct EndMember {
   int x;
-  __host__ __device__ const int *begin() const;
-  __host__ __device__ constexpr const int *end() const { return &x; }
+  TEST_HOST_DEVICE const int *begin() const;
+  TEST_HOST_DEVICE constexpr const int *end() const { return &x; }
 };
 
 // Ensure that we can't call with rvalues with borrowing disabled.
@@ -58,12 +58,12 @@ static_assert( cuda::std::is_invocable_v<RangeCEndT, EndMember const&>);
 static_assert(!cuda::std::is_invocable_v<RangeCEndT, EndMember const&&>);
 
 struct Different {
-  __host__ __device__ char *begin();
-  __host__ __device__ sentinel_wrapper<char*>& end();
-  __host__ __device__ short *begin() const;
-  __host__ __device__ sentinel_wrapper<short*>& end() const;
+  TEST_HOST_DEVICE char *begin();
+  TEST_HOST_DEVICE sentinel_wrapper<char*>& end();
+  TEST_HOST_DEVICE short *begin() const;
+  TEST_HOST_DEVICE sentinel_wrapper<short*>& end() const;
 };
-__host__ __device__ constexpr bool testReturnTypes() {
+TEST_HOST_DEVICE constexpr bool testReturnTypes() {
   {
     int *x[2] = {};
     unused(x);
@@ -85,7 +85,7 @@ __host__ __device__ constexpr bool testReturnTypes() {
   return true;
 }
 
-__host__ __device__ constexpr bool testArray() {
+TEST_HOST_DEVICE constexpr bool testArray() {
   int a[2] = {};
   assert(cuda::std::ranges::end(a) == a + 2);
   assert(cuda::std::ranges::cend(a) == a + 2);
@@ -102,35 +102,35 @@ __host__ __device__ constexpr bool testArray() {
 }
 
 struct EndMemberReturnsInt {
-  __host__ __device__ int begin() const;
-  __host__ __device__ int end() const;
+  TEST_HOST_DEVICE int begin() const;
+  TEST_HOST_DEVICE int end() const;
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndMemberReturnsInt const&>);
 
 struct EndMemberReturnsVoidPtr {
-  __host__ __device__ const void *begin() const;
-  __host__ __device__ const void *end() const;
+  TEST_HOST_DEVICE const void *begin() const;
+  TEST_HOST_DEVICE const void *end() const;
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndMemberReturnsVoidPtr const&>);
 
 struct PtrConvertible {
-  __host__ __device__ operator int*() const;
+  TEST_HOST_DEVICE operator int*() const;
 };
 struct PtrConvertibleEndMember {
-  __host__ __device__ PtrConvertible begin() const;
-  __host__ __device__ PtrConvertible end() const;
+  TEST_HOST_DEVICE PtrConvertible begin() const;
+  TEST_HOST_DEVICE PtrConvertible end() const;
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, PtrConvertibleEndMember const&>);
 
 struct NoBeginMember {
-  __host__ __device__ constexpr const int *end();
+  TEST_HOST_DEVICE constexpr const int *end();
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, NoBeginMember const&>);
 
 struct NonConstEndMember {
   int x;
-  __host__ __device__ constexpr int *begin() { return nullptr; }
-  __host__ __device__ constexpr int *end() { return &x; }
+  TEST_HOST_DEVICE constexpr int *begin() { return nullptr; }
+  TEST_HOST_DEVICE constexpr int *end() { return &x; }
 };
 static_assert( cuda::std::is_invocable_v<RangeEndT,  NonConstEndMember &>);
 static_assert(!cuda::std::is_invocable_v<RangeEndT,  NonConstEndMember const&>);
@@ -138,33 +138,33 @@ static_assert(!cuda::std::is_invocable_v<RangeCEndT, NonConstEndMember &>);
 static_assert(!cuda::std::is_invocable_v<RangeCEndT, NonConstEndMember const&>);
 
 struct EnabledBorrowingEndMember {
-  __host__ __device__ constexpr int *begin() const { return nullptr; }
-  __host__ __device__ constexpr int *end() const { return &globalBuff[0]; }
+  TEST_HOST_DEVICE constexpr int *begin() const { return nullptr; }
+  TEST_HOST_DEVICE constexpr int *end() const { return &globalBuff[0]; }
 };
 template<>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<EnabledBorrowingEndMember> = true;
 
 struct EndMemberFunction {
   int x;
-  __host__ __device__ constexpr const int *begin() const { return nullptr; }
-  __host__ __device__ constexpr const int *end() const { return &x; }
-  __host__ __device__ friend constexpr int *end(EndMemberFunction const&);
+  TEST_HOST_DEVICE constexpr const int *begin() const { return nullptr; }
+  TEST_HOST_DEVICE constexpr const int *end() const { return &x; }
+  TEST_HOST_DEVICE friend constexpr int *end(EndMemberFunction const&);
 };
 
 struct Empty { };
 struct EmptyEndMember {
-  __host__ __device__ Empty begin() const;
-  __host__ __device__ Empty end() const;
+  TEST_HOST_DEVICE Empty begin() const;
+  TEST_HOST_DEVICE Empty end() const;
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EmptyEndMember const&>);
 
 struct EmptyPtrEndMember {
   Empty x;
-  __host__ __device__ constexpr const Empty *begin() const { return nullptr; }
-  __host__ __device__ constexpr const Empty *end() const { return &x; }
+  TEST_HOST_DEVICE constexpr const Empty *begin() const { return nullptr; }
+  TEST_HOST_DEVICE constexpr const Empty *end() const { return &x; }
 };
 
-__host__ __device__ constexpr bool testEndMember() {
+TEST_HOST_DEVICE constexpr bool testEndMember() {
   EndMember a{};
   assert(cuda::std::ranges::end(a) == &a.x);
   assert(cuda::std::ranges::cend(a) == &a.x);
@@ -190,8 +190,8 @@ __host__ __device__ constexpr bool testEndMember() {
 
 struct EndFunction {
   int x;
-  __host__ __device__ friend constexpr const int *begin(EndFunction const&) { return nullptr; }
-  __host__ __device__ friend constexpr const int *end(EndFunction const& bf) { return &bf.x; }
+  TEST_HOST_DEVICE friend constexpr const int *begin(EndFunction const&) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr const int *end(EndFunction const& bf) { return &bf.x; }
 };
 
 static_assert( cuda::std::is_invocable_v<RangeEndT, EndFunction const&>);
@@ -204,75 +204,75 @@ static_assert( cuda::std::is_invocable_v<RangeCEndT, EndFunction const&>);
 static_assert( cuda::std::is_invocable_v<RangeCEndT, EndFunction &>);
 
 struct EndFunctionReturnsInt {
-  __host__ __device__ friend constexpr int begin(EndFunctionReturnsInt const&);
-  __host__ __device__ friend constexpr int end(EndFunctionReturnsInt const&);
+  TEST_HOST_DEVICE friend constexpr int begin(EndFunctionReturnsInt const&);
+  TEST_HOST_DEVICE friend constexpr int end(EndFunctionReturnsInt const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsInt const&>);
 
 struct EndFunctionReturnsVoidPtr {
-  __host__ __device__ friend constexpr void *begin(EndFunctionReturnsVoidPtr const&);
-  __host__ __device__ friend constexpr void *end(EndFunctionReturnsVoidPtr const&);
+  TEST_HOST_DEVICE friend constexpr void *begin(EndFunctionReturnsVoidPtr const&);
+  TEST_HOST_DEVICE friend constexpr void *end(EndFunctionReturnsVoidPtr const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsVoidPtr const&>);
 
 struct EndFunctionReturnsEmpty {
-  __host__ __device__ friend constexpr Empty begin(EndFunctionReturnsEmpty const&);
-  __host__ __device__ friend constexpr Empty end(EndFunctionReturnsEmpty const&);
+  TEST_HOST_DEVICE friend constexpr Empty begin(EndFunctionReturnsEmpty const&);
+  TEST_HOST_DEVICE friend constexpr Empty end(EndFunctionReturnsEmpty const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsEmpty const&>);
 
 struct EndFunctionReturnsPtrConvertible {
-  __host__ __device__ friend constexpr PtrConvertible begin(EndFunctionReturnsPtrConvertible const&);
-  __host__ __device__ friend constexpr PtrConvertible end(EndFunctionReturnsPtrConvertible const&);
+  TEST_HOST_DEVICE friend constexpr PtrConvertible begin(EndFunctionReturnsPtrConvertible const&);
+  TEST_HOST_DEVICE friend constexpr PtrConvertible end(EndFunctionReturnsPtrConvertible const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, EndFunctionReturnsPtrConvertible const&>);
 
 struct NoBeginFunction {
-  __host__ __device__ friend constexpr const int *end(NoBeginFunction const&);
+  TEST_HOST_DEVICE friend constexpr const int *end(NoBeginFunction const&);
 };
 static_assert(!cuda::std::is_invocable_v<RangeEndT, NoBeginFunction const&>);
 
 struct EndFunctionByValue {
-  __host__ __device__ friend constexpr int *begin(EndFunctionByValue) { return nullptr; }
-  __host__ __device__ friend constexpr int *end(EndFunctionByValue) { return &globalBuff[1]; }
+  TEST_HOST_DEVICE friend constexpr int *begin(EndFunctionByValue) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr int *end(EndFunctionByValue) { return &globalBuff[1]; }
 };
 static_assert(!cuda::std::is_invocable_v<RangeCEndT, EndFunctionByValue>);
 
 struct EndFunctionEnabledBorrowing {
-  __host__ __device__ friend constexpr int *begin(EndFunctionEnabledBorrowing) { return nullptr; }
-  __host__ __device__ friend constexpr int *end(EndFunctionEnabledBorrowing) { return &globalBuff[2]; }
+  TEST_HOST_DEVICE friend constexpr int *begin(EndFunctionEnabledBorrowing) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr int *end(EndFunctionEnabledBorrowing) { return &globalBuff[2]; }
 };
 template<>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<EndFunctionEnabledBorrowing> = true;
 
 struct EndFunctionReturnsEmptyPtr {
   Empty x;
-  __host__ __device__ friend constexpr const Empty *begin(EndFunctionReturnsEmptyPtr const&) { return nullptr; }
-  __host__ __device__ friend constexpr const Empty *end(EndFunctionReturnsEmptyPtr const& bf) { return &bf.x; }
+  TEST_HOST_DEVICE friend constexpr const Empty *begin(EndFunctionReturnsEmptyPtr const&) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr const Empty *end(EndFunctionReturnsEmptyPtr const& bf) { return &bf.x; }
 };
 
 struct EndFunctionWithDataMember {
   int x;
   int end;
-  __host__ __device__ friend constexpr const int *begin(EndFunctionWithDataMember const&) { return nullptr; }
-  __host__ __device__ friend constexpr const int *end(EndFunctionWithDataMember const& bf) { return &bf.x; }
+  TEST_HOST_DEVICE friend constexpr const int *begin(EndFunctionWithDataMember const&) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr const int *end(EndFunctionWithDataMember const& bf) { return &bf.x; }
 };
 
 struct EndFunctionWithPrivateEndMember {
   int y;
-  __host__ __device__ friend constexpr const int *begin(EndFunctionWithPrivateEndMember const&) { return nullptr; }
-  __host__ __device__ friend constexpr const int *end(EndFunctionWithPrivateEndMember const& bf) { return &bf.y; }
+  TEST_HOST_DEVICE friend constexpr const int *begin(EndFunctionWithPrivateEndMember const&) { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr const int *end(EndFunctionWithPrivateEndMember const& bf) { return &bf.y; }
 private:
-  __host__ __device__ const int *end() const;
+  TEST_HOST_DEVICE const int *end() const;
 };
 
 struct BeginMemberEndFunction {
   int x;
-  __host__ __device__ constexpr const int *begin() const { return nullptr; }
-  __host__ __device__ friend constexpr const int *end(BeginMemberEndFunction const& bf) { return &bf.x; }
+  TEST_HOST_DEVICE constexpr const int *begin() const { return nullptr; }
+  TEST_HOST_DEVICE friend constexpr const int *end(BeginMemberEndFunction const& bf) { return &bf.x; }
 };
 
-__host__ __device__ constexpr bool testEndFunction() {
+TEST_HOST_DEVICE constexpr bool testEndFunction() {
   const EndFunction a{};
   assert(cuda::std::ranges::end(a) == &a.x);
   assert(cuda::std::ranges::cend(a) == &a.x);
@@ -323,16 +323,16 @@ ASSERT_NOEXCEPT(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>()));
 
 #if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
 _LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberEnd {
-  __host__ __device__ ThrowingIterator<int> begin() const;
-  __host__ __device__ ThrowingIterator<int> end() const noexcept; // auto(t.end()) doesn't throw
+  TEST_HOST_DEVICE ThrowingIterator<int> begin() const;
+  TEST_HOST_DEVICE ThrowingIterator<int> end() const noexcept; // auto(t.end()) doesn't throw
 } ntme;
 static_assert(noexcept(cuda::std::ranges::end(ntme)));
 static_assert(noexcept(cuda::std::ranges::cend(ntme)));
 
 _LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowADLEnd {
-  __host__ __device__ ThrowingIterator<int> begin() const;
-  __host__ __device__ friend ThrowingIterator<int> end(NoThrowADLEnd&) noexcept;  // auto(end(t)) doesn't throw
-  __host__ __device__ friend ThrowingIterator<int> end(const NoThrowADLEnd&) noexcept;
+  TEST_HOST_DEVICE ThrowingIterator<int> begin() const;
+  TEST_HOST_DEVICE friend ThrowingIterator<int> end(NoThrowADLEnd&) noexcept;  // auto(end(t)) doesn't throw
+  TEST_HOST_DEVICE friend ThrowingIterator<int> end(const NoThrowADLEnd&) noexcept;
 } ntae;
 static_assert(noexcept(cuda::std::ranges::end(ntae)));
 static_assert(noexcept(cuda::std::ranges::cend(ntae)));
@@ -340,16 +340,16 @@ static_assert(noexcept(cuda::std::ranges::cend(ntae)));
 
 #if !defined(TEST_COMPILER_ICC)
 _LIBCUDACXX_CPO_ACCESSIBILITY struct NoThrowMemberEndReturnsRef {
-  __host__ __device__ ThrowingIterator<int> begin() const;
-  __host__ __device__ ThrowingIterator<int>& end() const noexcept; // auto(t.end()) may throw
+  TEST_HOST_DEVICE ThrowingIterator<int> begin() const;
+  TEST_HOST_DEVICE ThrowingIterator<int>& end() const noexcept; // auto(t.end()) may throw
 } ntmerr;
 static_assert(!noexcept(cuda::std::ranges::end(ntmerr)));
 static_assert(!noexcept(cuda::std::ranges::cend(ntmerr)));
 #endif // !TEST_COMPILER_ICC
 
 _LIBCUDACXX_CPO_ACCESSIBILITY struct EndReturnsArrayRef {
-  __host__ __device__ auto begin() const noexcept -> int(&)[10];
-  __host__ __device__ auto end() const noexcept -> int(&)[10];
+  TEST_HOST_DEVICE auto begin() const noexcept -> int(&)[10];
+  TEST_HOST_DEVICE auto end() const noexcept -> int(&)[10];
 } erar;
 static_assert(noexcept(cuda::std::ranges::end(erar)));
 static_assert(noexcept(cuda::std::ranges::cend(erar)));

@@ -29,7 +29,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     static_assert(cuda::std::numeric_limits<T>::is_specialized,
@@ -67,7 +67,7 @@ int main(int, char**)
 #endif
     test<float>();
     test<double>();
-#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE    
+#ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
     test<long double>();
 #endif
     static_assert(!cuda::std::numeric_limits<cuda::std::complex<double> >::is_specialized,

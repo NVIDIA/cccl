@@ -81,7 +81,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 do_test()
 {
@@ -126,7 +126,7 @@ do_test()
 }
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     do_test<A, T, Selector>();

@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_literal_type()
 {
     static_assert( cuda::std::is_literal_type<T>::value, "");
@@ -34,7 +34,7 @@ void test_is_literal_type()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_literal_type()
 {
     static_assert(!cuda::std::is_literal_type<T>::value, "");
@@ -55,7 +55,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -68,7 +68,7 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 

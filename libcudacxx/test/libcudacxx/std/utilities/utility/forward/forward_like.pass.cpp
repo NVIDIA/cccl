@@ -85,7 +85,7 @@ static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<T&>(cuda::st
 
 static_assert(noexcept(cuda::std::forward_like<T>(cuda::std::declval<NoCtorCopyMove>())));
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   {
     int val       = 1729;
     auto&& result = cuda::std::forward_like<const double&>(val);

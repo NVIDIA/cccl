@@ -20,7 +20,7 @@
 #include "test_iterators.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
     int ia[] = {0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 0, 1, 2, 3, 0, 1, 2, 0, 1, 0};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);

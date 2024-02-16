@@ -16,7 +16,7 @@
 #include "test_workarounds.h"
 
 struct X {
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int) {}
 
     X(X&&) = default;
@@ -27,13 +27,13 @@ private:
     X& operator=(const X&) = default;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void PushFront(X&&) {}
 
 template<class T = int>
-__host__ __device__
+TEST_HOST_DEVICE
 auto test(int) -> decltype(PushFront(cuda::std::declval<T>()), cuda::std::true_type{});
-__host__ __device__
+TEST_HOST_DEVICE
 auto test(long) -> cuda::std::false_type;
 
 int main(int, char**) {

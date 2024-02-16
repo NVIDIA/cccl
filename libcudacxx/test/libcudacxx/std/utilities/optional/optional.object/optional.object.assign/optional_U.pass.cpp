@@ -34,7 +34,7 @@ struct X
     STATIC_MEMBER_VAR(throw_now, bool);
 
     X() = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int &&)
     {
         if (throw_now())
@@ -45,7 +45,7 @@ struct X
 struct Y1
 {
     Y1() = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     Y1(const int&) {}
     Y1& operator=(const Y1&) = delete;
 };
@@ -54,7 +54,7 @@ struct Y2
 {
     Y2() = default;
     Y2(const int&) = delete;
-    __host__ __device__
+    TEST_HOST_DEVICE
     Y2& operator=(const int&) { return *this; }
 };
 
@@ -69,7 +69,7 @@ struct AssignableFrom {
   STATIC_MEMBER_VAR(int_constructed, int);
   STATIC_MEMBER_VAR(int_assigned, int);
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   static void reset() {
       type_constructed() = int_constructed() = 0;
       type_assigned() = int_assigned() = 0;
@@ -77,21 +77,21 @@ struct AssignableFrom {
 
   AssignableFrom() = default;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit AssignableFrom(T) { ++type_constructed(); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   AssignableFrom& operator=(T) { ++type_assigned(); return *this; }
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   AssignableFrom(int) { ++int_constructed(); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   AssignableFrom& operator=(int) { ++int_assigned(); return *this; }
 private:
   AssignableFrom(AssignableFrom const&) = delete;
   AssignableFrom& operator=(AssignableFrom const&) = delete;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_with_test_type() {
     using T = TestTypes::TestType;
     T::reset();
@@ -156,7 +156,7 @@ void test_with_test_type() {
 }
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ambiguous_assign() {
     using OptInt = cuda::std::optional<int>;
     {
@@ -210,7 +210,7 @@ void test_ambiguous_assign() {
 }
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX20 bool test()
 {
     {
@@ -249,7 +249,7 @@ TEST_CONSTEXPR_CXX20 bool test()
     enum class state_t { inactive, constructed, copy_assigned, move_assigned };
     class StateTracker {
     public:
-      __host__ __device__
+      TEST_HOST_DEVICE
       constexpr StateTracker(state_t& s)
       : state_(&s)
       {
@@ -259,7 +259,7 @@ TEST_CONSTEXPR_CXX20 bool test()
       StateTracker(StateTracker&&) = default;
       StateTracker(StateTracker const&) = default;
 
-      __host__ __device__
+      TEST_HOST_DEVICE
       constexpr StateTracker& operator=(StateTracker&& other) noexcept
       {
         *state_ = state_t::inactive;
@@ -269,7 +269,7 @@ TEST_CONSTEXPR_CXX20 bool test()
         return *this;
       }
 
-      __host__ __device__
+      TEST_HOST_DEVICE
       constexpr StateTracker& operator=(StateTracker const& other) noexcept
       {
         *state_ = state_t::inactive;

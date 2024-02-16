@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_true()
 {
 #if defined(_LIBCUDACXX_IS_AGGREGATE)
@@ -33,7 +33,7 @@ void test_true()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_false()
 {
 #if defined(_LIBCUDACXX_IS_AGGREGATE)
@@ -49,9 +49,9 @@ void test_false()
 }
 
 struct Aggregate {};
-struct HasCons { __host__ __device__ HasCons(int); };
+struct HasCons { TEST_HOST_DEVICE HasCons(int); };
 struct HasPriv {
-  __host__ __device__
+  TEST_HOST_DEVICE
   void PreventUnusedPrivateMemberWarning();
 private:
   int x;

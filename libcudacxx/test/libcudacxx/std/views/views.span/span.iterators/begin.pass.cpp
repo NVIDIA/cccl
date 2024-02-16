@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprSpan(Span s)
 {
     bool ret = true;
@@ -38,7 +38,7 @@ constexpr bool testConstexprSpan(Span s)
 
 
 template <class Span>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan(Span s)
 {
     typename Span::iterator b = s.begin();
@@ -55,7 +55,7 @@ void testRuntimeSpan(Span s)
 }
 
 struct A{};
-__host__ __device__ bool operator==(A, A) {return true;}
+TEST_HOST_DEVICE bool operator==(A, A) {return true;}
 
 constexpr              int iArr1[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
 STATIC_TEST_GLOBAL_VAR int iArr2[] = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};

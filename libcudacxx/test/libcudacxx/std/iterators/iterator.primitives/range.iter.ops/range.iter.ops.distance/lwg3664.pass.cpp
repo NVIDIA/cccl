@@ -29,22 +29,22 @@
 template<class It>
 struct EvilSentinel {
   It p_;
-  __host__ __device__ friend constexpr bool operator==(EvilSentinel s, It p) { return s.p_ == p; }
+  TEST_HOST_DEVICE friend constexpr bool operator==(EvilSentinel s, It p) { return s.p_ == p; }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator==(It p, EvilSentinel s) { return s.p_ == p; }
-  __host__ __device__ friend constexpr bool operator!=(EvilSentinel s, It p) { return s.p_ != p; }
-  __host__ __device__ friend constexpr bool operator!=(It p, EvilSentinel s) { return s.p_ != p; }
+  TEST_HOST_DEVICE friend constexpr bool operator==(It p, EvilSentinel s) { return s.p_ == p; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(EvilSentinel s, It p) { return s.p_ != p; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(It p, EvilSentinel s) { return s.p_ != p; }
 #endif
-  __host__ __device__ friend constexpr auto operator-(EvilSentinel s, It p) { return s.p_ - p; }
-  __host__ __device__ friend constexpr auto operator-(It p, EvilSentinel s) { return p - s.p_; }
+  TEST_HOST_DEVICE friend constexpr auto operator-(EvilSentinel s, It p) { return s.p_ - p; }
+  TEST_HOST_DEVICE friend constexpr auto operator-(It p, EvilSentinel s) { return p - s.p_; }
 // Older clang confuses the all deleted overloads
 #if (!defined(TEST_CLANG_VER) || TEST_CLANG_VER >= 1000)
-  __host__ __device__ friend constexpr void operator-(EvilSentinel s, int(&)[3]) = delete;
-  __host__ __device__ friend constexpr void operator-(EvilSentinel s, const int(&)[3]) = delete;
+  TEST_HOST_DEVICE friend constexpr void operator-(EvilSentinel s, int(&)[3]) = delete;
+  TEST_HOST_DEVICE friend constexpr void operator-(EvilSentinel s, const int(&)[3]) = delete;
 // Older gcc confuses the rvalue overloads with the lvalue overloads and complains about duplicated function definitions
 #if (!defined(TEST_COMPILER_GCC)|| __GNUC__ >= 10)
-  __host__ __device__ friend constexpr void operator-(EvilSentinel s, int(&&)[3]) = delete;
-  __host__ __device__ friend constexpr void operator-(EvilSentinel s, const int(&&)[3]) = delete;
+  TEST_HOST_DEVICE friend constexpr void operator-(EvilSentinel s, int(&&)[3]) = delete;
+  TEST_HOST_DEVICE friend constexpr void operator-(EvilSentinel s, const int(&&)[3]) = delete;
 #endif
 #endif
 };
@@ -53,7 +53,7 @@ static_assert(!cuda::std::sized_sentinel_for<EvilSentinel<int*>, const int*>);
 static_assert( cuda::std::sized_sentinel_for<EvilSentinel<const int*>, int*>);
 static_assert( cuda::std::sized_sentinel_for<EvilSentinel<const int*>, const int*>);
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   {
     int a[] = {1, 2, 3};
     assert(cuda::std::ranges::distance(a, a + 3) == 3);

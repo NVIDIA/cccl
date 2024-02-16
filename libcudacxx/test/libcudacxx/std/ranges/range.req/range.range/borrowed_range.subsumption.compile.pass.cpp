@@ -15,13 +15,15 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 template <cuda::std::ranges::range R>
-__host__ __device__ consteval bool check_subsumption() {
+TEST_HOST_DEVICE consteval bool check_subsumption() {
   return false;
 }
 
 template <cuda::std::ranges::borrowed_range R>
-__host__ __device__ consteval bool check_subsumption() {
+TEST_HOST_DEVICE consteval bool check_subsumption() {
   return true;
 }
 

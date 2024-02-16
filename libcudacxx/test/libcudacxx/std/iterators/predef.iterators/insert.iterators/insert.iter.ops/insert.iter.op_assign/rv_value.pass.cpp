@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(C c1, typename C::difference_type j,
      typename C::value_type x1, typename C::value_type x2,
@@ -42,7 +42,7 @@ test(C c1, typename C::difference_type j,
 }
 
 template <class C>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 insert3at(C& c, typename C::iterator i,
      typename C::value_type x1, typename C::value_type x2,
@@ -55,7 +55,7 @@ insert3at(C& c, typename C::iterator i,
 
 struct do_nothing
 {
-__host__ __device__
+TEST_HOST_DEVICE
     void operator()(void*) const {}
 };
 

@@ -32,10 +32,10 @@ struct no_explicit_iter_concept {
   no_explicit_iter_concept(no_explicit_iter_concept const&) = delete;
   no_explicit_iter_concept& operator=(no_explicit_iter_concept const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_HOST_DEVICE value_type operator*() const;
 
-  __host__ __device__ no_explicit_iter_concept& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_HOST_DEVICE no_explicit_iter_concept& operator++();
+  TEST_HOST_DEVICE void operator++(int);
 };
 #ifndef TEST_COMPILER_MSVC_2017
 // ITER-CONCEPT is `random_access_iterator_tag` >:(
@@ -59,12 +59,12 @@ struct not_weakly_incrementable {
   not_weakly_incrementable(not_weakly_incrementable const&) = delete;
   not_weakly_incrementable& operator=(not_weakly_incrementable const&) = delete;
 
-  __host__ __device__ int operator*() const;
+  TEST_HOST_DEVICE int operator*() const;
 
 #if defined(TEST_COMPILER_MSVC) // nvbug4119179
-  __host__ __device__ void operator++(int);
+  TEST_HOST_DEVICE void operator++(int);
 #else
-  __host__ __device__ not_weakly_incrementable& operator++();
+  TEST_HOST_DEVICE not_weakly_incrementable& operator++();
 #endif // TEST_COMPILER_MSVC
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable> &&
@@ -82,10 +82,10 @@ struct not_indirectly_readable {
   not_indirectly_readable(not_indirectly_readable const&) = delete;
   not_indirectly_readable& operator=(not_indirectly_readable const&) = delete;
 
-  __host__ __device__ int operator*() const;
+  TEST_HOST_DEVICE int operator*() const;
 
-  __host__ __device__ not_indirectly_readable& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_HOST_DEVICE not_indirectly_readable& operator++();
+  TEST_HOST_DEVICE void operator++(int);
 };
 static_assert(!cuda::std::indirectly_readable<not_indirectly_readable> && !cuda::std::input_iterator<not_indirectly_readable>);
 
@@ -102,10 +102,10 @@ struct bad_iterator_category {
   bad_iterator_category(bad_iterator_category const&) = delete;
   bad_iterator_category& operator=(bad_iterator_category const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_HOST_DEVICE value_type operator*() const;
 
-  __host__ __device__ bad_iterator_category& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_HOST_DEVICE bad_iterator_category& operator++();
+  TEST_HOST_DEVICE void operator++(int);
 };
 static_assert(!cuda::std::input_iterator<bad_iterator_category>);
 
@@ -122,10 +122,10 @@ struct bad_iterator_concept {
   bad_iterator_concept(bad_iterator_concept const&) = delete;
   bad_iterator_concept& operator=(bad_iterator_concept const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
+  TEST_HOST_DEVICE value_type operator*() const;
 
-  __host__ __device__ bad_iterator_concept& operator++();
-  __host__ __device__ void operator++(int);
+  TEST_HOST_DEVICE bad_iterator_concept& operator++();
+  TEST_HOST_DEVICE void operator++(int);
 };
 static_assert(!cuda::std::input_iterator<bad_iterator_concept>);
 

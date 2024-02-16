@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-template <class V, size_t E> __host__ __device__ void test() {
+template <class V, size_t E> TEST_HOST_DEVICE void test() {
   static_assert(cuda::std::variant_size<V>::value == E, "");
   static_assert(cuda::std::variant_size<const V>::value == E, "");
   static_assert(cuda::std::variant_size<volatile V>::value == E, "");

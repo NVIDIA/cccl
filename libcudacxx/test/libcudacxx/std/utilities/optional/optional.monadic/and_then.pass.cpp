@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 struct LVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int&) { return 1; }
   cuda::std::optional<int> operator()(const int&) = delete;
   cuda::std::optional<int> operator()(int&&) = delete;
@@ -31,7 +31,7 @@ struct LVal {
 
 struct CLVal {
   cuda::std::optional<int> operator()(int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(const int&) { return 1; }
   cuda::std::optional<int> operator()(int&&) = delete;
   cuda::std::optional<int> operator()(const int&&) = delete;
@@ -40,7 +40,7 @@ struct CLVal {
 struct RVal {
   cuda::std::optional<int> operator()(int&) = delete;
   cuda::std::optional<int> operator()(const int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int&&) { return 1; }
   cuda::std::optional<int> operator()(const int&&) = delete;
 };
@@ -49,12 +49,12 @@ struct CRVal {
   cuda::std::optional<int> operator()(int&) = delete;
   cuda::std::optional<int> operator()(const int&) = delete;
   cuda::std::optional<int> operator()(int&&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(const int&&) { return 1; }
 };
 
 struct RefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) & { return 1; }
   cuda::std::optional<int> operator()(int) const& = delete;
   cuda::std::optional<int> operator()(int) && = delete;
@@ -63,7 +63,7 @@ struct RefQual {
 
 struct CRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) const& { return 1; }
   cuda::std::optional<int> operator()(int) && = delete;
   cuda::std::optional<int> operator()(int) const&& = delete;
@@ -72,7 +72,7 @@ struct CRefQual {
 struct RVRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
   cuda::std::optional<int> operator()(int) const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) && { return 1; }
   cuda::std::optional<int> operator()(int) const&& = delete;
 };
@@ -81,12 +81,12 @@ struct RVCRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
   cuda::std::optional<int> operator()(int) const& = delete;
   cuda::std::optional<int> operator()(int) && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) const&& { return 1; }
 };
 
 struct NOLVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int&) { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(const int&) = delete;
   cuda::std::optional<int> operator()(int&&) = delete;
@@ -95,7 +95,7 @@ struct NOLVal {
 
 struct NOCLVal {
   cuda::std::optional<int> operator()(int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(const int&) { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(int&&) = delete;
   cuda::std::optional<int> operator()(const int&&) = delete;
@@ -104,7 +104,7 @@ struct NOCLVal {
 struct NORVal {
   cuda::std::optional<int> operator()(int&) = delete;
   cuda::std::optional<int> operator()(const int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int&&) { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(const int&&) = delete;
 };
@@ -113,12 +113,12 @@ struct NOCRVal {
   cuda::std::optional<int> operator()(int&) = delete;
   cuda::std::optional<int> operator()(const int&) = delete;
   cuda::std::optional<int> operator()(int&&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(const int&&) { return cuda::std::nullopt; }
 };
 
 struct NORefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) & { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(int) const& = delete;
   cuda::std::optional<int> operator()(int) && = delete;
@@ -127,7 +127,7 @@ struct NORefQual {
 
 struct NOCRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) const& { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(int) && = delete;
   cuda::std::optional<int> operator()(int) const&& = delete;
@@ -136,7 +136,7 @@ struct NOCRefQual {
 struct NORVRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
   cuda::std::optional<int> operator()(int) const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) && { return cuda::std::nullopt; }
   cuda::std::optional<int> operator()(int) const&& = delete;
 };
@@ -145,24 +145,24 @@ struct NORVCRefQual {
   cuda::std::optional<int> operator()(int) & = delete;
   cuda::std::optional<int> operator()(int) const& = delete;
   cuda::std::optional<int> operator()(int) && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::optional<int> operator()(int) const&& { return cuda::std::nullopt; }
 };
 
 struct NoCopy {
   NoCopy() = default;
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoCopy(const NoCopy&) { assert(false); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   cuda::std::optional<int> operator()(const NoCopy&&) { return 1; }
 };
 
 struct NonConst {
-  __host__ __device__
+  TEST_HOST_DEVICE
   cuda::std::optional<int> non_const() { return 1; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_val_types() {
   // Test & overload
   {
@@ -251,14 +251,14 @@ constexpr void test_val_types() {
 // This is an expanded lambda from the original test.
 struct nvrtc_workaround {
     template<typename T>
-    __host__ __device__
+    TEST_HOST_DEVICE
     cuda::std::optional<int> operator()(T && t) {
         return t.non_const();
     }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 void test_sfinae() {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -266,7 +266,7 @@ TEST_CONSTEXPR_CXX17 void test_sfinae() {
   cuda::std::move(opt).and_then(l);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool test() {
   test_val_types();
   cuda::std::optional<int> opt{};

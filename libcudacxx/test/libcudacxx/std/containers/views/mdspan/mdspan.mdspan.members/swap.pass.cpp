@@ -13,7 +13,9 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-__host__ __device__ void test_std_swap_static_extents()
+#include "test_macros.h"
+
+TEST_HOST_DEVICE void test_std_swap_static_extents()
 {
     int data1[12] = {1,2,3,4,5,6,7,8,9,10,11,12};
     int data2[12] = {21,22,23,24,25,26,27,28,29,30,31,32};
@@ -45,7 +47,7 @@ __host__ __device__ void test_std_swap_static_extents()
     assert(val2 == 1);
 }
 
-__host__ __device__ void test_std_swap_dynamic_extents()
+TEST_HOST_DEVICE void test_std_swap_dynamic_extents()
 {
     int data1[12] = {1,2,3,4,5,6,7,8,9,10,11,12};
     int data2[12] = {21,22,23,24,25,26,27,28,29,30,31,32};

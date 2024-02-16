@@ -14,7 +14,7 @@
 #include <cuda/std/cassert>
 #include "../my_int.hpp"
 
-__host__ __device__ void check( cuda::std::dextents<size_t,2> e )
+TEST_HOST_DEVICE void check( cuda::std::dextents<size_t,2> e )
 {
     static_assert( e.rank        () == 2, "" );
     static_assert( e.rank_dynamic() == 2, "" );

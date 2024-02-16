@@ -40,8 +40,8 @@ struct no_copy_assignment_mutable {
 
 struct non_copyable {
    non_copyable() = default;
-   __host__ __device__ non_copyable(non_copyable&&) {}
-   __host__ __device__ non_copyable& operator=(non_copyable&&) { return *this; }
+   TEST_HOST_DEVICE non_copyable(non_copyable&&) {}
+   TEST_HOST_DEVICE non_copyable& operator=(non_copyable&&) { return *this; }
    non_copyable(const non_copyable&) = delete;
    non_copyable& operator=(const non_copyable&) = delete;
 };
@@ -55,33 +55,33 @@ struct has_noncopyable {
 struct const_copy_assignment {
   const_copy_assignment() = default;
 
-  __host__ __device__ const_copy_assignment(const_copy_assignment const&);
-  __host__ __device__ const_copy_assignment(const_copy_assignment&&);
+  TEST_HOST_DEVICE const_copy_assignment(const_copy_assignment const&);
+  TEST_HOST_DEVICE const_copy_assignment(const_copy_assignment&&);
 
-  __host__ __device__ const_copy_assignment& operator=(const_copy_assignment&&);
-  __host__ __device__ const_copy_assignment const& operator=(const_copy_assignment const&) const;
+  TEST_HOST_DEVICE const_copy_assignment& operator=(const_copy_assignment&&);
+  TEST_HOST_DEVICE const_copy_assignment const& operator=(const_copy_assignment const&) const;
 };
 
 struct volatile_copy_assignment {
   volatile_copy_assignment() = default;
 
-  __host__ __device__ volatile_copy_assignment(volatile_copy_assignment volatile&);
-  __host__ __device__ volatile_copy_assignment(volatile_copy_assignment volatile&&);
+  TEST_HOST_DEVICE volatile_copy_assignment(volatile_copy_assignment volatile&);
+  TEST_HOST_DEVICE volatile_copy_assignment(volatile_copy_assignment volatile&&);
 
-  __host__ __device__ volatile_copy_assignment& operator=(volatile_copy_assignment&&);
-  __host__ __device__ volatile_copy_assignment volatile&
+  TEST_HOST_DEVICE volatile_copy_assignment& operator=(volatile_copy_assignment&&);
+  TEST_HOST_DEVICE volatile_copy_assignment volatile&
   operator=(volatile_copy_assignment const&) volatile;
 };
 
 struct cv_copy_assignment {
   cv_copy_assignment() = default;
 
-  __host__ __device__ cv_copy_assignment(cv_copy_assignment const volatile&);
-  __host__ __device__ cv_copy_assignment(cv_copy_assignment const volatile&&);
+  TEST_HOST_DEVICE cv_copy_assignment(cv_copy_assignment const volatile&);
+  TEST_HOST_DEVICE cv_copy_assignment(cv_copy_assignment const volatile&&);
 
-  __host__ __device__ cv_copy_assignment const volatile&
+  TEST_HOST_DEVICE cv_copy_assignment const volatile&
   operator=(cv_copy_assignment const volatile&) const volatile;
-  __host__ __device__ cv_copy_assignment const volatile&
+  TEST_HOST_DEVICE cv_copy_assignment const volatile&
   operator=(cv_copy_assignment const volatile&&) const volatile;
 };
 

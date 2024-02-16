@@ -18,10 +18,10 @@
 
 struct Error {
   int i;
-  __host__ __device__ constexpr Error(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr Error(int ii) : i(ii) {}
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   const cuda::std::unexpected<Error> unex(5);
   auto unex2 = unex;
   assert(unex2.error().i == 5);

@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprSpan(Span sp, size_t idx)
 {
     ASSERT_NOEXCEPT(sp[idx]);
@@ -32,7 +32,7 @@ constexpr bool testConstexprSpan(Span sp, size_t idx)
 
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan(Span sp, size_t idx)
 {
     ASSERT_NOEXCEPT(sp[idx]);

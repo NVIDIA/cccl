@@ -13,8 +13,10 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 template<size_t N, class Extents>
-__host__ __device__ void test_mdspan_size(cuda::std::array<char,N>& storage, Extents&& e)
+TEST_HOST_DEVICE void test_mdspan_size(cuda::std::array<char,N>& storage, Extents&& e)
 {
     using extents_type = cuda::std::remove_cv_t<cuda::std::remove_reference_t<Extents>>;
     cuda::std::mdspan<char, extents_type> m(storage.data(), cuda::std::forward<Extents>(e));

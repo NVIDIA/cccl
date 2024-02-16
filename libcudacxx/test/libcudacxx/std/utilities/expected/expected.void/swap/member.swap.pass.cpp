@@ -41,14 +41,14 @@ _LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, E);
 static_assert(HasMemberSwap<int>, "");
 
 struct NotSwappable {};
-__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
+TEST_HOST_DEVICE void swap(NotSwappable&, NotSwappable&) = delete;
 
 // !is_swappable_v<E>
 static_assert(!HasMemberSwap<NotSwappable>, "");
 
 struct NotMoveContructible {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
+  TEST_HOST_DEVICE friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<E>
@@ -56,8 +56,8 @@ static_assert(!HasMemberSwap<NotMoveContructible>, "");
 
 // Test noexcept
 struct MoveMayThrow {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
-  __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) noexcept(false);
+  TEST_HOST_DEVICE friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 
 template <class E, bool = HasMemberSwap<E>>
@@ -73,14 +73,14 @@ static_assert(MemberSwapNoexcept<int>, "");
 static_assert(!MemberSwapNoexcept<MoveMayThrow>, "");
 
 struct SwapMayThrow {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
+  TEST_HOST_DEVICE friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<SwapMayThrow>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && rhs.has_value()
   {
     cuda::std::expected<void, int> x;
@@ -140,7 +140,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   // !e1.has_value() && e2.has_value()
   {

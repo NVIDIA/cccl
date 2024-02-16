@@ -40,13 +40,13 @@ struct DtorDeleted {
 };
 
 struct Noexcept {
-  __host__ __device__ ~Noexcept() noexcept;
+  TEST_HOST_DEVICE ~Noexcept() noexcept;
 };
 struct NoexceptTrue {
-  __host__ __device__ ~NoexceptTrue() noexcept(true);
+  TEST_HOST_DEVICE ~NoexceptTrue() noexcept(true);
 };
 struct NoexceptFalse {
-  __host__ __device__ ~NoexceptFalse() noexcept(false);
+  TEST_HOST_DEVICE ~NoexceptFalse() noexcept(false);
 };
 
 struct CtorProtected {
@@ -68,30 +68,30 @@ private:
 
 template <class T>
 struct NoexceptDependant {
-  __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
+  TEST_HOST_DEVICE ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
 };
 
 struct CtorExplicit {
   explicit CtorExplicit() = default;
 };
 struct CtorArgument {
-  __host__ __device__ CtorArgument(int) {}
+  TEST_HOST_DEVICE CtorArgument(int) {}
 };
 struct CtorDefaultArgument {
-  __host__ __device__ CtorDefaultArgument(int = 0) {}
+  TEST_HOST_DEVICE CtorDefaultArgument(int = 0) {}
 };
 struct CtorExplicitDefaultArgument {
-  __host__ __device__ explicit CtorExplicitDefaultArgument(int = 0) {}
+  TEST_HOST_DEVICE explicit CtorExplicitDefaultArgument(int = 0) {}
 };
 
 struct Derived : public Empty {};
 
 class Abstract {
-  __host__ __device__ virtual void foo() = 0;
+  TEST_HOST_DEVICE virtual void foo() = 0;
 };
 
 class AbstractDestructor {
-  __host__ __device__ virtual ~AbstractDestructor() = 0;
+  TEST_HOST_DEVICE virtual ~AbstractDestructor() = 0;
 };
 
 class OperatorNewDeleted {
@@ -100,7 +100,7 @@ class OperatorNewDeleted {
 };
 
 template<class T>
-__host__ __device__ void test_not_const()
+TEST_HOST_DEVICE void test_not_const()
 {
     static_assert( cuda::std::default_initializable<               T>, "");
     static_assert( cuda::std::default_initializable<      volatile T>, "");
@@ -111,7 +111,7 @@ __host__ __device__ void test_not_const()
 }
 
 template<class T>
-__host__ __device__ void test_true()
+TEST_HOST_DEVICE void test_true()
 {
     static_assert( cuda::std::default_initializable<               T>, "");
     static_assert( cuda::std::default_initializable<const          T>, "");
@@ -120,7 +120,7 @@ __host__ __device__ void test_true()
 }
 
 template<class T>
-__host__ __device__ void test_false()
+TEST_HOST_DEVICE void test_false()
 {
     static_assert(!cuda::std::default_initializable<               T>, "");
     static_assert(!cuda::std::default_initializable<const          T>, "");
@@ -128,7 +128,7 @@ __host__ __device__ void test_false()
     static_assert(!cuda::std::default_initializable<const volatile T>, "");
 }
 
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     test_not_const<bool>();
     test_not_const<char>();

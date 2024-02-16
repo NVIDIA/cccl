@@ -18,13 +18,13 @@
 #include "test_macros.h"
 
 struct NonSwappable {
-    __host__ __device__ TEST_CONSTEXPR NonSwappable() { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonSwappable() { }
 private:
-    __host__ __device__ NonSwappable(NonSwappable const&);
-    __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+    TEST_HOST_DEVICE NonSwappable(NonSwappable const&);
+    TEST_HOST_DEVICE NonSwappable& operator=(NonSwappable const&);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;

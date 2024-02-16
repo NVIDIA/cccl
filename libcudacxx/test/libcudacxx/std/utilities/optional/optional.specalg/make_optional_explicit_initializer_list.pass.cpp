@@ -24,15 +24,15 @@ struct TestT {
   int x;
   int size;
   int *ptr;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr TestT(cuda::std::initializer_list<int> il)
     : x(*il.begin()), size(static_cast<int>(il.size())), ptr(nullptr) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr TestT(cuda::std::initializer_list<int> il, int *p)
     : x(*il.begin()), size(static_cast<int>(il.size())), ptr(p) {}
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test()
 {
   {

@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class FromDuration, class ToDuration>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(const FromDuration& df, const ToDuration& d)
 {
@@ -40,7 +40,7 @@ test(const FromDuration& df, const ToDuration& d)
 #if TEST_STD_VER > 2011
 
 template<class FromDuration, long long From, class ToDuration, long long To>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_constexpr ()
 {
     typedef cuda::std::chrono::system_clock Clock;

@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T1, class T2>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     {
     typedef T1 Exp1;

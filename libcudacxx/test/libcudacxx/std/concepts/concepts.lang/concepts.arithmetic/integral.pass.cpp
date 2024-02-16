@@ -21,7 +21,7 @@
 using cuda::std::integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckIntegralQualifiers() {
+TEST_HOST_DEVICE constexpr bool CheckIntegralQualifiers() {
   constexpr bool result = integral<T>;
   static_assert(integral<const T> == result, "");
   static_assert(integral<volatile T> == result, "");

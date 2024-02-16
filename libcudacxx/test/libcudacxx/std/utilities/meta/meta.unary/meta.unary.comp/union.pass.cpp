@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_union_imp()
 {
     static_assert(!cuda::std::is_reference<T>::value, "");
@@ -28,7 +28,7 @@ void test_union_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_union()
 {
     test_union_imp<T>();

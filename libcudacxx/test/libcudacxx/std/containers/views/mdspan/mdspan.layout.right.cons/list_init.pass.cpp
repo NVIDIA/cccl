@@ -16,6 +16,8 @@
 #include <cuda/std/utility>
 #include "../mdspan.layout.util/layout_util.hpp"
 
+#include "test_macros.h"
+
 constexpr auto dyn = cuda::std::dynamic_extent;
 
 template <class Extents, size_t... DynamicSizes>
@@ -24,7 +26,7 @@ using test_right_type = cuda::std::tuple<
     cuda::std::integer_sequence<size_t, DynamicSizes...>
 >;
 
-__host__ __device__ void typed_test_default_ctor_right()
+TEST_HOST_DEVICE void typed_test_default_ctor_right()
 {
     typed_test_default_ctor< test_right_type< cuda::std::extents<size_t,10     >     > >();
     typed_test_default_ctor< test_right_type< cuda::std::extents<size_t,dyn    >, 10 > >();
@@ -33,7 +35,7 @@ __host__ __device__ void typed_test_default_ctor_right()
     typed_test_default_ctor< test_right_type< cuda::std::extents<size_t,  5, 10>     > >();
 }
 
-__host__ __device__ void typed_test_compatible_right()
+TEST_HOST_DEVICE void typed_test_compatible_right()
 {
     typed_test_compatible< test_right_type_pair<_exts<dyn         >, _sizes<10    >, _exts< 10          >, _sizes<          >> >();
     typed_test_compatible< test_right_type_pair<_exts<dyn,  10    >, _sizes< 5    >, _exts<  5, dyn     >, _sizes<10        >> >();

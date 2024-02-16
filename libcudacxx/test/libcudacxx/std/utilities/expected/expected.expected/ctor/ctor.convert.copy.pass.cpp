@@ -53,7 +53,7 @@ template <class T1, class Err1, class T2, class Err2>
 constexpr bool canCstrFromExpected = cuda::std::is_constructible<cuda::std::expected<T1, Err1>, const cuda::std::expected<T2, Err2>&>::value;
 
 struct CtorFromInt {
-  __host__ __device__ CtorFromInt(int);
+  TEST_HOST_DEVICE CtorFromInt(int);
 };
 
 static_assert(canCstrFromExpected<CtorFromInt, int, int, int>, "");
@@ -70,11 +70,11 @@ template <class T>
 struct CtorFrom {
   _LIBCUDACXX_TEMPLATE(class T2 = T)
     _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>))
-  __host__ __device__ explicit CtorFrom(int);
-  __host__ __device__ explicit CtorFrom(T);
+  TEST_HOST_DEVICE explicit CtorFrom(int);
+  TEST_HOST_DEVICE explicit CtorFrom(T);
 
   template<class U>
-  __host__ __device__ explicit CtorFrom(U&&) = delete;
+  TEST_HOST_DEVICE explicit CtorFrom(U&&) = delete;
 };
 
 // is_constructible_v<T, expected<U, G>&>
@@ -96,11 +96,11 @@ template <class T>
 struct ConvertFrom {
   _LIBCUDACXX_TEMPLATE(class T2 = T)
     _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>))
-  __host__ __device__ ConvertFrom(int);
-  __host__ __device__ ConvertFrom(T);
+  TEST_HOST_DEVICE ConvertFrom(int);
+  TEST_HOST_DEVICE ConvertFrom(T);
 
   template<class U>
-  __host__ __device__ ConvertFrom(U&&) = delete;
+  TEST_HOST_DEVICE ConvertFrom(U&&) = delete;
 };
 
 // is_convertible_v<expected<U, G>&, T>
@@ -145,10 +145,10 @@ static_assert(!cuda::std::is_convertible_v<const cuda::std::expected<int, int>&,
 
 struct Data {
   int i;
-  __host__ __device__ constexpr Data(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr Data(int ii) : i(ii) {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // convert the value
   {
     const cuda::std::expected<int, int> e1(5);
@@ -172,12 +172,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct ThrowingInt {
-    __host__ __device__ ThrowingInt(int) { throw Except{}; }
+    TEST_HOST_DEVICE ThrowingInt(int) { throw Except{}; }
   };
 
   // throw on converting value

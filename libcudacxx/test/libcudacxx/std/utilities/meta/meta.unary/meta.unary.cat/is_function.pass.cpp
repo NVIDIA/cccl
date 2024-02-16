@@ -54,7 +54,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -67,7 +67,7 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 

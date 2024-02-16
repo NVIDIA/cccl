@@ -27,7 +27,7 @@
 #endif // TEST_COMPILER_MSVC_2017
 
 template<typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan(Span sp)
 {
     ASSERT_NOEXCEPT(cuda::std::as_writable_bytes(sp));
@@ -48,7 +48,7 @@ void testRuntimeSpan(Span sp)
 }
 
 struct A{};
-__device__ int iArr2[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
+STATIC_TEST_GLOBAL_VAR int iArr2[] = { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9};
 
 int main(int, char**)
 {

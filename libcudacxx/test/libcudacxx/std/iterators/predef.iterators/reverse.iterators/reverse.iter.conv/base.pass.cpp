@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     typedef bidirectional_iterator<int*> Iter;
     int i = 0;
     Iter iter(&i);

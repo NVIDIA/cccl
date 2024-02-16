@@ -22,11 +22,11 @@
 
 struct A
 {
-    __host__ __device__ void operator&() const {}
+    TEST_HOST_DEVICE void operator&() const {}
 };
 
 struct nothing {
-    __host__ __device__ operator char&()
+    TEST_HOST_DEVICE operator char&()
     {
         static char c;
         return c;

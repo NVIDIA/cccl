@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "operator_hijacker.h"
 
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
   cuda::std::array<operator_hijacker, 1> ao{};
   cuda::std::array<operator_hijacker, 1> a;
   a = ao;

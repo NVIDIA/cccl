@@ -42,10 +42,10 @@ STATIC_TEST_GLOBAL_VAR int copied = 0;
 STATIC_TEST_GLOBAL_VAR int moved = 0;
 
 struct CountAssign {
-  __host__ __device__ static void reset() { copied = moved = 0; }
+  TEST_HOST_DEVICE static void reset() { copied = moved = 0; }
   CountAssign() = default;
-  __host__ __device__ CountAssign& operator=(CountAssign const&) { ++copied; return *this; }
-  __host__ __device__ CountAssign& operator=(CountAssign&&) { ++moved; return *this; }
+  TEST_HOST_DEVICE CountAssign& operator=(CountAssign const&) { ++copied; return *this; }
+  TEST_HOST_DEVICE CountAssign& operator=(CountAssign&&) { ++moved; return *this; }
 };
 
 int main(int, char**)

@@ -23,7 +23,7 @@
 #include "pointer_comparison_test_helper.h"
 
 struct NotTotallyOrdered {
-  __host__ __device__ friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
+  TEST_HOST_DEVICE friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::greater_equal, NotTotallyOrdered, NotTotallyOrdered>);
@@ -42,7 +42,7 @@ inline constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transpa
 static_assert(is_transparent<cuda::std::ranges::greater_equal>);
 #endif
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   auto fn = cuda::std::ranges::greater_equal();
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)

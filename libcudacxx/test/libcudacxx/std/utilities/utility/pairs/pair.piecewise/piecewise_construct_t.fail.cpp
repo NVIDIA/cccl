@@ -23,7 +23,7 @@
 #include <cuda/std/utility>
 
 
-__host__ __device__ cuda::std::piecewise_construct_t f() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::piecewise_construct_t f() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
 int main(int, char**) {
     return 0;

@@ -25,23 +25,23 @@
 
 class MoveOnly
 {
-    __host__ __device__ MoveOnly(const MoveOnly&);
-    __host__ __device__ MoveOnly& operator=(const MoveOnly&);
+    TEST_HOST_DEVICE MoveOnly(const MoveOnly&);
+    TEST_HOST_DEVICE MoveOnly& operator=(const MoveOnly&);
 
     int data_;
 public:
-    __host__ __device__ MoveOnly(int data = 1) : data_(data) {}
-    __host__ __device__ MoveOnly(MoveOnly&& x)
+    TEST_HOST_DEVICE MoveOnly(int data = 1) : data_(data) {}
+    TEST_HOST_DEVICE MoveOnly(MoveOnly&& x)
         : data_(x.data_) {x.data_ = 0;}
-    __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+    TEST_HOST_DEVICE MoveOnly& operator=(MoveOnly&& x)
         {data_ = x.data_; x.data_ = 0; return *this;}
 
-    __host__ __device__ int get() const {return data_;}
+    TEST_HOST_DEVICE int get() const {return data_;}
 };
 
 
 template <class T>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     typedef cuda::std::reference_wrapper<T> Wrap;
     static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");

@@ -28,20 +28,20 @@ struct B
 {
     int id_;
 
-    __host__ __device__ explicit B(int i= 0) : id_(i) {}
+    TEST_HOST_DEVICE explicit B(int i= 0) : id_(i) {}
 
-    __host__ __device__ virtual ~B() {}
+    TEST_HOST_DEVICE virtual ~B() {}
 };
 
 struct D
     : B
 {
-    __host__ __device__ explicit D(int i) : B(i) {}
+    TEST_HOST_DEVICE explicit D(int i) : B(i) {}
 };
 
 struct E {
     E() = default;
-    __host__ __device__ E& operator=(int) {
+    TEST_HOST_DEVICE E& operator=(int) {
         return *this;
     }
 };

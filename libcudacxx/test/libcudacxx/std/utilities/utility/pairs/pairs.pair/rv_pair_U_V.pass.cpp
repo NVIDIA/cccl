@@ -30,7 +30,7 @@ using namespace ImplicitTypes; // Get implicitly archetypes
 
 template <class T1, class U1,
           bool CanCopy = true, bool CanConvert = CanCopy>
-__host__ __device__ void test_pair_rv()
+TEST_HOST_DEVICE void test_pair_rv()
 {
     using P1 = cuda::std::pair<T1, int>;
     using P2 = cuda::std::pair<int, T1>;
@@ -44,7 +44,7 @@ __host__ __device__ void test_pair_rv()
 
 struct Base
 {
-    __host__ __device__ virtual ~Base() {}
+    TEST_HOST_DEVICE virtual ~Base() {}
 };
 
 struct Derived
@@ -60,12 +60,12 @@ struct DPair : public cuda::std::pair<T, U> {
 };
 
 struct ExplicitT {
-  __host__ __device__ constexpr explicit ExplicitT(int x) : value(x) {}
+  TEST_HOST_DEVICE constexpr explicit ExplicitT(int x) : value(x) {}
   int value;
 };
 
 struct ImplicitT {
-  __host__ __device__ constexpr ImplicitT(int x) : value(x) {}
+  TEST_HOST_DEVICE constexpr ImplicitT(int x) : value(x) {}
   int value;
 };
 

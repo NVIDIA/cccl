@@ -25,7 +25,7 @@
 using cuda::std::optional;
 
 template <class Opt, class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test()
 {

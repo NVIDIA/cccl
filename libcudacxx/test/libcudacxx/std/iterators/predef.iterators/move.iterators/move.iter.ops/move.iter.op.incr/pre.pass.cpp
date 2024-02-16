@@ -22,7 +22,7 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(It i, It x)
 {

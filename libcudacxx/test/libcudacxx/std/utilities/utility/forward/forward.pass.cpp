@@ -21,12 +21,12 @@ struct A
 {
 };
 
-__host__ __device__ A source() TEST_NOEXCEPT {return A();}
-__host__ __device__ const A csource() TEST_NOEXCEPT {return A();}
+TEST_HOST_DEVICE A source() TEST_NOEXCEPT {return A();}
+TEST_HOST_DEVICE const A csource() TEST_NOEXCEPT {return A();}
 
 
 #if TEST_STD_VER > 2011
-__host__ __device__ constexpr bool test_constexpr_forward() {
+TEST_HOST_DEVICE constexpr bool test_constexpr_forward() {
     int x = 42;
     const int cx = 101;
     return cuda::std::forward<int&>(x)        == 42

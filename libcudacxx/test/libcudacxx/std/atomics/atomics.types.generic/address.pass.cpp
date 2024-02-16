@@ -81,7 +81,7 @@
 #include "cuda_space_selector.h"
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 do_test()
 {
@@ -141,7 +141,7 @@ do_test()
 }
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void do_test_std()
 {
     Selector<A, constructor_initializer> sel;
@@ -155,7 +155,7 @@ void do_test_std()
 }
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     do_test<A, T, Selector>();
@@ -163,7 +163,7 @@ void test()
 }
 
 template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_std()
 {
     do_test_std<A, T, Selector>();
@@ -193,7 +193,7 @@ int main(int, char**)
         test<cuda::atomic<int*, cuda::thread_scope_block>, int*, shared_memory_selector>();
 
         // note: this _should_ be test_std, but for some reason that's resulting in an
-        // unspecified launch failure, and I'm unsure what function is not __device__
+        // unspecified launch failure, and I'm unsure what function is not TEST_DEVICE
         // and causes that to happen
         // the only difference is whether atomic_init is done or not, and that
         // _seems_ to be appropriately tested by the atomic_init test for cuda::std::

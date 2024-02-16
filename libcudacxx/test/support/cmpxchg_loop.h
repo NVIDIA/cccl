@@ -8,8 +8,10 @@
 
 #include <cuda/std/atomic>
 
+#include "test_macros.h"
+
 template <class A, class T>
-__host__ __device__
+TEST_HOST_DEVICE
 bool cmpxchg_weak_loop(A& atomic, T& expected, T desired) {
   for (int i = 0; i < 10; i++) {
     if (atomic.compare_exchange_weak(expected, desired) == true) {
@@ -21,7 +23,7 @@ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired) {
 }
 
 template <class A, class T>
-__host__ __device__
+TEST_HOST_DEVICE
 bool cmpxchg_weak_loop(A& atomic, T& expected, T desired,
                        cuda::std::memory_order success,
                        cuda::std::memory_order failure) {
@@ -36,7 +38,7 @@ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired,
 }
 
 template <class A, class T>
-__host__ __device__
+TEST_HOST_DEVICE
 bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired) {
   for (int i = 0; i < 10; i++) {
     if (cuda::std::atomic_compare_exchange_weak(atomic, expected, desired) == true) {
@@ -48,7 +50,7 @@ bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired) {
 }
 
 template <class A, class T>
-__host__ __device__
+TEST_HOST_DEVICE
 bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired,
                          cuda::std::memory_order success,
                          cuda::std::memory_order failure) {

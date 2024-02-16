@@ -24,13 +24,13 @@ struct Base { };
 struct Derived : Base { };
 
 template <class It, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(U u) {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test(U u) {
     const cuda::std::reverse_iterator<U> r2(u);
     cuda::std::reverse_iterator<It> r1 = r2;
     assert(base(r1.base()) == base(u));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests() {
     Derived d{};
     test<bidirectional_iterator<Base*> >(bidirectional_iterator<Derived*>(&d));
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));

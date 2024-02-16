@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test_imp(cuda::std::true_type)
 {
@@ -29,7 +29,7 @@ test_imp(cuda::std::true_type)
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test_imp(cuda::std::false_type)
 {
@@ -40,7 +40,7 @@ test_imp(cuda::std::false_type)
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 inline
 void
 test()

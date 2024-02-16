@@ -31,24 +31,24 @@ class iterator_wrapper {
 public:
   iterator_wrapper() = default;
 
-  __host__ __device__ constexpr explicit iterator_wrapper(I i) noexcept : base_(cuda::std::move(i)) {}
+  TEST_HOST_DEVICE constexpr explicit iterator_wrapper(I i) noexcept : base_(cuda::std::move(i)) {}
 
   // `noexcept(false)` is used to check that this operator is called.
-  __host__ __device__ constexpr decltype(auto) operator*() const& noexcept(false) { return *base_; }
+  TEST_HOST_DEVICE constexpr decltype(auto) operator*() const& noexcept(false) { return *base_; }
 
   // `noexcept` is used to check that this operator is called.
-  __host__ __device__ constexpr auto&& operator*() && noexcept { return cuda::std::move(*base_); }
+  TEST_HOST_DEVICE constexpr auto&& operator*() && noexcept { return cuda::std::move(*base_); }
 
-  __host__ __device__ constexpr iterator_wrapper& operator++() noexcept {
+  TEST_HOST_DEVICE constexpr iterator_wrapper& operator++() noexcept {
     ++base_;
     return *this;
   }
 
-  __host__ __device__ constexpr void operator++(int) noexcept { ++base_; }
+  TEST_HOST_DEVICE constexpr void operator++(int) noexcept { ++base_; }
 
-  __host__ __device__ constexpr bool operator==(iterator_wrapper const& other) const noexcept { return base_ == other.base_; }
+  TEST_HOST_DEVICE constexpr bool operator==(iterator_wrapper const& other) const noexcept { return base_ == other.base_; }
 #if TEST_STD_VER < 2020
-  __host__ __device__ constexpr bool operator!=(iterator_wrapper const& other) const noexcept { return base_ != other.base_; }
+  TEST_HOST_DEVICE constexpr bool operator!=(iterator_wrapper const& other) const noexcept { return base_ != other.base_; }
 #endif
 
 private:
@@ -56,7 +56,7 @@ private:
 };
 
 template <typename It, typename Out>
-__host__ __device__ constexpr void unqualified_lookup_move(It first_, It last_, Out result_first_, Out result_last_) {
+TEST_HOST_DEVICE constexpr void unqualified_lookup_move(It first_, It last_, Out result_first_, Out result_last_) {
   auto first = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(first_)};
   auto last = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(last_)};
   auto result_first = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(result_first_)};
@@ -72,7 +72,7 @@ __host__ __device__ constexpr void unqualified_lookup_move(It first_, It last_, 
 }
 
 template <typename It, typename Out>
-__host__ __device__ constexpr void lvalue_move(It first_, It last_, Out result_first_, Out result_last_) {
+TEST_HOST_DEVICE constexpr void lvalue_move(It first_, It last_, Out result_first_, Out result_last_) {
   auto first = iterator_wrapper<It>{cuda::std::move(first_)};
   auto last = ::iterator_wrapper<It>{cuda::std::move(last_)};
   auto result_first = iterator_wrapper<It>{cuda::std::move(result_first_)};
@@ -89,7 +89,7 @@ __host__ __device__ constexpr void lvalue_move(It first_, It last_, Out result_f
 }
 
 template <typename It, typename Out>
-__host__ __device__ constexpr void rvalue_move(It first_, It last_, Out result_first_, Out result_last_) {
+TEST_HOST_DEVICE constexpr void rvalue_move(It first_, It last_, Out result_first_, Out result_last_) {
   auto first = iterator_wrapper<It>{cuda::std::move(first_)};
   auto last = iterator_wrapper<It>{cuda::std::move(last_)};
   auto result_first = iterator_wrapper<It>{cuda::std::move(result_first_)};
@@ -107,24 +107,24 @@ __host__ __device__ constexpr void rvalue_move(It first_, It last_, Out result_f
 template <bool NoExcept>
 struct WithADL {
   WithADL() = default;
-  __host__ __device__ constexpr int operator*() const { return 0; }
-  __host__ __device__ constexpr WithADL& operator++();
-  __host__ __device__ constexpr void operator++(int);
-  __host__ __device__ constexpr bool operator==(WithADL const&) const;
-  __host__ __device__ friend constexpr int iter_move(WithADL&&) noexcept(NoExcept) { return 0; }
+  TEST_HOST_DEVICE constexpr int operator*() const { return 0; }
+  TEST_HOST_DEVICE constexpr WithADL& operator++();
+  TEST_HOST_DEVICE constexpr void operator++(int);
+  TEST_HOST_DEVICE constexpr bool operator==(WithADL const&) const;
+  TEST_HOST_DEVICE friend constexpr int iter_move(WithADL&&) noexcept(NoExcept) { return 0; }
 };
 
 template <bool NoExcept>
 struct WithoutADL {
   WithoutADL() = default;
-  __host__ __device__ constexpr int operator*() const noexcept(NoExcept) { return 0; }
-  __host__ __device__ constexpr WithoutADL& operator++();
-  __host__ __device__ constexpr void operator++(int);
-  __host__ __device__ constexpr bool operator==(WithoutADL const&) const;
+  TEST_HOST_DEVICE constexpr int operator*() const noexcept(NoExcept) { return 0; }
+  TEST_HOST_DEVICE constexpr WithoutADL& operator++();
+  TEST_HOST_DEVICE constexpr void operator++(int);
+  TEST_HOST_DEVICE constexpr bool operator==(WithoutADL const&) const;
 };
 
 template <class It, class Pred>
-__host__ __device__ constexpr bool all_of(It first, It last, Pred pred) {
+TEST_HOST_DEVICE constexpr bool all_of(It first, It last, Pred pred) {
     for (; first != last; ++first) {
         if (!pred(*first)) {
             return false;
@@ -133,16 +133,16 @@ __host__ __device__ constexpr bool all_of(It first, It last, Pred pred) {
     return true;
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   constexpr int full_size = 100;
   constexpr int half_size = full_size / 2;
   constexpr int reset = 0;
   move_tracker v1[full_size];
 
   struct move_counter_is {
-    __host__ __device__ constexpr move_counter_is(const int counter) : _counter(counter) {}
+    TEST_HOST_DEVICE constexpr move_counter_is(const int counter) : _counter(counter) {}
 
-    __host__ __device__ constexpr bool operator()(move_tracker const& x) {
+    TEST_HOST_DEVICE constexpr bool operator()(move_tracker const& x) {
       return x.moves() == _counter;
     }
 

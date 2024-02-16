@@ -26,10 +26,10 @@
 #endif // TEST_COMPILER_MSVC
 
 struct Foo {
-    __host__ __device__ constexpr Foo() { }
-    __host__ __device__ constexpr Foo(int a, char b, double c) : a_(a), b_(b), c_(c) { }
-    __host__ __device__ constexpr Foo(int a, char b, double c, int* count) : Foo(a, b, c) { *count += 1; }
-    __host__ __device__ constexpr bool operator==(Foo const& other) const {
+    TEST_HOST_DEVICE constexpr Foo() { }
+    TEST_HOST_DEVICE constexpr Foo(int a, char b, double c) : a_(a), b_(b), c_(c) { }
+    TEST_HOST_DEVICE constexpr Foo(int a, char b, double c, int* count) : Foo(a, b, c) { *count += 1; }
+    TEST_HOST_DEVICE constexpr bool operator==(Foo const& other) const {
         return a_ == other.a_ && b_ == other.b_ && c_ == other.c_;
     }
 
@@ -41,9 +41,9 @@ private:
 
 struct Counted {
     int& count_;
-    __host__ __device__ constexpr Counted(int& count) : count_(count) { ++count; }
-    __host__ __device__ constexpr Counted(Counted const& that) : count_(that.count_) { ++count_; }
-    __host__ __device__ constexpr ~Counted() { --count_; }
+    TEST_HOST_DEVICE constexpr Counted(int& count) : count_(count) { ++count; }
+    TEST_HOST_DEVICE constexpr Counted(Counted const& that) : count_(that.count_) { ++count_; }
+    TEST_HOST_DEVICE constexpr ~Counted() { --count_; }
 };
 
 union union_t {
@@ -62,7 +62,7 @@ struct NotAssignable {
 
 constexpr bool move_assignment_called = false;
 struct Always_false {
-    __host__ __device__ constexpr Always_false(const bool val) noexcept { assert(val);}
+    TEST_HOST_DEVICE constexpr Always_false(const bool val) noexcept { assert(val);}
 };
 
 struct WithSpecialMoveAssignment {
@@ -70,7 +70,7 @@ struct WithSpecialMoveAssignment {
   WithSpecialMoveAssignment(const WithSpecialMoveAssignment&) = default;
   WithSpecialMoveAssignment(WithSpecialMoveAssignment&&) = default;
   WithSpecialMoveAssignment& operator=(const WithSpecialMoveAssignment&) = default;
-  __host__ __device__ constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept {
+  TEST_HOST_DEVICE constexpr WithSpecialMoveAssignment& operator=(WithSpecialMoveAssignment&&) noexcept {
     Always_false invalid{move_assignment_called};
     unused(invalid);
     return *this;
@@ -78,7 +78,7 @@ struct WithSpecialMoveAssignment {
 };
 static_assert(cuda::std::is_trivially_constructible_v<WithSpecialMoveAssignment>);
 
-__host__ __device__ constexpr bool test()
+TEST_HOST_DEVICE constexpr bool test()
 {
     {
         int i = 99;
@@ -168,10 +168,10 @@ __host__ __device__ constexpr bool test()
 }
 
 template <class ...Args, class = decltype(cuda::std::construct_at(cuda::std::declval<Args>()...))>
-__host__ __device__ constexpr bool can_construct_at(Args&&...) { return true; }
+TEST_HOST_DEVICE constexpr bool can_construct_at(Args&&...) { return true; }
 
 template <class ...Args>
-__host__ __device__ constexpr bool can_construct_at(...) { return false; }
+TEST_HOST_DEVICE constexpr bool can_construct_at(...) { return false; }
 
 // Check that SFINAE works.
 static_assert( can_construct_at((int*)nullptr, 42));

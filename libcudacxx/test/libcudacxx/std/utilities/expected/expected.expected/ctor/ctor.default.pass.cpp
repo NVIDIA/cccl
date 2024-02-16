@@ -36,33 +36,33 @@ static_assert(!cuda::std::is_default_constructible_v<cuda::std::expected<NoDedef
 struct MyInt {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
 #endif // TEST_STD_VER > 2017
 };
 
 template <class T, class E>
-__host__ __device__ constexpr void testDefaultCtor() {
+TEST_HOST_DEVICE constexpr void testDefaultCtor() {
   cuda::std::expected<T, E> e;
   assert(e.has_value());
   assert(e.value() == T());
 }
 
 template <class T>
-__host__ __device__ constexpr void testTypes() {
+TEST_HOST_DEVICE constexpr void testTypes() {
   testDefaultCtor<T, int>();
   testDefaultCtor<T, NoDedefaultCtor>();
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   testTypes<int>();
   testTypes<MyInt>();
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 

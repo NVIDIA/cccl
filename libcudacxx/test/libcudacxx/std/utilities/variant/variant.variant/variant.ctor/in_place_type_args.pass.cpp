@@ -23,7 +23,7 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ctor_sfinae() {
   {
     using V = cuda::std::variant<int>;
@@ -67,7 +67,7 @@ void test_ctor_sfinae() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ctor_basic() {
   {
     constexpr cuda::std::variant<int> v(cuda::std::in_place_type<int>, 42);

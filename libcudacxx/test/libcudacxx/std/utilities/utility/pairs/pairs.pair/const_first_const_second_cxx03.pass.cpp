@@ -21,9 +21,9 @@ class A
 {
     int data_;
 public:
-    __host__ __device__ A(int data) : data_(data) {}
+    TEST_HOST_DEVICE A(int data) : data_(data) {}
 
-    __host__ __device__ bool operator==(const A& a) const {return data_ == a.data_;}
+    TEST_HOST_DEVICE bool operator==(const A& a) const {return data_ == a.data_;}
 };
 
 int main(int, char**)

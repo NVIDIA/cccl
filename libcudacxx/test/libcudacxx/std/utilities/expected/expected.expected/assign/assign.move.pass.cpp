@@ -55,7 +55,7 @@ struct NotMoveAssignable {
 };
 
 struct MoveCtorMayThrow {
-  __host__ __device__ MoveCtorMayThrow(MoveCtorMayThrow&&) noexcept(false) {}
+  TEST_HOST_DEVICE MoveCtorMayThrow(MoveCtorMayThrow&&) noexcept(false) {}
   MoveCtorMayThrow& operator=(MoveCtorMayThrow&&) noexcept = default;
 };
 
@@ -87,7 +87,7 @@ static_assert(!cuda::std::is_move_assignable_v<cuda::std::expected<MoveCtorMayTh
 
 struct MoveAssignMayThrow {
   MoveAssignMayThrow(MoveAssignMayThrow&&) noexcept = default;
-  __host__ __device__ MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false) { return *this; }
+  TEST_HOST_DEVICE MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false) { return *this; }
 };
 
 // Test noexcept
@@ -107,7 +107,7 @@ static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, 
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, MoveCtorMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // If this->has_value() && rhs.has_value() is true, equivalent to val = cuda::std::move(*rhs).
   {
     Traced::state oldState{};
@@ -269,7 +269,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   // assign value throw on move
   {

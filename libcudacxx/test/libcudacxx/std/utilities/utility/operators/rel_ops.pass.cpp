@@ -18,17 +18,17 @@ struct A
 {
     int data_;
 
-    __host__ __device__ explicit A(int data = -1) : data_(data) {}
+    TEST_HOST_DEVICE explicit A(int data = -1) : data_(data) {}
 };
 
-inline __host__ __device__
+inline TEST_HOST_DEVICE
 bool
 operator == (const A& x, const A& y)
 {
     return x.data_ == y.data_;
 }
 
-inline __host__ __device__
+inline TEST_HOST_DEVICE
 bool
 operator < (const A& x, const A& y)
 {

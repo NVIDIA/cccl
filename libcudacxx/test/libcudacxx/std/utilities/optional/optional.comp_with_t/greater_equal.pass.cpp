@@ -23,16 +23,16 @@ using cuda::std::optional;
 struct X {
   int i_;
 
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr X(int i) : i_(i) {}
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool operator>=(const X& lhs, const X& rhs) {
   return lhs.i_ >= rhs.i_;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
   {
     typedef X T;

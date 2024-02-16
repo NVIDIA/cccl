@@ -32,10 +32,10 @@ struct S {
    cuda::std::tuple<int, Empty> a;
    int k;
    Empty e;
-   __host__ __device__ constexpr S() : a{1,Empty{}}, k(cuda::std::get<0>(a)), e(cuda::std::get<1>(a)) {}
+   TEST_HOST_DEVICE constexpr S() : a{1,Empty{}}, k(cuda::std::get<0>(a)), e(cuda::std::get<1>(a)) {}
    };
 
-__host__ __device__ constexpr cuda::std::tuple<int, int> getP () { return { 3, 4 }; }
+TEST_HOST_DEVICE constexpr cuda::std::tuple<int, int> getP () { return { 3, 4 }; }
 #endif
 
 int main(int, char**)

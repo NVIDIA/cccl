@@ -23,23 +23,23 @@
 #include "variant_test_helpers.h"
 
 struct NonDefaultConstructible {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr NonDefaultConstructible(int) {}
 };
 
 struct NotNoexcept {
-  __host__ __device__
+  TEST_HOST_DEVICE
   NotNoexcept() noexcept(false) {}
 };
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 struct DefaultCtorThrows {
-  __host__ __device__
+  TEST_HOST_DEVICE
   DefaultCtorThrows() { throw 42; }
 };
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_default_ctor_sfinae() {
   {
     using V = cuda::std::variant<cuda::std::monostate, int>;
@@ -57,7 +57,7 @@ void test_default_ctor_sfinae() {
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_default_ctor_noexcept() {
   {
     using V = cuda::std::variant<int>;
@@ -71,7 +71,7 @@ void test_default_ctor_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_default_ctor_throws() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   using V = cuda::std::variant<DefaultCtorThrows, int>;
@@ -86,7 +86,7 @@ void test_default_ctor_throws() {
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_default_ctor_basic() {
   {
     cuda::std::variant<int> v;

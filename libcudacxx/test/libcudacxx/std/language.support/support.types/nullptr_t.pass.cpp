@@ -16,12 +16,12 @@
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(cuda::std::nullptr_t) {}
 };
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_conversions()
 {
     {
@@ -46,7 +46,7 @@ template <class T> struct has_less<T,
     typename Voider<decltype(cuda::std::declval<T>() < nullptr)>::type> : cuda::std::true_type {};
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_comparisons()
 {
     T p = nullptr;
@@ -61,7 +61,7 @@ void test_comparisons()
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnull-conversion"
 #endif
-__host__ __device__
+TEST_HOST_DEVICE
 void test_nullptr_conversions() {
 // GCC does not accept this due to CWG Defect #1423
 // http://www.open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#1423

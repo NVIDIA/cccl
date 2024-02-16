@@ -56,13 +56,13 @@ static_assert(!cuda::std::is_move_assignable_v<cuda::std::expected<void, NotMove
 
 // Test noexcept
 struct MoveCtorMayThrow {
-  __host__ __device__ MoveCtorMayThrow(MoveCtorMayThrow&&) noexcept(false) {}
+  TEST_HOST_DEVICE MoveCtorMayThrow(MoveCtorMayThrow&&) noexcept(false) {}
   MoveCtorMayThrow& operator=(MoveCtorMayThrow&&) noexcept = default;
 };
 
 struct MoveAssignMayThrow {
   MoveAssignMayThrow(MoveAssignMayThrow&&) noexcept = default;
-  __host__ __device__ MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false) { return *this; }
+  TEST_HOST_DEVICE MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false) { return *this; }
 };
 
 // Test noexcept
@@ -76,7 +76,7 @@ static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<void,
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<void, MoveCtorMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // If this->has_value() && rhs.has_value() is true, no effects.
   {
     cuda::std::expected<void, int> e1;
@@ -133,7 +133,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<void, ThrowOnMoveConstruct> e1(cuda::std::in_place);
   cuda::std::expected<void, ThrowOnMoveConstruct> e2(cuda::std::unexpect);

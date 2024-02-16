@@ -10,13 +10,15 @@
 #include <cuda/std/functional>
 // #include <cuda/std/string>
 
+#include "test_macros.h"
+
 template <class T>
 struct is_transparent
 {
 private:
     struct two {char lx; char lxx;};
-    template <class U> __host__ __device__ static two test(...);
-    template <class U> __host__ __device__ static char test(typename U::is_transparent* = 0);
+    template <class U> TEST_HOST_DEVICE static two test(...);
+    template <class U> TEST_HOST_DEVICE static char test(typename U::is_transparent* = 0);
 public:
     static const bool value = sizeof(test<T>(0)) == 1;
 };

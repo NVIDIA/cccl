@@ -26,12 +26,12 @@
 
 struct Explicit {
   int value;
-  __host__ __device__ explicit Explicit(int x) : value(x) {}
+  TEST_HOST_DEVICE explicit Explicit(int x) : value(x) {}
 };
 
 struct Implicit {
   int value;
-  __host__ __device__ Implicit(int x) : value(x) {}
+  TEST_HOST_DEVICE Implicit(int x) : value(x) {}
 };
 
 int main(int, char**)

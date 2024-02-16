@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_nothrow_default_constructible()
 {
     static_assert( cuda::std::is_nothrow_default_constructible<T>::value, "");
@@ -30,7 +30,7 @@ void test_is_nothrow_default_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_nothrow_default_constructor()
 {
     static_assert(!cuda::std::is_nothrow_default_constructible<T>::value, "");
@@ -58,15 +58,15 @@ struct bit_zero
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A();
 };
 
 struct DThrows
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     DThrows()  noexcept(true) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~DThrows() noexcept(false) {}
 };
 

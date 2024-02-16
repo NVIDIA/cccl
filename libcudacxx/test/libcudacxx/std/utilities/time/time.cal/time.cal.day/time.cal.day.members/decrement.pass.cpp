@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <typename D>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexpr()
 {
     D d1{10};

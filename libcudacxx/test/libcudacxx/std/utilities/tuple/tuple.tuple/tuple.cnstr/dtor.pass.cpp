@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 struct not_trivially_destructible {
-    __host__ __device__ virtual ~not_trivially_destructible() {}
+    TEST_HOST_DEVICE virtual ~not_trivially_destructible() {}
 };
 
 int main(int, char**)

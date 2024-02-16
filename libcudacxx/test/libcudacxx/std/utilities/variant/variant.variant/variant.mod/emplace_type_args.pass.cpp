@@ -26,23 +26,23 @@
 #include "variant_test_helpers.h"
 
 template <class Var, class T, class... Args>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr auto test_emplace_exists_imp(int) -> decltype(
     cuda::std::declval<Var>().template emplace<T>(cuda::std::declval<Args>()...), true) {
   return true;
 }
 
 template <class, class, class...>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr auto test_emplace_exists_imp(long) -> bool {
   return false;
 }
 
-template <class... Args> __host__ __device__ constexpr bool emplace_exists() {
+template <class... Args> TEST_HOST_DEVICE constexpr bool emplace_exists() {
   return test_emplace_exists_imp<Args...>(0);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_emplace_sfinae() {
   {
     using V = cuda::std::variant<int, void *, const void *, TestTypes::NoCtors>;
@@ -84,7 +84,7 @@ void test_emplace_sfinae() {
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_basic() {
   {
     using V = cuda::std::variant<int>;

@@ -27,19 +27,19 @@ STATIC_TEST_GLOBAL_VAR int count = 0;
 
 struct Explicit {
   Explicit() = default;
-  __host__ __device__ explicit Explicit(int) {}
+  TEST_HOST_DEVICE explicit Explicit(int) {}
 };
 
 struct Implicit {
   Implicit() = default;
-  __host__ __device__ Implicit(int) {}
+  TEST_HOST_DEVICE Implicit(int) {}
 };
 
 template<class T>
 struct Derived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
   template<class U>
-  __host__ __device__ operator cuda::std::tuple<U>() && { ++count; return {}; }
+  TEST_HOST_DEVICE operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
 
@@ -47,7 +47,7 @@ template<class T>
 struct ExplicitDerived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
   template<class U>
-  __host__ __device__ explicit operator cuda::std::tuple<U>() && { ++count; return {}; }
+  TEST_HOST_DEVICE explicit operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
 int main(int, char**) {

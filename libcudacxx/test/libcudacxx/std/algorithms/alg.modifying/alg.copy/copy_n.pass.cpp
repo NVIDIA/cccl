@@ -22,7 +22,7 @@
 using UDI = UserDefinedIntegral<unsigned>;
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX20 TEST_HOST_DEVICE void test() {
   {
     constexpr unsigned N = 1000;
     int ia[N];
@@ -54,7 +54,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
   }
 }
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX20 TEST_HOST_DEVICE bool test() {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*> >();

@@ -32,7 +32,7 @@
 // cuda::std::array not supported
 /*
 template <class T, cuda::std::size_t N, class U, size_t idx>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     static_assert((cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, N>,
                                    cuda::std::tuple_size<T> >::value), "");

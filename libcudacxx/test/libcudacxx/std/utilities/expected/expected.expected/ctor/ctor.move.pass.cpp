@@ -41,22 +41,22 @@ struct NonMovable {
 
 struct MovableNonTrivial {
   int i;
-  __host__ __device__ constexpr MovableNonTrivial(int ii) : i(ii) {}
-  __host__ __device__ constexpr MovableNonTrivial(MovableNonTrivial&& o) : i(o.i) { o.i = 0; }
+  TEST_HOST_DEVICE constexpr MovableNonTrivial(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr MovableNonTrivial(MovableNonTrivial&& o) : i(o.i) { o.i = 0; }
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept {
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ friend constexpr bool operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept {
+  TEST_HOST_DEVICE friend constexpr bool operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept {
     return lhs.i != rhs.i;
   };
 #endif // TEST_STD_VER > 2017
 };
 
 struct MoveMayThrow {
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) {}
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) {}
 };
 
 // Test Constraints:
@@ -87,7 +87,7 @@ static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<in
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // move the value non-trivial
   {
     cuda::std::expected<MovableNonTrivial, int> e1(5);
@@ -128,13 +128,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct Throwing {
     Throwing() = default;
-    __host__ __device__ Throwing(Throwing&&) { throw Except{}; }
+    TEST_HOST_DEVICE Throwing(Throwing&&) { throw Except{}; }
   };
 
   // throw on moving value

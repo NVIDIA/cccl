@@ -20,10 +20,10 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ int plusOne(const int v) noexcept { return v + 1; }
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE int plusOne(const int v) noexcept { return v + 1; }
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE void test() {
   {
     constexpr int N = 4;
     constexpr int ia[N] = {1, 3, 6, 7};
@@ -42,7 +42,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE bool test() {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*> >();

@@ -28,10 +28,10 @@ struct MoveOnly {
     MoveOnly& operator=(MoveOnly&&) = default;
 
     // Not deleted because of non guaranteed copy elision in C++11/14
-    __host__ __device__ MoveOnly(const MoveOnly&);
-    __host__ __device__ MoveOnly& operator=(const MoveOnly&);
+    TEST_HOST_DEVICE MoveOnly(const MoveOnly&);
+    TEST_HOST_DEVICE MoveOnly& operator=(const MoveOnly&);
 
-    __host__ __device__ constexpr MoveOnly(const double val) noexcept : val_(val) {}
+    TEST_HOST_DEVICE constexpr MoveOnly(const double val) noexcept : val_(val) {}
 };
 
 int main(int, char**)

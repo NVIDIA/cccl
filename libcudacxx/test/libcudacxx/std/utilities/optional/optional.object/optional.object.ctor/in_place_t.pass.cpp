@@ -29,17 +29,17 @@ class X
     int i_;
     int j_ = 0;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     X() : i_(0) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int i, int j) : i_(i), j_(j) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~X() {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const X& x, const X& y)
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
@@ -49,14 +49,14 @@ class Y
     int i_;
     int j_ = 0;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y() : i_(0) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y(int i, int j) : i_(i), j_(j) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const Y& x, const Y& y)
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
@@ -64,7 +64,7 @@ public:
 class Z
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(int) {TEST_THROW(6);}
 };
 
@@ -80,7 +80,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<int>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(in_place_t, int i)
                 : optional<int>(in_place, i) {}
         };
@@ -117,7 +117,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<Y>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(in_place_t)
                 : optional<Y>(in_place) {}
         };
@@ -131,7 +131,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<Y>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(in_place_t, int i)
                 : optional<Y>(in_place, i) {}
         };
@@ -145,7 +145,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<Y>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(in_place_t, int i, int j)
                 : optional<Y>(in_place, i, j) {}
         };

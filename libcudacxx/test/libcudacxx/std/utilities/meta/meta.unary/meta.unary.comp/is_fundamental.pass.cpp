@@ -17,7 +17,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_fundamental()
 {
     static_assert( cuda::std::is_fundamental<T>::value, "");
@@ -33,7 +33,7 @@ void test_is_fundamental()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_fundamental()
 {
     static_assert(!cuda::std::is_fundamental<T>::value, "");
@@ -56,7 +56,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -69,7 +69,7 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 

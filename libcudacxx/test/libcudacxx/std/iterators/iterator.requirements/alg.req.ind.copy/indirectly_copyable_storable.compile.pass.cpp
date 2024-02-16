@@ -28,7 +28,7 @@ struct CopyOnly {
 template<class T>
 struct PointerTo {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_HOST_DEVICE T& operator*() const;
 };
 
 // Copying the underlying object between pointers (or dereferenceable classes) works. This is a non-exhaustive check
@@ -51,18 +51,18 @@ struct NoLvalueAssignment {
   struct ValueType;
 
   struct ReferenceType {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&);
     ReferenceType& operator=(ValueType&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_HOST_DEVICE operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 static_assert( cuda::std::indirectly_writable<NoLvalueAssignment, cuda::std::iter_reference_t<NoLvalueAssignment>>);
@@ -79,17 +79,17 @@ struct NoConstLvalueAssignment {
 
   struct ReferenceType {
     ReferenceType& operator=(ValueType const&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType&);
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_HOST_DEVICE operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 static_assert( cuda::std::indirectly_writable<NoConstLvalueAssignment, cuda::std::iter_reference_t<NoConstLvalueAssignment>>);
@@ -105,18 +105,18 @@ struct NoRvalueAssignment {
   struct ValueType;
 
   struct ReferenceType {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
-    __host__ __device__ ReferenceType& operator=(ValueType&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&);
     ReferenceType& operator=(ValueType&&) = delete;
-    __host__ __device__ ReferenceType& operator=(ValueType const&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&&);
   };
 
   struct ValueType {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_HOST_DEVICE operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 static_assert( cuda::std::indirectly_writable<NoRvalueAssignment, cuda::std::iter_reference_t<NoRvalueAssignment>>);
@@ -132,18 +132,18 @@ struct NoConstRvalueAssignment {
   struct ValueType;
 
   struct ReferenceType {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
-    __host__ __device__ ReferenceType& operator=(ValueType&);
-    __host__ __device__ ReferenceType& operator=(ValueType&&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType&&);
     ReferenceType& operator=(ValueType const&&) = delete;
   };
 
   struct ValueType {
-    __host__ __device__ operator ReferenceType&() const;
+    TEST_HOST_DEVICE operator ReferenceType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 static_assert( cuda::std::indirectly_writable<NoConstRvalueAssignment, cuda::std::iter_reference_t<NoConstRvalueAssignment>>);
@@ -215,16 +215,16 @@ struct InconsistentIterator {
   struct ValueType;
 
   struct ReferenceType {
-    __host__ __device__ ReferenceType& operator=(ValueType const&);
+    TEST_HOST_DEVICE ReferenceType& operator=(ValueType const&);
   };
 
   struct ValueType {
     ValueType() = default;
-    __host__ __device__ ValueType(const ReferenceType&);
+    TEST_HOST_DEVICE ValueType(const ReferenceType&);
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 // `ValueType` can be constructed with a `ReferenceType` and assigned to a `ReferenceType`, so it does model
@@ -239,15 +239,15 @@ struct NotConstructibleFromRefIn {
 
   struct ValueType {
     ValueType(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   struct ReferenceType {
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 template <template <class> class X, template <class> class Y>
@@ -267,7 +267,7 @@ static_assert(cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueT
 
 struct AssignableFromAnything {
   template<class T>
-  __host__ __device__ AssignableFromAnything& operator=(T&&);
+  TEST_HOST_DEVICE AssignableFromAnything& operator=(T&&);
 };
 
 // A type that can't be constructed from its own reference isn't `indirectly_copyable_storable`, even when assigning it
@@ -279,17 +279,17 @@ struct NotAssignableFromRefIn {
   struct ReferenceType;
 
   struct ValueType {
-    __host__ __device__ ValueType(ReferenceType);
+    TEST_HOST_DEVICE ValueType(ReferenceType);
     ValueType& operator=(ReferenceType) = delete;
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   struct ReferenceType {
-    __host__ __device__ operator CommonType&() const;
+    TEST_HOST_DEVICE operator CommonType&() const;
   };
 
   using value_type = ValueType;
-  __host__ __device__ ReferenceType& operator*() const;
+  TEST_HOST_DEVICE ReferenceType& operator*() const;
 };
 
 template <template <class> class X, template <class> class Y>

@@ -21,7 +21,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     int ia[] = {0, 1, 2, 3, 0, 1, 2, 3};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);
     int ib[] = {1, 3, 5, 7};

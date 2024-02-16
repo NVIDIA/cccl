@@ -18,24 +18,24 @@
 #include "test_macros.h"
 #if TEST_STD_VER > 2017
 
-__host__ __device__ constexpr bool check_subsumption(cuda::std::regular_invocable auto) {
+TEST_HOST_DEVICE constexpr bool check_subsumption(cuda::std::regular_invocable auto) {
   return false;
 }
 
 // clang-format off
 template<class F>
 requires cuda::std::predicate<F> && true
-__host__ __device__ constexpr bool check_subsumption(F)
+TEST_HOST_DEVICE constexpr bool check_subsumption(F)
 {
   return true;
 }
 // clang-format on
 struct not_predicate {
-  __host__ __device__ constexpr void operator()() const {}
+  TEST_HOST_DEVICE constexpr void operator()() const {}
 };
 
 struct predicate {
-  __host__ __device__ constexpr bool operator()() const { return true; }
+  TEST_HOST_DEVICE constexpr bool operator()() const { return true; }
 };
 
 static_assert(!check_subsumption(not_predicate{}), "");

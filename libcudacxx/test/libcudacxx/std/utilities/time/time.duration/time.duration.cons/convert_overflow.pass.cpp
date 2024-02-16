@@ -18,13 +18,15 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cassert>
 
-__host__ __device__
+#include "test_macros.h"
+
+TEST_HOST_DEVICE
 bool f(cuda::std::chrono::milliseconds)
 {
     return false;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 bool f(cuda::std::chrono::seconds)
 {
     return true;

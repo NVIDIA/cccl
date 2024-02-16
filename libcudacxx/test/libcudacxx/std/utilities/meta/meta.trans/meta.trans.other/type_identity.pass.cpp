@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_type_identity()
 {
     ASSERT_SAME_TYPE(T, typename cuda::std::type_identity<T>::type);

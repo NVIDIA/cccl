@@ -27,7 +27,7 @@
 
 struct S { int x; };
 
-__host__ __device__ void test_decomp_user_type() {
+TEST_HOST_DEVICE void test_decomp_user_type() {
   {
     S s{99};
     auto [m1] = s;
@@ -44,7 +44,7 @@ __host__ __device__ void test_decomp_user_type() {
   }
 }
 
-__host__ __device__ void test_decomp_tuple() {
+TEST_HOST_DEVICE void test_decomp_tuple() {
   typedef cuda::std::tuple<int> T;
   {
     T s{99};
@@ -62,7 +62,7 @@ __host__ __device__ void test_decomp_tuple() {
   }
 }
 
-__host__ __device__ void test_decomp_pair() {
+TEST_HOST_DEVICE void test_decomp_pair() {
   typedef cuda::std::pair<int, double> T;
   {
     T s{99, 42.5};
@@ -84,7 +84,7 @@ __host__ __device__ void test_decomp_pair() {
   }
 }
 
-__host__ __device__ void test_decomp_array() {
+TEST_HOST_DEVICE void test_decomp_array() {
   typedef cuda::std::array<int, 3> T;
   {
     T s{{99, 42, -1}};
@@ -115,14 +115,14 @@ struct Test {
 };
 
 template <size_t N>
-__host__ __device__ int get(Test const&) { static_assert(N == 0, ""); return -1; }
+TEST_HOST_DEVICE int get(Test const&) { static_assert(N == 0, ""); return -1; }
 
 template <>
 struct std::tuple_element<0, Test> {
   typedef int type;
 };
 
-__host__ __device__ void test_before_tuple_size_specialization() {
+TEST_HOST_DEVICE void test_before_tuple_size_specialization() {
   Test const t{99};
   auto& [p] = t;
   assert(p == 99);
@@ -134,7 +134,7 @@ public:
   static const size_t value = 1;
 };
 
-__host__ __device__ void test_after_tuple_size_specialization() {
+TEST_HOST_DEVICE void test_after_tuple_size_specialization() {
   Test const t{99};
   auto& [p] = t;
 #if !(defined(_CCCL_COMPILER_NVRTC) && defined(__CUDA_ARCH__)) // nvbug4053842

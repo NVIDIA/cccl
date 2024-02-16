@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprSpan(Span sp)
 {
     ASSERT_NOEXCEPT(sp.front());
@@ -31,7 +31,7 @@ constexpr bool testConstexprSpan(Span sp)
 
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan(Span sp)
 {
     ASSERT_NOEXCEPT(sp.front());
@@ -39,7 +39,7 @@ void testRuntimeSpan(Span sp)
 }
 
 template <typename Span>
-__host__ __device__
+TEST_HOST_DEVICE
 void testEmptySpan(Span sp)
 {
     if (!sp.empty())

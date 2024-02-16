@@ -30,24 +30,24 @@ struct Explicit {
     explicit Explicit() = default;
 };
 
-__host__ __device__ cuda::std::tuple<> test1() { return {}; }
+TEST_HOST_DEVICE cuda::std::tuple<> test1() { return {}; }
 
-__host__ __device__ cuda::std::tuple<Implicit> test2() { return {}; }
-__host__ __device__ cuda::std::tuple<Explicit> test3() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit> test2() { return {}; }
+TEST_HOST_DEVICE cuda::std::tuple<Explicit> test3() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
-__host__ __device__ cuda::std::tuple<Implicit, Implicit> test4() { return {}; }
-__host__ __device__ cuda::std::tuple<Explicit, Implicit> test5() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Implicit, Explicit> test6() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Explicit, Explicit> test7() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Implicit> test4() { return {}; }
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Implicit> test5() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Explicit> test6() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Explicit> test7() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
-__host__ __device__ cuda::std::tuple<Implicit, Implicit, Implicit> test8() { return {}; }
-__host__ __device__ cuda::std::tuple<Implicit, Implicit, Explicit> test9() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Implicit, Explicit, Implicit> test10() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Implicit, Explicit, Explicit> test11() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Explicit, Implicit, Implicit> test12() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Explicit, Implicit, Explicit> test13() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Explicit, Explicit, Implicit> test14() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-__host__ __device__ cuda::std::tuple<Explicit, Explicit, Explicit> test15() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Implicit, Implicit> test8() { return {}; }
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Implicit, Explicit> test9() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Explicit, Implicit> test10() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Implicit, Explicit, Explicit> test11() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Implicit, Implicit> test12() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Implicit, Explicit> test13() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Explicit, Implicit> test14() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+TEST_HOST_DEVICE cuda::std::tuple<Explicit, Explicit, Explicit> test15() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
 int main(int, char**) {
     return 0;

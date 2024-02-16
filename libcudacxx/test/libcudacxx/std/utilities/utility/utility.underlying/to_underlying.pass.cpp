@@ -39,7 +39,7 @@ struct WithBitfieldEnums {
   e_bool e3 : 1;
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
   ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));

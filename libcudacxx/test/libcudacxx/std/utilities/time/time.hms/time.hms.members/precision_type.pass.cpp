@@ -15,9 +15,9 @@
 //     static unsigned constexpr fractional_width = see below;
 //     using precision                            = see below;
 //
-//   precision is duration<common_type_t<Duration::rep, seconds::rep>, 
+//   precision is duration<common_type_t<Duration::rep, seconds::rep>,
 //                                 ratio<1, 10^^fractional_width>>
-   
+
 #include <cuda/std/chrono>
 #include <cuda/std/cassert>
 
@@ -45,9 +45,9 @@ constexpr unsigned long long powers[] = {
 	1000000000000000000ULL,
 	10000000000000000000ULL
 	};
-	
+
 template <typename Duration, unsigned width>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_precision()
 {
 	using HMS = cuda::std::chrono::hh_mm_ss<Duration>;

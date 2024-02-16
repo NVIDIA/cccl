@@ -20,20 +20,20 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const cuda::std::complex<T>& c, cuda::std::complex<T> x)
 {
     assert(acos(c) == x);
 }
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test()
 {
     test(cuda::std::complex<T>(INFINITY, 1), cuda::std::complex<T>(0, -INFINITY));
 }
 
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE void test_edges()
 {
     const double pi = cuda::std::atan2(+0., -0.);
     auto testcases = get_testcases();

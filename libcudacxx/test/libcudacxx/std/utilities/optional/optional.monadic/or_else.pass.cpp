@@ -44,7 +44,7 @@ _LIBCUDACXX_CONCEPT has_or_else = _LIBCUDACXX_FRAGMENT(HasOrElse, Opt, F);
 #endif
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 cuda::std::optional<T> return_optional();
 
 static_assert(has_or_else<cuda::std::optional<int>&, decltype(return_optional<int>)>, "");
@@ -59,9 +59,9 @@ static_assert(!has_or_else<cuda::std::optional<NonMovable>&, decltype(return_opt
 static_assert(!has_or_else<cuda::std::optional<NonMovable>&&, decltype(return_optional<NonMovable>)>, "");
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 cuda::std::optional<int> take_int(int);
-__host__ __device__
+TEST_HOST_DEVICE
 void take_int_return_void(int);
 
 // For some reason, MSVC handles the assertions above correctly in pre-C++20 modes, but... fails to fail these.
@@ -85,7 +85,7 @@ static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int_return_v
 static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool test() {
   {
     cuda::std::optional<int> opt;
@@ -111,7 +111,7 @@ TEST_CONSTEXPR_CXX17 bool test() {
   return true;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool test_nontrivial() {
   {
     cuda::std::optional<MoveOnly> opt;

@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_volatile_imp()
 {
     ASSERT_SAME_TYPE(volatile U, typename cuda::std::add_volatile<T>::type);
@@ -25,7 +25,7 @@ void test_add_volatile_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_volatile()
 {
     test_add_volatile_imp<T, volatile T>();

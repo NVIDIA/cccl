@@ -40,36 +40,36 @@ struct simple_contiguous_iterator {
     typedef int&                                reference;
     typedef simple_contiguous_iterator          self;
 
-    __host__ __device__ simple_contiguous_iterator();
+    TEST_HOST_DEVICE simple_contiguous_iterator();
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
     auto operator<=>(const self&) const = default;
 #else
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type n, self x);
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type n, self x);
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 static_assert(cuda::std::random_access_iterator<simple_contiguous_iterator>);
@@ -86,36 +86,36 @@ struct mismatch_value_iter_ref_t {
     typedef int&                                reference;
     typedef mismatch_value_iter_ref_t           self;
 
-    __host__ __device__ mismatch_value_iter_ref_t();
+    TEST_HOST_DEVICE mismatch_value_iter_ref_t();
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
     auto operator<=>(const self&) const = default;
 #else
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type n, self x);
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type n, self x);
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 static_assert(cuda::std::random_access_iterator<mismatch_value_iter_ref_t>);
@@ -130,36 +130,36 @@ struct wrong_iter_reference_t {
     typedef int&                            reference;
     typedef wrong_iter_reference_t          self;
 
-    __host__ __device__ wrong_iter_reference_t();
+    TEST_HOST_DEVICE wrong_iter_reference_t();
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
     auto operator<=>(const self&) const = default;
 #else
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type n, self x);
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type n, self x);
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 static_assert(cuda::std::random_access_iterator<wrong_iter_reference_t>);
@@ -174,42 +174,42 @@ struct to_address_wrong_return_type {
     typedef int&                                reference;
     typedef to_address_wrong_return_type        self;
 
-    __host__ __device__ to_address_wrong_return_type();
+    TEST_HOST_DEVICE to_address_wrong_return_type();
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
     auto operator<=>(const self&) const = default;
 #else
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type n, self x);
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type n, self x);
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 template<>
 struct cuda::std::pointer_traits<to_address_wrong_return_type> {
   typedef void element_type;
-  __host__ __device__ static void *to_address(to_address_wrong_return_type const&);
+  TEST_HOST_DEVICE static void *to_address(to_address_wrong_return_type const&);
 };
 
 static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>);
@@ -224,36 +224,36 @@ struct template_and_no_element_type {
     typedef int&                            reference;
     typedef template_and_no_element_type    self;
 
-    __host__ __device__ template_and_no_element_type();
+    TEST_HOST_DEVICE template_and_no_element_type();
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
     auto operator<=>(const self&) const = default;
 #else
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type, self) { return self{}; }
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type, self) { return self{}; }
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 // Template param is used instead of element_type.
@@ -270,43 +270,43 @@ struct no_operator_arrow {
     typedef int&                            reference;
     typedef no_operator_arrow               self;
 
-    __host__ __device__ no_operator_arrow();
+    TEST_HOST_DEVICE no_operator_arrow();
 
-    __host__ __device__ reference operator*() const;
+    TEST_HOST_DEVICE reference operator*() const;
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
-    __host__ __device__ pointer operator->() const requires (!DisableArrow);
+    TEST_HOST_DEVICE pointer operator->() const requires (!DisableArrow);
     auto operator<=>(const self&) const = default;
 #else
     template<bool B = DisableArrow, cuda::std::enable_if_t<!B, int> = 0>
-    __host__ __device__ pointer operator->() const;
-    __host__ __device__ friend bool operator==(const self&, const self&) { return true; };
-    __host__ __device__ friend bool operator!=(const self&, const self&) { return false; };
-    __host__ __device__ friend bool operator<(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator<=(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>(const self&, const self&)  { return true; };
-    __host__ __device__ friend bool operator>=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE pointer operator->() const;
+    TEST_HOST_DEVICE friend bool operator==(const self&, const self&) { return true; };
+    TEST_HOST_DEVICE friend bool operator!=(const self&, const self&) { return false; };
+    TEST_HOST_DEVICE friend bool operator<(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator<=(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>(const self&, const self&)  { return true; };
+    TEST_HOST_DEVICE friend bool operator>=(const self&, const self&)  { return true; };
 #endif
 
-    __host__ __device__ self& operator++();
-    __host__ __device__ self operator++(int);
+    TEST_HOST_DEVICE self& operator++();
+    TEST_HOST_DEVICE self operator++(int);
 
-    __host__ __device__ self& operator--();
-    __host__ __device__ self operator--(int);
+    TEST_HOST_DEVICE self& operator--();
+    TEST_HOST_DEVICE self operator--(int);
 
-    __host__ __device__ self& operator+=(difference_type n);
-    __host__ __device__ self operator+(difference_type n) const;
-    __host__ __device__ friend self operator+(difference_type, self) { return self{}; }
+    TEST_HOST_DEVICE self& operator+=(difference_type n);
+    TEST_HOST_DEVICE self operator+(difference_type n) const;
+    TEST_HOST_DEVICE friend self operator+(difference_type, self) { return self{}; }
 
-    __host__ __device__ self& operator-=(difference_type n);
-    __host__ __device__ self operator-(difference_type n) const;
-    __host__ __device__ difference_type operator-(const self& n) const;
+    TEST_HOST_DEVICE self& operator-=(difference_type n);
+    TEST_HOST_DEVICE self operator-(difference_type n) const;
+    TEST_HOST_DEVICE difference_type operator-(const self& n) const;
 
-    __host__ __device__ reference operator[](difference_type n) const;
+    TEST_HOST_DEVICE reference operator[](difference_type n) const;
 };
 
 template<>
 struct cuda::std::pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>> {
-  __host__ __device__ static constexpr int *to_address(const no_operator_arrow<true, false>&);
+  TEST_HOST_DEVICE static constexpr int *to_address(const no_operator_arrow<true, false>&);
 };
 
 static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>);

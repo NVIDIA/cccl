@@ -27,7 +27,7 @@
 #include "test_workarounds.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__ void test_const_lvalue_get() {
+TEST_HOST_DEVICE void test_const_lvalue_get() {
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
@@ -94,7 +94,7 @@ __host__ __device__ void test_const_lvalue_get() {
 #endif
 }
 
-__host__ __device__ void test_lvalue_get() {
+TEST_HOST_DEVICE void test_lvalue_get() {
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
@@ -143,7 +143,7 @@ __host__ __device__ void test_lvalue_get() {
 #endif
 }
 
-__host__ __device__ void test_rvalue_get() {
+TEST_HOST_DEVICE void test_rvalue_get() {
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
@@ -198,7 +198,7 @@ __host__ __device__ void test_rvalue_get() {
 #endif
 }
 
-__host__ __device__ void test_const_rvalue_get() {
+TEST_HOST_DEVICE void test_const_rvalue_get() {
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42);
@@ -259,7 +259,7 @@ struct identity {
   using type = Tp;
 };
 
-__host__ __device__ void test_throws_for_all_value_categories() {
+TEST_HOST_DEVICE void test_throws_for_all_value_categories() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   using V = cuda::std::variant<int, long>;
   V v0(42);

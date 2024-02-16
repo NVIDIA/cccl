@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 struct LVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int&) { return 1; }
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
@@ -32,7 +32,7 @@ struct LVal {
 
 struct CLVal {
   int operator()(int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(const int&) { return 1; }
   int operator()(int&&) = delete;
   int operator()(const int&&) = delete;
@@ -41,7 +41,7 @@ struct CLVal {
 struct RVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int&&) { return 1; }
   int operator()(const int&&) = delete;
 };
@@ -50,12 +50,12 @@ struct CRVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(const int&&) { return 1; }
 };
 
 struct RefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) & { return 1; }
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
@@ -64,7 +64,7 @@ struct RefQual {
 
 struct CRefQual {
   int operator()(int) & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) const& { return 1; }
   int operator()(int) && = delete;
   int operator()(int) const&& = delete;
@@ -73,7 +73,7 @@ struct CRefQual {
 struct RVRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) && { return 1; }
   int operator()(int) const&& = delete;
 };
@@ -82,28 +82,28 @@ struct RVCRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) const&& { return 1; }
 };
 
 #if TEST_STD_VER >= 2017
 struct NoCopy {
   NoCopy() = default;
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoCopy(const NoCopy&) { assert(false); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   int operator()(const NoCopy&&) { return 1; }
 };
 
 struct NoMove {
   NoMove() = default;
   NoMove(NoMove&&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   NoMove operator()(const NoCopy&&) { return NoMove{}; }
 };
 #endif
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_val_types() {
   // Test & overload
   {
@@ -178,7 +178,7 @@ constexpr void test_val_types() {
 }
 
 struct NonConst {
-  __host__ __device__
+  TEST_HOST_DEVICE
   int non_const() { return 1; }
 };
 
@@ -186,14 +186,14 @@ struct NonConst {
 // This is an expanded lambda from the original test.
 struct nvrtc_workaround {
     template<typename T>
-    __host__ __device__
+    TEST_HOST_DEVICE
     int operator()(T && t) {
         return t.non_const();
     }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 void test_sfinae() {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -201,7 +201,7 @@ TEST_CONSTEXPR_CXX17 void test_sfinae() {
   cuda::std::move(opt).transform(l);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool test() {
   test_sfinae();
   test_val_types();

@@ -28,7 +28,7 @@
 #include "cuda_space_selector.h"
 
 template<template<typename, typename> class Selector>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     Selector<cuda::std::atomic<int>, default_initializer> sel;

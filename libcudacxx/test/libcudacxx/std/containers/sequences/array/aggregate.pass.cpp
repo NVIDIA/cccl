@@ -21,7 +21,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <typename T>
-__host__ __device__ void check_aggregate()
+TEST_HOST_DEVICE void check_aggregate()
 {
     static_assert(cuda::std::is_aggregate<cuda::std::array<T, 0> >::value, "");
     static_assert(cuda::std::is_aggregate<cuda::std::array<T, 1> >::value, "");
@@ -34,7 +34,7 @@ struct Empty { };
 struct Trivial { int i; int j; };
 struct NonTrivial {
     int i; int j;
-    __host__ __device__ NonTrivial(NonTrivial const&) { }
+    TEST_HOST_DEVICE NonTrivial(NonTrivial const&) { }
 };
 
 int main(int, char**)

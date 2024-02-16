@@ -13,6 +13,8 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 constexpr auto dyn = cuda::std::dynamic_extent;
 
 //template<class LayoutOrg, class LayoutSub, class ExtentsOrg, class ExtentsSub, class ... SubArgs>
@@ -84,7 +86,7 @@ struct TestSubMDSpan<
 
 // TYPED_TEST(TestSubMDSpan, submdspan_return_type)
 template<class T>
-__host__ __device__ void test_submdspan()
+TEST_HOST_DEVICE void test_submdspan()
 {
     using TestFixture = TestSubMDSpan<T>;
 

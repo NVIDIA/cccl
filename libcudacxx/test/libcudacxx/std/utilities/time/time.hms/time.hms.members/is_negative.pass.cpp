@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <typename Duration>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_neg(Duration d)
 {
 	ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<cuda::std::chrono::hh_mm_ss<Duration>>().is_negative()));

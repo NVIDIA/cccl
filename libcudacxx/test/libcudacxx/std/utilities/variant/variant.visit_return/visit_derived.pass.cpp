@@ -25,21 +25,21 @@
 
 struct visitor_42 {
   template<class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept {
+  TEST_HOST_DEVICE constexpr bool operator()(T x) const noexcept {
     assert(x == 42);
     return true;
   }
 };
 struct visitor_42_3 {
   template<class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept {
+  TEST_HOST_DEVICE constexpr bool operator()(T x) const noexcept {
     assert(x == 42.3);
     return true;
   }
 };
 struct visitor_float {
   template<class T>
-  __host__ __device__ constexpr bool operator()(T x) const noexcept {
+  TEST_HOST_DEVICE constexpr bool operator()(T x) const noexcept {
     assert(x == -1.3f);
     return true;
   }
@@ -64,7 +64,7 @@ struct EvilVariant1 : cuda::std::variant<int, long, double>,
 // Check that visit unambiguously picks the variant, even if the other base has __impl member.
 struct ImplVariantBase {
   struct Callable {
-    __host__ __device__
+    TEST_HOST_DEVICE
     bool operator()() const { assert(false); return false; }
   };
 
@@ -75,7 +75,7 @@ struct ImplVariantBase {
     using cuda::std::variant<int, long, double>::variant;
   };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_derived_from_variant() {
   cuda::std::visit<bool>(visitor_42{}, MyVariant{42});
   cuda::std::visit<bool>(visitor_float{}, MyVariant{-1.3f});

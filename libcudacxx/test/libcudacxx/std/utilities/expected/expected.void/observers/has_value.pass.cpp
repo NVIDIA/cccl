@@ -32,7 +32,7 @@ static_assert(!HasValueNoexcept<Foo>, "");
 static_assert(HasValueNoexcept<cuda::std::expected<int, int>>, "");
 static_assert(HasValueNoexcept<const cuda::std::expected<int, int>>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // has_value
   {
     const cuda::std::expected<void, int> e;

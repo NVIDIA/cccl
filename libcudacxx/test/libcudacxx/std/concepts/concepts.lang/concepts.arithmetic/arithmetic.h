@@ -17,19 +17,19 @@
 #if TEST_STD_VER > 2017
 // This overload should never be called. It exists solely to force subsumption.
 template <cuda::std::integral I>
-__host__ __device__ constexpr bool CheckSubsumption(I) {
+TEST_HOST_DEVICE constexpr bool CheckSubsumption(I) {
   return false;
 }
 
 template <cuda::std::integral I>
 requires cuda::std::signed_integral<I> && (!cuda::std::unsigned_integral<I>)
-__host__ __device__ constexpr bool CheckSubsumption(I) {
+TEST_HOST_DEVICE constexpr bool CheckSubsumption(I) {
   return cuda::std::is_signed_v<I>;
 }
 
 template <cuda::std::integral I>
 requires cuda::std::unsigned_integral<I> && (!cuda::std::signed_integral<I>)
-__host__ __device__ constexpr bool CheckSubsumption(I) {
+TEST_HOST_DEVICE constexpr bool CheckSubsumption(I) {
   return cuda::std::is_unsigned_v<I>;
 }
 #endif // TEST_STD_VER > 2017

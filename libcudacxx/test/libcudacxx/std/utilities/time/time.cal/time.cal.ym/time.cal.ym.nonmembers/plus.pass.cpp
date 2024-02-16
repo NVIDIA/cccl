@@ -31,7 +31,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprYears(cuda::std::chrono::year_month ym)
 {
     cuda::std::chrono::years offset{23};
@@ -42,7 +42,7 @@ constexpr bool testConstexprYears(cuda::std::chrono::year_month ym)
 }
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprMonths(cuda::std::chrono::year_month ym)
 {
     cuda::std::chrono::months offset{6};

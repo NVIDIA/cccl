@@ -24,17 +24,17 @@ struct B {};
 
 struct A1 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const { return b_; }
+  TEST_HOST_DEVICE TEST_CONSTEXPR operator B&() const { return b_; }
 };
 
 struct A2 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const TEST_NOEXCEPT { return b_; }
+  TEST_HOST_DEVICE TEST_CONSTEXPR operator B&() const TEST_NOEXCEPT { return b_; }
 };
 
-__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) TEST_NOEXCEPT;
+TEST_HOST_DEVICE void implicitly_convert(cuda::std::reference_wrapper<B>) TEST_NOEXCEPT;
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test()
 {
   {
     A1 a{};

@@ -19,7 +19,7 @@
 #include "../../rep.h"
 
 template <class D>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<typename D::rep>::zero());

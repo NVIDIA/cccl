@@ -25,7 +25,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_const_get_if() {
   {
     using V = cuda::std::variant<int>;
@@ -77,7 +77,7 @@ void test_const_get_if() {
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_get_if() {
   {
     using V = cuda::std::variant<int>;

@@ -18,12 +18,12 @@ struct Incomplete;
 template<class T> struct Holder { T t; };
 typedef Holder<Incomplete> *Ptr;
 
-__host__ __device__ Ptr no_args() { return nullptr; }
-__host__ __device__ Ptr one_arg(Ptr p) { return p; }
-__host__ __device__ Ptr two_args(Ptr p, Ptr) { return p; }
-__host__ __device__ Ptr three_args(Ptr p, Ptr, Ptr) { return p; }
+TEST_HOST_DEVICE Ptr no_args() { return nullptr; }
+TEST_HOST_DEVICE Ptr one_arg(Ptr p) { return p; }
+TEST_HOST_DEVICE Ptr two_args(Ptr p, Ptr) { return p; }
+TEST_HOST_DEVICE Ptr three_args(Ptr p, Ptr, Ptr) { return p; }
 
-__host__ __device__ void one_arg_void(Ptr) { }
+TEST_HOST_DEVICE void one_arg_void(Ptr) { }
 
 int main(int, char**)
 {

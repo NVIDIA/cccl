@@ -12,7 +12,9 @@
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+
 #include "../mdspan.layout.util/layout_util.hpp"
+#include "test_macros.h"
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 

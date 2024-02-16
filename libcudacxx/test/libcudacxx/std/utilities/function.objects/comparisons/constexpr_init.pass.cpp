@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_constexpr_context() {
   cuda::std::equal_to<T> eq;
   ((void)eq);

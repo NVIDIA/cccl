@@ -28,7 +28,7 @@ TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 #endif
 #endif
 
-template <typename T> __host__ __device__ void checkAlwaysLockFree() {
+template <typename T> TEST_HOST_DEVICE void checkAlwaysLockFree() {
   if (cuda::std::atomic<T>::is_always_lock_free)
     assert(cuda::std::atomic<T>().is_lock_free());
 }
@@ -47,7 +47,7 @@ template <bool Disable = NeedWorkaroundForPR31864,
   cuda::std::enable_if_t<!Disable>* = nullptr,
   class LLong = long long,
   class ULLong = unsigned long long>
-__host__ __device__
+TEST_HOST_DEVICE
 void checkLongLongTypes() {
   static_assert(cuda::std::atomic<LLong>::is_always_lock_free == (2 == ATOMIC_LLONG_LOCK_FREE), "");
   static_assert(cuda::std::atomic<ULLong>::is_always_lock_free == (2 == ATOMIC_LLONG_LOCK_FREE), "");
@@ -55,13 +55,13 @@ void checkLongLongTypes() {
 
 // Used to make the calls to __atomic_always_lock_free dependent on a template
 // parameter.
-template <class T> __host__ __device__ constexpr size_t getSizeOf() { return sizeof(T); }
+template <class T> TEST_HOST_DEVICE constexpr size_t getSizeOf() { return sizeof(T); }
 
 template <bool Enable = NeedWorkaroundForPR31864,
   cuda::std::enable_if_t<Enable>* = nullptr,
   class LLong = long long,
   class ULLong = unsigned long long>
-__host__ __device__
+TEST_HOST_DEVICE
 void checkLongLongTypes() {
   constexpr bool ExpectLockFree = __atomic_always_lock_free(getSizeOf<LLong>(), 0);
   static_assert(cuda::std::atomic<LLong>::is_always_lock_free == ExpectLockFree, "");
@@ -69,7 +69,7 @@ void checkLongLongTypes() {
   static_assert((0 != ATOMIC_LLONG_LOCK_FREE) == ExpectLockFree, "");
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void run()
 {
 // structs and unions can't be defined in the template invocation.

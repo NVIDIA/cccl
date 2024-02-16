@@ -36,7 +36,7 @@
 #include "test_macros.h"
 
 template <class Tp, class Up>
-__host__ __device__ constexpr bool check_tag(Up) {
+TEST_HOST_DEVICE constexpr bool check_tag(Up) {
     return cuda::std::is_same<Tp, cuda::std::decay_t<Tp>>::value
         && cuda::std::is_same<Tp, Up>::value;
 }

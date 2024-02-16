@@ -25,7 +25,7 @@
 
 struct any_visitor {
   template <typename T>
-  __host__ __device__
+  TEST_HOST_DEVICE
   bool operator()(const T&) {
     return true;
   }
@@ -33,18 +33,18 @@ struct any_visitor {
 
 template <typename T, typename = decltype(cuda::std::visit<bool>(
                           cuda::std::declval<any_visitor&>(), cuda::std::declval<T>()))>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool has_visit(int) {
   return true;
 }
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool has_visit(...) {
   return false;
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_sfinae() {
   struct BadVariant : cuda::std::variant<short>, cuda::std::variant<long, float> {};
 

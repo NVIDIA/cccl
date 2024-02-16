@@ -19,27 +19,27 @@
 static_assert(cuda::std::sentinel_for<int*, int*>);
 static_assert(!cuda::std::sentinel_for<int*, long*>);
 struct nth_element_sentinel {
-  __host__ __device__ friend bool operator==(const nth_element_sentinel&, int*);
-  __host__ __device__ friend bool operator==(int*, const nth_element_sentinel&);
-  __host__ __device__ friend bool operator!=(const nth_element_sentinel&, int*);
-  __host__ __device__ friend bool operator!=(int*, const nth_element_sentinel&);
+  TEST_HOST_DEVICE friend bool operator==(const nth_element_sentinel&, int*);
+  TEST_HOST_DEVICE friend bool operator==(int*, const nth_element_sentinel&);
+  TEST_HOST_DEVICE friend bool operator!=(const nth_element_sentinel&, int*);
+  TEST_HOST_DEVICE friend bool operator!=(int*, const nth_element_sentinel&);
 };
 static_assert(cuda::std::sentinel_for<nth_element_sentinel, int*>);
 
 struct not_semiregular {
   not_semiregular() = delete;
-  __host__ __device__ friend bool operator==(const not_semiregular&, int*);
-  __host__ __device__ friend bool operator==(int*, const not_semiregular&);
-  __host__ __device__ friend bool operator!=(const not_semiregular&, int*);
-  __host__ __device__ friend bool operator!=(int*, const not_semiregular&);
+  TEST_HOST_DEVICE friend bool operator==(const not_semiregular&, int*);
+  TEST_HOST_DEVICE friend bool operator==(int*, const not_semiregular&);
+  TEST_HOST_DEVICE friend bool operator!=(const not_semiregular&, int*);
+  TEST_HOST_DEVICE friend bool operator!=(int*, const not_semiregular&);
 };
 static_assert(!cuda::std::sentinel_for<not_semiregular, int*>);
 
 struct weakly_equality_comparable_with_int {
-  __host__ __device__ friend bool operator==(const weakly_equality_comparable_with_int&, int);
-  __host__ __device__ friend bool operator==(int, const weakly_equality_comparable_with_int&);
-  __host__ __device__ friend bool operator!=(const weakly_equality_comparable_with_int&, int*);
-  __host__ __device__ friend bool operator!=(int*, const weakly_equality_comparable_with_int&);
+  TEST_HOST_DEVICE friend bool operator==(const weakly_equality_comparable_with_int&, int);
+  TEST_HOST_DEVICE friend bool operator==(int, const weakly_equality_comparable_with_int&);
+  TEST_HOST_DEVICE friend bool operator!=(const weakly_equality_comparable_with_int&, int*);
+  TEST_HOST_DEVICE friend bool operator!=(int*, const weakly_equality_comparable_with_int&);
 };
 static_assert(!cuda::std::sentinel_for<weakly_equality_comparable_with_int, int>);
 
@@ -55,12 +55,12 @@ struct move_only_iterator {
   move_only_iterator(move_only_iterator const&) = delete;
   move_only_iterator& operator=(move_only_iterator const&) = delete;
 
-  __host__ __device__ value_type operator*() const;
-  __host__ __device__ move_only_iterator& operator++();
-  __host__ __device__ move_only_iterator operator++(int);
+  TEST_HOST_DEVICE value_type operator*() const;
+  TEST_HOST_DEVICE move_only_iterator& operator++();
+  TEST_HOST_DEVICE move_only_iterator operator++(int);
 
-  __host__ __device__ bool operator==(move_only_iterator const&) const;
-  __host__ __device__ bool operator!=(move_only_iterator const&) const;
+  TEST_HOST_DEVICE bool operator==(move_only_iterator const&) const;
+  TEST_HOST_DEVICE bool operator!=(move_only_iterator const&) const;
 };
 
 #ifndef TEST_COMPILER_MSVC_2017

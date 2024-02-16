@@ -30,7 +30,7 @@
 #include "test_iterators.h"
 #include "counting_predicates.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
     typedef cuda::std::equal_to<int> EQ;
 

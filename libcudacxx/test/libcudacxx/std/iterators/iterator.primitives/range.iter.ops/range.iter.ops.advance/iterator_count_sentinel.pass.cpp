@@ -24,7 +24,7 @@
 #include "../types.h"
 
 template <bool Count, typename It>
-__host__ __device__ constexpr void check_forward(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
+TEST_HOST_DEVICE constexpr void check_forward(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   using Difference = cuda::std::iter_difference_t<It>;
   Difference const M = (expected - first); // expected travel distance
 
@@ -50,7 +50,7 @@ __host__ __device__ constexpr void check_forward(int* first, int* last, cuda::st
 }
 
 template <typename It>
-__host__ __device__ constexpr void check_forward_sized_sentinel(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
+TEST_HOST_DEVICE constexpr void check_forward_sized_sentinel(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   using Difference = cuda::std::iter_difference_t<It>;
   Difference const size = (last - first);
   Difference const M = (expected - first); // expected travel distance
@@ -80,7 +80,7 @@ __host__ __device__ constexpr void check_forward_sized_sentinel(int* first, int*
 }
 
 template <typename It>
-__host__ __device__ constexpr void check_backward(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
+TEST_HOST_DEVICE constexpr void check_backward(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   static_assert(cuda::std::random_access_iterator<It>, "This test doesn't support non random access iterators");
   using Difference = cuda::std::iter_difference_t<It>;
   Difference const M = (expected - last); // expected travel distance (which is negative)
@@ -108,25 +108,25 @@ struct iota_iterator {
     using difference_type = int;
     using value_type = int;
 
-    __host__ __device__ constexpr int operator*() const { return x; }
-    __host__ __device__ constexpr iota_iterator& operator++() { ++x; return *this; }
-    __host__ __device__ constexpr iota_iterator operator++(int) { ++x; return iota_iterator{x - 1}; }
+    TEST_HOST_DEVICE constexpr int operator*() const { return x; }
+    TEST_HOST_DEVICE constexpr iota_iterator& operator++() { ++x; return *this; }
+    TEST_HOST_DEVICE constexpr iota_iterator operator++(int) { ++x; return iota_iterator{x - 1}; }
 #if TEST_STD_VER > 2017
     constexpr bool operator==(const iota_iterator&) const = default;
 #else
-    __host__ __device__ constexpr bool operator==(const iota_iterator& other) const { return x == other.x; }
-    __host__ __device__ constexpr bool operator!=(const iota_iterator& other) const { return x != other.x; }
+    TEST_HOST_DEVICE constexpr bool operator==(const iota_iterator& other) const { return x == other.x; }
+    TEST_HOST_DEVICE constexpr bool operator!=(const iota_iterator& other) const { return x != other.x; }
 #endif
-    __host__ __device__ constexpr int operator-(const iota_iterator& that) const { return x - that.x; }
-    __host__ __device__ constexpr iota_iterator& operator--() { --x; return *this; }
-    __host__ __device__ constexpr iota_iterator operator--(int) { --x; return iota_iterator{x + 1}; }
+    TEST_HOST_DEVICE constexpr int operator-(const iota_iterator& that) const { return x - that.x; }
+    TEST_HOST_DEVICE constexpr iota_iterator& operator--() { --x; return *this; }
+    TEST_HOST_DEVICE constexpr iota_iterator operator--(int) { --x; return iota_iterator{x + 1}; }
 
     int x;
 };
 static_assert(cuda::std::bidirectional_iterator<iota_iterator>);
 static_assert(cuda::std::sized_sentinel_for<iota_iterator, iota_iterator>);
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   // Basic functionality test: advance forward, bound has the same type

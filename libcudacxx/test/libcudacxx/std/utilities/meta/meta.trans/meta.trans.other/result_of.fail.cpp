@@ -15,10 +15,15 @@
 
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+
 #include "test_macros.h"
 
+#ifndef _CCCL_CUDA_COMPILER
+static_assert(false, "There are no device lambdas in host only tests");
+#endif // !_CCCL_CUDA_COMPILER
+
 template <class Ret, class Fn>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_lambda(Fn &&)
 {
     ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
@@ -32,8 +37,8 @@ int main(int, char**)
 {
 #if defined(TEST_COMPILER_NVCC) || defined (TEST_COMPILER_NVRTC)
     { // extended device lambda
-    test_lambda<int>([] __device__ () -> int { return 42; });
-    test_lambda<double>([] __device__ () -> double { return 42.0; });
+    test_lambda<int>([] TEST_DEVICE () -> int { return 42; });
+    test_lambda<double>([] TEST_DEVICE () -> double { return 42.0; });
     }
 #endif
 

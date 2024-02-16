@@ -24,7 +24,7 @@ using cuda::std::equality_comparable_with;
 using cuda::std::nullptr_t;
 
 template <class T, class U>
-__host__ __device__ constexpr bool check_equality_comparable_with() {
+TEST_HOST_DEVICE constexpr bool check_equality_comparable_with() {
   constexpr bool result = equality_comparable_with<T, U>;
   static_assert(equality_comparable_with<U, T> == result, "");
   static_assert(equality_comparable_with<T, U const> == result, "");

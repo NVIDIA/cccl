@@ -32,9 +32,9 @@ TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
 
 struct wat
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     wat& operator*() { return *this; }
-    __host__ __device__
+    TEST_HOST_DEVICE
     void foo();
 };
 
@@ -48,7 +48,7 @@ struct test_invoke_result;
 template <typename Fn, typename ...Args, typename Ret>
 struct test_invoke_result<Fn(Args...), Ret>
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void call()
     {
         static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
@@ -60,7 +60,7 @@ struct test_invoke_result<Fn(Args...), Ret>
 #endif
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_result_of_imp()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);

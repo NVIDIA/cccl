@@ -12,7 +12,9 @@
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+
 #include "../mdspan.extents.util/extents_util.hpp"
+#include "test_macros.h"
 
 template <class> struct TestExtentsExtent;
 template <size_t... Extents, size_t... DynamicSizes>
@@ -22,7 +24,7 @@ struct TestExtentsExtent< TEST_TYPE >
     using base         = TestExtents<TEST_TYPE>;
     using extents_type = typename TestExtents<TEST_TYPE>::extents_type;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     void test_extent()
     {
         size_t result[extents_type::rank()];
@@ -47,7 +49,7 @@ struct TestExtentsExtent< TEST_TYPE >
 
 // TYPED_TEST(TestExtents, extent)
 template<class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_extent()
 {
    TestExtentsExtent<T> test;

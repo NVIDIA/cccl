@@ -27,7 +27,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void checkCV()
 {
     cuda::std::array<int, 3> arr  = {1,2,3};
@@ -65,7 +65,7 @@ void checkCV()
 }
 
 template <typename T, typename U>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool testConstructorArray() {
   cuda::std::array<U, 2> val = {U(), U()};
   ASSERT_NOEXCEPT(cuda::std::span<T>{val});
@@ -77,7 +77,7 @@ TEST_CONSTEXPR_CXX17 bool testConstructorArray() {
 }
 
 template <typename T, typename U>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool testConstructorConstArray() {
   const cuda::std::array<U, 2> val = {U(), U()};
   ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
@@ -89,7 +89,7 @@ TEST_CONSTEXPR_CXX17 bool testConstructorConstArray() {
 }
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX17 bool testConstructors() {
   STATIC_ASSERT_CXX17((testConstructorArray<T, T>()));
   STATIC_ASSERT_CXX17((testConstructorArray<const T, const T>()));

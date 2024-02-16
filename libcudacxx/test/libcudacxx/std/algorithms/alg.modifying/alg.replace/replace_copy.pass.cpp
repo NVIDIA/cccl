@@ -23,7 +23,7 @@
 #include "test_iterators.h"
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE void test() {
   {
     constexpr int N = 5;
     constexpr int ia[N] = {0, 1, 2, 3, 4};
@@ -43,7 +43,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE bool test() {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, bidirectional_iterator<int*> >();

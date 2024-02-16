@@ -32,14 +32,14 @@ static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, int>, ""
 
 // is_same_v<remove_cvref_t<Err>, unexpected>
 struct CstrFromUnexpected {
-  __host__ __device__ CstrFromUnexpected(CstrFromUnexpected const&) = delete;
-  __host__ __device__ CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
+  TEST_HOST_DEVICE CstrFromUnexpected(CstrFromUnexpected const&) = delete;
+  TEST_HOST_DEVICE CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
 };
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>, "");
 
 // is_same_v<remove_cvref_t<Err>, in_place_t>
 struct CstrFromInplace {
-  __host__ __device__ CstrFromInplace(cuda::std::in_place_t);
+  TEST_HOST_DEVICE CstrFromInplace(cuda::std::in_place_t);
 };
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromInplace>, cuda::std::in_place_t>, "");
 
@@ -53,13 +53,13 @@ static_assert(!cuda::std::convertible_to<int, cuda::std::unexpected<int>>, "");
 
 struct Error {
   int i;
-  __host__ __device__ constexpr Error(int ii) : i(ii) {}
-  __host__ __device__ constexpr Error(const Error& other) : i(other.i) {}
-  __host__ __device__ constexpr Error(Error&& other) : i(other.i) { other.i = 0; }
-  __host__ __device__ Error(cuda::std::initializer_list<Error>) { assert(false); }
+  TEST_HOST_DEVICE constexpr Error(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr Error(const Error& other) : i(other.i) {}
+  TEST_HOST_DEVICE constexpr Error(Error&& other) : i(other.i) { other.i = 0; }
+  TEST_HOST_DEVICE Error(cuda::std::initializer_list<Error>) { assert(false); }
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // lvalue
   {
     Error e(5);
@@ -89,7 +89,7 @@ __host__ __device__ constexpr bool test() {
     struct Bar {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj) : i(ii), j(jj) {}
+      TEST_HOST_DEVICE constexpr Bar(int ii, int jj) : i(ii), j(jj) {}
     };
     cuda::std::unexpected<Bar> ue({5, 6});
     assert(ue.error().i == 5);
@@ -99,7 +99,7 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 

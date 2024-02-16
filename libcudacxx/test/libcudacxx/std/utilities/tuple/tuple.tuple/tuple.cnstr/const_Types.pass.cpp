@@ -31,13 +31,13 @@ struct NoValueCtor
 {
     STATIC_MEMBER_VAR(count, int);
 
-    __host__ __device__ NoValueCtor() : id(++count()) {}
-    __host__ __device__ NoValueCtor(NoValueCtor const & other) : id(other.id) { ++count(); }
+    TEST_HOST_DEVICE NoValueCtor() : id(++count()) {}
+    TEST_HOST_DEVICE NoValueCtor(NoValueCtor const & other) : id(other.id) { ++count(); }
 
     // The constexpr is required to make is_constructible instantiate this template.
     // The explicit is needed to test-around a similar bug with is_convertible.
     template <class T>
-    __host__ __device__ constexpr explicit NoValueCtor(T)
+    TEST_HOST_DEVICE constexpr explicit NoValueCtor(T)
     { static_assert(never<T>::value, "This should not be instantiated"); }
 
     int id;
@@ -46,33 +46,33 @@ struct NoValueCtor
 
 struct NoValueCtorEmpty
 {
-    __host__ __device__ NoValueCtorEmpty() {}
-    __host__ __device__ NoValueCtorEmpty(NoValueCtorEmpty const &) {}
+    TEST_HOST_DEVICE NoValueCtorEmpty() {}
+    TEST_HOST_DEVICE NoValueCtorEmpty(NoValueCtorEmpty const &) {}
 
     template <class T>
-    __host__ __device__ constexpr explicit NoValueCtorEmpty(T)
+    TEST_HOST_DEVICE constexpr explicit NoValueCtorEmpty(T)
     { static_assert(never<T>::value, "This should not be instantiated"); }
 };
 
 
 struct ImplicitCopy {
-  __host__ __device__ explicit ImplicitCopy(int) {}
-  __host__ __device__ ImplicitCopy(ImplicitCopy const&) {}
+  TEST_HOST_DEVICE explicit ImplicitCopy(int) {}
+  TEST_HOST_DEVICE ImplicitCopy(ImplicitCopy const&) {}
 };
 
 // Test that tuple(cuda::std::allocator_arg, Alloc, Types const&...) allows implicit
 // copy conversions in return value expressions.
-__host__ __device__ cuda::std::tuple<ImplicitCopy> testImplicitCopy1() {
+TEST_HOST_DEVICE cuda::std::tuple<ImplicitCopy> testImplicitCopy1() {
     ImplicitCopy i(42);
     return {i};
 }
 
-__host__ __device__ cuda::std::tuple<ImplicitCopy> testImplicitCopy2() {
+TEST_HOST_DEVICE cuda::std::tuple<ImplicitCopy> testImplicitCopy2() {
     const ImplicitCopy i(42);
     return {i};
 }
 
-__host__ __device__ cuda::std::tuple<ImplicitCopy> testImplicitCopy3() {
+TEST_HOST_DEVICE cuda::std::tuple<ImplicitCopy> testImplicitCopy3() {
     const ImplicitCopy i(42);
     return i;
 }

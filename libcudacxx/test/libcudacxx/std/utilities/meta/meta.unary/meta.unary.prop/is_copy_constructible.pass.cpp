@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_copy_constructible()
 {
     static_assert( cuda::std::is_copy_constructible<T>::value, "");
@@ -24,7 +24,7 @@ void test_is_copy_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_copy_constructible()
 {
     static_assert(!cuda::std::is_copy_constructible<T>::value, "");
@@ -40,7 +40,7 @@ class Empty
 class NotEmpty
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -54,27 +54,27 @@ struct bit_zero
 class Abstract
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(const A&);
 };
 
 class B
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     B(const B&);
 };
 
 struct C
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     C(C&);  // not const
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator=(C&);  // not const
 };
 

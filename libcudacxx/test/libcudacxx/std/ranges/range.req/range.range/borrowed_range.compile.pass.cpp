@@ -15,24 +15,26 @@
 
 #include <cuda/std/ranges>
 
+#include "test_macros.h"
+
 struct NotRange {
-  __host__ __device__ int begin() const;
-  __host__ __device__ int end() const;
+  TEST_HOST_DEVICE int begin() const;
+  TEST_HOST_DEVICE int end() const;
 };
 
 struct Range {
-  __host__ __device__ int *begin();
-  __host__ __device__ int *end();
+  TEST_HOST_DEVICE int *begin();
+  TEST_HOST_DEVICE int *end();
 };
 
 struct ConstRange {
-  __host__ __device__ int *begin() const;
-  __host__ __device__ int *end() const;
+  TEST_HOST_DEVICE int *begin() const;
+  TEST_HOST_DEVICE int *end() const;
 };
 
 struct BorrowedRange {
-  __host__ __device__ int *begin() const;
-  __host__ __device__ int *end() const;
+  TEST_HOST_DEVICE int *begin() const;
+  TEST_HOST_DEVICE int *end() const;
 };
 
 namespace cuda { namespace std { namespace ranges {

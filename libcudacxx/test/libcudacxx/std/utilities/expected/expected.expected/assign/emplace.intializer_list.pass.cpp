@@ -45,8 +45,8 @@ static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 
 template <bool Noexcept>
 struct CtorFromInitalizerList {
-  __host__ __device__ CtorFromInitalizerList(cuda::std::initializer_list<int>&) noexcept(Noexcept);
-  __host__ __device__ CtorFromInitalizerList(cuda::std::initializer_list<int>&, int) noexcept(Noexcept);
+  TEST_HOST_DEVICE CtorFromInitalizerList(cuda::std::initializer_list<int>&) noexcept(Noexcept);
+  TEST_HOST_DEVICE CtorFromInitalizerList(cuda::std::initializer_list<int>&, int) noexcept(Noexcept);
 };
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>, "");
@@ -62,10 +62,10 @@ struct Data {
   cuda::std::initializer_list<int> il;
   int i;
 
-  __host__ __device__ constexpr Data(cuda::std::initializer_list<int>& l, int ii) noexcept : il(l), i(ii) {}
+  TEST_HOST_DEVICE constexpr Data(cuda::std::initializer_list<int>& l, int ii) noexcept : il(l), i(ii) {}
 };
 
-__host__ __device__ constexpr bool equal(const cuda::std::initializer_list<int>& lhs, const cuda::std::initializer_list<int>& rhs) {
+TEST_HOST_DEVICE constexpr bool equal(const cuda::std::initializer_list<int>& lhs, const cuda::std::initializer_list<int>& rhs) {
   auto* left = lhs.begin();
   auto* right = rhs.begin();
 
@@ -76,7 +76,7 @@ __host__ __device__ constexpr bool equal(const cuda::std::initializer_list<int>&
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // has_value
   {
     auto list1 = {1, 2, 3};

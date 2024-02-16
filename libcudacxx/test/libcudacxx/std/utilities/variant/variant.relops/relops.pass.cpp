@@ -86,42 +86,42 @@ template <class Variant> void makeEmpty(Variant &v) {
 
 struct MyBool {
   bool value;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr explicit MyBool(bool v) : value(v) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr operator bool() const noexcept { return value; }
 };
 
 struct ComparesToMyBool {
   int value = 0;
 };
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator==(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value == RHS.value);
 }
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator!=(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value != RHS.value);
 }
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator<(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value < RHS.value);
 }
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator<=(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value <= RHS.value);
 }
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator>(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value > RHS.value);
 }
-__host__ __device__
+TEST_HOST_DEVICE
 inline constexpr MyBool operator>=(const ComparesToMyBool& LHS, const ComparesToMyBool& RHS) noexcept {
   return MyBool(LHS.value >= RHS.value);
 }
 
 template <class T1, class T2>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_equality_basic() {
   {
     using V = cuda::std::variant<T1, T2>;
@@ -161,7 +161,7 @@ void test_equality_basic() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_equality() {
   test_equality_basic<int, long>();
   test_equality_basic<ComparesToMyBool, int>();
@@ -203,7 +203,7 @@ void test_equality() {
 }
 
 template <class Var>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_less(const Var &l, const Var &r, bool expect_less,
                          bool expect_greater) {
   static_assert(cuda::std::is_same_v<decltype(l < r), bool>, "");
@@ -216,7 +216,7 @@ constexpr bool test_less(const Var &l, const Var &r, bool expect_less,
 }
 
 template <class T1, class T2>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_relational_basic() {
   { // same index, same value
     using V = cuda::std::variant<T1, T2>;
@@ -250,7 +250,7 @@ void test_relational_basic() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_relational() {
   test_relational_basic<int, long>();
   test_relational_basic<ComparesToMyBool, int>();

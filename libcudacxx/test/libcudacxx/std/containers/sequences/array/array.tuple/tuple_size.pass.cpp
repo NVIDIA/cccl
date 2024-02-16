@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, cuda::std::size_t N>
-__host__ __device__ void test()
+TEST_HOST_DEVICE void test()
 {
     {
     typedef cuda::std::array<T, N> C;

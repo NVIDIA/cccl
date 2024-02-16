@@ -22,9 +22,9 @@
 #include <cuda/std/tuple>
 
 
-struct ExplicitDefault { __host__ __device__ explicit ExplicitDefault() { } };
+struct ExplicitDefault { TEST_HOST_DEVICE explicit ExplicitDefault() { } };
 
-__host__ __device__ std::tuple<ExplicitDefault> explicit_default_test() {
+TEST_HOST_DEVICE std::tuple<ExplicitDefault> explicit_default_test() {
     return {cuda::std::allocator_arg, cuda::std::allocator<int>()}; // expected-error {{chosen constructor is explicit in copy-initialization}}
 }
 

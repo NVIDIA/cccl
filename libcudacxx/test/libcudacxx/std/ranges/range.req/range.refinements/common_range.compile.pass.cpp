@@ -17,9 +17,9 @@
 
 #include "test_iterators.h"
 
-template<class It>             struct Common { __host__ __device__ It begin() const; __host__ __device__ It end() const; };
-template<class It>             struct NonCommon { __host__ __device__ It begin() const; __host__ __device__ sentinel_wrapper<It> end() const; };
-template<class It, class Sent> struct Range { __host__ __device__ It begin() const; __host__ __device__ Sent end() const; };
+template<class It>             struct Common { TEST_HOST_DEVICE It begin() const; TEST_HOST_DEVICE It end() const; };
+template<class It>             struct NonCommon { TEST_HOST_DEVICE It begin() const; TEST_HOST_DEVICE sentinel_wrapper<It> end() const; };
+template<class It, class Sent> struct Range { TEST_HOST_DEVICE It begin() const; TEST_HOST_DEVICE Sent end() const; };
 
 static_assert(!cuda::std::ranges::common_range<Common<cpp17_input_iterator<int*>>>); // not a sentinel for itself
 static_assert(!cuda::std::ranges::common_range<Common<cpp20_input_iterator<int*>>>); // not a sentinel for itself
@@ -49,18 +49,18 @@ static_assert(!cuda::std::ranges::common_range<NonCommon<forward_iterator<int*>>
 
 // Test with a range that's a common_range only when const-qualified.
 struct Range1 {
-  __host__ __device__ int* begin();
-  __host__ __device__ int const* begin() const;
-  __host__ __device__ int const* end() const;
+  TEST_HOST_DEVICE int* begin();
+  TEST_HOST_DEVICE int const* begin() const;
+  TEST_HOST_DEVICE int const* end() const;
 };
 static_assert(!cuda::std::ranges::common_range<Range1>);
 static_assert( cuda::std::ranges::common_range<Range1 const>);
 
 // Test with a range that's a common_range only when not const-qualified.
 struct Range2 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end();
-  __host__ __device__ int const* end() const;
+  TEST_HOST_DEVICE int* begin() const;
+  TEST_HOST_DEVICE int* end();
+  TEST_HOST_DEVICE int const* end() const;
 };
 static_assert( cuda::std::ranges::common_range<Range2>);
 static_assert(!cuda::std::ranges::common_range<Range2 const>);

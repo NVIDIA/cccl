@@ -22,13 +22,13 @@
 #include "user_defined_integral.h"
 
 struct gen_test {
-  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept {
+  TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE int operator()() const noexcept {
     return 1;
   }
 };
 
 template <class Iter, class Size>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE void test() {
   constexpr int N = 5;
   int ia[N + 1] = {0};
   assert(cuda::std::generate_n(Iter(ia), Size(N), gen_test()) == Iter(ia + N));
@@ -42,7 +42,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
 }
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE void test() {
   test<Iter, int>();
   test<Iter, unsigned int>();
   test<Iter, long>();
@@ -55,7 +55,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE bool test() {
   test<cpp17_input_iterator<int*> >();
   test<forward_iterator<int*> >();
   test<bidirectional_iterator<int*> >();

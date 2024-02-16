@@ -21,12 +21,12 @@
 #include "test_iterators.h"
 
 struct eq {
-    __host__ __device__ constexpr eq (int val) : v(val) {}
-    __host__ __device__ constexpr bool operator () (int v2) const { return v == v2; }
+    TEST_HOST_DEVICE constexpr eq (int val) : v(val) {}
+    TEST_HOST_DEVICE constexpr bool operator () (int v2) const { return v == v2; }
     int v;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
     int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);

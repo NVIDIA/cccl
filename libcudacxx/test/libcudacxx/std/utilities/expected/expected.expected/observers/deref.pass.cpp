@@ -36,7 +36,7 @@ static_assert(DerefNoexcept<const cuda::std::expected<int, int>&>, "");
 static_assert(DerefNoexcept<cuda::std::expected<int, int>&&>, "");
 static_assert(DerefNoexcept<const cuda::std::expected<int, int>&&>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // non-const &
   {
     cuda::std::expected<int, int> e(5);

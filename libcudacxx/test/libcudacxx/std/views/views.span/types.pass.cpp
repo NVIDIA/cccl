@@ -35,7 +35,7 @@
 #include "test_macros.h"
 
 template <typename S, typename Iter>
-__host__ __device__
+TEST_HOST_DEVICE
 void testIterator()
 {
     typedef cuda::std::iterator_traits<Iter> ItT;
@@ -48,7 +48,7 @@ void testIterator()
 }
 
 template <typename S, typename ElementType, cuda::std::size_t Size>
-__host__ __device__
+TEST_HOST_DEVICE
 void testSpan()
 {
     ASSERT_SAME_TYPE(typename S::element_type,    ElementType);
@@ -68,7 +68,7 @@ void testSpan()
 
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
     testSpan<cuda::std::span<               T>,                T, cuda::std::dynamic_extent>();

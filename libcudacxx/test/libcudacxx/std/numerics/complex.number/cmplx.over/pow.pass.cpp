@@ -33,15 +33,15 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ double
+TEST_HOST_DEVICE double
 promote(T, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0);
 
-__host__ __device__ float promote(float);
-__host__ __device__ double promote(double);
-__host__ __device__ long double promote(long double);
+TEST_HOST_DEVICE float promote(float);
+TEST_HOST_DEVICE double promote(double);
+TEST_HOST_DEVICE long double promote(long double);
 
 template <class T, class U>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(T x, const cuda::std::complex<U>& y)
 {
     typedef decltype(promote(x)+promote(real(y))) V;
@@ -50,7 +50,7 @@ test(T x, const cuda::std::complex<U>& y)
 }
 
 template <class T, class U>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const cuda::std::complex<T>& x, U y)
 {
     typedef decltype(promote(real(x))+promote(y)) V;
@@ -59,7 +59,7 @@ test(const cuda::std::complex<T>& x, U y)
 }
 
 template <class T, class U>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
 {
     typedef decltype(promote(real(x))+promote(real(y))) V;
@@ -68,7 +68,7 @@ test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
 }
 
 template <class T, class U>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0, typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
 {
     test(T(3), cuda::std::complex<U>(4, 5));
@@ -76,7 +76,7 @@ test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0,
 }
 
 template <class T, class U>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0, typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
 {
     test(T(3), cuda::std::complex<U>(4, 5));

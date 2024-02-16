@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_nullptr_imp()
 {
     static_assert(!cuda::std::is_void<T>::value, "");
@@ -39,7 +39,7 @@ void test_nullptr_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_nullptr()
 {
     test_nullptr_imp<T>();

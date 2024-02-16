@@ -28,7 +28,7 @@
 // Test Remarks: If is_trivially_destructible_v<T> is true, and is_trivially_destructible_v<E> is true,
 // then this destructor is a trivial destructor.
 struct NonTrivial {
-  __host__ __device__ ~NonTrivial() {}
+  TEST_HOST_DEVICE ~NonTrivial() {}
 };
 
 static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>, "");
@@ -38,11 +38,11 @@ static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTri
 
 struct TrackedDestroy {
   bool& destroyed;
-  __host__ __device__ constexpr TrackedDestroy(bool& b) : destroyed(b) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TrackedDestroy() { destroyed = true; }
+  TEST_HOST_DEVICE constexpr TrackedDestroy(bool& b) : destroyed(b) {}
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 ~TrackedDestroy() { destroyed = true; }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // has value
   {
     bool valueDestroyed = false;

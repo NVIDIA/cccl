@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_volatile()
 {
     static_assert(!cuda::std::is_volatile<T>::value, "");

@@ -23,44 +23,44 @@
 struct Tag {};
 
 struct Implicit {
-  __host__ __device__ Implicit(int) noexcept {}
+  TEST_HOST_DEVICE Implicit(int) noexcept {}
 };
 
 struct ThrowsImplicit {
-  __host__ __device__ ThrowsImplicit(int) {}
+  TEST_HOST_DEVICE ThrowsImplicit(int) {}
 };
 
 struct Explicit {
-  __host__ __device__ explicit Explicit(int) noexcept {}
+  TEST_HOST_DEVICE explicit Explicit(int) noexcept {}
 };
 
 template <bool IsNoexcept, class Ret, class... Args>
 struct CallObject {
-  __host__ __device__ Ret operator()(Args&&...) const noexcept(IsNoexcept);
+  TEST_HOST_DEVICE Ret operator()(Args&&...) const noexcept(IsNoexcept);
 };
 
 struct Sink {
   template <class... Args>
-  __host__ __device__ void operator()(Args&&...) const noexcept {}
+  TEST_HOST_DEVICE void operator()(Args&&...) const noexcept {}
 };
 
 template <class Fn, class... Args>
-__host__ __device__ constexpr bool throws_invocable() {
+TEST_HOST_DEVICE constexpr bool throws_invocable() {
   return cuda::std::is_invocable<Fn, Args...>::value &&
          !cuda::std::is_nothrow_invocable<Fn, Args...>::value;
 }
 
 template <class Ret, class Fn, class... Args>
-__host__ __device__ constexpr bool throws_invocable_r() {
+TEST_HOST_DEVICE constexpr bool throws_invocable_r() {
   return cuda::std::is_invocable_r<Ret, Fn, Args...>::value &&
          !cuda::std::is_nothrow_invocable_r<Ret, Fn, Args...>::value;
 }
 
-__host__ __device__ void test_noexcept_function_pointers() {
+TEST_HOST_DEVICE void test_noexcept_function_pointers() {
 #if !defined(TEST_COMPILER_NVCC) || TEST_STD_VER >= 2017 // nvbug4360046
   struct Dummy {
-    __host__ __device__ void foo() noexcept {}
-    __host__ __device__ static void bar() noexcept {}
+    TEST_HOST_DEVICE void foo() noexcept {}
+    TEST_HOST_DEVICE static void bar() noexcept {}
   };
   // Check that PMF's and function pointers actually work and that
   // is_nothrow_invocable returns true for noexcept PMF's and function
@@ -216,7 +216,7 @@ int main(int, char**) {
     // Check that it's fine if the result type is non-moveable.
     struct CantMove {
       CantMove() = default;
-      __host__ __device__ CantMove(CantMove&&) = delete;
+      TEST_HOST_DEVICE CantMove(CantMove&&) = delete;
     };
 
     static_assert(!cuda::std::is_move_constructible_v<CantMove>, "");

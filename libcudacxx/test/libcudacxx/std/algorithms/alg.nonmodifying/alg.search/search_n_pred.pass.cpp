@@ -34,10 +34,10 @@
 
 struct count_equal
 {
-    __host__ __device__ TEST_CONSTEXPR_CXX14 count_equal(int& count) noexcept : count(count) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 count_equal(int& count) noexcept : count(count) {}
 
     template <class T>
-    __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) {
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) {
       ++count;
       return x == y;
     }
@@ -46,7 +46,7 @@ struct count_equal
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void test()
 {
     int ia[] = {0, 1, 2, 3, 4, 5};
     const unsigned sa = sizeof(ia)/sizeof(ia[0]);
@@ -161,9 +161,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 
 class A {
 public:
-  __host__ __device__ constexpr A(int x, int y) : x_(x), y_(y) {}
-  __host__ __device__ constexpr int x() const { return x_; }
-  __host__ __device__ constexpr int y() const { return y_; }
+  TEST_HOST_DEVICE constexpr A(int x, int y) : x_(x), y_(y) {}
+  TEST_HOST_DEVICE constexpr int x() const { return x_; }
+  TEST_HOST_DEVICE constexpr int y() const { return y_; }
 
 private:
   int x_;
@@ -171,10 +171,10 @@ private:
 };
 
 struct Pred {
-  __host__ __device__ constexpr bool operator()(const A& l, int r) const { return l.x() == r; }
+  TEST_HOST_DEVICE constexpr bool operator()(const A& l, int r) const { return l.x() == r; }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
     test<forward_iterator<const int*> >();
     test<bidirectional_iterator<const int*> >();
     test<random_access_iterator<const int*> >();

@@ -36,7 +36,7 @@ static_assert(CanCompare<cuda::std::expected<void, int>, cuda::std::expected<voi
 // Note this is true because other overloads in expected<non-void> are unconstrained
 static_assert(CanCompare<cuda::std::expected<void, int>, cuda::std::expected<int, int>>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // x.has_value() && y.has_value()
   {
     const cuda::std::expected<void, int> e1;

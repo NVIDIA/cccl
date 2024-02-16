@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 struct LVal {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int&) { return 1; }
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
@@ -34,7 +34,7 @@ struct LVal {
 
 struct CLVal {
   int operator()(int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(const int&) { return 1; }
   int operator()(int&&) = delete;
   int operator()(const int&&) = delete;
@@ -43,7 +43,7 @@ struct CLVal {
 struct RVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int&&) { return 1; }
   int operator()(const int&&) = delete;
 };
@@ -52,12 +52,12 @@ struct CRVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(const int&&) { return 1; }
 };
 
 struct RefQual {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) & { return 1; }
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
@@ -66,7 +66,7 @@ struct RefQual {
 
 struct CRefQual {
   int operator()(int) & = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) const& { return 1; }
   int operator()(int) && = delete;
   int operator()(int) const&& = delete;
@@ -75,7 +75,7 @@ struct CRefQual {
 struct RVRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) && { return 1; }
   int operator()(int) const&& = delete;
 };
@@ -84,11 +84,11 @@ struct RVCRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(int) const&& { return 1; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_val_types() {
   const cuda::std::expected<int, TestError> expected_error{cuda::std::unexpect, 42};
 
@@ -217,7 +217,7 @@ constexpr void test_val_types() {
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 8 // GCC7 and GCC8 seem to be too eager to instantiate the world
 struct NonConst {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int non_const() { return 1; }
 };
 
@@ -225,14 +225,14 @@ struct NonConst {
 // This is an expanded lambda from the original test.
 struct nvrtc_workaround {
     template<typename T>
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr int operator()(T && t) {
         return t.non_const();
     }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void test_sfinae() {
   cuda::std::expected<NonConst, TestError> expect{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -243,26 +243,26 @@ constexpr void test_sfinae() {
 
 struct NoCopy {
   NoCopy() = default;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr NoCopy(const NoCopy&) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr int operator()(const NoCopy&&) { return 1; }
 };
 
 // We need an indirection so the assert does not break the compilation
 template<class T>
 struct AlwaysFalse {
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr AlwaysFalse() { assert(false); }
 };
 
 struct NeverCalled {
   template<class T>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr cuda::std::expected<int, TestError> operator()(T) const { return AlwaysFalse<T>{}, cuda::std::expected<int, TestError>{42}; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test() {
   test_val_types();
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 8 // GCC7 and GCC8 seem to be too eager to instantiate the world

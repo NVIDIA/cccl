@@ -33,16 +33,16 @@ class MoveOnly
 
     int data_;
 public:
-    __host__ __device__ explicit MoveOnly(int data = 1) : data_(data) {}
-    __host__ __device__ MoveOnly(MoveOnly&& x)
+    TEST_HOST_DEVICE explicit MoveOnly(int data = 1) : data_(data) {}
+    TEST_HOST_DEVICE MoveOnly(MoveOnly&& x)
         : data_(x.data_) {x.data_ = 0;}
-    __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+    TEST_HOST_DEVICE MoveOnly& operator=(MoveOnly&& x)
         {data_ = x.data_; x.data_ = 0; return *this;}
 
-    __host__ __device__ int get() const {return data_;}
+    TEST_HOST_DEVICE int get() const {return data_;}
 
-    __host__ __device__ bool operator==(const MoveOnly& x) const {return data_ == x.data_;}
-    __host__ __device__ bool operator< (const MoveOnly& x) const {return data_ <  x.data_;}
+    TEST_HOST_DEVICE bool operator==(const MoveOnly& x) const {return data_ == x.data_;}
+    TEST_HOST_DEVICE bool operator< (const MoveOnly& x) const {return data_ <  x.data_;}
 };
 
 int main(int, char**)

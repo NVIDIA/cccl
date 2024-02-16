@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_copyable()
 {
     static_assert( cuda::std::is_trivially_copyable<T>::value, "");
@@ -35,7 +35,7 @@ void test_is_trivially_copyable()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_trivially_copyable()
 {
     static_assert(!cuda::std::is_trivially_copyable<T>::value, "");
@@ -54,14 +54,14 @@ struct A
 struct B
 {
     int i_;
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~B() {assert(i_ == 0);}
 };
 
 class C
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     C();
 };
 

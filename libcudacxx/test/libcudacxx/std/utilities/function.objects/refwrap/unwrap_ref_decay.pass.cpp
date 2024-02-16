@@ -25,7 +25,7 @@
 
 
 template <typename T, typename Result>
-__host__ __device__ void check() {
+TEST_HOST_DEVICE void check() {
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_ref_decay<T>::type, Result>);
   static_assert(cuda::std::is_same_v<typename cuda::std::unwrap_ref_decay<T>::type, cuda::std::unwrap_ref_decay_t<T>>);
 }

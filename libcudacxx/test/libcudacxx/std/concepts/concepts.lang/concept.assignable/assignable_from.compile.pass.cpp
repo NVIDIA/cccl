@@ -27,7 +27,7 @@
 #include "MoveOnly.h"
 
 struct NoCommonRef {
-  __host__ __device__ NoCommonRef& operator=(const int&);
+  TEST_HOST_DEVICE NoCommonRef& operator=(const int&);
 };
 static_assert(cuda::std::is_assignable_v<NoCommonRef&, const int&>, "");
 static_assert(!cuda::std::assignable_from<NoCommonRef&, const int&>, ""); // no common reference type
@@ -61,19 +61,19 @@ static_assert( cuda::std::assignable_from<const Base*&, const Derived* const&>, 
 static_assert( cuda::std::assignable_from<const Base*&, const Derived* const&&>, "");
 
 struct VoidResultType {
-    __host__ __device__ void operator=(const VoidResultType&);
+    TEST_HOST_DEVICE void operator=(const VoidResultType&);
 };
 static_assert(cuda::std::is_assignable_v<VoidResultType&, const VoidResultType&>, "");
 static_assert(!cuda::std::assignable_from<VoidResultType&, const VoidResultType&>, "");
 
 struct ValueResultType {
-    __host__ __device__ ValueResultType operator=(const ValueResultType&);
+    TEST_HOST_DEVICE ValueResultType operator=(const ValueResultType&);
 };
 static_assert(cuda::std::is_assignable_v<ValueResultType&, const ValueResultType&>, "");
 static_assert(!cuda::std::assignable_from<ValueResultType&, const ValueResultType&>, "");
 
 struct Locale {
-    __host__ __device__ const Locale& operator=(const Locale&);
+    TEST_HOST_DEVICE const Locale& operator=(const Locale&);
 };
 static_assert(cuda::std::is_assignable_v<Locale&, const Locale&>, "");
 static_assert(!cuda::std::assignable_from<Locale&, const Locale&>, "");
@@ -82,8 +82,8 @@ static_assert(!cuda::std::assignable_from<Locale&, const Locale&>, "");
 #pragma warning(disable: 4522) // multiple assignment operators defined
 #endif // TEST_COMPILER_MSVC_2017
 struct Tuple {
-    __host__ __device__ Tuple& operator=(const Tuple&);
-    __host__ __device__ const Tuple& operator=(const Tuple&) const;
+    TEST_HOST_DEVICE Tuple& operator=(const Tuple&);
+    TEST_HOST_DEVICE const Tuple& operator=(const Tuple&) const;
 };
 static_assert(!cuda::std::assignable_from<Tuple, const Tuple&>, "");
 static_assert( cuda::std::assignable_from<Tuple&, const Tuple&>, "");

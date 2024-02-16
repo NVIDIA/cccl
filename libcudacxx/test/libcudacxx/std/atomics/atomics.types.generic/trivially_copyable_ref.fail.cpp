@@ -56,13 +56,13 @@
 #include <cuda/std/cassert>
 
 struct NotTriviallyCopyable {
-    __host__ __device__ NotTriviallyCopyable ( int i ) : i_(i) {}
-    __host__ __device__ NotTriviallyCopyable ( const NotTriviallyCopyable &rhs) : i_(rhs.i_) {}
+    TEST_HOST_DEVICE NotTriviallyCopyable ( int i ) : i_(i) {}
+    TEST_HOST_DEVICE NotTriviallyCopyable ( const NotTriviallyCopyable &rhs) : i_(rhs.i_) {}
     int i_;
 };
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test ( T t ) {
     cuda::std::atomic_ref<T> t0(t);
 }

@@ -22,9 +22,9 @@
 #include "test_macros.h"
 
 struct NonAssignable {
-  __host__ __device__ NonAssignable() {}
+  TEST_HOST_DEVICE NonAssignable() {}
 private:
-  __host__ __device__ NonAssignable& operator=(NonAssignable const&);
+  TEST_HOST_DEVICE NonAssignable& operator=(NonAssignable const&);
 };
 
 struct Incomplete;

@@ -30,12 +30,12 @@ struct MaybeNoexceptSwap {
   using value_type = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ constexpr friend void iter_swap(MaybeNoexceptSwap, MaybeNoexceptSwap) noexcept(IsNoexcept) {}
+  TEST_HOST_DEVICE constexpr friend void iter_swap(MaybeNoexceptSwap, MaybeNoexceptSwap) noexcept(IsNoexcept) {}
 
-  __host__ __device__ int& operator*() const { static int x; return x; }
+  TEST_HOST_DEVICE int& operator*() const { static int x; return x; }
 
-  __host__ __device__ MaybeNoexceptSwap& operator++();
-  __host__ __device__ MaybeNoexceptSwap operator++(int);
+  TEST_HOST_DEVICE MaybeNoexceptSwap& operator++();
+  TEST_HOST_DEVICE MaybeNoexceptSwap operator++(int);
 };
 using ThrowingBase = MaybeNoexceptSwap<false>;
 using NoexceptBase = MaybeNoexceptSwap<true>;
@@ -47,7 +47,7 @@ ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(cuda::std::declval<NoexceptBase>(),
 #endif // !TEST_COMPILER_MSVC_2017
 #endif // & !TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // Can use `iter_swap` with a regular array.
   {
     int a[] = {0, 1, 2};

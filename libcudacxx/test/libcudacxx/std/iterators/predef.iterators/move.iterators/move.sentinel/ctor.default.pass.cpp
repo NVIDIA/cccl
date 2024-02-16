@@ -18,7 +18,9 @@
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test()
+#include "test_macros.h"
+
+TEST_HOST_DEVICE constexpr bool test()
 {
 
   // The underlying sentinel is an integer.

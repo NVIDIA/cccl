@@ -19,12 +19,12 @@
 
 struct X
 {
-    __device__ __host__ X() {}
+    TEST_HOST_DEVICE X() {}
 
     template <class T>
-    __device__ __host__ X(T);
+    TEST_HOST_DEVICE X(T);
 
-    __device__ __host__ void operator()() {}
+    TEST_HOST_DEVICE void operator()() {}
 };
 
 int main(int, char**)

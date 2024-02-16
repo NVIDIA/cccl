@@ -20,7 +20,7 @@
 template<typename Latch,
     template<typename, typename> typename Selector,
     typename Initializer = constructor_initializer>
-__host__ __device__
+TEST_HOST_DEVICE
 void test()
 {
   Selector<Latch, Initializer> sel;

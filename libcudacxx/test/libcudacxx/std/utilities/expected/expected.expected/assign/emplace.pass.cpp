@@ -46,8 +46,8 @@ static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 
 template <bool Noexcept>
 struct CtorFromInt {
-  __host__ __device__ CtorFromInt(int) noexcept(Noexcept);
-  __host__ __device__ CtorFromInt(int, int) noexcept(Noexcept);
+  TEST_HOST_DEVICE CtorFromInt(int) noexcept(Noexcept);
+  TEST_HOST_DEVICE CtorFromInt(int, int) noexcept(Noexcept);
 };
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>, "");
@@ -57,7 +57,7 @@ static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>, ""
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // has_value
   {
     BothNoexcept::state oldState{};

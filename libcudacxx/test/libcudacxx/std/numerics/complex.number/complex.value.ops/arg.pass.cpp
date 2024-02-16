@@ -20,14 +20,14 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test()
 {
     cuda::std::complex<T> z(1, 0);
     assert(arg(z) == 0);
 }
 
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE void test_edges()
 {
     const double pi = cuda::std::atan2(+0., -0.);
     auto testcases = get_testcases();

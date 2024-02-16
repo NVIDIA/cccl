@@ -19,7 +19,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test() {
   static_assert(_LIBCUDACXX_ALIGNOF(T) == cuda::std::alignment_of<T>::value, "");
   static_assert(_LIBCUDACXX_ALIGNOF(T) == TEST_ALIGNOF(T), "");

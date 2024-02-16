@@ -14,10 +14,12 @@
 
 #include <cuda/std/iterator>
 
-template<class I> __host__ __device__ void test_subsumption() requires cuda::std::forward_iterator<I>;
-template<class I> __host__ __device__ void test_subsumption() requires cuda::std::indirectly_movable_storable<I, I>;
-template<class I> __host__ __device__ void test_subsumption() requires cuda::std::indirectly_swappable<I, I>;
-template<class I> __host__ __device__ constexpr bool test_subsumption() requires cuda::std::permutable<I> { return true; }
+#include "test_macros.h"
+
+template<class I> TEST_HOST_DEVICE void test_subsumption() requires cuda::std::forward_iterator<I>;
+template<class I> TEST_HOST_DEVICE void test_subsumption() requires cuda::std::indirectly_movable_storable<I, I>;
+template<class I> TEST_HOST_DEVICE void test_subsumption() requires cuda::std::indirectly_swappable<I, I>;
+template<class I> TEST_HOST_DEVICE constexpr bool test_subsumption() requires cuda::std::permutable<I> { return true; }
 static_assert(test_subsumption<int*>());
 
 int main(int, char**)

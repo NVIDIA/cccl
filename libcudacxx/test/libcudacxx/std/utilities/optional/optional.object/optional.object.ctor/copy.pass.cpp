@@ -22,7 +22,7 @@
 using cuda::std::optional;
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 void test(InitArgs&&... args)
 {
     const optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
@@ -34,7 +34,7 @@ void test(InitArgs&&... args)
 }
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool constexpr_test(InitArgs&&... args)
 {
     static_assert( cuda::std::is_trivially_copy_constructible_v<T>, ""); // requirement
@@ -44,7 +44,7 @@ constexpr bool constexpr_test(InitArgs&&... args)
            (lhs.has_value() ? *lhs == *rhs : true);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_throwing_ctor() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
     struct Z {
@@ -68,7 +68,7 @@ void test_throwing_ctor() {
 }
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ref(InitArgs&&... args)
 {
     const optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
@@ -80,7 +80,7 @@ void test_ref(InitArgs&&... args)
 }
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_reference_extension()
 {
 #if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.

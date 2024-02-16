@@ -23,54 +23,54 @@ static_assert(!cuda::std::ranges::sized_range<int (&)[]>);
 static_assert(!cuda::std::ranges::sized_range<int[]>);
 
 struct range_has_size {
-  __host__ __device__ bidirectional_iterator<int*> begin();
-  __host__ __device__ bidirectional_iterator<int*> end();
-  __host__ __device__ int size();
+  TEST_HOST_DEVICE bidirectional_iterator<int*> begin();
+  TEST_HOST_DEVICE bidirectional_iterator<int*> end();
+  TEST_HOST_DEVICE int size();
 };
 static_assert(cuda::std::ranges::sized_range<range_has_size>);
 static_assert(!cuda::std::ranges::sized_range<range_has_size const>);
 
 struct range_has_const_size {
-  __host__ __device__ bidirectional_iterator<int*> begin();
-  __host__ __device__ bidirectional_iterator<int*> end();
-  __host__ __device__ int size() const;
+  TEST_HOST_DEVICE bidirectional_iterator<int*> begin();
+  TEST_HOST_DEVICE bidirectional_iterator<int*> end();
+  TEST_HOST_DEVICE int size() const;
 };
 static_assert(cuda::std::ranges::sized_range<range_has_const_size>);
 static_assert(!cuda::std::ranges::sized_range<range_has_const_size const>);
 
 struct const_range_has_size {
-  __host__ __device__ bidirectional_iterator<int*> begin() const;
-  __host__ __device__ bidirectional_iterator<int*> end() const;
-  __host__ __device__ int size();
+  TEST_HOST_DEVICE bidirectional_iterator<int*> begin() const;
+  TEST_HOST_DEVICE bidirectional_iterator<int*> end() const;
+  TEST_HOST_DEVICE int size();
 };
 static_assert(cuda::std::ranges::sized_range<const_range_has_size>);
 static_assert(cuda::std::ranges::range<const_range_has_size const>);
 static_assert(!cuda::std::ranges::sized_range<const_range_has_size const>);
 
 struct const_range_has_const_size {
-  __host__ __device__ bidirectional_iterator<int*> begin() const;
-  __host__ __device__ bidirectional_iterator<int*> end() const;
-  __host__ __device__ int size() const;
+  TEST_HOST_DEVICE bidirectional_iterator<int*> begin() const;
+  TEST_HOST_DEVICE bidirectional_iterator<int*> end() const;
+  TEST_HOST_DEVICE int size() const;
 };
 static_assert(cuda::std::ranges::sized_range<const_range_has_const_size>);
 static_assert(cuda::std::ranges::sized_range<const_range_has_const_size const>);
 
 struct sized_sentinel_range_has_size {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  TEST_HOST_DEVICE int* begin();
+  TEST_HOST_DEVICE int* end();
 };
 static_assert(cuda::std::ranges::sized_range<sized_sentinel_range_has_size>);
 static_assert(!cuda::std::ranges::sized_range<sized_sentinel_range_has_size const>);
 
 struct const_sized_sentinel_range_has_size {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  TEST_HOST_DEVICE int* begin() const;
+  TEST_HOST_DEVICE int* end() const;
 };
 static_assert(cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size>);
 static_assert(cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size const>);
 
 struct non_range_has_size {
-  __host__ __device__ int size() const;
+  TEST_HOST_DEVICE int size() const;
 };
 #if TEST_STD_VER > 2017
 static_assert(requires(non_range_has_size const x) { unused(cuda::std::ranges::size(x)); });

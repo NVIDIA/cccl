@@ -29,7 +29,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class T>
 _LIBCUDACXX_CONCEPT brace_initializable = _LIBCUDACXX_FRAGMENT(brace_initializable_, T);
 
-__host__ __device__ void test() {
+TEST_HOST_DEVICE void test() {
     // LWG3149
     // Changed the concept from constructible_from<T>
     // to constructible_from<T> &&

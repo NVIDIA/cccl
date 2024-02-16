@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_const_imp()
 {
     ASSERT_SAME_TYPE(const U, typename cuda::std::add_const<T>::type);
@@ -26,7 +26,7 @@ void test_add_const_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_const()
 {
     test_add_const_imp<T, const T>();

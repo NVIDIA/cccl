@@ -25,7 +25,7 @@
 using cuda::std::nullopt_t;
 using cuda::std::nullopt;
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test()
 {
     nullopt_t foo{nullopt};

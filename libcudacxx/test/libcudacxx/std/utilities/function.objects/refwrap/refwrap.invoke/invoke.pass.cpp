@@ -26,23 +26,23 @@ STATIC_TEST_GLOBAL_VAR int count = 0;
 
 // 1 arg, return void
 
-__host__ __device__ void f_void_1(int i)
+TEST_HOST_DEVICE void f_void_1(int i)
 {
     count += i;
 }
 
 struct A_void_1
 {
-    __host__ __device__ void operator()(int i)
+    TEST_HOST_DEVICE void operator()(int i)
     {
         count += i;
     }
 
-    __host__ __device__ void mem1() {++count;}
-    __host__ __device__ void mem2() const {++count;}
+    TEST_HOST_DEVICE void mem1() {++count;}
+    TEST_HOST_DEVICE void mem2() const {++count;}
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_void_1()
 {
     int save_count = count;
@@ -102,25 +102,25 @@ test_void_1()
 
 // 1 arg, return int
 
-__host__ __device__ int f_int_1(int i)
+TEST_HOST_DEVICE int f_int_1(int i)
 {
     return i + 1;
 }
 
 struct A_int_1
 {
-    __host__ __device__ A_int_1() : data_(5) {}
-    __host__ __device__ int operator()(int i)
+    TEST_HOST_DEVICE A_int_1() : data_(5) {}
+    TEST_HOST_DEVICE int operator()(int i)
     {
         return i - 1;
     }
 
-    __host__ __device__ int mem1() {return 3;}
-    __host__ __device__ int mem2() const {return 4;}
+    TEST_HOST_DEVICE int mem1() {return 3;}
+    TEST_HOST_DEVICE int mem2() const {return 4;}
     int data_;
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_int_1()
 {
     // function
@@ -180,23 +180,23 @@ test_int_1()
 
 // 2 arg, return void
 
-__host__ __device__ void f_void_2(int i, int j)
+TEST_HOST_DEVICE void f_void_2(int i, int j)
 {
     count += i+j;
 }
 
 struct A_void_2
 {
-    __host__ __device__ void operator()(int i, int j)
+    TEST_HOST_DEVICE void operator()(int i, int j)
     {
         count += i+j;
     }
 
-    __host__ __device__ void mem1(int i) {count += i;}
-    __host__ __device__ void mem2(int i) const {count += i;}
+    TEST_HOST_DEVICE void mem1(int i) {count += i;}
+    TEST_HOST_DEVICE void mem2(int i) const {count += i;}
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_void_2()
 {
     int save_count = count;
@@ -261,23 +261,23 @@ test_void_2()
 
 // 2 arg, return int
 
-__host__ __device__ int f_int_2(int i, int j)
+TEST_HOST_DEVICE int f_int_2(int i, int j)
 {
     return i+j;
 }
 
 struct A_int_2
 {
-    __host__ __device__ int operator()(int i, int j)
+    TEST_HOST_DEVICE int operator()(int i, int j)
     {
         return i+j;
     }
 
-    __host__ __device__ int mem1(int i) {return i+1;}
-    __host__ __device__ int mem2(int i) const {return i+2;}
+    TEST_HOST_DEVICE int mem1(int i) {return i+1;}
+    TEST_HOST_DEVICE int mem2(int i) const {return i+2;}
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 testint_2()
 {
     // function

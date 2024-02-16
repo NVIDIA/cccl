@@ -26,17 +26,17 @@
 
 STATIC_TEST_GLOBAL_VAR int count = 0;
 
-__host__ __device__ int f_int_0()
+TEST_HOST_DEVICE int f_int_0()
 {
     return 3;
 }
 
 struct A_int_0
 {
-    __host__ __device__ int operator()() {return 4;}
+    TEST_HOST_DEVICE int operator()() {return 4;}
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_int_0()
 {
     // function
@@ -60,14 +60,14 @@ test_int_0()
 
 // 1 arg, return void
 
-__host__ __device__ void f_void_1(int i)
+TEST_HOST_DEVICE void f_void_1(int i)
 {
     count += i;
 }
 
 struct A_void_1
 {
-    __host__ __device__ void operator()(int i)
+    TEST_HOST_DEVICE void operator()(int i)
     {
         count += i;
     }

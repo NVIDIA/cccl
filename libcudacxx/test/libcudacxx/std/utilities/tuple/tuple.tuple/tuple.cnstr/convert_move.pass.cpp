@@ -26,37 +26,37 @@
 
 struct Explicit {
   int value;
-  __host__ __device__ explicit Explicit(int x) : value(x) {}
+  TEST_HOST_DEVICE explicit Explicit(int x) : value(x) {}
 };
 
 struct Implicit {
   int value;
-  __host__ __device__ Implicit(int x) : value(x) {}
+  TEST_HOST_DEVICE Implicit(int x) : value(x) {}
 };
 
 struct B
 {
  int id_;
 
- __host__ __device__ explicit B(int i) : id_(i) {}
+ TEST_HOST_DEVICE explicit B(int i) : id_(i) {}
 
- __host__ __device__ virtual ~B() {}
+ TEST_HOST_DEVICE virtual ~B() {}
 };
 
 struct D
     : B
 {
-    __host__ __device__ explicit D(int i) : B(i) {}
+    TEST_HOST_DEVICE explicit D(int i) : B(i) {}
 };
 
 struct BonkersBananas {
   template <class T>
-  __host__ __device__ operator T() &&;
+  TEST_HOST_DEVICE operator T() &&;
   template <class T, class = void>
-  __host__ __device__ explicit operator T() && = delete;
+  TEST_HOST_DEVICE explicit operator T() && = delete;
 };
 
-__host__ __device__ void test_bonkers_bananas_conversion() {
+TEST_HOST_DEVICE void test_bonkers_bananas_conversion() {
   using ReturnType = cuda::std::tuple<int, int>;
   static_assert(cuda::std::is_convertible<BonkersBananas, ReturnType>(), "");
   //TODO: possibly a compiler bug that allows NVCC to think that it can construct a tuple from this type

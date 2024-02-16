@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename AtContainer, typename T, T... I>
-__host__ __device__ auto extract ( const AtContainer &t, const cuda::std::integer_sequence<T, I...> )
+TEST_HOST_DEVICE auto extract ( const AtContainer &t, const cuda::std::integer_sequence<T, I...> )
 -> decltype ( cuda::std::make_tuple ( cuda::std::get<I>(t)... ))
 {     return  cuda::std::make_tuple ( cuda::std::get<I>(t)... ); }
 

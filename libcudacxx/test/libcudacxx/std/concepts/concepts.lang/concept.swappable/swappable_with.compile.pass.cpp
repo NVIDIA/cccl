@@ -25,14 +25,14 @@ using cuda::std::swappable;
 using cuda::std::swappable_with;
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_swappable_with_impl() {
   static_assert(swappable_with<T, U> == swappable_with<U, T>, "");
   return swappable_with<T, U>;
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_swappable_with() {
   static_assert(!check_swappable_with_impl<T, U>(), "");
   static_assert(!check_swappable_with_impl<T, U const>(), "");
@@ -148,7 +148,7 @@ constexpr bool check_swappable_with() {
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_swappable_with_including_lvalue_ref_to_volatile() {
   constexpr auto result = check_swappable_with<T, U>();
   static_assert(check_swappable_with_impl<T volatile&, U volatile&>() ==
@@ -266,21 +266,21 @@ static_assert(!check_swappable_with_impl<lvalue_rvalue_adl_swappable&,
 
 struct s1 {};
 struct no_common_reference_with_s1 {
-  __host__ __device__ friend void swap(s1&, no_common_reference_with_s1&);
-  __host__ __device__ friend void swap(no_common_reference_with_s1&, s1&);
+  TEST_HOST_DEVICE friend void swap(s1&, no_common_reference_with_s1&);
+  TEST_HOST_DEVICE friend void swap(no_common_reference_with_s1&, s1&);
 };
 static_assert(!check_swappable_with<s1, no_common_reference_with_s1>(), "");
 
 struct one_way_swappable_with_s1 {
-  __host__ __device__ friend void swap(s1&, one_way_swappable_with_s1&);
-  __host__ __device__ operator s1();
+  TEST_HOST_DEVICE friend void swap(s1&, one_way_swappable_with_s1&);
+  TEST_HOST_DEVICE operator s1();
 };
 static_assert(cuda::std::common_reference_with<one_way_swappable_with_s1, s1>, "");
 static_assert(!check_swappable_with<one_way_swappable_with_s1, s1>(), "");
 
 struct one_way_swappable_with_s1_other_way {
-  __host__ __device__ friend void swap(one_way_swappable_with_s1_other_way&, s1&);
-  __host__ __device__ operator s1();
+  TEST_HOST_DEVICE friend void swap(one_way_swappable_with_s1_other_way&, s1&);
+  TEST_HOST_DEVICE operator s1();
 };
 static_assert(
     cuda::std::common_reference_with<one_way_swappable_with_s1_other_way, s1>, "");
@@ -289,10 +289,10 @@ static_assert(!check_swappable_with<one_way_swappable_with_s1_other_way, s1>(), 
 struct can_swap_with_s1_but_not_swappable {
   can_swap_with_s1_but_not_swappable(can_swap_with_s1_but_not_swappable&&) =
       delete;
-  __host__ __device__ friend void swap(s1&, can_swap_with_s1_but_not_swappable&);
-  __host__ __device__ friend void swap(can_swap_with_s1_but_not_swappable&, s1&);
+  TEST_HOST_DEVICE friend void swap(s1&, can_swap_with_s1_but_not_swappable&);
+  TEST_HOST_DEVICE friend void swap(can_swap_with_s1_but_not_swappable&, s1&);
 
-  __host__ __device__ operator s1() const;
+  TEST_HOST_DEVICE operator s1() const;
 };
 static_assert(
     cuda::std::common_reference_with<can_swap_with_s1_but_not_swappable, s1>, "");
@@ -302,27 +302,27 @@ static_assert(
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap definitions
 struct swappable_with_s1 {
-  __host__ __device__ friend void swap(s1&, swappable_with_s1&);
-  __host__ __device__ friend void swap(swappable_with_s1&, s1&);
-  __host__ __device__ operator s1() const;
+  TEST_HOST_DEVICE friend void swap(s1&, swappable_with_s1&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_s1&, s1&);
+  TEST_HOST_DEVICE operator s1() const;
 };
 static_assert(check_swappable_with<swappable_with_s1, s1>(), "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
 struct swappable_with_const_s1_but_not_swappable {
-  __host__ __device__ swappable_with_const_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_const_s1_but_not_swappable(
       swappable_with_const_s1_but_not_swappable const&);
-  __host__ __device__ swappable_with_const_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_const_s1_but_not_swappable(
       swappable_with_const_s1_but_not_swappable const&&);
-  __host__ __device__ swappable_with_const_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_const_s1_but_not_swappable&
   operator=(swappable_with_const_s1_but_not_swappable const&);
-  __host__ __device__ swappable_with_const_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_const_s1_but_not_swappable&
   operator=(swappable_with_const_s1_but_not_swappable const&&);
 
-  __host__ __device__ friend void swap(s1 const&, swappable_with_const_s1_but_not_swappable const&);
-  __host__ __device__ friend void swap(swappable_with_const_s1_but_not_swappable const&, s1 const&);
+  TEST_HOST_DEVICE friend void swap(s1 const&, swappable_with_const_s1_but_not_swappable const&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_const_s1_but_not_swappable const&, s1 const&);
 
-  __host__ __device__ operator s1 const &() const;
+  TEST_HOST_DEVICE operator s1 const &() const;
 };
 static_assert(
     !swappable<swappable_with_const_s1_but_not_swappable const&>, "");
@@ -330,21 +330,21 @@ static_assert(!swappable_with<
               swappable_with_const_s1_but_not_swappable const&, s1 const&>, "");
 
 struct swappable_with_volatile_s1_but_not_swappable {
-  __host__ __device__ swappable_with_volatile_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_volatile_s1_but_not_swappable(
       swappable_with_volatile_s1_but_not_swappable volatile&);
-  __host__ __device__ swappable_with_volatile_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_volatile_s1_but_not_swappable(
       swappable_with_volatile_s1_but_not_swappable volatile&&);
-  __host__ __device__ swappable_with_volatile_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_volatile_s1_but_not_swappable&
   operator=(swappable_with_volatile_s1_but_not_swappable volatile&);
-  __host__ __device__ swappable_with_volatile_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_volatile_s1_but_not_swappable&
   operator=(swappable_with_volatile_s1_but_not_swappable volatile&&);
 
-  __host__ __device__ friend void swap(s1 volatile&,
+  TEST_HOST_DEVICE friend void swap(s1 volatile&,
                    swappable_with_volatile_s1_but_not_swappable volatile&);
-  __host__ __device__ friend void swap(swappable_with_volatile_s1_but_not_swappable volatile&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_volatile_s1_but_not_swappable volatile&,
                    s1 volatile&);
 
-  __host__ __device__ operator s1 volatile &() volatile;
+  TEST_HOST_DEVICE operator s1 volatile &() volatile;
 };
 static_assert(
     !swappable<swappable_with_volatile_s1_but_not_swappable volatile&>, "");
@@ -353,21 +353,21 @@ static_assert(
                          s1 volatile&>, "");
 
 struct swappable_with_cv_s1_but_not_swappable {
-  __host__ __device__ swappable_with_cv_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_cv_s1_but_not_swappable(
       swappable_with_cv_s1_but_not_swappable const volatile&);
-  __host__ __device__ swappable_with_cv_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_cv_s1_but_not_swappable(
       swappable_with_cv_s1_but_not_swappable const volatile&&);
-  __host__ __device__ swappable_with_cv_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_cv_s1_but_not_swappable&
   operator=(swappable_with_cv_s1_but_not_swappable const volatile&);
-  __host__ __device__ swappable_with_cv_s1_but_not_swappable&
+  TEST_HOST_DEVICE swappable_with_cv_s1_but_not_swappable&
   operator=(swappable_with_cv_s1_but_not_swappable const volatile&&);
 
-  __host__ __device__ friend void swap(s1 const volatile&,
+  TEST_HOST_DEVICE friend void swap(s1 const volatile&,
                    swappable_with_cv_s1_but_not_swappable const volatile&);
-  __host__ __device__ friend void swap(swappable_with_cv_s1_but_not_swappable const volatile&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_cv_s1_but_not_swappable const volatile&,
                    s1 const volatile&);
 
-  __host__ __device__ operator s1 const volatile &() const volatile;
+  TEST_HOST_DEVICE operator s1 const volatile &() const volatile;
 };
 static_assert(
     !swappable<swappable_with_cv_s1_but_not_swappable const volatile&>, "");
@@ -376,39 +376,39 @@ static_assert(
                          s1 const volatile&>, "");
 
 struct s2 {
-  __host__ __device__ friend void swap(s2 const&, s2 const&);
-  __host__ __device__ friend void swap(s2 volatile&, s2 volatile&);
-  __host__ __device__ friend void swap(s2 const volatile&, s2 const volatile&);
+  TEST_HOST_DEVICE friend void swap(s2 const&, s2 const&);
+  TEST_HOST_DEVICE friend void swap(s2 volatile&, s2 volatile&);
+  TEST_HOST_DEVICE friend void swap(s2 const volatile&, s2 const volatile&);
 };
 
 #ifndef TEST_COMPILER_MSVC_2017
 struct swappable_with_const_s2 {
-  __host__ __device__ swappable_with_const_s2(swappable_with_const_s2 const&);
-  __host__ __device__ swappable_with_const_s2(swappable_with_const_s2 const&&);
-  __host__ __device__ swappable_with_const_s2& operator=(swappable_with_const_s2 const&);
-  __host__ __device__ swappable_with_const_s2& operator=(swappable_with_const_s2 const&&);
+  TEST_HOST_DEVICE swappable_with_const_s2(swappable_with_const_s2 const&);
+  TEST_HOST_DEVICE swappable_with_const_s2(swappable_with_const_s2 const&&);
+  TEST_HOST_DEVICE swappable_with_const_s2& operator=(swappable_with_const_s2 const&);
+  TEST_HOST_DEVICE swappable_with_const_s2& operator=(swappable_with_const_s2 const&&);
 
-  __host__ __device__ friend void swap(swappable_with_const_s2 const&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_const_s2 const&,
                    swappable_with_const_s2 const&);
-  __host__ __device__ friend void swap(s2 const&, swappable_with_const_s2 const&);
-  __host__ __device__ friend void swap(swappable_with_const_s2 const&, s2 const&);
+  TEST_HOST_DEVICE friend void swap(s2 const&, swappable_with_const_s2 const&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_const_s2 const&, s2 const&);
 
-  __host__ __device__ operator s2 const &() const;
+  TEST_HOST_DEVICE operator s2 const &() const;
 };
 static_assert(swappable_with<swappable_with_const_s2 const&, s2 const&>, "");
 
 struct swappable_with_volatile_s2 {
-  __host__ __device__ swappable_with_volatile_s2(swappable_with_volatile_s2 volatile&);
-  __host__ __device__ swappable_with_volatile_s2(swappable_with_volatile_s2 volatile&&);
-  __host__ __device__ swappable_with_volatile_s2& operator=(swappable_with_volatile_s2 volatile&);
-  __host__ __device__ swappable_with_volatile_s2& operator=(swappable_with_volatile_s2 volatile&&);
+  TEST_HOST_DEVICE swappable_with_volatile_s2(swappable_with_volatile_s2 volatile&);
+  TEST_HOST_DEVICE swappable_with_volatile_s2(swappable_with_volatile_s2 volatile&&);
+  TEST_HOST_DEVICE swappable_with_volatile_s2& operator=(swappable_with_volatile_s2 volatile&);
+  TEST_HOST_DEVICE swappable_with_volatile_s2& operator=(swappable_with_volatile_s2 volatile&&);
 
-  __host__ __device__ friend void swap(swappable_with_volatile_s2 volatile&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_volatile_s2 volatile&,
                    swappable_with_volatile_s2 volatile&);
-  __host__ __device__ friend void swap(s2 volatile&, swappable_with_volatile_s2 volatile&);
-  __host__ __device__ friend void swap(swappable_with_volatile_s2 volatile&, s2 volatile&);
+  TEST_HOST_DEVICE friend void swap(s2 volatile&, swappable_with_volatile_s2 volatile&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_volatile_s2 volatile&, s2 volatile&);
 
-  __host__ __device__ operator s2 volatile &() volatile;
+  TEST_HOST_DEVICE operator s2 volatile &() volatile;
 };
 using test = cuda::std::common_reference_t<swappable_with_volatile_s2 volatile&, s2 volatile&>;
 using test2 = cuda::std::common_reference_t<s2 volatile&, swappable_with_volatile_s2 volatile&>;
@@ -416,29 +416,29 @@ static_assert(
     swappable_with<swappable_with_volatile_s2 volatile&, s2 volatile&>, "");
 
 struct swappable_with_cv_s2 {
-  __host__ __device__ swappable_with_cv_s2(swappable_with_cv_s2 const volatile&);
-  __host__ __device__ swappable_with_cv_s2(swappable_with_cv_s2 const volatile&&);
-  __host__ __device__ swappable_with_cv_s2& operator=(swappable_with_cv_s2 const volatile&);
-  __host__ __device__ swappable_with_cv_s2& operator=(swappable_with_cv_s2 const volatile&&);
+  TEST_HOST_DEVICE swappable_with_cv_s2(swappable_with_cv_s2 const volatile&);
+  TEST_HOST_DEVICE swappable_with_cv_s2(swappable_with_cv_s2 const volatile&&);
+  TEST_HOST_DEVICE swappable_with_cv_s2& operator=(swappable_with_cv_s2 const volatile&);
+  TEST_HOST_DEVICE swappable_with_cv_s2& operator=(swappable_with_cv_s2 const volatile&&);
 
-  __host__ __device__ friend void swap(swappable_with_cv_s2 const volatile&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_cv_s2 const volatile&,
                    swappable_with_cv_s2 const volatile&);
-  __host__ __device__ friend void swap(s2 const volatile&, swappable_with_cv_s2 const volatile&);
-  __host__ __device__ friend void swap(swappable_with_cv_s2 const volatile&, s2 const volatile&);
+  TEST_HOST_DEVICE friend void swap(s2 const volatile&, swappable_with_cv_s2 const volatile&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_cv_s2 const volatile&, s2 const volatile&);
 
-  __host__ __device__ operator s2 const volatile &() const volatile;
+  TEST_HOST_DEVICE operator s2 const volatile &() const volatile;
 };
 static_assert(swappable_with<swappable_with_cv_s2 const volatile&,
                                   s2 const volatile&>, "");
 #endif // !TEST_COMPILER_MSVC_2017
 
 struct swappable_with_rvalue_ref_to_s1_but_not_swappable {
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s1_but_not_swappable&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_s1_but_not_swappable&&,
                    swappable_with_rvalue_ref_to_s1_but_not_swappable&&);
-  __host__ __device__ friend void swap(s1&&, swappable_with_rvalue_ref_to_s1_but_not_swappable&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s1_but_not_swappable&&, s1&&);
+  TEST_HOST_DEVICE friend void swap(s1&&, swappable_with_rvalue_ref_to_s1_but_not_swappable&&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_s1_but_not_swappable&&, s1&&);
 
-  __host__ __device__ operator s1() const;
+  TEST_HOST_DEVICE operator s1() const;
 };
 static_assert(
     !swappable<swappable_with_rvalue_ref_to_s1_but_not_swappable const&&>, "");
@@ -447,12 +447,12 @@ static_assert(
         swappable_with_rvalue_ref_to_s1_but_not_swappable const&&, s1 const&&>, "");
 
 struct swappable_with_rvalue_ref_to_const_s1_but_not_swappable {
-  __host__ __device__ friend void swap(s1 const&&,
+  TEST_HOST_DEVICE friend void swap(s1 const&&,
        swappable_with_rvalue_ref_to_const_s1_but_not_swappable const&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_const_s1_but_not_swappable const&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_const_s1_but_not_swappable const&&,
        s1 const&&);
 
-  __host__ __device__ operator s1 const() const;
+  TEST_HOST_DEVICE operator s1 const() const;
 };
 static_assert(!swappable<
               swappable_with_rvalue_ref_to_const_s1_but_not_swappable const&&>, "");
@@ -461,21 +461,21 @@ static_assert(!swappable_with<
               s1 const&&>, "");
 
 struct swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable {
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable(
       swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable(
       swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&);
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable& operator=(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable& operator=(
       swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&);
-  __host__ __device__ __host__ __device__ swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable& operator=(
+  TEST_HOST_DEVICE TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable& operator=(
       swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&);
 
-  __host__ __device__ friend void swap(
+  TEST_HOST_DEVICE friend void swap(
       s1 volatile&&, swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&);
-  __host__ __device__ friend void swap(
+  TEST_HOST_DEVICE friend void swap(
       swappable_with_rvalue_ref_to_volatile_s1_but_not_swappable volatile&&, s1 volatile&&);
 
-  __host__ __device__ operator s1 volatile &&() volatile&&;
+  TEST_HOST_DEVICE operator s1 volatile &&() volatile&&;
 };
 static_assert(
     !swappable<
@@ -486,21 +486,21 @@ static_assert(
         s1 volatile&&>, "");
 
 struct swappable_with_rvalue_ref_to_cv_s1_but_not_swappable {
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s1_but_not_swappable(
       swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s1_but_not_swappable(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s1_but_not_swappable(
       swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s1_but_not_swappable& operator=(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s1_but_not_swappable& operator=(
       swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s1_but_not_swappable& operator=(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s1_but_not_swappable& operator=(
       swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&);
 
-  __host__ __device__ friend void swap(s1 const volatile&&,
+  TEST_HOST_DEVICE friend void swap(s1 const volatile&&,
        swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_cv_s1_but_not_swappable const volatile&&,
        s1 const volatile&&);
 
-  __host__ __device__ operator s1 const volatile &&() const volatile&&;
+  TEST_HOST_DEVICE operator s1 const volatile &&() const volatile&&;
 };
 static_assert(
     !swappable<
@@ -511,39 +511,39 @@ static_assert(
         s1 const volatile&&>, "");
 
 struct s3 {
-  __host__ __device__ friend void swap(s3&&, s3&&);
-  __host__ __device__ friend void swap(s3 const&&, s3 const&&);
-  __host__ __device__ friend void swap(s3 volatile&&, s3 volatile&&);
-  __host__ __device__ friend void swap(s3 const volatile&&, s3 const volatile&&);
+  TEST_HOST_DEVICE friend void swap(s3&&, s3&&);
+  TEST_HOST_DEVICE friend void swap(s3 const&&, s3 const&&);
+  TEST_HOST_DEVICE friend void swap(s3 volatile&&, s3 volatile&&);
+  TEST_HOST_DEVICE friend void swap(s3 const volatile&&, s3 const volatile&&);
 };
 
 #ifndef TEST_COMPILER_MSVC_2017
 struct swappable_with_rvalue_ref_to_s3 {
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s3&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_s3&&,
                    swappable_with_rvalue_ref_to_s3&&);
-  __host__ __device__ friend void swap(s3&&, swappable_with_rvalue_ref_to_s3&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_s3&&, s3&&);
+  TEST_HOST_DEVICE friend void swap(s3&&, swappable_with_rvalue_ref_to_s3&&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_s3&&, s3&&);
 
-  __host__ __device__ operator s3() const;
+  TEST_HOST_DEVICE operator s3() const;
 };
 static_assert(swappable_with<swappable_with_rvalue_ref_to_s3&&, s3&&>, "");
 
 struct swappable_with_rvalue_ref_to_const_s3 {
-  __host__ __device__ swappable_with_rvalue_ref_to_const_s3(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_const_s3(
       swappable_with_rvalue_ref_to_const_s3 const&);
-  __host__ __device__ swappable_with_rvalue_ref_to_const_s3(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_const_s3(
       swappable_with_rvalue_ref_to_const_s3 const&&);
-  __host__ __device__ swappable_with_rvalue_ref_to_const_s3&
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_const_s3&
   operator=(swappable_with_rvalue_ref_to_const_s3 const&);
-  __host__ __device__ swappable_with_rvalue_ref_to_const_s3&
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_const_s3&
   operator=(swappable_with_rvalue_ref_to_const_s3 const&&);
 
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_const_s3 const&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_const_s3 const&&,
                    swappable_with_rvalue_ref_to_const_s3 const&&);
-  __host__ __device__ friend void swap(s3 const&&, swappable_with_rvalue_ref_to_const_s3 const&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_const_s3 const&&, s3 const&&);
+  TEST_HOST_DEVICE friend void swap(s3 const&&, swappable_with_rvalue_ref_to_const_s3 const&&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_const_s3 const&&, s3 const&&);
 
-  __host__ __device__ operator s3() const;
+  TEST_HOST_DEVICE operator s3() const;
 };
 static_assert(swappable_with<swappable_with_rvalue_ref_to_const_s3 const&&,
                                   s3 const&&>, "");
@@ -551,23 +551,23 @@ static_assert(swappable_with<swappable_with_rvalue_ref_to_const_s3 const&&,
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap definitions
 struct swappable_with_rvalue_ref_to_volatile_s3 {
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s3(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s3(
       swappable_with_rvalue_ref_to_volatile_s3 volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s3(
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s3(
       swappable_with_rvalue_ref_to_volatile_s3 volatile&&);
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s3&
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s3&
   operator=(swappable_with_rvalue_ref_to_volatile_s3 volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_volatile_s3&
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_volatile_s3&
   operator=(swappable_with_rvalue_ref_to_volatile_s3 volatile&&);
 
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_volatile_s3 volatile&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_volatile_s3 volatile&&,
                    swappable_with_rvalue_ref_to_volatile_s3 volatile&&);
-  __host__ __device__ friend void swap(s3 volatile&&,
+  TEST_HOST_DEVICE friend void swap(s3 volatile&&,
                    swappable_with_rvalue_ref_to_volatile_s3 volatile&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_volatile_s3 volatile&&,
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_volatile_s3 volatile&&,
                    s3 volatile&&);
 
-  __host__ __device__ operator s3 volatile &&() volatile;
+  TEST_HOST_DEVICE operator s3 volatile &&() volatile;
 };
 static_assert(
     swappable_with<swappable_with_rvalue_ref_to_volatile_s3 volatile&&,
@@ -575,16 +575,16 @@ static_assert(
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
 struct swappable_with_rvalue_ref_to_cv_s3 {
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s3(swappable_with_rvalue_ref_to_cv_s3 const volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s3(swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s3& operator=(swappable_with_rvalue_ref_to_cv_s3 const volatile&);
-  __host__ __device__ swappable_with_rvalue_ref_to_cv_s3& operator=(swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s3(swappable_with_rvalue_ref_to_cv_s3 const volatile&);
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s3(swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s3& operator=(swappable_with_rvalue_ref_to_cv_s3 const volatile&);
+  TEST_HOST_DEVICE swappable_with_rvalue_ref_to_cv_s3& operator=(swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
 
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_cv_s3 const volatile&&, swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
-  __host__ __device__ friend void swap(s3 const volatile&&, swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
-  __host__ __device__ friend void swap(swappable_with_rvalue_ref_to_cv_s3 const volatile&&, s3 const volatile&&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_cv_s3 const volatile&&, swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
+  TEST_HOST_DEVICE friend void swap(s3 const volatile&&, swappable_with_rvalue_ref_to_cv_s3 const volatile&&);
+  TEST_HOST_DEVICE friend void swap(swappable_with_rvalue_ref_to_cv_s3 const volatile&&, s3 const volatile&&);
 
-  __host__ __device__ operator s3 const volatile &&() const volatile;
+  TEST_HOST_DEVICE operator s3 const volatile &&() const volatile;
 };
 #if !defined(TEST_COMPILER_MSVC)
 static_assert(cuda::std::common_reference_with<swappable_with_rvalue_ref_to_cv_s3 const volatile&&,
@@ -599,13 +599,13 @@ union adl_swappable {
   int x;
   double y;
 
-  __host__ __device__ operator int() const;
+  TEST_HOST_DEVICE operator int() const;
 };
 
-__host__ __device__ void swap(adl_swappable&, adl_swappable&) noexcept;
-__host__ __device__ void swap(adl_swappable&&, adl_swappable&&) noexcept;
-__host__ __device__ void swap(adl_swappable&, int&) noexcept;
-__host__ __device__ void swap(int&, adl_swappable&) noexcept;
+TEST_HOST_DEVICE void swap(adl_swappable&, adl_swappable&) noexcept;
+TEST_HOST_DEVICE void swap(adl_swappable&&, adl_swappable&&) noexcept;
+TEST_HOST_DEVICE void swap(adl_swappable&, int&) noexcept;
+TEST_HOST_DEVICE void swap(int&, adl_swappable&) noexcept;
 } // namespace union_swap
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC ignores the rvalue/lvalue distinction in the swap definitions
 static_assert(
@@ -647,14 +647,14 @@ namespace LWG3175 {
 // Example taken directly from [concept.swappable]
 _LIBCUDACXX_TEMPLATE(class T, class U)
   _LIBCUDACXX_REQUIRES( swappable_with<T, U>)
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void value_swap(T&& t, U&& u) {
   cuda::std::ranges::swap(cuda::std::forward<T>(t), cuda::std::forward<U>(u));
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
   _LIBCUDACXX_REQUIRES( swappable<T>)
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr void lv_swap(T& t1, T& t2) {
   cuda::std::ranges::swap(t1, t2);
 }
@@ -665,15 +665,15 @@ struct A {
 };
 struct Proxy {
   A* a;
-  __host__ __device__ constexpr Proxy(A& a_) : a{&a_} {}
-  __host__ __device__ friend constexpr void swap(Proxy x, Proxy y) {
+  TEST_HOST_DEVICE constexpr Proxy(A& a_) : a{&a_} {}
+  TEST_HOST_DEVICE friend constexpr void swap(Proxy x, Proxy y) {
     cuda::std::ranges::swap(*x.a, *y.a);
   }
 };
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr Proxy proxy(A& a) { return Proxy{a}; }
 } // namespace N
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool CheckRegression() {
   int i = 1, j = 2;
   lv_swap(i, j);

@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 template <class T, bool B>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_array_imp()
 {
 	static_assert( B == cuda::std::is_bounded_array<T>::value, "" );
@@ -25,7 +25,7 @@ void test_array_imp()
 }
 
 template <class T, bool B>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_array()
 {
     test_array_imp<T, B>();
@@ -44,7 +44,7 @@ union Union {};
 
 class Abstract
 {
-    __host__ __device__ virtual ~Abstract() = 0;
+    TEST_HOST_DEVICE virtual ~Abstract() = 0;
 };
 
 enum Enum {zero, one};

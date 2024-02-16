@@ -29,33 +29,33 @@ using cuda::std::optional;
 struct ThrowAssign {
   STATIC_MEMBER_VAR(dtor_called, unsigned);
   ThrowAssign() = default;
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowAssign(int) { TEST_THROW(42); }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ThrowAssign& operator=(int) {
       TEST_THROW(42);
       return *this;
   }
-  __host__ __device__
+  TEST_HOST_DEVICE
   ~ThrowAssign() { ++dtor_called(); }
 };
 
 template <class T, class Arg = T, bool Expect = true>
-__host__ __device__
+TEST_HOST_DEVICE
 void assert_assignable() {
     static_assert(cuda::std::is_assignable<optional<T>&, Arg>::value == Expect, "");
     static_assert(!cuda::std::is_assignable<const optional<T>&, Arg>::value, "");
 }
 
 struct MismatchType {
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit MismatchType(int) {}
-  __host__ __device__
+  TEST_HOST_DEVICE
   explicit MismatchType(char*) {}
   explicit MismatchType(int*) = delete;
-  __host__ __device__
+  TEST_HOST_DEVICE
   MismatchType& operator=(int) { return *this; }
-  __host__ __device__
+  TEST_HOST_DEVICE
   MismatchType& operator=(int*) { return *this; }
   MismatchType& operator=(char*) = delete;
 };
@@ -65,14 +65,14 @@ struct FromOptionalType {
   FromOptionalType() = default;
   FromOptionalType(FromOptionalType const&) = delete;
   template <class Dummy = void>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr FromOptionalType(Opt&) { Dummy::BARK; }
   template <class Dummy = void>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr FromOptionalType& operator=(Opt&) { Dummy::BARK; return *this; }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_sfinae() {
     using I = TestTypes::TestType;
     using E = ExplicitTestTypes::TestType;
@@ -97,7 +97,7 @@ void test_sfinae() {
     assert_assignable<FromOptionalType, cuda::std::optional<FromOptionalType>&, false>();
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_with_test_type()
 {
     using T = TestTypes::TestType;
@@ -177,7 +177,7 @@ void test_with_test_type()
 }
 
 template <class T, class Value = int>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_with_type() {
     { // to empty
         optional<T> opt;
@@ -212,7 +212,7 @@ void test_with_type() {
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_with_type_multi() {
     test_with_type<T>();
     { // test default argument
@@ -229,7 +229,7 @@ void test_with_type_multi() {
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_throws()
 {
 #ifndef TEST_HAS_NO_EXCEPTIONS
@@ -263,7 +263,7 @@ using Fn = void(*)();
 
 // https://llvm.org/PR38638
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr T pr38638(T v)
 {
   cuda::std::optional<T> o;

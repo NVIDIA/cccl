@@ -15,19 +15,19 @@
 //     static unsigned constexpr fractional_width = see below;
 //     using precision                            = see below;
 //
-//	fractional_width is the number of fractional decimal digits represented by precision. 
-//  fractional_width has the value of the smallest possible integer in the range [0, 18] 
-//    such that precision will exactly represent all values of Duration. 
+//	fractional_width is the number of fractional decimal digits represented by precision.
+//  fractional_width has the value of the smallest possible integer in the range [0, 18]
+//    such that precision will exactly represent all values of Duration.
 //  If no such value of fractional_width exists, then fractional_width is 6.
 
-   
+
 #include <cuda/std/chrono>
 #include <cuda/std/chrono>
 
 #include "test_macros.h"
 
 template <typename Duration, unsigned width>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool check_width()
 {
 	using HMS = cuda::std::chrono::hh_mm_ss<Duration>;

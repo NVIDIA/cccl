@@ -26,17 +26,17 @@
 
 STATIC_TEST_GLOBAL_VAR int count = 0;
 
-__host__ __device__ void f_void_0()
+TEST_HOST_DEVICE void f_void_0()
 {
     ++count;
 }
 
 struct A_void_0
 {
-    __host__ __device__ void operator()() {++count;}
+    TEST_HOST_DEVICE void operator()() {++count;}
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_void_0()
 {
     int save_count = count;

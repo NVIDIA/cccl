@@ -30,9 +30,9 @@ struct B {
   B& operator=(B const&) = delete;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(A&, A&) noexcept {}
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(B&, B&) {}
 
 struct M {
@@ -40,13 +40,13 @@ struct M {
   M& operator=(M const&) = delete;
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void swap(M&&, M&&) noexcept {}
 
 struct ThrowingMove {
-    __host__ __device__
+    TEST_HOST_DEVICE
     ThrowingMove(ThrowingMove&&) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     ThrowingMove& operator=(ThrowingMove&&) { return *this; }
 };
 

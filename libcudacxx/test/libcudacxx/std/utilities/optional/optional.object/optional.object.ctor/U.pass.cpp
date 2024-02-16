@@ -27,25 +27,25 @@ using cuda::std::optional;
 
 struct ImplicitThrow
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr ImplicitThrow(int x) { if (x != -1) TEST_THROW(6);}
 };
 
 struct ExplicitThrow
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr explicit ExplicitThrow(int x) { if (x != -1) TEST_THROW(6);}
 };
 
 struct ImplicitAny {
   template <class U>
-  __host__ __device__
+  TEST_HOST_DEVICE
   constexpr ImplicitAny(U&&) {}
 };
 
 
 template <class To, class From>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool implicit_conversion(optional<To>&& opt, const From& v)
 {
     using O = optional<To>;
@@ -56,7 +56,7 @@ constexpr bool implicit_conversion(optional<To>&& opt, const From& v)
 }
 
 template <class To, class Input, class Expect>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool explicit_conversion(Input&& in, const Expect& v)
 {
     using O = optional<To>;
@@ -68,7 +68,7 @@ constexpr bool explicit_conversion(Input&& in, const Expect& v)
     return opt && *opt == static_cast<To>(v);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_implicit()
 {
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
@@ -116,7 +116,7 @@ void test_implicit()
 #endif
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_explicit() {
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     {

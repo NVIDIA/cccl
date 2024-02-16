@@ -12,8 +12,9 @@
 // template<class F, class... Args>
 // concept relation;
 
-
 #include <cuda/std/concepts>
+
+#include "test_macros.h"
 
 using cuda::std::relation;
 
@@ -34,28 +35,28 @@ static_assert(relation<bool (S1::*)(S1&), S1&, S1&>, "");
 struct S2 {};
 
 struct P1 {
-  __host__ __device__ bool operator()(S1, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S1) const;
 };
 static_assert(relation<P1, S1, S1>, "");
 
 struct P2 {
-  __host__ __device__ bool operator()(S1, S1) const;
-  __host__ __device__ bool operator()(S1, S2) const;
+  TEST_HOST_DEVICE bool operator()(S1, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S2) const;
 };
 static_assert(!relation<P2, S1, S2>, "");
 
 struct P3 {
-  __host__ __device__ bool operator()(S1, S1) const;
-  __host__ __device__ bool operator()(S1, S2) const;
-  __host__ __device__ bool operator()(S2, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S2) const;
+  TEST_HOST_DEVICE bool operator()(S2, S1) const;
 };
 static_assert(!relation<P3, S1, S2>, "");
 
 struct P4 {
-  __host__ __device__ bool operator()(S1, S1) const;
-  __host__ __device__ bool operator()(S1, S2) const;
-  __host__ __device__ bool operator()(S2, S1) const;
-  __host__ __device__ bool operator()(S2, S2) const;
+  TEST_HOST_DEVICE bool operator()(S1, S1) const;
+  TEST_HOST_DEVICE bool operator()(S1, S2) const;
+  TEST_HOST_DEVICE bool operator()(S2, S1) const;
+  TEST_HOST_DEVICE bool operator()(S2, S2) const;
 };
 static_assert(relation<P4, S1, S2>, "");
 

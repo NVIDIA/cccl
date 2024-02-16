@@ -27,7 +27,7 @@
 #include "test_iterators.h"
 
 template <class ItL, class ItR, class Ord>
-__host__ __device__ constexpr void test(ItL l, ItR r, Ord x) {
+TEST_HOST_DEVICE constexpr void test(ItL l, ItR r, Ord x) {
     const cuda::std::reverse_iterator<ItL> l1(l);
     const cuda::std::reverse_iterator<ItR> r1(r);
     ASSERT_SAME_TYPE(decltype(l1 <=> r1), Ord);
@@ -41,13 +41,13 @@ struct Iter {
     using value_type = char;
     using difference_type = double;
 
-    __host__ __device__ constexpr Iter(double value): m_value(value) {}
+    TEST_HOST_DEVICE constexpr Iter(double value): m_value(value) {}
     double m_value;
 
-    __host__ __device__ reference operator*() const;
+    TEST_HOST_DEVICE reference operator*() const;
 private:
-    __host__ __device__ friend constexpr bool operator==(const Iter& l, const Iter& r) = default;
-    __host__ __device__ friend constexpr cuda::std::partial_ordering operator<=>(const Iter& l, const Iter& r) = default;
+    TEST_HOST_DEVICE friend constexpr bool operator==(const Iter& l, const Iter& r) = default;
+    TEST_HOST_DEVICE friend constexpr cuda::std::partial_ordering operator<=>(const Iter& l, const Iter& r) = default;
 };
 
 struct ConstIter {
@@ -57,17 +57,17 @@ struct ConstIter {
     using value_type = const char;
     using difference_type = double;
 
-    __host__ __device__ constexpr ConstIter(double value): m_value(value) {}
-    __host__ __device__ constexpr ConstIter(Iter it): m_value(it.m_value) {}
+    TEST_HOST_DEVICE constexpr ConstIter(double value): m_value(value) {}
+    TEST_HOST_DEVICE constexpr ConstIter(Iter it): m_value(it.m_value) {}
     double m_value;
 
-    __host__ __device__ reference operator*() const;
+    TEST_HOST_DEVICE reference operator*() const;
 private:
-    __host__ __device__ friend constexpr bool operator==(const ConstIter& l, const ConstIter& r) = default;
-    __host__ __device__ friend constexpr cuda::std::partial_ordering operator<=>(const ConstIter& l, const ConstIter& r) = default;
+    TEST_HOST_DEVICE friend constexpr bool operator==(const ConstIter& l, const ConstIter& r) = default;
+    TEST_HOST_DEVICE friend constexpr cuda::std::partial_ordering operator<=>(const ConstIter& l, const ConstIter& r) = default;
 };
 
-__host__ __device__ constexpr bool tests() {
+TEST_HOST_DEVICE constexpr bool tests() {
     char s[] = "1234567890";
     test(three_way_contiguous_iterator<const char*>(s),
          three_way_contiguous_iterator<const char*>(s),

@@ -24,7 +24,7 @@ struct TestExtentsRank< TEST_TYPE >
     using base         = TestExtents<TEST_TYPE>;
     using extents_type = typename TestExtents<TEST_TYPE>::extents_type;
 
-    __host__ __device__ void test_rank()
+    TEST_HOST_DEVICE void test_rank()
     {
         size_t result[2];
 
@@ -45,7 +45,7 @@ struct TestExtentsRank< TEST_TYPE >
 
 // TYPED_TEST(TestExtents, rank)
 template<class T>
-__host__ __device__ void test_rank()
+TEST_HOST_DEVICE void test_rank()
 {
    TestExtentsRank<T> test;
 

@@ -28,15 +28,15 @@ struct B
 {
     int id_;
 
-    __host__ __device__ explicit B(int i) : id_(i) {}
+    TEST_HOST_DEVICE explicit B(int i) : id_(i) {}
 
-    __host__ __device__ virtual ~B() {}
+    TEST_HOST_DEVICE virtual ~B() {}
 };
 
 struct D
     : B
 {
-    __host__ __device__ explicit D(int i) : B(i) {}
+    TEST_HOST_DEVICE explicit D(int i) : B(i) {}
 };
 
 int main(int, char**)

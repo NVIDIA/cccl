@@ -21,7 +21,7 @@
 namespace ranges = cuda::std::ranges;
 
 template <template <class...> class I>
-__host__ __device__ constexpr bool check_range() {
+TEST_HOST_DEVICE constexpr bool check_range() {
   constexpr bool result = ranges::contiguous_range<test_range<I> >;
   static_assert(ranges::contiguous_range<test_range<I> const> == result);
   static_assert(ranges::contiguous_range<test_non_const_common_range<I> > == result);
@@ -40,39 +40,39 @@ static_assert(!check_range<random_access_iterator>());
 static_assert(check_range<contiguous_iterator>());
 
 struct ContiguousWhenNonConst {
-    __host__ __device__ const int *begin() const;
-    __host__ __device__ const int *end() const;
-    __host__ __device__ int *begin();
-    __host__ __device__ int *end();
-    __host__ __device__ int *data() const;
+    TEST_HOST_DEVICE const int *begin() const;
+    TEST_HOST_DEVICE const int *end() const;
+    TEST_HOST_DEVICE int *begin();
+    TEST_HOST_DEVICE int *end();
+    TEST_HOST_DEVICE int *data() const;
 };
 static_assert( cuda::std::ranges::contiguous_range<ContiguousWhenNonConst>);
 static_assert( cuda::std::ranges::random_access_range<const ContiguousWhenNonConst>);
 static_assert(!cuda::std::ranges::contiguous_range<const ContiguousWhenNonConst>);
 
 struct ContiguousWhenConst {
-    __host__ __device__ const int *begin() const;
-    __host__ __device__ const int *end() const;
-    __host__ __device__ int *begin();
-    __host__ __device__ int *end();
-    __host__ __device__ const int *data() const;
+    TEST_HOST_DEVICE const int *begin() const;
+    TEST_HOST_DEVICE const int *end() const;
+    TEST_HOST_DEVICE int *begin();
+    TEST_HOST_DEVICE int *end();
+    TEST_HOST_DEVICE const int *data() const;
 };
 static_assert( cuda::std::ranges::contiguous_range<const ContiguousWhenConst>);
 static_assert( cuda::std::ranges::random_access_range<ContiguousWhenConst>);
 static_assert(!cuda::std::ranges::contiguous_range<ContiguousWhenConst>);
 
 struct DataFunctionWrongReturnType {
-    __host__ __device__ const int *begin() const;
-    __host__ __device__ const int *end() const;
-    __host__ __device__ const char *data() const;
+    TEST_HOST_DEVICE const int *begin() const;
+    TEST_HOST_DEVICE const int *end() const;
+    TEST_HOST_DEVICE const char *data() const;
 };
 static_assert( cuda::std::ranges::random_access_range<DataFunctionWrongReturnType>);
 static_assert(!cuda::std::ranges::contiguous_range<DataFunctionWrongReturnType>);
 
 struct WrongObjectness {
-    __host__ __device__ const int *begin() const;
-    __host__ __device__ const int *end() const;
-    __host__ __device__ void *data() const;
+    TEST_HOST_DEVICE const int *begin() const;
+    TEST_HOST_DEVICE const int *end() const;
+    TEST_HOST_DEVICE void *data() const;
 };
 static_assert(cuda::std::ranges::contiguous_range<WrongObjectness>);
 

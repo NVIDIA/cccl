@@ -22,10 +22,10 @@
 
 #if TEST_STD_VER > 2011
 struct add_two {
-    __host__ __device__ constexpr void operator()(int& a) const noexcept { a += 2; }
+    TEST_HOST_DEVICE constexpr void operator()(int& a) const noexcept { a += 2; }
 };
 
-__host__ __device__ constexpr bool test_constexpr() {
+TEST_HOST_DEVICE constexpr bool test_constexpr() {
     int ia[] = {1, 3, 6, 7};
     int expected[] = {3, 5, 8, 9};
 
@@ -41,8 +41,8 @@ struct for_each_test
 {
     int count;
 
-    __host__ __device__ constexpr for_each_test(int c) : count(c) {}
-    __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()(int& i) {++i; ++count;}
+    TEST_HOST_DEVICE constexpr for_each_test(int c) : count(c) {}
+    TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void operator()(int& i) {++i; ++count;}
 };
 
 int main(int, char**)

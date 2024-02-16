@@ -70,7 +70,7 @@ static_assert(!cuda::std::indirectly_copyable<const CopyOnly*, const CopyOnly*>)
 template<class T>
 struct PointerTo {
   using value_type = T;
-  __host__ __device__ T& operator*() const;
+  TEST_HOST_DEVICE T& operator*() const;
 };
 
 #ifndef TEST_COMPILER_MSVC_2017 // MSVC2017 has issues determining common_reference

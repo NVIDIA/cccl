@@ -23,7 +23,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_constexpr_void() {
   constexpr ReturnFirst obj{};
   constexpr ReturnArity aobj{};
@@ -67,7 +67,7 @@ void test_constexpr_void() {
   }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_constexpr_int() {
   constexpr ReturnFirst obj{};
   constexpr ReturnArity aobj{};
@@ -113,10 +113,10 @@ void test_constexpr_int() {
 
 struct visitor_side_effects {
   int arg_;
-  __host__ __device__ constexpr visitor_side_effects(int arg) noexcept : arg_(arg) {}
-  __host__ __device__ constexpr void operator()(int& x) const noexcept { x = arg_; }
+  TEST_HOST_DEVICE constexpr visitor_side_effects(int arg) noexcept : arg_(arg) {}
+  TEST_HOST_DEVICE constexpr void operator()(int& x) const noexcept { x = arg_; }
 };
-__host__ __device__ constexpr int test_constexpr_explicit_side_effect() {
+TEST_HOST_DEVICE constexpr int test_constexpr_explicit_side_effect() {
   cuda::std::variant<int> v = 101;
   cuda::std::visit<void>(visitor_side_effects{202}, v);
   return cuda::std::get<int>(v);

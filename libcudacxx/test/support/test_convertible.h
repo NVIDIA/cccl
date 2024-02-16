@@ -20,19 +20,19 @@
 
 
 namespace detail {
-    template <class Tp> __host__ __device__ void eat_type(Tp);
+    template <class Tp> TEST_HOST_DEVICE void eat_type(Tp);
 
     template <class Tp, class ...Args>
-    __host__ __device__ constexpr auto test_convertible_imp(int)
+    TEST_HOST_DEVICE constexpr auto test_convertible_imp(int)
         -> decltype(eat_type<Tp>({cuda::std::declval<Args>()...}), true)
     { return true; }
 
     template <class Tp, class ...Args>
-    __host__ __device__ constexpr auto test_convertible_imp(long) -> bool { return false; }
+    TEST_HOST_DEVICE constexpr auto test_convertible_imp(long) -> bool { return false; }
 }
 
 template <class Tp, class ...Args>
-__host__ __device__ constexpr bool test_convertible()
+TEST_HOST_DEVICE constexpr bool test_convertible()
 { return detail::test_convertible_imp<Tp, Args...>(0); }
 
 #endif // SUPPORT_TEST_CONVERTIBLE_H

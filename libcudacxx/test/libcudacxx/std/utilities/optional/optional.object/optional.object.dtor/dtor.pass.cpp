@@ -30,7 +30,7 @@ class X
 public:
     STATIC_MEMBER_VAR(dtor_called, bool);
     X() = default;
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~X() {dtor_called() = true;}
 };
 

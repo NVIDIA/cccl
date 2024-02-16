@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_add_rvalue_reference()
 {
     ASSERT_SAME_TYPE(U, typename cuda::std::add_rvalue_reference<T>::type);
@@ -28,7 +28,7 @@ void test_add_rvalue_reference()
 }
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_function0()
 {
     ASSERT_SAME_TYPE(F&&, typename cuda::std::add_rvalue_reference<F>::type);
@@ -38,7 +38,7 @@ void test_function0()
 }
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_function1()
 {
     ASSERT_SAME_TYPE(F, typename cuda::std::add_rvalue_reference<F>::type);

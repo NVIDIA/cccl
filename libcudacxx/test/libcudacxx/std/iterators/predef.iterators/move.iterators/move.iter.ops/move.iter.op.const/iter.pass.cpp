@@ -22,7 +22,7 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test()
 {
   static_assert( cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
   static_assert( cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
@@ -44,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 }
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_moveonly()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test_moveonly()
 {
 #if !defined(TEST_COMPILER_MSVC_2017)
   static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");

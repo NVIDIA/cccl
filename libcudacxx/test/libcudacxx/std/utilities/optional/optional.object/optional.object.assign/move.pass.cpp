@@ -52,7 +52,7 @@ struct X
 struct Y {};
 
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool assign_empty(optional<Tp>&& lhs) {
     optional<Tp> rhs;
     lhs = cuda::std::move(rhs);
@@ -60,7 +60,7 @@ constexpr bool assign_empty(optional<Tp>&& lhs) {
 }
 
 template <class Tp>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool assign_value(optional<Tp>&& lhs) {
     optional<Tp> rhs(101);
     lhs = cuda::std::move(rhs);
@@ -190,42 +190,42 @@ int main(int, char**)
     {
 #ifndef TEST_COMPILER_ICC
         struct ThrowsMove {
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMove() noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMove(ThrowsMove const&) noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMove(ThrowsMove &&) noexcept(false) {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMove& operator=(ThrowsMove const&) noexcept { return *this; }
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMove& operator=(ThrowsMove &&) noexcept { return *this; }
         };
         static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMove>>::value, "");
         struct ThrowsMoveAssign {
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMoveAssign() noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMoveAssign(ThrowsMoveAssign const&) noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMoveAssign(ThrowsMoveAssign &&) noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMoveAssign& operator=(ThrowsMoveAssign const&) noexcept { return *this; }
-            __host__ __device__
+            TEST_HOST_DEVICE
             ThrowsMoveAssign& operator=(ThrowsMoveAssign &&) noexcept(false) { return *this; }
         };
         static_assert(!cuda::std::is_nothrow_move_assignable<optional<ThrowsMoveAssign>>::value, "");
 #endif // TEST_COMPILER_ICC
         struct NoThrowMove {
-            __host__ __device__
+            TEST_HOST_DEVICE
             NoThrowMove() noexcept(false) {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             NoThrowMove(NoThrowMove const&) noexcept(false) {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             NoThrowMove(NoThrowMove &&) noexcept {}
-            __host__ __device__
+            TEST_HOST_DEVICE
             NoThrowMove& operator=(NoThrowMove const&) noexcept { return *this; }
-            __host__ __device__
+            TEST_HOST_DEVICE
             NoThrowMove& operator=(NoThrowMove&&) noexcept { return *this; }
         };
         static_assert(cuda::std::is_nothrow_move_assignable<optional<NoThrowMove>>::value, "");

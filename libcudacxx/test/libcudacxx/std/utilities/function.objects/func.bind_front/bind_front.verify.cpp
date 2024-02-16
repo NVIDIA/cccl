@@ -18,22 +18,22 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr int pass(const int n) { return n; }
+TEST_HOST_DEVICE constexpr int pass(const int n) { return n; }
 
-__host__ __device__ int simple(int n) { return n; }
+TEST_HOST_DEVICE int simple(int n) { return n; }
 
 template<class T>
-__host__ __device__ T do_nothing(T t) { return t; }
+TEST_HOST_DEVICE T do_nothing(T t) { return t; }
 
 struct NotMoveConst
 {
     NotMoveConst(NotMoveConst &&) = delete;
     NotMoveConst(NotMoveConst const&) = delete;
 
-    __host__ __device__ NotMoveConst(int) { }
+    TEST_HOST_DEVICE NotMoveConst(int) { }
 };
 
-__host__ __device__ void testNotMoveConst(NotMoveConst) { }
+TEST_HOST_DEVICE void testNotMoveConst(NotMoveConst) { }
 
 int main(int, char**)
 {

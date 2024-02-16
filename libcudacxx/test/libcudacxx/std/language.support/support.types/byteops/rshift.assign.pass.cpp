@@ -17,7 +17,7 @@
 //   is_integral_v<IntegerType> is true.
 
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr cuda::std::byte test(cuda::std::byte b) {
     return b >>= 2;
     }

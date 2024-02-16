@@ -23,8 +23,8 @@
 #include "pointer_comparison_test_helper.h"
 
 struct NotEqualityComparable {
-  __host__ __device__ friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
-  __host__ __device__ friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
+  TEST_HOST_DEVICE friend bool operator==(const NotEqualityComparable&, const NotEqualityComparable&);
+  TEST_HOST_DEVICE friend bool operator!=(const NotEqualityComparable&, const NotEqualityComparable&) = delete;
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::not_equal_to, NotEqualityComparable, NotEqualityComparable>);
@@ -44,12 +44,12 @@ static_assert(is_transparent<cuda::std::ranges::not_equal_to>);
 #endif
 
 struct PtrAndNotEqOperator {
-  __host__ __device__ constexpr operator void*() const { return nullptr; }
+  TEST_HOST_DEVICE constexpr operator void*() const { return nullptr; }
   // We *don't* want operator!= to be picked here.
-  __host__ __device__ friend constexpr bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator) { return true; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(PtrAndNotEqOperator, PtrAndNotEqOperator) { return true; }
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   auto fn = cuda::std::ranges::not_equal_to();
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)

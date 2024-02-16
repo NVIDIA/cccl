@@ -32,17 +32,17 @@ class X
     int i_;
     int j_ = 0;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     X() : i_(0) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     X(int i, int j) : i_(i), j_(j) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~X() {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const X& x, const X& y)
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
@@ -52,14 +52,14 @@ class Y
     int i_;
     int j_ = 0;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y() : i_(0) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr Y(cuda::std::initializer_list<int> il) : i_(il.begin()[0]), j_(il.begin()[1]) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const Y& x, const Y& y)
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
@@ -69,15 +69,15 @@ class Z
     int i_;
     int j_ = 0;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z() : i_(0) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(cuda::std::initializer_list<int> il) : i_(il.begin()[0]), j_(il.begin()[1])
         {TEST_THROW(6);}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const Z& x, const Z& y)
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
@@ -121,7 +121,7 @@ int main(int, char**)
         struct test_constexpr_ctor
             : public optional<Y>
         {
-            __host__ __device__
+            TEST_HOST_DEVICE
             constexpr test_constexpr_ctor(in_place_t, cuda::std::initializer_list<int> i)
                 : optional<Y>(in_place, i) {}
         };

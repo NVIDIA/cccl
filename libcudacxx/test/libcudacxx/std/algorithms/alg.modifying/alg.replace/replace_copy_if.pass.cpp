@@ -22,12 +22,12 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool equalToTwo(const int v) noexcept {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE bool equalToTwo(const int v) noexcept {
   return v == 2;
 }
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE void test() {
   constexpr int N = 5;
   constexpr int ia[N] = {0, 1, 2, 3, 4};
   int ib[N + 1] = {0};
@@ -44,7 +44,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX14 TEST_HOST_DEVICE bool test() {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*> >();
   test<cpp17_input_iterator<const int*>, bidirectional_iterator<int*> >();

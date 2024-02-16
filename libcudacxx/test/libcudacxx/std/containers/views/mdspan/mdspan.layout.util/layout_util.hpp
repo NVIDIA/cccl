@@ -9,6 +9,8 @@
 
 #include <cuda/std/tuple>
 
+#include "test_macros.h"
+
 template <class> struct TestLayoutCtors;
 template <class Mapping, size_t... DynamicSizes>
 struct TestLayoutCtors<cuda::std::tuple<
@@ -21,7 +23,7 @@ struct TestLayoutCtors<cuda::std::tuple<
     Mapping map = { extents_type{ DynamicSizes... } };
 };
 
-template<class T> __host__ __device__ void typed_test_default_ctor()
+template<class T> TEST_HOST_DEVICE void typed_test_default_ctor()
 // TYPED_TEST( TestLayoutCtors, default_ctor )
 {
     // Default constructor ensures extents() == Extents() is true.
@@ -49,7 +51,7 @@ struct TestLayoutCompatCtors<cuda::std::tuple<
   Mapping2 map2 = { extents_type2{ DynamicSizes2... } };
 };
 
-template<class T> __host__ __device__ void typed_test_compatible()
+template<class T> TEST_HOST_DEVICE void typed_test_compatible()
 //TYPED_TEST(TestLayout{Left|Right}CompatCtors, compatible_construct_{1|2}) {
 //TYPED_TEST(TestLayout{Left|Right}CompatCtors, compatible_assign_{1|2}) {
 {
@@ -87,7 +89,7 @@ template<class T> __host__ __device__ void typed_test_compatible()
     }
 }
 
-template<class T> __host__ __device__ void typed_test_compare()
+template<class T> TEST_HOST_DEVICE void typed_test_compare()
 {
     using TestFixture = TestLayoutCompatCtors<T>;
 

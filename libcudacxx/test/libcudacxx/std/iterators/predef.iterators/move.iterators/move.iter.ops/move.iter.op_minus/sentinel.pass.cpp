@@ -38,16 +38,16 @@ struct CustomIt {
   using iterator_category = cuda::std::input_iterator_tag;
 
   CustomIt() = default;
-  __host__ __device__ constexpr explicit CustomIt(int* p) : p_(p) {}
-  __host__ __device__ int& operator*() const;
-  __host__ __device__ CustomIt& operator++();
-  __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b) { return static_cast<difference_type>(a.p_ - b.p_); }
+  TEST_HOST_DEVICE constexpr explicit CustomIt(int* p) : p_(p) {}
+  TEST_HOST_DEVICE int& operator*() const;
+  TEST_HOST_DEVICE CustomIt& operator++();
+  TEST_HOST_DEVICE CustomIt operator++(int);
+  TEST_HOST_DEVICE constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b) { return static_cast<difference_type>(a.p_ - b.p_); }
   int *p_ = nullptr;
 };
 
 template <class It, class Sent = sized_sentinel<It>>
-__host__ __device__ constexpr void test_one() {
+TEST_HOST_DEVICE constexpr void test_one() {
   int arr[] = {3, 1, 4};
 
   const cuda::std::move_iterator<It> it_a{It(arr)};
@@ -81,7 +81,7 @@ __host__ __device__ constexpr void test_one() {
   assert(sent_c - it_b == 1);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   test_one<CustomIt>();
   test_one<cpp17_input_iterator<int*>>();
   test_one<forward_iterator<int*>>();

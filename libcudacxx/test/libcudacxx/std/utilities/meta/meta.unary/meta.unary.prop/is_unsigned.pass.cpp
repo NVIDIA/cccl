@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_unsigned()
 {
     static_assert( cuda::std::is_unsigned<T>::value, "");
@@ -30,7 +30,7 @@ void test_is_unsigned()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_unsigned()
 {
     static_assert(!cuda::std::is_unsigned<T>::value, "");
@@ -48,7 +48,7 @@ void test_is_not_unsigned()
 class Class
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Class();
 };
 

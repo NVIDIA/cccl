@@ -23,7 +23,7 @@
 #ifdef _CCCL_COMPILER_NVRTC
 #define LAMBDA [=]
 #else
-#define LAMBDA [=] __host__ __device__
+#define LAMBDA [=] TEST_HOST_DEVICE
 #endif
 
 #ifdef __CUDA_ARCH__
@@ -41,7 +41,7 @@ struct malloc_memory_provider {
     static const constexpr cuda::std::size_t shared_offset = prefix_size + sizeof(T *);
 
 private:
-    __host__ __device__
+    TEST_HOST_DEVICE
     T *& get_pointer() {
         alignas(T*)
 #ifdef __CUDA_ARCH__
@@ -55,7 +55,7 @@ private:
     }
 
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     T * get() {
         execute_on_main_thread([&]{
             get_pointer() = reinterpret_cast<T *>(malloc(sizeof(T) + alignof(T)));
@@ -66,7 +66,7 @@ public:
         return reinterpret_cast<T *>(ptr);
     }
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~malloc_memory_provider() {
         execute_on_main_thread([&]{
             free((void*)get_pointer());
@@ -81,7 +81,7 @@ struct local_memory_provider {
 
     alignas(T) char buffer[sizeof(T)];
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     T * get() {
         return reinterpret_cast<T *>(&buffer);
     }
@@ -104,7 +104,7 @@ struct device_shared_memory_provider {
 
 struct init_initializer {
     template<typename T, typename ...Ts>
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void construct(T & t, Ts && ...ts) {
         t.init(std::forward<Ts>(ts)...);
     }
@@ -112,7 +112,7 @@ struct init_initializer {
 
 struct constructor_initializer {
     template<typename T, typename ...Ts>
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void construct(T & t, Ts && ...ts) {
         new ((void*)&t) T(std::forward<Ts>(ts)...);
     }
@@ -120,7 +120,7 @@ struct constructor_initializer {
 
 struct default_initializer {
     template<typename T>
-    __host__ __device__
+    TEST_HOST_DEVICE
     static void construct(T & t) {
         new ((void*)&t) T;
     }
@@ -144,7 +144,7 @@ public:
 
     TEST_EXEC_CHECK_DISABLE
     template<typename ...Ts>
-    __host__ __device__
+    TEST_HOST_DEVICE
     T * construct(Ts && ...ts) {
         ptr = provider.get();
         assert(ptr);
@@ -156,7 +156,7 @@ public:
     }
 
     TEST_EXEC_CHECK_DISABLE
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~memory_selector() {
         execute_on_main_thread([&]{
             ptr->~T();

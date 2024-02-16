@@ -25,7 +25,7 @@ using cuda::std::nullopt_t;
 using cuda::std::nullopt;
 
 template <class Opt>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool
 test_constexpr()
 {
@@ -39,7 +39,7 @@ test_constexpr()
     struct test_constexpr_ctor
         : public Opt
     {
-        __host__ __device__
+        TEST_HOST_DEVICE
         constexpr test_constexpr_ctor() {}
     };
 
@@ -47,7 +47,7 @@ test_constexpr()
 }
 
 template <class Opt>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test()
 {
@@ -65,7 +65,7 @@ test()
     struct test_constexpr_ctor
         : public Opt
     {
-        __host__ __device__
+        TEST_HOST_DEVICE
         constexpr test_constexpr_ctor() {}
     };
 }

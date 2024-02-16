@@ -17,14 +17,14 @@
 #include <cuda/std/cassert>
 
 struct ExplicitT {
-  __host__ __device__ constexpr explicit ExplicitT(int x) : value(x) {}
-  __host__ __device__ constexpr explicit ExplicitT(ExplicitT const& o) : value(o.value) {}
+  TEST_HOST_DEVICE constexpr explicit ExplicitT(int x) : value(x) {}
+  TEST_HOST_DEVICE constexpr explicit ExplicitT(ExplicitT const& o) : value(o.value) {}
   int value;
 };
 
 struct ImplicitT {
-  __host__ __device__ constexpr ImplicitT(int x) : value(x) {}
-  __host__ __device__ constexpr ImplicitT(ImplicitT const& o) : value(o.value) {}
+  TEST_HOST_DEVICE constexpr ImplicitT(int x) : value(x) {}
+  TEST_HOST_DEVICE constexpr ImplicitT(ImplicitT const& o) : value(o.value) {}
   int value;
 };
 

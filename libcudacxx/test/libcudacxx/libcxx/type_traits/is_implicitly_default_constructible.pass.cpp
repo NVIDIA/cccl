@@ -24,12 +24,12 @@ struct ExplicitlyDefaultConstructible1 {
 };
 
 struct ExplicitlyDefaultConstructible2 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit ExplicitlyDefaultConstructible2() { }
 };
 
 struct ImplicitlyDefaultConstructible1 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     ImplicitlyDefaultConstructible1() { }
 };
 
@@ -46,7 +46,7 @@ struct NonDefaultConstructible2 {
 };
 
 struct NonDefaultConstructible3 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     NonDefaultConstructible3(NonDefaultConstructible3&&) { }
 };
 

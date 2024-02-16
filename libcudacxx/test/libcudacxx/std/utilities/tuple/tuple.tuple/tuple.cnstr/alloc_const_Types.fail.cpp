@@ -20,17 +20,17 @@
 #include <cuda/std/cassert>
 
 struct ExplicitCopy {
-  __host__ __device__ explicit ExplicitCopy(ExplicitCopy const&) {}
-  __host__ __device__ explicit ExplicitCopy(int) {}
+  TEST_HOST_DEVICE explicit ExplicitCopy(ExplicitCopy const&) {}
+  TEST_HOST_DEVICE explicit ExplicitCopy(int) {}
 };
 
-__host__ __device__ cuda::std::tuple<ExplicitCopy> const_explicit_copy_test() {
+TEST_HOST_DEVICE cuda::std::tuple<ExplicitCopy> const_explicit_copy_test() {
     const ExplicitCopy e(42);
     return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, e};
     // expected-error@-1 {{chosen constructor is explicit in copy-initialization}}
 }
 
-__host__ __device__ cuda::std::tuple<ExplicitCopy> non_const_explicity_copy_test() {
+TEST_HOST_DEVICE cuda::std::tuple<ExplicitCopy> non_const_explicity_copy_test() {
     ExplicitCopy e(42);
     return {cuda::std::allocator_arg, cuda::std::allocator<void>{}, e};
     // expected-error@-1 {{chosen constructor is explicit in copy-initialization}}

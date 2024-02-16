@@ -25,7 +25,7 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test(C c)
 {
@@ -39,12 +39,12 @@ class Copyable
 {
     int data_;
 public:
-__host__ __device__
+TEST_HOST_DEVICE
     Copyable() : data_(0) {}
-__host__ __device__
+TEST_HOST_DEVICE
     ~Copyable() {data_ = -1;}
 
-__host__ __device__
+TEST_HOST_DEVICE
     friend bool operator==(const Copyable& x, const Copyable& y)
         {return x.data_ == y.data_;}
 };

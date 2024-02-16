@@ -30,7 +30,7 @@ static_assert(!DerefNoexcept<int>, "");
 
 static_assert(DerefNoexcept<cuda::std::expected<void, int>>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   const cuda::std::expected<void, int> e;
   *e;
   static_assert(cuda::std::is_same_v<decltype(*e), void>, "");

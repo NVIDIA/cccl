@@ -20,7 +20,7 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const cuda::std::complex<T>& a, const cuda::std::complex<T>& b, cuda::std::complex<T> x)
 {
     cuda::std::complex<T> c = pow(a, b);
@@ -29,13 +29,13 @@ test(const cuda::std::complex<T>& a, const cuda::std::complex<T>& b, cuda::std::
 }
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test()
 {
     test(cuda::std::complex<T>(2, 3), cuda::std::complex<T>(2, 0), cuda::std::complex<T>(-5, 12));
 }
 
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE void test_edges()
 {
     auto testcases = get_testcases();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

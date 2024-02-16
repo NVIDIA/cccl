@@ -22,16 +22,16 @@
 #include "counting_predicates.h"
 
 struct S {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 S(int i) : i_(i) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator==(const S& other) = delete;
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 S(int i) : i_(i) {}
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool operator==(const S& other) = delete;
   int i_;
 };
 
 struct eq {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const S& a, const S&b) { return a.i_ == b.i_; }
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool operator()(const S& a, const S&b) { return a.i_ == b.i_; }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
 {
         const int ia[] = {0};
         const int ib[] = {0};

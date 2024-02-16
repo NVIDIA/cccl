@@ -40,42 +40,42 @@ static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, MoveOnly>
 
 // explicit(!is_convertible_v<const G&, E>)
 struct NotConvertible {
-  __host__ __device__ explicit NotConvertible(int);
+  TEST_HOST_DEVICE explicit NotConvertible(int);
 };
 static_assert(cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<void, NotConvertible>>, "");
 
 struct MyInt {
   int i;
-  __host__ __device__ constexpr MyInt(int ii) : i(ii) {}
+  TEST_HOST_DEVICE constexpr MyInt(int ii) : i(ii) {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i != rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
+  TEST_HOST_DEVICE friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i != rhs.i; }
 #endif // TEST_STD_VER > 2017
 };
 
 template <class T>
-__host__ __device__ constexpr void testUnexpected() {
+TEST_HOST_DEVICE constexpr void testUnexpected() {
   const cuda::std::unexpected<int> u(5);
   cuda::std::expected<void, T> e(u);
   assert(!e.has_value());
   assert(e.error() == 5);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   testUnexpected<int>();
   testUnexpected<MyInt>();
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 
   struct Throwing {
-    __host__ __device__ Throwing(int) { throw Except{}; }
+    TEST_HOST_DEVICE Throwing(int) { throw Except{}; }
   };
 
   {

@@ -34,7 +34,7 @@
 template <class UnderlyingType, class Iter1>
 struct Test {
   template <class Iter2>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() {
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void operator()() {
     UnderlyingType a[]  = {0, 1, 2, 3, 4, 5};
     const unsigned s    = sizeof(a) / sizeof(a[0]);
     UnderlyingType b[s] = {0, 1, 2, 5, 4, 5};
@@ -59,7 +59,7 @@ struct Test {
 
 struct TestNarrowingEqualTo {
   template <class UnderlyingType>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() {
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void operator()() {
     UnderlyingType a[] = {
         UnderlyingType(0x1000),
         UnderlyingType(0x1001),
@@ -83,22 +83,22 @@ struct TestNarrowingEqualTo {
 template <class UnderlyingType, class TypeList>
 struct TestIter2 {
   template <class Iter1>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() {
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 void operator()() {
     types::for_each(TypeList(), Test<UnderlyingType, Iter1>());
   }
 };
 
 struct AddressCompare {
   int i = 0;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 AddressCompare(int) {}
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 AddressCompare(int) {}
 
-  __host__ __device__ operator char() { return static_cast<char>(i); }
+  TEST_HOST_DEVICE operator char() { return static_cast<char>(i); }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator==(const AddressCompare& lhs, const AddressCompare& rhs) {
+  TEST_HOST_DEVICE friend TEST_CONSTEXPR_CXX14 bool operator==(const AddressCompare& lhs, const AddressCompare& rhs) {
     return &lhs == &rhs;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs) {
+  TEST_HOST_DEVICE friend TEST_CONSTEXPR_CXX14 bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs) {
     return &lhs != &rhs;
   }
 };
@@ -106,8 +106,8 @@ struct AddressCompare {
 #if TEST_STD_VER >= 2014
 class trivially_equality_comparable {
 public:
-  __host__ __device__  constexpr trivially_equality_comparable(int i) : i_(i) {}
-  __host__ __device__  constexpr bool operator==(const trivially_equality_comparable& other) const noexcept { return i_ == other.i_; };
+  TEST_HOST_DEVICE  constexpr trivially_equality_comparable(int i) : i_(i) {}
+  TEST_HOST_DEVICE  constexpr bool operator==(const trivially_equality_comparable& other) const noexcept { return i_ == other.i_; };
 
 private:
   int i_;
@@ -115,7 +115,7 @@ private:
 
 #endif // TEST_STD_VER >= 2014
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test() {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestIter2<int, types::cpp17_input_iterator_list<int*> >());
   types::for_each(
       types::cpp17_input_iterator_list<char*>(), TestIter2<char, types::cpp17_input_iterator_list<char*> >());

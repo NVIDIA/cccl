@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_nothrow_constructible()
 {
     static_assert(( cuda::std::is_nothrow_constructible<T>::value), "");
@@ -25,7 +25,7 @@ void test_is_nothrow_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_nothrow_constructible()
 {
     static_assert(( cuda::std::is_nothrow_constructible<T, A0>::value), "");
@@ -35,7 +35,7 @@ void test_is_nothrow_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_nothrow_constructible()
 {
     static_assert((!cuda::std::is_nothrow_constructible<T>::value), "");
@@ -45,7 +45,7 @@ void test_is_not_nothrow_constructible()
 }
 
 template <class T, class A0>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_nothrow_constructible()
 {
     static_assert((!cuda::std::is_nothrow_constructible<T, A0>::value), "");
@@ -55,7 +55,7 @@ void test_is_not_nothrow_constructible()
 }
 
 template <class T, class A0, class A1>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_nothrow_constructible()
 {
     static_assert((!cuda::std::is_nothrow_constructible<T, A0, A1>::value), "");
@@ -70,7 +70,7 @@ class Empty
 
 class NotEmpty
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -83,26 +83,26 @@ struct bit_zero
 
 class Abstract
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(const A&);
 };
 
 struct C
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     C(C&);  // not const
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator=(C&);  // not const
 };
 
 struct Tuple {
-    __host__ __device__
+    TEST_HOST_DEVICE
     Tuple(Empty&&) noexcept {}
 };
 

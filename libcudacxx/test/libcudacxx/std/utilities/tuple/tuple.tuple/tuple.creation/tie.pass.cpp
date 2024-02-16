@@ -27,7 +27,7 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2011
-__host__ __device__ constexpr bool test_tie_constexpr() {
+TEST_HOST_DEVICE constexpr bool test_tie_constexpr() {
     {
         int i = 42;
         double f = 1.1;

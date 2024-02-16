@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void check(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
+TEST_HOST_DEVICE constexpr void check(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   It it(first);
   auto sent = sentinel_wrapper(It(last));
 
@@ -30,7 +30,7 @@ __host__ __device__ constexpr void check(int* first, int* last, cuda::std::iter_
   assert(base(result) == expected);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   for (int size = 0; size != 10; ++size) {

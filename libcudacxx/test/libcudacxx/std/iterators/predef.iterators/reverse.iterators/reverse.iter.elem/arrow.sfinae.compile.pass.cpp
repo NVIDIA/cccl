@@ -30,15 +30,15 @@ struct simple_bidirectional_iterator {
     using pointer = int*;
     using reference = int&;
 
-    __host__ __device__ reference operator*() const;
-    __host__ __device__ pointer operator->() const;
+    TEST_HOST_DEVICE reference operator*() const;
+    TEST_HOST_DEVICE pointer operator->() const;
 
-    __host__ __device__ simple_bidirectional_iterator& operator++();
-    __host__ __device__ simple_bidirectional_iterator& operator--();
-    __host__ __device__ simple_bidirectional_iterator operator++(int);
-    __host__ __device__ simple_bidirectional_iterator operator--(int);
+    TEST_HOST_DEVICE simple_bidirectional_iterator& operator++();
+    TEST_HOST_DEVICE simple_bidirectional_iterator& operator--();
+    TEST_HOST_DEVICE simple_bidirectional_iterator operator++(int);
+    TEST_HOST_DEVICE simple_bidirectional_iterator operator--(int);
 
-    __host__ __device__ friend bool operator==(const simple_bidirectional_iterator&, const simple_bidirectional_iterator&);
+    TEST_HOST_DEVICE friend bool operator==(const simple_bidirectional_iterator&, const simple_bidirectional_iterator&);
 };
 static_assert( cuda::std::bidirectional_iterator<simple_bidirectional_iterator>);
 static_assert(!cuda::std::random_access_iterator<simple_bidirectional_iterator>);

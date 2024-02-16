@@ -27,53 +27,53 @@ struct NonTrivialMove {
   bool move_assigned_from = false;
 
   NonTrivialMove() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20
   NonTrivialMove(const NonTrivialMove& other) noexcept
       : data(other.data),
         move_assigned_from(false) {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20
   NonTrivialMove(NonTrivialMove&& other) noexcept : data(other.data),
                                                     move_assigned_from(false) {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 NonTrivialMove&
   operator=(const NonTrivialMove& other) noexcept {
     data = other.data;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 NonTrivialMove&
   operator=(NonTrivialMove&& other) noexcept {
     data = other.data;
     move_assigned_from = true;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20
   NonTrivialMove(const int val) noexcept : data(val),
                                            move_assigned_from(false) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 NonTrivialMove&
   operator=(const int val) noexcept {
     data = val;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 friend bool
   operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept {
     // NOTE: This uses implicit knowledge that the right hand side has been moved from
     return lhs.data == rhs.data && !lhs.move_assigned_from &&
            rhs.move_assigned_from;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 bool
+  TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool
   operator==(const int& other) const noexcept {
     return data == other;
   }
 };
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX20 TEST_HOST_DEVICE void test() {
   using value_type = typename cuda::std::iterator_traits<InIter>::value_type;
   {
     constexpr int N = 1000;
@@ -120,7 +120,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test1() {
+TEST_CONSTEXPR_CXX20 TEST_HOST_DEVICE void test1() {
   const unsigned N = 100;
   cuda::std::unique_ptr<int> ia[N];
   for (unsigned i = 0; i < N; ++i)
@@ -135,7 +135,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test1() {
 }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test() {
+TEST_CONSTEXPR_CXX20 TEST_HOST_DEVICE bool test() {
   test<bidirectional_iterator<int*>, bidirectional_iterator<int*> >();
   test<bidirectional_iterator<int*>, random_access_iterator<int*> >();
   test<bidirectional_iterator<int*>, int*>();

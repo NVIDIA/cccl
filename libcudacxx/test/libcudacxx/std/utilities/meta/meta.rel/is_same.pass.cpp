@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_same()
 {
     static_assert(( cuda::std::is_same<T, U>::value), "");
@@ -31,7 +31,7 @@ void test_is_same()
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_same_ref()
 {
     static_assert((cuda::std::is_same<T, U>::value), "");
@@ -47,7 +47,7 @@ void test_is_same_ref()
 }
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_not_same()
 {
     static_assert((!cuda::std::is_same<T, U>::value), "");
@@ -56,7 +56,7 @@ void test_is_not_same()
 class Class
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     ~Class();
 };
 

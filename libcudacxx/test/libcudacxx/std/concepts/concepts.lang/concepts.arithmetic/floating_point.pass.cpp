@@ -21,7 +21,7 @@
 using cuda::std::floating_point;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckFloatingPointQualifiers() {
+TEST_HOST_DEVICE constexpr bool CheckFloatingPointQualifiers() {
   constexpr bool result = floating_point<T>;
   static_assert(floating_point<const T> == result, "");
   static_assert(floating_point<volatile T> == result, "");

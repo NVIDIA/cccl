@@ -24,12 +24,12 @@
 
 struct A_int_1
 {
-    __host__ __device__ A_int_1() : data_(5) {}
+    TEST_HOST_DEVICE A_int_1() : data_(5) {}
 
     int data_;
 };
 
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test_int_1()
 {
     // member data pointer

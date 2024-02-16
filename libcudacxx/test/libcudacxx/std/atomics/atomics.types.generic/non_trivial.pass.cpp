@@ -71,7 +71,7 @@ struct small_aggregate {
 };
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test() {
     cuda::atomic<T> a({42, 137});
     cuda::std::atomic<T> b({42, 137});

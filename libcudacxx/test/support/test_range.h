@@ -20,55 +20,55 @@
 
 struct sentinel {
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator==(sentinel const&, I const&) { return true; }
+  TEST_HOST_DEVICE friend bool operator==(sentinel const&, I const&) { return true; }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator==(I const&,sentinel const&) { return true; }
+  TEST_HOST_DEVICE friend bool operator==(I const&,sentinel const&) { return true; }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator!=(sentinel const&, I const&) { return false; }
+  TEST_HOST_DEVICE friend bool operator!=(sentinel const&, I const&) { return false; }
   template <class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I>, int> = 0>
-  __host__ __device__ friend bool operator!=(I const&,sentinel const&) { return false; }
+  TEST_HOST_DEVICE friend bool operator!=(I const&,sentinel const&) { return false; }
 };
 
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_range {
-  __host__ __device__ I<int*> begin();
-  __host__ __device__ I<int const*> begin() const;
-  __host__ __device__ sentinel end();
-  __host__ __device__ sentinel end() const;
+  TEST_HOST_DEVICE I<int*> begin();
+  TEST_HOST_DEVICE I<int const*> begin() const;
+  TEST_HOST_DEVICE sentinel end();
+  TEST_HOST_DEVICE sentinel end() const;
 };
 
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_non_const_range {
-  __host__ __device__ I<int*> begin();
-  __host__ __device__ sentinel end();
+  TEST_HOST_DEVICE I<int*> begin();
+  TEST_HOST_DEVICE sentinel end();
 };
 
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_common_range {
-  __host__ __device__ I<int*> begin();
-  __host__ __device__ I<int const*> begin() const;
-  __host__ __device__ I<int*> end();
-  __host__ __device__ I<int const*> end() const;
+  TEST_HOST_DEVICE I<int*> begin();
+  TEST_HOST_DEVICE I<int const*> begin() const;
+  TEST_HOST_DEVICE I<int*> end();
+  TEST_HOST_DEVICE I<int const*> end() const;
 };
 
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_non_const_common_range {
-  __host__ __device__ I<int*> begin();
-  __host__ __device__ I<int*> end();
+  TEST_HOST_DEVICE I<int*> begin();
+  TEST_HOST_DEVICE I<int*> end();
 };
 
 template <template <class...> class I, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<I<int*>>, int> = 0>
 struct test_view : cuda::std::ranges::view_base {
-  __host__ __device__ I<int*> begin();
-  __host__ __device__ I<int const*> begin() const;
-  __host__ __device__ sentinel end();
-  __host__ __device__ sentinel end() const;
+  TEST_HOST_DEVICE I<int*> begin();
+  TEST_HOST_DEVICE I<int const*> begin() const;
+  TEST_HOST_DEVICE sentinel end();
+  TEST_HOST_DEVICE sentinel end() const;
 };
 
 struct BorrowedRange {
-  __host__ __device__ int *begin() const;
-  __host__ __device__ int *end() const;
-  __host__ __device__ BorrowedRange(BorrowedRange&&) = delete;
+  TEST_HOST_DEVICE int *begin() const;
+  TEST_HOST_DEVICE int *end() const;
+  TEST_HOST_DEVICE BorrowedRange(BorrowedRange&&) = delete;
 };
 template<>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;

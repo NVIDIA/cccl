@@ -22,21 +22,21 @@ using cuda::std::optional;
 
 struct X
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr int test() const {return 3;}
 };
 
 struct Y
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     int test() const noexcept {return 2;}
 };
 
 struct Z
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     const Z* operator&() const;
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr int test() const {return 1;}
 };
 

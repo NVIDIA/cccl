@@ -18,23 +18,23 @@
 #include "test_macros.h"
 
 struct NonSwappable {
-    __host__ __device__ TEST_CONSTEXPR NonSwappable() { }
+    TEST_HOST_DEVICE TEST_CONSTEXPR NonSwappable() { }
 private:
-    __host__ __device__ NonSwappable(NonSwappable const&);
-    __host__ __device__ NonSwappable& operator=(NonSwappable const&);
+    TEST_HOST_DEVICE NonSwappable(NonSwappable const&);
+    TEST_HOST_DEVICE NonSwappable& operator=(NonSwappable const&);
 };
 
 template <class Tp>
 decltype(swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()))
-__host__ __device__ can_swap_imp(int);
+TEST_HOST_DEVICE can_swap_imp(int);
 
 template <class Tp>
-cuda::std::false_type __host__ __device__ can_swap_imp(...);
+cuda::std::false_type TEST_HOST_DEVICE can_swap_imp(...);
 
 template <class Tp>
 struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void> { };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool tests()
 {
     {
         typedef double T;

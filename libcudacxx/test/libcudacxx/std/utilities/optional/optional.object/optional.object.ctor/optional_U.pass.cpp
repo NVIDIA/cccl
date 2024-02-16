@@ -23,7 +23,7 @@
 using cuda::std::optional;
 
 template <class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX14 void
 test(optional<U>&& rhs, bool is_going_to_throw = false)
 {
@@ -50,24 +50,24 @@ class X
 {
     int i_;
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     TEST_CONSTEXPR_CXX20 X(int i) : i_(i) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     TEST_CONSTEXPR_CXX20 X(X&& x) : i_(cuda::std::exchange(x.i_, 0)) {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     TEST_CONSTEXPR_CXX20 ~X() {i_ = 0;}
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend constexpr bool operator==(const X& x, const X& y) {return x.i_ == y.i_;}
 };
 
 struct Z
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     Z(int) { TEST_THROW(6); }
 };
 
 template<class T, class U>
-__host__ __device__
+TEST_HOST_DEVICE
 TEST_CONSTEXPR_CXX20 bool test_all()
 {
     {

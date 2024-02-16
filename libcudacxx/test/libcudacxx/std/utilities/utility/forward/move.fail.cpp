@@ -20,15 +20,15 @@
 #include <cuda/std/cassert>
 
 struct move_only {
-    __host__ __device__ move_only() {}
+    TEST_HOST_DEVICE move_only() {}
     move_only(move_only&&) = default;
     move_only& operator=(move_only&&) = default;
 };
 
-__host__ __device__ move_only source() {return move_only();}
-__host__ __device__ const move_only csource() {return move_only();}
+TEST_HOST_DEVICE move_only source() {return move_only();}
+TEST_HOST_DEVICE const move_only csource() {return move_only();}
 
-__host__ __device__ void test(move_only) {}
+TEST_HOST_DEVICE void test(move_only) {}
 
 int main(int, char**)
 {

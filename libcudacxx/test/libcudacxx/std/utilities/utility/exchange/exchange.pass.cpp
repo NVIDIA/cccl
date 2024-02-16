@@ -26,7 +26,7 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2011
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test_constexpr() {
     int v = 12;
 
     if (12 != cuda::std::exchange(v,23) || v != 23)
@@ -44,13 +44,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr() {
 template<bool Move, bool Assign>
 struct TestNoexcept {
     TestNoexcept() = default;
-    __host__ __device__ TestNoexcept(const TestNoexcept&);
-    __host__ __device__ TestNoexcept(TestNoexcept&&) noexcept(Move);
-    __host__ __device__ TestNoexcept& operator=(const TestNoexcept&);
-    __host__ __device__ TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
+    TEST_HOST_DEVICE TestNoexcept(const TestNoexcept&);
+    TEST_HOST_DEVICE TestNoexcept(TestNoexcept&&) noexcept(Move);
+    TEST_HOST_DEVICE TestNoexcept& operator=(const TestNoexcept&);
+    TEST_HOST_DEVICE TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX14 bool test_noexcept() {
   {
     int x = 42;
     ASSERT_NOEXCEPT(cuda::std::exchange(x, 42));

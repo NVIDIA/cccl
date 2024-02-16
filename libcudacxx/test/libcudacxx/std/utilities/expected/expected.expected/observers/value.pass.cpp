@@ -23,7 +23,7 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // non-const &
   {
     cuda::std::expected<int, int> e(5);
@@ -63,7 +63,7 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
 
   // int

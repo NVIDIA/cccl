@@ -20,10 +20,10 @@ struct UserAtomicType
 {
     int i;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     explicit UserAtomicType(int d = 0) TEST_NOEXCEPT : i(d) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const UserAtomicType& x, const UserAtomicType& y)
     { return x.i == y.i; }
 };
@@ -35,7 +35,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachIntegralType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestFunctor<char, Selector, Scope>()();
         TestFunctor<signed char, Selector, Scope>()();
@@ -71,7 +71,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachFloatingPointType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestFunctor<float, Selector, Scope>()();
         TestFunctor<double, Selector, Scope>()();
@@ -85,7 +85,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachAtomicType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestEachIntegralType<TestFunctor, Selector, Scope>()();
         TestEachFloatingPointType<TestFunctor, Selector, Scope>()();
@@ -102,7 +102,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachIntegralRefType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestFunctor<int, Selector, Scope>()();
         TestFunctor<unsigned int, Selector, Scope>()();
@@ -127,7 +127,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachFLoatingPointRefType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestFunctor<float, Selector, Scope>()();
         TestFunctor<double, Selector, Scope>()();
@@ -141,7 +141,7 @@ template < template <class, template<typename, typename> class, cuda::thread_sco
 #endif
 >
 struct TestEachAtomicRefType {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         TestEachIntegralRefType<TestFunctor, Selector, Scope>()();
         TestEachFLoatingPointRefType<TestFunctor, Selector, Scope>()();

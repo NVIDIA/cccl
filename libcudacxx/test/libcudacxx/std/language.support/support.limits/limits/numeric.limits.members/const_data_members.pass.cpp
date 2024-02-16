@@ -39,7 +39,7 @@
 */
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test(T) {}
 
 #define TEST_NUMERIC_LIMITS(type) \

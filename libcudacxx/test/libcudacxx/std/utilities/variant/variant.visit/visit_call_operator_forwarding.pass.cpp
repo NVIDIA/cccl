@@ -26,16 +26,16 @@
 struct almost_string {
     const char * ptr;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     almost_string(const char * ptr) : ptr(ptr) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
         return lhs.ptr == rhs.ptr;
     }
 };
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_call_operator_forwarding() {
   using Fn = ForwardingCallObject;
   Fn obj{};

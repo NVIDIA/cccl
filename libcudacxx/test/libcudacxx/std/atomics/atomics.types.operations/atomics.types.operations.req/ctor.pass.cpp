@@ -31,12 +31,12 @@
 struct UserType {
     int i;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     UserType() noexcept {}
-    __host__ __device__
+    TEST_HOST_DEVICE
     constexpr explicit UserType(int d) noexcept : i(d) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const UserType& x, const UserType& y) {
         return x.i == y.i;
     }
@@ -44,7 +44,7 @@ struct UserType {
 
 template <class Tp, template<typename, typename> class, cuda::thread_scope Scope>
 struct TestFunc {
-    __host__ __device__
+    TEST_HOST_DEVICE
     void operator()() const {
         typedef cuda::atomic<Tp, Scope> Atomic;
         static_assert(cuda::std::is_literal_type<Atomic>::value, "");

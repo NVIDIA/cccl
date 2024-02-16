@@ -20,21 +20,21 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const T& rho, cuda::std::complex<T> x)
 {
     assert(cuda::std::polar(rho) == x);
 }
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test(const T& rho, const T& theta, cuda::std::complex<T> x)
 {
     assert(cuda::std::polar(rho, theta) == x);
 }
 
 template <class T>
-__host__ __device__ void
+TEST_HOST_DEVICE void
 test()
 {
     test(T(0), cuda::std::complex<T>(0, 0));
@@ -45,7 +45,7 @@ test()
     test(T(100), T(0), cuda::std::complex<T>(100, 0));
 }
 
-__host__ __device__ void test_edges()
+TEST_HOST_DEVICE void test_edges()
 {
     auto testcases = get_testcases();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);

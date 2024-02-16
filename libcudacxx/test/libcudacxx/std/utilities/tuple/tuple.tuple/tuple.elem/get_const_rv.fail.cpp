@@ -19,10 +19,10 @@
 
 #include <cuda/std/tuple>
 
-template <class T> __host__ __device__ void cref(T const&) {}
-template <class T> __host__ __device__ void cref(T const&&) = delete;
+template <class T> TEST_HOST_DEVICE void cref(T const&) {}
+template <class T> TEST_HOST_DEVICE void cref(T const&&) = delete;
 
-cuda::std::tuple<int> __host__ __device__ const tup4() { return cuda::std::make_tuple(4); }
+cuda::std::tuple<int> TEST_HOST_DEVICE const tup4() { return cuda::std::make_tuple(4); }
 
 int main(int, char**)
 {

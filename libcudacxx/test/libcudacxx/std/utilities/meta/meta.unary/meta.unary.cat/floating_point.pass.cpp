@@ -16,7 +16,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_floating_point_imp()
 {
     static_assert(!cuda::std::is_void<T>::value, "");
@@ -38,7 +38,7 @@ void test_floating_point_imp()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_floating_point()
 {
     test_floating_point_imp<T>();

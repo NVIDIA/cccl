@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class D>
-__host__ __device__
+TEST_HOST_DEVICE
 void test2739()  // LWG2739
 {
     typedef cuda::std::chrono::time_point<cuda::std::chrono::system_clock> TimePoint;

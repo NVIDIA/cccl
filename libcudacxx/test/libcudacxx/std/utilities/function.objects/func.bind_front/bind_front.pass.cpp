@@ -28,19 +28,19 @@
 struct CopyMoveInfo {
   enum { none, copy, move } copy_kind;
 
-  __host__ __device__ constexpr CopyMoveInfo() : copy_kind(none) {}
-  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo const&) : copy_kind(copy) {}
-  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo&&) : copy_kind(move) {}
+  TEST_HOST_DEVICE constexpr CopyMoveInfo() : copy_kind(none) {}
+  TEST_HOST_DEVICE constexpr CopyMoveInfo(CopyMoveInfo const&) : copy_kind(copy) {}
+  TEST_HOST_DEVICE constexpr CopyMoveInfo(CopyMoveInfo&&) : copy_kind(move) {}
 };
 
 template <class ...Args>
 struct is_bind_frontable {
   template <class ...LocalArgs>
-  __host__ __device__ static auto test(int)
+  TEST_HOST_DEVICE static auto test(int)
       -> decltype((void)cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
 
   template <class...>
-  __host__ __device__ static cuda::std::false_type test(...);
+  TEST_HOST_DEVICE static cuda::std::false_type test(...);
 
   static constexpr bool value = decltype(test<Args...>(0))::value;
 };
@@ -50,22 +50,22 @@ struct NotCopyMove {
   NotCopyMove(const NotCopyMove&) = delete;
   NotCopyMove(NotCopyMove&&) = delete;
   template <class ...Args>
-  __host__ __device__ void operator()(Args&& ...) const { }
+  TEST_HOST_DEVICE void operator()(Args&& ...) const { }
 };
 
 struct NonConstCopyConstructible {
-  __host__ __device__ explicit NonConstCopyConstructible() {}
-  __host__ __device__ NonConstCopyConstructible(NonConstCopyConstructible&) {}
+  TEST_HOST_DEVICE explicit NonConstCopyConstructible() {}
+  TEST_HOST_DEVICE NonConstCopyConstructible(NonConstCopyConstructible&) {}
 };
 
 struct MoveConstructible {
-  __host__ __device__ explicit MoveConstructible() {}
-  __host__ __device__ MoveConstructible(MoveConstructible&&) {}
+  TEST_HOST_DEVICE explicit MoveConstructible() {}
+  TEST_HOST_DEVICE MoveConstructible(MoveConstructible&&) {}
 };
 
 struct MakeTuple {
   template <class ...Args>
-  __host__ __device__ constexpr auto operator()(Args&& ...args) const {
+  TEST_HOST_DEVICE constexpr auto operator()(Args&& ...args) const {
     return cuda::std::make_tuple(cuda::std::forward<Args>(args)...);
   }
 };
@@ -73,16 +73,16 @@ struct MakeTuple {
 template <int X>
 struct Elem {
   template <int Y>
-  __host__ __device__ constexpr bool operator==(Elem<Y> const&) const
+  TEST_HOST_DEVICE constexpr bool operator==(Elem<Y> const&) const
   { return X == Y; }
 };
 
 struct TakeAnything {
   template<class... Ts>
-  __host__ __device__ constexpr void operator()(Ts&&...) const {}
+  TEST_HOST_DEVICE constexpr void operator()(Ts&&...) const {}
 };
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   // Bind arguments, call without arguments
   {
     {
@@ -194,7 +194,7 @@ __host__ __device__ constexpr bool test() {
   // Make sure we can call a function that's a pointer to a member function.
   {
     struct MemberFunction {
-      __host__ __device__ constexpr bool foo(int, int) { return true; }
+      TEST_HOST_DEVICE constexpr bool foo(int, int) { return true; }
     };
     MemberFunction value{};
     auto fn = cuda::std::bind_front(&MemberFunction::foo, value, 0);
@@ -236,10 +236,10 @@ __host__ __device__ constexpr bool test() {
   // value category of the bind_front unspecified-type.
   {
     struct F {
-      __host__ __device__ constexpr int operator()() & { return 1; }
-      __host__ __device__ constexpr int operator()() const& { return 2; }
-      __host__ __device__ constexpr int operator()() && { return 3; }
-      __host__ __device__ constexpr int operator()() const&& { return 4; }
+      TEST_HOST_DEVICE constexpr int operator()() & { return 1; }
+      TEST_HOST_DEVICE constexpr int operator()() const& { return 2; }
+      TEST_HOST_DEVICE constexpr int operator()() && { return 3; }
+      TEST_HOST_DEVICE constexpr int operator()() const&& { return 4; }
     };
     auto x = cuda::std::bind_front(F{});
     using X = decltype(x);
@@ -266,10 +266,10 @@ __host__ __device__ constexpr bool test() {
     // Make sure we delete the && overload when the underlying call isn't valid
     {
       struct F {
-        __host__ __device__ void operator()() & {}
-        __host__ __device__ void operator()() const& {}
+        TEST_HOST_DEVICE void operator()() & {}
+        TEST_HOST_DEVICE void operator()() const& {}
         void operator()() && = delete;
-        __host__ __device__ void operator()() const&& {}
+        TEST_HOST_DEVICE void operator()() const&& {}
       };
       using X = decltype(cuda::std::bind_front(F{}));
       static_assert( cuda::std::is_invocable_v<X&>);
@@ -285,9 +285,9 @@ __host__ __device__ constexpr bool test() {
     // Make sure we delete the const&& overload when the underlying call isn't valid
     {
       struct F {
-        __host__ __device__ void operator()() & {}
-        __host__ __device__ void operator()() const& {}
-        __host__ __device__ void operator()() && {}
+        TEST_HOST_DEVICE void operator()() & {}
+        TEST_HOST_DEVICE void operator()() const& {}
+        TEST_HOST_DEVICE void operator()() && {}
         void operator()() const&& = delete;
       };
       using X = decltype(cuda::std::bind_front(F{}));
@@ -310,7 +310,7 @@ __host__ __device__ constexpr bool test() {
     {
       struct T { };
       struct F {
-        __host__ __device__ void operator()(T&&) const & {}
+        TEST_HOST_DEVICE void operator()(T&&) const & {}
         void operator()(T&&) && = delete;
       };
       using X = decltype(cuda::std::bind_front(F{}));
@@ -320,7 +320,7 @@ __host__ __device__ constexpr bool test() {
     {
       struct T { };
       struct F {
-        __host__ __device__ void operator()(T const&) const {}
+        TEST_HOST_DEVICE void operator()(T const&) const {}
         void operator()(T&&) const = delete;
       };
       using X = decltype(cuda::std::bind_front(F{}, T{}));

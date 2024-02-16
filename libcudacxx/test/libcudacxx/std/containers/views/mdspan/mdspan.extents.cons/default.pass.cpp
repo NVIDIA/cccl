@@ -12,11 +12,13 @@
 
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+
 #include "../mdspan.extents.util/extents_util.hpp"
+#include "test_macros.h"
 
 // TYPED_TEST(TestExtents, default_ctor)
 template<class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_default_con()
 {
     using TestFixture = TestExtents<T>;

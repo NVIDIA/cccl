@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__
+TEST_HOST_DEVICE
 void checkCV()
 {
 //  Types the same (dynamic sized)
@@ -42,7 +42,7 @@ void checkCV()
 
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexprSpan()
 {
     cuda::std::span<const T>    s1;
@@ -54,7 +54,7 @@ constexpr bool testConstexprSpan()
 
 
 template <typename T>
-__host__ __device__
+TEST_HOST_DEVICE
 void testRuntimeSpan()
 {
     ASSERT_NOEXCEPT(T{});

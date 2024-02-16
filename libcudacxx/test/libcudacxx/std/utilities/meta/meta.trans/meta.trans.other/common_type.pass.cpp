@@ -20,16 +20,16 @@
 struct E {};
 
 template <class T>
-struct X { __host__ __device__ explicit X(T const&){} };
+struct X { TEST_HOST_DEVICE explicit X(T const&){} };
 
 template <class T>
-struct S { __host__ __device__ explicit S(T const&){} };
+struct S { TEST_HOST_DEVICE explicit S(T const&){} };
 
 template <class T>
 struct bad_reference_wrapper {
-    __host__ __device__ bad_reference_wrapper(T&);
+    TEST_HOST_DEVICE bad_reference_wrapper(T&);
     bad_reference_wrapper(T&&) = delete;
-    __host__ __device__ operator T&() const;
+    TEST_HOST_DEVICE operator T&() const;
 };
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -64,13 +64,13 @@ struct always_bool_imp { using type = bool; };
 template <class Tp> using always_bool = typename always_bool_imp<Tp>::type;
 
 template <class ...Args>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr auto no_common_type_imp(int)
 -> always_bool<typename cuda::std::common_type<Args...>::type>
 { return false; }
 
 template <class ...Args>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool no_common_type_imp(long) { return true; }
 
 template <class ...Args>
@@ -87,7 +87,7 @@ struct TernaryOp {
 
 // (4.1)
 // -- If sizeof...(T) is zero, there shall be no member type.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_one() {
   static_assert(no_common_type<>::value, "");
 }
@@ -96,7 +96,7 @@ void test_bullet_one() {
 // -- If sizeof...(T) is one, let T0 denote the sole type constituting the pack
 //    T. The member typedef-name type shall denote the same type, if any, as
 //    common_type_t<T0, T0>; otherwise there shall be no member type.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_two() {
   static_assert((cuda::std::is_same<cuda::std::common_type<void>::type, void>::value), "");
   static_assert((cuda::std::is_same<cuda::std::common_type<int>::type, int>::value), "");
@@ -108,7 +108,7 @@ void test_bullet_two() {
 }
 
 template <class T, class U, class Expect>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_three_one_imp() {
   typedef typename cuda::std::decay<T>::type DT;
   typedef typename cuda::std::decay<U>::type DU;
@@ -125,7 +125,7 @@ void test_bullet_three_one_imp() {
 // (4.3.1)
 //    -- If is_same_v<T1, D1> is false or is_same_v<T2, D2> is false, let C
 //       denote the same type, if any, as common_type_t<D1, D2>.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_three_one() {
   // Test that the user provided specialization of common_type is used after
   // decaying T1.
@@ -169,7 +169,7 @@ void test_bullet_three_one() {
 //    -- Otherwise, if
 //       decay_t<decltype(false ? declval<D1>() : declval<D2>())>
 //       denotes a type, let C denote that type.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_three_three() {
   {
     typedef int const* T1;
@@ -217,7 +217,7 @@ void test_bullet_three_three() {
 // (4.3.4)
 //    -- Otherwise, if COND-RES(CREF(D1), CREF(D2)) denotes a type, let C
 //       denote the type decay_t<COND-RES(CREF(D1), CREF(D2))>.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_three_four() {
 #if TEST_STD_VER >= 2020
   static_assert(cuda::std::is_same_v<cuda::std::common_type_t<int, bad_reference_wrapper<int>>, int>, "");
@@ -242,7 +242,7 @@ void test_bullet_three_four() {
 // such a type C, the member typedef-name type shall denote the
 // same type, if any, as common_type_t<C, R...>. Otherwise, there shall be
 // no member type.
-__host__ __device__
+TEST_HOST_DEVICE
 void test_bullet_four() {
   { // test that there is no ::type member
     static_assert((no_common_type<int, E>::value), "");

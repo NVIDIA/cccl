@@ -17,38 +17,38 @@
 
 class move_only
 {
-    __host__ __device__ move_only(const move_only&);
-    __host__ __device__ move_only& operator=(const move_only&);
+    TEST_HOST_DEVICE move_only(const move_only&);
+    TEST_HOST_DEVICE move_only& operator=(const move_only&);
 public:
-    __host__ __device__ move_only(move_only&&) {}
-    __host__ __device__ move_only& operator=(move_only&&) {return *this;}
+    TEST_HOST_DEVICE move_only(move_only&&) {}
+    TEST_HOST_DEVICE move_only& operator=(move_only&&) {return *this;}
 
-    __host__ __device__ move_only() {}
+    TEST_HOST_DEVICE move_only() {}
 };
 
-__host__ __device__ move_only source() {return move_only();}
-__host__ __device__ const move_only csource() {return move_only();}
+TEST_HOST_DEVICE move_only source() {return move_only();}
+TEST_HOST_DEVICE const move_only csource() {return move_only();}
 
-__host__ __device__ void test(move_only) {}
+TEST_HOST_DEVICE void test(move_only) {}
 
-__device__ int global_var = 42;
-__device__ const int& global_reference = global_var;
+STATIC_TEST_GLOBAL_VAR int global_var = 42;
+STATIC_TEST_GLOBAL_VAR const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() TEST_NOEXCEPT { return static_cast<QualInt>(global_var); }
+TEST_HOST_DEVICE QualInt get() TEST_NOEXCEPT { return static_cast<QualInt>(global_var); }
 
 STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
 STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
 
 struct A {
-    __host__ __device__ A() {}
-    __host__ __device__ A(const A&) {++copy_ctor;}
-    __host__ __device__ A(A&&) {++move_ctor;}
-    __host__ __device__ A& operator=(const A&) = delete;
+    TEST_HOST_DEVICE A() {}
+    TEST_HOST_DEVICE A(const A&) {++copy_ctor;}
+    TEST_HOST_DEVICE A(A&&) {++move_ctor;}
+    TEST_HOST_DEVICE A& operator=(const A&) = delete;
 };
 
 #if TEST_STD_VER > 2011
-__host__ __device__ constexpr bool test_constexpr_move() {
+TEST_HOST_DEVICE constexpr bool test_constexpr_move() {
     int y = 42;
     const int cy = y;
     return cuda::std::move(y) == 42
@@ -68,6 +68,7 @@ int main(int, char**)
         ASSERT_NOEXCEPT(cuda::std::move(42));
         static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value, "");
         ASSERT_NOEXCEPT(cuda::std::move(get<int const&&>()));
+        (void)global_reference;
     }
     { // test copy and move semantics
         A a;

@@ -50,8 +50,8 @@ struct NotCopyAssignable {
 struct MoveMayThrow {
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false) { return *this; }
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
+  TEST_HOST_DEVICE MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false) { return *this; }
 };
 
 // Test constraints
@@ -68,10 +68,10 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<int, NotCopyAssign
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept {
-  __host__ __device__ explicit MaybeNoexcept(int) noexcept(convertNoexcept);
-  __host__ __device__ MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
+  TEST_HOST_DEVICE explicit MaybeNoexcept(int) noexcept(convertNoexcept);
+  TEST_HOST_DEVICE MaybeNoexcept(MaybeNoexcept&&) noexcept(moveNoexcept);
   MaybeNoexcept& operator=(MaybeNoexcept&&) = default;
-  __host__ __device__ MaybeNoexcept& operator=(int);
+  TEST_HOST_DEVICE MaybeNoexcept& operator=(int);
 };
 
 // !is_nothrow_constructible_v<E, GF> && !is_nothrow_move_constructible_v<T> &&
@@ -98,7 +98,7 @@ static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<fals
 #endif // TEST_COMPILER_ICC
 #endif // TEST_COMPILER_MSVC_2017
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // - If has_value() is true, equivalent to:
   //   reinit-expected(unex, val, cuda::std::forward<GF>(e.error()));
   // is_nothrow_constructible_v<E, GF>
@@ -185,7 +185,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<int, ThrowOnConvert> e1(cuda::std::in_place, 5);
   const cuda::std::unexpected<int> un(10);

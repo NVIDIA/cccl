@@ -18,7 +18,7 @@ template<class T> struct Holder { T t; };
 
 template<class>
 struct Intable {
-    __host__ __device__
+    TEST_HOST_DEVICE
     operator int() const { return 1; }
 };
 

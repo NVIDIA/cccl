@@ -18,8 +18,8 @@ struct A
 {
 };
 
-__host__ __device__ A source() {return A();}
-__host__ __device__ const A csource() {return A();}
+TEST_HOST_DEVICE A source() {return A();}
+TEST_HOST_DEVICE const A csource() {return A();}
 
 int main(int, char**)
 {

@@ -26,17 +26,17 @@
 struct almost_string {
     const char * ptr;
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     almost_string(const char * ptr) : ptr(ptr) {}
 
-    __host__ __device__
+    TEST_HOST_DEVICE
     friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
         return lhs.ptr == rhs.ptr;
     }
 };
 
 template <typename ReturnType>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_argument_forwarding() {
   using Fn = ForwardingCallObject;
   Fn obj{};

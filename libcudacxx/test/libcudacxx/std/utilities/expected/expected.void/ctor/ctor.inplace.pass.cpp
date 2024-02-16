@@ -25,7 +25,7 @@ static_assert(!cuda::std::is_convertible_v<cuda::std::in_place_t, cuda::std::exp
 // test noexcept
 static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::expected<void, int>, cuda::std::in_place_t>, "");
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   cuda::std::expected<void, int> e(cuda::std::in_place);
   assert(e.has_value());
 

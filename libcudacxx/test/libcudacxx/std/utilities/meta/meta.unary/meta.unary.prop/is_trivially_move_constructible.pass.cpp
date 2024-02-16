@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_is_trivially_move_constructible()
 {
     static_assert( cuda::std::is_trivially_move_constructible<T>::value, "");
@@ -26,7 +26,7 @@ void test_is_trivially_move_constructible()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_has_not_trivial_move_constructor()
 {
     static_assert(!cuda::std::is_trivially_move_constructible<T>::value, "");
@@ -42,7 +42,7 @@ class Empty
 class NotEmpty
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~NotEmpty();
 };
 
@@ -56,19 +56,19 @@ struct bit_zero
 class Abstract
 {
 public:
-    __host__ __device__
+    TEST_HOST_DEVICE
     virtual ~Abstract() = 0;
 };
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     A(const A&);
 };
 
 struct MoveOnly1
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     MoveOnly1(MoveOnly1&&);
 };
 

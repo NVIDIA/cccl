@@ -58,7 +58,7 @@ struct AllCtors : DEFINE_BASE(AllCtors) {
   using Base = DEFINE_BASE(AllCtors);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   AllCtors(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -86,7 +86,7 @@ struct NoDefault : DEFINE_BASE(NoDefault) {
   using Base = DEFINE_BASE(NoDefault);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   NoDefault(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -101,7 +101,7 @@ struct DefaultOnly : DEFINE_BASE(DefaultOnly) {
   using Base = DEFINE_BASE(DefaultOnly);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   DefaultOnly(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -118,7 +118,7 @@ struct Copyable : DEFINE_BASE(Copyable) {
   using Base = DEFINE_BASE(Copyable);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   Copyable(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -135,7 +135,7 @@ struct CopyOnly : DEFINE_BASE(CopyOnly) {
   using Base = DEFINE_BASE(CopyOnly);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   CopyOnly(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -154,7 +154,7 @@ struct NonCopyable : DEFINE_BASE(NonCopyable) {
   using Base = DEFINE_BASE(NonCopyable);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   NonCopyable(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -171,7 +171,7 @@ struct MoveOnly : DEFINE_BASE(MoveOnly) {
   using Base = DEFINE_BASE(MoveOnly);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   MoveOnly(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -188,7 +188,7 @@ struct CopyAssignable : DEFINE_BASE(CopyAssignable) {
   using Base = DEFINE_BASE(CopyAssignable);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   CopyAssignable(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -204,7 +204,7 @@ struct CopyAssignOnly : DEFINE_BASE(CopyAssignOnly) {
   using Base = DEFINE_BASE(CopyAssignOnly);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   CopyAssignOnly(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -221,7 +221,7 @@ struct MoveAssignOnly : DEFINE_BASE(MoveAssignOnly) {
   using Base = DEFINE_BASE(MoveAssignOnly);
 #if defined(TEST_COMPILER_NVRTC) // nvbug3961621
   template<class... Args, typename = decltype(Base(cuda::std::declval<Args>()...))>
-  __host__ __device__ DEFINE_EXPLICIT DEFINE_CONSTEXPR
+  TEST_HOST_DEVICE DEFINE_EXPLICIT DEFINE_CONSTEXPR
   MoveAssignOnly(Args&&... args) noexcept(noexcept(Base(cuda::std::declval<Args>()...)))
       : Base(cuda::std::forward<Args>(args)...)
   {}
@@ -246,10 +246,10 @@ struct ConvertingType : DEFINE_BASE(ConvertingType) {
   DEFINE_ASSIGN_ANNOTATIONS ConvertingType& operator=(ConvertingType const&) DEFINE_NOEXCEPT DEFINE_ASSIGN;
   DEFINE_ASSIGN_ANNOTATIONS ConvertingType& operator=(ConvertingType &&) DEFINE_NOEXCEPT DEFINE_ASSIGN;
   template <class ...Args>
-  __host__ __device__
+  TEST_HOST_DEVICE
   DEFINE_EXPLICIT DEFINE_CONSTEXPR ConvertingType(Args&&...) DEFINE_NOEXCEPT DEFINE_INIT_LIST {}
   template <class Arg>
-  __host__ __device__
+  TEST_HOST_DEVICE
   ConvertingType& operator=(Arg&&) DEFINE_NOEXCEPT { return *this; }
   DEFINE_DTOR(ConvertingType)
 };

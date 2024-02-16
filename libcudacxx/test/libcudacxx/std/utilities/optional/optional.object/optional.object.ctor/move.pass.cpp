@@ -23,7 +23,7 @@
 using cuda::std::optional;
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 void test(InitArgs&&... args)
 {
     const optional<T> orig(cuda::std::forward<InitArgs>(args)...);
@@ -36,7 +36,7 @@ void test(InitArgs&&... args)
 }
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool constexpr_test(InitArgs&&... args)
 {
     static_assert( cuda::std::is_trivially_copy_constructible_v<T>, ""); // requirement
@@ -47,7 +47,7 @@ constexpr bool constexpr_test(InitArgs&&... args)
            (lhs.has_value() ? *lhs == *orig : true);
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_throwing_ctor() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
     struct Z {
@@ -72,7 +72,7 @@ void test_throwing_ctor() {
 
 
 template <class T, class ...InitArgs>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_ref(InitArgs&&... args)
 {
     optional<T> rhs(cuda::std::forward<InitArgs>(args)...);
@@ -83,7 +83,7 @@ void test_ref(InitArgs&&... args)
         assert(&(*lhs) == &(*rhs));
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 void test_reference_extension()
 {
 #if defined(_LIBCPP_VERSION) && 0 // FIXME these extensions are currently disabled.
@@ -206,21 +206,21 @@ int main(int, char**)
     {
 #ifndef TEST_COMPILER_ICC
         struct ThrowsMove {
-          __host__ __device__
+          TEST_HOST_DEVICE
           ThrowsMove() noexcept(false) {}
-          __host__ __device__
+          TEST_HOST_DEVICE
           ThrowsMove(ThrowsMove const&) noexcept(false) {}
-          __host__ __device__
+          TEST_HOST_DEVICE
           ThrowsMove(ThrowsMove &&) noexcept(false) {}
         };
         static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value, "");
 #endif // TEST_COMPILER_ICC
         struct NoThrowMove {
-          __host__ __device__
+          TEST_HOST_DEVICE
           NoThrowMove() noexcept(false) {}
-          __host__ __device__
+          TEST_HOST_DEVICE
           NoThrowMove(NoThrowMove const&) noexcept(false) {}
-          __host__ __device__
+          TEST_HOST_DEVICE
           NoThrowMove(NoThrowMove &&) noexcept(true) {}
         };
         static_assert(cuda::std::is_nothrow_move_constructible<optional<NoThrowMove>>::value, "");

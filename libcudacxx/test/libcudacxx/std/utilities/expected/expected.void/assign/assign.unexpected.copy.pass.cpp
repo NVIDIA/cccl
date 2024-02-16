@@ -47,8 +47,8 @@ struct NotCopyAssignable {
 struct MoveMayThrow {
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
-  __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false) { return *this; }
+  TEST_HOST_DEVICE MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
+  TEST_HOST_DEVICE MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false) { return *this; }
 };
 
 // Test constraints
@@ -62,7 +62,7 @@ static_assert(
 static_assert(
     !cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyAssignable>&, const cuda::std::unexpected<NotCopyAssignable>&>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+TEST_HOST_DEVICE TEST_CONSTEXPR_CXX20 bool test() {
   // - If has_value() is true, equivalent to:
   //   construct_at(addressof(unex), cuda::std::forward<GF>(e.error()));
   //   has_val = false;
@@ -97,7 +97,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+TEST_HOST_DEVICE void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<void, ThrowOnCopyConstruct> e1(cuda::std::in_place);
   cuda::std::unexpected<ThrowOnCopyConstruct> un(cuda::std::in_place);

@@ -18,16 +18,16 @@
 
 struct A
 {
-    __host__ __device__
+    TEST_HOST_DEVICE
     char test0() {return 'a';}
-    __host__ __device__
+    TEST_HOST_DEVICE
     char test1(int) {return 'b';}
-    __host__ __device__
+    TEST_HOST_DEVICE
     char test2(int, double) {return 'c';}
 };
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test0(F f)
 {
@@ -42,7 +42,7 @@ test0(F f)
 }
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test1(F f)
 {
@@ -57,7 +57,7 @@ test1(F f)
 }
 
 template <class F>
-__host__ __device__
+TEST_HOST_DEVICE
 void
 test2(F f)
 {

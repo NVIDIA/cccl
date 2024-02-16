@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <typename Y>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool testConstexpr()
 {
     Y y1{1};

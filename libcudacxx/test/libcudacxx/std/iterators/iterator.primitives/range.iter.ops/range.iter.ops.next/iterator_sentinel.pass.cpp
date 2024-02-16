@@ -22,7 +22,7 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void check_assignable(int* first, int* last, int* expected) {
+TEST_HOST_DEVICE constexpr void check_assignable(int* first, int* last, int* expected) {
   It it(first);
   auto sent = assignable_sentinel(It(last));
   It result = cuda::std::ranges::next(cuda::std::move(it), sent);
@@ -30,7 +30,7 @@ __host__ __device__ constexpr void check_assignable(int* first, int* last, int* 
 }
 
 template <typename It>
-__host__ __device__ constexpr void check_sized_sentinel(int* first, int* last, int* expected) {
+TEST_HOST_DEVICE constexpr void check_sized_sentinel(int* first, int* last, int* expected) {
   auto size = (last - first);
 
   It it(first);
@@ -41,7 +41,7 @@ __host__ __device__ constexpr void check_sized_sentinel(int* first, int* last, i
 }
 
 template <typename It>
-__host__ __device__ constexpr void check_sentinel(int* first, int* last, int* expected) {
+TEST_HOST_DEVICE constexpr void check_sentinel(int* first, int* last, int* expected) {
   It it(first);
   auto sent = sentinel_wrapper(It(last));
   decltype(auto) result = cuda::std::ranges::next(cuda::std::move(it), sent);
@@ -49,7 +49,7 @@ __host__ __device__ constexpr void check_sentinel(int* first, int* last, int* ex
   assert(base(result) == expected);
 }
 
-__host__ __device__ constexpr bool test() {
+TEST_HOST_DEVICE constexpr bool test() {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   for (int n = 0; n != 10; ++n) {

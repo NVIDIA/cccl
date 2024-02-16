@@ -35,7 +35,7 @@ bool Y::dtor_called = false;
 #endif
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_one_arg() {
     using Opt = cuda::std::optional<T>;
     {
@@ -75,7 +75,7 @@ constexpr bool test_one_arg() {
 
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_multi_arg()
 {
     test_one_arg<T>();
@@ -108,7 +108,7 @@ constexpr bool test_multi_arg()
 }
 
 template <class T>
-__host__ __device__
+TEST_HOST_DEVICE
 void test_on_test_type() {
 
     T::reset();
@@ -200,7 +200,7 @@ void test_on_test_type() {
     }
 }
 
-__host__ __device__
+TEST_HOST_DEVICE
 constexpr bool test_empty_emplace()
 {
     optional<const int> opt;
