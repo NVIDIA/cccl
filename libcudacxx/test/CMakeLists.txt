@@ -36,6 +36,9 @@ add_subdirectory(public_headers)
 # Libcudacxx auto-generated public header as std tests
 add_subdirectory(public_headers_host_only)
 
+# Libcudacxx host only mode tests
+add_subdirectory(libcxx)
+
 # Enable building the nvrtcc project if NVRTC is enabled
 if (LIBCUDACXX_TEST_WITH_NVRTC)
   add_subdirectory(utils/nvidia/nvrtc)

@@ -213,6 +213,11 @@ template<class T>
 #include <stdexcept>
 #endif // __cuda_std__
 
+#ifndef _CCCL_CUDA_COMPILER
+#include <new>
+#include <stdexcept>
+#endif // _CCCL_CUDA_COMPILER
+
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__

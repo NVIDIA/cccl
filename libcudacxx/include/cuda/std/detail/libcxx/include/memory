@@ -697,6 +697,10 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include "tuple"
 #include "type_traits"
 
+#ifndef _CCCL_CUDA_COMPILER
+#  include <new>
+#endif // !_CCCL_CUDA_COMPILER
+
 // standard-mandated includes
 #include "version"
 

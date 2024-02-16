@@ -46,6 +46,10 @@
 #include "../__utility/swap.h"
 #include "../tuple"
 
+#ifndef _CCCL_CUDA_COMPILER
+#  include <new>
+#endif // !_CCCL_CUDA_COMPILER
+
 #ifndef __cuda_std__
 #include <exception>
 #include <memory>
