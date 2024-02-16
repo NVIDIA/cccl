@@ -40,6 +40,7 @@
 
 #include <algorithm>
 
+#include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
@@ -315,7 +316,8 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   c2h::device_vector<key_t> keys_in(num_items);
-  thrust::transform(c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
+  thrust::transform(
+    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
   c2h::device_vector<key_t> keys_out(num_items, static_cast<key_t>(42));
@@ -333,7 +335,7 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
   auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = thrust::make_counting_iterator(offset_t{});
   bool keys_equal         = thrust::equal(c2h::device_policy, keys_out.cbegin(), keys_out.cend(), keys_expected_it);
-  bool values_equal       = thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
+  bool values_equal = thrust::equal(c2h::device_policy, values_out.cbegin(), values_out.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -347,7 +349,8 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
   c2h::device_vector<key_t> keys_in_out(num_items);
-  thrust::transform(c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
+  thrust::transform(
+    c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
 
   // Perform sort
   sort_pairs(thrust::raw_pointer_cast(keys_in_out.data()),
@@ -359,8 +362,8 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
   auto key_ranks_it       = thrust::make_counting_iterator(offset_t{});
   auto keys_expected_it   = thrust::make_transform_iterator(key_ranks_it, rank_to_key_op_t<offset_t, key_t>{});
   auto values_expected_it = thrust::make_counting_iterator(offset_t{});
-  bool keys_equal         = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
-  bool values_equal       = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
+  bool keys_equal   = thrust::equal(c2h::device_policy, keys_in_out.cbegin(), keys_in_out.cend(), keys_expected_it);
+  bool values_equal = thrust::equal(c2h::device_policy, key_ranks.cbegin(), key_ranks.cend(), values_expected_it);
   REQUIRE(keys_equal == true);
   REQUIRE(values_equal == true);
 }
@@ -407,24 +410,38 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
-  c2h::device_vector<key_t> keys_in_out(num_items);
+  SECTION("Random")
+  {
+    try
+    {
+      // Initialize random input data
+      large_array_sort_helper<key_t> arrays;
+      constexpr bool is_descending = false;
+      arrays.initialize_for_unstable_key_sort(num_items, is_descending);
 
-  // TODO this will build on common functionality in https://github.com/NVIDIA/cccl/pull/1349
-  // SECTION("Random")
-  // {
-  //   try
-  //   {
-  //   }
-  //   catch (std::bad_alloc&)
-  //   {
-  //     std::cout << "Not enough memory, skipping large num items test" << std::endl;
-  //   }
-  // }
+      // Free extra data buffer used during initialization, but not needed for the "in-place" merge sort
+      arrays.deallocate_outputs();
+
+      // Perform sort
+      stable_sort_keys(thrust::raw_pointer_cast(arrays.keys_in.data()), num_items, custom_less_op_t{});
+
+      // Verify results
+      arrays.verify_unstable_key_sort(num_items, is_descending, arrays.keys_in);
+    }
+    catch (std::bad_alloc& e)
+    {
+      const std::size_t num_bytes = num_items * sizeof(key_t);
+      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
+                << " bytes): " << e.what() << "\n";
+    }
+  }
 
   SECTION("Pre-sorted input")
   {
     try
     {
+      c2h::device_vector<key_t> keys_in_out(num_items);
+
       // Pre-populated array with a constant value
       auto counting_it = thrust::make_counting_iterator(std::size_t{0});
       thrust::copy(counting_it, counting_it + num_items, keys_in_out.begin());
@@ -438,9 +455,11 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
       REQUIRE(is_correct == true);
     }
-    catch (std::bad_alloc&)
+    catch (std::bad_alloc& e)
     {
-      std::cout << "Not enough memory, skipping large num items test" << std::endl;
+      const std::size_t num_bytes = num_items * sizeof(key_t);
+      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
+                << " bytes): " << e.what() << "\n";
     }
   }
 
@@ -448,6 +467,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
   {
     try
     {
+      c2h::device_vector<key_t> keys_in_out(num_items);
+
       auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
       auto key_value_it  = thrust::make_transform_iterator(counting_it, index_to_key_value_op<key_t>{});
       auto rev_sorted_it = thrust::make_reverse_iterator(key_value_it + num_items);
@@ -462,9 +483,11 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
       REQUIRE(is_correct == true);
     }
-    catch (std::bad_alloc&)
+    catch (std::bad_alloc& e)
     {
-      std::cout << "Not enough memory, skipping large num items test" << std::endl;
+      const std::size_t num_bytes = num_items * sizeof(key_t);
+      std::cerr << "Skipping merge sort test with " << num_items << " elements (" << num_bytes
+                << " bytes): " << e.what() << "\n";
     }
   }
 }
