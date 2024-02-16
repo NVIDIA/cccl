@@ -355,9 +355,9 @@ struct AgentPartition
     OffsetT local_tile_idx = mask & partition_idx;
 
     OffsetT keys1_beg = (cub::min)(keys_count, start);
-    OffsetT keys1_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(start, size));
+    OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
     OffsetT keys2_beg = keys1_end;
-    OffsetT keys2_end = (cub::min)(keys_count, detail::SafeAddBoundToMax(keys2_beg, size));
+    OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
     // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
     if (partition_idx + 1 == num_partitions)
@@ -548,8 +548,9 @@ struct AgentMerge
     // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
     // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
     // and keys1_end is key1's component of that path
-    OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);                              
-    OffsetT keys2_end = (cub::min)(max_keys2, detail::SafeAddBoundToMax(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+    OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
+    OffsetT keys2_end =
+      (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
