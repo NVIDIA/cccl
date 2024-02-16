@@ -116,3 +116,82 @@ Click the badge above or [click here](https://codespaces.new/NVIDIA/cccl?quickst
 For more information, see the `.devcontainer/make_devcontainers.sh --help` message.
 
 **Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
+
+## Installing Devcontainers on WSL
+
+[!NOTE]
+
+_Make sure you have the Nvidia driver installed in your Windows host before moving further_. Type in `nvidia-smi` for verification.
+
+### Install WSL on your Windows host
+
+[!WARNING] 
+
+Dsiclaimer: This guide was developed for WSL 2 on Windows 11.
+
+1. Launch a Windows terminal (_e.g. Powershell_) as an administrator.
+
+2. Install WSL 2 by running:
+```bash
+wsl --install 
+```
+This should probably install Ubuntu distro as a default.
+
+3. Restart your computer and run `wsl -l -v` on a Windows terminal to verify installation.
+
+<h3 id="prereqs"> Install prerequisites and VS Code extensions</h3>
+
+4. Launch your WSL/Ubuntu terminal by running `wsl` in Powershell.
+
+
+5. Install the [WSL extension](ms-vscode-remote.remote-wsl) on VS Code.
+
+    - `Ctrl + Shift + P` and select `WSL: Connect to WSL` (it will prompt you to install the WSL extension).
+
+    - Make sure you are connected to WSL with VS Code by checking the bottom left corner of the VS Code window (should indicate "WSL: Ubuntu" in our case).
+
+6. Install the [Dev Containers extension](ms-vscode-remote.remote-containers) on VS Code.
+
+    - In a vanilla system you should be prompted to install `Docker` at this point, accept it. If it hangs you might have to restart VS Code after that.
+
+7. Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). **Make sure you install the WSL 2 version and not the native Linux one**. This builds on top of Docker so make sure you have Docker properly installed (run `docker --version`).
+
+8. Open `/etc/docker/daemon.json` (if the file does not exist, create it) and add the following:
+
+```json
+{
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    }
+}
+```
+
+and run `sudo systemctl restart docker.service`.
+
+---
+### Build CCCL in WSL using Dev Containers
+
+9. Still on your WSL terminal run `git clone https://github.com/NVIDIA/cccl.git`
+
+
+10. Open the CCCL cloned repo in VS Code ( `Ctrl + Shift + P `, select `File: Open Folder...` and select the path where your CCCL clone is located).
+
+11. If prompted, choose `Reopen in Container`.
+    
+    - If you are not prompted just type `Ctrl + Shift + P` and `Dev Containers: Open Folder in Container ...`.
+
+12. Verify that Dev Container was configured properly by running `./nvidia-smi` in your Dev Container terminal. For a proper configuration set up it is important for the steps in [Install prerequisites and VS Code extensions](#prereqs) to be followed in a precise order.
+
+From that point on, the guide aligns with our [existing Dev Containers native Linux guide](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md) with just one minor potential alteration.
+
+13. If WSL was launched without the X-server enabled, when asked to "authenticate Git with your Github credentials", if you answer **Yes**, the browser might not open automatically, with the following error message. 
+
+> Failed opening a web browser at https://github.com/login/device
+  exec: "xdg-open,x-www-browser,www-browser,wslview": executable file not found in $PATH
+  Please try entering the URL in your browser manually
+
+In that case type in the address manually in your web browser https://github.com/login/device and fill in the one-time code.
+
