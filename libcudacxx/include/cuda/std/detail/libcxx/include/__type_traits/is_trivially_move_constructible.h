@@ -14,9 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/add_rvalue_reference.h"
-#include "../__type_traits/is_trivially_constructible.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,6 +21,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/add_rvalue_reference.h"
+#include "../__type_traits/is_trivially_constructible.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -14,11 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_floating_point.h"
-#include "../__type_traits/underlying_type.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +21,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_enum.h"
+#include "../__type_traits/is_floating_point.h"
+#include "../__type_traits/underlying_type.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

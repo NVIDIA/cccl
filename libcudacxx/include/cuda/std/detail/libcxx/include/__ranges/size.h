@@ -39,7 +39,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 template <class>
 _LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range = false;
@@ -212,7 +212,7 @@ inline namespace __cpo
 _LIBCUDACXX_CPO_ACCESSIBILITY auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_LIBCUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

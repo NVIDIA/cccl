@@ -13,12 +13,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/nat.h"
-#include "../__type_traits/type_list.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +20,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/conditional.h"
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/nat.h"
+#include "../__type_traits/type_list.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

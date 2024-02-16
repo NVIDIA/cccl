@@ -12,16 +12,18 @@
 #define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 
 #ifndef __cuda_std__
-
-#ifndef __cuda_std__
-#include <__config>
-#include <exception>
-#include <memory>
-#include <new>
-#include <typeinfo>
+#  include <__config>
 #endif // __cuda_std__
 
-#include "__assert"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "../__assert"
 #include "../__debug"
 #include "../__functional_base"
 #include "../__functional/binary_function.h"
@@ -44,13 +46,14 @@
 #include "../__utility/swap.h"
 #include "../tuple"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#ifndef __cuda_std__
+#include <exception>
+#include <memory>
+#include <new>
+#include <typeinfo>
+#endif // __cuda_std__
+
+#ifndef __cuda_std__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -15,8 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "__verbose_abort"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,6 +22,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "__verbose_abort"
 
 // This is for backwards compatibility with code that might have been enabling
 // assertions through the Debug mode previously.
