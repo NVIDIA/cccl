@@ -354,7 +354,7 @@ struct AgentSelectIf
 
             if (!IS_LAST_TILE || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
             {
-              selection_flags[ITEM] = select_op(items[ITEM]);
+              selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
             }
         }
     }
@@ -395,7 +395,7 @@ struct AgentSelectIf
             // Set selection_flags for out-of-bounds items
             if ((!IS_LAST_TILE) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
             {
-              selection_flags[ITEM] = select_op(flags[ITEM]);
+              selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
             }
         }
     }
