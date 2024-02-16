@@ -64,7 +64,7 @@ using is_integral_or_enum =
 template <typename OffsetT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, OffsetT rhs)
 {
-  static_assert(::cuda::std::is_integral_v<OffsetT>, "OffsetT must be an integral type");
+  static_assert(::cuda::std::is_integral<OffsetT>::value, "OffsetT must be an integral type");
   static_assert(sizeof(OffsetT) >= 4, "OffsetT must be at least 32 bits in size");
   auto const capped_operand_rhs = (cub::min)(rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
   return lhs + capped_operand_rhs;
