@@ -411,8 +411,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
 
-  std::cout << "num_items: " << num_items << "\n";
-
   SECTION("Random")
   {
     try
