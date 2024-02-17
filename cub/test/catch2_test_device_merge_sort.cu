@@ -399,7 +399,7 @@ CUB_TEST(
   REQUIRE(values_expected == values_in_out);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][sort][device][extensive]", offset_types)
+CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sort][device]", offset_types)
 {
   using testing_types_tuple = c2h::get<0, TestType>;
   using key_t               = typename testing_types_tuple::key_t;
