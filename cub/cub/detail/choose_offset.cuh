@@ -71,6 +71,22 @@ struct choose_offset
 template <typename NumItemsT>
 using choose_offset_t = typename choose_offset<NumItemsT>::type;
 
+/** 
+ * PromoteSmallOffsetT checks NumItemsT, the type of the num_items parameter, and
+ * promotes any integral type smaller than 32 bits to a signed 32-bit integer type.
+ */
+template <typename NumItemsT>
+struct PromoteSmallOffsetT
+{
+  // NumItemsT must be an integral type (but not bool).
+  static_assert(std::is_integral<NumItemsT>::value
+                  && !std::is_same<typename std::remove_cv<NumItemsT>::type, bool>::value,
+                "NumItemsT must be an integral type, but not bool");
+
+  // Unsigned integer type for global offsets.
+  using Type = typename std::conditional<sizeof(NumItemsT) < 4, std::int32_t, NumItemsT>::type;
+};
+
 /**
  * common_iterator_value sets member type to the common_type of
  * value_type for all argument types. used to get OffsetT in

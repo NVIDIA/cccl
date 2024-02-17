@@ -74,7 +74,8 @@ struct type_tuple
   using key_t    = KeyT;
 };
 using offset_types =
-  c2h::type_list<type_tuple<std::int32_t>,
+  c2h::type_list<type_tuple<std::int16_t>,
+                 type_tuple<std::int32_t>,
                  type_tuple<std::int32_t, std::uint32_t>,
                  type_tuple<std::uint32_t>,
                  type_tuple<std::uint64_t>>;
@@ -409,6 +410,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[.][merge][
     std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()) - 1,
              ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
   offset_t num_items = static_cast<offset_t>(num_items_ull);
+
+  std::cout << "num_items: " << num_items << "\n";
 
   SECTION("Random")
   {
