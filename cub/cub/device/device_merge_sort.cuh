@@ -218,7 +218,7 @@ struct DeviceMergeSort
             CompareOpT compare_op,
             cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
                                                  ValueIteratorT,
@@ -393,7 +393,7 @@ struct DeviceMergeSort
                 CompareOpT compare_op,
                 cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
                                                  ValueInputIteratorT,
@@ -544,7 +544,7 @@ struct DeviceMergeSort
            CompareOpT compare_op,
            cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
                                                  NullType *,
@@ -696,7 +696,7 @@ struct DeviceMergeSort
                CompareOpT compare_op,
                cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
                                                  NullType *,
@@ -848,7 +848,7 @@ struct DeviceMergeSort
                   CompareOpT compare_op,
                   cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     return SortPairs<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
       d_temp_storage,
@@ -982,7 +982,7 @@ struct DeviceMergeSort
                  CompareOpT compare_op,
                  cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     return SortKeys<KeyIteratorT, PromotedOffsetT, CompareOpT>(d_temp_storage,
                                                        temp_storage_bytes,
@@ -1125,7 +1125,7 @@ struct DeviceMergeSort
                      CompareOpT compare_op,
                      cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = typename detail::PromoteSmallOffsetT<OffsetT>::Type; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
 
     return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(d_temp_storage,
                                                                               temp_storage_bytes,
