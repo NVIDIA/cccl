@@ -51,7 +51,7 @@
 #include <c2h/vector.cuh>
 #include <catch2_test_helper.h>
 
-// #define DEBUG_TIMING
+#define DEBUG_TIMING
 
 #ifdef DEBUG_TIMING
 #  define TIME(expr) expr
