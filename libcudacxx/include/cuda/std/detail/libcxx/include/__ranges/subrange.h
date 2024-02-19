@@ -57,6 +57,10 @@
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
+// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4848)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
@@ -525,6 +529,8 @@ struct tuple_element<1, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_DIAG_POP
 
 #endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 

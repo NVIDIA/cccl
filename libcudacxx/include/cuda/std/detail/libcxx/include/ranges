@@ -319,10 +319,8 @@ namespace std {
 #endif // no system header
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma warning(push)
-#pragma warning(disable : 4848)
-#endif // _LIBCUDACXX_COMPILER_MSVC
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__ranges/access.h"
@@ -352,9 +350,6 @@ namespace std {
 #include "__tuple_dir/tuple_element.h"
 #include "__tuple_dir/tuple_size.h"
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-#pragma warning(pop)
-#endif // _LIBCUDACXX_COMPILER_MSVC
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX_RANGES
