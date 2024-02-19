@@ -574,7 +574,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[1],
-  void* srcMem);
+  const void* srcMem);
 
 // cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1b. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
@@ -610,7 +610,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[2],
-  void* srcMem);
+  const void* srcMem);
 
 // cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1c. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
@@ -646,7 +646,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[3],
-  void* srcMem);
+  const void* srcMem);
 
 // cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1d. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
@@ -682,7 +682,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[4],
-  void* srcMem);
+  const void* srcMem);
 
 // cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1e. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
@@ -718,7 +718,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[5],
-  void* srcMem);
+  const void* srcMem);
 ```
 
 #### `cp.reduce.async.bulk.tensor`

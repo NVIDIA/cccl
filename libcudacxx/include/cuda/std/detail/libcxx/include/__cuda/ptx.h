@@ -919,7 +919,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[1],
-  void* srcMem);
+  const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
@@ -929,7 +929,7 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
   const void* __tensorMap,
   const _CUDA_VSTD::int32_t (&__tensorCoords)[1],
-  void* __srcMem)
+  const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -1053,7 +1053,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[2],
-  void* srcMem);
+  const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
@@ -1063,7 +1063,7 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
   const void* __tensorMap,
   const _CUDA_VSTD::int32_t (&__tensorCoords)[2],
-  void* __srcMem)
+  const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -1190,7 +1190,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[3],
-  void* srcMem);
+  const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
@@ -1200,7 +1200,7 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
   const void* __tensorMap,
   const _CUDA_VSTD::int32_t (&__tensorCoords)[3],
-  void* __srcMem)
+  const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -1330,7 +1330,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[4],
-  void* srcMem);
+  const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
@@ -1340,7 +1340,7 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
   const void* __tensorMap,
   const _CUDA_VSTD::int32_t (&__tensorCoords)[4],
-  void* __srcMem)
+  const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
@@ -1473,7 +1473,7 @@ __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_shared_t,
   const void* tensorMap,
   const int32_t (&tensorCoords)[5],
-  void* srcMem);
+  const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
@@ -1483,7 +1483,7 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   space_shared_t,
   const void* __tensorMap,
   const _CUDA_VSTD::int32_t (&__tensorCoords)[5],
-  void* __srcMem)
+  const void* __srcMem)
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
