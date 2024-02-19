@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -60,14 +62,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-
-/**
- * @brief A random-access input wrapper for dereferencing array values through texture cache.  
+ * @brief A random-access input wrapper for dereferencing array values through texture cache.
  *        Uses newer Kepler-style texture objects.
  *
  * @par Overview
@@ -107,10 +102,10 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam T                    
+ * @tparam T
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -139,17 +134,17 @@ public:
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-    
+
     /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::device_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -171,7 +166,7 @@ private:
 public:
 
     /// Constructor
-    __host__ __device__ __forceinline__ TexObjInputIterator()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
     :
         ptr(NULL),
         tex_offset(0),
@@ -216,7 +211,7 @@ public:
     }
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
         self_type retval = *this;
         tex_offset++;
@@ -224,14 +219,14 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         tex_offset++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         NV_IF_TARGET(NV_IS_HOST,
                      (return ptr[tex_offset];),
@@ -240,7 +235,7 @@ public:
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval;
         retval.ptr          = ptr;
@@ -251,7 +246,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         tex_offset += n;
         return *this;
@@ -259,7 +254,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval;
         retval.ptr          = ptr;
@@ -270,40 +265,40 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         tex_offset -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return tex_offset - other.tex_offset;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         self_type offset = (*this) + n;
         return *offset;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &(*(*this));
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
     }
@@ -320,7 +315,7 @@ public:
 private:
     // This is hoisted out of operator* because #pragma can't be used inside of
     // NV_IF_TARGET
-    __device__ __forceinline__ reference device_deref() const
+    _CCCL_DEVICE _CCCL_FORCEINLINE reference device_deref() const
     {
         // Move array of uninitialized words, then alias and assign to return
         // value
@@ -338,9 +333,5 @@ private:
         return *reinterpret_cast<T *>(words);
     }
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

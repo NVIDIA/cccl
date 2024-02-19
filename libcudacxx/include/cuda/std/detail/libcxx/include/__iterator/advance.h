@@ -15,6 +15,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__concepts/assignable.h"
 #include "../__concepts/same_as.h"
@@ -24,12 +32,6 @@
 #include "../__utility/convert_to_integral.h"
 #include "../__utility/move.h"
 #include "../cstdlib"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#  pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -85,7 +87,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void advance(_In
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LICBUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !defined(_LICBUDACXX_COMPILER_MSVC_2017)
 
 // [range.iter.op.advance]
 
@@ -243,6 +245,6 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto advance = __advance::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX_STD_VER > 14 && !_LICBUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER > 2014 && !_LICBUDACXX_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX___ITERATOR_ADVANCE_H

@@ -40,7 +40,6 @@ int main(int, char**)
         m.clear();
         assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::set<int, std::less<int>, min_allocator<int>> M;
         typedef int V;
@@ -61,7 +60,6 @@ int main(int, char**)
         m.clear();
         assert(m.size() == 0);
     }
-#endif
 
   return 0;
 }

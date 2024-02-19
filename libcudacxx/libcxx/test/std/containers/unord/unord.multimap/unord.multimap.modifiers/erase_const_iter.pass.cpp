@@ -81,7 +81,6 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -129,8 +128,7 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.begin(), c.end())) == c.size());
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
     }
-#endif
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     {
     //  This is LWG #2059
         typedef TemplateConstructor T;

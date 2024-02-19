@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/unique_by_key.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
@@ -46,7 +48,7 @@ namespace generic
 template<typename ExecutionPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator1,ForwardIterator2>
 unique_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
               ForwardIterator1 keys_first,
@@ -62,7 +64,7 @@ template<typename ExecutionPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator1,ForwardIterator2>
 unique_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
               ForwardIterator1 keys_first,
@@ -87,7 +89,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
 unique_by_key_copy(thrust::execution_policy<ExecutionPolicy> &exec,
                    InputIterator1 keys_first,
@@ -107,7 +109,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
 unique_by_key_copy(thrust::execution_policy<ExecutionPolicy> &exec,
                    InputIterator1 keys_first,

@@ -28,11 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <iterator>
@@ -49,7 +51,7 @@ template <class Derived,
           class OutputIt,
           class TransformOp,
           class ScanOp>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 transform_inclusive_scan(execution_policy<Derived> &policy,
                          InputIt                    first,
                          InputIt                    last,
@@ -82,7 +84,7 @@ template <class Derived,
           class TransformOp,
           class InitialValueType,
           class ScanOp>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 transform_exclusive_scan(execution_policy<Derived> &policy,
                          InputIt                    first,
                          InputIt                    last,

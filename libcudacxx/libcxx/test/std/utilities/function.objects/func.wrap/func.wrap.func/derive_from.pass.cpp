@@ -23,7 +23,7 @@ struct S : public std::function<void()> { using function::function; };
 int main(int, char**) {
     S s( [](){} );
     S f1( s );
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     S f2(std::allocator_arg, std::allocator<int>{}, s);
 #endif
 

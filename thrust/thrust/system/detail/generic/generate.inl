@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/generate.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/internal_functional.h>
@@ -39,7 +41,7 @@ namespace generic
 template<typename ExecutionPolicy,
          typename ForwardIterator,
          typename Generator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void generate(thrust::execution_policy<ExecutionPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,
@@ -71,7 +73,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator,
          typename Size,
          typename Generator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator generate_n(thrust::execution_policy<ExecutionPolicy> &exec,
                             OutputIterator first,
                             Size n,

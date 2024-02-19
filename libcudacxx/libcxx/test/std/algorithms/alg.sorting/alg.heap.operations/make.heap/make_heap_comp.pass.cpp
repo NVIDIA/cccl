@@ -43,7 +43,7 @@ void test(int N)
     assert(std::is_heap(ia, ia+N, std::greater<int>()));
 
     std::shuffle(ia, ia+N, randomness);
-    std::make_heap(random_access_iterator<int *>(ia), 
+    std::make_heap(random_access_iterator<int *>(ia),
                    random_access_iterator<int *>(ia+N), std::greater<int>());
     assert(std::is_heap(ia, ia+N, std::greater<int>()));
     }
@@ -91,7 +91,6 @@ int main(int, char**)
     test(10000);
     test(100000);
 
-#if TEST_STD_VER >= 11
     {
     const int N = 1000;
     std::unique_ptr<int>* ia = new std::unique_ptr<int> [N];
@@ -102,7 +101,6 @@ int main(int, char**)
     assert(std::is_heap(ia, ia+N, indirect_less()));
     delete [] ia;
     }
-#endif
 
   return 0;
 }

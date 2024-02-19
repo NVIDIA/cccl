@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/memory.h>
 #include <thrust/detail/type_traits.h>
@@ -47,7 +49,7 @@ namespace cuda_cub
  *  \see cuda::free
  *  \see std::malloc
  */
-inline __host__ __device__ pointer<void> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE pointer<void> malloc(std::size_t n);
 
 /*! Allocates a typed area of memory available to Thrust's <tt>cuda</tt> system.
  *  \param n Number of elements to allocate.
@@ -60,7 +62,7 @@ inline __host__ __device__ pointer<void> malloc(std::size_t n);
  *  \see std::malloc
  */
 template <typename T>
-inline __host__ __device__ pointer<T> malloc(std::size_t n);
+inline _CCCL_HOST_DEVICE pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>cuda::malloc</tt>.
  *  \param ptr A <tt>cuda::pointer<void></tt> pointing to the beginning of an area
@@ -68,7 +70,7 @@ inline __host__ __device__ pointer<T> malloc(std::size_t n);
  *  \see cuda::malloc
  *  \see std::free
  */
-inline __host__ __device__ void free(pointer<void> ptr);
+inline _CCCL_HOST_DEVICE void free(pointer<void> ptr);
 
 /*! \p cuda::allocator is the default allocator used by the \p cuda system's
  *  containers such as <tt>cuda::vector</tt> if no user-specified allocator is

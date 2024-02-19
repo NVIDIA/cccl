@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
   #include <string_view>
 #endif
 #include <deque>
@@ -26,7 +26,7 @@ THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<
   std::wstring::iterator
 >::value));
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<
   std::string_view::iterator
 >::value));

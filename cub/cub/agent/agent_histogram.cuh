@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_load.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -266,7 +268,7 @@ struct AgentHistogram
     struct _TempStorage
     {
         // Smem needed for block-privatized smem histogram (with 1 word of padding)
-        CounterT histograms[NUM_ACTIVE_CHANNELS][PRIVATIZED_SMEM_BINS + 1];     
+        CounterT histograms[NUM_ACTIVE_CHANNELS][PRIVATIZED_SMEM_BINS + 1];
 
         int tile_idx;
 
@@ -274,10 +276,10 @@ struct AgentHistogram
         union Aliasable
         {
             // Smem needed for loading a tile of samples
-            typename BlockLoadSampleT::TempStorage sample_load;     
+            typename BlockLoadSampleT::TempStorage sample_load;
 
             // Smem needed for loading a tile of pixels
-            typename BlockLoadPixelT::TempStorage pixel_load;       
+            typename BlockLoadPixelT::TempStorage pixel_load;
 
             // Smem needed for loading a tile of vecs
             typename BlockLoadVecT::TempStorage vec_load;
@@ -330,7 +332,7 @@ struct AgentHistogram
     //---------------------------------------------------------------------
 
     // Initialize privatized bin counters
-    __device__ __forceinline__ void InitBinCounters(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
     {
         // Initialize histogram bin counts to zeros
         #pragma unroll
@@ -348,7 +350,7 @@ struct AgentHistogram
 
 
     // Initialize privatized bin counters.  Specialized for privatized shared-memory counters
-    __device__ __forceinline__ void InitSmemBinCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitSmemBinCounters()
     {
         CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS];
 
@@ -360,7 +362,7 @@ struct AgentHistogram
 
 
     // Initialize privatized bin counters.  Specialized for privatized global-memory counters
-    __device__ __forceinline__ void InitGmemBinCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitGmemBinCounters()
     {
         InitBinCounters(d_privatized_histograms);
     }
@@ -371,7 +373,7 @@ struct AgentHistogram
     //---------------------------------------------------------------------
 
     // Update final output histograms from privatized histograms
-    __device__ __forceinline__ void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
     {
         // Barrier to make sure all threads are done updating counters
         CTA_SYNC();
@@ -402,7 +404,7 @@ struct AgentHistogram
 
 
     // Update final output histograms from privatized histograms.  Specialized for privatized shared-memory counters
-    __device__ __forceinline__ void StoreSmemOutput()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void StoreSmemOutput()
     {
         CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS];
         for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
@@ -413,7 +415,7 @@ struct AgentHistogram
 
 
     // Update final output histograms from privatized histograms.  Specialized for privatized global-memory counters
-    __device__ __forceinline__ void StoreGmemOutput()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void StoreGmemOutput()
     {
         StoreOutput(d_privatized_histograms);
     }
@@ -424,7 +426,7 @@ struct AgentHistogram
     //---------------------------------------------------------------------
 
     // Accumulate pixels.  Specialized for RLE compression.
-    __device__ __forceinline__ void AccumulatePixels(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
         SampleT             samples[PIXELS_PER_THREAD][NUM_CHANNELS],
         bool                is_valid[PIXELS_PER_THREAD],
         CounterT*           privatized_histograms[NUM_ACTIVE_CHANNELS],
@@ -466,7 +468,7 @@ struct AgentHistogram
 
 
     // Accumulate pixels.  Specialized for individual accumulation of each pixel.
-    __device__ __forceinline__ void AccumulatePixels(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulatePixels(
         SampleT             samples[PIXELS_PER_THREAD][NUM_CHANNELS],
         bool                is_valid[PIXELS_PER_THREAD],
         CounterT*           privatized_histograms[NUM_ACTIVE_CHANNELS],
@@ -490,7 +492,7 @@ struct AgentHistogram
     /**
      * Accumulate pixel, specialized for smem privatized histogram
      */
-    __device__ __forceinline__ void AccumulateSmemPixels(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateSmemPixels(
         SampleT             samples[PIXELS_PER_THREAD][NUM_CHANNELS],
         bool                is_valid[PIXELS_PER_THREAD])
     {
@@ -506,7 +508,7 @@ struct AgentHistogram
     /**
      * Accumulate pixel, specialized for gmem privatized histogram
      */
-    __device__ __forceinline__ void AccumulateGmemPixels(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGmemPixels(
         SampleT             samples[PIXELS_PER_THREAD][NUM_CHANNELS],
         bool                is_valid[PIXELS_PER_THREAD])
     {
@@ -521,7 +523,7 @@ struct AgentHistogram
 
     // Load full, aligned tile using pixel iterator (multi-channel)
     template <int _NUM_ACTIVE_CHANNELS>
-    __device__ __forceinline__ void LoadFullAlignedTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadFullAlignedTile(
         OffsetT                         block_offset,
         int                             valid_samples,
         SampleT                         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -538,7 +540,7 @@ struct AgentHistogram
     }
 
     // Load full, aligned tile using vec iterator (single-channel)
-    __device__ __forceinline__ void LoadFullAlignedTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadFullAlignedTile(
         OffsetT                         block_offset,
         int                             valid_samples,
         SampleT                         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -555,7 +557,7 @@ struct AgentHistogram
     }
 
     // Load full, aligned tile
-    __device__ __forceinline__ void LoadTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
         OffsetT         block_offset,
         int             valid_samples,
         SampleT         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -566,7 +568,7 @@ struct AgentHistogram
     }
 
     // Load full, mis-aligned tile using sample iterator
-    __device__ __forceinline__ void LoadTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
         OffsetT         block_offset,
         int             valid_samples,
         SampleT         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -582,7 +584,7 @@ struct AgentHistogram
     }
 
     // Load partially-full, aligned tile using the pixel iterator
-    __device__ __forceinline__ void LoadTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
         OffsetT         block_offset,
         int             valid_samples,
         SampleT         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -603,7 +605,7 @@ struct AgentHistogram
     }
 
     // Load partially-full, mis-aligned tile using sample iterator
-    __device__ __forceinline__ void LoadTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadTile(
         OffsetT         block_offset,
         int             valid_samples,
         SampleT         (&samples)[PIXELS_PER_THREAD][NUM_CHANNELS],
@@ -619,7 +621,7 @@ struct AgentHistogram
     }
 
     template <bool IS_FULL_TILE>
-    __device__ __forceinline__ void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD],
                                               int valid_samples,
                                               Int2Type<false> /* is_striped = false */)
     {
@@ -632,7 +634,7 @@ struct AgentHistogram
     }
 
     template <bool IS_FULL_TILE>
-    __device__ __forceinline__ void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void MarkValid(bool (&is_valid)[PIXELS_PER_THREAD],
                                               int valid_samples,
                                               Int2Type<true> /* is_striped = true */)
     {
@@ -650,7 +652,7 @@ struct AgentHistogram
 
     /**
      * @brief Consume a tile of data samples
-     * 
+     *
      * @tparam IS_ALIGNED
      *   Whether the tile offset is aligned (vec-aligned for single-channel, pixel-aligned for multi-channel)
      *
@@ -658,7 +660,7 @@ struct AgentHistogram
         Whether the tile is full
      */
     template <bool IS_ALIGNED, bool IS_FULL_TILE>
-    __device__ __forceinline__ void ConsumeTile(OffsetT block_offset, int valid_samples)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT block_offset, int valid_samples)
     {
         SampleT     samples[PIXELS_PER_THREAD][NUM_CHANNELS];
         bool        is_valid[PIXELS_PER_THREAD];
@@ -691,21 +693,21 @@ struct AgentHistogram
 
     /**
      * @brief Consume row tiles. Specialized for work-stealing from queue
-     * 
-     * @param num_row_pixels 
-     *   The number of multi-channel pixels per row in the region of interest 
      *
-     * @param num_rows 
+     * @param num_row_pixels
+     *   The number of multi-channel pixels per row in the region of interest
+     *
+     * @param num_rows
      *   The number of rows in the region of interest
      *
-     * @param row_stride_samples 
+     * @param row_stride_samples
      *   The number of samples between starts of consecutive rows in the region of interest
      *
-     * @param tiles_per_row 
+     * @param tiles_per_row
      *   Number of image tiles per row
      */
     template <bool IS_ALIGNED>
-    __device__ __forceinline__ void ConsumeTiles(OffsetT num_row_pixels,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(OffsetT num_row_pixels,
                                                  OffsetT num_rows,
                                                  OffsetT row_stride_samples,
                                                  int tiles_per_row,
@@ -752,21 +754,21 @@ struct AgentHistogram
 
     /**
      * @brief Consume row tiles.  Specialized for even-share (striped across thread blocks)
-     * 
-     * @param num_row_pixels 
+     *
+     * @param num_row_pixels
      *   The number of multi-channel pixels per row in the region of interest
      *
-     * @param num_rows 
+     * @param num_rows
      *   The number of rows in the region of interest
      *
-     * @param row_stride_samples 
+     * @param row_stride_samples
      *   The number of samples between starts of consecutive rows in the region of interest
      *
-     * @param tiles_per_row 
+     * @param tiles_per_row
      *   Number of image tiles per row
      */
     template <bool IS_ALIGNED>
-    __device__ __forceinline__ void ConsumeTiles(OffsetT num_row_pixels,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(OffsetT num_row_pixels,
                                                  OffsetT num_rows,
                                                  OffsetT row_stride_samples,
                                                  int tiles_per_row,
@@ -807,14 +809,14 @@ struct AgentHistogram
         CacheLoadModifier   _MODIFIER,
         typename            _ValueT,
         typename            _OffsetT>
-    __device__ __forceinline__ SampleT* NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
+    _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
     {
         return itr.ptr;
     }
 
     // Return a native pixel pointer (specialized for other types)
     template <typename IteratorT>
-    __device__ __forceinline__ SampleT* NativePointer(IteratorT itr)
+    _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(IteratorT itr)
     {
         return NULL;
     }
@@ -829,10 +831,10 @@ struct AgentHistogram
     /**
      * @brief Constructor
      *
-     * @param temp_storage 
+     * @param temp_storage
      *   Reference to temp_storage
      *
-     * @param d_samples 
+     * @param d_samples
      *   Input data to reduce
      *
      * @param num_output_bins
@@ -853,7 +855,7 @@ struct AgentHistogram
      * @param privatized_decode_op
      *   The transform operator for determining privatized counter indices from samples, one for each channel
      */
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     AgentHistogram(TempStorage &temp_storage,
                    SampleIteratorT d_samples,
                    int (&num_output_bins)[NUM_ACTIVE_CHANNELS],
@@ -900,7 +902,7 @@ struct AgentHistogram
      * @param tile_queue
      *   Queue descriptor for assigning tiles of work to thread blocks
      */
-    __device__ __forceinline__ void ConsumeTiles(OffsetT num_row_pixels,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTiles(OffsetT num_row_pixels,
                                                  OffsetT num_rows,
                                                  OffsetT row_stride_samples,
                                                  int tiles_per_row,
@@ -930,7 +932,7 @@ struct AgentHistogram
     /**
      * Initialize privatized bin counters.  Specialized for privatized shared-memory counters
      */
-    __device__ __forceinline__ void InitBinCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters()
     {
         if (prefer_smem)
             InitSmemBinCounters();
@@ -942,7 +944,7 @@ struct AgentHistogram
     /**
      * Store privatized histogram to device-accessible memory.  Specialized for privatized shared-memory counters
      */
-    __device__ __forceinline__ void StoreOutput()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void StoreOutput()
     {
         if (prefer_smem)
             StoreSmemOutput();

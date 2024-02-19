@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <unittest/unittest.h>
 #include <unittest/util_async.h>
@@ -60,7 +60,7 @@ void test_event_new_stream()
 
   ASSERT_EQUAL(true, e0.valid_stream());
 
-  ASSERT_NOT_EQUAL_QUIET(nullptr, e0.stream().native_handle());    
+  ASSERT_NOT_EQUAL_QUIET(nullptr, e0.stream().native_handle());
 
   e0.wait();
 
@@ -175,6 +175,6 @@ void test_event_when_all()
 DECLARE_UNITTEST(test_event_when_all);
 
 ///////////////////////////////////////////////////////////////////////////////
- 
+
 #endif
 

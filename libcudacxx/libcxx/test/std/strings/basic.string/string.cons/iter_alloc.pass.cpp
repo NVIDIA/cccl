@@ -91,7 +91,6 @@ bool test() {
     test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50));
     test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50), A(2));
   }
-#if TEST_STD_VER >= 11
   {
     typedef min_allocator<char> A;
     const char* s = "12345678901234567890123456789012345678901234567890";
@@ -120,7 +119,6 @@ bool test() {
     test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50));
     test(cpp17_input_iterator<const char*>(s), cpp17_input_iterator<const char*>(s+50), A());
   }
-#endif
   {
       static_assert((!std::is_constructible<std::string, std::string,
                                             std::string>::value),

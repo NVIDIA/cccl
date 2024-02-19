@@ -18,15 +18,17 @@
 
 // Internal config header that is only included through thrust/detail/config/config.h
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/config/cpp_dialect.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 #ifndef __has_cpp_attribute
 #  define __has_cpp_attribute(X) 0
@@ -40,13 +42,13 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #  define THRUST_TRAILING_RETURN(...) -> __VA_ARGS__
 #endif
 
-#if THRUST_CPP_DIALECT >= 2014 && __has_cpp_attribute(nodiscard)
+#if _CCCL_STD_VER >= 2014 && __has_cpp_attribute(nodiscard)
 #  define THRUST_NODISCARD [[nodiscard]]
 #else
 #  define THRUST_NODISCARD
 #endif
 
-#if THRUST_CPP_DIALECT >= 2017 && __cpp_if_constexpr
+#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
 #  define THRUST_IF_CONSTEXPR if constexpr
 #else
 #  define THRUST_IF_CONSTEXPR if
@@ -57,7 +59,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 // supports `constexpr` globals in host and device code.
 #if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   THRUST_CPP_DIALECT >= 2017
+//#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
 #    define THRUST_INLINE_CONSTANT                 static const __device__
@@ -65,7 +67,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 #else
 // FIXME: Add this when NVCC supports inline variables.
-//#  if   THRUST_CPP_DIALECT >= 2017
+//#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
 #    define THRUST_INLINE_CONSTANT                 static constexpr

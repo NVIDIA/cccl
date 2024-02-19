@@ -85,7 +85,6 @@ public:
 int G::n_alive = 0;
 bool G::op_run = false;
 
-#if TEST_STD_VER >= 11
 
 class MoveOnly
 {
@@ -99,7 +98,6 @@ public:
     }
 };
 
-#endif
 
 // Test throwing std::bad_alloc
 //-----------------------------
@@ -192,7 +190,6 @@ int main(int, char**)
         }
     }
 #endif
-#if TEST_STD_VER >= 11
     {
         assert(G::n_alive == 0);
         assert(!G::op_run);
@@ -208,7 +205,6 @@ int main(int, char**)
         std::thread t = std::thread(MoveOnly(), MoveOnly());
         t.join();
     }
-#endif
 
     return 0;
 }

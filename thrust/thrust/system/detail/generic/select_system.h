@@ -19,11 +19,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
@@ -57,7 +59,7 @@ template<typename Tag1, typename Tag2, typename Tag3, typename Tag4, typename Ta
   struct select_system6_exists;
 
 template<typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::disable_if<
     select_system1_exists<System>::value,
     System &
@@ -65,7 +67,7 @@ __host__ __device__
     select_system(thrust::execution_policy<System> &system);
 
 template<typename System1, typename System2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_defined<
     thrust::detail::minimum_system<System1,System2>
   >::type
@@ -73,7 +75,7 @@ __host__ __device__
                    thrust::execution_policy<System2> &system2);
 
 template<typename System1, typename System2, typename System3>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system3_exists<System1,System2,System3>::value,
     thrust::detail::minimum_system<System1,System2,System3>
@@ -83,7 +85,7 @@ __host__ __device__
                    thrust::execution_policy<System3> &system3);
 
 template<typename System1, typename System2, typename System3, typename System4>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system4_exists<System1,System2,System3,System4>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4>
@@ -94,7 +96,7 @@ __host__ __device__
                    thrust::execution_policy<System4> &system4);
 
 template<typename System1, typename System2, typename System3, typename System4, typename System5>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system5_exists<System1,System2,System3,System4,System5>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4,System5>
@@ -106,7 +108,7 @@ __host__ __device__
                    thrust::execution_policy<System5> &system5);
 
 template<typename System1, typename System2, typename System3, typename System4, typename System5, typename System6>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system6_exists<System1,System2,System3,System4,System5,System6>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4,System5,System6>
@@ -119,7 +121,7 @@ __host__ __device__
                    thrust::execution_policy<System6> &system6);
 
 // Map a single any_system_tag to device_system_tag.
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 thrust::device_system_tag select_system(thrust::any_system_tag);
 
 } // end generic

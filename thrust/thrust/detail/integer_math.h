@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_deduction.h>
 
 #include <nv/target>
@@ -34,7 +36,7 @@ namespace detail
 {
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer clz(Integer x)
 {
   Integer result;
@@ -59,21 +61,21 @@ Integer clz(Integer x)
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_odd(Integer x)
 {
   return 1 & x;
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2(Integer x)
 {
   Integer num_bits = 8 * sizeof(Integer);
@@ -84,7 +86,7 @@ Integer log2(Integer x)
 
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2_ri(Integer x)
 {
   Integer result = log2(x);

@@ -18,14 +18,16 @@
 
 #include <thrust/detail/config/cpp_dialect.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #ifndef THRUST_CPP14_REQUIRED_NO_ERROR
-#  if THRUST_CPP_DIALECT < 2014
+#  if _CCCL_STD_VER < 2014
 #    error C++14 is required for this Thrust feature; please upgrade your compiler or pass the appropriate -std=c++14 flag to it.
 #  endif
 #endif

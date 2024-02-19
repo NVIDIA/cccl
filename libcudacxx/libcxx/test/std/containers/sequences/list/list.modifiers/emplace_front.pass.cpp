@@ -38,7 +38,7 @@ int main(int, char**)
 {
     {
     std::list<A> c;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     A& r1 = c.emplace_front(2, 3.5);
     assert(c.size() == 1);
     assert(&r1 == &c.front());
@@ -63,7 +63,7 @@ int main(int, char**)
 
     {
     std::list<A, min_allocator<A>> c;
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     A& r1 = c.emplace_front(2, 3.5);
     assert(c.size() == 1);
     assert(&r1 == &c.front());

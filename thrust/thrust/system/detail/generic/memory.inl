@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/system/detail/generic/memory.h>
 #include <thrust/system/detail/adl/malloc_and_free.h>
@@ -39,7 +41,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void malloc(thrust::execution_policy<DerivedPolicy> &, Size)
 {
   THRUST_STATIC_ASSERT_MSG(
@@ -50,7 +52,7 @@ __host__ __device__
 
 
 template<typename T, typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pointer<T,DerivedPolicy>
     malloc(thrust::execution_policy<DerivedPolicy> &exec, std::size_t n)
 {
@@ -61,7 +63,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void free(thrust::execution_policy<DerivedPolicy> &, Pointer)
 {
   THRUST_STATIC_ASSERT_MSG(
@@ -72,7 +74,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void assign_value(thrust::execution_policy<DerivedPolicy> &, Pointer1, Pointer2)
 {
   THRUST_STATIC_ASSERT_MSG(
@@ -83,7 +85,7 @@ void assign_value(thrust::execution_policy<DerivedPolicy> &, Pointer1, Pointer2)
 
 
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void get_value(thrust::execution_policy<DerivedPolicy> &, Pointer)
 {
   THRUST_STATIC_ASSERT_MSG(
@@ -94,7 +96,7 @@ void get_value(thrust::execution_policy<DerivedPolicy> &, Pointer)
 
 
 template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void iter_swap(thrust::execution_policy<DerivedPolicy> &, Pointer1, Pointer2)
 {
   THRUST_STATIC_ASSERT_MSG(

@@ -824,11 +824,21 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 */
 
 #ifndef __cuda_std__
-#include <__config>
-#else
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#ifdef __cuda_std__
+#ifndef _CCCL_COMPILER_NVRTC
 #include <chrono>
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -849,12 +859,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 // Silence NVCC warnings `long double` arising from chrono floating pointer
 // user-defined literals which are defined in terms of `long double`.
@@ -980,11 +984,11 @@ duration_cast(const duration<_Rep, _Period>& __fd)
 template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS treat_as_floating_point : is_floating_point<_Rep> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Rep>
 _LIBCUDACXX_INLINE_VAR constexpr bool treat_as_floating_point_v
     = treat_as_floating_point<_Rep>::value;
-#endif // _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#endif // _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 
 template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS duration_values
@@ -995,7 +999,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Rep, class _Period>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 __enable_if_t
@@ -1045,7 +1049,7 @@ round(const duration<_Rep, _Period>& __d)
         return __upper;
     return __lower.count() & 1 ? __upper : __lower;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 // duration
 
@@ -1153,12 +1157,12 @@ typedef duration<long long,        milli> milliseconds;
 typedef duration<long long              > seconds;
 typedef duration<     long, ratio<  60> > minutes;
 typedef duration<     long, ratio<3600> > hours;
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 typedef duration<     int, ratio_multiply<ratio<24>, hours::period>>         days;
 typedef duration<     int, ratio_multiply<ratio<7>,   days::period>>         weeks;
 typedef duration<     int, ratio_multiply<ratio<146097, 400>, days::period>> years;
 typedef duration<     int, ratio_divide<years::period, ratio<12>>>           months;
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 // Duration ==
 
 template <class _LhsDuration, class _RhsDuration>
@@ -1433,7 +1437,7 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
     return time_point<_Clock, _ToDuration>(_CUDA_VSTD::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Clock, class _Duration>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
@@ -1481,7 +1485,7 @@ abs(duration<_Rep, _Period> __d)
 {
     return __d >= __d.zero() ? +__d : -__d;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 // time_point ==
 
@@ -1623,7 +1627,7 @@ typedef steady_clock high_resolution_clock;
 typedef system_clock high_resolution_clock;
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
@@ -3193,21 +3197,22 @@ constexpr hours make24(const hours& __h, bool __is_pm) noexcept
     else
         return __h == hours(12) ? hours(0) : __h;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 } // chrono
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#if defined(_LIBCUDACXX_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
+#if defined(_CCCL_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
 #pragma GCC system_header
 #endif
 
-_LIBCUDACXX_DIAGNOSTIC_PUSH
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wliteral-suffix")
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wuser-defined-literals")
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS_MSVC(4455)
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
 {
@@ -3286,7 +3291,7 @@ inline namespace literals
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> (__ns);
     }
 
-#if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr chrono::day operator""d(unsigned long long __d) noexcept
     {
@@ -3298,15 +3303,16 @@ inline namespace literals
     {
         return chrono::year(static_cast<int>(__y));
     }
-#endif //_LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 }}
-_LIBCUDACXX_DIAGNOSTIC_POP
+
+_CCCL_DIAG_POP
 
 namespace chrono { // hoist the literals into namespace std::chrono
    using namespace literals::chrono_literals;
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

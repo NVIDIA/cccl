@@ -34,11 +34,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_debug.cuh>
@@ -50,16 +52,16 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #ifdef CUB_IGNORE_DEPRECATED_API
 #  define CUB_DEPRECATED
 #  define CUB_DEPRECATED_BECAUSE(MSG)
-#elif CUB_CPP_DIALECT >= 2014
+#elif _CCCL_STD_VER >= 2014
 #  define CUB_DEPRECATED [[deprecated]]
 #  define CUB_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#elif defined(_CCCL_COMPILER_MSVC)
 #  define CUB_DEPRECATED __declspec(deprecated)
 #  define CUB_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG
+#elif defined(_CCCL_COMPILER_CLANG)
 #  define CUB_DEPRECATED __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 #  define CUB_DEPRECATED __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else

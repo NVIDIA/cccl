@@ -26,9 +26,6 @@ function(thrust_build_compiler_targets)
 
   thrust_update_system_found_flags()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
-
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -115,6 +112,8 @@ function(thrust_build_compiler_targets)
     # Disable warning that inlining is inhibited by compiler thresholds.
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
+    # Disable warning about deprecated classic compiler
+    append_option_if_available("-diag-disable=10441" cxx_compile_options)
   endif()
 
   add_library(thrust.compiler_interface INTERFACE)

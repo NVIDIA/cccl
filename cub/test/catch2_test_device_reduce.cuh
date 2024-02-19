@@ -31,8 +31,6 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <iostream>
@@ -289,7 +287,7 @@ inline AccumulatorT compute_single_problem_reference(InputItT h_in_begin,
                                                      AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
-  thrust::host_vector<AccumulatorT> h_results(num_segments);
+  c2h::host_vector<AccumulatorT> h_results(num_segments);
 
   compute_host_reference(h_in_begin,
                          thrust::make_constant_iterator(0),
@@ -304,37 +302,37 @@ inline AccumulatorT compute_single_problem_reference(InputItT h_in_begin,
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
- * thrust::device_vector.
+ * c2h::device_vector.
  */
 template <typename ItemT, typename ReductionOpT, typename AccumulatorT>
-inline AccumulatorT compute_single_problem_reference(const thrust::device_vector<ItemT> &d_in,
+inline AccumulatorT compute_single_problem_reference(const c2h::device_vector<ItemT> &d_in,
                                                      ReductionOpT reduction_op,
                                                      AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
-  thrust::host_vector<ItemT> h_items(d_in);
-  thrust::host_vector<AccumulatorT> h_results(num_segments);
+  c2h::host_vector<ItemT> h_items(d_in);
+  c2h::host_vector<AccumulatorT> h_results(num_segments);
 
   return compute_single_problem_reference(h_items.cbegin(), h_items.cend(), reduction_op, init);
 }
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
- * thrust::device_vector of input items and a thrust::device_vector of offsets into the segments.
+ * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
 template <typename ItemT,
           typename OffsetT,
           typename ReductionOpT,
           typename AccumulatorT,
           typename ResultItT>
-void compute_segmented_problem_reference(const thrust::device_vector<ItemT> &d_in,
-                                         const thrust::device_vector<OffsetT> &d_offsets,
+void compute_segmented_problem_reference(const c2h::device_vector<ItemT> &d_in,
+                                         const c2h::device_vector<OffsetT> &d_offsets,
                                          ReductionOpT reduction_op,
                                          AccumulatorT init,
                                          ResultItT h_results)
 {
-  thrust::host_vector<ItemT> h_items(d_in);
-  thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  c2h::host_vector<ItemT> h_items(d_in);
+  c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = thrust::make_transform_iterator(
     thrust::make_counting_iterator(std::size_t{0}),
@@ -352,7 +350,7 @@ void compute_segmented_problem_reference(const thrust::device_vector<ItemT> &d_i
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
- * host-accessible input iterator and a thrust::device_vector of offsets into the segments.
+ * host-accessible input iterator and a c2h::device_vector of offsets into the segments.
  */
 template <typename InputItT,
           typename OffsetT,
@@ -360,12 +358,12 @@ template <typename InputItT,
           typename AccumulatorT,
           typename ResultItT>
 void compute_segmented_problem_reference(InputItT in_it,
-                                         const thrust::device_vector<OffsetT> &d_offsets,
+                                         const c2h::device_vector<OffsetT> &d_offsets,
                                          ReductionOpT reduction_op,
                                          AccumulatorT init,
                                          ResultItT h_results)
 {
-  thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  c2h::host_vector<OffsetT> h_offsets(d_offsets);
   auto offsets_it   = h_offsets.cbegin();
   auto seg_sizes_it = thrust::make_transform_iterator(
     thrust::make_counting_iterator(std::size_t{0}),
@@ -383,15 +381,15 @@ void compute_segmented_problem_reference(InputItT in_it,
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
- * thrust::device_vector of input items and a thrust::device_vector of offsets into the segments.
+ * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
 template <typename ItemT, typename OffsetT, typename ResultItT>
-void compute_segmented_argmin_reference(const thrust::device_vector<ItemT> &d_in,
-                                        const thrust::device_vector<OffsetT> &d_offsets,
+void compute_segmented_argmin_reference(const c2h::device_vector<ItemT> &d_in,
+                                        const c2h::device_vector<OffsetT> &d_offsets,
                                         ResultItT h_results)
 {
-  thrust::host_vector<ItemT> h_items(d_in);
-  thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  c2h::host_vector<ItemT> h_items(d_in);
+  c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
   {
@@ -412,15 +410,15 @@ void compute_segmented_argmin_reference(const thrust::device_vector<ItemT> &d_in
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
- * thrust::device_vector of input items and a thrust::device_vector of offsets into the segments.
+ * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
 template <typename ItemT, typename OffsetT, typename ResultItT>
-void compute_segmented_argmax_reference(const thrust::device_vector<ItemT> &d_in,
-                                        const thrust::device_vector<OffsetT> &d_offsets,
+void compute_segmented_argmax_reference(const c2h::device_vector<ItemT> &d_in,
+                                        const c2h::device_vector<OffsetT> &d_offsets,
                                         ResultItT h_results)
 {
-  thrust::host_vector<ItemT> h_items(d_in);
-  thrust::host_vector<OffsetT> h_offsets(d_offsets);
+  c2h::host_vector<ItemT> h_items(d_in);
+  c2h::host_vector<OffsetT> h_offsets(d_offsets);
   const auto num_segments = h_offsets.size() - 1;
   for (std::size_t seg = 0; seg < num_segments; seg++)
   {
@@ -469,11 +467,11 @@ inline OutputItT compute_unique_keys_reference(InputItT h_in_begin,
  * run of equal keys into a single key).
  */
 template <typename ItemT>
-inline thrust::host_vector<ItemT>
-compute_unique_keys_reference(const thrust::device_vector<ItemT> &d_keys)
+inline c2h::host_vector<ItemT>
+compute_unique_keys_reference(const c2h::device_vector<ItemT> &d_keys)
 {
-  thrust::host_vector<ItemT> h_keys(d_keys);
-  thrust::host_vector<ItemT> h_unique_keys_out(d_keys.size());
+  c2h::host_vector<ItemT> h_keys(d_keys);
+  c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
   auto end_it =
     compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());

@@ -33,7 +33,6 @@ int main(int, char**)
     (void) *i;
     assert(false);
     }
-#if TEST_STD_VER >= 11
     {
     typedef int T;
     typedef std::unordered_set<T, std::hash<T>, std::equal_to<T>, min_allocator<T>> C;
@@ -42,7 +41,6 @@ int main(int, char**)
     (void) *i;
     assert(false);
     }
-#endif
 }
 
 #else

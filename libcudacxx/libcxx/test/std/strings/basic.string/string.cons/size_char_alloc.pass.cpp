@@ -100,7 +100,6 @@ int main(int, char**)
     test(static_cast<char>(100), static_cast<char>(65));
     test(static_cast<char>(100), static_cast<char>(65), A(3));
     }
-#if TEST_STD_VER >= 11
     {
     typedef min_allocator<char> A;
 
@@ -119,7 +118,6 @@ int main(int, char**)
     test(static_cast<char>(100), static_cast<char>(65));
     test(static_cast<char>(100), static_cast<char>(65), A());
     }
-#endif
 
   return 0;
 }

@@ -18,15 +18,17 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) || \
-    (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG) || \
-    (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_INTEL)
+#if defined(_CCCL_COMPILER_GCC) || \
+    defined(_CCCL_COMPILER_CLANG) || \
+    defined(_CCCL_COMPILER_ICC)
 #include <stdint.h>
 #endif
 
@@ -35,7 +37,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 
 #if (_MSC_VER < 1300)
    typedef signed   char     int8_t;

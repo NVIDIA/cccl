@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
@@ -48,7 +50,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/std/type_traits>
 
 #include <nv/target>
-#include <stdint.h>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -146,7 +148,7 @@ struct WarpReduceShfl
     int warp_id;
 
     /// 32-thread physical warp member mask of logical warp
-    uint32_t member_mask;
+    ::cuda::std::uint32_t member_mask;
 
 
     //---------------------------------------------------------------------
@@ -154,7 +156,7 @@ struct WarpReduceShfl
     //---------------------------------------------------------------------
 
     /// Constructor
-    __device__ __forceinline__ WarpReduceShfl(
+    _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceShfl(
         TempStorage &/*temp_storage*/)
         : lane_id(static_cast<int>(LaneId()))
         , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
@@ -186,7 +188,7 @@ struct WarpReduceShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ unsigned int
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
     ReduceStep(unsigned int input, cub::Sum /*reduction_op*/, int last_lane, int offset)
     {
         unsigned int output;
@@ -221,7 +223,7 @@ struct WarpReduceShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ float
+    _CCCL_DEVICE _CCCL_FORCEINLINE float
     ReduceStep(float input, cub::Sum /*reduction_op*/, int last_lane, int offset)
     {
         float output;
@@ -256,7 +258,7 @@ struct WarpReduceShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ unsigned long long
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
     ReduceStep(unsigned long long input, cub::Sum /*reduction_op*/, int last_lane, int offset)
     {
         unsigned long long output;
@@ -293,7 +295,7 @@ struct WarpReduceShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ long long
+    _CCCL_DEVICE _CCCL_FORCEINLINE long long
     ReduceStep(long long input, cub::Sum /*reduction_op*/, int last_lane, int offset)
     {
         long long output;
@@ -331,7 +333,7 @@ struct WarpReduceShfl
      * @param[in] offset
      *   Up-offset to pull from
      */
-    __device__ __forceinline__ double
+    _CCCL_DEVICE _CCCL_FORCEINLINE double
     ReduceStep(double input, cub::Sum /*reduction_op*/, int last_lane, int offset)
     {
         double output;
@@ -357,7 +359,7 @@ struct WarpReduceShfl
     }
 
     /**
-     * @brief Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across 
+     * @brief Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across
      *        KeyValuePair<KeyT, ValueT> types)
      *
      * @param[in] input
@@ -373,7 +375,7 @@ struct WarpReduceShfl
      *   Up-offset to pull from
      */
     template <typename ValueT, typename KeyT>
-    __device__ __forceinline__ KeyValuePair<KeyT, ValueT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<KeyT, ValueT>
     ReduceStep(KeyValuePair<KeyT, ValueT> input,
                SwizzleScanOp<ReduceByKeyOp<cub::Sum>> /*reduction_op*/,
                int last_lane,
@@ -414,7 +416,7 @@ struct WarpReduceShfl
      *   Up-offset to pull from
      */
     template <typename ValueT, typename OffsetT>
-    __device__ __forceinline__ KeyValuePair<OffsetT, ValueT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, ValueT>
     ReduceStep(KeyValuePair<OffsetT, ValueT> input,
                SwizzleScanOp<ReduceBySegmentOp<cub::Sum>> /*reduction_op*/,
                int last_lane,
@@ -447,7 +449,7 @@ struct WarpReduceShfl
      *   Up-offset to pull from
      */
     template <typename _T, typename ReductionOp>
-    __device__ __forceinline__ _T
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T
     ReduceStep(_T input, ReductionOp reduction_op, int last_lane, int offset)
     {
         _T output = input;
@@ -480,7 +482,7 @@ struct WarpReduceShfl
      *   Marker type indicating whether T is a small unsigned integer
      */
     template <typename _T, typename ReductionOp>
-    __device__ __forceinline__ _T ReduceStep(_T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(_T input,
                                              ReductionOp reduction_op,
                                              int last_lane,
                                              int offset,
@@ -490,7 +492,7 @@ struct WarpReduceShfl
     }
 
     /**
-     * @brief Reduction step (specialized for types other than small unsigned integers size 
+     * @brief Reduction step (specialized for types other than small unsigned integers size
      *        32b or less)
      *
      * @param[in] input
@@ -509,7 +511,7 @@ struct WarpReduceShfl
      *   Marker type indicating whether T is a small unsigned integer
      */
     template <typename _T, typename ReductionOp>
-    __device__ __forceinline__ _T ReduceStep(_T input,
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T ReduceStep(_T input,
                                              ReductionOp reduction_op,
                                              int last_lane,
                                              int offset,
@@ -534,7 +536,7 @@ struct WarpReduceShfl
      *   Index of last lane in segment
      */
     template <typename ReductionOp, int STEP>
-    __device__ __forceinline__ void
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
     ReduceStep(T &input, ReductionOp reduction_op, int last_lane, Int2Type<STEP> /*step*/)
     {
         input = ReduceStep(input, reduction_op, last_lane, 1 << STEP, Int2Type<IsInteger<T>::IS_SMALL_UNSIGNED>());
@@ -553,7 +555,7 @@ struct WarpReduceShfl
      *   Index of last lane in segment
      */
     template <typename ReductionOp>
-    __device__ __forceinline__ void ReduceStep(T & /*input*/,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ReduceStep(T & /*input*/,
                                                ReductionOp /*reduction_op*/,
                                                int /*last_lane*/,
                                                Int2Type<STEPS> /*step*/)
@@ -575,7 +577,7 @@ struct WarpReduceShfl
      *   Binary reduction operator
      */
     template <typename ReductionOp>
-    __device__ __forceinline__ T ReduceImpl(Int2Type<0> /* all_lanes_valid */,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T ReduceImpl(Int2Type<0> /* all_lanes_valid */,
                                             T input,
                                             int valid_items,
                                             ReductionOp reduction_op)
@@ -601,7 +603,7 @@ struct WarpReduceShfl
      *   Binary reduction operator
      */
     template <typename ReductionOp>
-    __device__ __forceinline__ T ReduceImpl(Int2Type<1> /* all_lanes_valid */,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                                             T input,
                                             int /* valid_items */,
                                             ReductionOp reduction_op)
@@ -617,9 +619,9 @@ struct WarpReduceShfl
     }
 
     template <class U = T>
-    __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    _CCCL_DEVICE _CCCL_FORCEINLINE
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_add_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,
@@ -639,9 +641,9 @@ struct WarpReduceShfl
     }
 
     template <class U = T>
-    __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    _CCCL_DEVICE _CCCL_FORCEINLINE
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_min_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,
@@ -661,9 +663,9 @@ struct WarpReduceShfl
     }
 
     template <class U = T>
-    __device__ __forceinline__
-    typename std::enable_if<
-               (std::is_same<int, U>::value || std::is_same<unsigned int, U>::value)
+    _CCCL_DEVICE _CCCL_FORCEINLINE
+    typename ::cuda::std::enable_if<
+               (::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
             && detail::reduce_max_exists<>::value, T>::type
     ReduceImpl(Int2Type<1> /* all_lanes_valid */,
                T input,
@@ -698,7 +700,7 @@ struct WarpReduceShfl
      *   Binary reduction operator
      */
     template <bool ALL_LANES_VALID, typename ReductionOp>
-    __device__ __forceinline__ T Reduce(T input, int valid_items, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
     {
         return ReduceImpl(
             Int2Type<ALL_LANES_VALID>{}, input, valid_items, reduction_op);
@@ -720,7 +722,7 @@ struct WarpReduceShfl
      *   Binary reduction operator
      */
     template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-    __device__ __forceinline__ T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
     {
         // Get the start flags for each thread in the warp.
         int warp_flags = WARP_BALLOT(flag, member_mask);

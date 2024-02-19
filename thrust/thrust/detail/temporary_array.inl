@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/temporary_array.h>
 #include <thrust/distance.h>
@@ -41,7 +43,7 @@ template<typename T> struct avoid_initialization : thrust::detail::has_trivial_c
 
 
 template<typename T, typename TemporaryArray, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::enable_if<
   avoid_initialization<T>::value
 >::type
@@ -53,7 +55,7 @@ typename thrust::detail::enable_if<
 
 
 template<typename T, typename TemporaryArray, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::disable_if<
   avoid_initialization<T>::value
 >::type
@@ -68,7 +70,7 @@ typename thrust::detail::disable_if<
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   temporary_array<T,System>
     ::temporary_array(thrust::execution_policy<System> &system)
       :super_t(alloc_type(temporary_allocator<T,System>(system)))
@@ -77,7 +79,7 @@ __host__ __device__
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   temporary_array<T,System>
     ::temporary_array(thrust::execution_policy<System> &system, size_type n)
       :super_t(n, alloc_type(temporary_allocator<T,System>(system)))
@@ -87,7 +89,7 @@ __host__ __device__
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   temporary_array<T,System>
     ::temporary_array(int, thrust::execution_policy<System> &system, size_type n)
       :super_t(n, alloc_type(temporary_allocator<T,System>(system)))
@@ -99,7 +101,7 @@ __host__ __device__
 
 template<typename T, typename System>
   template<typename InputIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     temporary_array<T,System>
       ::temporary_array(thrust::execution_policy<System> &system,
                         InputIterator first,
@@ -114,7 +116,7 @@ template<typename T, typename System>
 
 template<typename T, typename System>
   template<typename InputIterator, typename InputSystem>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     temporary_array<T,System>
       ::temporary_array(thrust::execution_policy<System> &system,
                         thrust::execution_policy<InputSystem> &input_system,
@@ -130,7 +132,7 @@ template<typename T, typename System>
 
 template<typename T, typename System>
   template<typename InputIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     temporary_array<T,System>
       ::temporary_array(thrust::execution_policy<System> &system,
                         InputIterator first,
@@ -145,7 +147,7 @@ template<typename T, typename System>
 
 template<typename T, typename System>
   template<typename InputSystem, typename InputIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     temporary_array<T,System>
       ::temporary_array(thrust::execution_policy<System> &system,
                         thrust::execution_policy<InputSystem> &input_system,
@@ -160,7 +162,7 @@ template<typename T, typename System>
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   temporary_array<T,System>
     ::~temporary_array()
 {

@@ -26,7 +26,6 @@ int main(int, char**)
         assert(v.capacity() >= 101);
         assert(v.size() >= 101);
     }
-#if TEST_STD_VER >= 11
     {
         std::vector<bool, min_allocator<bool>> v(100);
         v.push_back(1);
@@ -34,7 +33,6 @@ int main(int, char**)
         assert(v.capacity() >= 101);
         assert(v.size() >= 101);
     }
-#endif
 
   return 0;
 }

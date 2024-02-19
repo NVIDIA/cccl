@@ -114,7 +114,6 @@ int main(int, char**)
             for (int k = 0; k < 3; ++k, ++i)
                 assert(*i == j);
     }
-#if TEST_STD_VER >= 11
     {
         typedef int V;
         V ar[] =
@@ -195,8 +194,7 @@ int main(int, char**)
             for (int k = 0; k < 3; ++k, ++i)
                 assert(*i == j);
     }
-#endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         typedef std::multiset<int> C;
         C::iterator ii1{}, ii2{};

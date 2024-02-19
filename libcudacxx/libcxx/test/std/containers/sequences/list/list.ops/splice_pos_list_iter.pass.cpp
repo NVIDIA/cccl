@@ -176,7 +176,6 @@ int main(int, char**)
         ++i;
         assert(*i == 2);
     }
-#if TEST_STD_VER >= 11
     {
         std::list<int, min_allocator<int>> l1;
         std::list<int, min_allocator<int>> l2(a2, a2+1);
@@ -333,7 +332,6 @@ int main(int, char**)
         ++i;
         assert(*i == 2);
     }
-#endif
 
   return 0;
 }

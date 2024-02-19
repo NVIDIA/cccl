@@ -95,7 +95,6 @@ int main(int, char**)
         assert(mo.get_allocator() == A(2));
         assert(mo.key_comp() == C(5));
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::pair<const int, double> V;
         V ar[] =
@@ -122,7 +121,6 @@ int main(int, char**)
         assert(mo.get_allocator() == A());
         assert(mo.key_comp() == C(5));
     }
-#endif
 
   return 0;
 }

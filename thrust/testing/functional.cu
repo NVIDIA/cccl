@@ -9,7 +9,7 @@ THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
 
 // There is a unfortunate miscompilation of the gcc-12 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && __GNUC__ >= 12
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 12
 #define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
 #else
 #define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
@@ -325,7 +325,7 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
       THRUST_GCC_VERSION < 120000 &&				\
       THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP &&		\
       THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP &&	\
-      THRUST_CPP_DIALECT == 2011)
+      _CCCL_STD_VER == 2011)
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER

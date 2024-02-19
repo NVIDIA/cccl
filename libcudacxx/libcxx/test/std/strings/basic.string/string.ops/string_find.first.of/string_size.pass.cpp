@@ -147,13 +147,11 @@ int main(int, char**)
     test0<S>();
     test1<S>();
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test0<S>();
     test1<S>();
     }
-#endif
 
 #if TEST_STD_VER > 3
     {   // LWG 2946

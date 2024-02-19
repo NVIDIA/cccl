@@ -43,22 +43,18 @@ int main(int, char**) {
     test ( L"ABCDE", 5 );
     test ( L"a", 1 );
 
-#if TEST_STD_VER >= 11
     test ( u"ABCDE", 5 );
     test ( u"a", 1 );
 
     test ( U"ABCDE", 5 );
     test ( U"a", 1 );
-#endif
 
-#if TEST_STD_VER >= 11
     {
     constexpr std::basic_string_view<char> sv ( "ABC", 2 );
     static_assert ( sv.length() ==  2,  "" );
     static_assert ( sv.at(0) == 'A', "" );
     static_assert ( sv.at(1) == 'B', "" );
     }
-#endif
 
   return 0;
 }

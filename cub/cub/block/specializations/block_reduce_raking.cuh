@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_raking_layout.cuh>
 #include <cub/thread/thread_reduce.cuh>
@@ -134,7 +136,7 @@ struct BlockReduceRaking
 
 
     /// Constructor
-    __device__ __forceinline__ BlockReduceRaking(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(
         TempStorage &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -152,7 +154,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE, typename ReductionOp, int ITERATION>
-    __device__ __forceinline__ T RakingReduction(ReductionOp reduction_op,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(ReductionOp reduction_op,
                                                  T *raking_segment,
                                                  T partial,
                                                  int num_valid,
@@ -178,7 +180,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE, typename ReductionOp>
-    __device__ __forceinline__ T RakingReduction(ReductionOp /*reduction_op*/,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(ReductionOp /*reduction_op*/,
                                                  T * /*raking_segment*/,
                                                  T partial,
                                                  int /*num_valid*/,
@@ -202,7 +204,7 @@ struct BlockReduceRaking
      *   Binary reduction operator
      */
     template <bool IS_FULL_TILE, typename ReductionOp>
-    __device__ __forceinline__ T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
     {
         if (WARP_SYNCHRONOUS)
         {
@@ -255,7 +257,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE>
-    __device__ __forceinline__ T Sum(T partial, int num_valid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
     {
         cub::Sum reduction_op;
 

@@ -44,7 +44,6 @@ int main(int, char**)
         assert(c.size() == 3);
         assert(*r == 5.5);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_set<MoveOnly> C;
         typedef C::iterator R;
@@ -110,7 +109,6 @@ int main(int, char**)
         assert(c.size() == 3);
         assert(*r == 5);
     }
-#endif // TEST_STD_VER >= 11
 
   return 0;
 }

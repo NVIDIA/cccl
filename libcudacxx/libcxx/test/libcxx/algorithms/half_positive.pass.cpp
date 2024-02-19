@@ -41,7 +41,6 @@ int main(int, char**)
 #endif  // !defined(_LIBCUDACXX_HAS_NO_INT128)
     }
 
-#if TEST_STD_VER >= 11
     {
         static_assert(test<char>(), "");
         static_assert(test<int>(), "");
@@ -51,7 +50,6 @@ int main(int, char**)
         static_assert(test<__int128_t>(), "");
 #endif  // !defined(_LIBCUDACXX_HAS_NO_INT128)
     }
-#endif // TEST_STD_VER >= 11
 
   return 0;
 }

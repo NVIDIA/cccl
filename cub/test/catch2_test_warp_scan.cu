@@ -29,10 +29,6 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include "catch2_test_helper.h"
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
@@ -60,9 +56,9 @@ __global__ void warp_combine_scan_kernel(T *in, T *inclusive_out, T *exclusive_o
 }
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
-void warp_combine_scan(thrust::device_vector<T> &in,
-                       thrust::device_vector<T> &inclusive_out,
-                       thrust::device_vector<T> &exclusive_out,
+void warp_combine_scan(c2h::device_vector<T> &in,
+                       c2h::device_vector<T> &inclusive_out,
+                       c2h::device_vector<T> &exclusive_out,
                        ActionT action)
 {
   warp_combine_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT>
@@ -98,7 +94,7 @@ __global__ void warp_scan_kernel(T *in, T *out, ActionT action)
 }
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
-void warp_scan(thrust::device_vector<T> &in, thrust::device_vector<T> &out, ActionT action)
+void warp_scan(c2h::device_vector<T> &in, c2h::device_vector<T> &out, ActionT action)
 {
   warp_scan_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT>
     <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
@@ -264,20 +260,20 @@ struct min_init_value_scan_op_t
 };
 
 template <class T, class ScanOpT>
-thrust::host_vector<T> compute_host_reference(scan_mode mode,
-                                              thrust::host_vector<T> &result,
+c2h::host_vector<T> compute_host_reference(scan_mode mode,
+                                              c2h::host_vector<T> &result,
                                               int logical_warp_threads,
                                               ScanOpT scan_op,
                                               T initial_value = T{})
 {
   if (result.empty())
   {
-    return thrust::host_vector<T>{};
+    return c2h::host_vector<T>{};
   }
   // TODO : assert result.size() % logical_warp_threads == 0
 
   int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(result.size()), logical_warp_threads);
-  thrust::host_vector<T> warp_accumulator(num_warps);
+  c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
   {
     for (int w = 0; w < num_warps; ++w)
@@ -351,15 +347,15 @@ CUB_TEST("Warp scan works with sum", "[scan][warp]", types, logical_warp_threads
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   warp_scan<params::logical_warp_threads, params::total_warps>(d_in,
                                                                d_out,
                                                                sum_op_t<params::mode>{});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{});
   REQUIRE_APPROX_EQ(h_out, d_out);
@@ -370,15 +366,15 @@ CUB_TEST("Warp scan works with vec_types", "[scan][warp]", vec_types, logical_wa
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   warp_scan<params::logical_warp_threads, params::total_warps>(d_in,
                                                                d_out,
                                                                sum_op_t<params::mode>{});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{});
   REQUIRE(h_out == d_out);
@@ -393,15 +389,15 @@ CUB_TEST("Warp scan works with custom types",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   warp_scan<params::logical_warp_threads, params::total_warps>(d_in,
                                                                d_out,
                                                                sum_op_t<params::mode>{});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{});
   REQUIRE(h_out == d_out);
@@ -416,9 +412,9 @@ CUB_TEST("Warp scan returns valid warp aggregate",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_warp_aggregates(params::total_warps);
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_warp_aggregates(params::total_warps);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::logical_warp_threads - 1)));
@@ -429,7 +425,7 @@ CUB_TEST("Warp scan returns valid warp aggregate",
     sum_aggregate_op_t<type, params::mode>{target_thread_id,
                                            thrust::raw_pointer_cast(d_warp_aggregates.data())});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   auto h_warp_aggregates =
     compute_host_reference(params::mode, h_out, params::logical_warp_threads, std::plus<type>{});
@@ -443,15 +439,15 @@ CUB_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   warp_scan<params::logical_warp_threads, params::total_warps>(d_in,
                                                                d_out,
                                                                min_op_t<params::mode>{});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   compute_host_reference(
     params::mode,
@@ -487,9 +483,9 @@ CUB_TEST("Warp custom op scan returns valid warp aggregate",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_warp_aggregates(params::total_warps);
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_warp_aggregates(params::total_warps);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::logical_warp_threads - 1)));
@@ -500,7 +496,7 @@ CUB_TEST("Warp custom op scan returns valid warp aggregate",
     min_aggregate_op_t<type, params::mode>{target_thread_id,
                                            thrust::raw_pointer_cast(d_warp_aggregates.data())});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   auto h_warp_aggregates = compute_host_reference(
     params::mode,
@@ -537,8 +533,8 @@ CUB_TEST("Warp custom op scan works with initial value",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   const type initial_value = static_cast<type>(GENERATE_COPY(take(2, random(0, params::tile_size))));
@@ -548,7 +544,7 @@ CUB_TEST("Warp custom op scan works with initial value",
                                                                min_init_value_op_t<type>{
                                                                  initial_value});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   compute_host_reference(
     params::mode,
@@ -569,9 +565,9 @@ CUB_TEST("Warp custom op scan with initial value returns valid warp aggregate",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_warp_aggregates(params::total_warps);
-  thrust::device_vector<type> d_out(params::tile_size);
-  thrust::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_warp_aggregates(params::total_warps);
+  c2h::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
   c2h::gen(CUB_SEED(10), d_in);
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::logical_warp_threads - 1)));
@@ -584,7 +580,7 @@ CUB_TEST("Warp custom op scan with initial value returns valid warp aggregate",
                                         initial_value,
                                         thrust::raw_pointer_cast(d_warp_aggregates.data())});
 
-  thrust::host_vector<type> h_out = d_in;
+  c2h::host_vector<type> h_out = d_in;
 
   auto h_warp_aggregates = compute_host_reference(
     params::mode,
@@ -603,9 +599,9 @@ CUB_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   using type                         = int;
 
-  thrust::device_vector<type> d_inclusive_out(total_warps * logical_warp_threads);
-  thrust::device_vector<type> d_exclusive_out(total_warps * logical_warp_threads);
-  thrust::device_vector<type> d_in(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_inclusive_out(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_exclusive_out(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_in(total_warps * logical_warp_threads);
   c2h::gen(CUB_SEED(10), d_in);
 
   warp_combine_scan<logical_warp_threads, total_warps>(d_in,
@@ -613,8 +609,8 @@ CUB_TEST("Warp combination scan works with custom scan op", "[scan][warp]", logi
                                                        d_exclusive_out,
                                                        min_scan_op_t{});
 
-  thrust::host_vector<type> h_exclusive_out = d_in;
-  thrust::host_vector<type> h_inclusive_out = d_in;
+  c2h::host_vector<type> h_exclusive_out = d_in;
+  c2h::host_vector<type> h_inclusive_out = d_in;
 
   compute_host_reference(
     scan_mode::exclusive,
@@ -654,9 +650,9 @@ CUB_TEST("Warp combination custom scan works with initial value",
   constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   using type                         = int;
 
-  thrust::device_vector<type> d_inclusive_out(total_warps * logical_warp_threads);
-  thrust::device_vector<type> d_exclusive_out(total_warps * logical_warp_threads);
-  thrust::device_vector<type> d_in(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_inclusive_out(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_exclusive_out(total_warps * logical_warp_threads);
+  c2h::device_vector<type> d_in(total_warps * logical_warp_threads);
   c2h::gen(CUB_SEED(10), d_in);
 
   const type initial_value = GENERATE_COPY(take(2, random(0, total_warps * logical_warp_threads)));
@@ -667,8 +663,8 @@ CUB_TEST("Warp combination custom scan works with initial value",
                                                        min_init_value_scan_op_t<type>{
                                                          initial_value});
 
-  thrust::host_vector<type> h_exclusive_out = d_in;
-  thrust::host_vector<type> h_inclusive_out = d_in;
+  c2h::host_vector<type> h_exclusive_out = d_in;
+  c2h::host_vector<type> h_inclusive_out = d_in;
 
   compute_host_reference(
     scan_mode::exclusive,

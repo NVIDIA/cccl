@@ -28,11 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/util.h>
@@ -65,7 +67,7 @@ namespace __fill {
 }    // namespace __fill
 
 template <class Derived, class OutputIterator, class Size, class T>
-OutputIterator __host__ __device__
+OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy,
        OutputIterator             first,
        Size                       count,
@@ -81,7 +83,7 @@ fill_n(execution_policy<Derived>& policy,
 }    // func fill_n
 
 template <class Derived, class ForwardIterator, class T>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 fill(execution_policy<Derived>& policy,
      ForwardIterator            first,
      ForwardIterator            last,

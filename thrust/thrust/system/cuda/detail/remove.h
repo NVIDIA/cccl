@@ -28,11 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/copy_if.h>
@@ -46,7 +48,7 @@ template <class Derived,
           class InputIt,
           class StencilIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived> &policy,
           InputIt                    first,
           InputIt                    last,
@@ -60,7 +62,7 @@ remove_if(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived> &policy,
           InputIt                    first,
           InputIt                    last,
@@ -74,7 +76,7 @@ remove_if(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class T>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove(execution_policy<Derived> &policy,
        InputIt                    first,
        InputIt                    last,
@@ -92,7 +94,7 @@ template <class Derived,
           class StencilIt,
           class OutputIt,
           class Predicate>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy_if(execution_policy<Derived> &policy,
                InputIt                    first,
                InputIt                    last,
@@ -108,7 +110,7 @@ template <class Derived,
           class InputIt,
           class OutputIt,
           class Predicate>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy_if(execution_policy<Derived> &policy,
                InputIt                    first,
                InputIt                    last,
@@ -124,7 +126,7 @@ template <class Derived,
           class InputIt,
           class OutputIt,
           class T>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy(execution_policy<Derived> &policy,
             InputIt                    first,
             InputIt                    last,

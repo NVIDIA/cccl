@@ -32,7 +32,6 @@ int main(int, char**)
                 assert(c[j] == a[j]);
         }
     }
-#if TEST_STD_VER >= 11
     {
         bool a[] = {0, 1, 1, 0, 1, 0, 0};
         const unsigned N = sizeof(a)/sizeof(a[0]);
@@ -45,7 +44,6 @@ int main(int, char**)
                 assert(c[j] == a[j]);
         }
     }
-#endif
 
   return 0;
 }

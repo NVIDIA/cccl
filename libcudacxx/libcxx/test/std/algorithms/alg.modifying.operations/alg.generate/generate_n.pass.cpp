@@ -32,7 +32,7 @@ struct gen_test
 };
 
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
     const size_t N = 5;
     int ib[] = {0, 0, 0, 0, 0, 0}; // one bigger than N
@@ -81,7 +81,7 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

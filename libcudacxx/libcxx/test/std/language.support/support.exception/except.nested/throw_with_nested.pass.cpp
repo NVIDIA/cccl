@@ -38,7 +38,7 @@ public:
     friend bool operator==(const B& x, const B& y) {return x.data_ == y.data_;}
 };
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 struct Final final {};
 #endif
 
@@ -116,7 +116,7 @@ int main(int, char**)
         {
         }
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         try
         {

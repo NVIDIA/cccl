@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
 
@@ -33,9 +35,9 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(
+_CCCL_HOST_DEVICE void shuffle(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, URBG&& g) {
   using thrust::system::detail::generic::shuffle;
@@ -45,7 +47,7 @@ __host__ __device__ void shuffle(
 }
 
 template <typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
                                  URBG&& g) {
   using thrust::system::detail::generic::select_system;
 
@@ -55,10 +57,10 @@ __host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
   return thrust::shuffle(select_system(system), first, last, g);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator,
           typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(
+_CCCL_HOST_DEVICE void shuffle_copy(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, OutputIterator result,
     URBG&& g) {
@@ -69,7 +71,7 @@ __host__ __device__ void shuffle_copy(
 }
 
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
                                       OutputIterator result, URBG&& g) {
   using thrust::system::detail::generic::select_system;
 

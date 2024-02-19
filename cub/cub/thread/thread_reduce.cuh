@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -66,7 +68,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
     AccumT retval = prefix;
@@ -106,7 +108,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
 {
     return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
@@ -132,7 +134,7 @@ __device__ __forceinline__ AccumT ThreadReduce(T *input, ReductionOp reduction_o
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-__device__ __forceinline__ T ThreadReduce(T *input, ReductionOp reduction_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T *input, ReductionOp reduction_op)
 {
     T prefix = input[0];
     return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
@@ -166,7 +168,7 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-__device__ __forceinline__ AccumT ThreadReduce(T (&input)[LENGTH],
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH],
                                                ReductionOp reduction_op,
                                                PrefixT prefix)
 {
@@ -193,7 +195,7 @@ __device__ __forceinline__ AccumT ThreadReduce(T (&input)[LENGTH],
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-__device__ __forceinline__ T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
 {
     return ThreadReduce<LENGTH>((T*) input, reduction_op);
 }

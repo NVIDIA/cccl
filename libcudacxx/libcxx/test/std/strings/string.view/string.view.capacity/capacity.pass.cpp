@@ -22,7 +22,7 @@
 
 template<typename SV>
 void test1 () {
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr SV sv1;
     static_assert ( sv1.size() == 0, "" );
@@ -54,7 +54,7 @@ void test2 ( const CharT *s, size_t len ) {
     assert ( sv1.empty() == (len == 0));
     assert ( sv1.size() == sv1.length());
     assert ( sv1.max_size() > sv1.size());
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 //  make sure we pick up std::size, too!
     assert ( sv1.size() == std::size(sv1));
     assert ( sv1.empty() == std::empty(sv1));
@@ -88,7 +88,6 @@ int main(int, char**) {
     test2 ( u8"", 0 );
 #endif
 
-#if TEST_STD_VER >= 11
     test2 ( u"ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE", 105 );
     test2 ( u"ABCDE", 5 );
     test2 ( u"a", 1 );
@@ -98,7 +97,6 @@ int main(int, char**) {
     test2 ( U"ABCDE", 5 );
     test2 ( U"a", 1 );
     test2 ( U"", 0 );
-#endif
 
   return 0;
 }

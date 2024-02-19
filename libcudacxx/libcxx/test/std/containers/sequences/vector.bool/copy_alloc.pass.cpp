@@ -47,7 +47,6 @@ int main(int, char**)
         assert(l2 == l);
         assert(l2.get_allocator() == other_allocator<bool>(3));
     }
-#if TEST_STD_VER >= 11
     {
         bool a[] = {0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0};
         bool* an = a + sizeof(a)/sizeof(a[0]);
@@ -59,7 +58,6 @@ int main(int, char**)
         assert(l2 == l);
         assert(l2.get_allocator() == min_allocator<bool>());
     }
-#endif
 
   return 0;
 }

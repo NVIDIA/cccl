@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/contiguous_storage.h>
 #include <thrust/detail/swap.h>
 #include <thrust/detail/allocator/allocator_traits.h>
@@ -50,9 +52,9 @@ public:
   }
 };
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc>
     ::contiguous_storage(const Alloc &alloc)
       :m_allocator(alloc),
@@ -62,9 +64,9 @@ __host__ __device__
   ;
 } // end contiguous_storage::contiguous_storage()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc>
     ::contiguous_storage(size_type n, const Alloc &alloc)
       :m_allocator(alloc),
@@ -75,7 +77,7 @@ __host__ __device__
 } // end contiguous_storage::contiguous_storage()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc>
     ::contiguous_storage(copy_allocator_t,
         const contiguous_storage &other)
@@ -86,7 +88,7 @@ __host__ __device__
 } // end contiguous_storage::contiguous_storage()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc>
     ::contiguous_storage(copy_allocator_t,
         const contiguous_storage &other, size_type n)
@@ -97,9 +99,9 @@ __host__ __device__
   allocate(n);
 } // end contiguous_storage::contiguous_storage()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc>
     ::~contiguous_storage()
 {
@@ -107,7 +109,7 @@ __host__ __device__
 } // end contiguous_storage::~contiguous_storage()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::size_type
     contiguous_storage<T,Alloc>
       ::size() const
@@ -116,7 +118,7 @@ __host__ __device__
 } // end contiguous_storage::size()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::size_type
     contiguous_storage<T,Alloc>
       ::max_size() const
@@ -125,7 +127,7 @@ __host__ __device__
 } // end contiguous_storage::max_size()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::iterator
     contiguous_storage<T,Alloc>
       ::begin()
@@ -134,7 +136,7 @@ __host__ __device__
 } // end contiguous_storage::begin()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::const_iterator
     contiguous_storage<T,Alloc>
       ::begin() const
@@ -143,7 +145,7 @@ __host__ __device__
 } // end contiguous_storage::begin()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::iterator
     contiguous_storage<T,Alloc>
       ::end()
@@ -152,7 +154,7 @@ __host__ __device__
 } // end contiguous_storage::end()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::const_iterator
     contiguous_storage<T,Alloc>
       ::end() const
@@ -161,7 +163,7 @@ __host__ __device__
 } // end contiguous_storage::end()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::pointer
     contiguous_storage<T,Alloc>
       ::data()
@@ -170,7 +172,7 @@ __host__ __device__
 } // end contiguous_storage::data()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::const_pointer
     contiguous_storage<T,Alloc>
       ::data() const
@@ -179,7 +181,7 @@ __host__ __device__
 } // end contiguous_storage::data()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::reference
     contiguous_storage<T,Alloc>
       ::operator[](size_type n)
@@ -188,7 +190,7 @@ __host__ __device__
 } // end contiguous_storage::operator[]()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::const_reference
     contiguous_storage<T,Alloc>
       ::operator[](size_type n) const
@@ -196,9 +198,9 @@ __host__ __device__
   return m_begin[n];
 } // end contiguous_storage::operator[]()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename contiguous_storage<T,Alloc>::allocator_type
     contiguous_storage<T,Alloc>
       ::get_allocator() const
@@ -207,7 +209,7 @@ __host__ __device__
 } // end contiguous_storage::get_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::allocate(size_type n)
 {
@@ -224,7 +226,7 @@ __host__ __device__
 } // end contiguous_storage::allocate()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::deallocate()
 {
@@ -237,7 +239,7 @@ __host__ __device__
 } // end contiguous_storage::deallocate()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::swap(contiguous_storage &x)
 {
@@ -255,7 +257,7 @@ __host__ __device__
 } // end contiguous_storage::swap()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::default_construct_n(iterator first, size_type n)
 {
@@ -263,7 +265,7 @@ __host__ __device__
 } // end contiguous_storage::default_construct_n()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::uninitialized_fill_n(iterator first, size_type n, const value_type &x)
 {
@@ -272,7 +274,7 @@ __host__ __device__
 
 template<typename T, typename Alloc>
   template<typename System, typename InputIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename contiguous_storage<T,Alloc>::iterator
       contiguous_storage<T,Alloc>
         ::uninitialized_copy(thrust::execution_policy<System> &from_system, InputIterator first, InputIterator last, iterator result)
@@ -282,7 +284,7 @@ template<typename T, typename Alloc>
 
 template<typename T, typename Alloc>
   template<typename InputIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename contiguous_storage<T,Alloc>::iterator
       contiguous_storage<T,Alloc>
         ::uninitialized_copy(InputIterator first, InputIterator last, iterator result)
@@ -295,7 +297,7 @@ template<typename T, typename Alloc>
 
 template<typename T, typename Alloc>
   template<typename System, typename InputIterator, typename Size>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename contiguous_storage<T,Alloc>::iterator
       contiguous_storage<T,Alloc>
         ::uninitialized_copy_n(thrust::execution_policy<System> &from_system, InputIterator first, Size n, iterator result)
@@ -305,7 +307,7 @@ template<typename T, typename Alloc>
 
 template<typename T, typename Alloc>
   template<typename InputIterator, typename Size>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename contiguous_storage<T,Alloc>::iterator
       contiguous_storage<T,Alloc>
         ::uninitialized_copy_n(InputIterator first, Size n, iterator result)
@@ -317,7 +319,7 @@ template<typename T, typename Alloc>
 } // end contiguous_storage::uninitialized_copy_n()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::destroy(iterator first, iterator last)
 {
@@ -325,7 +327,7 @@ __host__ __device__
 } // end contiguous_storage::destroy()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::deallocate_on_allocator_mismatch(const contiguous_storage &other)
 {
@@ -338,7 +340,7 @@ __host__ __device__
 } // end contiguous_storage::deallocate_on_allocator_mismatch
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::destroy_on_allocator_mismatch(const contiguous_storage &other,
         iterator first, iterator last)
@@ -351,9 +353,9 @@ __host__ __device__
   destroy_on_allocator_mismatch_dispatch(c, other, first, last);
 } // end contiguous_storage::destroy_on_allocator_mismatch
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::set_allocator(const Alloc &alloc)
 {
@@ -361,7 +363,7 @@ __host__ __device__
 } // end contiguous_storage::set_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool contiguous_storage<T,Alloc>
     ::is_allocator_not_equal(const Alloc &alloc) const
 {
@@ -374,7 +376,7 @@ __host__ __device__
 } // end contiguous_storage::is_allocator_not_equal()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool contiguous_storage<T,Alloc>
     ::is_allocator_not_equal(const contiguous_storage<T,Alloc> &other) const
 {
@@ -382,7 +384,7 @@ __host__ __device__
 } // end contiguous_storage::is_allocator_not_equal()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator(const contiguous_storage &other)
 {
@@ -395,7 +397,7 @@ __host__ __device__
 } // end contiguous_storage::propagate_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator(contiguous_storage &other)
 {
@@ -408,7 +410,7 @@ __host__ __device__
 } // end contiguous_storage::propagate_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   contiguous_storage<T,Alloc> &contiguous_storage<T,Alloc>
     ::operator=(contiguous_storage &&other)
 {
@@ -427,14 +429,14 @@ __host__ __device__
 } // end contiguous_storage::propagate_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::swap_allocators(true_type, const Alloc &)
 {
 } // end contiguous_storage::swap_allocators()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::swap_allocators(false_type, Alloc &other)
 {
@@ -452,25 +454,25 @@ __host__ __device__
 } // end contiguous_storage::swap_allocators()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool contiguous_storage<T,Alloc>
     ::is_allocator_not_equal_dispatch(true_type /*is_always_equal*/, const Alloc &) const
 {
   return false;
 } // end contiguous_storage::is_allocator_not_equal_dispatch()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool contiguous_storage<T,Alloc>
     ::is_allocator_not_equal_dispatch(false_type /*!is_always_equal*/, const Alloc& other) const
 {
   return m_allocator != other;
 } // end contiguous_storage::is_allocator_not_equal_dispatch()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::deallocate_on_allocator_mismatch_dispatch(true_type, const contiguous_storage &other)
 {
@@ -481,15 +483,15 @@ __host__ __device__
 } // end contiguous_storage::deallocate_on_allocator_mismatch()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::deallocate_on_allocator_mismatch_dispatch(false_type, const contiguous_storage &)
 {
 } // end contiguous_storage::deallocate_on_allocator_mismatch()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::destroy_on_allocator_mismatch_dispatch(true_type, const contiguous_storage &other,
         iterator first, iterator last)
@@ -501,16 +503,16 @@ __host__ __device__
 } // end contiguous_storage::destroy_on_allocator_mismatch()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::destroy_on_allocator_mismatch_dispatch(false_type, const contiguous_storage &,
         iterator, iterator)
 {
 } // end contiguous_storage::destroy_on_allocator_mismatch()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator_dispatch(true_type, const contiguous_storage &other)
 {
@@ -518,7 +520,7 @@ __host__ __device__
 } // end contiguous_storage::propagate_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator_dispatch(false_type, const contiguous_storage &)
 {
@@ -526,7 +528,7 @@ __host__ __device__
 
 __thrust_exec_check_disable__
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator_dispatch(true_type, contiguous_storage &other)
 {
@@ -534,7 +536,7 @@ __host__ __device__
 } // end contiguous_storage::propagate_allocator()
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
     ::propagate_allocator_dispatch(false_type, contiguous_storage &)
 {
@@ -543,7 +545,7 @@ __host__ __device__
 } // end detail
 
 template<typename T, typename Alloc>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void swap(detail::contiguous_storage<T,Alloc> &lhs, detail::contiguous_storage<T,Alloc> &rhs)
 {
   lhs.swap(rhs);

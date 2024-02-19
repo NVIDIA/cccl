@@ -30,8 +30,6 @@
 #include <cub/util_ptx.cuh>
 
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/iterator/transform_output_iterator.h>
@@ -44,9 +42,12 @@
 #include <limits>
 #include <numeric>
 #include <random>
+#include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
+#include "c2h/vector.cuh"
 #include "test_util.h"
 
 /**
@@ -77,35 +78,35 @@ void GenerateRandomData(
  * sequence of input-ranges.
  */
 template <typename RangeOffsetT, typename ByteOffsetT, typename RangeSizeT>
-std::vector<ByteOffsetT> GetShuffledRangeOffsets(const std::vector<RangeSizeT> &range_sizes,
+c2h::host_vector<ByteOffsetT> GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT> &range_sizes,
                                                  const std::uint_fast32_t seed = 320981U)
 {
   RangeOffsetT num_ranges = static_cast<RangeOffsetT>(range_sizes.size());
 
   // We're remapping the i-th range to pmt_idxs[i]
   std::mt19937 rng(seed);
-  std::vector<RangeOffsetT> pmt_idxs(num_ranges);
+  c2h::host_vector<RangeOffsetT> pmt_idxs(num_ranges);
   std::iota(pmt_idxs.begin(), pmt_idxs.end(), static_cast<RangeOffsetT>(0));
   std::shuffle(std::begin(pmt_idxs), std::end(pmt_idxs), rng);
 
   // Compute the offsets using the new mapping
   ByteOffsetT running_offset = {};
-  std::vector<ByteOffsetT> permuted_offsets;
+  c2h::host_vector<ByteOffsetT> permuted_offsets;
   permuted_offsets.reserve(num_ranges);
   for (auto permuted_range_idx : pmt_idxs)
   {
-    permuted_offsets.emplace_back(running_offset);
+    permuted_offsets.push_back(running_offset);
     running_offset += range_sizes[permuted_range_idx];
   }
 
   // Generate the scatter indexes that identify where each range was mapped to
-  std::vector<RangeOffsetT> scatter_idxs(num_ranges);
+  c2h::host_vector<RangeOffsetT> scatter_idxs(num_ranges);
   for (RangeOffsetT i = 0; i < num_ranges; i++)
   {
     scatter_idxs[pmt_idxs[i]] = i;
   }
 
-  std::vector<ByteOffsetT> new_offsets(num_ranges);
+  c2h::host_vector<ByteOffsetT> new_offsets(num_ranges);
   for (RangeOffsetT i = 0; i < num_ranges; i++)
   {
     new_offsets[i] = permuted_offsets[scatter_idxs[i]];
@@ -185,6 +186,19 @@ enum class TestDataGen
   CONSECUTIVE
 };
 
+std::string TestDataGenToString(TestDataGen gen)
+{
+  switch (gen)
+  {
+    case TestDataGen::RANDOM:
+      return "TestDataGen::RANDOM";
+    case TestDataGen::CONSECUTIVE:
+      return "TestDataGen::CONSECUTIVE";
+    default:
+      return "Unknown";
+  }
+}
+
 /**
  * @brief
  *
@@ -199,21 +213,13 @@ void RunTest(RangeOffsetT num_ranges,
              RangeSizeT min_range_size,
              RangeSizeT max_range_size,
              TestDataGen output_gen)
+try
 {
-  using SrcPtrT = AtomicT *;
-
   // Range segment data (their offsets and sizes)
-  std::vector<RangeSizeT> h_range_sizes(num_ranges);
+  c2h::host_vector<RangeSizeT> h_range_sizes(num_ranges);
   thrust::counting_iterator<RangeOffsetT> iota(0);
   auto d_range_srcs = thrust::make_transform_iterator(iota, RepeatIndex<AtomicT>{});
-  std::vector<ByteOffsetT> h_offsets(num_ranges + 1);
-
-  // Device-side resources
-  AtomicT *d_out            = nullptr;
-  ByteOffsetT *d_offsets    = nullptr;
-  RangeSizeT *d_range_sizes = nullptr;
-  void *d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
+  c2h::host_vector<ByteOffsetT> h_offsets(num_ranges + 1);
 
   // Generate the range sizes
   GenerateRandomData(h_range_sizes.data(), h_range_sizes.size(), min_range_size, max_range_size);
@@ -221,8 +227,6 @@ void RunTest(RangeOffsetT num_ranges,
   // Compute the total bytes to be copied
   std::partial_sum(h_range_sizes.begin(), h_range_sizes.end(), h_offsets.begin() + 1);
   const ByteOffsetT num_total_items = h_offsets.back();
-  const ByteOffsetT num_total_bytes = num_total_items * static_cast<ByteOffsetT>(sizeof(AtomicT));
-
   h_offsets.pop_back();
 
   constexpr int32_t shuffle_seed = 123241;
@@ -233,101 +237,66 @@ void RunTest(RangeOffsetT num_ranges,
     h_offsets = GetShuffledRangeOffsets<RangeOffsetT, ByteOffsetT>(h_range_sizes, shuffle_seed);
   }
 
-  // Initialize d_range_dsts
-  OffsetToIteratorOp<AtomicT *> dst_transform_op{d_out};
-  auto d_range_dsts = thrust::make_transform_iterator(d_offsets, dst_transform_op);
-
-  // Get temporary storage requirements
-  CubDebugExit(cub::DeviceCopy::Batched(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_range_srcs,
-                                        d_range_dsts,
-                                        d_range_sizes,
-                                        num_ranges));
-
-  // Check if there's sufficient device memory to run this test
-  std::size_t total_required_mem = num_total_bytes +                         //
-                                   (num_ranges * sizeof(d_offsets[0])) +     //
-                                   (num_ranges * sizeof(d_range_sizes[0])) + //
-                                   temp_storage_bytes;                       //
-  if (TotalGlobalMem() < total_required_mem)
-  {
-    std::cout
-      << "Skipping the test due to insufficient device memory\n"                                  //
-      << " - Required: " << total_required_mem << " B, available: " << TotalGlobalMem() << " B\n" //
-      << " - Skipped test instance: "                                                             //
-      << " -> Min. range size: " << min_range_size << ", max. range size: " << max_range_size     //
-      << ", num_ranges: " << num_ranges                                                           //
-      << ", out_gen: " << ((output_gen == TestDataGen::RANDOM) ? "SHFL" : "CONSECUTIVE");
-    return;
-  }
-
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
-
-  // Allocate device memory
-  CubDebugExit(cudaMalloc(&d_out, num_total_bytes));
-  CubDebugExit(cudaMalloc(&d_offsets, num_ranges * sizeof(d_offsets[0])));
-  CubDebugExit(cudaMalloc(&d_range_sizes, num_ranges * sizeof(d_range_sizes[0])));
-  CubDebugExit(cudaMalloc(&d_temp_storage, temp_storage_bytes));
-
-  std::unique_ptr<AtomicT[]> h_out(new AtomicT[num_total_items]);
-  std::unique_ptr<AtomicT[]> h_gpu_results(new AtomicT[num_total_items]);
+  // Device-side resources
+  c2h::device_vector<AtomicT> d_out(num_total_items);
+  c2h::device_vector<ByteOffsetT> d_offsets(h_offsets);
+  c2h::device_vector<RangeSizeT> d_range_sizes(h_range_sizes);
 
   // Prepare d_range_dsts
-  dst_transform_op.base_it = d_out;
-  d_range_dsts             = thrust::make_transform_iterator(d_offsets, dst_transform_op);
+  using AtomicIterT = typename c2h::device_vector<AtomicT>::iterator;
+  OffsetToIteratorOp<AtomicIterT> dst_transform_op{d_out.begin()};
+  auto d_range_dsts = thrust::make_transform_iterator(d_offsets.begin(), dst_transform_op);
 
-  // Prepare d_offsets
-  CubDebugExit(cudaMemcpyAsync(d_offsets,
-                               h_offsets.data(),
-                               h_offsets.size() * sizeof(h_offsets[0]),
-                               cudaMemcpyHostToDevice,
-                               stream));
-
-  // Prepare d_range_sizes
-  CubDebugExit(cudaMemcpyAsync(d_range_sizes,
-                               h_range_sizes.data(),
-                               h_range_sizes.size() * sizeof(h_range_sizes[0]),
-                               cudaMemcpyHostToDevice,
-                               stream));
-
-  // Invoke device-side algorithm being under test
-  CubDebugExit(cub::DeviceCopy::Batched(d_temp_storage,
+  // Get temporary storage requirements
+  size_t temp_storage_bytes = 0;
+  CubDebugExit(cub::DeviceCopy::Batched(nullptr,
                                         temp_storage_bytes,
                                         d_range_srcs,
                                         d_range_dsts,
-                                        d_range_sizes,
-                                        num_ranges,
-                                        stream));
+                                        d_range_sizes.cbegin(),
+                                        num_ranges));
+
+  c2h::device_vector<std::uint8_t> d_temp_storage(temp_storage_bytes);
+
+
+  c2h::host_vector<AtomicT> h_out(num_total_items);
+  c2h::host_vector<AtomicT> h_gpu_results(num_total_items);
+
+  // Invoke device-side algorithm being under test
+  CubDebugExit(cub::DeviceCopy::Batched(thrust::raw_pointer_cast(d_temp_storage.data()),
+                                        temp_storage_bytes,
+                                        d_range_srcs,
+                                        d_range_dsts,
+                                        d_range_sizes.cbegin(),
+                                        num_ranges));
 
   // Copy back the output range
-  CubDebugExit(
-    cudaMemcpyAsync(h_gpu_results.get(), d_out, num_total_bytes, cudaMemcpyDeviceToHost, stream));
-
-  // Make sure results have been copied back to the host
-  CubDebugExit(cudaStreamSynchronize(stream));
+  h_gpu_results = d_out;
 
   // CPU-side result generation for verification
   for (RangeOffsetT i = 0; i < num_ranges; i++)
   {
-    std::copy(d_range_srcs[i], d_range_srcs[i] + h_range_sizes[i], h_out.get() + h_offsets[i]);
+    std::copy(d_range_srcs[i], d_range_srcs[i] + h_range_sizes[i], h_out.begin() + h_offsets[i]);
   }
 
   const auto it_pair =
-    std::mismatch(h_gpu_results.get(), h_gpu_results.get() + num_total_items, h_out.get());
+    std::mismatch(h_gpu_results.cbegin(), h_gpu_results.cend(), h_out.cbegin());
 
-  if (it_pair.first != h_gpu_results.get() + num_total_items)
+  if (it_pair.first != h_gpu_results.cend())
   {
-    std::cout << "Mismatch at index " << it_pair.first - h_gpu_results.get()
+    std::cout << "Mismatch at index " << std::distance(h_gpu_results.cbegin(), it_pair.first)
               << ", CPU vs. GPU: " << *it_pair.second << ", " << *it_pair.first << "\n";
   }
-  AssertEquals(it_pair.first, h_gpu_results.get() + num_total_items);
-
-  CubDebugExit(cudaFree(d_out));
-  CubDebugExit(cudaFree(d_offsets));
-  CubDebugExit(cudaFree(d_range_sizes));
-  CubDebugExit(cudaFree(d_temp_storage));
+  AssertEquals(it_pair.first, h_gpu_results.cend());
+}
+catch (std::bad_alloc &e)
+{
+  std::cout << "Skipping test 'RunTest("
+            << num_ranges << ", "
+            << min_range_size << ", "
+            << max_range_size << ", "
+            << TestDataGenToString(output_gen) << ")"
+            << "' due to insufficient memory: " << e.what() << "\n";
 }
 
 struct object_with_non_trivial_ctor
@@ -363,14 +332,14 @@ struct object_with_non_trivial_ctor
 void nontrivial_constructor_test()
 {
   constexpr int num_buffers = 3;
-  thrust::device_vector<object_with_non_trivial_ctor> a(num_buffers,
-                                                        object_with_non_trivial_ctor(99));
-  thrust::device_vector<object_with_non_trivial_ctor> b(num_buffers);
-  using iterator = thrust::device_vector<object_with_non_trivial_ctor>::iterator;
+  c2h::device_vector<object_with_non_trivial_ctor> a(num_buffers,
+                                                     object_with_non_trivial_ctor(99));
+  c2h::device_vector<object_with_non_trivial_ctor> b(num_buffers);
+  using iterator = c2h::device_vector<object_with_non_trivial_ctor>::iterator;
 
-  thrust::device_vector<iterator> a_iter{a.begin(), a.begin() + 1, a.begin() + 2};
+  c2h::device_vector<iterator> a_iter{a.begin(), a.begin() + 1, a.begin() + 2};
 
-  thrust::device_vector<iterator> b_iter{b.begin(), b.begin() + 1, b.begin() + 2};
+  c2h::device_vector<iterator> b_iter{b.begin(), b.begin() + 1, b.begin() + 2};
 
   auto sizes = thrust::make_constant_iterator(1);
 
@@ -384,7 +353,7 @@ void nontrivial_constructor_test()
                            sizes,
                            num_buffers);
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cub::DeviceCopy::Batched(d_temp_storage,
@@ -436,15 +405,15 @@ int main(int argc, char **argv)
   constexpr std::size_t num_rnd_range_tests = 32;
 
   // Each range's size will be random within this interval
-  std::vector<std::pair<std::size_t, std::size_t>> size_ranges = {{0, 1},
-                                                                  {1, 2},
-                                                                  {0, 16},
-                                                                  {1, 32},
-                                                                  {1, 1024},
-                                                                  {1, 32 * 1024},
-                                                                  {128 * 1024, 256 * 1024},
-                                                                  {target_copy_size,
-                                                                   target_copy_size}};
+  c2h::host_vector<std::pair<std::size_t, std::size_t>> size_ranges = {{0, 1},
+                                                                       {1, 2},
+                                                                       {0, 16},
+                                                                       {1, 32},
+                                                                       {1, 1024},
+                                                                       {1, 32 * 1024},
+                                                                       {128 * 1024, 256 * 1024},
+                                                                       {target_copy_size,
+                                                                        target_copy_size}};
 
   std::mt19937 rng(0);
   std::uniform_int_distribution<std::size_t> size_dist(1, 1000000);

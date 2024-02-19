@@ -37,11 +37,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_exchange.cuh>
 #include <cub/block/block_load.cuh>
@@ -131,7 +133,7 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
 
 
 /**
- * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in 
+ * @brief AgentRadixSortDownsweep implements a stateful abstraction of CUDA thread blocks for participating in
  *        device-wide radix sort downsweep .
  *
  * @tparam AgentRadixSortDownsweepPolicy
@@ -268,7 +270,7 @@ struct AgentRadixSortDownsweep
     // Utility methods
     //---------------------------------------------------------------------
 
-    __device__ __forceinline__ digit_extractor_t digit_extractor()
+    _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
     {
         return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit,
                                                                                num_bits,
@@ -279,7 +281,7 @@ struct AgentRadixSortDownsweep
      * Scatter ranked keys through shared memory, then to device-accessible memory
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ void ScatterKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeys(
         bit_ordered_type (&twiddled_keys)[ITEMS_PER_THREAD],
         OffsetT          (&relative_bin_offsets)[ITEMS_PER_THREAD],
         int              (&ranks)[ITEMS_PER_THREAD],
@@ -315,7 +317,7 @@ struct AgentRadixSortDownsweep
      * Scatter ranked values through shared memory, then to device-accessible memory
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ void ScatterValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValues(
         ValueT      (&values)[ITEMS_PER_THREAD],
         OffsetT     (&relative_bin_offsets)[ITEMS_PER_THREAD],
         int         (&ranks)[ITEMS_PER_THREAD],
@@ -349,7 +351,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of keys (specialized for full tile, block load)
      */
-    __device__ __forceinline__ void LoadKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
         bit_ordered_type            (&keys)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -367,7 +369,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of keys (specialized for partial tile, block load)
      */
-    __device__ __forceinline__ void LoadKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
         bit_ordered_type            (&keys)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -389,7 +391,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of keys (specialized for full tile, warp-striped load)
      */
-    __device__ __forceinline__ void LoadKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
         bit_ordered_type            (&keys)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -403,7 +405,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of keys (specialized for partial tile, warp-striped load)
      */
-    __device__ __forceinline__ void LoadKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadKeys(
         bit_ordered_type            (&keys)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -421,7 +423,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of values (specialized for full tile, block load)
      */
-    __device__ __forceinline__ void LoadValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
         ValueT                      (&values)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -438,7 +440,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of values (specialized for partial tile, block load)
      */
-    __device__ __forceinline__ void LoadValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
         ValueT                      (&values)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -459,7 +461,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of items (specialized for full tile, warp-striped load)
      */
-    __device__ __forceinline__ void LoadValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
         ValueT                      (&values)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -472,7 +474,7 @@ struct AgentRadixSortDownsweep
     /**
      * Load a tile of items (specialized for partial tile, warp-striped load)
      */
-    __device__ __forceinline__ void LoadValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void LoadValues(
         ValueT                      (&values)[ITEMS_PER_THREAD],
         OffsetT                     block_offset,
         OffsetT                     valid_items,
@@ -490,7 +492,7 @@ struct AgentRadixSortDownsweep
      * Truck along associated values
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ void GatherScatterValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
         OffsetT         (&relative_bin_offsets)[ITEMS_PER_THREAD],
         int             (&ranks)[ITEMS_PER_THREAD],
         OffsetT         block_offset,
@@ -520,7 +522,7 @@ struct AgentRadixSortDownsweep
      * Truck along associated values (specialized for key-only sorting)
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ void GatherScatterValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void GatherScatterValues(
         OffsetT         (&/*relative_bin_offsets*/)[ITEMS_PER_THREAD],
         int             (&/*ranks*/)[ITEMS_PER_THREAD],
         OffsetT         /*block_offset*/,
@@ -533,7 +535,7 @@ struct AgentRadixSortDownsweep
      * Process tile
      */
     template <bool FULL_TILE>
-    __device__ __forceinline__ void ProcessTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessTile(
         OffsetT block_offset,
         const OffsetT &valid_items = TILE_ITEMS)
     {
@@ -646,7 +648,7 @@ struct AgentRadixSortDownsweep
     template <
         typename InputIteratorT,
         typename T>
-    __device__ __forceinline__ void Copy(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Copy(
         InputIteratorT  d_in,
         T               *d_out,
         OffsetT         block_offset,
@@ -682,7 +684,7 @@ struct AgentRadixSortDownsweep
      * Copy tiles within the range of input (specialized for NullType)
      */
     template <typename InputIteratorT>
-    __device__ __forceinline__ void Copy(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Copy(
         InputIteratorT  /*d_in*/,
         NullType        * /*d_out*/,
         OffsetT         /*block_offset*/,
@@ -697,7 +699,7 @@ struct AgentRadixSortDownsweep
     /**
      * Constructor
      */
-    __device__ __forceinline__ AgentRadixSortDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
         TempStorage     &temp_storage,
         OffsetT         (&bin_offset)[BINS_TRACKED_PER_THREAD],
         OffsetT         num_items,
@@ -739,7 +741,7 @@ struct AgentRadixSortDownsweep
     /**
      * Constructor
      */
-    __device__ __forceinline__ AgentRadixSortDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortDownsweep(
         TempStorage     &temp_storage,
         OffsetT         num_items,
         OffsetT         *d_spine,
@@ -788,7 +790,7 @@ struct AgentRadixSortDownsweep
     /**
      * Distribute keys from a segment of input tiles.
      */
-    __device__ __forceinline__ void ProcessRegion(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(
         OffsetT   block_offset,
         OffsetT   block_end)
     {

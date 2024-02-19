@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
@@ -61,12 +63,12 @@ struct complex : public ::cuda::std::complex<T>
 
   complex() = default;
 
-  __host__ __device__ complex(const base& rhs) : base(rhs) {}
-  __host__ __device__ complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
+  _CCCL_HOST_DEVICE complex(const base& rhs) : base(rhs) {}
+  _CCCL_HOST_DEVICE complex(base&& rhs) : base(::cuda::std::move(rhs)) {}
 
   template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
                      typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
    complex &operator=(const complex<U> &rhs)
   {
     this->real(static_cast<T>(rhs.real()));
@@ -77,7 +79,7 @@ struct complex : public ::cuda::std::complex<T>
 
   template <class U, typename = typename detail::enable_if<!detail::is_same<T, U>::value>::type,
                      typename = typename detail::enable_if<detail::has_promoted_numerical_type<T, U>::value>::type>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   complex &operator=(const U &rhs)
   {
     this->operator=(static_cast<T>(rhs));
@@ -86,7 +88,7 @@ struct complex : public ::cuda::std::complex<T>
 
   /*! Cast this \p complex to a <tt>std::complex</tt>
    */
-  __host__ operator ::std::complex<T>() const { return ::std::complex<T>(this->real(), this->imag()); }
+  _CCCL_HOST operator ::std::complex<T>() const { return ::std::complex<T>(this->real(), this->imag()); }
 };
 
 /* --- Equality Operators --- */
@@ -102,7 +104,7 @@ struct complex : public ::cuda::std::complex<T>
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator==(const complex<T0> &x, const complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
@@ -118,7 +120,7 @@ __host__ __device__ bool operator==(const complex<T0> &x, const complex<T1> &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator==(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
@@ -134,7 +136,7 @@ __host__ __device__ bool operator==(const complex<T0> &x, const ::cuda::std::com
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator==(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
 {
   return x.real() == y.real() && x.imag() == y.imag();
 }
@@ -151,7 +153,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator==(const T0 &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator==(const T0 &x, const complex<T1> &y)
 {
   return x == y.real() && T0() == y.imag();
 }
@@ -168,7 +170,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
+_CCCL_HOST_DEVICE bool operator==(const complex<T0> &x, const T1 &y)
 {
   return x.real() == y && x.imag() == T1();
 }
@@ -184,7 +186,7 @@ __host__ __device__ bool operator==(const complex<T0> &x, const T1 &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator!=(const complex<T0> &x, const complex<T1> &y)
 {
   return !(x == y);
 }
@@ -200,7 +202,7 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const complex<T1> &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator!=(const complex<T0> &x, const ::cuda::std::complex<T1> &y)
 {
   return !(x == y);
 }
@@ -216,7 +218,7 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const ::cuda::std::com
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>>
-__host__ __device__ bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator!=(const ::cuda::std::complex<T0> &x, const complex<T1> &y)
 {
   return !(x == y);
 }
@@ -233,7 +235,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ bool operator!=(const T0 &x, const complex<T1> &y)
+_CCCL_HOST_DEVICE bool operator!=(const T0 &x, const complex<T1> &y)
 {
   return !(x == y);
 }
@@ -250,7 +252,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
+_CCCL_HOST_DEVICE bool operator!=(const complex<T0> &x, const T1 &y)
 {
   return !(x == y);
 }
@@ -270,7 +272,7 @@ __host__ __device__ bool operator!=(const complex<T0> &x, const T1 &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -291,7 +293,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -312,7 +314,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator+(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -334,7 +336,7 @@ operator+(const T0 &x, const complex<T1> &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -355,7 +357,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -376,7 +378,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator-(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -388,7 +390,7 @@ operator-(const T0 &x, const complex<T1> &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -400,7 +402,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -412,7 +414,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator*(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -425,7 +427,7 @@ operator*(const T0 &x, const complex<T1> &y)
 template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const complex<T0> &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -437,7 +439,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T1>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const complex<T0> &x, const T1 &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -449,7 +451,7 @@ template <typename T0,
           typename T1,
           typename = typename detail::enable_if<!detail::is_same<T0, T1>::value>::type,
           typename = typename detail::enable_if<detail::is_arithmetic<T0>::value>::type>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
 operator/(const T0 &x, const complex<T1> &y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -459,17 +461,21 @@ operator/(const T0 &x, const complex<T1> &y)
 
 // The using declarations allows imports all necessary functions for thurst::complex.
 // However, they also lead to thrust::abs(1.0F) being valid code after include <thurst/complex.h>.
+// We are importing those for the plain value taking overloads and specialize for those taking
+// or returning a `thrust::complex` below
 using ::cuda::std::abs;
 using ::cuda::std::arg;
 using ::cuda::std::conj;
 using ::cuda::std::norm;
-using ::cuda::std::polar;
+// polar only takes a T but returns a complex<T> so we cannot pull that one in.
+// using ::cuda::std::polar;
 using ::cuda::std::proj;
 
 using ::cuda::std::exp;
 using ::cuda::std::log;
 using ::cuda::std::log10;
-using ::cuda::std::pow;
+// pow always returns a complex.
+// using ::cuda::std::pow;
 using ::cuda::std::sqrt;
 
 using ::cuda::std::acos;
@@ -484,6 +490,100 @@ using ::cuda::std::sin;
 using ::cuda::std::sinh;
 using ::cuda::std::tan;
 using ::cuda::std::tanh;
+
+// Those functions return `cuda::std::complex<T>` so we must provide an explicit overload that returns `thrust::complex<T>`
+template<class T>
+_CCCL_HOST_DEVICE complex<T> conj(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::conj(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> polar(const T& rho, const T& theta = T{}) {
+  return static_cast<complex<T>>(::cuda::std::polar(rho, theta));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> proj(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::proj(c));
+}
+
+template<class T>
+_CCCL_HOST_DEVICE complex<T> exp(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::exp(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> log(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::log(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> log10(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::log10(c));
+}
+template<class T0, class T1>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const complex<T1>& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
+}
+template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T1>::value, int> = 0>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const complex<T0>& x, const T1& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
+}
+template<class T0, class T1, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<T0>::value, int> = 0>
+_CCCL_HOST_DEVICE complex<typename detail::promoted_numerical_type<T0, T1>::type>
+pow(const T0& x, const complex<T1>& y) {
+  return static_cast<complex<typename detail::promoted_numerical_type<T0, T1>::type>>(::cuda::std::pow(x, y));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> sqrt(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sqrt(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> acos(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::acos(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> acosh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::acosh(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> asin(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::asin(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> asinh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::asinh(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> atan(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::atan(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> atanh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::atanh(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> cos(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::cos(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> cosh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::cosh(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> sin(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sin(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> sinh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::sinh(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> tan(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::tan(c));
+}
+template<class T>
+_CCCL_HOST_DEVICE complex<T> tanh(const complex<T>& c) {
+  return static_cast<complex<T>>(::cuda::std::tanh(c));
+}
 
 template <typename T>
 struct proclaim_trivially_relocatable<complex<T>> : thrust::true_type

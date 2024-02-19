@@ -85,14 +85,12 @@ int main(int, char**) {
     typedef std::unordered_map<int, int, std::hash<int>, std::equal_to<int>, Alloc> Map;
     testUnorderedMap<Map, ValueTp, ValueTp*, ValueTp const*>();
   }
-#if TEST_STD_VER >= 11
   {
     typedef std::pair<const int, int> ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::unordered_map<int, int, std::hash<int>, std::equal_to<int>, Alloc> Map;
     testUnorderedMap<Map, ValueTp, min_pointer<ValueTp>, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef std::unordered_multimap<int, int> Map;
     typedef std::pair<const int, int> ValueTp;
@@ -104,14 +102,12 @@ int main(int, char**) {
     typedef std::unordered_multimap<int, int, std::hash<int>, std::equal_to<int>, Alloc> Map;
     testUnorderedMap<Map, ValueTp, ValueTp*, ValueTp const*>();
   }
-#if TEST_STD_VER >= 11
   {
     typedef std::pair<const int, int> ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::unordered_multimap<int, int, std::hash<int>, std::equal_to<int>, Alloc> Map;
     testUnorderedMap<Map, ValueTp, min_pointer<ValueTp>, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef int ValueTp;
     typedef std::unordered_set<ValueTp> Set;
@@ -123,14 +119,12 @@ int main(int, char**) {
     typedef std::unordered_set<ValueTp, std::hash<ValueTp>, std::equal_to<ValueTp>, Alloc> Set;
     testUnorderedSet<Set, ValueTp, ValueTp const*>();
   }
-#if TEST_STD_VER >= 11
   {
     typedef int ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::unordered_set<ValueTp, std::hash<ValueTp>, std::equal_to<ValueTp>, Alloc> Set;
     testUnorderedSet<Set, ValueTp, min_pointer<const ValueTp>>();
   }
-#endif
   {
     typedef int ValueTp;
     typedef std::unordered_multiset<ValueTp> Set;
@@ -142,14 +136,12 @@ int main(int, char**) {
     typedef std::unordered_multiset<ValueTp, std::hash<ValueTp>, std::equal_to<ValueTp>, Alloc> Set;
     testUnorderedSet<Set, ValueTp, ValueTp const*>();
   }
-#if TEST_STD_VER >= 11
   {
     typedef int ValueTp;
     typedef min_allocator<ValueTp> Alloc;
     typedef std::unordered_multiset<ValueTp, std::hash<ValueTp>, std::equal_to<ValueTp>, Alloc> Set;
     testUnorderedSet<Set, ValueTp, min_pointer<const ValueTp>>();
   }
-#endif
 
   return 0;
 }

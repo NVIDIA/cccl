@@ -25,11 +25,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/pair.h>
 #include <thrust/random/uniform_real_distribution.h>
 #include <limits>
@@ -48,7 +50,7 @@ template<typename RealType>
 {
   protected:
     template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     RealType sample(UniformRandomNumberGenerator &urng, const RealType mean, const RealType stddev)
     {
       using uint_type = typename UniformRandomNumberGenerator::result_type;
@@ -78,7 +80,7 @@ template<typename RealType>
     }
 
     // no-op
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void reset() {}
 };
 
@@ -103,7 +105,7 @@ template<typename RealType>
 
     // note that we promise to call this member function with the same mean and stddev
     template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     RealType sample(UniformRandomNumberGenerator &urng, const RealType mean, const RealType stddev)
     {
       // implementation from Boost

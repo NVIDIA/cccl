@@ -59,9 +59,7 @@ int main(int, char**)
     static_assert((std::is_same<std::pointer_traits<C<double> >::difference_type, std::ptrdiff_t>::value), "");
     static_assert((std::is_same<std::pointer_traits<D<int> >::difference_type, char>::value), "");
     static_assert((std::is_same<std::pointer_traits<E<int> >::difference_type, std::ptrdiff_t>::value), "");
-#if TEST_STD_VER >= 11
     static_assert((std::is_same<std::pointer_traits<F<int>>::difference_type, std::ptrdiff_t>::value), "");
-#endif
 
   return 0;
 }

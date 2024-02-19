@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_array.h"
 #include "../__type_traits/is_function.h"
@@ -23,12 +31,6 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
@@ -36,12 +38,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_convertible
     : public integral_constant<bool, _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2);
 #endif
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Ty>
 struct is_convertible<_Ty&, volatile _Ty&> : true_type {};
 
@@ -65,7 +67,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&
 
 template <class _Ty>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #else  // __has_builtin(__is_convertible_to) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
@@ -137,7 +139,7 @@ template <class _T1, class _T2> struct _LIBCUDACXX_TEMPLATE_VIS is_convertible
     static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;
 };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _From, class _To>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 #endif

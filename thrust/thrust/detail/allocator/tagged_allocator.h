@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
@@ -69,34 +71,34 @@ template<typename T, typename Tag, typename Pointer>
       typedef tagged_allocator<U,Tag,Pointer> other;
     }; // end rebind
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline tagged_allocator();
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline tagged_allocator(const tagged_allocator &);
 
     template<typename U, typename OtherPointer>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline tagged_allocator(const tagged_allocator<U, Tag, OtherPointer> &);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline ~tagged_allocator();
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer address(reference x) const;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_pointer address(const_reference x) const;
 
     size_type max_size() const;
 };
 
 template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &);
 
 template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &);
 
 } // end detail

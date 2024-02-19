@@ -14,20 +14,22 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_valid_expansion.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 template<class _Tp, class = void>
 struct __is_primary_template : false_type {};
 
@@ -35,7 +37,7 @@ template<class _Tp>
 struct __is_primary_template<_Tp, void_t<typename _Tp::__primary_template>>
   : public is_same<_Tp, typename _Tp::__primary_template> {};
 
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 
 template <class _Tp>
 using __test_for_primary_template = __enable_if_t<
@@ -45,7 +47,7 @@ template <class _Tp>
 using __is_primary_template = _IsValidExpansion<
     __test_for_primary_template, _Tp
   >;
-#endif // !_LIBCUDACXX_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

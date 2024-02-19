@@ -24,7 +24,7 @@
 
 TEST_CONSTEXPR bool equalToTwo(int v) { return v == 2; }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool test_constexpr() {
           int ia[]       = {0, 1, 2, 3, 4};
     const int expected[] = {0, 1, 5, 3, 4};
@@ -57,7 +57,7 @@ int main(int, char**)
     test<random_access_iterator<int*> >();
     test<int*>();
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

@@ -36,42 +36,41 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking
- *        across thread block data.    ![](raking.png)
- *
- * @ingroup BlockModule
- *
- * @par Overview
- * This type facilitates a shared memory usage pattern where a block of CUDA
- * threads places elements into shared memory and then reduces the active
- * parallelism to one "raking" warp of threads for serially aggregating consecutive
- * sequences of shared items.  Padding is inserted to eliminate bank conflicts
- * (for most data types).
- *
- * @tparam T                        
- *   The data type to be exchanged.
- *
- * @tparam BLOCK_THREADS            
- *   The thread block size in threads.
- *
- * @tparam LEGACY_PTX_ARCH          
- *   <b>[optional]</b> Unused.
- */
-template <
-    typename    T,
-    int         BLOCK_THREADS,
-    int         LEGACY_PTX_ARCH = 0>
+//! @rst
+//! BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.
+//!
+//! Overview
+//! ++++++++++++++++++++++++++
+//!
+//! This type facilitates a shared memory usage pattern where a block of CUDA
+//! threads places elements into shared memory and then reduces the active
+//! parallelism to one "raking" warp of threads for serially aggregating consecutive
+//! sequences of shared items.  Padding is inserted to eliminate bank conflicts
+//! (for most data types).
+//!
+//! @endrst
+//!
+//! @tparam T
+//!   The data type to be exchanged.
+//!
+//! @tparam BLOCK_THREADS
+//!   The thread block size in threads.
+//!
+//! @tparam LEGACY_PTX_ARCH
+//!   **[optional]** Unused.
+template <typename T, int BLOCK_THREADS, int LEGACY_PTX_ARCH = 0>
 struct BlockRakingLayout
 {
     //---------------------------------------------------------------------
@@ -126,7 +125,7 @@ struct BlockRakingLayout
     /**
      * @brief Returns the location for the calling thread to place data into the grid
      */
-    static __device__ __forceinline__ T* PlacementPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {
@@ -147,7 +146,7 @@ struct BlockRakingLayout
     /**
      * @brief Returns the location for the calling thread to begin sequential raking
      */
-    static __device__ __forceinline__ T* RakingPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {

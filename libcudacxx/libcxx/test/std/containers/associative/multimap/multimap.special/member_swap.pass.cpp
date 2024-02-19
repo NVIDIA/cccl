@@ -96,7 +96,6 @@ int main(int, char**)
         assert(m2 == m1_save);
     }
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::multimap<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
     {
@@ -172,7 +171,6 @@ int main(int, char**)
         assert(m2 == m1_save);
     }
     }
-#endif
 
   return 0;
 }

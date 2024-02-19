@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 THRUST_NAMESPACE_BEGIN
 
@@ -38,7 +40,7 @@ template<typename T, T a, T c, T m, bool = (m == 0)>
   static const T q = m / a;
   static const T r = m % a;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   T operator()(T x) const
   {
     THRUST_IF_CONSTEXPR(a == 1)
@@ -81,7 +83,7 @@ template<typename T, T a, T c, T m, bool = (m == 0)>
 template<typename T, T a, T c, T m>
   struct static_mod<T,a,c,m,true>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   T operator()(T x) const
   {
     return a * x + c;
@@ -89,7 +91,7 @@ template<typename T, T a, T c, T m>
 }; // end static_mod
 
 template<typename T, T a, T c, T m>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T mod(T x)
 {
   static_mod<T,a,c,m> f;

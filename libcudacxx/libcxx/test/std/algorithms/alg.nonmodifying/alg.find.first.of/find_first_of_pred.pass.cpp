@@ -21,7 +21,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 constexpr bool test_constexpr() {
     int ia[] = {1, 2, 3};
     int ib[] = {7, 8, 9};
@@ -72,7 +72,7 @@ int main(int, char**)
                               std::equal_to<int>()) ==
                               cpp17_input_iterator<const int*>(ia));
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

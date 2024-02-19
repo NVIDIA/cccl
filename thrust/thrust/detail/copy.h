@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -30,7 +32,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename System,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(const thrust::detail::execution_policy_base<System> &system,
                       InputIterator first,
                       InputIterator last,
@@ -40,7 +42,7 @@ template<typename System,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(const thrust::detail::execution_policy_base<System> &system,
                         InputIterator first,
                         Size n,
@@ -68,7 +70,7 @@ template<typename FromSystem,
          typename ToSystem,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy(const thrust::execution_policy<FromSystem> &from_system,
                                  const thrust::execution_policy<ToSystem>   &two_system,
                                  InputIterator first,
@@ -81,7 +83,7 @@ template<typename FromSystem,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy_n(const thrust::execution_policy<FromSystem> &from_system,
                                    const thrust::execution_policy<ToSystem>   &two_system,
                                    InputIterator first,

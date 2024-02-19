@@ -67,7 +67,6 @@ int main(int, char**)
     test(S("gfsmthlkon"), 'q', 0);
     test(S("laenfsbridchgotmkqpj"), 'q', 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 'q', 0, S::npos);
@@ -98,7 +97,6 @@ int main(int, char**)
     test(S("gfsmthlkon"), 'q', 0);
     test(S("laenfsbridchgotmkqpj"), 'q', 0);
     }
-#endif
 
   return 0;
 }

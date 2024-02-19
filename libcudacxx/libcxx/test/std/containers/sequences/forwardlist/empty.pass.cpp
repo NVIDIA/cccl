@@ -30,7 +30,6 @@ int main(int, char**)
     c.clear();
     assert(c.empty());
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::forward_list<int, min_allocator<int>> C;
     C c;
@@ -41,7 +40,6 @@ int main(int, char**)
     c.clear();
     assert(c.empty());
     }
-#endif
 
   return 0;
 }

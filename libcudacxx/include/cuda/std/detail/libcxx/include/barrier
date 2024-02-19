@@ -44,15 +44,26 @@ namespace std
 */
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#ifndef __cuda_std__
 #ifndef _LIBCUDACXX_HAS_NO_TREE_BARRIER
 #  include <thread>
 #  include <vector>
 #endif
 #else
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef _CCCL_COMPILER_NVRTC
 #include <new>
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -64,12 +75,6 @@ namespace std
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 # error <barrier> is not supported on this single threaded system
@@ -384,11 +389,11 @@ private:
     static _LIBCUDACXX_INLINE_VISIBILITY constexpr
     uint64_t __init(ptrdiff_t __count) noexcept
     {
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
         // This debug assert is not supported in C++11 due to resulting in a
         // multi-statement constexpr function.
         _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "Count must be non-negative.");
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
         return (((1u << 31) - __count) << 32)
               | ((1u << 31) - __count);
     }

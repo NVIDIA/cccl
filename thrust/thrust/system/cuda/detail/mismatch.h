@@ -28,11 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/config.h>
@@ -47,7 +49,7 @@ template <class Derived,
           class InputIt1,
           class InputIt2,
           class BinaryPred>
-pair<InputIt1, InputIt2> __host__ __device__
+pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
 mismatch(execution_policy<Derived>& policy,
          InputIt1                   first1,
          InputIt1                   last1,
@@ -57,7 +59,7 @@ mismatch(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt1,
           class InputIt2>
-pair<InputIt1, InputIt2> __host__ __device__
+pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
 mismatch(execution_policy<Derived>& policy,
          InputIt1                   first1,
          InputIt1                   last1,
@@ -74,7 +76,7 @@ template <class Derived,
           class InputIt1,
           class InputIt2,
           class BinaryPred>
-pair<InputIt1, InputIt2> __host__ __device__
+pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
 mismatch(execution_policy<Derived>& policy,
          InputIt1                   first1,
          InputIt1                   last1,
@@ -101,7 +103,7 @@ mismatch(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt1,
           class InputIt2>
-pair<InputIt1, InputIt2> __host__ __device__
+pair<InputIt1, InputIt2> _CCCL_HOST_DEVICE
 mismatch(execution_policy<Derived>& policy,
          InputIt1                   first1,
          InputIt1                   last1,

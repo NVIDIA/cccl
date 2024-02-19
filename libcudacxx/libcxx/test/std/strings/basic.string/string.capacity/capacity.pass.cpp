@@ -53,13 +53,11 @@ int main(int, char**)
     s.erase(50);
     test(s);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     S s;
     assert(s.capacity() > 0);
     }
-#endif
 
   return 0;
 }

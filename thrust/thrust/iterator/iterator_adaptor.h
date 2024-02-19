@@ -34,11 +34,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>
@@ -148,8 +150,8 @@ template<typename Derived,
 
     /*! This constructor copies from a given instance of the \p Base iterator.
      */
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
     {}
@@ -168,20 +170,20 @@ template<typename Derived,
 
     /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Base const& base() const
     { return m_iterator; }
 
   protected:
     /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Base const& base_reference() const
     { return m_iterator; }
 
     /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Base& base_reference()
     { return m_iterator; }
 
@@ -189,19 +191,19 @@ template<typename Derived,
      */
   private: // Core iterator interface for iterator_facade
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     typename iterator_adaptor::reference dereference() const
     { return *m_iterator; }
 
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template<typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
     { return m_iterator == x.base(); }
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     void advance(typename iterator_adaptor::difference_type n)
     {
       // XXX statically assert on random_access_traversal_tag
@@ -211,22 +213,22 @@ template<typename Derived,
       m_iterator = static_cast<base_type>(m_iterator + n);
     }
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     void increment()
     { ++m_iterator; }
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     void decrement()
     {
       // XXX statically assert on bidirectional_traversal_tag
       --m_iterator;
     }
 
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template<typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename iterator_adaptor::difference_type distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
     { return y.base() - m_iterator; }
 

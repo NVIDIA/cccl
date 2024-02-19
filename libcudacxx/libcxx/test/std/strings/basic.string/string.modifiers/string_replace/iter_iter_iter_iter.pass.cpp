@@ -1056,7 +1056,7 @@ void test() {
   test8<S>();
   test9<S>();
 
-#if 0 // TEST_STD_VER > 17
+#if 0 // TEST_STD_VER > 2017
   static_assert(test0<S>());
   static_assert(test1<S>());
   static_assert(test2<S>());
@@ -1073,9 +1073,7 @@ void test() {
 int main(int, char**)
 {
   test<std::string>();
-#if TEST_STD_VER >= 11
   test<std::basic_string<char, std::char_traits<char>, min_allocator<char>>>();
-#endif
 
   return 0;
 }

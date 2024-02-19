@@ -13,6 +13,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__concepts/invocable.h"
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -60,13 +68,7 @@
 #include "../cstdlib"
 #include "../initializer_list"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -985,12 +987,12 @@ public:
     }
   }
 
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator!=(const expected& __x, const expected& __y) {
     return !(__x == __y);
   }
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 
   _LIBCUDACXX_TEMPLATE(class _T2, class _E2)
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_void, _T2)))
@@ -1007,14 +1009,14 @@ public:
     }
   }
 
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   _LIBCUDACXX_TEMPLATE(class _T2, class _E2)
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_void, _T2)))
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator!=(const expected& __x, const expected<_T2, _E2>& __y) {
     return !(__x == __y);
   }
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 
   _LIBCUDACXX_TEMPLATE(class _T2)
     _LIBCUDACXX_REQUIRES( (!__expected::__is_expected_nonvoid<_T2>))
@@ -1022,7 +1024,7 @@ public:
   bool operator==(const expected& __x, const _T2& __v) {
     return __x.__has_val_ && static_cast<bool>(__x.__union_.__val_ == __v);
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   _LIBCUDACXX_TEMPLATE(class _T2)
     _LIBCUDACXX_REQUIRES( (!__expected::__is_expected_nonvoid<_T2>))
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
@@ -1041,14 +1043,14 @@ public:
   bool operator!=(const _T2& __v, const expected& __x) {
     return !__x.__has_val_ || static_cast<bool>(__x.__union_.__val_ != __v);
   }
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator==(const expected& __x, const unexpected<_E2>& __e) {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __e.error());
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator==(const unexpected<_E2>& __e, const expected& __x) {
@@ -1064,7 +1066,7 @@ public:
   bool operator!=(const unexpected<_E2>& __e, const expected& __x) {
     return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ != __e.error());
   }
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 };
 
 
@@ -1733,7 +1735,7 @@ public:
       return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
     }
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator!=(const expected& __x, const expected& __y) noexcept {
     return !(__x == __y);
@@ -1749,7 +1751,7 @@ public:
       return __x.__has_val_ || static_cast<bool>(__x.__union_.__unex_ == __y.error());
     }
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator!=(const expected& __x, const expected<void, _E2>& __y) noexcept {
@@ -1762,7 +1764,7 @@ public:
   bool operator==(const expected& __x, const unexpected<_E2>& __y) noexcept {
     return !__x.__has_val_ && static_cast<bool>(__x.__union_.__unex_ == __y.error());
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   template <class _E2>
   friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   bool operator==(const unexpected<_E2>& __y, const expected& __x) noexcept {
@@ -1783,6 +1785,6 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_EXPECTED_H

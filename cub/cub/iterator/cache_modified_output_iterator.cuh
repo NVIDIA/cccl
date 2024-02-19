@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -55,12 +57,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 
 CUB_NAMESPACE_BEGIN
-
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
 
 
 /**
@@ -100,13 +96,13 @@ CUB_NAMESPACE_BEGIN
  * @par Usage Considerations
  * - Can only be dereferenced within device code
  *
- * @tparam CacheStoreModifier     
+ * @tparam CacheStoreModifier
  *   The cub::CacheStoreModifier to use when accessing data
  *
- * @tparam ValueType            
+ * @tparam ValueType
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -123,10 +119,10 @@ private:
         ValueType* ptr;
 
         /// Constructor
-        __host__ __device__ __forceinline__ Reference(ValueType* ptr) : ptr(ptr) {}
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Reference(ValueType* ptr) : ptr(ptr) {}
 
         /// Assignment
-        __device__ __forceinline__ ValueType operator =(ValueType val)
+        _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator =(ValueType val)
         {
             ThreadStore<MODIFIER>(ptr, val);
             return val;
@@ -161,10 +157,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -177,12 +173,12 @@ public:
      *   Native pointer to wrap
      */
     template <typename QualifiedValueType>
-    __host__ __device__ __forceinline__ CacheModifiedOutputIterator(QualifiedValueType *ptr)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType *ptr)
         : ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type *>(ptr))
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
         self_type retval = *this;
         ptr++;
@@ -191,21 +187,21 @@ public:
 
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         ptr++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return Reference(ptr);
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(ptr + n);
         return retval;
@@ -213,7 +209,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         ptr += n;
         return *this;
@@ -221,7 +217,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(ptr - n);
         return retval;
@@ -229,33 +225,33 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         ptr -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return ptr - other.ptr;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return Reference(ptr + n);
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
     {
         return (ptr == rhs.ptr);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
     {
         return (ptr != rhs.ptr);
     }
@@ -266,8 +262,5 @@ public:
         return os;
     }
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

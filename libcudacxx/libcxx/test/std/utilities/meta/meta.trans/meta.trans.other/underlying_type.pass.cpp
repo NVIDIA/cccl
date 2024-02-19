@@ -24,7 +24,7 @@
 #endif
 
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class, class = std::void_t<>>
 struct has_type_member : std::false_type {};
 
@@ -40,9 +40,9 @@ template <typename T, typename Expected>
 void check()
 {
     ASSERT_SAME_TYPE(Expected, typename std::underlying_type<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(Expected, typename std::underlying_type_t<T>);
-#endif  
+#endif
 }
 
 enum E { V = INT_MIN };
@@ -51,13 +51,11 @@ enum E { V = INT_MIN };
 enum F { W = UINT_MAX };
 #endif // TEST_UNSIGNED_UNDERLYING_TYPE
 
-#if TEST_STD_VER >= 11
 enum G : char {};
 enum class H { red, green = 20, blue };
 enum class I : long { red, green = 20, blue };
 enum struct J { red, green = 20, blue };
 enum struct K : short { red, green = 20, blue };
-#endif
 
 int main(int, char**)
 {
@@ -68,16 +66,14 @@ int main(int, char**)
 #endif // TEST_UNSIGNED_UNDERLYING_TYPE
 
 //  Class enums and enums with specified underlying type
-#if TEST_STD_VER >= 11
     check<G, char>();
     check<H, int>();
     check<I, long>();
     check<J, int>();
     check<K, short>();
-#endif
 
 //  SFINAE-able underlying_type
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert( has_type_member<E>::value, "");
     static_assert( has_type_member<F>::value, "");
     static_assert( has_type_member<G>::value, "");

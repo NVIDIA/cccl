@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/tag.h>
 #include <thrust/pair.h>
 
@@ -39,7 +41,7 @@ template<typename ExecutionPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_difference(thrust::execution_policy<ExecutionPolicy> &exec,
                               InputIterator1                             first1,
                               InputIterator1                             last1,
@@ -54,7 +56,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_difference(thrust::execution_policy<ExecutionPolicy> &exec,
                               InputIterator1                             first1,
                               InputIterator1                             last1,
@@ -71,7 +73,7 @@ template<typename ExecutionPolicy,
          typename InputIterator4,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_difference_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
                         InputIterator1                             keys_first1,
@@ -92,7 +94,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_difference_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
                         InputIterator1                             keys_first1,
@@ -110,7 +112,7 @@ template<typename ExecutionPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_intersection(thrust::execution_policy<ExecutionPolicy> &system,
                                 InputIterator1                             first1,
                                 InputIterator1                             last1,
@@ -125,7 +127,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_intersection(thrust::execution_policy<StrictWeakOrdering> &system,
                                 InputIterator1                                first1,
                                 InputIterator1                                last1,
@@ -141,7 +143,7 @@ template<typename ExecutionPolicy,
          typename InputIterator3,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_intersection_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                           InputIterator1                             keys_first1,
@@ -160,7 +162,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_intersection_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                           InputIterator1                             keys_first1,
@@ -177,7 +179,7 @@ template<typename ExecutionPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_symmetric_difference(thrust::execution_policy<ExecutionPolicy> &system,
                                         InputIterator1                             first1,
                                         InputIterator1                             last1,
@@ -192,7 +194,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_symmetric_difference(thrust::execution_policy<ExecutionPolicy> &system,
                                         InputIterator1                             first1,
                                         InputIterator1                             last1,
@@ -209,7 +211,7 @@ template<typename ExecutionPolicy,
          typename InputIterator4,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_symmetric_difference_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                                   InputIterator1                             keys_first1,
@@ -230,7 +232,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_symmetric_difference_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                                   InputIterator1                             keys_first1,
@@ -248,7 +250,7 @@ template<typename ExecutionPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_union(thrust::execution_policy<ExecutionPolicy> &system,
                          InputIterator1                             first1,
                          InputIterator1                             last1,
@@ -263,7 +265,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator set_union(thrust::execution_policy<ExecutionPolicy> &system,
                          InputIterator1                             first1,
                          InputIterator1                             last1,
@@ -280,7 +282,7 @@ template<typename ExecutionPolicy,
          typename InputIterator4,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_union_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                    InputIterator1                             keys_first1,
@@ -301,7 +303,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   set_union_by_key(thrust::execution_policy<ExecutionPolicy> &system,
                    InputIterator1                             keys_first1,

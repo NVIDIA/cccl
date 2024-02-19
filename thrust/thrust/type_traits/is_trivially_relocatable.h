@@ -25,11 +25,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
@@ -76,7 +78,7 @@ template <typename T>
 using is_trivially_relocatable =
   detail::is_trivially_relocatable_impl<T>;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
  *  aka can be bitwise copied with a facility like
@@ -113,7 +115,7 @@ using is_trivially_relocatable_to =
   , detail::is_same<From, To>::value && is_trivially_relocatable<To>::value
   >;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c From is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
  *  to \c To, aka can be bitwise copied with a facility like
@@ -157,7 +159,7 @@ using is_indirectly_trivially_relocatable_to =
        >::value
   >;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if the element type of
  *  \c FromIterator is
  *  <a href="https://wg21.link/P1144"><i>TriviallyRelocatable</i></a>,
@@ -241,7 +243,7 @@ struct is_trivially_copyable_impl
         bool,
             #if defined(__GLIBCXX__) && __has_feature(is_trivially_copyable)
                 __is_trivially_copyable(T)
-            #elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC && THRUST_GCC_VERSION >= 50000
+            #elif defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 50000
                 std::is_trivially_copyable<T>::value
             #else
                 has_trivial_assign<T>::value
@@ -268,8 +270,6 @@ struct is_trivially_relocatable_impl<T[N]> : is_trivially_relocatable_impl<T> {}
 THRUST_NAMESPACE_END
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(char1)
 THRUST_PROCLAIM_TRIVIALLY_RELOCATABLE(char2)

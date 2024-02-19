@@ -21,12 +21,10 @@ int main(int, char**)
     std::once_flag f;
     (void)f;
     }
-#if TEST_STD_VER >= 11
     {
     constexpr std::once_flag f;
     (void)f;
     }
-#endif
 
   return 0;
 }

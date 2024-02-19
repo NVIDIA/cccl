@@ -14,6 +14,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__memory/addressof.h"
 #include "../__type_traits/conjunction.h"
 #include "../__type_traits/conditional.h"
@@ -26,12 +34,6 @@
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
 #include "../cstddef"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -326,7 +328,7 @@ struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 auto to_address(_Tp *__p) noexcept {

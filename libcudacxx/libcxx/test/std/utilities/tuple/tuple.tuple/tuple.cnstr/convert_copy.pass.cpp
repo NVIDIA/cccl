@@ -53,7 +53,7 @@ struct D
     explicit D(int i) : B(i) {}
 };
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 struct A
 {
@@ -82,7 +82,7 @@ int main(int, char**)
         T1 t1 = t0;
         assert(std::get<0>(t1) == 2);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef std::tuple<int> T0;
         typedef std::tuple<A> T1;

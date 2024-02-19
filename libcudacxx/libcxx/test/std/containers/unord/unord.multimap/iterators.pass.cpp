@@ -70,7 +70,6 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         C::const_iterator i;
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -114,8 +113,7 @@ int main(int, char**)
         assert(static_cast<std::size_t>(std::distance(c.cbegin(), c.cend())) == c.size());
         C::const_iterator i;
     }
-#endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         typedef std::unordered_multimap<int,double> C;
         C::iterator ii1{}, ii2{};

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/actor.h>
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/operator_adaptors.h>
@@ -35,7 +37,7 @@ namespace functional
 {
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -51,7 +53,7 @@ operator&&(const actor<T1> &_1, const T2 &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -67,7 +69,7 @@ operator&&(const T1 &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_and<>>,
@@ -83,7 +85,7 @@ operator&&(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -99,7 +101,7 @@ operator||(const actor<T1> &_1, const T2 &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -115,7 +117,7 @@ operator||(const T1 &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::logical_or<>>,
@@ -131,7 +133,7 @@ operator||(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator&&()
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<thrust::logical_not<>>,

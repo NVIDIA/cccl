@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -57,16 +59,10 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 CUB_NAMESPACE_BEGIN
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-/**
  * @brief A random-access input wrapper for transforming dereferenced values.
  *
  * @par Overview
- * - TransformInputIteratorTwraps a unary conversion functor of type 
+ * - TransformInputIteratorTwraps a unary conversion functor of type
  *   @p ConversionOp and a random-access input iterator of type <tt>InputIteratorT</tt>,
  *   using the former to produce references of type @p ValueType from the latter.
  * - Can be used with any data type.
@@ -105,17 +101,17 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam ValueType            
+ * @tparam ValueType
  *   The value type of this iterator
  *
- * @tparam ConversionOp         
- *   Unary functor type for mapping objects of type @p InputType to type @p ValueType.  
+ * @tparam ConversionOp
+ *   Unary functor type for mapping objects of type @p InputType to type @p ValueType.
  *   Must have member <tt>ValueType operator()(const InputType &datum)</tt>.
  *
- * @tparam InputIteratorT       
+ * @tparam InputIteratorT
  *   The type of the wrapped input iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -153,10 +149,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -172,14 +168,14 @@ public:
      * @param conversion_op
      *   Conversion functor to wrap
      */
-    __host__ __device__ __forceinline__ TransformInputIterator(InputIteratorT input_itr,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TransformInputIterator(InputIteratorT input_itr,
                                                                ConversionOp conversion_op)
         : conversion_op(conversion_op)
         , input_itr(input_itr)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
       self_type retval = *this;
       input_itr++;
@@ -187,21 +183,21 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         input_itr++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return conversion_op(*input_itr);
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(input_itr + n, conversion_op);
         return retval;
@@ -209,7 +205,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         input_itr += n;
         return *this;
@@ -217,7 +213,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(input_itr - n, conversion_op);
         return retval;
@@ -225,33 +221,33 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         input_itr -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return input_itr - other.input_itr;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return conversion_op(input_itr[n]);
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (input_itr == rhs.input_itr);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (input_itr != rhs.input_itr);
     }
@@ -262,9 +258,5 @@ public:
         return os;
     }
 };
-
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

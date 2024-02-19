@@ -26,7 +26,7 @@ struct test_is_function {
     static_assert( std::is_function<const T>::value, "");
     static_assert( std::is_function<volatile T>::value, "");
     static_assert( std::is_function<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_function_v<T>, "");
     static_assert( std::is_function_v<const T>, "");
     static_assert( std::is_function_v<volatile T>, "");
@@ -40,7 +40,7 @@ struct test_is_not_function {
     static_assert(!std::is_function<const T>::value, "");
     static_assert(!std::is_function<volatile T>::value, "");
     static_assert(!std::is_function<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_function_v<T>, "");
     static_assert(!std::is_function_v<const T>, "");
     static_assert(!std::is_function_v<volatile T>, "");
@@ -101,10 +101,8 @@ int main(int, char**)
   test_is_not_function<Abstract*>();
   test_is_not_function<incomplete_type>();
 
-#if TEST_STD_VER >= 11
   test_is_function<void() noexcept>();
   test_is_function<void() const && noexcept>();
-#endif
 
   return 0;
 }

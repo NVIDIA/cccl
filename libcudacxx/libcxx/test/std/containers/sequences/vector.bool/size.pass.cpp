@@ -38,7 +38,6 @@ int main(int, char**)
     c.erase(c.begin());
     assert(c.size() == 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::vector<bool, min_allocator<bool>> C;
     C c;
@@ -57,7 +56,6 @@ int main(int, char**)
     c.erase(c.begin());
     assert(c.size() == 0);
     }
-#endif
 
   return 0;
 }

@@ -58,7 +58,6 @@ int main(int, char**)
         Alloc a;
         assert(std::allocator_traits<Alloc >::max_size(a) == 100);
     }
-#if TEST_STD_VER >= 11
     {
         A<int> a;
         assert(std::allocator_traits<A<int> >::max_size(a) ==
@@ -73,7 +72,6 @@ int main(int, char**)
         std::allocator<int> a;
         static_assert(noexcept(std::allocator_traits<std::allocator<int>>::max_size(a)) == true, "");
     }
-#endif
 
   return 0;
 }

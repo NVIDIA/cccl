@@ -49,9 +49,7 @@ void test()
 int main(int, char**)
 {
     test<std::list<int> >();
-#if TEST_STD_VER >= 11
     test<std::list<int, min_allocator<int>>>();
-#endif
 
   return 0;
 }

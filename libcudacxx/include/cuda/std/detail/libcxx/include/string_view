@@ -172,6 +172,15 @@ namespace std {
 */
 
 #include <__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <__string>
 #include <iosfwd>
 #include <algorithm>
@@ -182,12 +191,8 @@ namespace std {
 #include <__debug>
 
 #include "__fwd/string_view.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#include "__ranges/enable_borrowed_range.h"
+#include "__ranges/enable_view.h"
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -232,7 +237,7 @@ public:
     basic_string_view(const _CharT* __s, size_type __len) noexcept
         : __data(__s), __size(__len)
     {
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     _LIBCUDACXX_ASSERT(__len == 0 || __s != nullptr, "string_view::string_view(_CharT *, size_t): received nullptr");
 #endif
     }
@@ -578,7 +583,7 @@ public:
             (data(), size(), __s, __pos, traits_type::length(__s));
     }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
     bool starts_with(basic_string_view __s) const noexcept
     { return size() >= __s.size() && compare(0, __s.size(), __s) == 0; }
@@ -608,7 +613,34 @@ private:
     const   value_type* __data;
     size_type           __size;
 };
+_LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
+_LIBCUDACXX_END_NAMESPACE_STD
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+
+#if _CCCL_STD_VER >= 2020
+template <class _CharT, class _Traits>
+_LIBCUDACXX_INLINE_VAR constexpr bool enable_view<basic_string_view<_CharT, _Traits>> = true;
+
+template <class _CharT, class _Traits>
+_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<basic_string_view<_CharT, _Traits> > = true;
+#endif // _CCCL_STD_VER >= 2020
+
+_LIBCUDACXX_END_NAMESPACE_RANGES
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+// [string.view.deduct]
+
+#if _CCCL_STD_VER >= 2020
+template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
+  basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
+#endif // _CCCL_STD_VER >= 2020
+
+
+#if _CCCL_STD_VER >= 2023
+template <_CUDA_VRANGES::contiguous_range _Range>
+  basic_string_view(_Range) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
+#endif
 
 // [string.view.comparison]
 // operator ==
@@ -797,7 +829,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<basic_string_view<_CharT, char_traits<_Char
 };
 
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 inline namespace literals
 {
   inline namespace string_view_literals

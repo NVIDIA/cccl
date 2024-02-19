@@ -32,7 +32,6 @@ bool my_free_called = false;
 
 void my_free(void*) { my_free_called = true; }
 
-#if TEST_STD_VER >= 11
 struct DeleterBase {
   void operator()(void*) const {}
 };
@@ -49,11 +48,9 @@ struct NoCopyMoveDeleter : DeleterBase {
   NoCopyMoveDeleter() = default;
   NoCopyMoveDeleter(NoCopyMoveDeleter const&) = delete;
 };
-#endif
 
 template <bool IsArray>
 void test_sfinae() {
-#if TEST_STD_VER >= 11
   typedef typename std::conditional<!IsArray, int, int[]>::type VT;
   {
     using D = CopyOnlyDeleter;
@@ -98,12 +95,10 @@ void test_sfinae() {
     static_assert(!std::is_constructible<U, int*, D&&>::value, "");
     static_assert(!std::is_constructible<U, int*, const D&&>::value, "");
   }
-#endif
 }
 
 template <bool IsArray>
 void test_noexcept() {
-#if TEST_STD_VER >= 11
   typedef typename std::conditional<!IsArray, int, int[]>::type VT;
   {
     using D = CopyOnlyDeleter;
@@ -130,11 +125,9 @@ void test_noexcept() {
     static_assert(std::is_nothrow_constructible<U, int*, D const&>::value, "");
     static_assert(std::is_nothrow_constructible<U, int*, D&>::value, "");
   }
-#endif
 }
 
 void test_sfinae_runtime() {
-#if TEST_STD_VER >= 11
   {
     using D = CopyOnlyDeleter;
     using U = std::unique_ptr<A[], D>;
@@ -200,7 +193,6 @@ void test_sfinae_runtime() {
     static_assert(!std::is_constructible<U, B*, D&&>::value, "");
     static_assert(!std::is_constructible<U, B*, const D&&>::value, "");
   }
-#endif
 }
 
 template <bool IsArray>
@@ -290,7 +282,6 @@ void test_basic_single() {
 
 template <bool IsArray>
 void test_nullptr() {
-#if TEST_STD_VER >= 11
   typedef typename std::conditional<!IsArray, A, A[]>::type VT;
   {
     std::unique_ptr<VT, Deleter<VT> > u(nullptr, Deleter<VT>{});
@@ -306,7 +297,6 @@ void test_nullptr() {
     std::unique_ptr<VT, NCConstDeleter<VT> const& > u(nullptr, d);
     assert(u.get() == nullptr);
   }
-#endif
 }
 
 int main(int, char**) {

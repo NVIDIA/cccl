@@ -50,7 +50,7 @@ int main(int, char**)
     test<long double, double>();
     test<long double, long double>();
 
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
     static_assert(test<float, float>());
     static_assert(test<float, double>());
     static_assert(test<float, long double>());

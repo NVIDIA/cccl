@@ -27,7 +27,6 @@
 #include "test_allocator.h"
 #include "min_allocator.h"
 
-#if TEST_STD_VER >= 11
 std::vector<int> ca_allocs;
 std::vector<int> ca_deallocs;
 
@@ -115,7 +114,6 @@ bool balanced_allocs() {
 
     return true;
 }
-#endif
 
 int main(int, char**)
 {
@@ -204,7 +202,6 @@ int main(int, char**)
         assert(*std::next(mo.begin()) == V(2, 1));
         assert(*std::next(mo.begin(), 2) == V(3, 1));
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::pair<const int, double> V;
         V ar[] =
@@ -345,7 +342,6 @@ int main(int, char**)
         assert(*std::next(mo.begin(), 2) == V(3, 1));
     }
     assert(balanced_allocs());
-#endif
 
   return 0;
 }

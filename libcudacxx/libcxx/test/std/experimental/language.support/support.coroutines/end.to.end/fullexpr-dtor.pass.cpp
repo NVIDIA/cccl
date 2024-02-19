@@ -28,7 +28,7 @@ void reset() {
 struct Noisy {
   Noisy() { ++alive; ++ctor_called; }
   ~Noisy() { --alive; ++dtor_called; }
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   Noisy(Noisy const&) = delete;
 #else
   // FIXME: This test depends on copy elision taking place in C++14

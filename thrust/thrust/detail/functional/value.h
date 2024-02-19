@@ -27,11 +27,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/actor.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -55,13 +57,13 @@ template<typename T>
       typedef T type;
     };
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     value(const T &arg)
       : m_val(arg)
     {}
 
     template<typename Env>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
       T eval(const Env &) const
     {
       return m_val;
@@ -72,7 +74,7 @@ template<typename T>
 }; // end value
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<value<T> > val(const T &x)
 {
   return value<T>(x);

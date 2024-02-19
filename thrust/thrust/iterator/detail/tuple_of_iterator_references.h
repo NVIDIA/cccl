@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/type_traits>
 #include <cuda/std/tuple>
@@ -46,27 +48,27 @@ template<
     using super_t = thrust::tuple<Ts...>;
     using super_t::super_t;
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references()
       : super_t()
     {}
 
     // allow implicit construction from tuple<refs>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references(const super_t& other)
       : super_t(other)
     {}
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references(super_t&& other)
       : super_t(::cuda::std::move(other))
     {}
 
     // allow assignment from tuples
     // XXX might be worthwhile to guard this with an enable_if is_assignable
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template<typename... Us>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references &operator=(const thrust::tuple<Us...> &other)
     {
       super_t::operator=(other);
@@ -75,9 +77,9 @@ template<
 
     // allow assignment from pairs
     // XXX might be worthwhile to guard this with an enable_if is_assignable
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template<typename U1, typename U2>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references &operator=(const thrust::pair<U1,U2> &other)
     {
       super_t::operator=(other);
@@ -87,9 +89,9 @@ template<
     // allow assignment from reference<tuple>
     // XXX perhaps we should generalize to reference<T>
     //     we could captures reference<pair> this way
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template<typename Pointer, typename Derived, typename... Us>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     tuple_of_iterator_references&
     operator=(const thrust::reference<thrust::tuple<Us...>, Pointer, Derived> &other)
     {
@@ -101,7 +103,7 @@ template<
     }
 
     template<class... Us, ::cuda::std::__enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     constexpr operator thrust::tuple<Us...>() const {
       return to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
     }
@@ -109,7 +111,7 @@ template<
     // this overload of swap() permits swapping tuple_of_iterator_references returned as temporaries from
     // iterator dereferences
     template<class... Us>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     friend void swap(tuple_of_iterator_references&& x, tuple_of_iterator_references<Us...>&& y)
     {
       x.swap(y);
@@ -117,7 +119,7 @@ template<
 
 private:
     template<class... Us, size_t... Id>
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     constexpr thrust::tuple<Us...> to_tuple(::cuda::std::__tuple_indices<Id...>) const {
       return {get<Id>(*this)...};
     }

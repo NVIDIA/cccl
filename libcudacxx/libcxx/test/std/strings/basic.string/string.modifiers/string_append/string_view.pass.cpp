@@ -53,7 +53,6 @@ int main(int, char**)
     test(S("12345678901234567890"), SV("12345678901234567890"),
          S("1234567890123456789012345678901234567890"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string     <char, std::char_traits<char>, min_allocator<char>> S;
     typedef std::basic_string_view<char, std::char_traits<char> > SV;
@@ -78,7 +77,6 @@ int main(int, char**)
     test(S("12345678901234567890"), SV("12345678901234567890"),
          S("1234567890123456789012345678901234567890"));
     }
-#endif
 
   return 0;
 }

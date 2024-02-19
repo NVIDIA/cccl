@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -88,7 +90,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                ForwardIterator first, ForwardIterator last,
                const T &old_value,
@@ -202,7 +204,7 @@ template<typename ForwardIterator, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   Predicate pred,
@@ -336,7 +338,7 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   InputIterator stencil,
@@ -465,7 +467,7 @@ template<typename ForwardIterator, typename InputIterator, typename Predicate, t
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                               InputIterator first, InputIterator last,
                               OutputIterator result,
@@ -590,7 +592,7 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *  \see \c replace_copy
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator first, InputIterator last,
                                  OutputIterator result,
@@ -734,7 +736,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *  \see \c replace_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator1 first, InputIterator1 last,
                                  InputIterator2 stencil,

@@ -40,22 +40,12 @@ int main(int, char**)
             A* p = pA.get();
             std::shared_ptr<A> pA2(std::move(pA));
             assert(A::count == 1);
-#if TEST_STD_VER >= 11
             assert(pA.use_count() == 0);
             assert(pA2.use_count() == 1);
-#else
-            assert(pA.use_count() == 2);
-            assert(pA2.use_count() == 2);
-#endif
             assert(pA2.get() == p);
         }
-#if TEST_STD_VER >= 11
         assert(pA.use_count() == 0);
         assert(A::count == 0);
-#else
-        assert(pA.use_count() == 1);
-        assert(A::count == 1);
-#endif
     }
     assert(A::count == 0);
     {

@@ -44,7 +44,6 @@ int main(int, char**)
         for (size_t i = 0; i < 13; ++i)
             LIBCPP_ASSERT(c.bucket(i) == i % bc);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_multiset<int, std::hash<int>,
                                       std::equal_to<int>, min_allocator<int>> C;
@@ -64,7 +63,6 @@ int main(int, char**)
         for (size_t i = 0; i < 13; ++i)
             LIBCPP_ASSERT(c.bucket(i) == i % bc);
     }
-#endif
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1
     {
         typedef std::unordered_multiset<int> C;

@@ -33,11 +33,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/permutation_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -150,33 +152,32 @@ template <typename ElementIterator,
      *  \param x An \c ElementIterator pointing this \p permutation_iterator's range of values.
      *  \param y An \c IndexIterator pointing to an indexing scheme to use on \p x.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit permutation_iterator(ElementIterator x, IndexIterator y)
       : super_t(y), m_element_iterator(x) {}
 
     /*! Copy constructor accepts a related \p permutation_iterator.
      *  \param r A compatible \p permutation_iterator to copy from.
      */
-    template<typename OtherElementIterator, typename OtherIndexIterator>
-    __host__ __device__
-    permutation_iterator(permutation_iterator<OtherElementIterator,OtherIndexIterator> const &r
-    // XXX remove these guards when we have static_assert
-    , typename detail::enable_if_convertible<OtherElementIterator, ElementIterator>::type* = 0
-    , typename detail::enable_if_convertible<OtherIndexIterator, IndexIterator>::type* = 0
-    )
-      : super_t(r.base()), m_element_iterator(r.m_element_iterator)
+    template <typename OtherElementIterator,
+              typename OtherIndexIterator,
+              detail::enable_if_convertible_t<OtherElementIterator, ElementIterator, int> = 0,
+              detail::enable_if_convertible_t<OtherIndexIterator, IndexIterator, int>     = 0>
+    _CCCL_HOST_DEVICE permutation_iterator(permutation_iterator<OtherElementIterator, OtherIndexIterator> const& rhs)
+        : super_t(rhs.base())
+        , m_element_iterator(rhs.m_element_iterator)
     {}
 
-  /*! \cond
-   */
+    /*! \cond
+     */
   private:
     // MSVC 2013 and 2015 incorrectly warning about returning a reference to
     // a local/temporary here.
     // See goo.gl/LELTNp
     THRUST_DISABLE_MSVC_WARNING_BEGIN(4172)
 
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     typename super_t::reference dereference() const
     {
       return *(m_element_iterator + *this->base());
@@ -204,7 +205,7 @@ template <typename ElementIterator,
  *  \see permutation_iterator
  */
 template<typename ElementIterator, typename IndexIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 permutation_iterator<ElementIterator,IndexIterator> make_permutation_iterator(ElementIterator e, IndexIterator i)
 {
   return permutation_iterator<ElementIterator,IndexIterator>(e,i);

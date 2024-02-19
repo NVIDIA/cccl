@@ -28,11 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/seq.h>
 #include <thrust/system/cuda/detail/par.h>
@@ -51,7 +53,7 @@ struct cvt_to_seq_impl
 {
   typedef thrust::detail::seq_t seq_t;
 
-  static seq_t __host__ __device__
+  static seq_t _CCCL_HOST_DEVICE
   doit(Policy&)
   {
     return seq_t();
@@ -73,7 +75,7 @@ struct cvt_to_seq_impl<
       seq_t;
 
 
-  static seq_t __host__ __device__
+  static seq_t _CCCL_HOST_DEVICE
   doit(Policy& policy)
   {
     return seq_t(policy.m_alloc);
@@ -82,7 +84,7 @@ struct cvt_to_seq_impl<
 #endif
 
 template <class Policy>
-typename cvt_to_seq_impl<Policy>::seq_t __host__ __device__
+typename cvt_to_seq_impl<Policy>::seq_t _CCCL_HOST_DEVICE
 cvt_to_seq(Policy& policy)
 {
   return cvt_to_seq_impl<Policy>::doit(policy);

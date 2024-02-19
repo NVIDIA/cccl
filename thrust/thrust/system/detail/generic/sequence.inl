@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/sequence.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/tabulate.h>
@@ -39,7 +41,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(thrust::execution_policy<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last)
@@ -51,7 +53,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(thrust::execution_policy<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,
@@ -68,8 +70,8 @@ struct compute_sequence_value
   T init;
   T step;
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   T operator()(std::size_t i) const
   {
     return init + step * i;
@@ -81,8 +83,8 @@ struct compute_sequence_value<T, typename std::enable_if<std::is_arithmetic<T>::
   T init;
   T step;
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   T operator()(std::size_t i) const
   {
     return init + step * static_cast<T>(i);
@@ -95,8 +97,8 @@ struct compute_sequence_value<::cuda::std::complex<T>, ::cuda::std::__enable_if_
   ::cuda::std::complex<T> init;
   ::cuda::std::complex<T> step;
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   ::cuda::std::complex<T> operator()(std::size_t i) const
   {
     return init + step * static_cast<T>(i);
@@ -105,7 +107,7 @@ struct compute_sequence_value<::cuda::std::complex<T>, ::cuda::std::__enable_if_
 }
 
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(thrust::execution_policy<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,

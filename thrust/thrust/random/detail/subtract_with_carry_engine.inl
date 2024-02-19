@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/subtract_with_carry_engine.h>
@@ -36,7 +38,7 @@ namespace random
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   subtract_with_carry_engine<UIntType,w,s,r>
     ::subtract_with_carry_engine(result_type value)
 {
@@ -45,7 +47,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void subtract_with_carry_engine<UIntType,w,s,r>
     ::seed(result_type value)
 {
@@ -64,7 +66,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename subtract_with_carry_engine<UIntType,w,s,r>::result_type
     subtract_with_carry_engine<UIntType,w,s,r>
       ::operator()(void)
@@ -96,7 +98,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void subtract_with_carry_engine<UIntType,w,s,r>
     ::discard(unsigned long long z)
 {
@@ -156,7 +158,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bool subtract_with_carry_engine<UIntType,w,s,r>
     ::equal(const subtract_with_carry_engine<UIntType,w,s,r> &rhs) const
 {
@@ -196,7 +198,7 @@ template<typename UIntType, size_t w, size_t s, size_t r,
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bool operator==(const subtract_with_carry_engine<UIntType,w,s,r> &lhs,
                   const subtract_with_carry_engine<UIntType,w,s,r> &rhs)
 {
@@ -205,7 +207,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
 
 template<typename UIntType, size_t w, size_t s, size_t r>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bool operator!=(const subtract_with_carry_engine<UIntType,w,s,r> &lhs,
                   const subtract_with_carry_engine<UIntType,w,s,r> &rhs)
 {

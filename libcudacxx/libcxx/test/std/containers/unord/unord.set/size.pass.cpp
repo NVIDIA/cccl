@@ -38,7 +38,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> M;
     M m;
@@ -57,7 +56,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#endif
 
   return 0;
 }

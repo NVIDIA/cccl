@@ -15,6 +15,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__debug"
 #include "../__iterator/iterator_traits.h"
 #include "../__memory/addressof.h"
@@ -22,12 +30,6 @@
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_trivially_copy_assignable.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#  pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -41,7 +43,7 @@ public:
   typedef typename iterator_traits<iterator_type>::pointer pointer;
   typedef typename iterator_traits<iterator_type>::reference reference;
   typedef typename iterator_traits<iterator_type>::iterator_category iterator_category;
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
   typedef contiguous_iterator_tag iterator_concept;
 #endif
 
@@ -305,7 +307,7 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
   return __x;
 }
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _It>
 struct __is_cpp17_contiguous_iterator<__wrap_iter<_It> > : true_type
 {};

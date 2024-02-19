@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_radix_sort.cuh>
@@ -139,7 +141,7 @@ struct BlockHistogramSort
 
 
     /// Constructor
-    __device__ __forceinline__ BlockHistogramSort(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(
         TempStorage     &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -154,12 +156,12 @@ struct BlockHistogramSort
         _TempStorage &temp_storage;
 
         // Constructor
-        __device__ __forceinline__ DiscontinuityOp(_TempStorage &temp_storage) :
+        _CCCL_DEVICE _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage &temp_storage) :
             temp_storage(temp_storage)
         {}
 
         // Discontinuity predicate
-        __device__ __forceinline__ bool operator()(const T &a, const T &b, int b_index)
+        _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const T &a, const T &b, int b_index)
         {
             if (a != b)
             {
@@ -186,7 +188,7 @@ struct BlockHistogramSort
      *   Reference to shared/device-accessible memory histogram
      */
     template <typename CounterT>
-    __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
                                               CounterT histogram[BINS])
     {
         enum { TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD };

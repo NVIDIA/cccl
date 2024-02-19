@@ -37,11 +37,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
@@ -123,10 +125,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(ScanTileStateT tile_st
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -212,10 +214,10 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *        DeviceScan
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanOpT
  *   Binary scan functor type having member
@@ -310,7 +312,7 @@ struct DispatchScan : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -331,7 +333,7 @@ struct DispatchScan : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -355,7 +357,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
     typedef typename ActivePolicyT::ScanPolicyT Policy;
@@ -526,7 +528,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     typedef typename DispatchScan::MaxPolicy MaxPolicyT;
     typedef typename cub::ScanTileState<AccumT> ScanTileStateT;
@@ -573,7 +575,7 @@ struct DispatchScan : SelectedPolicy
    *   Default is stream<sub>0</sub>.
    *
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -619,7 +621,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

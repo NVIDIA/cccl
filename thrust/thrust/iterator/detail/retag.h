@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/detail/pointer.h>
@@ -56,7 +58,7 @@ template<typename FromTag, typename ToTag, typename Result>
 
 
 template<typename Tag, typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::detail::tagged_iterator<Iterator,Tag>
     reinterpret_tag(Iterator iter)
 {
@@ -66,7 +68,7 @@ __host__ __device__
 
 // specialization for raw pointer
 template<typename Tag, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pointer<T,Tag>
     reinterpret_tag(T *ptr)
 {
@@ -76,7 +78,7 @@ __host__ __device__
 
 // specialization for thrust::pointer
 template<typename Tag, typename T, typename OtherTag, typename Reference, typename Derived>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pointer<T,Tag>
     reinterpret_tag(thrust::pointer<T,OtherTag,Reference,Derived> ptr)
 {
@@ -86,7 +88,7 @@ __host__ __device__
 
 // avoid deeply-nested tagged_iterator
 template<typename Tag, typename BaseIterator, typename OtherTag>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::detail::tagged_iterator<BaseIterator,Tag>
     reinterpret_tag(thrust::detail::tagged_iterator<BaseIterator,OtherTag> iter)
 {
@@ -95,7 +97,7 @@ __host__ __device__
 
 
 template<typename Tag, typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_retaggable<
     typename thrust::iterator_system<Iterator>::type,
     Tag,
@@ -109,7 +111,7 @@ __host__ __device__
 
 // specialization for raw pointer
 template<typename Tag, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_retaggable<
     typename thrust::iterator_system<T*>::type,
     Tag,
@@ -123,7 +125,7 @@ __host__ __device__
 
 // specialization for thrust::pointer
 template<typename Tag, typename T, typename OtherTag>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_retaggable<
     OtherTag,
     Tag,
@@ -137,7 +139,7 @@ __host__ __device__
 
 // avoid deeply-nested tagged_iterator
 template<typename Tag, typename BaseIterator, typename OtherTag>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_retaggable<
     OtherTag,
     Tag,

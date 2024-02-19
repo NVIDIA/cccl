@@ -65,7 +65,6 @@ void f3()
 #endif
 }
 
-#if TEST_STD_VER >= 11
 
 struct init1
 {
@@ -100,7 +99,6 @@ void f2()
     std::call_once(flg2, init2(), 4, 5);
 }
 
-#endif  // TEST_STD_VER >= 11
 
 std::once_flag flg41;
 std::once_flag flg42;
@@ -134,7 +132,6 @@ void f42()
     std::call_once(flg41, init41);
 }
 
-#if TEST_STD_VER >= 11
 
 class MoveOnly
 {
@@ -184,8 +181,6 @@ struct RefQual
     void operator()() && { ++rv_called; }
 };
 
-#endif // TEST_STD_VER >= 11
-
 int main(int, char**)
 {
     // check basic functionality
@@ -216,7 +211,6 @@ int main(int, char**)
         assert(init41_called == 1);
         assert(init42_called == 1);
     }
-#if TEST_STD_VER >= 11
     // check functors with 1 arg
     {
         std::thread t0(f1);
@@ -252,7 +246,6 @@ int main(int, char**)
         std::call_once(f2, std::move(rq));
         assert(rq.rv_called == 1);
     }
-#endif  // TEST_STD_VER >= 11
 
   return 0;
 }

@@ -13,18 +13,21 @@ def elapsed_time_looks_good(x):
   return False
 
 
-def problem_size_looks_large_enough(elements):
+def get_largest_problem_size(rt_values):
   # Small problem sizes do not utilize entire GPU.
   # Benchmarking small problem sizes in environments where we do not control
   # distributions comparison, e.g. CI, is not useful because of stability issues.
-  return elements.isdigit() and int(elements) > 20
-
+  elements = []
+  for element in rt_values:
+    if element.isdigit():
+      elements.append(int(element))
+  return [str(max(elements))]
 
 def filter_runtime_workloads_for_ci(rt_values):
   for subbench in rt_values:
     for axis in rt_values[subbench]:
       if axis.startswith('Elements') and axis.endswith('[pow2]'):
-        rt_values[subbench][axis] = list(filter(problem_size_looks_large_enough, rt_values[subbench][axis]))
+        rt_values[subbench][axis] = get_largest_problem_size(rt_values[subbench][axis])
 
   return rt_values
 
@@ -34,11 +37,12 @@ class BaseRunner:
     self.estimator = cccl.bench.MedianCenterEstimator()
 
   def __call__(self, algname, ct_workload_space, rt_values):
+    failure_occured = False
     rt_values = filter_runtime_workloads_for_ci(rt_values)
 
     for ct_workload in ct_workload_space:
       bench = cccl.bench.BaseBench(algname)
-      if bench.build():
+      if bench.build(): # might throw
         results = bench.run(ct_workload, rt_values, self.estimator, False)
         for subbench in results:
           for point in results[subbench]:
@@ -49,8 +53,11 @@ class BaseRunner:
             if elapsed_time_looks_good(elapsed_time):
               print("&&&& PERF {} {} -sec".format(bench_name, elapsed_time))
       else:
-        print("&&&& FAILED bench")
-        sys.exit(-1)
+        failure_occured = True
+        print("&&&& FAILED {}".format(algname))
+    
+    if failure_occured:
+      sys.exit(1)
 
 
 def main():

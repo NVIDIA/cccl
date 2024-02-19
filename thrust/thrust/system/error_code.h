@@ -24,11 +24,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/detail/errno.h>
 #include <iostream>
@@ -257,9 +259,9 @@ class error_code
     template <typename ErrorCodeEnum>
       error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if !defined(_CCCL_COMPILER_MSVC)
         , typename thrust::detail::enable_if<is_error_code_enum<ErrorCodeEnum>::value>::type * = 0
-#endif // THRUST_HOST_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         );
 
     // [19.5.2.3] modifiers:
@@ -272,11 +274,11 @@ class error_code
      */
     template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if !defined(_CCCL_COMPILER_MSVC)
       typename thrust::detail::enable_if<is_error_code_enum<ErrorCodeEnum>::value, error_code>::type &
 #else
       error_code &
-#endif // THRUST_HOST_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         operator=(ErrorCodeEnum e);
 
     /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
@@ -373,9 +375,9 @@ class error_condition
     template<typename ErrorConditionEnum>
       error_condition(ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if !defined(_CCCL_COMPILER_MSVC)
         , typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value>::type * = 0
-#endif // THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
                      );
 
     // [19.5.3.3] modifiers
@@ -396,11 +398,11 @@ class error_condition
      */
     template<typename ErrorConditionEnum>
 // XXX WAR msvc's problem with enable_if
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#if !defined(_CCCL_COMPILER_MSVC)
       typename thrust::detail::enable_if<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>::type &
 #else
       error_condition &
-#endif // THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_MSVC
         operator=(ErrorConditionEnum e);
 
     /*! Clears this \p error_code object.

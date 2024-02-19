@@ -19,17 +19,22 @@
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
 #endif
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
 #include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
-#include "../__cuda/ptx.h"           // cuda::ptx::*
 
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(_CCCL_CUDA_COMPILER)
+#include "../__cuda/ptx.h"           // cuda::ptx::*
+#endif // _CCCL_CUDA_COMPILER
+
+#if defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type *)0)->member))
 #else
 #define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
@@ -565,6 +570,7 @@ inline _CUDA_VSTD::uint64_t * barrier_native_handle(barrier<thread_scope_block> 
     return reinterpret_cast<_CUDA_VSTD::uint64_t *>(&b.__barrier);
 }
 
+#if defined(_CCCL_CUDA_COMPILER)
 
 // Hide arrive_tx when CUDA architecture is insufficient. Note the
 // (!defined(__CUDA_MINIMUM_ARCH__)). This is required to make sure the function
@@ -628,7 +634,7 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
     // memcpy_async when compiling with GCC 4.8.
     // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || _GNUC_VER > 408
+#if !defined(_CCCL_COMPILER_GCC) || _GNUC_VER > 408
     static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #endif
     static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
@@ -684,8 +690,11 @@ void barrier_expect_tx(
         : "memory");
 }
 #endif // __CUDA_MINIMUM_ARCH__
+#endif // _CCCL_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#if defined(_CCCL_CUDA_COMPILER)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -946,9 +955,9 @@ void __cp_async_shared_global(char * __dest, const char * __src) {
 
     // If `if constexpr` is not available, this function gets instantiated even
     // if is not called. Do not static_assert in that case.
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
     static_assert(_Copy_size == 4 || _Copy_size == 8 || _Copy_size == 16, "cp.async.shared.global requires a copy size of 4, 8, or 16.");
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
     asm volatile(
         "cp.async.ca.shared.global [%0], [%1], %2, %2;"
@@ -978,9 +987,9 @@ inline __device__
 void __cp_async_shared_global_mechanism(_Group __g, char * __dest, const char * __src, _CUDA_VSTD::size_t __size) {
     // If `if constexpr` is not available, this function gets instantiated even
     // if is not called. Do not static_assert in that case.
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
     static_assert(4 <= _Alignment, "cp.async requires at least 4-byte alignment");
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
     // Maximal copy size is 16.
     constexpr int __copy_size = (_Alignment > 16) ? 16 : _Alignment;
@@ -1215,5 +1224,7 @@ async_contract_fulfillment memcpy_async(void * __destination, void const * __sou
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_CUDA_COMPILER
 
 #endif // _LIBCUDACXX___CUDA_BARRIER_H

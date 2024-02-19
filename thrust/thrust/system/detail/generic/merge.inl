@@ -19,11 +19,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/static_assert.h>
 #include <thrust/system/detail/generic/merge.h>
 #include <thrust/merge.h>
@@ -45,7 +47,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator merge(thrust::execution_policy<DerivedPolicy> &,
                        InputIterator1,
                        InputIterator1,
@@ -66,7 +68,7 @@ template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator merge(thrust::execution_policy<DerivedPolicy> &exec,
                        InputIterator1 first1,
                        InputIterator1 last1,
@@ -80,7 +82,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename InputIterator3, typename InputIterator4, typename OutputIterator1, typename OutputIterator2, typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     merge_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                  InputIterator1 keys_first1, InputIterator1 keys_last1,
@@ -115,7 +117,7 @@ __host__ __device__
 
 
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename InputIterator3, typename InputIterator4, typename OutputIterator1, typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     merge_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                  InputIterator1 keys_first1, InputIterator1 keys_last1,

@@ -12,22 +12,22 @@ extern "C" cudaError_t cudaFreeIgnoreShutdown(void* ptr) {
   cudaError_t const err = cudaFree(ptr);
   if (cudaSuccess == err || cudaErrorCudartUnloading == err)
     return cudaSuccess;
-  return err; 
+  return err;
 }
 
 typedef thrust::system::cuda::detail::cuda_memory_resource<
-  cudaMalloc, 
+  cudaMalloc,
   cudaFreeIgnoreShutdown,
   thrust::cuda::pointer<void>
 > device_ignore_shutdown_memory_resource;
 
   template <typename T>
-  using device_ignore_shutdown_allocator = 
+  using device_ignore_shutdown_allocator =
     thrust::mr::stateless_resource_allocator<
       T,
       thrust::device_ptr_memory_resource<device_ignore_shutdown_memory_resource>
     >;
-    
+
   thrust::device_vector<double, device_ignore_shutdown_allocator<double>> d;
 
 int main() {

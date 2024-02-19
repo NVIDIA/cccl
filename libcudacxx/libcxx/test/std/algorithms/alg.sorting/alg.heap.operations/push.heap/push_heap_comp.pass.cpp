@@ -59,7 +59,6 @@ int main(int, char**)
 {
     test(1000);
 
-#if TEST_STD_VER >= 11
     {
     const int N = 1000;
     std::unique_ptr<int>* ia = new std::unique_ptr<int> [N];
@@ -73,7 +72,6 @@ int main(int, char**)
     }
     delete [] ia;
     }
-#endif
 
   return 0;
 }

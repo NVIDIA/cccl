@@ -23,7 +23,7 @@ template <class D>
 void test()
 {
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<typename D::rep>::max());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(       std::chrono::duration_values<typename D::rep>::max());
 #endif
     {
@@ -31,13 +31,11 @@ void test()
     Rep max_rep = std::chrono::duration_values<Rep>::max();
     assert(D::max().count() == max_rep);
     }
-#if TEST_STD_VER >= 11
     {
     typedef typename D::rep Rep;
     constexpr Rep max_rep = std::chrono::duration_values<Rep>::max();
     static_assert(D::max().count() == max_rep, "");
     }
-#endif
 }
 
 int main(int, char**)

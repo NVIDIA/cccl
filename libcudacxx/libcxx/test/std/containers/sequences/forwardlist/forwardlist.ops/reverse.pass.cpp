@@ -35,10 +35,8 @@ int main(int, char**)
 {
     for (int i = 0; i < 10; ++i)
         test<std::forward_list<int> >(i);
-#if TEST_STD_VER >= 11
     for (int i = 0; i < 10; ++i)
         test<std::forward_list<int, min_allocator<int>> >(i);
-#endif
 
   return 0;
 }

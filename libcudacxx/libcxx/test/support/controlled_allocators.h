@@ -19,10 +19,6 @@
 #include "test_macros.h"
 #include "type_id.h"
 
-#if TEST_STD_VER < 11
-#error This header requires C++11 or greater
-#endif
-
 struct AllocController;
     // 'AllocController' is a concrete type that instruments and controls the
     // behavior of test allocators.

@@ -46,7 +46,6 @@ int main(int, char**)
     std::chrono::duration<double, std::ratio<1, 15> > r = s1 - s2;
     assert(r.count() == -15);
     }
-#if TEST_STD_VER >= 11
     {
     constexpr std::chrono::seconds s1(3);
     constexpr std::chrono::seconds s2(5);
@@ -71,7 +70,6 @@ int main(int, char**)
     constexpr std::chrono::duration<double, std::ratio<1, 15> > r = s1 - s2;
     static_assert(r.count() == -15, "");
     }
-#endif
 
   return 0;
 }

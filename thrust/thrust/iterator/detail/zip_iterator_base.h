@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/advance.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -52,12 +54,12 @@ template<typename DiffType>
 class advance_iterator
 {
 public:
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   advance_iterator(DiffType step) : m_step(step) {}
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it) const
   { thrust::advance(it, m_step); }
 
@@ -68,9 +70,9 @@ private:
 
 struct increment_iterator
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it)
   { ++it; }
 }; // end increment_iterator
@@ -78,9 +80,9 @@ struct increment_iterator
 
 struct decrement_iterator
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it)
   { --it; }
 }; // end decrement_iterator
@@ -97,9 +99,9 @@ struct dereference_iterator
   }; // end apply
 
   // XXX silence warnings of the form "calling a __host__ function from a __host__ __device__ function is not allowed
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename apply<Iterator>::type operator()(Iterator const& it)
   {
     return *it;
@@ -166,14 +168,14 @@ template<
 
 
 template<typename Fun>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each_helper(Fun f)
 {
   return f;
 }
 
 template<typename Fun, typename T, typename... Ts>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each_helper(Fun f, T& t, Ts&... ts)
 {
   f(t);
@@ -183,7 +185,7 @@ Fun tuple_for_each_helper(Fun f, T& t, Ts&... ts)
 // for_each algorithm for tuples.
 
 template<typename Fun, typename... Ts, size_t... Is>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f, thrust::index_sequence<Is...>)
 {
   return tuple_for_each_helper(f, thrust::get<Is>(t)...);
@@ -191,7 +193,7 @@ Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f, thrust::index_sequence<Is...>
 
 // for_each algorithm for tuples.
 template<typename Fun, typename... Ts>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f)
 {
   return tuple_for_each(t, f, thrust::make_index_sequence<thrust::tuple_size<thrust::tuple<Ts...>>::value>{});

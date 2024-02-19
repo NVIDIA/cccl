@@ -19,11 +19,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/static_assert.h>
 #include <thrust/system/detail/generic/scan.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -44,7 +46,7 @@ namespace generic
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -58,7 +60,7 @@ __host__ __device__
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -74,7 +76,7 @@ template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -90,7 +92,7 @@ template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &,
                                 InputIterator,
                                 InputIterator,
@@ -110,7 +112,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator,
          typename T,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &,
                                 InputIterator,
                                 InputIterator,

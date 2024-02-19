@@ -137,7 +137,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, S("1234567890"), S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, S("12345678901234567890"), S("can't happen"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 0, S(""), S(""));
@@ -221,7 +220,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, S("1234567890"), S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, S("12345678901234567890"), S("can't happen"));
     }
-#endif
 
 #if TEST_STD_VER > 3
     {   // LWG 2946

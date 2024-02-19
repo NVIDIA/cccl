@@ -31,8 +31,6 @@
 #include <memory>
 #include <ostream>
 
-#include <thrust/device_vector.h>
-
 namespace c2h
 {
 
@@ -48,23 +46,34 @@ class custom_type_t : public custom_type_state_t
 {
 
 public:
-  friend __host__ std::ostream &operator<<(std::ostream &os, 
-                                           const custom_type_t &self) 
-  { 
+  friend __host__ std::ostream &operator<<(std::ostream &os,
+                                           const custom_type_t &self)
+  {
     return os << "{ " << self.key << ", " << self.val << " }";
   }
 
 };
 
+template <std::size_t TotalSize>
+struct huge_data
+{
+  template <class CustomType>
+  class type
+  {
+    static constexpr auto extra_member_bytes = (TotalSize - sizeof(custom_type_state_t));
+    std::uint8_t data[extra_member_bytes];
+  };
+};
+
 template <class CustomType>
 class less_comparable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs) 
+  friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key < rhs.key;
   }
@@ -73,12 +82,12 @@ public:
 template <class CustomType>
 class greater_comparable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs) 
+  friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key > rhs.key;
   }
@@ -87,7 +96,7 @@ public:
 template <class CustomType>
 class lexicographical_less_comparable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
@@ -101,12 +110,12 @@ public:
 template <class CustomType>
 class lexicographical_greater_comparable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ bool operator>(const CustomType &lhs, const CustomType &rhs) 
+  friend __host__ __device__ bool operator>(const CustomType &lhs, const CustomType &rhs)
   {
     return lhs.key == rhs.key ? lhs.val > rhs.val : lhs.key > rhs.key;
   }
@@ -115,12 +124,12 @@ public:
 template <class CustomType>
 class equal_comparable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ bool operator==(const CustomType& lhs, const CustomType& rhs) 
+  friend __host__ __device__ bool operator==(const CustomType& lhs, const CustomType& rhs)
   {
     return lhs.key == rhs.key &&
            lhs.val == rhs.val;
@@ -130,18 +139,18 @@ public:
 template <class CustomType>
 class subtractable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ CustomType operator-(const CustomType& lhs, const CustomType& rhs) 
+  friend __host__ __device__ CustomType operator-(const CustomType& lhs, const CustomType& rhs)
   {
     CustomType result{};
 
     result.key = lhs.key - rhs.key;
     result.val = lhs.val - rhs.val;
-    
+
     return result;
   }
 };
@@ -149,18 +158,18 @@ public:
 template <class CustomType>
 class accumulateable_t
 {
-  // The CUDA compiler follows the IA64 ABI for class layout, while the 
+  // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
   char workaround_msvc;
 
 public:
-  friend __host__ __device__ CustomType operator+(const CustomType& lhs, const CustomType& rhs) 
+  friend __host__ __device__ CustomType operator+(const CustomType& lhs, const CustomType& rhs)
   {
     CustomType result{};
 
     result.key = lhs.key + rhs.key;
     result.val = lhs.val + rhs.val;
-    
+
     return result;
   }
 };
@@ -168,11 +177,11 @@ public:
 } // c2h
 
 namespace std {
-  template<template<typename> class... Policies> 
-  class numeric_limits<c2h::custom_type_t<Policies...>> 
+  template<template<typename> class... Policies>
+  class numeric_limits<c2h::custom_type_t<Policies...>>
   {
   public:
-     static c2h::custom_type_t<Policies...> max() 
+     static c2h::custom_type_t<Policies...> max()
      {
        c2h::custom_type_t<Policies...> val;
        val.key = std::numeric_limits<std::size_t>::max();
@@ -180,7 +189,7 @@ namespace std {
        return val;
      }
 
-     static c2h::custom_type_t<Policies...> min() 
+     static c2h::custom_type_t<Policies...> min()
      {
        c2h::custom_type_t<Policies...> val;
        val.key = std::numeric_limits<std::size_t>::min();
@@ -188,7 +197,7 @@ namespace std {
        return val;
      }
 
-     static c2h::custom_type_t<Policies...> lowest() 
+     static c2h::custom_type_t<Policies...> lowest()
      {
        c2h::custom_type_t<Policies...> val;
        val.key = std::numeric_limits<std::size_t>::lowest();
@@ -197,4 +206,3 @@ namespace std {
      }
   };
 }
-

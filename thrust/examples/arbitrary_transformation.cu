@@ -15,7 +15,7 @@
 //
 // Iterators for all four vectors (3 inputs + 1 output) are "zipped"
 // into a single sequence of tuples with the zip_iterator.
-//  
+//
 // The arbitrary_functor receives a tuple that contains four elements,
 // which are references to values in each of the four sequences. When we
 // access the tuple 't' with the get() function,
@@ -34,7 +34,7 @@
 //
 // Note that we could extend this example to implement functions with an
 // arbitrary number of input arguments by zipping more sequence together.
-// With the same approach we can have multiple *output* sequences, if we 
+// With the same approach we can have multiple *output* sequences, if we
 // wanted to implement something like
 //      D[i] = A[i] + B[i] * C[i];
 //      E[i] = A[i] + B[i] + C[i];
@@ -74,11 +74,11 @@ int main(void)
     thrust::device_vector<float> D1(5);
 
     // initialize input vectors
-    A[0] = 3;  B[0] = 6;  C[0] = 2; 
-    A[1] = 4;  B[1] = 7;  C[1] = 5; 
-    A[2] = 0;  B[2] = 2;  C[2] = 7; 
-    A[3] = 8;  B[3] = 1;  C[3] = 4; 
-    A[4] = 2;  B[4] = 8;  C[4] = 3; 
+    A[0] = 3;  B[0] = 6;  C[0] = 2;
+    A[1] = 4;  B[1] = 7;  C[1] = 5;
+    A[2] = 0;  B[2] = 2;  C[2] = 7;
+    A[3] = 8;  B[3] = 1;  C[3] = 4;
+    A[4] = 2;  B[4] = 8;  C[4] = 3;
 
     // apply the transformation
     thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D1.begin())),

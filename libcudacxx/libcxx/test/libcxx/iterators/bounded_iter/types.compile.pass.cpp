@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct Iterator {
   struct value_type {};
   using difference_type = int;
@@ -43,7 +43,7 @@ static_assert(std::is_same<BoundedIter2::difference_type, std::ptrdiff_t>::value
 static_assert(std::is_same<BoundedIter2::pointer, int*>::value, "");
 static_assert(std::is_same<BoundedIter2::reference, int&>::value, "");
 static_assert(std::is_same<BoundedIter2::iterator_category, std::random_access_iterator_tag>::value, "");
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(std::is_same<BoundedIter2::iterator_concept, std::contiguous_iterator_tag>::value, "");
 #endif
 

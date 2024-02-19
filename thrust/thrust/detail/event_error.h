@@ -21,14 +21,16 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
@@ -131,23 +133,23 @@ inline error_condition make_error_condition(event_errc e)
 
 struct event_error : std::logic_error
 {
-  __host__
+  _CCCL_HOST
   explicit event_error(error_code ec)
     : std::logic_error(ec.message()), ec_(ec)
   {}
 
-  __host__
+  _CCCL_HOST
   explicit event_error(event_errc e)
     : event_error(make_error_code(e))
   {}
 
-  __host__
+  _CCCL_HOST
   error_code const& code() const noexcept
   {
     return ec_;
   }
 
-  __host__
+  _CCCL_HOST
   virtual ~event_error() noexcept {}
 
 private:

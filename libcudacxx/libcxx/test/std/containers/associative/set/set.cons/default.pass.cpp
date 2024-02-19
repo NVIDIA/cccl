@@ -25,7 +25,6 @@ int main(int, char**)
     assert(m.empty());
     assert(m.begin() == m.end());
     }
-#if TEST_STD_VER >= 11
     {
     std::set<int, std::less<int>, min_allocator<int>> m;
     assert(m.empty());
@@ -50,7 +49,6 @@ int main(int, char**)
     assert(m.empty());
     assert(m.begin() == m.end());
     }
-#endif
 
   return 0;
 }

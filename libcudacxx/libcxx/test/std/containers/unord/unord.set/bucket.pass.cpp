@@ -44,7 +44,6 @@ int main(int, char**)
         for (size_t i = 0; i < 13; ++i)
             LIBCPP_ASSERT(c.bucket(i) == i % bc);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         typedef int P;
@@ -63,7 +62,6 @@ int main(int, char**)
         for (size_t i = 0; i < 13; ++i)
             LIBCPP_ASSERT(c.bucket(i) == i % bc);
     }
-#endif
 #if _LIBCUDACXX_DEBUG_LEVEL >= 1
     {
         typedef std::unordered_set<int> C;

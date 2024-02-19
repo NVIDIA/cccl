@@ -34,13 +34,15 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,13 +51,13 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  std::integral_constant<bool,
-                         std::is_integral<T>::value || std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool,
+                         ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
-__host__ __device__ __forceinline__ constexpr  std::size_t
-VshmemSize(std::size_t max_shmem,
-           std::size_t shmem_per_block,
-           std::size_t num_blocks)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr  ::cuda::std::size_t
+VshmemSize(::cuda::std::size_t max_shmem,
+           ::cuda::std::size_t shmem_per_block,
+           ::cuda::std::size_t num_blocks)
 {
   return shmem_per_block > max_shmem ? shmem_per_block * num_blocks : 0;
 }
@@ -69,7 +71,7 @@ VshmemSize(std::size_t max_shmem,
  * `(n + d - 1)` would overflow.
  */
 template <typename NumeratorT, typename DenominatorT>
-__host__ __device__ __forceinline__ constexpr NumeratorT
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT
 DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
   static_assert(cub::detail::is_integral_or_enum<NumeratorT>::value &&
@@ -80,7 +82,7 @@ DivideAndRoundUp(NumeratorT n, DenominatorT d)
   return static_cast<NumeratorT>(n / d + (n % d != 0 ? 1 : 0));
 }
 
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
 {
   return (cub::min)(nominal_4b_items_per_thread,
@@ -90,7 +92,7 @@ Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_byte
 }
 
 template <typename T>
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 {
   return (cub::min)(nominal_4b_items_per_thread,
@@ -100,7 +102,7 @@ Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 }
 
 template <typename ItemT>
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal8BItemsToItems(int nominal_8b_items_per_thread)
 {
   return sizeof(ItemT) <= 8u
@@ -120,7 +122,7 @@ Nominal8BItemsToItems(int nominal_8b_items_per_thread)
  * \return Half the sum of \p begin and \p end
  */
 template <typename T>
-constexpr __device__ __host__ T MidPoint(T begin, T end)
+constexpr _CCCL_HOST_DEVICE T MidPoint(T begin, T end)
 {
   return begin + (end - begin) / 2;
 }

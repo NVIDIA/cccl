@@ -17,11 +17,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/execution_policy.h>
@@ -36,7 +38,7 @@ namespace detail {
 // --------------------------------------------------
 // it is okay to dereference iterator in the usual way
 template<typename DerivedPolicy, typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::iterator_traits<Iterator>::value_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy> &, Iterator it)
 {
@@ -50,7 +52,7 @@ get_iterator_value(thrust::execution_policy<DerivedPolicy> &, Iterator it)
 // we use get_value(exec,pointer*) function
 // to perform a dereferencing consistent with the execution policy
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::pointer_traits<Pointer*>::element_type
 get_iterator_value(thrust::execution_policy<DerivedPolicy> &exec, Pointer* ptr)
 {

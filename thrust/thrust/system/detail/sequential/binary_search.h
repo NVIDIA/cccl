@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/advance.h>
 #include <thrust/distance.h>
@@ -43,12 +45,12 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename T,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator lower_bound(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -88,12 +90,12 @@ ForwardIterator lower_bound(sequential::execution_policy<DerivedPolicy> &,
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename T,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator upper_bound(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -133,12 +135,12 @@ ForwardIterator upper_bound(sequential::execution_policy<DerivedPolicy> &,
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename T,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool binary_search(sequential::execution_policy<DerivedPolicy> &exec,
                    ForwardIterator first,
                    ForwardIterator last,

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/detail/minimum_system.h>
@@ -56,10 +58,10 @@ struct reduce_by_key_functor
 
   typedef typename thrust::tuple<ValueType, TailFlagType> result_type;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   reduce_by_key_functor(AssociativeOperator _binary_op) : binary_op(_binary_op) {}
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   result_type operator()(result_type a, result_type b)
   {
     return result_type(thrust::get<1>(b) ? thrust::get<0>(b) : binary_op(thrust::get<0>(a), thrust::get<0>(b)),
@@ -78,7 +80,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator2,
          typename BinaryPredicate,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
                   InputIterator1 keys_first,
@@ -143,7 +145,7 @@ template<typename ExecutionPolicy,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
                   InputIterator1 keys_first,
@@ -165,7 +167,7 @@ template<typename ExecutionPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<ExecutionPolicy> &exec,
                   InputIterator1 keys_first,

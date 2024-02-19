@@ -25,11 +25,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#if TEST_STD_VER >= 11
 #include <initializer_list>
 
 #include "test_macros.h"
-#endif
 
 struct all_zero_seed_seq {
   typedef unsigned int result_type;
@@ -38,9 +36,7 @@ struct all_zero_seed_seq {
 
   template <typename InputIterator>
   all_zero_seed_seq(InputIterator, InputIterator) {}
-#if TEST_STD_VER >= 11
   all_zero_seed_seq(std::initializer_list<result_type>) {}
-#endif
 
   template <typename RandomAccessIterator>
   void generate(RandomAccessIterator rb, RandomAccessIterator re) {

@@ -37,7 +37,7 @@ void test ( const CharT *s, size_t len ) {
     }
 }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 constexpr size_t test_ce ( size_t n, size_t k ) {
     typedef std::basic_string_view<char> SV;
     SV sv1{ "ABCDEFGHIJKL", n };
@@ -55,7 +55,6 @@ int main(int, char**) {
     test ( L"a", 1 );
     test ( L"", 0 );
 
-#if TEST_STD_VER >= 11
     test ( u"ABCDE", 5 );
     test ( u"a", 1 );
     test ( u"", 0 );
@@ -63,9 +62,8 @@ int main(int, char**) {
     test ( U"ABCDE", 5 );
     test ( U"a", 1 );
     test ( U"", 0 );
-#endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     static_assert ( test_ce ( 5, 0 ) == 5, "" );
     static_assert ( test_ce ( 5, 1 ) == 4, "" );

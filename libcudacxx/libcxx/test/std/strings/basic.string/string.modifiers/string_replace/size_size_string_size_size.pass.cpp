@@ -5925,7 +5925,6 @@ int main(int, char**)
     test54<S>();
     test55<S>();
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test0<S>();
@@ -5985,7 +5984,6 @@ int main(int, char**)
     test54<S>();
     test55<S>();
     }
-#endif
 
   return 0;
 }

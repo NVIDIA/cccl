@@ -23,11 +23,13 @@
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cuda/__cccl_config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 // NOTE: The order of these #includes matters.
 
@@ -40,10 +42,7 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 // because other config headers depend on it
 #include <thrust/detail/config/host_system.h>
 #include <thrust/detail/config/device_system.h>
-#include <thrust/detail/config/host_device.h>
 #include <thrust/detail/config/debug.h>
-#include <thrust/detail/config/forceinline.h>
-#include <thrust/detail/config/exec_check_disable.h>
 #include <thrust/detail/config/global_workarounds.h>
 #include <thrust/detail/config/namespace.h>
 

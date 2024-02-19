@@ -43,7 +43,7 @@ int main(int, char**)
                   "decltype(nullptr) == nullptr_t");
     static_assert(sizeof(nullptr_t) == sizeof(void*),
                   "sizeof(nullptr_t) == sizeof(void*)");
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 //   P0767
     static_assert(std::is_trivial<max_align_t>::value,
                   "std::is_trivial<max_align_t>::value");

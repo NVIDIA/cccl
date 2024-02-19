@@ -40,7 +40,6 @@ int main(int, char**)
         m.clear();
         assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::map<int, double, std::less<int>, min_allocator<std::pair<const int, double>>> M;
         typedef std::pair<int, double> P;
@@ -61,7 +60,6 @@ int main(int, char**)
         m.clear();
         assert(m.size() == 0);
     }
-#endif
 
   return 0;
 }

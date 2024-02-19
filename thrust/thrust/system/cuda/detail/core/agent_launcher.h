@@ -28,18 +28,19 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/detail/device_synchronize.cuh>
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/system/cuda/detail/core/util.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
 #include <cassert>
 
@@ -54,7 +55,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #if !defined(_CCCL_CUDA_COMPILER_NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#endif // !_LIBCUDACXX_COMPILER_NVHPC_CUDA
+#endif // !_CCCL_CUDA_COMPILER_NVHPC
 #endif // !THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 THRUST_NAMESPACE_BEGIN

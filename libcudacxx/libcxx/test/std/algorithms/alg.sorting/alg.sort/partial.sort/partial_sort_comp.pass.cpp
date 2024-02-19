@@ -82,7 +82,6 @@ int main(int, char**)
     test_larger_sorts(1009);
     }
 
-#if TEST_STD_VER >= 11
     {
     std::vector<std::unique_ptr<int> > v(1000);
     for (int i = 0; static_cast<std::size_t>(i) < v.size(); ++i)
@@ -91,7 +90,6 @@ int main(int, char**)
     for (int i = 0; static_cast<std::size_t>(i) < v.size()/2; ++i)
         assert(*v[i] == i);
     }
-#endif
 
   return 0;
 }

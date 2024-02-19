@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <iterator>
 
@@ -50,6 +52,10 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+#include <cuda/std/functional>
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_BEGIN
 
@@ -123,7 +129,8 @@ template <typename AgentReducePolicy,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOp,
-          typename AccumT>
+          typename AccumT,
+          typename TransformOp = ::cuda::std::__identity>
 struct AgentReduce
 {
   //---------------------------------------------------------------------
@@ -187,6 +194,7 @@ struct AgentReduce
   InputIteratorT d_in;                ///< Input data to reduce
   WrappedInputIteratorT d_wrapped_in; ///< Wrapped input data to reduce
   ReductionOp reduction_op;           ///< Binary reduction operator
+  TransformOp transform_op;          ///< Transform operator
 
   //---------------------------------------------------------------------
   // Utility
@@ -195,7 +203,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we can vectorize)
   template <typename Iterator>
-  static __device__ __forceinline__ bool
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
   IsAligned(Iterator d_in, Int2Type<true> /*can_vectorize*/)
   {
     return (size_t(d_in) & (sizeof(VectorT) - 1)) == 0;
@@ -204,7 +212,7 @@ struct AgentReduce
   // Whether or not the input is aligned with the vector type (specialized for
   // types we cannot vectorize)
   template <typename Iterator>
-  static __device__ __forceinline__ bool
+  static _CCCL_DEVICE _CCCL_FORCEINLINE bool
   IsAligned(Iterator /*d_in*/, Int2Type<false> /*can_vectorize*/)
   {
     return false;
@@ -220,13 +228,15 @@ struct AgentReduce
    * @param d_in Input data to reduce
    * @param reduction_op Binary reduction operator
    */
-  __device__ __forceinline__ AgentReduce(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduce(TempStorage &temp_storage,
                                          InputIteratorT d_in,
-                                         ReductionOp reduction_op)
+                                         ReductionOp reduction_op,
+                                         TransformOp transform_op = {})
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_wrapped_in(d_in)
       , reduction_op(reduction_op)
+      , transform_op(transform_op)
   {}
 
   //---------------------------------------------------------------------
@@ -241,7 +251,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE>
-  __device__ __forceinline__ void ConsumeTile(AccumT &thread_aggregate,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(AccumT &thread_aggregate,
                                               OffsetT block_offset,
                                               int /*valid_items*/,
                                               Int2Type<true> /*is_full_tile*/,
@@ -250,9 +260,8 @@ struct AgentReduce
     AccumT items[ITEMS_PER_THREAD];
 
     // Load items in striped fashion
-    LoadDirectStriped<BLOCK_THREADS>(threadIdx.x,
-                                     d_wrapped_in + block_offset,
-                                     items);
+    cub::detail::load_transform_direct_striped<BLOCK_THREADS>(
+      threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
     thread_aggregate =
@@ -269,7 +278,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE>
-  __device__ __forceinline__ void ConsumeTile(AccumT &thread_aggregate,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(AccumT &thread_aggregate,
                                               OffsetT block_offset,
                                               int /*valid_items*/,
                                               Int2Type<true> /*is_full_tile*/,
@@ -301,7 +310,7 @@ struct AgentReduce
 #pragma unroll
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
-      items[i] = input_items[i];
+      items[i] = transform_op(input_items[i]);
     }
 
     // Reduce items within each thread stripe
@@ -319,7 +328,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int IS_FIRST_TILE, int CAN_VECTORIZE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(AccumT &thread_aggregate,
               OffsetT block_offset,
               int valid_items,
@@ -332,7 +341,7 @@ struct AgentReduce
     // Read first item
     if ((IS_FIRST_TILE) && (thread_offset < valid_items))
     {
-      thread_aggregate = d_wrapped_in[block_offset + thread_offset];
+      thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
       thread_offset += BLOCK_THREADS;
     }
 
@@ -341,7 +350,7 @@ struct AgentReduce
     {
       InputT item(d_wrapped_in[block_offset + thread_offset]);
 
-      thread_aggregate = reduction_op(thread_aggregate, item);
+      thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
       thread_offset += BLOCK_THREADS;
     }
   }
@@ -356,7 +365,7 @@ struct AgentReduce
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int CAN_VECTORIZE>
-  __device__ __forceinline__ AccumT
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
   ConsumeRange(GridEvenShare<OffsetT> &even_share,
                Int2Type<CAN_VECTORIZE> can_vectorize)
   {
@@ -389,7 +398,7 @@ struct AgentReduce
    * @param[in] block_offset Threadblock begin offset (inclusive)
    * @param[in] block_end Threadblock end offset (exclusive)
    */
-  __device__ __forceinline__ AccumT ConsumeRange(OffsetT block_offset,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ConsumeRange(OffsetT block_offset,
                                                  OffsetT block_end)
   {
     GridEvenShare<OffsetT> even_share;
@@ -406,7 +415,7 @@ struct AgentReduce
    * Reduce a contiguous segment of input tiles
    * @param[in] even_share GridEvenShare descriptor
    */
-  __device__ __forceinline__ AccumT
+  _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
   ConsumeTiles(GridEvenShare<OffsetT> &even_share)
   {
     // Initialize GRID_MAPPING_STRIP_MINE even-share descriptor for this thread block
@@ -426,7 +435,7 @@ private:
    * @param can_vectorize Whether or not we can vectorize loads
    */
   template <int CAN_VECTORIZE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeFullTileRange(AccumT &thread_aggregate,
                        GridEvenShare<OffsetT> &even_share,
                        Int2Type<CAN_VECTORIZE> can_vectorize)

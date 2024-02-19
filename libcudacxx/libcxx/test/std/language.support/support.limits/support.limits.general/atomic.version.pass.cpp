@@ -24,7 +24,7 @@
 #include <atomic>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_atomic_is_always_lock_free
 #   error "__cpp_lib_atomic_is_always_lock_free should not be defined before c++17"
@@ -38,7 +38,7 @@
 #   error "__cpp_lib_char8_t should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 # ifdef __cpp_lib_atomic_is_always_lock_free
 #   error "__cpp_lib_atomic_is_always_lock_free should not be defined before c++17"
@@ -52,7 +52,7 @@
 #   error "__cpp_lib_char8_t should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 # if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 #   ifndef __cpp_lib_atomic_is_always_lock_free
@@ -75,7 +75,7 @@
 #   error "__cpp_lib_char8_t should not be defined before c++2a"
 # endif
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 # if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 #   ifndef __cpp_lib_atomic_is_always_lock_free
@@ -116,6 +116,6 @@
 #   endif
 # endif
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

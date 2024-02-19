@@ -38,17 +38,15 @@ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
 
-#if TEST_STD_VER >= 11
     // Sanity check for constexpr in C++11
     {
         constexpr std::array<int, 3> array = {};
         static_assert(!array.empty(), "");
     }
-#endif
 
     return 0;
 }

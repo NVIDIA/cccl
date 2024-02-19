@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/detail/tuple_transform.h>
@@ -31,38 +33,15 @@ THRUST_NAMESPACE_BEGIN
 
 
 template<typename IteratorTuple>
-__host__ __device__
-  zip_iterator<IteratorTuple>
-    ::zip_iterator()
-{
-} // end zip_iterator::zip_iterator()
-
-
-template<typename IteratorTuple>
-__host__ __device__
+_CCCL_HOST_DEVICE
   zip_iterator<IteratorTuple>
     ::zip_iterator(IteratorTuple iterator_tuple)
       :m_iterator_tuple(iterator_tuple)
 {
 } // end zip_iterator::zip_iterator()
 
-
 template<typename IteratorTuple>
-  template<typename OtherIteratorTuple>
-  __host__ __device__
-    zip_iterator<IteratorTuple>
-      ::zip_iterator(const zip_iterator<OtherIteratorTuple> &other,
-                     typename thrust::detail::enable_if_convertible<
-                       OtherIteratorTuple,
-                       IteratorTuple
-                     >::type *)
-        :m_iterator_tuple(other.get_iterator_tuple())
-{
-} // end zip_iterator::zip_iterator()
-
-
-template<typename IteratorTuple>
-__host__ __device__
+_CCCL_HOST_DEVICE
 const IteratorTuple &zip_iterator<IteratorTuple>
   ::get_iterator_tuple() const
 {
@@ -72,7 +51,7 @@ const IteratorTuple &zip_iterator<IteratorTuple>
 
 template<typename IteratorTuple>
   typename zip_iterator<IteratorTuple>::super_t::reference
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     zip_iterator<IteratorTuple>
       ::dereference() const
 {
@@ -84,10 +63,10 @@ template<typename IteratorTuple>
 } // end zip_iterator::dereference()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename IteratorTuple>
   template<typename OtherIteratorTuple>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     bool zip_iterator<IteratorTuple>
       ::equal(const zip_iterator<OtherIteratorTuple> &other) const
 {
@@ -96,7 +75,7 @@ template<typename IteratorTuple>
 
 
 template<typename IteratorTuple>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void zip_iterator<IteratorTuple>
     ::advance(typename super_t::difference_type n)
 {
@@ -107,7 +86,7 @@ __host__ __device__
 
 
 template<typename IteratorTuple>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void zip_iterator<IteratorTuple>
     ::increment()
 {
@@ -117,7 +96,7 @@ __host__ __device__
 
 
 template<typename IteratorTuple>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void zip_iterator<IteratorTuple>
     ::decrement()
 {
@@ -126,10 +105,10 @@ __host__ __device__
 } // end zip_iterator::decrement()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename IteratorTuple>
   template <typename OtherIteratorTuple>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename zip_iterator<IteratorTuple>::super_t::difference_type
       zip_iterator<IteratorTuple>
         ::distance_to(const zip_iterator<OtherIteratorTuple> &other) const
@@ -139,7 +118,7 @@ template<typename IteratorTuple>
 
 
 template<typename... Iterators>
-__host__ __device__
+_CCCL_HOST_DEVICE
   zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(thrust::tuple<Iterators...> t)
 {
   return zip_iterator<thrust::tuple<Iterators...>>(t);
@@ -147,7 +126,7 @@ __host__ __device__
 
 
 template<typename... Iterators>
-__host__ __device__
+_CCCL_HOST_DEVICE
   zip_iterator<thrust::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
   return make_zip_iterator(thrust::make_tuple(its...));

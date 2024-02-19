@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/random/xor_combine_engine.h>
 #include <thrust/random/detail/random_core_access.h>
@@ -34,7 +36,7 @@ namespace random
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   xor_combine_engine<Engine1,s1,Engine2,s2>
     ::xor_combine_engine(void)
       :m_b1(),m_b2()
@@ -43,7 +45,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   xor_combine_engine<Engine1,s1,Engine2,s2>
     ::xor_combine_engine(const base1_type &urng1, const base2_type &urng2)
       :m_b1(urng1),m_b2(urng2)
@@ -52,7 +54,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   xor_combine_engine<Engine1,s1,Engine2,s2>
     ::xor_combine_engine(result_type s)
       :m_b1(s),m_b2(s)
@@ -61,7 +63,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void xor_combine_engine<Engine1,s1,Engine2,s2>
     ::seed(void)
 {
@@ -71,7 +73,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void xor_combine_engine<Engine1,s1,Engine2,s2>
     ::seed(result_type s)
 {
@@ -81,7 +83,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   const typename xor_combine_engine<Engine1,s1,Engine2,s2>::base1_type &
     xor_combine_engine<Engine1,s1,Engine2,s2>
       ::base1(void) const
@@ -91,7 +93,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   const typename xor_combine_engine<Engine1,s1,Engine2,s2>::base2_type &
     xor_combine_engine<Engine1,s1,Engine2,s2>
       ::base2(void) const
@@ -101,7 +103,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename xor_combine_engine<Engine1,s1,Engine2,s2>::result_type
     xor_combine_engine<Engine1,s1,Engine2,s2>
       ::operator()(void)
@@ -112,7 +114,7 @@ template<typename Engine1, size_t s1,
 
 template<typename Engine1, size_t s1,
          typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void xor_combine_engine<Engine1, s1, Engine2, s2>
     ::discard(unsigned long long z)
 {
@@ -172,7 +174,7 @@ template<typename Engine1, size_t s1, typename Engine2, size_t s2>
 
 
 template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bool xor_combine_engine<Engine1,s1,Engine2,s2>
     ::equal(const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs) const
 {
@@ -201,7 +203,7 @@ operator>>(std::basic_istream<CharT,Traits> &is,
 
 
 template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const xor_combine_engine<Engine1,s1,Engine2,s2> &lhs,
                 const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs)
 {
@@ -210,7 +212,7 @@ bool operator==(const xor_combine_engine<Engine1,s1,Engine2,s2> &lhs,
 
 
 template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const xor_combine_engine<Engine1,s1,Engine2,s2> &lhs,
                 const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs)
 {

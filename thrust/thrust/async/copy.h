@@ -22,14 +22,16 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/select_system.h>
@@ -53,7 +55,7 @@ template <
   typename FromPolicy, typename ToPolicy
 , typename ForwardIt, typename Sentinel, typename OutputIt
 >
-__host__
+_CCCL_HOST
 event<FromPolicy>
 async_copy(
   thrust::execution_policy<FromPolicy>& from_exec
@@ -81,7 +83,7 @@ struct copy_fn final
     typename FromPolicy, typename ToPolicy
   , typename ForwardIt, typename Sentinel, typename OutputIt
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     thrust::detail::execution_policy_base<FromPolicy> const& from_exec
   , thrust::detail::execution_policy_base<ToPolicy> const&   to_exec
@@ -102,7 +104,7 @@ struct copy_fn final
     typename DerivedPolicy
   , typename ForwardIt, typename Sentinel, typename OutputIt
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
   , ForwardIt&& first, Sentinel&& last
@@ -122,7 +124,7 @@ struct copy_fn final
   )
 
   template <typename ForwardIt, typename Sentinel, typename OutputIt>
-  __host__
+  _CCCL_HOST
   static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output)
   THRUST_RETURNS(
     copy_fn::call(
@@ -138,7 +140,7 @@ struct copy_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)

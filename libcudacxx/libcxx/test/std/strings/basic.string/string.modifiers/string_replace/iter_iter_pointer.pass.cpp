@@ -274,14 +274,12 @@ int main(int, char**)
     test1<S>();
     test2<S>();
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test0<S>();
     test1<S>();
     test2<S>();
     }
-#endif
 
     { // test replacing into self
     typedef std::string S;

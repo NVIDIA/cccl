@@ -19,9 +19,7 @@
 #include "test_iterators.h"
 #include "test_allocator.h"
 #include "min_allocator.h"
-#if TEST_STD_VER >= 11
 #include "emplace_constructible.h"
-#endif
 
 template <class InputIterator, class Allocator>
 void
@@ -46,17 +44,14 @@ void basic_test()
     test(forward_iterator<const int*>(ab), forward_iterator<const int*>(an), test_allocator<int>(4));
     test(bidirectional_iterator<const int*>(ab), bidirectional_iterator<const int*>(an), test_allocator<int>(5));
     test(random_access_iterator<const int*>(ab), random_access_iterator<const int*>(an), test_allocator<int>(6));
-#if TEST_STD_VER >= 11
     test(cpp17_input_iterator<const int*>(ab), cpp17_input_iterator<const int*>(an), min_allocator<int>());
     test(forward_iterator<const int*>(ab), forward_iterator<const int*>(an), min_allocator<int>());
     test(bidirectional_iterator<const int*>(ab), bidirectional_iterator<const int*>(an), min_allocator<int>());
     test(random_access_iterator<const int*>(ab), random_access_iterator<const int*>(an), min_allocator<int>());
-#endif
 }
 
 
 void test_emplacable_concept() {
-#if TEST_STD_VER >= 11
   int arr1[] = {42};
   int arr2[] = {1, 101, 42};
   {
@@ -93,7 +88,6 @@ void test_emplacable_concept() {
       assert(v[2].value == 42);
     }
   }
-#endif
 }
 
 int main(int, char**) {

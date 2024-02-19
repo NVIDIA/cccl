@@ -35,13 +35,16 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_debug.cuh>
+#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <map>
@@ -51,12 +54,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <math.h>
 
 CUB_NAMESPACE_BEGIN
-
-
-/**
- * @addtogroup UtilMgmt
- * @{
- */
 
 
 /******************************************************************************
@@ -331,8 +328,7 @@ struct CachingDeviceAllocator
                            unsigned int min_bin    = 1,
                            unsigned int max_bin    = INVALID_BIN,
                            size_t max_cached_bytes = INVALID_SIZE,
-                           bool skip_cleanup       = false,
-                           bool debug              = false)
+                           bool skip_cleanup       = false)
         : bin_growth(bin_growth)
         , min_bin(min_bin)
         , max_bin(max_bin)
@@ -340,9 +336,43 @@ struct CachingDeviceAllocator
         , max_bin_bytes(IntPow(bin_growth, max_bin))
         , max_cached_bytes(max_cached_bytes)
         , skip_cleanup(skip_cleanup)
-        , debug(debug)
+        , debug(false)
         , cached_blocks(BlockDescriptor::SizeCompare)
         , live_blocks(BlockDescriptor::PtrCompare)
+    {}
+
+    /**
+     * @brief Constructor.
+     *
+     * @param bin_growth
+     *   Geometric growth factor for bin-sizes
+     *
+     * @param min_bin
+     *   Minimum bin (default is bin_growth ^ 1)
+     *
+     * @param max_bin
+     *   Maximum bin (default is no max bin)
+     *
+     * @param max_cached_bytes
+     *   Maximum aggregate cached bytes per device (default is no limit)
+     *
+     * @param skip_cleanup
+     *   Whether or not to skip a call to @p FreeAllCached() when the destructor is called (default
+     *   is to deallocate)
+     *
+     * @param debug
+     *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
+     */
+    CUB_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
+                           "Define CUB_DEBUG_LOG instead, or silence this message with "
+                           "CUB_IGNORE_DEPRECATED_API.")
+    CachingDeviceAllocator(unsigned int bin_growth,
+                           unsigned int min_bin,
+                           unsigned int max_bin,
+                           size_t max_cached_bytes,
+                           bool skip_cleanup,
+                           bool /* debug */)
+        : CachingDeviceAllocator(bin_growth, min_bin, max_bin, max_cached_bytes, skip_cleanup)
     {}
 
 
@@ -387,7 +417,9 @@ struct CachingDeviceAllocator
         // Lock
         mutex.lock();
 
-        if (debug) _CubLog("Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+        _CubLog("Changing max_cached_bytes (%lld -> %lld)\n", (long long) this->max_cached_bytes, (long long) max_cached_bytes_);
+#endif
 
         this->max_cached_bytes = max_cached_bytes_;
 
@@ -498,8 +530,10 @@ struct CachingDeviceAllocator
                     cached_bytes[device].free -= search_key.bytes;
                     cached_bytes[device].live += search_key.bytes;
 
-                    if (debug) _CubLog("\tDevice %d reused cached block at %p (%lld bytes) for stream %lld (previously associated with stream %lld).\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+                    _CubLog("\tDevice %d reused cached block at %p (%lld bytes) for stream %lld (previously associated with stream %lld).\n",
                         device, search_key.d_ptr, (long long) search_key.bytes, (long long) search_key.associated_stream, (long long)  block_itr->associated_stream);
+#endif
 
                     cached_blocks.erase(block_itr);
 
@@ -536,8 +570,10 @@ struct CachingDeviceAllocator
             if (error == cudaErrorMemoryAllocation)
             {
                 // The allocation attempt failed: free all cached blocks on device and retry
-                if (debug) _CubLog("\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+                _CubLog("\tDevice %d failed to allocate %lld bytes for stream %lld, retrying after freeing cached allocations",
                       device, (long long) search_key.bytes, (long long) search_key.associated_stream);
+#endif
 
                 error = cudaSuccess;    // Reset the error we will return
                 cudaGetLastError();     // Reset CUDART's error
@@ -571,8 +607,10 @@ struct CachingDeviceAllocator
                     // Reduce balance and erase entry
                     cached_bytes[device].free -= block_itr->bytes;
 
-                    if (debug) _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+                    _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
                         device, (long long) block_itr->bytes, (long long) cached_blocks.size(), (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
+#endif
 
                     block_itr = cached_blocks.erase(block_itr);
                 }
@@ -606,8 +644,10 @@ struct CachingDeviceAllocator
             cached_bytes[device].live += search_key.bytes;
             mutex.unlock();
 
-            if (debug) _CubLog("\tDevice %d allocated new device block at %p (%lld bytes associated with stream %lld).\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+            _CubLog("\tDevice %d allocated new device block at %p (%lld bytes associated with stream %lld).\n",
                       device, search_key.d_ptr, (long long) search_key.bytes, (long long) search_key.associated_stream);
+#endif
 
             // Attempt to revert back to previous device if necessary
             if ((entrypoint_device != INVALID_DEVICE_ORDINAL) && (entrypoint_device != device))
@@ -623,8 +663,10 @@ struct CachingDeviceAllocator
         // Copy device pointer to output parameter
         *d_ptr = search_key.d_ptr;
 
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         if (debug) _CubLog("\t\t%lld available blocks cached (%lld bytes), %lld live blocks outstanding(%lld bytes).\n",
             (long long) cached_blocks.size(), (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
+#endif
 
         return error;
     }
@@ -700,9 +742,11 @@ struct CachingDeviceAllocator
                 cached_blocks.insert(search_key);
                 cached_bytes[device].free += search_key.bytes;
 
-                if (debug) _CubLog("\tDevice %d returned %lld bytes from associated stream %lld.\n\t\t %lld available blocks cached (%lld bytes), %lld live blocks outstanding. (%lld bytes)\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+                _CubLog("\tDevice %d returned %lld bytes from associated stream %lld.\n\t\t %lld available blocks cached (%lld bytes), %lld live blocks outstanding. (%lld bytes)\n",
                     device, (long long) search_key.bytes, (long long) search_key.associated_stream, (long long) cached_blocks.size(),
                     (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
+#endif
             }
         }
 
@@ -750,8 +794,10 @@ struct CachingDeviceAllocator
                 return error;
             }
 
-            if (debug) _CubLog("\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+            _CubLog("\tDevice %d freed %lld bytes from associated stream %lld.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
                 device, (long long) search_key.bytes, (long long) search_key.associated_stream, (long long) cached_blocks.size(), (long long) cached_bytes[device].free, (long long) live_blocks.size(), (long long) cached_bytes[device].live);
+#endif
         }
 
         // Reset device
@@ -838,8 +884,10 @@ struct CachingDeviceAllocator
             cached_bytes[current_device].free -= block_bytes;
             cached_blocks.erase(begin);
 
-            if (debug) _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
+#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+            _CubLog("\tDevice %d freed %lld bytes.\n\t\t  %lld available blocks cached (%lld bytes), %lld live blocks (%lld bytes) outstanding.\n",
                 current_device, (long long) block_bytes, (long long) cached_blocks.size(), (long long) cached_bytes[current_device].free, (long long) live_blocks.size(), (long long) cached_bytes[current_device].live);
+#endif
 
         }
 
@@ -869,10 +917,5 @@ struct CachingDeviceAllocator
     }
 
 };
-
-
-
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

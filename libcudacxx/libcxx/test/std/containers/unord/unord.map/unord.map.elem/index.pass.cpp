@@ -24,9 +24,7 @@
 #include "min_allocator.h"
 #include "count_new.h"
 
-#if TEST_STD_VER >= 11
 #include "container_test_types.h"
-#endif
 
 int main(int, char**)
 {
@@ -50,7 +48,6 @@ int main(int, char**)
         assert(c.size() == 5);
         assert(c.at(11) == "eleven");
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<MoveOnly, std::string> C;
         typedef std::pair<int, std::string> P;
@@ -158,7 +155,6 @@ int main(int, char**)
             }
         }
     }
-#endif
 
   return 0;
 }

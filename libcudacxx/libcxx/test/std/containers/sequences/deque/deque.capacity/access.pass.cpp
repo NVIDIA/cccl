@@ -83,7 +83,6 @@ int main(int, char**)
         assert(c.front() == 0);
         assert(c.back() == 9);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::deque<int, min_allocator<int>> C;
         C c = make<std::deque<int, min_allocator<int>> >(10);
@@ -116,7 +115,6 @@ int main(int, char**)
         assert(c.front() == 0);
         assert(c.back() == 9);
     }
-#endif
 
   return 0;
 }

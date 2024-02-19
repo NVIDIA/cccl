@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/pair.h>
@@ -41,7 +43,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -69,7 +71,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -96,7 +98,7 @@ template <
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
@@ -125,7 +127,7 @@ template <
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,

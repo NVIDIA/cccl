@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/detail/allocator/allocator_traits.h>
@@ -101,13 +103,13 @@ template<typename Allocator>
 {
   Allocator &a;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   destroy_via_allocator(Allocator &a)
     : a(a)
   {}
 
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(T &x)
   {
     allocator_traits<Allocator>::destroy(a, &x);
@@ -117,7 +119,7 @@ template<typename Allocator>
 
 // destroy_range case 1: destroy via allocator
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if_destroy_range_case1<Allocator,Pointer>::type
     destroy_range(Allocator &a, Pointer p, Size n)
 {
@@ -128,9 +130,9 @@ __host__ __device__
 // we must prepare for His coming
 struct gozer
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(T &x)
   {
     x.~T();
@@ -139,7 +141,7 @@ struct gozer
 
 // destroy_range case 2: destroy without the allocator
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if_destroy_range_case2<Allocator,Pointer>::type
     destroy_range(Allocator &a, Pointer p, Size n)
 {
@@ -149,7 +151,7 @@ __host__ __device__
 
 // destroy_range case 3: no-op
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if_destroy_range_case3<Allocator,Pointer>::type
     destroy_range(Allocator &, Pointer, Size)
 {
@@ -161,7 +163,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void destroy_range(Allocator &a, Pointer p, Size n)
 {
   return allocator_traits_detail::destroy_range(a,p,n);

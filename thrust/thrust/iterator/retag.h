@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/retag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -48,7 +50,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see retag
  */
 template<typename Tag, typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 unspecified_iterator_type reinterpret_tag(Iterator iter);
 
 /*! \p retag returns a copy of an iterator and changes the type of the result's system tag.
@@ -63,7 +65,7 @@ unspecified_iterator_type reinterpret_tag(Iterator iter);
  *  \see reinterpret_tag
  */
 template<typename Tag, typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 unspecified_iterator_type retag(Iterator iter);
 #endif
 

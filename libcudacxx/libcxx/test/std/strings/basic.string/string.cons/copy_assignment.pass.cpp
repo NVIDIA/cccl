@@ -47,7 +47,6 @@ int main(int, char**)
            "1234567890123456789012345678901234567890123456789012345678901234567890"),
          S("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), S());
@@ -66,7 +65,6 @@ int main(int, char**)
            "1234567890123456789012345678901234567890123456789012345678901234567890"),
          S("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz"));
     }
-#endif
 
 #if TEST_STD_VER > 3
     {   // LWG 2946

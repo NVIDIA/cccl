@@ -15,18 +15,20 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__iterator/advance.h"
 #include "../__iterator/concepts.h"
 #include "../__iterator/incrementable_traits.h"
 #include "../__iterator/iterator_traits.h"
 #include "../__type_traits/enable_if.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#  pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -44,7 +46,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 // [range.iter.op.next]
 
@@ -94,6 +96,6 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto next = __next::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 #endif // _LIBCUDACXX___ITERATOR_NEXT_H

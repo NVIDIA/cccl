@@ -86,7 +86,6 @@ int main(int, char**)
     test<Copyable, test_allocator<Copyable> >();
     static_assert((std::is_same<std::vector<char>::allocator_type,
                                 std::allocator<char> >::value), "");
-#if TEST_STD_VER >= 11
     {
 
     typedef std::vector<int, min_allocator<int> > C;
@@ -104,7 +103,6 @@ int main(int, char**)
 //     static_assert((std::is_same<typename C::difference_type,
 //         typename std::iterator_traits<typename C::const_iterator>::difference_type>::value), "");
     }
-#endif
 
   return 0;
 }

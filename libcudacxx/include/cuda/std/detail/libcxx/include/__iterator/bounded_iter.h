@@ -15,18 +15,20 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__iterator/iterator_traits.h"
 #include "../__memory/pointer_traits.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__utility/move.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -47,7 +49,7 @@ struct __bounded_iter {
   using pointer           = typename iterator_traits<_Iterator>::pointer;
   using reference         = typename iterator_traits<_Iterator>::reference;
   using iterator_category = typename iterator_traits<_Iterator>::iterator_category;
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
   using iterator_concept = contiguous_iterator_tag;
 #endif
 
@@ -239,7 +241,7 @@ constexpr __bounded_iter<_It> __make_bounded_iter(_It __it, _It __begin, _It __e
   return __bounded_iter<_It>(_CUDA_VSTD::move(__it), _CUDA_VSTD::move(__begin), _CUDA_VSTD::move(__end));
 }
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _Iterator>
 struct __is_cpp17_contiguous_iterator<__bounded_iter<_Iterator> > : true_type {};
 #endif

@@ -36,7 +36,6 @@ int main(int, char**)
     assert(ns.count() == 90);
     }
 
-#if TEST_STD_VER >= 11
     {
     constexpr std::chrono::nanoseconds ns(3);
     constexpr std::chrono::nanoseconds ns2 = ns * 5;
@@ -44,9 +43,7 @@ int main(int, char**)
     constexpr std::chrono::nanoseconds ns3 = 6 * ns;
     static_assert(ns3.count() == 18, "");
     }
-#endif
 
-#if TEST_STD_VER >= 11
     { // This is related to PR#41130
     typedef std::chrono::nanoseconds Duration;
     Duration d(5);
@@ -58,7 +55,6 @@ int main(int, char**)
     d = n * d;
     assert(d.count() == 5);
     }
-#endif
 
   return 0;
 }

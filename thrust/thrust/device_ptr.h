@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/memory.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -88,7 +90,7 @@ class device_ptr
      *
      *  \post <tt>get() == nullptr</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_ptr() : super_t() {}
 
     /*! \brief Construct a null \c device_ptr.
@@ -97,7 +99,7 @@ class device_ptr
      *
      *  \post <tt>get() == nullptr</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_ptr(std::nullptr_t) : super_t(nullptr) {}
 
     /*! \brief Construct a \c device_ptr from a raw pointer which is
@@ -113,7 +115,7 @@ class device_ptr
      *  \post <tt>get() == nullptr</tt>.
      */
     template <typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit device_ptr(U* ptr) : super_t(ptr) {}
 
     /*! \brief Copy construct a \c device_ptr from another \c device_ptr whose
@@ -127,7 +129,7 @@ class device_ptr
      *  \post <tt>get() == other.get()</tt>.
      */
     template <typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_ptr(device_ptr<U> const& other) : super_t(other) {}
 
     /*! \brief Set this \c device_ptr to point to the same object as another
@@ -143,7 +145,7 @@ class device_ptr
      *  \return \c *this.
      */
     template <typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_ptr &operator=(device_ptr<U> const& other)
     {
       super_t::operator=(other);
@@ -158,7 +160,7 @@ class device_ptr
      *
      *  \return \c *this.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     device_ptr& operator=(std::nullptr_t)
     {
       super_t::operator=(nullptr);
@@ -168,7 +170,7 @@ class device_ptr
 #if THRUST_DOXYGEN
     /*! \brief Return the raw pointer that this \c device_ptr points to.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     T* get() const;
 #endif
 };
@@ -182,7 +184,7 @@ class device_ptr
  *  \return \c os.
  */
 template <typename T, typename CharT, typename Traits>
-__host__ std::basic_ostream<CharT, Traits>&
+_CCCL_HOST std::basic_ostream<CharT, Traits>&
 operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
 #endif
 
@@ -196,7 +198,7 @@ operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
  *  \return A \c device_ptr<T> pointing to \c ptr.
  */
 template <typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 device_ptr<T> device_pointer_cast(T* ptr);
 
 /*! \brief Create a \c device_ptr from another \c device_ptr.
@@ -205,7 +207,7 @@ device_ptr<T> device_pointer_cast(T* ptr);
  *  \param  dptr A \c device_ptr to a \c T.
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
 
 /*! \} // memory_management

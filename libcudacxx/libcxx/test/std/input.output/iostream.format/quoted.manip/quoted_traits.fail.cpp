@@ -17,7 +17,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 //  Test that mismatches in the traits between the quoted object and the dest string are diagnosed.
 

@@ -80,7 +80,6 @@ int main(int, char**) {
     test ( L"a" );
     test ( L"" );
 
-#if TEST_STD_VER >= 11
     test ( u"ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE" );
     test ( u"ABCDE" );
     test ( u"a" );
@@ -90,9 +89,8 @@ int main(int, char**) {
     test ( U"ABCDE" );
     test ( U"a" );
     test ( U"" );
-#endif
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr std::string_view sv1 { "ABCDE", 5 };
 

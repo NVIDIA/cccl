@@ -27,17 +27,15 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
-
 #include <cuda/std/limits>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 
 CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
 {
@@ -48,7 +46,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   constexpr int n     = 10;
   constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
 
-  thrust::device_vector<out_t> out(1);
+  c2h::device_vector<out_t> out(1);
   out_t *d_out = thrust::raw_pointer_cast(out.data());
 
   /**
@@ -58,7 +56,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
    */
   SECTION("InfInArgMin")
   {
-    thrust::device_vector<in_t> in(n, inf);
+    c2h::device_vector<in_t> in(n, inf);
     const in_t *d_in = thrust::raw_pointer_cast(in.data());
 
     device_arg_min(d_in, d_out, n);
@@ -75,7 +73,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
    */
   SECTION("InfInArgMax")
   {
-    thrust::device_vector<in_t> in(n, -inf);
+    c2h::device_vector<in_t> in(n, -inf);
     const in_t *d_in = thrust::raw_pointer_cast(in.data());
 
     device_arg_max(d_in, d_out, n);

@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_signed.h"
@@ -21,19 +29,13 @@
 #include "../__type_traits/make_unsigned.h"
 #include "../cstdint"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 /// Helper to promote an integral to smallest 32, 64, or 128 bit representation.
 ///
 /// The restriction is the same as the integral version of to_char.
 template <class _Tp>
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   requires (is_signed_v<_Tp> || is_unsigned_v<_Tp> || is_same_v<_Tp, char>)
 #endif
 using __make_32_64_or_128_bit_t =

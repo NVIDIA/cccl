@@ -48,7 +48,6 @@ int main(int, char**)
     test(S("12345678901234567890"), "12345678901234567890", 20,
          S("1234567890123456789012345678901234567890"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), "", 0, S());
@@ -68,7 +67,6 @@ int main(int, char**)
     test(S("12345678901234567890"), "12345678901234567890", 20,
          S("1234567890123456789012345678901234567890"));
     }
-#endif
 
     { // test appending to self
     typedef std::string S;

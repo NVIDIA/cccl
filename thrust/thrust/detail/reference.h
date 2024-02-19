@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/reference_forward_declaration.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -76,7 +78,7 @@ public:
    *  \param  other        A \p reference to copy from.
    */
   template <typename OtherElement, typename OtherPointer, typename OtherDerived>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   reference(
     reference<OtherElement, OtherPointer, OtherDerived> const& other
   /*! \cond
@@ -99,7 +101,7 @@ public:
    *
    *  \param ptr A \p pointer to construct from.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   explicit reference(pointer const& p) : ptr(p) {}
 
   /*! Assign the object referred to \p other to the object referred to by
@@ -109,7 +111,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   derived_type& operator=(reference const& other)
   {
     assign_from(&other);
@@ -128,7 +130,7 @@ public:
    *  \return <tt>*this</tt>.
    */
   template <typename OtherElement, typename OtherPointer, typename OtherDerived>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   /*! \cond
    */
   typename std::enable_if<
@@ -156,7 +158,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   derived_type& operator=(value_type const& rhs)
   {
     assign_from(&rhs);
@@ -168,7 +170,7 @@ public:
    *
    *  \param other The \p tagged_reference to swap with.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void swap(derived_type& other)
   {
     // Avoid default-constructing a system; instead, just use a null pointer
@@ -178,11 +180,11 @@ public:
     swap(system, other);
   }
 
-  __host__ __device__ pointer operator&() const { return ptr; }
+  _CCCL_HOST_DEVICE pointer operator&() const { return ptr; }
 
   // This is inherently hazardous, as it discards the strong type information
   // about what system the object is on.
-  __host__ __device__ operator value_type() const
+  _CCCL_HOST_DEVICE operator value_type() const
   {
     // Avoid default-constructing a system; instead, just use a null pointer
     // for dispatch. This assumes that `get_value` will not access any system
@@ -191,7 +193,7 @@ public:
     return convert_to_value_type(system);
   }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   derived_type& operator++()
   {
     // Sadly, this has to make a copy. The only mechanism we have for
@@ -203,7 +205,7 @@ public:
     return derived();
   }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   value_type operator++(int)
   {
     value_type tmp = *this;
@@ -231,7 +233,7 @@ public:
     return derived();
   }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   derived_type& operator+=(value_type const& rhs)
   {
     value_type tmp = *this;
@@ -325,11 +327,11 @@ private:
   template <typename OtherElement, typename OtherPointer, typename OtherDerived>
   friend class reference;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   derived_type& derived() { return static_cast<derived_type&>(*this); }
 
   template<typename System>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   value_type convert_to_value_type(System* system) const
   {
     using thrust::system::detail::generic::select_system;
@@ -337,7 +339,7 @@ private:
   }
 
   template <typename System>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   value_type strip_const_get_value(System const& system) const
   {
     System &non_const_system = const_cast<System&>(system);
@@ -347,7 +349,7 @@ private:
   }
 
   template <typename System0, typename System1, typename OtherPointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void assign_from(System0* system0, System1* system1, OtherPointer src)
   {
     using thrust::system::detail::generic::select_system;
@@ -355,7 +357,7 @@ private:
   }
 
   template <typename OtherPointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void assign_from(OtherPointer src)
   {
     // Avoid default-constructing systems; instead, just use a null pointer
@@ -367,7 +369,7 @@ private:
   }
 
   template <typename System, typename OtherPointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void strip_const_assign_value(System const& system, OtherPointer src)
   {
     System& non_const_system = const_cast<System&>(system);
@@ -377,7 +379,7 @@ private:
   }
 
   template <typename System>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void swap(System* system, derived_type& other)
   {
     using thrust::system::detail::generic::select_system;
@@ -443,7 +445,7 @@ public:
    *  \param  other        A \p tagged_reference to copy from.
    */
   template <typename OtherElement, typename OtherTag>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_reference(tagged_reference<OtherElement, OtherTag> const& other)
     : base_type(other)
   {}
@@ -454,7 +456,7 @@ public:
    *
    *  \param ptr A \p pointer to construct from.
    */
-  __host__ __device__ explicit tagged_reference(pointer const& p)
+  _CCCL_HOST_DEVICE explicit tagged_reference(pointer const& p)
     : base_type(p)
   {}
 
@@ -465,7 +467,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_reference& operator=(tagged_reference const& other)
   {
     return base_type::operator=(other);
@@ -482,7 +484,7 @@ public:
    *  \return <tt>*this</tt>.
    */
   template <typename OtherElement, typename OtherTag>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_reference&
   operator=(tagged_reference<OtherElement, OtherTag> const& other)
   {
@@ -495,7 +497,7 @@ public:
    *
    *  \return <tt>*this</tt>.
    */
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_reference& operator=(value_type const& rhs)
   {
     return base_type::operator=(rhs);
@@ -514,7 +516,7 @@ class tagged_reference<void const, Tag> {};
  *  \param y The second \p tagged_reference of interest.
  */
 template <typename Element, typename Tag>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y)
 {
   x.swap(y);

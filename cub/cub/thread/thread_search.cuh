@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <iterator>
 #include <cub/util_namespace.cuh>
@@ -58,7 +60,7 @@ template <
     typename BIteratorT,
     typename OffsetT,
     typename CoordinateT>
-__host__ __device__ __forceinline__ void MergePathSearch(
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
     OffsetT         diagonal,
     AIteratorT      a,
     BIteratorT      b,
@@ -105,7 +107,7 @@ __host__ __device__ __forceinline__ void MergePathSearch(
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT, typename T>
-__device__ __forceinline__ OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -139,7 +141,7 @@ __device__ __forceinline__ OffsetT LowerBound(InputIteratorT input, OffsetT num_
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT, typename T>
-__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
     OffsetT retval = 0;
     while (num_items > 0)
@@ -172,7 +174,7 @@ __device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_
  *   Search key
  */
 template <typename InputIteratorT, typename OffsetT>
-__device__ __forceinline__ OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
+_CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
 {
     OffsetT retval = 0;
     while (num_items > 0)

@@ -15,13 +15,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/underlying_type.h"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#include "../__type_traits/underlying_type.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -31,7 +33,7 @@ __to_underlying(_Tp __val) noexcept {
   return static_cast<typename underlying_type<_Tp>::type>(__val);
 }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr underlying_type_t<_Tp>
 to_underlying(_Tp __val) noexcept {

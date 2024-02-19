@@ -44,9 +44,10 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<ValueT> in_vals(elements);
 
-  const std::size_t unique_elements =
-    thrust::distance(out_keys.begin(),
-                     thrust::unique_copy(in_keys.cbegin(), in_keys.cend(), out_keys.begin()));
+  caching_allocator_t alloc;
+  const std::size_t unique_elements = thrust::distance(
+      out_keys.begin(), thrust::unique_copy(policy(alloc), in_keys.cbegin(),
+                                            in_keys.cend(), out_keys.begin()));
 
   thrust::device_vector<ValueT> out_vals(unique_elements);
 
@@ -56,13 +57,12 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(unique_elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::unique_by_key_copy(in_keys.cbegin(),
-                               in_keys.cend(),
-                               in_vals.cbegin(),
-                               out_keys.begin(),
-                               out_vals.begin());
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::unique_by_key_copy(
+                   policy(alloc, launch), in_keys.cbegin(), in_keys.cend(),
+                   in_vals.cbegin(), out_keys.begin(), out_vals.begin());
+             });
 }
 
 using key_types = nvbench::type_list<int8_t,

@@ -41,7 +41,6 @@ int main(int, char**)
     assert(std::is_sorted(v.begin(), v.end()));
     }
 
-#if TEST_STD_VER >= 11
     {
     std::vector<std::unique_ptr<int> > v(1000);
     for (int i = 0; static_cast<std::size_t>(i) < v.size(); ++i)
@@ -52,7 +51,6 @@ int main(int, char**)
     assert(*v[1] == 1);
     assert(*v[2] == 2);
     }
-#endif
 
   return 0;
 }

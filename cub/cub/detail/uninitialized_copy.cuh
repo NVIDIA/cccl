@@ -29,14 +29,16 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
@@ -46,7 +48,7 @@ namespace detail
 
 #if defined(_NVHPC_CUDA)
 template <typename T, typename U>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   // NVBug 3384810
   new (ptr) T(::cuda::std::forward<U>(val));
@@ -58,7 +60,7 @@ template <typename T,
             ::cuda::std::is_trivially_copyable<T>::value,
             int
           >::type = 0>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   *ptr = ::cuda::std::forward<U>(val);
 }
@@ -69,7 +71,7 @@ template <typename T,
            !::cuda::std::is_trivially_copyable<T>::value,
            int
          >::type = 0>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   new (ptr) T(::cuda::std::forward<U>(val));
 }

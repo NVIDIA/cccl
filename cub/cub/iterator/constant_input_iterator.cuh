@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -55,13 +57,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 
 
 CUB_NAMESPACE_BEGIN
-
-
-/**
- * @addtogroup UtilIterator
- * @{
- */
-
 
 /**
  * @brief A random-access input generator for dereferencing a sequence of homogeneous values
@@ -90,10 +85,10 @@ CUB_NAMESPACE_BEGIN
  *
  * @endcode
  *
- * @tparam ValueType            
+ * @tparam ValueType
  *   The value type of this iterator
  *
- * @tparam OffsetT              
+ * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
@@ -129,10 +124,10 @@ public:
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        
+      >::type iterator_category;
 #else
     /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;      
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -141,7 +136,7 @@ private:
     OffsetT     offset;
 #ifdef _WIN32
     // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
-    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];        
+    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
 #endif
 
 public:
@@ -152,13 +147,13 @@ public:
      * @param offset
      *   Base offset
      */
-    __host__ __device__ __forceinline__ ConstantInputIterator(ValueType val, OffsetT offset = 0)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ConstantInputIterator(ValueType val, OffsetT offset = 0)
         : val(val)
         , offset(offset)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
       self_type retval = *this;
       offset++;
@@ -166,21 +161,21 @@ public:
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         offset++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return val;
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(val, offset + n);
         return retval;
@@ -188,7 +183,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         offset += n;
         return *this;
@@ -196,7 +191,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(val, offset - n);
         return retval;
@@ -204,39 +199,39 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         offset -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return offset - other.offset;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance /*n*/) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance /*n*/) const
     {
         return val;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &val;
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (offset == rhs.offset) && ((val == rhs.val));
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (offset != rhs.offset) || (val!= rhs.val);
     }
@@ -249,8 +244,5 @@ public:
     }
 
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

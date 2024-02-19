@@ -62,14 +62,12 @@ int main(int, char**)
     for (int j = 0; j < N; ++j)
         test<std::deque<int> >(rng[j]);
     }
-#if TEST_STD_VER >= 11
     {
     int rng[] = {0, 1, 2, 3, 1023, 1024, 1025, 2046, 2047, 2048, 2049, 4094, 4095, 4096};
     const int N = sizeof(rng)/sizeof(rng[0]);
     for (int j = 0; j < N; ++j)
         test<std::deque<int, min_allocator<int>> >(rng[j]);
     }
-#endif
 
   return 0;
 }

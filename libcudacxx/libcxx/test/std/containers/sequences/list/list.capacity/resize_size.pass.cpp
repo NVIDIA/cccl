@@ -47,7 +47,6 @@ int main(int, char**)
         assert(std::distance(l.begin(), l.end()) == 20);
     }
 #endif  // __LIBCUDACXX_MOVE
-#if TEST_STD_VER >= 11
     {
         std::list<int, min_allocator<int>> l(5, 2);
         l.resize(2);
@@ -77,7 +76,6 @@ int main(int, char**)
         assert(std::distance(l.begin(), l.end()) == 20);
     }
 #endif  // __LIBCUDACXX_MOVE
-#endif
 
   return 0;
 }

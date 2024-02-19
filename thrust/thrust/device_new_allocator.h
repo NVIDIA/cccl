@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_new.h>
@@ -90,32 +92,32 @@ template<typename T>
     }; // end rebind
 
     /*! No-argument constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_new_allocator() {}
 
     /*! No-argument destructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline ~device_new_allocator() {}
 
     /*! Copy constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_new_allocator(device_new_allocator const&) {}
 
     /*! Constructor from other \p device_malloc_allocator has no effect. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_new_allocator(device_new_allocator<U> const&) {}
 
     /*! Returns the address of an allocated object.
      *  \return <tt>&r</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline pointer address(reference r) { return &r; }
 
     /*! Returns the address an allocated object.
      *  \return <tt>&r</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline const_pointer address(const_reference r) { return &r; }
 
     /*! Allocates storage for \p cnt objects.
@@ -123,7 +125,7 @@ template<typename T>
      *  \return A \p pointer to uninitialized storage for \p cnt objects.
      *  \note Memory allocated by this function must be deallocated with \p deallocate.
      */
-    __host__
+    _CCCL_HOST
     inline pointer allocate(size_type cnt,
                             const_pointer = const_pointer(static_cast<T*>(0)))
     {
@@ -142,7 +144,7 @@ template<typename T>
      *  \note Memory deallocated by this function must previously have been
      *        allocated with \p allocate.
      */
-    __host__
+    _CCCL_HOST
     inline void deallocate(pointer p, size_type cnt)
     {
       // use "::operator delete" rather than keyword delete
@@ -153,7 +155,7 @@ template<typename T>
     /*! Returns the largest value \c n for which <tt>allocate(n)</tt> might succeed.
      *  \return The largest value \c n for which <tt>allocate(n)</tt> might succeed.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline size_type max_size() const
     {
       return ::cuda::std::numeric_limits<size_type>::max THRUST_PREVENT_MACRO_SUBSTITUTION () / sizeof(T);
@@ -162,13 +164,13 @@ template<typename T>
     /*! Compares against another \p device_malloc_allocator for equality.
      *  \return \c true
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline bool operator==(device_new_allocator const&) { return true; }
 
     /*! Compares against another \p device_malloc_allocator for inequality.
      *  \return \c false
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline bool operator!=(device_new_allocator const &a) {return !operator==(a); }
 }; // end device_new_allocator
 

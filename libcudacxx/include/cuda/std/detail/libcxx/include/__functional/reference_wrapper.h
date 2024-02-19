@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__functional/invoke.h"
 #include "../__functional/weak_result_type.h"
 #include "../__memory/addressof.h"
@@ -21,12 +29,6 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__utility/declval.h"
 #include "../__utility/forward.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -61,7 +63,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
     typename __invoke_of<type&, _ArgTypes...>::type
     operator() (_ArgTypes&&... __args) const
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
         // Since is_nothrow_invocable requires C++11 LWG3764 is not backported
         // to earlier versions.
         noexcept(_LIBCUDACXX_TRAIT(is_nothrow_invocable, _Tp&, _ArgTypes...))
@@ -71,7 +73,7 @@ public:
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _LIBCUDACXX_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
 #endif

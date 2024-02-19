@@ -92,7 +92,6 @@ int main(int, char**)
         assert(r == next(m.begin(), 8));
     }
     }
-#if TEST_STD_VER >= 11
     {
     typedef int V;
     typedef std::set<int, std::less<int>, min_allocator<int>> M;
@@ -163,8 +162,7 @@ int main(int, char**)
         assert(r == next(m.begin(), 8));
     }
     }
-#endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef int V;
     typedef std::set<V, std::less<>> M;

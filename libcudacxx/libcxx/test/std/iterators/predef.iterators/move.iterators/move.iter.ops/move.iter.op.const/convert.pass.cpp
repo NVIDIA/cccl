@@ -44,7 +44,7 @@ int main(int, char**)
     test<random_access_iterator<const Base*> >(random_access_iterator<Derived*>(&d));
     test<Base*>(&d);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     constexpr const Derived *p = nullptr;
     constexpr std::move_iterator<const Derived *>     it1 = std::make_move_iterator(p);

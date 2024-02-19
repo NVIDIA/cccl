@@ -168,7 +168,6 @@ int main(int, char**)
         assert(m2.key_comp() == C(1));
         assert(m2.get_allocator() == A(1));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::map<int, double, std::less<int>, min_allocator<V>> M;
     {
@@ -278,7 +277,6 @@ int main(int, char**)
         assert(m2.key_comp() == C(1));
         assert(m2.get_allocator() == A());
     }
-#endif
 
   return 0;
 }

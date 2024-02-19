@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h> // For `integral_constant`.
 
 #include <cstddef> // For `std::size_t` and `std::max_align_t`.
@@ -62,16 +64,15 @@ struct aligned_type;
     {
         struct alignas(Align) type {};
     };
-#elif  (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)                    \
-    || (   (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC)                 \
-        && (THRUST_GCC_VERSION < 40600))
+#elif defined(_CCCL_COMPILER_MSVC) \
+    || (defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40600))
     // C++03 implementation for MSVC and GCC <= 4.5.
     //
     // We have to implement `aligned_type` with specializations for MSVC
     // and GCC 4.2.x and older because they require literals as arguments to
     // their alignment attribute.
 
-    #if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+    #if defined(_CCCL_COMPILER_MSVC)
         // MSVC implementation.
         #define THRUST_DEFINE_ALIGNED_TYPE_SPECIALIZATION(X)                  \
             template <>                                                       \
@@ -143,13 +144,13 @@ struct aligned_type;
 /// \p aligned_reinterpret_cast is responsible for ensuring that the alignment
 /// requirements are actually satisified.
 template <typename T, typename U>
-__host__ __device__
+_CCCL_HOST_DEVICE
 T aligned_reinterpret_cast(U u)
 {
   return reinterpret_cast<T>(reinterpret_cast<void*>(u));
 }
 
-__host__ __device__
+_CCCL_HOST_DEVICE
 inline std::size_t aligned_storage_size(std::size_t n, std::size_t align)
 {
   return ((n + align - 1) / align) * align;

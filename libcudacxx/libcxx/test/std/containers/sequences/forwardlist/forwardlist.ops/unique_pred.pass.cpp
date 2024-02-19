@@ -22,7 +22,7 @@ template <class L, class Predicate>
 void do_unique(L &l, Predicate pred, typename L::size_type expected)
 {
     typename L::size_type old_size = std::distance(l.begin(), l.end());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_SAME_TYPE(decltype(l.unique(pred)), typename L::size_type);
     assert(l.unique(pred) == expected);
 #else
@@ -113,7 +113,6 @@ int main(int, char**)
     assert(c1.empty());
     }
 
-#if TEST_STD_VER >= 11
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -162,7 +161,6 @@ int main(int, char**)
         do_unique(c1, g, 2);
         assert(c1 == c2);
     }
-#endif
 
   return 0;
 }

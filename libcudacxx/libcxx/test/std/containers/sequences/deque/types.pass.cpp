@@ -80,7 +80,6 @@ int main(int, char**)
     static_assert((std::is_same<std::deque<char>::allocator_type,
                                 std::allocator<char> >::value), "");
 
-#if TEST_STD_VER >= 11
     {
         typedef std::deque<short, min_allocator<short>> C;
         static_assert((std::is_same<C::value_type, short>::value), "");
@@ -100,7 +99,6 @@ int main(int, char**)
         static_assert((std::is_same<typename C::difference_type,
             typename std::iterator_traits<typename C::const_iterator>::difference_type>::value), "");
     }
-#endif
 
   return 0;
 }

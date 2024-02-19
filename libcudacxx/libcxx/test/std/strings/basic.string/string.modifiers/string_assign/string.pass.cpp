@@ -77,7 +77,6 @@ int main(int, char**)
     testAlloc(S(A(5)), S("1234567890123456789012345678901234567890123456789012345678901234567890", A(7)), A(7));
     }
 
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), S(), S());
@@ -106,8 +105,7 @@ int main(int, char**)
     testAlloc(S(), S("1234567890"), min_allocator<char>());
     testAlloc(S(), S("12345678901234567890"), min_allocator<char>());
     }
-#endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     typedef std::string S;
     static_assert(noexcept(S().assign(S())), "");  // LWG#2063

@@ -50,7 +50,7 @@ constexpr bool check_reset()
 int main(int, char**)
 {
     check_reset();
-#if TEST_STD_VER >= 20
+#if TEST_STD_VER >= 2020
     static_assert(check_reset());
 #endif
     {

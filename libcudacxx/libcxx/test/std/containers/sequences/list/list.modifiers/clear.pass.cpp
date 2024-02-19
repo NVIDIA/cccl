@@ -25,7 +25,6 @@ int main(int, char**)
     c.clear();
     assert(c.empty());
     }
-#if TEST_STD_VER >= 11
     {
     int a[] = {1, 2, 3};
     std::list<int, min_allocator<int>> c(a, a+3);
@@ -33,7 +32,6 @@ int main(int, char**)
     c.clear();
     assert(c.empty());
     }
-#endif
 
   return 0;
 }

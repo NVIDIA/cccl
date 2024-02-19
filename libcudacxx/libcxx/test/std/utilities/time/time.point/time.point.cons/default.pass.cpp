@@ -26,7 +26,7 @@ int main(int, char**)
     std::chrono::time_point<Clock, Duration> t;
     assert(t.time_since_epoch() == Duration::zero());
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr std::chrono::time_point<Clock, Duration> t;
     static_assert(t.time_since_epoch() == Duration::zero(), "");

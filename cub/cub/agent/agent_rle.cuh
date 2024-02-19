@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
@@ -130,7 +132,7 @@ struct AgentRlePolicy
  ******************************************************************************/
 
 /**
- * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode 
+ * @brief AgentRle implements a stateful abstraction of CUDA thread blocks for participating in device-wide run-length-encode
  *
  * @tparam AgentRlePolicyT
  *   Parameterized AgentRlePolicyT tuning policy type
@@ -206,7 +208,7 @@ struct AgentRle
         OffsetT         num_remaining;
         EqualityOpT      equality_op;
 
-        __device__ __forceinline__ OobInequalityOp(
+        _CCCL_DEVICE _CCCL_FORCEINLINE OobInequalityOp(
             OffsetT     num_remaining,
             EqualityOpT  equality_op)
         :
@@ -215,7 +217,7 @@ struct AgentRle
         {}
 
         template <typename Index>
-        __host__ __device__ __forceinline__ bool operator()(T first, T second, Index idx)
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T first, T second, Index idx)
         {
             if (!LAST_TILE || (idx < num_remaining))
                 return !equality_op(first, second);
@@ -329,25 +331,25 @@ struct AgentRle
     //---------------------------------------------------------------------
 
     /**
-     * @param[in] temp_storage 
+     * @param[in] temp_storage
      *   Reference to temp_storage
      *
-     * @param[in] d_in 
+     * @param[in] d_in
      *   Pointer to input sequence of data items
      *
-     * @param[out] d_offsets_out 
+     * @param[out] d_offsets_out
      *   Pointer to output sequence of run offsets
      *
-     * @param[out] d_lengths_out 
+     * @param[out] d_lengths_out
      *   Pointer to output sequence of run lengths
      *
-     * @param[in] equality_op 
+     * @param[in] equality_op
      *   Equality operator
      *
-     * @param[in] num_items 
+     * @param[in] num_items
      *   Total number of input items
      */
-    __device__ __forceinline__ AgentRle(TempStorage &temp_storage,
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRle(TempStorage &temp_storage,
                                         InputIteratorT d_in,
                                         OffsetsOutputIteratorT d_offsets_out,
                                         LengthsOutputIteratorT d_lengths_out,
@@ -367,7 +369,7 @@ struct AgentRle
     //---------------------------------------------------------------------
 
     template <bool FIRST_TILE, bool LAST_TILE>
-    __device__ __forceinline__ void InitializeSelections(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
         OffsetT             tile_offset,
         OffsetT             num_remaining,
         T                   (&items)[ITEMS_PER_THREAD],
@@ -447,7 +449,7 @@ struct AgentRle
     /**
      * Scan of allocations
      */
-    __device__ __forceinline__ void WarpScanAllocations(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void WarpScanAllocations(
         LengthOffsetPair    &tile_aggregate,
         LengthOffsetPair    &warp_aggregate,
         LengthOffsetPair    &warp_exclusive_in_tile,
@@ -536,7 +538,7 @@ struct AgentRle
      * Two-phase scatter, specialized for warp time-slicing
      */
     template <bool FIRST_TILE>
-    __device__ __forceinline__ void ScatterTwoPhase(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
         OffsetT             tile_num_runs_exclusive_in_global,
         OffsetT             warp_num_runs_aggregate,
         OffsetT             warp_num_runs_exclusive_in_tile,
@@ -596,7 +598,7 @@ struct AgentRle
      * Two-phase scatter
      */
     template <bool FIRST_TILE>
-    __device__ __forceinline__ void ScatterTwoPhase(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
         OffsetT             tile_num_runs_exclusive_in_global,
         OffsetT             warp_num_runs_aggregate,
         OffsetT             warp_num_runs_exclusive_in_tile,
@@ -654,7 +656,7 @@ struct AgentRle
      * Direct scatter
      */
     template <bool FIRST_TILE>
-    __device__ __forceinline__ void ScatterDirect(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
         OffsetT             tile_num_runs_exclusive_in_global,
         OffsetT             warp_num_runs_aggregate,
         OffsetT             warp_num_runs_exclusive_in_tile,
@@ -688,7 +690,7 @@ struct AgentRle
      * Scatter
      */
     template <bool FIRST_TILE>
-    __device__ __forceinline__ void Scatter(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
         OffsetT             tile_num_runs_aggregate,
         OffsetT             tile_num_runs_exclusive_in_global,
         OffsetT             warp_num_runs_aggregate,
@@ -731,23 +733,23 @@ struct AgentRle
     /**
      * @brief Process a tile of input (dynamic chained scan)
      *
-     * @param num_items 
+     * @param num_items
      *   Total number of global input items
      *
-     * @param num_remaining 
+     * @param num_remaining
      *   Number of global input items remaining (including this tile)
      *
-     * @param tile_idx 
+     * @param tile_idx
      *   Tile index
      *
-     * @param tile_offset 
+     * @param tile_offset
      *   Tile offset
      *
-     * @param &tile_status 
+     * @param &tile_status
      *   Global list of tile status
      */
     template <bool LAST_TILE>
-    __device__ __forceinline__ LengthOffsetPair ConsumeTile(OffsetT num_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE LengthOffsetPair ConsumeTile(OffsetT num_items,
                                                             OffsetT num_remaining,
                                                             int tile_idx,
                                                             OffsetT tile_offset,
@@ -953,20 +955,20 @@ struct AgentRle
     /**
      * @brief Scan tiles of items as part of a dynamic chained scan
      *
-     * @param num_tiles 
+     * @param num_tiles
      *   Total number of input tiles
      *
-     * @param tile_status 
+     * @param tile_status
      *   Global list of tile status
      *
-     * @param d_num_runs_out 
+     * @param d_num_runs_out
      *   Output pointer for total number of runs identified
      *
      * @tparam NumRunsIteratorT
      *   Output iterator type for recording number of items selected
      */
     template <typename NumRunsIteratorT>
-    __device__ __forceinline__ void ConsumeRange(int num_tiles,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(int num_tiles,
                                                  ScanTileStateT &tile_status,
                                                  NumRunsIteratorT d_num_runs_out)
     {

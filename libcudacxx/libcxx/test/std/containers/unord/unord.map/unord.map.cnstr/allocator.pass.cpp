@@ -46,7 +46,6 @@ int main(int, char**)
         assert(c.load_factor() == 0);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<NotConstructible, NotConstructible,
                                    test_hash<NotConstructible>,
@@ -84,7 +83,7 @@ int main(int, char**)
         assert(c.load_factor() == 0);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
         typedef NotConstructible T;
         typedef test_allocator<std::pair<const T, T>> A;
@@ -125,7 +124,6 @@ int main(int, char**)
         assert(c.load_factor() == 0);
         assert(c.max_load_factor() == 1);
     }
-#endif
 #endif
 
   return 0;

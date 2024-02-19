@@ -137,6 +137,7 @@ __global__ void example_kernel() {
 [`cuda::barrier::init`]: ./barrier/init.md
 [`cuda::device::barrier_native_handle`]: ./barrier/barrier_native_handle.md
 [`cuda::device::barrier_arrive_tx`]: ./barrier/barrier_arrive_tx.md
+[`cuda::device::barrier_expect_tx`]: ./barrier/barrier_expect_tx.md
 
 [`cuda::std::barrier`]: https://en.cppreference.com/w/cpp/thread/barrier
 

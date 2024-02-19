@@ -69,7 +69,6 @@ int main(int, char**)
          S("12345678901234567890123456789012345678901234567890\0\0\0\0\0\0\0\0\0\0", 60));
     test(S(), S::npos, S("not going to happen"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(), 0, S());
@@ -89,7 +88,6 @@ int main(int, char**)
          S("12345678901234567890123456789012345678901234567890\0\0\0\0\0\0\0\0\0\0", 60));
     test(S(), S::npos, S("not going to happen"));
     }
-#endif
 
   return 0;
 }

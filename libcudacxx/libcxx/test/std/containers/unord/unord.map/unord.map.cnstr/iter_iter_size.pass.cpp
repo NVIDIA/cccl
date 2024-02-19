@@ -67,7 +67,6 @@ int main(int, char**)
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<int, std::string,
                                    test_hash<int>,
@@ -103,7 +102,6 @@ int main(int, char**)
         assert(std::fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#endif
 
   return 0;
 }

@@ -33,11 +33,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_facade.h>
 #include <thrust/iterator/iterator_categories.h>
@@ -153,30 +155,23 @@ template<typename Incrementable,
     /*! Default constructor initializes this \p counting_iterator's counter to
      * `Incrementable{}`.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     counting_iterator() : super_t(Incrementable{}) {}
-
-    /*! Copy constructor copies the value of another \p counting_iterator into a
-     *  new \p counting_iterator.
-     *
-     *  \p rhs The \p counting_iterator to copy.
-     */
-    __host__ __device__
-    counting_iterator(counting_iterator const &rhs):super_t(rhs.base()){}
 
     /*! Copy constructor copies the value of another counting_iterator
      *  with related System type.
      *
      *  \param rhs The \p counting_iterator to copy.
      */
-    template<typename OtherSystem>
-    __host__ __device__
-    counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const &rhs,
-                      typename thrust::detail::enable_if_convertible<
-                        typename thrust::iterator_system<counting_iterator<Incrementable,OtherSystem,Traversal,Difference> >::type,
-                        typename thrust::iterator_system<super_t>::type
-                      >::type * = 0)
-      : super_t(rhs.base()){}
+    template <
+      class OtherSystem,
+      detail::enable_if_convertible_t<
+        typename thrust::iterator_system<counting_iterator<Incrementable, OtherSystem, Traversal, Difference>>::type,
+        typename thrust::iterator_system<super_t>::type,
+        int> = 0>
+    _CCCL_HOST_DEVICE counting_iterator(counting_iterator<Incrementable, OtherSystem, Traversal, Difference> const& rhs)
+        : super_t(rhs.base())
+    {}
 
     /*! This \c explicit constructor copies the value of an \c Incrementable
      *  into a new \p counting_iterator's \c Incrementable counter.
@@ -184,7 +179,7 @@ template<typename Incrementable,
      *  \param x The initial value of the new \p counting_iterator's \c Incrementable
      *         counter.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit counting_iterator(Incrementable x):super_t(x){}
 
     counting_iterator & operator=(const counting_iterator &) = default;
@@ -192,7 +187,7 @@ template<typename Incrementable,
     /*! \cond
      */
   private:
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference dereference() const
     {
       return this->base_reference();
@@ -200,7 +195,7 @@ template<typename Incrementable,
 
     // note that we implement equal specially for floating point counting_iterator
     template <typename OtherIncrementable, typename OtherSystem, typename OtherTraversal, typename OtherDifference>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool equal(counting_iterator<OtherIncrementable, OtherSystem, OtherTraversal, OtherDifference> const& y) const
     {
       typedef thrust::detail::counting_iterator_equal<difference_type,Incrementable,OtherIncrementable> e;
@@ -208,7 +203,7 @@ template<typename Incrementable,
     }
 
     template <class OtherIncrementable>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     difference_type
     distance_to(counting_iterator<OtherIncrementable, System, Traversal, Difference> const& y) const
     {
@@ -234,7 +229,7 @@ template<typename Incrementable,
  *  \return A new \p counting_iterator whose counter has been initialized to \p x.
  */
 template <typename Incrementable>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 counting_iterator<Incrementable> make_counting_iterator(Incrementable x)
 {
   return counting_iterator<Incrementable>(x);

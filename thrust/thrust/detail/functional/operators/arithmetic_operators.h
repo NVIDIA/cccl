@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/actor.h>
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/operator_adaptors.h>
@@ -35,14 +37,14 @@ namespace functional
 {
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<thrust::negate<>>,
     actor<Eval>
   >
 >
-__host__ __device__
+_CCCL_HOST_DEVICE
 operator-(const actor<Eval> &_1)
 {
   return compose(transparent_unary_operator<thrust::negate<>>(), _1);
@@ -53,9 +55,9 @@ struct unary_plus
 {
   using is_transparent = void;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr auto operator()(T1&& t1) const
   noexcept(noexcept(+THRUST_FWD(t1)))
   THRUST_TRAILING_RETURN(decltype(+THRUST_FWD(t1)))
@@ -65,7 +67,7 @@ struct unary_plus
 };
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<unary_plus>,
@@ -78,7 +80,7 @@ operator+(const actor<Eval> &_1)
 } // end operator+()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::plus<>>,
@@ -94,7 +96,7 @@ operator+(const actor<T1> &_1, const T2 &_2)
 } // end operator+()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::plus<>>,
@@ -110,7 +112,7 @@ operator+(const T1 &_1, const actor<T2> &_2)
 } // end operator+()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::plus<>>,
@@ -126,7 +128,7 @@ operator+(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator+()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::minus<>>,
@@ -142,7 +144,7 @@ operator-(const T1 &_1, const actor<T2> &_2)
 } // end operator-()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::minus<>>,
@@ -158,7 +160,7 @@ operator-(const actor<T1> &_1, const T2 &_2)
 } // end operator-()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::minus<>>,
@@ -174,7 +176,7 @@ operator-(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator-()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::multiplies<>>,
@@ -190,7 +192,7 @@ operator*(const T1 &_1, const actor<T2> &_2)
 } // end operator*()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::multiplies<>>,
@@ -206,7 +208,7 @@ operator*(const actor<T1> &_1, const T2 &_2)
 } // end operator*()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::multiplies<>>,
@@ -222,7 +224,7 @@ operator*(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator*()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::divides<>>,
@@ -238,7 +240,7 @@ operator/(const actor<T1> &_1, const T2 &_2)
 } // end operator/()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::divides<>>,
@@ -254,7 +256,7 @@ operator/(const T1 &_1, const actor<T2> &_2)
 } // end operator/()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::divides<>>,
@@ -270,7 +272,7 @@ operator/(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator/()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::modulus<>>,
@@ -286,7 +288,7 @@ operator%(const actor<T1> &_1, const T2 &_2)
 } // end operator%()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::modulus<>>,
@@ -302,7 +304,7 @@ operator%(const T1 &_1, const actor<T2> &_2)
 } // end operator%()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::modulus<>>,
@@ -322,9 +324,9 @@ struct prefix_increment
 {
   using is_transparent = void;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr auto operator()(T1&& t1) const
   noexcept(noexcept(++THRUST_FWD(t1)))
   THRUST_TRAILING_RETURN(decltype(++THRUST_FWD(t1)))
@@ -334,7 +336,7 @@ struct prefix_increment
 }; // end prefix_increment
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<prefix_increment>,
@@ -352,9 +354,9 @@ struct postfix_increment
 {
   using is_transparent = void;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr auto operator()(T1&& t1) const
   noexcept(noexcept(THRUST_FWD(t1)++))
   THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)++))
@@ -364,7 +366,7 @@ struct postfix_increment
 }; // end postfix_increment
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<postfix_increment>,
@@ -382,9 +384,9 @@ struct prefix_decrement
 {
   using is_transparent = void;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr auto operator()(T1&& t1) const
   noexcept(noexcept(--THRUST_FWD(t1)))
   THRUST_TRAILING_RETURN(decltype(--THRUST_FWD(t1)))
@@ -394,7 +396,7 @@ struct prefix_decrement
 }; // end prefix_decrement
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<prefix_decrement>,
@@ -412,9 +414,9 @@ struct postfix_decrement
 {
   using is_transparent = void;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr auto operator()(T1&& t1) const
   noexcept(noexcept(THRUST_FWD(t1)--))
   THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)--))
@@ -424,7 +426,7 @@ struct postfix_decrement
 }; // end prefix_increment
 
 template<typename Eval>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_unary_operator<postfix_decrement>,

@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_rle.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -74,16 +76,16 @@ CUB_NAMESPACE_BEGIN
  *   Parameterized AgentRlePolicyT tuning policy type
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -162,16 +164,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * Utility class for dispatching the appropriately-tuned kernels for DeviceRle
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam EqualityOpT
  *   T equality operator type
@@ -219,7 +221,7 @@ struct DeviceRleDispatch
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__ DeviceRleDispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeviceRleDispatch(void *d_temp_storage,
                                                          size_t &temp_storage_bytes,
                                                          InputIteratorT d_in,
                                                          OffsetsOutputIteratorT d_offsets_out,
@@ -292,7 +294,7 @@ struct DeviceRleDispatch
    *   Kernel function pointer to parameterization of cub::DeviceRleSweepKernel
    */
   template <typename ActivePolicyT, typename DeviceScanInitKernelPtr, typename DeviceRleSweepKernelPtr>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceScanInitKernelPtr device_scan_init_kernel,
          DeviceRleSweepKernelPtr device_rle_sweep_kernel)
   {
@@ -456,7 +458,7 @@ struct DeviceRleDispatch
   }
 
   template <class ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -500,10 +502,10 @@ struct DeviceRleDispatch
    *   Total number of input items (i.e., length of `d_in`)
    *
    * @param stream
-   *   <b>[optional]</b> CUDA stream to launch kernels within.
+   *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -549,7 +551,7 @@ struct DeviceRleDispatch
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

@@ -45,7 +45,7 @@ struct HasType : std::false_type {};
 template <class T>
 struct HasType<T, typename Voider<typename T::type>::type> : std::true_type {};
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 template <typename T, typename U>
 struct test_invoke_result;
 
@@ -65,12 +65,12 @@ template <class T, class U>
 void test_result_of()
 {
     ASSERT_SAME_TYPE(U, typename std::result_of<T>::type);
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     test_invoke_result<T, U>::call();
 #endif
 }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 template <typename T>
 struct test_invoke_no_result;
 
@@ -88,10 +88,8 @@ struct test_invoke_no_result<Fn(Args...)>
 template <class T>
 void test_no_result()
 {
-#if TEST_STD_VER >= 11
     static_assert((!HasType<std::result_of<T> >::value), "");
-#endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     test_invoke_no_result<T>::call();
 #endif
 }
@@ -364,10 +362,8 @@ int main(int, char**)
     test_result_of<PMD(const SD*), const char&>();
     test_result_of<PMD(std::unique_ptr<S>), char &>();
     test_result_of<PMD(std::unique_ptr<S const>), const char&>();
-#if TEST_STD_VER >= 11
     test_result_of<PMD(std::reference_wrapper<S>), char&>();
     test_result_of<PMD(std::reference_wrapper<S const>), const char&>();
-#endif
     test_no_result<PMD(ND&)>();
     }
 

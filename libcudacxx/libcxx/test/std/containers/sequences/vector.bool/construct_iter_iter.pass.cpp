@@ -39,13 +39,11 @@ int main(int, char**)
     test<std::vector<bool> >(bidirectional_iterator<const bool*>(a), bidirectional_iterator<const bool*>(an));
     test<std::vector<bool> >(random_access_iterator<const bool*>(a), random_access_iterator<const bool*>(an));
     test<std::vector<bool> >(a, an);
-#if TEST_STD_VER >= 11
     test<std::vector<bool, min_allocator<bool>> >(cpp17_input_iterator<const bool*>(a), cpp17_input_iterator<const bool*>(an));
     test<std::vector<bool, min_allocator<bool>> >(forward_iterator<const bool*>(a), forward_iterator<const bool*>(an));
     test<std::vector<bool, min_allocator<bool>> >(bidirectional_iterator<const bool*>(a), bidirectional_iterator<const bool*>(an));
     test<std::vector<bool, min_allocator<bool>> >(random_access_iterator<const bool*>(a), random_access_iterator<const bool*>(an));
     test<std::vector<bool, min_allocator<bool>> >(a, an);
-#endif
 
   return 0;
 }

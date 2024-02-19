@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     return std::char_traits<char32_t>::length(U"") == 0
@@ -29,15 +29,13 @@ constexpr bool test_constexpr()
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 11
     assert(std::char_traits<char32_t>::length(U"") == 0);
     assert(std::char_traits<char32_t>::length(U"a") == 1);
     assert(std::char_traits<char32_t>::length(U"aa") == 2);
     assert(std::char_traits<char32_t>::length(U"aaa") == 3);
     assert(std::char_traits<char32_t>::length(U"aaaa") == 4);
-#endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );
 #endif
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS

@@ -35,24 +35,19 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_debug.cuh>
 
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
-
-
-/**
- * @addtogroup GridModule
- * @{
- */
-
 
 /**
  * @brief GridQueue is a descriptor utility for dynamic queue management.
@@ -101,7 +96,7 @@ private:
 public:
 
     /// Returns the device allocation size in bytes needed to construct a GridQueue instance
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     static size_t AllocationSize()
     {
         return sizeof(OffsetT) * 2;
@@ -109,7 +104,7 @@ public:
 
 
     /// Constructs an invalid GridQueue descriptor
-    __host__ __device__ __forceinline__ GridQueue()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue()
     :
         d_counters(NULL)
     {}
@@ -121,14 +116,14 @@ public:
      *   Device allocation to back the GridQueue.  Must be at least as big as
      *   <tt>AllocationSize()</tt>.
      */
-    __host__ __device__ __forceinline__ GridQueue(void *d_storage)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue(void *d_storage)
         : d_counters((OffsetT *)d_storage)
     {}
 
     /// This operation sets the fill-size and resets the drain counter, preparing the GridQueue for
     /// draining in the next kernel instance. To be called by the host or by a kernel prior to that
     /// which will be draining.
-    __host__ __device__ __forceinline__ cudaError_t FillAndResetDrain(
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillAndResetDrain(
         OffsetT fill_size,
         cudaStream_t stream = 0)
     {
@@ -150,9 +145,9 @@ public:
         return result;
     }
 
-    /// This operation resets the drain so that it may advance to meet the existing fill-size.  
+    /// This operation resets the drain so that it may advance to meet the existing fill-size.
     /// To be called by the host or by a kernel prior to that which will be draining.
-    __host__ __device__ __forceinline__ cudaError_t ResetDrain(cudaStream_t stream = 0)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain(cudaStream_t stream = 0)
     {
         cudaError_t result = cudaErrorUnknown;
 
@@ -169,9 +164,9 @@ public:
     }
 
 
-    /// This operation resets the fill counter.  
+    /// This operation resets the fill counter.
     /// To be called by the host or by a kernel prior to that which will be filling.
-    __host__ __device__ __forceinline__ cudaError_t ResetFill(cudaStream_t stream = 0)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill(cudaStream_t stream = 0)
     {
         cudaError_t result = cudaErrorUnknown;
 
@@ -189,7 +184,7 @@ public:
 
 
     /// Returns the fill-size established by the parent or by the previous kernel.
-    __host__ __device__ __forceinline__ cudaError_t FillSize(
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillSize(
         OffsetT &fill_size,
         cudaStream_t stream = 0)
     {
@@ -208,17 +203,17 @@ public:
     }
 
 
-    /// Drain @p num_items from the queue. Returns offset from which to read items.  
+    /// Drain @p num_items from the queue. Returns offset from which to read items.
     /// To be called from CUDA kernel.
-    __device__ __forceinline__ OffsetT Drain(OffsetT num_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Drain(OffsetT num_items)
     {
         return atomicAdd(d_counters + DRAIN, num_items);
     }
 
 
-    /// Fill @p num_items into the queue. Returns offset from which to write items.    
+    /// Fill @p num_items into the queue. Returns offset from which to write items.
     /// To be called from CUDA kernel.
-    __device__ __forceinline__ OffsetT Fill(OffsetT num_items)
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Fill(OffsetT num_items)
     {
         return atomicAdd(d_counters + FILL, num_items);
     }
@@ -240,11 +235,7 @@ __global__ void FillAndResetDrainKernel(
 }
 
 
-
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END
 

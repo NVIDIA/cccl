@@ -84,7 +84,6 @@ int main(int, char**)
     assert(A::count == 6);
     }
     assert(A::count == 0);
-#if TEST_STD_VER >= 11
     {
         // test that unique_ptr's specialized swap is disabled when the deleter
         // is non-swappable. Instead we should pick up the generic swap(T, T)
@@ -97,7 +96,6 @@ int main(int, char**)
         std::unique_ptr<int, D&> p2(&y, d);
         std::swap(p, p2);
     }
-#endif
 
   return 0;
 }

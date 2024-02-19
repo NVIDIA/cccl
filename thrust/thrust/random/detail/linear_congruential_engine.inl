@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/random/linear_congruential_engine.h>
 #include <thrust/random/detail/mod.h>
@@ -35,7 +37,7 @@ namespace random
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   linear_congruential_engine<UIntType,a,c,m>
     ::linear_congruential_engine(result_type s)
 {
@@ -44,7 +46,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void linear_congruential_engine<UIntType,a,c,m>
     ::seed(result_type s)
 {
@@ -57,7 +59,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename linear_congruential_engine<UIntType,a,c,m>::result_type
     linear_congruential_engine<UIntType,a,c,m>
       ::operator()(void)
@@ -68,7 +70,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void linear_congruential_engine<UIntType,a,c,m>
     ::discard(unsigned long long z)
 {
@@ -126,7 +128,7 @@ template<typename UIntType, UIntType a, UIntType c, UIntType m>
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool linear_congruential_engine<UIntType,a,c,m>
   ::equal(const linear_congruential_engine<UIntType,a,c,m> &rhs) const
 {
@@ -135,7 +137,7 @@ bool linear_congruential_engine<UIntType,a,c,m>
 
 
 template<typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const linear_congruential_engine<UIntType_,a_,c_,m_> &lhs,
                 const linear_congruential_engine<UIntType_,a_,c_,m_> &rhs)
 {
@@ -144,7 +146,7 @@ bool operator==(const linear_congruential_engine<UIntType_,a_,c_,m_> &lhs,
 
 
 template<typename UIntType, UIntType a, UIntType c, UIntType m>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const linear_congruential_engine<UIntType,a,c,m> &lhs,
                 const linear_congruential_engine<UIntType,a,c,m> &rhs)
 {

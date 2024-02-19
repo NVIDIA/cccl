@@ -14,15 +14,17 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/integral_constant.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -43,7 +45,7 @@ _LIBCUDACXX_INLINE_VISIBILITY false_type __and_helper(...);
 template <class... _Pred>
 using _And _LIBCUDACXX_NODEBUG_TYPE = decltype(__and_helper<_Pred...>(0));
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class...>
 struct conjunction : true_type {};
@@ -57,7 +59,7 @@ struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, con
 template <class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
 #include <tuple>
@@ -38,7 +40,7 @@ template<template<typename> class ExecutionPolicyCRTPBase>
 struct dependencies_aware_execution_policy
 {
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -49,7 +51,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -59,7 +61,7 @@ struct dependencies_aware_execution_policy
         return { capture_as_dependency(dependencies) };
     }
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -70,7 +72,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -81,7 +83,7 @@ struct dependencies_aware_execution_policy
     }
 
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...
@@ -91,7 +93,7 @@ struct dependencies_aware_execution_policy
         return { capture_as_dependency(dependencies) };
     }
     template<typename ...Dependencies>
-    __host__
+    _CCCL_HOST
     thrust::detail::execute_with_dependencies<
         ExecutionPolicyCRTPBase,
         Dependencies...

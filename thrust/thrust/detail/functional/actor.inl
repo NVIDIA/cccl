@@ -27,11 +27,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/assignment_operator.h>
 #include <thrust/functional.h>
@@ -47,14 +49,14 @@ namespace functional
 {
 
 template<typename Eval>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr actor<Eval>
     ::actor()
       : eval_type()
 {}
 
 template<typename Eval>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   actor<Eval>
     ::actor(const Eval &base)
       : eval_type(base)
@@ -81,7 +83,7 @@ using actor_check_ref_types =
 
 template<typename Eval>
 template<typename... Ts>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename apply_actor<typename actor<Eval>::eval_type,
                      thrust::tuple<eval_ref<Ts>...>>::type
 actor<Eval>::operator()(Ts&&... ts) const
@@ -95,7 +97,7 @@ actor<Eval>::operator()(Ts&&... ts) const
 
 template<typename Eval>
   template<typename T>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename assign_result<Eval,T>::type
       actor<Eval>
         ::operator=(const T& _1) const

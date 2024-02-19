@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits.h>
@@ -233,13 +235,13 @@ template <
 
 // provide declarations of raw_reference_cast's overloads for raw_reference_caster below
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<T>::type
   raw_reference_cast(T &ref);
 
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<const T>::type
   raw_reference_cast(const T &ref);
 
@@ -247,7 +249,7 @@ typename detail::raw_reference<const T>::type
 template<
   typename... Ts
 >
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::enable_if_unwrappable<
   thrust::detail::tuple_of_iterator_references<Ts...>,
   typename detail::raw_reference<
@@ -264,14 +266,14 @@ namespace detail
 struct raw_reference_caster
 {
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename detail::raw_reference<T>::type operator()(T &ref)
   {
     return thrust::raw_reference_cast(ref);
   }
 
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename detail::raw_reference<const T>::type operator()(const T &ref)
   {
     return thrust::raw_reference_cast(ref);
@@ -280,7 +282,7 @@ struct raw_reference_caster
   template<
     typename... Ts
   >
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename detail::raw_reference<
     thrust::detail::tuple_of_iterator_references<Ts...>
   >::type
@@ -298,7 +300,7 @@ struct raw_reference_caster
 
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<T>::type
   raw_reference_cast(T &ref)
 {
@@ -307,7 +309,7 @@ typename detail::raw_reference<T>::type
 
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<const T>::type
   raw_reference_cast(const T &ref)
 {
@@ -318,7 +320,7 @@ typename detail::raw_reference<const T>::type
 template<
   typename... Ts
 >
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::enable_if_unwrappable<
   thrust::detail::tuple_of_iterator_references<Ts...>,
   typename detail::raw_reference<

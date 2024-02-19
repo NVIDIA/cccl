@@ -24,20 +24,16 @@ test()
 {
     std::deque<T, Allocator> d;
     assert(d.size() == 0);
-#if TEST_STD_VER >= 11
     std::deque<T, Allocator> d1 = {};
     assert(d1.size() == 0);
-#endif
 }
 
 int main(int, char**)
 {
     test<int, std::allocator<int> >();
     test<NotConstructible, limited_allocator<NotConstructible, 1> >();
-#if TEST_STD_VER >= 11
     test<int, min_allocator<int> >();
     test<NotConstructible, min_allocator<NotConstructible> >();
-#endif
 
   return 0;
 }

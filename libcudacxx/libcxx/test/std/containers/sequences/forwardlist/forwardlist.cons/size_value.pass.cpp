@@ -29,7 +29,6 @@ int main(int, char**)
             assert(*i == v);
         assert(n == N);
     }
-#if TEST_STD_VER >= 11
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -41,7 +40,6 @@ int main(int, char**)
             assert(*i == v);
         assert(n == N);
     }
-#endif
 
   return 0;
 }

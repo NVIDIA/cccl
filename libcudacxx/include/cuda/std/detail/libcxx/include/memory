@@ -704,11 +704,13 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <__pragma_push>
 #endif //__cuda_std__
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -717,7 +719,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_relaxed_load(_ValueType const* __value) {
 #if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
     defined(__ATOMIC_RELAXED) &&        \
-    (__has_builtin(__atomic_load_n) || defined(_LIBCUDACXX_COMPILER_GCC))
+    (__has_builtin(__atomic_load_n) || defined(_CCCL_COMPILER_GCC))
     return __atomic_load_n(__value, __ATOMIC_RELAXED);
 #else
     return *__value;
@@ -729,7 +731,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 _ValueType __libcpp_acquire_load(_ValueType const* __value) {
 #if !defined(_LIBCUDACXX_HAS_NO_THREADS) && \
     defined(__ATOMIC_ACQUIRE) &&        \
-    (__has_builtin(__atomic_load_n) || defined(_LIBCUDACXX_COMPILER_GCC))
+    (__has_builtin(__atomic_load_n) || defined(_CCCL_COMPILER_GCC))
     return __atomic_load_n(__value, __ATOMIC_ACQUIRE);
 #else
     return *__value;
@@ -859,7 +861,7 @@ __to_raw_pointer(_Tp* __p) noexcept
     return __p;
 }
 
-#if _LIBCUDACXX_STD_VER <= 17
+#if _CCCL_STD_VER <= 2017
 template <class _Pointer>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 typename pointer_traits<_Pointer>::element_type*
@@ -1723,14 +1725,14 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator*() {return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator=(const _Tp& __element)
         {::new(_CUDA_VSTD::addressof(*__x_)) _Tp(__element); return *this;}
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
     _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator=(_Tp&& __element)
         {::new(_CUDA_VSTD::addressof(*__x_)) _Tp(_CUDA_VSTD::move(__element)); return *this;}
 #endif
     _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator& operator++() {++__x_; return *this;}
     _LIBCUDACXX_INLINE_VISIBILITY raw_storage_iterator  operator++(int)
         {raw_storage_iterator __t(*this); ++__x_; return __t;}
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
     _LIBCUDACXX_INLINE_VISIBILITY _OutputIterator base() const { return __x_; }
 #endif
 };
@@ -1787,7 +1789,7 @@ void return_temporary_buffer(_Tp* __p) noexcept
   _CUDA_VSTD::__libcpp_deallocate_unsized((void*)__p, _LIBCUDACXX_ALIGNOF(_Tp));
 }
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 template <class _Tp>
 struct _LIBCUDACXX_DEPRECATED_IN_CXX11 auto_ptr_ref
 {
@@ -2179,7 +2181,7 @@ public:
   unique_ptr(unique_ptr<_Up, _Ep>&& __u) noexcept
       : __ptr_(__u.release(), _CUDA_VSTD::forward<_Ep>(__u.get_deleter())) {}
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY
   unique_ptr(auto_ptr<_Up>&& __p,
@@ -2207,7 +2209,7 @@ public:
     return *this;
   }
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY
       typename enable_if<is_convertible<_Up*, _Tp*>::value &&
@@ -2646,7 +2648,7 @@ operator>=(nullptr_t, const unique_ptr<_T1, _Dest1>& __x)
     return !(nullptr < __x);
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template<class _Tp>
 struct __unique_if
@@ -2687,7 +2689,7 @@ template<class _Tp, class... _Args>
     typename __unique_if<_Tp>::__unique_array_known_bound
     make_unique(_Args&&...) = delete;
 
-#endif  // _LIBCUDACXX_STD_VER > 11
+#endif  // _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Dp>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<
@@ -2856,7 +2858,7 @@ uninitialized_fill_n(_ForwardIterator __f, _Size __n, const _Tp& __x)
     return __f;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 template <class _ForwardIterator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -2974,17 +2976,17 @@ uninitialized_move_n(_InputIt __first, _Size __n, _ForwardIt __first_res) {
 }
 
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 // NOTE: Relaxed and acq/rel atomics (for increment and decrement respectively)
 // should be sufficient for thread safety.
 // See https://bugs.llvm.org/show_bug.cgi?id=22803
-#if defined(_LIBCUDACXX_COMPILER_CLANG) \
+#if defined(_CCCL_COMPILER_CLANG) \
  && __has_builtin(__atomic_add_fetch)   \
  && defined(__ATOMIC_RELAXED)           \
  && defined(__ATOMIC_ACQ_REL)
 #   define _LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT
-#elif defined(_LIBCUDACXX_COMPILER_GCC)
+#elif defined(_CCCL_COMPILER_GCC)
 #   define _LIBCUDACXX_HAS_BUILTIN_ATOMIC_SUPPORT
 #endif
 
@@ -3259,7 +3261,7 @@ class _LIBCUDACXX_TEMPLATE_VIS shared_ptr
 public:
     typedef _Tp element_type;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     typedef weak_ptr<_Tp> weak_type;
 #endif
 private:
@@ -3300,7 +3302,7 @@ public:
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     template<class _Yp> explicit shared_ptr(const weak_ptr<_Yp>& __r,
                    typename enable_if<is_convertible<_Yp*, element_type*>::value, __nat>::type= __nat());
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
     template<class _Yp>
         shared_ptr(auto_ptr<_Yp>&& __r,
@@ -3374,7 +3376,7 @@ public:
         >::type
         _LIBCUDACXX_INLINE_VISIBILITY
         operator=(shared_ptr<_Yp>&& __r);
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
     template<class _Yp>
         _LIBCUDACXX_INLINE_VISIBILITY
         typename enable_if
@@ -3386,7 +3388,7 @@ public:
         operator=(auto_ptr<_Yp>&& __r);
 #endif
 #else  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
     template<class _Yp>
         _LIBCUDACXX_INLINE_VISIBILITY
         typename enable_if
@@ -3717,7 +3719,7 @@ shared_ptr<_Tp>::shared_ptr(shared_ptr<_Yp>&& __r,
 
 #endif  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 template<class _Tp>
 template<class _Yp>
 #ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
@@ -3751,7 +3753,7 @@ shared_ptr<_Tp>::shared_ptr(unique_ptr<_Yp, _Dp> __r,
                             >::type)
     : __ptr_(__r.get())
 {
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     if (__ptr_ == nullptr)
         __cntrl_ = nullptr;
     else
@@ -3781,7 +3783,7 @@ shared_ptr<_Tp>::shared_ptr(unique_ptr<_Yp, _Dp> __r,
                             >::type)
     : __ptr_(__r.get())
 {
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     if (__ptr_ == nullptr)
         __cntrl_ = nullptr;
     else
@@ -3891,7 +3893,7 @@ shared_ptr<_Tp>::operator=(shared_ptr<_Yp>&& __r)
     return *this;
 }
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 template<class _Tp>
 template<class _Yp>
 inline
@@ -3926,7 +3928,7 @@ shared_ptr<_Tp>::operator=(unique_ptr<_Yp, _Dp>&& __r)
 
 #else  // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_AUTO_PTR)
 template<class _Tp>
 template<class _Yp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -4132,7 +4134,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 bool
 operator<(const shared_ptr<_Tp>& __x, const shared_ptr<_Up>& __y) noexcept
 {
-#if _LIBCUDACXX_STD_VER <= 11
+#if _CCCL_STD_VER <= 2011
     typedef typename common_type<_Tp*, _Up*>::type _Vp;
     return less<_Vp>()(__x.get(), __y.get());
 #else
@@ -4597,7 +4599,7 @@ weak_ptr<_Tp>::lock() const noexcept
     return __r;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp = void> struct owner_less;
 #else
 template <class _Tp> struct owner_less;
@@ -4635,7 +4637,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS owner_less<weak_ptr<_Tp> >
         {return __x.owner_before(__y);}
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS owner_less<void>
 {
@@ -4681,7 +4683,7 @@ public:
     shared_ptr<_Tp const> shared_from_this() const
         {return shared_ptr<const _Tp>(__weak_this_);}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     weak_ptr<_Tp> weak_from_this() noexcept
        { return __weak_this_; }
@@ -4689,7 +4691,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     weak_ptr<const _Tp> weak_from_this() const noexcept
         { return __weak_this_; }
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
     template <class _Up> friend class shared_ptr;
 };
@@ -4915,7 +4917,7 @@ _LIBCUDACXX_FUNC_VIS void* align(size_t __align, size_t __sz, void*& __ptr, size
 template <typename _Alloc>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void __swap_allocator(_Alloc & __a1, _Alloc & __a2)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
     noexcept
 #else
     noexcept(__is_nothrow_swappable<_Alloc>::value)
@@ -4928,7 +4930,7 @@ void __swap_allocator(_Alloc & __a1, _Alloc & __a2)
 template <typename _Alloc>
 _LIBCUDACXX_INLINE_VISIBILITY
 void __swap_allocator(_Alloc & __a1, _Alloc & __a2, true_type)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
     noexcept
 #else
     noexcept(__is_nothrow_swappable<_Alloc>::value)
@@ -4945,7 +4947,7 @@ void __swap_allocator(_Alloc &, _Alloc &, false_type) noexcept {}
 template <typename _Alloc, typename _Traits=allocator_traits<_Alloc> >
 struct __noexcept_move_assign_container : public integral_constant<bool,
     _Traits::propagate_on_container_move_assignment::value
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         || _Traits::is_always_equal::value
 #else
         && is_nothrow_move_assignable<_Alloc>::value
@@ -5027,7 +5029,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #include <__pragma_pop>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _LIBCUDACXX_STD_VER >= 17
+#if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #   include <__pstl_memory>
 #endif
 

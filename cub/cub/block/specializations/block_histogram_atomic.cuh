@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 CUB_NAMESPACE_BEGIN
 
@@ -56,7 +58,7 @@ struct BlockHistogramAtomic
 
 
     /// Constructor
-    __device__ __forceinline__ BlockHistogramAtomic(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomic(
         TempStorage &temp_storage)
     {}
 
@@ -70,7 +72,7 @@ struct BlockHistogramAtomic
      *   Reference to shared/device-accessible memory histogram
      */
     template <typename T, typename CounterT, int ITEMS_PER_THREAD>
-    __device__ __forceinline__ void Composite(T (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
                                               CounterT histogram[BINS])
     {
       // Update histogram

@@ -18,10 +18,6 @@
 #include "test_macros.h"
 #include "test_workarounds.h"
 
-#if TEST_STD_VER < 11
-#error this header may only be used in C++11 or newer
-#endif
-
 template <class ...Args> struct TypeList;
 
 // Test that the specified Hash meets the requirements of an enabled hash
@@ -52,7 +48,7 @@ namespace PoisonedHashDetail {
 // specializations of hash for nullptr t and all cv-unqualified
 // arithmetic, enumeration, and pointer types.
 using LibraryHashTypes = TypeList<
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
       decltype(nullptr),
 #endif
       bool,
@@ -144,7 +140,7 @@ TEST_CONSTEXPR_CXX20 void test_hash_enabled(InputKey const& key) {
   static_assert(std::is_copy_assignable<Hash>::value, "");
   static_assert(std::is_move_assignable<Hash>::value, "");
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   static_assert(std::is_swappable<Hash>::value, "");
 #elif defined(_LIBCUDACXX_VERSION)
   static_assert(std::__is_swappable<Hash>::value, "");

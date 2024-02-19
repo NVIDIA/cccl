@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/is_metafunction_defined.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
@@ -174,12 +176,12 @@ template<typename Void>
   struct capture_address
 {
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   capture_address(T &r)
     : m_addr(&r)
   {}
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   Void *operator&() const
   {
     return m_addr;
@@ -214,7 +216,7 @@ template<typename Ptr>
     typedef typename rebind_pointer<Ptr,U>::type other;
   };
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static pointer pointer_to(typename pointer_traits_detail::pointer_to_param<element_type>::type r)
   {
     // XXX this is supposed to be pointer::pointer_to(&r); (i.e., call a static member function of pointer called pointer_to)
@@ -226,7 +228,7 @@ template<typename Ptr>
   // thrust additions follow
   typedef typename pointer_raw_pointer<Ptr>::type raw_pointer;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static raw_pointer get(pointer ptr)
   {
     return ptr.get();
@@ -247,7 +249,7 @@ template<typename T>
     typedef U* other;
   };
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static pointer pointer_to(typename pointer_traits_detail::pointer_to_param<element_type>::type r)
   {
     return &r;
@@ -256,7 +258,7 @@ template<typename T>
   // thrust additions follow
   typedef typename pointer_raw_pointer<T*>::type raw_pointer;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static raw_pointer get(pointer ptr)
   {
     return ptr;
@@ -277,7 +279,7 @@ template<>
     typedef U* other;
   };
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static pointer pointer_to(pointer_traits_detail::pointer_to_param<element_type>::type r)
   {
     return &r;
@@ -286,7 +288,7 @@ template<>
   // thrust additions follow
   typedef pointer_raw_pointer<void*>::type raw_pointer;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static raw_pointer get(pointer ptr)
   {
     return ptr;
@@ -307,7 +309,7 @@ template<>
     typedef U* other;
   };
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static pointer pointer_to(pointer_traits_detail::pointer_to_param<element_type>::type r)
   {
     return &r;
@@ -316,7 +318,7 @@ template<>
   // thrust additions follow
   typedef pointer_raw_pointer<const void*>::type raw_pointer;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static raw_pointer get(pointer ptr)
   {
     return ptr;

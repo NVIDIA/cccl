@@ -33,7 +33,6 @@ int main(int, char**)
         assert(l.size() == 0);
         assert(std::distance(l.begin(), l.end()) == 0);
     }
-#if TEST_STD_VER >= 11
     {
         std::list<int, min_allocator<int>> l;
         assert(l.size() == 0);
@@ -64,7 +63,6 @@ int main(int, char**)
         assert(l.size() == 0);
         assert(std::distance(l.begin(), l.end()) == 0);
     }
-#endif
 
   return 0;
 }

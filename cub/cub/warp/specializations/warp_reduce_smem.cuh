@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -120,7 +122,7 @@ struct WarpReduceSmem
      ******************************************************************************/
 
     /// Constructor
-    explicit __device__ __forceinline__ WarpReduceSmem(TempStorage &temp_storage)
+    explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , lane_id(IS_ARCH_WARP ? LaneId() : LaneId() % LOGICAL_WARP_THREADS)
         , member_mask(
@@ -151,7 +153,7 @@ struct WarpReduceSmem
      *   Reduction operator
      */
     template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
-    __device__ __forceinline__ T
+    _CCCL_DEVICE _CCCL_FORCEINLINE T
     ReduceStep(T input, int valid_items, ReductionOp reduction_op, Int2Type<STEP> /*step*/)
     {
         constexpr int OFFSET = 1 << STEP;
@@ -189,7 +191,7 @@ struct WarpReduceSmem
      *   Reduction operator
      */
     template <bool ALL_LANES_VALID, typename ReductionOp>
-    __device__ __forceinline__ T
+    _CCCL_DEVICE _CCCL_FORCEINLINE T
     ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, Int2Type<STEPS> /*step*/)
     {
         return input;
@@ -219,7 +221,7 @@ struct WarpReduceSmem
      *   Marker type for whether the target arch has ballot functionality
      */
     template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-    __device__ __forceinline__ T
+    _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<true> /*has_ballot*/)
     {
         // Get the start flags for each thread in the warp.
@@ -286,7 +288,7 @@ struct WarpReduceSmem
      *   Marker type for whether the target arch has ballot functionality
      */
     template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-    __device__ __forceinline__ T
+    _CCCL_DEVICE _CCCL_FORCEINLINE T
     SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, Int2Type<false> /*has_ballot*/)
     {
         enum
@@ -382,7 +384,7 @@ struct WarpReduceSmem
      *   Reduction operator
      */
     template <bool ALL_LANES_VALID, typename ReductionOp>
-    __device__ __forceinline__ T Reduce(T input, int valid_items, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
     {
         return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, Int2Type<0>());
     }
@@ -403,7 +405,7 @@ struct WarpReduceSmem
      *   Reduction operator
      */
     template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-    __device__ __forceinline__ T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
     {
         return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, Int2Type<true>());
     }

@@ -34,11 +34,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
@@ -53,7 +55,6 @@ CUB_NAMESPACE_BEGIN
 //! @brief DeviceRadixSort provides device-wide, parallel operations for
 //!        computing a radix sort across a sequence of data items residing
 //!        within device-accessible memory. ![](sorting_logo.png)
-//! @ingroup SingleModule
 //!
 //! @par Overview
 //! The [*radix sorting method*](http://en.wikipedia.org/wiki/Radix_sort)
@@ -756,7 +757,7 @@ public:
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to @p temp_storage_bytes and no work is done.
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -1189,7 +1190,7 @@ public:
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of @p d_temp_storage allocation
+  //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -2595,7 +2596,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
@@ -2713,7 +2714,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
   //!   differentiating key bits. This can reduce overall sorting overhead and
@@ -3269,7 +3270,7 @@ public:
   //! Performance is similar to DeviceRadixSort::SortKeys.
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of @p int keys.
+  //! The code snippet below illustrates the sorting of a device vector of `i`nt keys.
   //! @par
   //! @code
   //! #include <cub/cub.cuh>
@@ -3400,7 +3401,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
@@ -3518,7 +3519,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
   //!   differentiating key bits. This can reduce overall sorting overhead and
@@ -3640,11 +3641,7 @@ public:
                                                              stream);
   }
 
-  //@}  end member group
+  //! @}  end member group
 };
-
-/**
- * @example example_device_radix_sort.cu
- */
 
 CUB_NAMESPACE_END

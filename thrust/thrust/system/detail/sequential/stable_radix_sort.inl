@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/copy.h>
 #include <thrust/functional.h>
@@ -54,7 +56,7 @@ struct RadixEncoder : public thrust::identity<T>
 template <>
 struct RadixEncoder<char> : public thrust::unary_function<char, unsigned char>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned char operator()(char x) const
   {
     if(std::numeric_limits<char>::is_signed)
@@ -71,7 +73,7 @@ struct RadixEncoder<char> : public thrust::unary_function<char, unsigned char>
 template <>
 struct RadixEncoder<signed char> : public thrust::unary_function<signed char, unsigned char>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned char operator()(signed char x) const
   {
     return static_cast<unsigned char>(x) ^ static_cast<unsigned char>(1) << (8 * sizeof(unsigned char) - 1);
@@ -81,7 +83,7 @@ struct RadixEncoder<signed char> : public thrust::unary_function<signed char, un
 template <>
 struct RadixEncoder<short> : public thrust::unary_function<short, unsigned short>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned short operator()(short x) const
   {
     return static_cast<unsigned short>(x) ^ static_cast<unsigned short>(1) << (8 * sizeof(unsigned short) - 1);
@@ -91,7 +93,7 @@ struct RadixEncoder<short> : public thrust::unary_function<short, unsigned short
 template <>
 struct RadixEncoder<int> : public thrust::unary_function<int, unsigned int>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned long operator()(long x) const
   {
     return x ^ static_cast<unsigned int>(1) << (8 * sizeof(unsigned int) - 1);
@@ -101,7 +103,7 @@ struct RadixEncoder<int> : public thrust::unary_function<int, unsigned int>
 template <>
 struct RadixEncoder<long> : public thrust::unary_function<long, unsigned long>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned long operator()(long x) const
   {
     return x ^ static_cast<unsigned long>(1) << (8 * sizeof(unsigned long) - 1);
@@ -111,7 +113,7 @@ struct RadixEncoder<long> : public thrust::unary_function<long, unsigned long>
 template <>
 struct RadixEncoder<long long> : public thrust::unary_function<long long, unsigned long long>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unsigned long long operator()(long long x) const
   {
     return x ^ static_cast<unsigned long long>(1) << (8 * sizeof(unsigned long long) - 1);
@@ -122,7 +124,7 @@ struct RadixEncoder<long long> : public thrust::unary_function<long long, unsign
 template <>
 struct RadixEncoder<float> : public thrust::unary_function<float, thrust::detail::uint32_t>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   thrust::detail::uint32_t operator()(float x) const
   {
     union { float f; thrust::detail::uint32_t i; } u;
@@ -135,7 +137,7 @@ struct RadixEncoder<float> : public thrust::unary_function<float, thrust::detail
 template <>
 struct RadixEncoder<double> : public thrust::unary_function<double, thrust::detail::uint64_t>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   thrust::detail::uint64_t operator()(double x) const
   {
     union { double f; thrust::detail::uint64_t i; } u;
@@ -159,14 +161,14 @@ template<unsigned int RadixBits, typename KeyType>
   EncodedType bit_shift;
   size_t *histogram;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bucket_functor(EncodedType bit_shift, size_t *histogram)
     : encode(),
       bit_shift(bit_shift),
       histogram(histogram)
   {}
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   size_t operator()(KeyType key)
   {
     const EncodedType x = encode(key);
@@ -182,7 +184,7 @@ template<unsigned int RadixBits,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename Integer>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 void radix_shuffle_n(sequential::execution_policy<DerivedPolicy> &exec,
                      RandomAccessIterator1 first,
                      const size_t n,
@@ -207,7 +209,7 @@ template<unsigned int RadixBits,
          typename RandomAccessIterator3,
          typename RandomAccessIterator4,
          typename Integer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void radix_shuffle_n(sequential::execution_policy<DerivedPolicy> &exec,
                      RandomAccessIterator1 keys_first,
                      RandomAccessIterator2 values_first,
@@ -235,7 +237,7 @@ template<unsigned int RadixBits,
          typename RandomAccessIterator2,
          typename RandomAccessIterator3,
          typename RandomAccessIterator4>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
                 RandomAccessIterator1 keys1,
                 RandomAccessIterator2 keys2,
@@ -354,7 +356,7 @@ struct radix_sort_dispatcher<1>
   template<typename DerivedPolicy,
            typename RandomAccessIterator1,
            typename RandomAccessIterator2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   const size_t N)
@@ -367,7 +369,7 @@ struct radix_sort_dispatcher<1>
            typename RandomAccessIterator2,
            typename RandomAccessIterator3,
            typename RandomAccessIterator4>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   RandomAccessIterator3 vals1, RandomAccessIterator4 vals2,
@@ -384,7 +386,7 @@ struct radix_sort_dispatcher<2>
   template<typename DerivedPolicy,
            typename RandomAccessIterator1,
            typename RandomAccessIterator2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   const size_t N)
@@ -411,7 +413,7 @@ struct radix_sort_dispatcher<2>
            typename RandomAccessIterator2,
            typename RandomAccessIterator3,
            typename RandomAccessIterator4>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   RandomAccessIterator3 vals1, RandomAccessIterator4 vals2,
@@ -441,7 +443,7 @@ struct radix_sort_dispatcher<4>
   template<typename DerivedPolicy,
            typename RandomAccessIterator1,
            typename RandomAccessIterator2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   const size_t N)
@@ -461,7 +463,7 @@ struct radix_sort_dispatcher<4>
            typename RandomAccessIterator2,
            typename RandomAccessIterator3,
            typename RandomAccessIterator4>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   RandomAccessIterator3 vals1, RandomAccessIterator4 vals2,
@@ -485,7 +487,7 @@ struct radix_sort_dispatcher<8>
   template<typename DerivedPolicy,
            typename RandomAccessIterator1,
            typename RandomAccessIterator2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   const size_t N)
@@ -505,7 +507,7 @@ struct radix_sort_dispatcher<8>
            typename RandomAccessIterator2,
            typename RandomAccessIterator3,
            typename RandomAccessIterator4>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(sequential::execution_policy<DerivedPolicy> &exec,
                   RandomAccessIterator1 keys1, RandomAccessIterator2 keys2,
                   RandomAccessIterator3 vals1, RandomAccessIterator4 vals2,
@@ -526,7 +528,7 @@ struct radix_sort_dispatcher<8>
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
                 RandomAccessIterator1 keys1,
                 RandomAccessIterator2 keys2,
@@ -542,7 +544,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator2,
          typename RandomAccessIterator3,
          typename RandomAccessIterator4>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
                 RandomAccessIterator1 keys1,
                 RandomAccessIterator2 keys2,
@@ -560,7 +562,7 @@ void radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
 
 template<typename DerivedPolicy,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
                        RandomAccessIterator first,
                        RandomAccessIterator last)
@@ -578,7 +580,7 @@ void stable_radix_sort(sequential::execution_policy<DerivedPolicy> &exec,
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void stable_radix_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
                               RandomAccessIterator1 first1,
                               RandomAccessIterator1 last1,

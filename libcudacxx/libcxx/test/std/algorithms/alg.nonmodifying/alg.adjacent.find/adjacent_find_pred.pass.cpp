@@ -21,7 +21,7 @@
 #include "test_iterators.h"
 
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 TEST_CONSTEXPR bool eq (int a, int b) { return a == b; }
 
 TEST_CONSTEXPR bool test_constexpr() {
@@ -51,7 +51,7 @@ int main(int, char**)
                               std::equal_to<int>()) ==
                               forward_iterator<const int*>(ia+sa));
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_constexpr());
 #endif
 

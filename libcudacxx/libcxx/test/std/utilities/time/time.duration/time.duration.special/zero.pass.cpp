@@ -22,7 +22,7 @@ template <class D>
 void test()
 {
     LIBCPP_ASSERT_NOEXCEPT(std::chrono::duration_values<typename D::rep>::zero());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_NOEXCEPT(       std::chrono::duration_values<typename D::rep>::zero());
 #endif
     {
@@ -30,13 +30,11 @@ void test()
     Rep zero_rep = std::chrono::duration_values<Rep>::zero();
     assert(D::zero().count() == zero_rep);
     }
-#if TEST_STD_VER >= 11
     {
     typedef typename D::rep Rep;
     constexpr Rep zero_rep = std::chrono::duration_values<Rep>::zero();
     static_assert(D::zero().count() == zero_rep, "");
     }
-#endif
 }
 
 int main(int, char**)

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/functional.h>
 #include <thrust/detail/internal_functional.h>
@@ -38,7 +40,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputType inner_product(thrust::execution_policy<DerivedPolicy> &exec,
                          InputIterator1 first1,
                          InputIterator1 last1,
@@ -52,7 +54,7 @@ OutputType inner_product(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType, typename BinaryFunction1, typename BinaryFunction2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputType inner_product(thrust::execution_policy<DerivedPolicy> &exec,
                          InputIterator1 first1,
                          InputIterator1 last1,

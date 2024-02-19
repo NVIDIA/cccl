@@ -20,7 +20,7 @@
 template <class T>
 struct test_member_function_pointer_imp {
     static_assert(!std::is_void<T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!std::is_null_pointer<T>::value, "");
 #endif
     static_assert(!std::is_integral<T>::value, "");
@@ -80,7 +80,6 @@ int main(int, char**)
 
 
 // reference qualifiers on functions are a C++11 extension
-#if TEST_STD_VER >= 11
   // Noexcept qualifiers
   test_member_function_pointer<void (Class::*)() noexcept>();
   test_member_function_pointer<void (Class::*)(int) noexcept>();
@@ -221,7 +220,6 @@ int main(int, char**)
   test_member_function_pointer<void (Class::*)(...) const volatile && noexcept>();
   test_member_function_pointer<void (Class::*)(int,...) const volatile && noexcept>();
   test_member_function_pointer<void (Class::*)(int, char,...) const volatile && noexcept>();
-#endif
 
 //  LWG#2582
   static_assert(!std::is_member_function_pointer<incomplete_type>::value, "");

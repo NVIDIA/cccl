@@ -43,11 +43,7 @@ int main(int, char**) {
   }
   {
     static_assert((!std::is_constructible<std::align_val_t, std::size_t>::value), "");
-#if TEST_STD_VER >= 11
     static_assert(!std::is_constructible<std::size_t, std::align_val_t>::value, "");
-#else
-    static_assert((std::is_constructible<std::size_t, std::align_val_t>::value), "");
-#endif
   }
   {
     std::align_val_t a = std::align_val_t(0);

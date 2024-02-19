@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <iterator>
 
@@ -82,12 +84,12 @@ struct BlockScanRunningPrefixOp
   T running_total;
 
   /// Constructor
-  __device__ __forceinline__ BlockScanRunningPrefixOp(ScanOpT op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRunningPrefixOp(ScanOpT op)
       : op(op)
   {}
 
   /// Constructor
-  __device__ __forceinline__ BlockScanRunningPrefixOp(T starting_prefix, ScanOpT op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockScanRunningPrefixOp(T starting_prefix, ScanOpT op)
       : op(op)
       , running_total(starting_prefix)
   {}
@@ -98,7 +100,7 @@ struct BlockScanRunningPrefixOp
    * @param block_aggregate
    *   The aggregate sum of the BlockScan inputs
    */
-  __device__ __forceinline__ T operator()(const T &block_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T operator()(const T &block_aggregate)
   {
     T retval      = running_total;
     running_total = op(running_total, block_aggregate);
@@ -125,7 +127,7 @@ namespace detail
 {
 
 template <int Delay, unsigned int GridThreshold = 500>
-__device__ __forceinline__ void delay()
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (if (Delay > 0)
@@ -142,7 +144,7 @@ __device__ __forceinline__ void delay()
 }
 
 template <unsigned int GridThreshold = 500>
-__device__ __forceinline__ void delay(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay(int ns)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (if (ns > 0)
@@ -159,18 +161,18 @@ __device__ __forceinline__ void delay(int ns)
 }
 
 template <int Delay>
-__device__ __forceinline__ void always_delay()
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
 }
 
-__device__ __forceinline__ void always_delay(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay(int ns)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);), ((void)ns;));
 }
 
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
-__device__ __forceinline__ void delay_or_prevent_hoisting()
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (delay<Delay, GridThreshold>();),
@@ -178,7 +180,7 @@ __device__ __forceinline__ void delay_or_prevent_hoisting()
 }
 
 template <unsigned int GridThreshold = 500>
-__device__ __forceinline__ void delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting(int ns)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (delay<GridThreshold>(ns);),
@@ -186,14 +188,14 @@ __device__ __forceinline__ void delay_or_prevent_hoisting(int ns)
 }
 
 template <unsigned int Delay = 350>
-__device__ __forceinline__ void always_delay_or_prevent_hoisting()
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (always_delay(Delay);),
                (__threadfence_block();));
 }
 
-__device__ __forceinline__ void always_delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting(int ns)
 {
   NV_IF_TARGET(NV_PROVIDES_SM_70,
                (always_delay(ns);),
@@ -205,7 +207,7 @@ struct no_delay_constructor_t
 {
   struct delay_t
   {
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       NV_IF_TARGET(NV_PROVIDES_SM_70,
                   (),
@@ -213,12 +215,12 @@ struct no_delay_constructor_t
     }
   };
 
-  __device__ __forceinline__ no_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE no_delay_constructor_t(unsigned int /* seed */)
   {
     delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {}; }
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency, unsigned int GridThreshold = 500>
@@ -226,7 +228,7 @@ struct reduce_by_key_delay_constructor_t
 {
   struct delay_t
   {
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       NV_DISPATCH_TARGET(
         NV_IS_EXACTLY_SM_80, (delay<Delay, GridThreshold>();),
@@ -235,12 +237,12 @@ struct reduce_by_key_delay_constructor_t
     }
   };
 
-  __device__ __forceinline__ reduce_by_key_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE reduce_by_key_delay_constructor_t(unsigned int /* seed */)
   {
     delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {}; }
 };
 
 template <unsigned int Delay, unsigned int L2WriteLatency>
@@ -248,15 +250,15 @@ struct fixed_delay_constructor_t
 {
   struct delay_t
   {
-    __device__ __forceinline__ void operator()() { delay_or_prevent_hoisting<Delay>(); }
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()() { delay_or_prevent_hoisting<Delay>(); }
   };
 
-  __device__ __forceinline__ fixed_delay_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE fixed_delay_constructor_t(unsigned int /* seed */)
   {
     delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {}; }
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -266,19 +268,19 @@ struct exponential_backoff_constructor_t
   {
     int delay;
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       always_delay_or_prevent_hoisting(delay);
       delay <<= 1;
     }
   };
 
-  __device__ __forceinline__ exponential_backoff_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_constructor_t(unsigned int /* seed */)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {InitialDelay}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {InitialDelay}; }
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -293,12 +295,12 @@ struct exponential_backoff_jitter_constructor_t
     unsigned int max_delay;
     unsigned int &seed;
 
-    __device__ __forceinline__ unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
       return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
     }
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay <<= 1;
@@ -307,13 +309,13 @@ struct exponential_backoff_jitter_constructor_t
 
   unsigned int seed;
 
-  __device__ __forceinline__ exponential_backoff_jitter_constructor_t(unsigned int seed)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {InitialDelay, seed}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {InitialDelay, seed}; }
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -328,12 +330,12 @@ struct exponential_backoff_jitter_window_constructor_t
     unsigned int max_delay;
     unsigned int &seed;
 
-    __device__ __forceinline__ unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
       return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
     }
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       unsigned int next_max_delay = max_delay << 1;
       always_delay_or_prevent_hoisting(next(max_delay, next_max_delay));
@@ -342,13 +344,13 @@ struct exponential_backoff_jitter_window_constructor_t
   };
 
   unsigned int seed;
-  __device__ __forceinline__ exponential_backoff_jitter_window_constructor_t(unsigned int seed)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backoff_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()() { return {InitialDelay, seed}; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()() { return {InitialDelay, seed}; }
 };
 
 template <unsigned int InitialDelay, unsigned int L2WriteLatency>
@@ -363,12 +365,12 @@ struct exponential_backon_jitter_window_constructor_t
     unsigned int max_delay;
     unsigned int &seed;
 
-    __device__ __forceinline__ unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
       return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
     }
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       int prev_delay = max_delay >> 1;
       always_delay_or_prevent_hoisting(next(prev_delay, max_delay));
@@ -379,13 +381,13 @@ struct exponential_backon_jitter_window_constructor_t
   unsigned int seed;
   unsigned int max_delay = InitialDelay;
 
-  __device__ __forceinline__ exponential_backon_jitter_window_constructor_t(unsigned int seed)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_window_constructor_t(unsigned int seed)
       : seed(seed)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()()
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay, seed};
@@ -404,12 +406,12 @@ struct exponential_backon_jitter_constructor_t
     unsigned int max_delay;
     unsigned int &seed;
 
-    __device__ __forceinline__ unsigned int next(unsigned int min, unsigned int max)
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int next(unsigned int min, unsigned int max)
     {
       return (seed = (a * seed + c) % m) % (max + 1 - min) + min;
     }
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       always_delay_or_prevent_hoisting(next(0, max_delay));
       max_delay >>= 1;
@@ -419,13 +421,13 @@ struct exponential_backon_jitter_constructor_t
   unsigned int seed;
   unsigned int max_delay = InitialDelay;
 
-  __device__ __forceinline__ exponential_backon_jitter_constructor_t(unsigned int seed)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_jitter_constructor_t(unsigned int seed)
       : seed(seed)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()()
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay, seed};
@@ -439,7 +441,7 @@ struct exponential_backon_constructor_t
   {
     unsigned int delay;
 
-    __device__ __forceinline__ void operator()()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
     {
       always_delay_or_prevent_hoisting(delay);
       delay >>= 1;
@@ -448,12 +450,12 @@ struct exponential_backon_constructor_t
 
   unsigned int max_delay = InitialDelay;
 
-  __device__ __forceinline__ exponential_backon_constructor_t(unsigned int /* seed */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE exponential_backon_constructor_t(unsigned int /* seed */)
   {
     always_delay<L2WriteLatency>();
   }
 
-  __device__ __forceinline__ delay_t operator()()
+  _CCCL_DEVICE _CCCL_FORCEINLINE delay_t operator()()
   {
     max_delay >>= 1;
     return {max_delay};
@@ -532,7 +534,7 @@ struct ScanTileState<T, true>
     TxnWord *d_tile_descriptors;
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     ScanTileState()
     :
         d_tile_descriptors(NULL)
@@ -552,7 +554,7 @@ struct ScanTileState<T, true>
      * @param[in] temp_storage_bytes
      *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__ cudaError_t Init(int /*num_tiles*/,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int /*num_tiles*/,
                                                          void *d_temp_storage,
                                                          size_t /*temp_storage_bytes*/)
     {
@@ -569,7 +571,7 @@ struct ScanTileState<T, true>
      * @param[out] temp_storage_bytes
      *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__ static cudaError_t
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t
     AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
         // bytes needed for tile status descriptors
@@ -580,7 +582,7 @@ struct ScanTileState<T, true>
     /**
      * Initialize (from device)
      */
-    __device__ __forceinline__ void InitializeStatus(int num_tiles)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
     {
         int tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
 
@@ -606,7 +608,7 @@ struct ScanTileState<T, true>
     /**
      * Update the specified tile's inclusive value and corresponding status
      */
-    __device__ __forceinline__ void SetInclusive(int tile_idx, T tile_inclusive)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
     {
         TileDescriptor tile_descriptor;
         tile_descriptor.status = SCAN_TILE_INCLUSIVE;
@@ -622,7 +624,7 @@ struct ScanTileState<T, true>
     /**
      * Update the specified tile's partial value and corresponding status
      */
-    __device__ __forceinline__ void SetPartial(int tile_idx, T tile_partial)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
     {
         TileDescriptor tile_descriptor;
         tile_descriptor.status = SCAN_TILE_PARTIAL;
@@ -638,7 +640,7 @@ struct ScanTileState<T, true>
      * Wait for the corresponding tile to become non-invalid
      */
     template <class DelayT = detail::default_delay_t<T>>
-    __device__ __forceinline__ void WaitForValid(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(
         int             tile_idx,
         StatusWord      &status,
         T               &value,
@@ -666,7 +668,7 @@ struct ScanTileState<T, true>
      * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
      * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
      */
-     __device__ __forceinline__ T LoadValid(int tile_idx)
+     _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
     {
         TxnWord alias = d_tile_descriptors[TILE_STATUS_PADDING + tile_idx];
         TileDescriptor tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
@@ -698,7 +700,7 @@ struct ScanTileState<T, false>
     T           *d_tile_inclusive;
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     ScanTileState()
     :
         d_tile_status(NULL),
@@ -721,7 +723,7 @@ struct ScanTileState<T, false>
      *   Size in bytes of \t d_temp_storage allocation
      */
     /// Initializer
-    __host__ __device__ __forceinline__ cudaError_t Init(int num_tiles,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_tiles,
                                                          void *d_temp_storage,
                                                          size_t temp_storage_bytes)
     {
@@ -732,13 +734,13 @@ struct ScanTileState<T, false>
             size_t  allocation_sizes[3];
 
             // bytes needed for tile status descriptors
-            allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);           
+            allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);
 
             // bytes needed for partials
-            allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     
+            allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
             // bytes needed for inclusives
-            allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);     
+            allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
             // Compute allocation pointers into the single storage blob
             error = CubDebug(
@@ -768,20 +770,20 @@ struct ScanTileState<T, false>
      * @param[out] temp_storage_bytes
      *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__ static cudaError_t
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t
     AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
         // Specify storage allocation requirements
         size_t  allocation_sizes[3];
 
         // bytes needed for tile status descriptors
-        allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);         
+        allocation_sizes[0] = (num_tiles + TILE_STATUS_PADDING) * sizeof(StatusWord);
 
         // bytes needed for partials
-        allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   
+        allocation_sizes[1] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
         // bytes needed for inclusives
-        allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);   
+        allocation_sizes[2] = (num_tiles + TILE_STATUS_PADDING) * sizeof(Uninitialized<T>);
 
         // Set the necessary size of the blob
         void* allocations[3] = {};
@@ -792,7 +794,7 @@ struct ScanTileState<T, false>
     /**
      * Initialize (from device)
      */
-    __device__ __forceinline__ void InitializeStatus(int num_tiles)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
     {
         int tile_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
         if (tile_idx < num_tiles)
@@ -812,7 +814,7 @@ struct ScanTileState<T, false>
     /**
      * Update the specified tile's inclusive value and corresponding status
      */
-    __device__ __forceinline__ void SetInclusive(int tile_idx, T tile_inclusive)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, T tile_inclusive)
     {
         // Update tile inclusive value
         ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
@@ -823,7 +825,7 @@ struct ScanTileState<T, false>
     /**
      * Update the specified tile's partial value and corresponding status
      */
-    __device__ __forceinline__ void SetPartial(int tile_idx, T tile_partial)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, T tile_partial)
     {
         // Update tile partial value
         ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
@@ -834,7 +836,7 @@ struct ScanTileState<T, false>
      * Wait for the corresponding tile to become non-invalid
      */
     template <class DelayT = detail::default_no_delay_t>
-    __device__ __forceinline__ void WaitForValid(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(
         int             tile_idx,
         StatusWord      &status,
         T               &value,
@@ -861,7 +863,7 @@ struct ScanTileState<T, false>
      * Loads and returns the tile's value. The returned value is undefined if either (a) the tile's status is invalid or
      * (b) there is no memory fence between reading a non-invalid status and the call to LoadValid.
      */
-    __device__ __forceinline__ T LoadValid(int tile_idx)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T LoadValid(int tile_idx)
     {
         return d_tile_inclusive[TILE_STATUS_PADDING + tile_idx];
     }
@@ -896,7 +898,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, false> :
     typedef ScanTileState<KeyValuePair<KeyT, ValueT> > SuperClass;
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     ReduceByKeyScanTileState() : SuperClass() {}
 };
 
@@ -964,7 +966,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     ReduceByKeyScanTileState()
     :
         d_tile_descriptors(NULL)
@@ -983,7 +985,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
      * @param[in] temp_storage_bytes
      *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__ cudaError_t Init(int /*num_tiles*/,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int /*num_tiles*/,
                                                          void *d_temp_storage,
                                                          size_t /*temp_storage_bytes*/)
     {
@@ -1000,7 +1002,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
      * @param[out] temp_storage_bytes
      *   Size in bytes of \t d_temp_storage allocation
      */
-    __host__ __device__ __forceinline__ static cudaError_t
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static cudaError_t
     AllocationSize(int num_tiles, size_t &temp_storage_bytes)
     {
         // bytes needed for tile status descriptors
@@ -1011,7 +1013,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     /**
      * Initialize (from device)
      */
-    __device__ __forceinline__ void InitializeStatus(int num_tiles)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeStatus(int num_tiles)
     {
         int             tile_idx    = (blockIdx.x * blockDim.x) + threadIdx.x;
         TxnWord         val         = TxnWord();
@@ -1036,7 +1038,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     /**
      * Update the specified tile's inclusive value and corresponding status
      */
-    __device__ __forceinline__ void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetInclusive(int tile_idx, KeyValuePairT tile_inclusive)
     {
         TileDescriptor tile_descriptor;
         tile_descriptor.status  = SCAN_TILE_INCLUSIVE;
@@ -1053,7 +1055,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     /**
      * Update the specified tile's partial value and corresponding status
      */
-    __device__ __forceinline__ void SetPartial(int tile_idx, KeyValuePairT tile_partial)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
     {
         TileDescriptor tile_descriptor;
         tile_descriptor.status  = SCAN_TILE_PARTIAL;
@@ -1070,7 +1072,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
      * Wait for the corresponding tile to become non-invalid
      */
     template <class DelayT = detail::fixed_delay_constructor_t<350, 450>::delay_t>
-    __device__ __forceinline__ void WaitForValid(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(
         int                     tile_idx,
         StatusWord              &status,
         KeyValuePairT           &value,
@@ -1159,7 +1161,7 @@ struct TilePrefixCallbackOp
 
     // Constructs prefix functor for a given tile index.
     // Precondition: thread blocks processing all of the predecessor tiles were scheduled.
-    __device__ __forceinline__ TilePrefixCallbackOp(ScanTileStateT &tile_status,
+    _CCCL_DEVICE _CCCL_FORCEINLINE TilePrefixCallbackOp(ScanTileStateT &tile_status,
                                                     TempStorage &temp_storage,
                                                     ScanOpT scan_op,
                                                     int tile_idx)
@@ -1171,7 +1173,7 @@ struct TilePrefixCallbackOp
 
     // Computes the tile index and constructs prefix functor with it.
     // Precondition: thread block per tile assignment.
-    __device__ __forceinline__ TilePrefixCallbackOp(ScanTileStateT &tile_status,
+    _CCCL_DEVICE _CCCL_FORCEINLINE TilePrefixCallbackOp(ScanTileStateT &tile_status,
                                                     TempStorage &temp_storage,
                                                     ScanOpT scan_op)
         : TilePrefixCallbackOp(tile_status, temp_storage, scan_op, blockIdx.x)
@@ -1190,7 +1192,7 @@ struct TilePrefixCallbackOp
      *   Relevant partial reduction from this window of preceding tiles
      */
     template <class DelayT = detail::default_delay_t<T>>
-    __device__ __forceinline__ void ProcessWindow(int predecessor_idx,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessWindow(int predecessor_idx,
                                                   StatusWord &predecessor_status,
                                                   T &window_aggregate,
                                                   DelayT delay = {})
@@ -1210,7 +1212,7 @@ struct TilePrefixCallbackOp
 
 
     // BlockScan prefix callback functor (called by the first warp)
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     T operator()(T block_aggregate)
     {
         // Update our status with our tile-aggregate
@@ -1261,27 +1263,27 @@ struct TilePrefixCallbackOp
     }
 
     // Get the exclusive prefix stored in temporary storage
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     T GetExclusivePrefix()
     {
         return temp_storage.exclusive_prefix;
     }
 
     // Get the inclusive prefix stored in temporary storage
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     T GetInclusivePrefix()
     {
         return temp_storage.inclusive_prefix;
     }
 
     // Get the block aggregate stored in temporary storage
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     T GetBlockAggregate()
     {
         return temp_storage.block_aggregate;
     }
 
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     int GetTileIdx() const
     {
         return tile_idx;

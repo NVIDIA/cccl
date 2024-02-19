@@ -40,7 +40,6 @@ test()
         assert(ib[i] == ir[i]);
 }
 
-#if TEST_STD_VER >= 11
 
 class Y;
 
@@ -75,7 +74,6 @@ public:
     void operator=(const X& x) {i_ = x.i_;}
 };
 
-#endif
 
 
 int main(int, char**)
@@ -110,11 +108,9 @@ int main(int, char**)
     test<const int*, random_access_iterator<int*> >();
     test<const int*, int*>();
 
-#if TEST_STD_VER >= 11
     X x[3] = {X(1), X(2), X(3)};
     Y y[3] = {Y(1), Y(2), Y(3)};
     std::adjacent_difference(x, x+3, y, std::minus<X>());
-#endif
 
   return 0;
 }

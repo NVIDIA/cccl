@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -50,7 +52,7 @@ struct cons
 
 
   template<unsigned int default_value>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static unsigned int get(unsigned int key)
   {
     return (key == Head::key) ? (Head::value) : Tail::template get<default_value>(key);
@@ -68,7 +70,7 @@ struct cons<Head,void>
   };
 
   template<unsigned int default_value>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static unsigned int get(unsigned int key)
   {
     return (key == Head::key) ? (Head::value) : default_value;
@@ -118,7 +120,7 @@ struct static_map
     static const unsigned int value = impl::template static_get<key,default_value>::value;
   };
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static unsigned int get(unsigned int key)
   {
     return impl::template get<default_value>(key);
@@ -161,7 +163,7 @@ struct static_lookup
 
 
 template<typename StaticMap>
-__host__ __device__
+_CCCL_HOST_DEVICE
 unsigned int lookup(unsigned int key)
 {
   return StaticMap::get(key);

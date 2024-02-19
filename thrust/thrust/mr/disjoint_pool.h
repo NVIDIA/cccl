@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/detail/config.h>
@@ -182,13 +184,13 @@ private:
         std::size_t alignment;
         void_ptr pointer;
 
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         bool operator==(const oversized_block_descriptor & other) const
         {
             return size == other.size && alignment == other.alignment && pointer == other.pointer;
         }
 
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         bool operator<(const oversized_block_descriptor & other) const
         {
             return size < other.size || (size == other.size && alignment < other.alignment);
@@ -198,12 +200,12 @@ private:
     struct equal_pointers
     {
     public:
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         equal_pointers(void_ptr p) : p(p)
         {
         }
 
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         bool operator()(const oversized_block_descriptor & desc) const
         {
             return desc.pointer == p;
@@ -216,12 +218,12 @@ private:
     struct matching_alignment
     {
     public:
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         matching_alignment(std::size_t requested) : requested(requested)
         {
         }
 
-        __host__ __device__
+        _CCCL_HOST_DEVICE
         bool operator()(const oversized_block_descriptor & desc) const
         {
             return desc.alignment >= requested;
@@ -243,14 +245,14 @@ private:
 
     struct pool
     {
-        __host__
+        _CCCL_HOST
         pool(const pointer_vector & free)
             : free_blocks(free),
             previous_allocated_count(0)
         {
         }
 
-        __host__
+        _CCCL_HOST
         pool(const pool & other)
             : free_blocks(other.free_blocks),
             previous_allocated_count(other.previous_allocated_count)
@@ -259,7 +261,7 @@ private:
 
         pool & operator=(const pool &) = default;
 
-        __host__
+        _CCCL_HOST
         ~pool() {}
 
         pointer_vector free_blocks;

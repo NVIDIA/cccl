@@ -27,11 +27,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/functional/actor.h>
 #include <thrust/tuple.h>
@@ -59,14 +61,14 @@ template<typename Eval0, typename Eval1>
       >::type type;
     };
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     composite(const Eval0 &e0, const Eval1 &e1)
       : m_eval0(e0),
         m_eval1(e1)
     {}
 
     template<typename Env>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename result<Env>::type
     eval(const Env &x) const
     {
@@ -94,7 +96,7 @@ template<typename Eval0, typename Eval1, typename Eval2>
       >::type type;
     };
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     composite(const Eval0 &e0, const Eval1 &e1, const Eval2 &e2)
       : m_eval0(e0),
         m_eval1(e1),
@@ -102,7 +104,7 @@ template<typename Eval0, typename Eval1, typename Eval2>
     {}
 
     template<typename Env>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename result<Env>::type
     eval(const Env &x) const
     {
@@ -118,14 +120,14 @@ template<typename Eval0, typename Eval1, typename Eval2>
 }; // end composite<Eval0,Eval1,Eval2>
 
 template<typename Eval0, typename Eval1>
-__host__ __device__
+_CCCL_HOST_DEVICE
   actor<composite<Eval0,Eval1> > compose(const Eval0 &e0, const Eval1 &e1)
 {
   return actor<composite<Eval0,Eval1> >(composite<Eval0,Eval1>(e0,e1));
 }
 
 template<typename Eval0, typename Eval1, typename Eval2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   actor<composite<Eval0,Eval1,Eval2> > compose(const Eval0 &e0, const Eval1 &e1, const Eval2 &e2)
 {
   return actor<composite<Eval0,Eval1,Eval2> >(composite<Eval0,Eval1,Eval2>(e0,e1,e2));

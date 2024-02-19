@@ -29,15 +29,19 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_merge_sort.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -65,7 +69,7 @@ CUB_NAMESPACE_BEGIN
 //!    struct CustomLess
 //!    {
 //!      template <typename DataType>
-//!      __device__ bool operator()(const DataType &lhs, const DataType &rhs)
+//!      __host__ bool operator()(const DataType &lhs, const DataType &rhs)
 //!      {
 //!        return lhs < rhs;
 //!      }
@@ -135,7 +139,7 @@ class WarpMergeSort
 {
 private:
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
-  static constexpr bool KEYS_ONLY    = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY    = ::cuda::std::is_same<ValueT, NullType>::value;
   static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
 
   using BlockMergeSortStrategyT =
@@ -147,7 +151,7 @@ private:
 public:
   WarpMergeSort() = delete;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage &temp_storage)
       : BlockMergeSortStrategyT(temp_storage,
                                 IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
@@ -155,10 +159,10 @@ public:
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
-  __device__ __forceinline__ unsigned int get_member_mask() const { return member_mask; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const { return member_mask; }
 
 private:
-  __device__ __forceinline__ void SyncImplementation() const { WARP_SYNC(member_mask); }
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const { WARP_SYNC(member_mask); }
 
   friend BlockMergeSortStrategyT;
 };

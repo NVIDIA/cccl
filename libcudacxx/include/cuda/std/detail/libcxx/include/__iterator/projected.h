@@ -14,20 +14,22 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__iterator/concepts.h"
 #include "../__iterator/incrementable_traits.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/remove_cvref.h"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_TEMPLATE(class _It, class _Proj)
   _LIBCUDACXX_REQUIRES( indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular_unary_invocable<_Proj, _It>)
@@ -36,7 +38,7 @@ struct projected {
   _LIBCUDACXX_INLINE_VISIBILITY indirect_result_t<_Proj&, _It> operator*() const; // not defined
 };
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<weakly_incrementable _It, class _Proj>
 struct incrementable_traits<projected<_It, _Proj>> {
   using difference_type = iter_difference_t<_It>;
@@ -46,9 +48,9 @@ template<class _It, class _Proj>
 struct incrementable_traits<projected<_It, _Proj>, enable_if_t<weakly_incrementable<_It>>> {
   using difference_type = iter_difference_t<_It>;
 };
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

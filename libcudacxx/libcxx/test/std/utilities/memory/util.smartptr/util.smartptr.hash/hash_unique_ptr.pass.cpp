@@ -21,7 +21,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
 #include "poisoned_hash_helper.h"
 #include "deleter_types.h"
 #include "min_allocator.h"
@@ -58,7 +57,6 @@ struct hash<::min_pointer<T, std::integral_constant<size_t, 1>>> {
 
 struct A {};
 
-#endif // TEST_STD_VER >= 11
 
 int main(int, char**)
 {
@@ -69,7 +67,6 @@ int main(int, char**)
     std::size_t h = f(p);
     assert(h == std::hash<int*>()(ptr));
   }
-#if TEST_STD_VER >= 11
   {
     std::unique_ptr<int, PointerDeleter<int, 1>> pThrowingHash;
     std::hash<std::unique_ptr<int, PointerDeleter<int, 1>>> fThrowingHash;
@@ -91,12 +88,11 @@ int main(int, char**)
     test_enabled_with_deleter<A, PointerDeleter<A, 1>>();
     test_enabled_with_deleter<A[], PointerDeleter<A[], 1>>();
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     test_disabled_with_deleter<int, PointerDeleter<int, 0>>();
     test_disabled_with_deleter<int[], PointerDeleter<int[], 0>>();
     test_disabled_with_deleter<A, PointerDeleter<A, 0>>();
     test_disabled_with_deleter<A[], PointerDeleter<A[], 0>>();
-#endif
   }
 #endif
 

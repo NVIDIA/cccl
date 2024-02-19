@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <nv/target>
 
@@ -37,7 +39,7 @@ template<typename BaseAllocator>
     typedef BaseAllocator super_t;
 
   public:
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     no_throw_allocator(const BaseAllocator &other = BaseAllocator())
       : super_t(other)
     {}
@@ -48,7 +50,7 @@ template<typename BaseAllocator>
       typedef no_throw_allocator<typename super_t::template rebind<U>::other> other;
     }; // end rebind
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void deallocate(typename super_t::pointer p, typename super_t::size_type n)
     {
       NV_IF_TARGET(NV_IS_HOST, (
@@ -65,10 +67,10 @@ template<typename BaseAllocator>
       ));
     } // end deallocate()
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     bool operator==(no_throw_allocator const &other) { return super_t::operator==(other); }
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     bool operator!=(no_throw_allocator const &other) { return super_t::operator!=(other); }
 }; // end no_throw_allocator
 

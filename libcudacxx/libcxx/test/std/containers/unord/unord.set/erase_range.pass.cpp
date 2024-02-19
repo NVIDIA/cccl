@@ -56,7 +56,6 @@ int main(int, char**)
         assert(c.size() == 0);
         assert(k == c.end());
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_set<int, std::hash<int>, std::equal_to<int>, min_allocator<int>> C;
         typedef int P;
@@ -90,7 +89,6 @@ int main(int, char**)
         assert(c.size() == 0);
         assert(k == c.end());
     }
-#endif
 
   return 0;
 }

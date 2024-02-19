@@ -449,17 +449,18 @@ struct TestComplexBasicArithmetic
     // Test the basic arithmetic functions against std
 
     ASSERT_ALMOST_EQUAL(thrust::abs(a), std::abs(b));
-
     ASSERT_ALMOST_EQUAL(thrust::arg(a), std::arg(b));
-
     ASSERT_ALMOST_EQUAL(thrust::norm(a), std::norm(b));
 
     ASSERT_EQUAL(thrust::conj(a), std::conj(b));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::conj(a))>::value, "");
 
     ASSERT_ALMOST_EQUAL(thrust::polar(data[0], data[1]), std::polar(data[0], data[1]));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::polar(data[0], data[1]))>::value, "");
 
     // random_samples does not seem to produce infinities so proj(z) == z
     ASSERT_EQUAL(thrust::proj(a), a);
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::proj(a))>::value, "");
   }
 };
 SimpleUnitTest<TestComplexBasicArithmetic, FloatingPointTypes> TestComplexBasicArithmeticInstance;
@@ -556,6 +557,9 @@ struct TestComplexExponentialFunctions
     ASSERT_ALMOST_EQUAL(thrust::exp(a), std::exp(b));
     ASSERT_ALMOST_EQUAL(thrust::log(a), std::log(b));
     ASSERT_ALMOST_EQUAL(thrust::log10(a), std::log10(b));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::exp(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::log10(a))>::value, "");
   }
 };
 SimpleUnitTest<TestComplexExponentialFunctions, FloatingPointTypes>
@@ -575,16 +579,24 @@ struct TestComplexPowerFunctions
       const std::complex<T> b_std(b_thrust);
 
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
+      static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
+      static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
+      static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value, "");
+
+      ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust, 4), std::pow(a_std, 4));
+      static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::pow(a_thrust, 4))>::value, "");
 
       ASSERT_ALMOST_EQUAL(thrust::sqrt(a_thrust), std::sqrt(a_std));
+      static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sqrt(a_thrust))>::value, "");
     }
 
     // Test power functions with promoted types.
     {
       using T0 = T;
       using T1 = other_floating_point_type_t<T0>;
+      using promoted = typename thrust::detail::promoted_numerical_type<T0, T1>::type;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(4);
 
@@ -594,11 +606,17 @@ struct TestComplexPowerFunctions
       const std::complex<T0> b_std(data[2], data[3]);
 
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust), std::pow(a_std, b_std));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(b_thrust, a_thrust), std::pow(b_std, a_std));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust, b_thrust.real()), std::pow(a_std, b_std.real()));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust, b_thrust.real()))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(b_thrust, a_thrust.real()), std::pow(b_std, a_std.real()));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust, a_thrust.real()))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(a_thrust.real(), b_thrust), std::pow(a_std.real(), b_std));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(a_thrust.real(), b_thrust))>::value, "");
       ASSERT_ALMOST_EQUAL(thrust::pow(b_thrust.real(), a_thrust), std::pow(b_std.real(), a_std));
+      static_assert(cuda::std::is_same<thrust::complex<promoted>, decltype(thrust::pow(b_thrust.real(), a_thrust))>::value, "");
     }
   }
 };
@@ -617,19 +635,31 @@ struct TestComplexTrigonometricFunctions
     ASSERT_ALMOST_EQUAL(thrust::cos(a), std::cos(c));
     ASSERT_ALMOST_EQUAL(thrust::sin(a), std::sin(c));
     ASSERT_ALMOST_EQUAL(thrust::tan(a), std::tan(c));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cos(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sin(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tan(a))>::value, "");
 
     ASSERT_ALMOST_EQUAL(thrust::cosh(a), std::cosh(c));
     ASSERT_ALMOST_EQUAL(thrust::sinh(a), std::sinh(c));
     ASSERT_ALMOST_EQUAL(thrust::tanh(a), std::tanh(c));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::cosh(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::sinh(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::tanh(a))>::value, "");
 
 
     ASSERT_ALMOST_EQUAL(thrust::acos(a), std::acos(c));
     ASSERT_ALMOST_EQUAL(thrust::asin(a), std::asin(c));
     ASSERT_ALMOST_EQUAL(thrust::atan(a), std::atan(c));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acos(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asin(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atan(a))>::value, "");
 
     ASSERT_ALMOST_EQUAL(thrust::acosh(a), std::acosh(c));
     ASSERT_ALMOST_EQUAL(thrust::asinh(a), std::asinh(c));
     ASSERT_ALMOST_EQUAL(thrust::atanh(a), std::atanh(c));
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::acosh(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::asinh(a))>::value, "");
+    static_assert(cuda::std::is_same<thrust::complex<T>, decltype(thrust::atanh(a))>::value, "");
 
   }
 };

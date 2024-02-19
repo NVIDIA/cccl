@@ -71,13 +71,11 @@ int main(int, char**)
         typedef std::unordered_map<double, int> M;
         do_insert_cv_test<M>();
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<double, int, std::hash<double>, std::equal_to<double>,
                             min_allocator<std::pair<const double, int>>> M;
         do_insert_cv_test<M>();
     }
-#endif
 
   return 0;
 }

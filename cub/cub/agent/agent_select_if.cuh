@@ -35,11 +35,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
@@ -308,7 +310,7 @@ struct AgentSelectIf
      * @param num_items
      *   Total number of input items
      */
-    __device__ __forceinline__ AgentSelectIf(TempStorage &temp_storage,
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSelectIf(TempStorage &temp_storage,
                                              InputIteratorT d_in,
                                              FlagsInputIteratorT d_flags_in,
                                              SelectedOutputIteratorT d_selected_out,
@@ -332,7 +334,7 @@ struct AgentSelectIf
      * Initialize selections (specialized for selection operator)
      */
     template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    __device__ __forceinline__ void InitializeSelections(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
         OffsetT                     /*tile_offset*/,
         OffsetT                     num_tile_items,
         InputT                      (&items)[ITEMS_PER_THREAD],
@@ -355,7 +357,7 @@ struct AgentSelectIf
      * Initialize selections (specialized for valid flags)
      */
     template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    __device__ __forceinline__ void InitializeSelections(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
         OffsetT                     tile_offset,
         OffsetT                     num_tile_items,
         InputT                      (&/*items*/)[ITEMS_PER_THREAD],
@@ -389,7 +391,7 @@ struct AgentSelectIf
      * Initialize selections (specialized for discontinuity detection)
      */
     template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    __device__ __forceinline__ void InitializeSelections(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
         OffsetT                     tile_offset,
         OffsetT                     num_tile_items,
         InputT                      (&items)[ITEMS_PER_THREAD],
@@ -433,7 +435,7 @@ struct AgentSelectIf
      * Scatter flagged items to output offsets (specialized for direct scattering)
      */
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    __device__ __forceinline__ void ScatterDirect(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
         InputT  (&items)[ITEMS_PER_THREAD],
         OffsetT (&selection_flags)[ITEMS_PER_THREAD],
         OffsetT (&selection_indices)[ITEMS_PER_THREAD],
@@ -472,7 +474,7 @@ struct AgentSelectIf
      *   Marker type indicating whether to keep rejected items in the second partition
      */
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    __device__ __forceinline__ void ScatterTwoPhase(InputT (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(InputT (&items)[ITEMS_PER_THREAD],
                                                     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
                                                     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
                                                     int /*num_tile_items*/,
@@ -521,7 +523,7 @@ struct AgentSelectIf
      *   Marker type indicating whether to keep rejected items in the second partition
      */
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    __device__ __forceinline__ void ScatterTwoPhase(InputT (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(InputT (&items)[ITEMS_PER_THREAD],
                                                     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
                                                     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
                                                     int num_tile_items,
@@ -589,7 +591,7 @@ struct AgentSelectIf
      *   Total number of selections including this tile
      */
     template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    __device__ __forceinline__ void Scatter(InputT (&items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(InputT (&items)[ITEMS_PER_THREAD],
                                             OffsetT (&selection_flags)[ITEMS_PER_THREAD],
                                             OffsetT (&selection_indices)[ITEMS_PER_THREAD],
                                             int num_tile_items,
@@ -627,21 +629,21 @@ struct AgentSelectIf
 
 
     /**
-     * @brief Process first tile of input (dynamic chained scan).  
+     * @brief Process first tile of input (dynamic chained scan).
      *
-     * @param num_tile_items 
+     * @param num_tile_items
      *   Number of input items comprising this tile
      *
-     * @param tile_offset 
+     * @param tile_offset
      *   Tile offset
      *
-     * @param tile_state 
+     * @param tile_state
      *   Global tile state descriptor
      *
      * @return The running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeFirstTile(int num_tile_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeFirstTile(int num_tile_items,
                                                         OffsetT tile_offset,
                                                         ScanTileStateT &tile_state)
     {
@@ -712,7 +714,7 @@ struct AgentSelectIf
      * @return The running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeSubsequentTile(int num_tile_items,
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(int num_tile_items,
                                                              int tile_idx,
                                                              OffsetT tile_offset,
                                                              ScanTileStateT &tile_state)
@@ -775,7 +777,7 @@ struct AgentSelectIf
      * @param num_tile_items
      *   Number of input items comprising this tile
      *
-     * @param tile_idx 
+     * @param tile_idx
      *   Tile index
      *
      * @param tile_offset
@@ -785,7 +787,7 @@ struct AgentSelectIf
      *   Global tile state descriptor
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
     ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
     {
         OffsetT num_selections;
@@ -817,7 +819,7 @@ struct AgentSelectIf
      *   Output iterator type for recording number of items selection_flags
      */
     template <typename NumSelectedIteratorT>
-    __device__ __forceinline__ void ConsumeRange(int num_tiles,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(int num_tiles,
                                                  ScanTileStateT &tile_state,
                                                  NumSelectedIteratorT d_num_selected_out)
     {

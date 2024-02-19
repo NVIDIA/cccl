@@ -26,20 +26,19 @@
  *
  ******************************************************************************/
 
-/**
- * @file
- * cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
- */
+//! @file cub::BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block
 
 #pragma once
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_scan.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
@@ -48,54 +47,49 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
 #include <cuda/std/type_traits>
-
-#include <stdint.h>
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
- *        keys from a single tile. Note that different ranking algorithms require different
- *        initial arrangements of keys to function properly.
- */
+//! @brief Radix ranking algorithm, the algorithm used to implement stable ranking of the
+//!        keys from a single tile. Note that different ranking algorithms require different
+//!        initial arrangements of keys to function properly.
 enum RadixRankAlgorithm
 {
-    /** Ranking using the BlockRadixRank algorithm with MEMOIZE_OUTER_SCAN == false. It
-     * uses thread-private histograms, and thus uses more shared memory. Requires blocked
-     * arrangement of keys. Does not support count callbacks. */
-    RADIX_RANK_BASIC,
-    /** Ranking using the BlockRadixRank algorithm with MEMOIZE_OUTER_SCAN ==
-     * true. Similar to RADIX_RANK BASIC, it requires blocked arrangement of
-     * keys and does not support count callbacks.*/
-    RADIX_RANK_MEMOIZE,
-    /** Ranking using the BlockRadixRankMatch algorithm. It uses warp-private
-     * histograms and matching for ranking the keys in a single warp. Therefore,
-     * it uses less shared memory compared to RADIX_RANK_BASIC. It requires
-     * warp-striped key arrangement and supports count callbacks. */
-    RADIX_RANK_MATCH,
-    /** Ranking using the BlockRadixRankMatchEarlyCounts algorithm with
-     * MATCH_ALGORITHM == WARP_MATCH_ANY. An alternative implementation of
-     * match-based ranking that computes bin counts early. Because of this, it
-     * works better with onesweep sorting, which requires bin counts for
-     * decoupled look-back. Assumes warp-striped key arrangement and supports
-     * count callbacks.*/
-    RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-    /** Ranking using the BlockRadixRankEarlyCounts algorithm with
-     * MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR. It uses extra space in shared
-     * memory to generate warp match masks using atomicOr(). This is faster when
-     * there are few matches, but can lead to slowdowns if the number of
-     * matching keys among warp lanes is high. Assumes warp-striped key
-     * arrangement and supports count callbacks. */
-    RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
-};
+  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == false`.
+  //! It uses thread-private histograms, and thus uses more shared memory.
+  //! Requires blocked arrangement of keys. Does not support count callbacks.
+  RADIX_RANK_BASIC,
 
+  //! Ranking using the BlockRadixRank algorithm with `MEMOIZE_OUTER_SCAN == true`.
+  //! Similar to RADIX_RANK BASIC, it requires blocked arrangement of keys and does not support count callbacks.
+  RADIX_RANK_MEMOIZE,
+
+  //! Ranking using the BlockRadixRankMatch algorithm. It uses warp-private histograms and matching for ranking
+  //! the keys in a single warp. Therefore, it uses less shared memory compared to RADIX_RANK_BASIC.
+  //! It requires warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH,
+
+  //! Ranking using the BlockRadixRankMatchEarlyCounts algorithm with `MATCH_ALGORITHM == WARP_MATCH_ANY`.
+  //! An alternative implementation of match-based ranking that computes bin counts early.
+  //! Because of this, it works better with onesweep sorting, which requires bin counts for decoupled look-back.
+  //! Assumes warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
+
+  //! Ranking using the BlockRadixRankEarlyCounts algorithm with `MATCH_ALGORITHM == WARP_MATCH_ATOMIC_OR`.
+  //! It uses extra space in shared memory to generate warp match masks using `atomicOr()`.
+  //! This is faster when there are few matches, but can lead to slowdowns if the number of matching keys among
+  //! warp lanes is high. Assumes warp-striped key arrangement and supports count callbacks.
+  RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR
+};
 
 /** Empty callback implementation */
 template <int BINS_PER_THREAD>
 struct BlockRadixRankEmptyCallback
 {
-    __device__ __forceinline__ void operator()(int (&bins)[BINS_PER_THREAD]) {}
+    _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&bins)[BINS_PER_THREAD]) {}
 };
 
 
@@ -106,9 +100,9 @@ namespace detail
 template <int Bits, int PartialWarpThreads, int PartialWarpId>
 struct warp_in_block_matcher_t
 {
-  static __device__ std::uint32_t match_any(std::uint32_t label, std::uint32_t warp_id)
+  static _CCCL_DEVICE ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
-    if (warp_id == static_cast<std::uint32_t>(PartialWarpId))
+    if (warp_id == static_cast<::cuda::std::uint32_t>(PartialWarpId))
     {
       return MatchAny<Bits, PartialWarpThreads>(label);
     }
@@ -120,7 +114,7 @@ struct warp_in_block_matcher_t
 template <int Bits, int PartialWarpId>
 struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 {
-  static __device__ std::uint32_t match_any(std::uint32_t label, std::uint32_t warp_id)
+  static _CCCL_DEVICE ::cuda::std::uint32_t match_any(::cuda::std::uint32_t label, ::cuda::std::uint32_t warp_id)
   {
     return MatchAny<Bits>(label);
   }
@@ -129,106 +123,100 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 } // namespace detail
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-/**
- * @brief BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread
- *        block.
- *
- * @ingroup BlockModule
- *
- * @tparam BLOCK_DIM_X
- *   The thread block length in threads along the X dimension
- *
- * @tparam RADIX_BITS
- *   The number of radix bits per digit place
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam MEMOIZE_OUTER_SCAN
- *   <b>[optional]</b> Whether or not to buffer outer raking scan
- *   partials to incur fewer shared memory reads at the expense of higher register pressure
- *   (default: true for architectures SM35 and newer, false otherwise).
- *   See BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE for more details.
- *
- * @tparam INNER_SCAN_ALGORITHM
- *   <b>[optional]</b> The cub::BlockScanAlgorithm algorithm to use (default:
- *   cub::BLOCK_SCAN_WARP_SCANS)
- *
- * @tparam SMEM_CONFIG
- *   <b>[optional]</b> Shared memory bank mode (default: @p cudaSharedMemBankSizeFourByte)
- *
- * @tparam BLOCK_DIM_Y
- *   <b>[optional]</b> The thread block length in threads along the Y dimension (default: 1)
- *
- * @tparam BLOCK_DIM_Z
- *  <b>[optional]</b> The thread block length in threads along the Z dimension (default: 1)
- *
- * @tparam LEGACY_PTX_ARCH      
- *  <b>[optional]</b> Unused.
- *
- * @par Overview
- * Blah...
- * - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
- * - @blocked
- *
- * @par Performance Considerations
- * - @granularity
- *
- * @par
- * @code
- * #include <cub/cub.cuh>
- *
- * __global__ void ExampleKernel(...)
- * {
- *   constexpr int block_threads = 2;
- *   constexpr int radix_bits = 5;
- *
- *   // Specialize BlockRadixRank for a 1D block of 2 threads
- *   // Specialize BlockRadixRank for a 1D block of 2 threads
- *   using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
- *   using storage_t = typename block_radix_rank::TempStorage;
- *
- *   // Allocate shared memory for BlockRadixSort
- *   __shared__ storage_t temp_storage;
- *
- *   // Obtain a segment of consecutive items that are blocked across threads
- *   int keys[2];
- *   int ranks[2];
- *   ...
- *
- *   cub::BFEDigitExtractor<int> extractor(0, radix_bits);
- *   block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
- *
- *   ...
- * @endcode
- * Suppose the set of input `keys` across the block of threads is `{ [16,10], [9,11] }`.
- * The corresponding output `ranks` in those threads will be `{ [3,1], [0,2] }`.
- *
- * @par Re-using dynamically allocating shared memory
- * The following example under the examples/block folder illustrates usage of
- * dynamically shared memory with BlockReduce and how to re-purpose
- * the same memory region:
- * <a href="../../examples/block/example_block_reduce_dyn_smem.cu">example_block_reduce_dyn_smem.cu</a>
- *
- * This example can be easily adapted to the storage required by BlockRadixRank.
- */
-template <
-    int                     BLOCK_DIM_X,
-    int                     RADIX_BITS,
-    bool                    IS_DESCENDING,
-    bool                    MEMOIZE_OUTER_SCAN      = true,
-    BlockScanAlgorithm      INNER_SCAN_ALGORITHM    = BLOCK_SCAN_WARP_SCANS,
-    cudaSharedMemConfig     SMEM_CONFIG             = cudaSharedMemBankSizeFourByte,
-    int                     BLOCK_DIM_Y             = 1,
-    int                     BLOCK_DIM_Z             = 1,
-    int                     LEGACY_PTX_ARCH         = 0>
+//! @rst
+//! BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block.
+//!
+//! Overview
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - Keys must be in a form suitable for radix ranking (i.e., unsigned bits).
+//! - @blocked
+//!
+//! Performance Considerations
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! - @granularity
+//!
+//! .. code-block:: c++
+//!
+//!    #include <cub/cub.cuh>
+//!
+//!    __global__ void ExampleKernel(...)
+//!    {
+//!      constexpr int block_threads = 2;
+//!      constexpr int radix_bits = 5;
+//!
+//!      // Specialize BlockRadixRank for a 1D block of 2 threads
+//!      // Specialize BlockRadixRank for a 1D block of 2 threads
+//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
+//!      using storage_t = typename block_radix_rank::TempStorage;
+//!
+//!      // Allocate shared memory for BlockRadixSort
+//!      __shared__ storage_t temp_storage;
+//!
+//!      // Obtain a segment of consecutive items that are blocked across threads
+//!      int keys[2];
+//!      int ranks[2];
+//!      ...
+//!
+//!      cub::BFEDigitExtractor<int> extractor(0, radix_bits);
+//!      block_radix_rank(temp_storage).RankKeys(keys, ranks, extractor);
+//!
+//!      ...
+//!
+//! Suppose the set of input ``keys`` across the block of threads is ``{ [16,10], [9,11] }``.
+//! The corresponding output ``ranks`` in those threads will be ``{ [3,1], [0,2] }``.
+//!
+//! Re-using dynamically allocating shared memory
+//! +++++++++++++++++++++++++++++++++++++++++++++
+//!
+//! The ``block/example_block_reduce_dyn_smem.cu`` example illustrates usage of dynamically shared memory with
+//! BlockReduce and how to re-purpose the same memory region.
+//! This example can be easily adapted to the storage required by BlockRadixRank.
+//!
+//! @endrst
+//!
+//! @tparam BLOCK_DIM_X
+//!   The thread block length in threads along the X dimension
+//!
+//! @tparam RADIX_BITS
+//!   The number of radix bits per digit place
+//!
+//! @tparam IS_DESCENDING
+//!   Whether or not the sorted-order is high-to-low
+//!
+//! @tparam MEMOIZE_OUTER_SCAN
+//!   **[optional]** Whether or not to buffer outer raking scan
+//!   partials to incur fewer shared memory reads at the expense of higher register pressure
+//!   (default: true for architectures SM35 and newer, false otherwise).
+//!   See `BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE` for more details.
+//!
+//! @tparam INNER_SCAN_ALGORITHM
+//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use (default: cub::BLOCK_SCAN_WARP_SCANS)
+//!
+//! @tparam SMEM_CONFIG
+//!   **[optional]** Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
+//!
+//! @tparam BLOCK_DIM_Y
+//!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
+//!
+//! @tparam BLOCK_DIM_Z
+//!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
+//!
+//! @tparam LEGACY_PTX_ARCH
+//!   **[optional]** Unused.
+template < int BLOCK_DIM_X,
+           int RADIX_BITS,
+           bool IS_DESCENDING,
+           bool MEMOIZE_OUTER_SCAN                 = true,
+           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
+           int BLOCK_DIM_Y                         = 1,
+           int BLOCK_DIM_Z                         = 1,
+           int LEGACY_PTX_ARCH                     = 0>
 class BlockRadixRank
 {
 private:
-
-    /******************************************************************************
-     * Type definitions and constants
-     ******************************************************************************/
 
     // Integer type for digit counters (to be packed into words of type PackedCounters)
     using DigitCounter = unsigned short;
@@ -259,7 +247,7 @@ private:
         LOG_PACKING_RATIO           = Log2<PACKING_RATIO>::VALUE,
 
         // Always at least one lane
-        LOG_COUNTER_LANES           = CUB_MAX((int(RADIX_BITS) - int(LOG_PACKING_RATIO)), 0),                
+        LOG_COUNTER_LANES           = CUB_MAX((int(RADIX_BITS) - int(LOG_PACKING_RATIO)), 0),
         COUNTER_LANES               = 1 << LOG_COUNTER_LANES,
 
         // The number of packed counters per thread (plus one for padding)
@@ -288,7 +276,7 @@ private:
         BlockScan;
 
 
-    /// Shared memory storage layout type for BlockRadixRank
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
     struct __align__(16) _TempStorage
     {
         union Aliasable
@@ -301,11 +289,7 @@ private:
         // Storage for scanning local ranks
         typename BlockScan::TempStorage block_scan;
     };
-
-
-    /******************************************************************************
-     * Thread fields
-     ******************************************************************************/
+    #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
     /// Shared storage reference
     _TempStorage &temp_storage;
@@ -316,25 +300,19 @@ private:
     /// Copy of raking segment, promoted to registers
     PackedCounter cached_segment[RAKING_SEGMENT];
 
-
-    /******************************************************************************
-     * Utility methods
-     ******************************************************************************/
-
     /**
      * Internal storage allocator
      */
-    __device__ __forceinline__ _TempStorage& PrivateStorage()
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
     {
         __shared__ _TempStorage private_storage;
         return private_storage;
     }
 
-
     /**
      * Performs upsweep raking reduction, returning the aggregate
      */
-    __device__ __forceinline__ PackedCounter Upsweep()
+    _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter Upsweep()
     {
         PackedCounter *smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
         PackedCounter *raking_ptr;
@@ -359,7 +337,7 @@ private:
 
 
     /// Performs exclusive downsweep raking scan
-    __device__ __forceinline__ void ExclusiveDownsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveDownsweep(
         PackedCounter raking_partial)
     {
         PackedCounter *smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
@@ -386,7 +364,7 @@ private:
     /**
      * Reset shared memory digit counters
      */
-    __device__ __forceinline__ void ResetCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetCounters()
     {
         // Reset shared memory digit counters
         #pragma unroll
@@ -402,7 +380,7 @@ private:
      */
     struct PrefixCallBack
     {
-        __device__ __forceinline__ PackedCounter operator()(PackedCounter block_aggregate)
+        _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter operator()(PackedCounter block_aggregate)
         {
             PackedCounter block_prefix = 0;
 
@@ -421,7 +399,7 @@ private:
     /**
      * Scan shared memory digit counters.
      */
-    __device__ __forceinline__ void ScanCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ScanCounters()
     {
         // Upsweep scan
         PackedCounter raking_partial = Upsweep();
@@ -441,16 +419,11 @@ public:
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
-    /******************************************************************//**
-     * @name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
-    /**
-     * @brief Collective constructor using a private static allocation of shared memory as temporary
-     *        storage.
-     */
-    __device__ __forceinline__ BlockRadixRank()
+    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank()
     :
         temp_storage(PrivateStorage()),
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
@@ -462,17 +435,15 @@ public:
      * @param[in] temp_storage
      *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockRadixRank(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRank(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Raking
-     *********************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Raking
+    //! @{
 
     /**
      * @brief Rank keys.
@@ -487,7 +458,7 @@ public:
      *   The digit extractor
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor)
     {
@@ -504,13 +475,13 @@ public:
         for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
         {
             // Get digit
-            std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
+            ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
             // Get sub-counter
-            std::uint32_t sub_counter = digit >> LOG_COUNTER_LANES;
+            ::cuda::std::uint32_t sub_counter = digit >> LOG_COUNTER_LANES;
 
             // Get counter lane
-            std::uint32_t counter_lane = digit & (COUNTER_LANES - 1);
+            ::cuda::std::uint32_t counter_lane = digit & (COUNTER_LANES - 1);
 
             if (IS_DESCENDING)
             {
@@ -559,12 +530,12 @@ public:
      *
      * @param[out] exclusive_digit_prefix
      *   The exclusive prefix sum for the digits
-     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) 
-     *                   ... 
+     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD)
+     *                   ...
      *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD])
@@ -595,6 +566,8 @@ public:
             }
         }
     }
+
+    //! @}
 };
 
 
@@ -615,10 +588,6 @@ template <
 class BlockRadixRankMatch
 {
 private:
-
-    /******************************************************************************
-     * Type definitions and constants
-     ******************************************************************************/
 
     typedef int32_t    RankT;
     typedef int32_t    DigitCounterT;
@@ -666,7 +635,7 @@ private:
         BlockScanT;
 
 
-    /// Shared memory storage layout type for BlockRadixRank
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
     struct __align__(16) _TempStorage
     {
         typename BlockScanT::TempStorage            block_scan;
@@ -678,11 +647,7 @@ private:
 
         } aliasable;
     };
-
-
-    /******************************************************************************
-     * Thread fields
-     ******************************************************************************/
+    #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
     /// Shared storage reference
     _TempStorage &temp_storage;
@@ -694,14 +659,12 @@ private:
 
 public:
 
-    /// @smemstorage{BlockScan}
+    /// @smemstorage{BlockRadixRankMatch}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
-    /******************************************************************//**
-     * @name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
     /**
      * @brief Collective constructor using the specified memory allocation as temporary storage.
@@ -709,19 +672,17 @@ public:
      * @param[in] temp_storage
      *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockRadixRankMatch(TempStorage &temp_storage)
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatch(TempStorage &temp_storage)
         : temp_storage(temp_storage.Alias())
         , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * @name Raking
-     *********************************************************************/
-    //@{
+    //! @}  end member group
+    //! @name Raking
+    //! @{
 
-    /** 
+    /**
      * @brief Computes the count of keys for each digit value, and calls the
      *        callback with the array of key counts.
      *
@@ -736,7 +697,7 @@ public:
      * separate output parameter of RankKeys().
      */
     template <int KEYS_PER_THREAD, typename CountsCallback>
-    __device__ __forceinline__ void CallBack(CountsCallback callback)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void CallBack(CountsCallback callback)
     {
         int bins[BINS_TRACKED_PER_THREAD];
         // Get count for each digit
@@ -782,7 +743,7 @@ public:
               int KEYS_PER_THREAD,
               typename DigitExtractorT,
               typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              CountsCallback callback)
@@ -805,7 +766,7 @@ public:
         for (int ITEM = 0; ITEM < KEYS_PER_THREAD; ++ITEM)
         {
             // My digit
-            std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
+            ::cuda::std::uint32_t digit = digit_extractor.Digit(keys[ITEM]);
 
             if (IS_DESCENDING)
                 digit = RADIX_DIGITS - digit - 1;
@@ -862,7 +823,7 @@ public:
             temp_storage.aliasable.raking_grid[linear_tid][ITEM] = scan_counters[ITEM];
 
         CTA_SYNC();
-        if (!std::is_same<
+        if (!::cuda::std::is_same<
               CountsCallback,
               BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
         {
@@ -879,7 +840,7 @@ public:
         typename        UnsignedBits,
         int             KEYS_PER_THREAD,
         typename        DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor)
     {
@@ -910,7 +871,7 @@ public:
               int KEYS_PER_THREAD,
               typename DigitExtractorT,
               typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD],
@@ -948,7 +909,7 @@ public:
      *    (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD],
                                              int (&ranks)[KEYS_PER_THREAD],
                                              DigitExtractorT digit_extractor,
                                              int (&exclusive_digit_prefix)[BINS_TRACKED_PER_THREAD])
@@ -956,6 +917,8 @@ public:
         RankKeys(keys, ranks, digit_extractor, exclusive_digit_prefix,
                  BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>());
     }
+
+  //! @}
 };
 
 enum WarpMatchAlgorithm
@@ -996,9 +959,6 @@ struct BlockRadixRankMatchEarlyCounts
     // types
     typedef cub::BlockScan<int, BLOCK_THREADS, INNER_SCAN_ALGORITHM> BlockScan;
 
-
-
-    // temporary storage
     struct TempStorage
     {
         union
@@ -1025,19 +985,19 @@ struct BlockRadixRankMatchEarlyCounts
         int warp;
         int lane;
 
-        __device__ __forceinline__ std::uint32_t Digit(UnsignedBits key)
+        _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key)
         {
-            std::uint32_t digit =  digit_extractor.Digit(key);
+            ::cuda::std::uint32_t digit =  digit_extractor.Digit(key);
             return IS_DESCENDING ? RADIX_DIGITS - 1 - digit : digit;
         }
 
-        __device__ __forceinline__ int ThreadBin(int u)
+        _CCCL_DEVICE _CCCL_FORCEINLINE int ThreadBin(int u)
         {
             int bin = threadIdx.x * BINS_PER_THREAD + u;
             return IS_DESCENDING ? RADIX_DIGITS - 1 - bin : bin;
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeHistogramsWarp(UnsignedBits (&keys)[KEYS_PER_THREAD])
         {
             //int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1098,7 +1058,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeOffsetsWarpUpsweep(int (&bins)[BINS_PER_THREAD])
         {
             // sum up warp-private histograms
@@ -1120,7 +1080,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeOffsetsWarpDownsweep(int (&offsets)[BINS_PER_THREAD])
         {
             #pragma unroll
@@ -1139,7 +1099,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeRanksItem(
             UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
             Int2Type<WARP_MATCH_ATOMIC_OR>)
@@ -1151,7 +1111,7 @@ struct BlockRadixRankMatchEarlyCounts
             #pragma unroll
             for (int u = 0; u < KEYS_PER_THREAD; ++u)
             {
-                std::uint32_t bin = Digit(keys[u]);
+                ::cuda::std::uint32_t bin = Digit(keys[u]);
                 int* p_match_mask = &match_masks[bin];
                 atomicOr(p_match_mask, lane_mask);
                 WARP_SYNC(WARP_MASK);
@@ -1171,7 +1131,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__
+        _CCCL_DEVICE _CCCL_FORCEINLINE
         void ComputeRanksItem(
             UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD],
             Int2Type<WARP_MATCH_ANY>)
@@ -1181,7 +1141,7 @@ struct BlockRadixRankMatchEarlyCounts
             #pragma unroll
             for (int u = 0; u < KEYS_PER_THREAD; ++u)
             {
-                std::uint32_t bin = Digit(keys[u]);
+                ::cuda::std::uint32_t bin = Digit(keys[u]);
                 int bin_mask = detail::warp_in_block_matcher_t<RADIX_BITS,
                                                                PARTIAL_WARP_THREADS,
                                                                BLOCK_WARPS - 1>::match_any(bin,
@@ -1199,7 +1159,7 @@ struct BlockRadixRankMatchEarlyCounts
             }
         }
 
-        __device__ __forceinline__ void RankKeys(
+        _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
             UnsignedBits (&keys)[KEYS_PER_THREAD],
             int (&ranks)[KEYS_PER_THREAD],
             int (&exclusive_digit_prefix)[BINS_PER_THREAD])
@@ -1218,14 +1178,14 @@ struct BlockRadixRankMatchEarlyCounts
             ComputeRanksItem(keys, ranks, Int2Type<MATCH_ALGORITHM>());
         }
 
-        __device__ __forceinline__ BlockRadixRankMatchInternal
+        _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatchInternal
         (TempStorage& temp_storage, DigitExtractorT digit_extractor, CountsCallback callback)
             : s(temp_storage), digit_extractor(digit_extractor),
               callback(callback), warp(threadIdx.x / WARP_THREADS), lane(LaneId())
             {}
     };
 
-    __device__ __forceinline__ BlockRadixRankMatchEarlyCounts
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixRankMatchEarlyCounts
     (TempStorage& temp_storage) : temp_storage(temp_storage) {}
 
     /**
@@ -1234,7 +1194,7 @@ struct BlockRadixRankMatchEarlyCounts
      */
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT,
         typename CountsCallback>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor,
@@ -1247,7 +1207,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor,
@@ -1260,7 +1220,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         UnsignedBits    (&keys)[KEYS_PER_THREAD],
         int             (&ranks)[KEYS_PER_THREAD],
         DigitExtractorT digit_extractor)
@@ -1315,5 +1275,3 @@ using block_radix_rank_t = cub::detail::conditional_t<
 
 
 CUB_NAMESPACE_END
-
-

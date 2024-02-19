@@ -22,7 +22,7 @@ template <class L>
 void do_remove(L &l, const typename L::value_type &value, typename L::size_type expected)
 {
     typename L::size_type old_size = std::distance(l.begin(), l.end());
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     ASSERT_SAME_TYPE(decltype(l.remove(value)), typename L::size_type);
     assert(l.remove(value) == expected);
 #else
@@ -119,7 +119,6 @@ int main(int, char**)
         }
     assert ( it == c.end ());
     }
-#if TEST_STD_VER >= 11
     {
         typedef int T;
         typedef std::forward_list<T, min_allocator<T>> C;
@@ -167,7 +166,6 @@ int main(int, char**)
         do_remove(c1, 0, 1);
         assert(c1 == c2);
     }
-#endif
 
   return 0;
 }

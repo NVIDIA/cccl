@@ -11,8 +11,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
-
 #include <cstddef>
 #include <functional>
 
@@ -48,7 +46,5 @@ struct hash<MoveOnly>
 };
 
 }
-
-#endif  // TEST_STD_VER >= 11
 
 #endif  // MOVEONLY_H

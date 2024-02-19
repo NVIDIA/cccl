@@ -29,11 +29,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_type.cuh>
@@ -120,13 +122,13 @@ class AgentSubWarpSort
   struct BinaryOpT
   {
     template <typename T>
-    __device__ bool operator()(T lhs, T rhs)
+    _CCCL_DEVICE bool operator()(T lhs, T rhs)
     {
       return this->impl(lhs, rhs);
     }
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
-    __device__ bool operator()(__half lhs, __half rhs)
+    _CCCL_DEVICE bool operator()(__half lhs, __half rhs)
     {
       // Need to explicitly cast to float for SM <= 52.
       NV_IF_TARGET(NV_PROVIDES_SM_53,
@@ -137,7 +139,7 @@ class AgentSubWarpSort
 
   private:
     template <typename T>
-    __device__ bool impl(T lhs, T rhs)
+    _CCCL_DEVICE bool impl(T lhs, T rhs)
     {
       if (IS_DESCENDING)
       {
@@ -151,7 +153,7 @@ class AgentSubWarpSort
   };
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
-  __device__ static bool equal(__half lhs, __half rhs)
+  _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
     NV_IF_TARGET(NV_PROVIDES_SM_53,
@@ -161,19 +163,19 @@ class AgentSubWarpSort
 #endif
 
   template <typename T>
-  __device__ static bool equal(T lhs, T rhs)
+  _CCCL_DEVICE static bool equal(T lhs, T rhs)
   {
     return lhs == rhs;
   }
 
-  __device__ static bool get_oob_default(Int2Type<true> /* is bool */)
+  _CCCL_DEVICE static bool get_oob_default(Int2Type<true> /* is bool */)
   {
     // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
     // comparison with oob unreliable.
     return !IS_DESCENDING;
   }
 
-  __device__ static KeyT get_oob_default(Int2Type<false> /* is bool */)
+  _CCCL_DEVICE static KeyT get_oob_default(Int2Type<false> /* is bool */)
   {
     // For FP64 the difference is:
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
@@ -229,14 +231,14 @@ public:
 
   _TempStorage &storage;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   explicit AgentSubWarpSort(TempStorage &temp_storage)
     : storage(temp_storage.Alias())
   {
   }
 
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   void ProcessSegment(int segment_size,
                       KeysLoadItT keys_input,
                       KeyT *keys_output,
@@ -295,7 +297,7 @@ private:
    * Only the first thread of a virtual warp is used for soring.
    */
   template <typename CompareOpT>
-  __device__ __forceinline__ void ShortCircuit(unsigned int linear_tid,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ShortCircuit(unsigned int linear_tid,
                                                OffsetT segment_size,
                                                KeysLoadItT keys_input,
                                                KeyT *keys_output,

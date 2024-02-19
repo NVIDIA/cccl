@@ -33,7 +33,6 @@ int main(int, char**)
     (void) i;
     assert(false);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     S s1;
@@ -42,7 +41,6 @@ int main(int, char**)
     (void) i;
     assert(false);
     }
-#endif
 }
 
 #else

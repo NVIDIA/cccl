@@ -50,15 +50,17 @@ namespace std {
 #include <type_traits>
 #include <array>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // exposition only
 enum class _LIBCUDACXX_ENUM_VIS _EqResult : unsigned char {
@@ -673,7 +675,7 @@ template<class _Tp> constexpr partial_ordering partial_order(const _Tp& __lhs, c
 template<class _Tp> constexpr strong_equality strong_equal(const _Tp& __lhs, const _Tp& __rhs);
 template<class _Tp> constexpr weak_equality weak_equal(const _Tp& __lhs, const _Tp& __rhs);
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

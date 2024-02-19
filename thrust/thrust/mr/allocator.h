@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <limits>
 
@@ -100,8 +102,8 @@ public:
      *
      *  \return the maximum value of \p std::size_t, divided by the size of \p T.
      */
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     size_type max_size() const
     {
         return (std::numeric_limits<size_type>::max)() / sizeof(T);
@@ -111,14 +113,14 @@ public:
      *
      *  \param resource the resource to be used to allocate raw memory.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     allocator(MR * resource) : mem_res(resource)
     {
     }
 
     /*! Copy constructor. Copies the resource pointer. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     allocator(const allocator<U, MR> & other) : mem_res(other.resource())
     {
     }
@@ -129,7 +131,7 @@ public:
      *  \return a pointer to the newly allocated storage.
      */
     THRUST_NODISCARD
-    __host__
+    _CCCL_HOST
     pointer allocate(size_type n)
     {
         return static_cast<pointer>(mem_res->do_allocate(n * sizeof(T), alignof(T)));
@@ -140,7 +142,7 @@ public:
      *  \param p pointer returned by a previous call to \p allocate
      *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
      */
-    __host__
+    _CCCL_HOST
     void deallocate(pointer p, size_type n)
     {
         return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
@@ -150,7 +152,7 @@ public:
      *
      *  \return the memory resource used by this allocator.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     MR * resource() const
     {
         return mem_res;
@@ -162,7 +164,7 @@ private:
 
 /*! Compares the allocators for equality by comparing the underlying memory resources. */
 template<typename T, typename MR>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noexcept
 {
     return *lhs.resource() == *rhs.resource();
@@ -170,7 +172,7 @@ bool operator==(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noex
 
 /*! Compares the allocators for inequality by comparing the underlying memory resources. */
 template<typename T, typename MR>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noexcept
 {
     return !(lhs == rhs);
@@ -210,27 +212,27 @@ public:
     /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
      *      \p allocator base subobject with that resource.
      */
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     stateless_resource_allocator() : base(get_global_resource<Upstream>())
     {
     }
 
     /*! Copy constructor. Copies the memory resource pointer. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     stateless_resource_allocator(const stateless_resource_allocator & other)
         : base(other) {}
 
     /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     stateless_resource_allocator(const stateless_resource_allocator<U, Upstream> & other)
         : base(other) {}
 
     stateless_resource_allocator & operator=(const stateless_resource_allocator &) = default;
 
     /*! Destructor. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     ~stateless_resource_allocator() {}
 };
 

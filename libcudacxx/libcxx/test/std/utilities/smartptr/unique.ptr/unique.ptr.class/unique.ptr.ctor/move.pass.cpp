@@ -139,7 +139,6 @@ void test_basic() {
 
 template <class VT>
 void test_noexcept() {
-#if TEST_STD_VER >= 11
   {
     typedef std::unique_ptr<VT> U;
     static_assert(std::is_nothrow_move_constructible<U>::value, "");
@@ -156,7 +155,6 @@ void test_noexcept() {
     typedef std::unique_ptr<VT, const NCConstDeleter<VT> &> U;
     static_assert(std::is_nothrow_move_constructible<U>::value, "");
   }
-#endif
 }
 
 int main(int, char**) {

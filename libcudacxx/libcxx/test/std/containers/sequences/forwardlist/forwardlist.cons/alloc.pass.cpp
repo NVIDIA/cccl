@@ -28,7 +28,6 @@ int main(int, char**)
         assert(c.get_allocator() == A(12));
         assert(c.empty());
     }
-#if TEST_STD_VER >= 11
     {
         typedef min_allocator<NotConstructible> A;
         typedef A::value_type T;
@@ -45,7 +44,6 @@ int main(int, char**)
         assert(c.get_allocator() == A());
         assert(c.empty());
     }
-#endif
 
   return 0;
 }

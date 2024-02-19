@@ -14,14 +14,16 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_scalar.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,7 +34,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v =
     _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
@@ -45,6 +47,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
     : false_type
 {
 };
+
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp>
 #if defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
@@ -54,6 +58,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp>
 #endif // defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
 {
 };
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&&>
@@ -73,7 +78,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&>
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v
     = is_trivially_constructible<_Tp, _Args...>::value;

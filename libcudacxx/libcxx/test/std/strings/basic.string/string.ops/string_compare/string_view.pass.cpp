@@ -54,7 +54,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), SV("abcdefghij"), 10);
     test(S("abcdefghijklmnopqrst"), SV("abcdefghijklmnopqrst"), 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     typedef std::string_view SV;
@@ -75,7 +74,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), SV("abcdefghij"), 10);
     test(S("abcdefghijklmnopqrst"), SV("abcdefghijklmnopqrst"), 0);
     }
-#endif
 
   return 0;
 }

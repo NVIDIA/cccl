@@ -16,7 +16,7 @@ cuda::device::barrier_arrive_tx(
   ptrdiff_t transaction_count_update);
 ```
 
-Arrives at a barrier in shared memory, updating both the arrival count and
+Arrives at a barrier in shared memory, decrementing the arrival count and incrementing the expected
 transaction count.
 
 ## Preconditions
@@ -29,7 +29,7 @@ transaction count.
 ## Effects
 
 * This function constructs an arrival_token object associated with the phase
-  synchronization point for the current phase. Then, decrements the expected
+  synchronization point for the current phase. Then, decrements the
   arrival count by `arrive_count_update` and increments the expected transaction
   count by `transaction_count_update`.
 * This function executes atomically. The call to this function strongly
@@ -51,9 +51,7 @@ below.
 ## Example
 
 Below example shows only `cuda::device::barrier_arrive_tx`. A more extensive
-example can be found in the
-[`cuda::device::memcpy_async_tx`](../../../asynchronous_operations/memcpy_async_tx.md)
-documentation.
+example can be found in the [`cuda::device::memcpy_async_tx`] documentation.
 
 ```cuda
 #include <cuda/barrier>
@@ -83,3 +81,4 @@ __global__ void example_kernel() {
 [Tracking asynchronous operations by the mbarrier object]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object
 [thread.barrier.class paragraph 12]: https://eel.is/c++draft/thread.barrier.class#12
 
+[`cuda::device::memcpy_async_tx`]: ../../asynchronous_operations/memcpy_async_tx.md

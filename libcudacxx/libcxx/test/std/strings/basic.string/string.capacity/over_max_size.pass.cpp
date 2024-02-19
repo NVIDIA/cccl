@@ -44,14 +44,12 @@ int main(int, char**)
     test(S("123"));
     test(S("12345678901234567890123456789012345678901234567890"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S());
     test(S("123"));
     test(S("12345678901234567890123456789012345678901234567890"));
     }
-#endif
 
   return 0;
 }

@@ -19,7 +19,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 template <class It>
 void test_single_pass(It i, It x) {
   std::move_iterator<It> r(std::move(i));
@@ -38,7 +38,7 @@ void test(It i, It x) {
 
 int main(int, char**) {
   char s[] = "123";
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test_single_pass(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s + 1));
 #else
   test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s+1));
@@ -48,7 +48,7 @@ int main(int, char**) {
   test(random_access_iterator<char*>(s), random_access_iterator<char*>(s+1));
   test(s, s+1);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   {
     constexpr const char *p = "123456789";
     typedef std::move_iterator<const char *> MI;
@@ -61,7 +61,7 @@ int main(int, char**) {
   }
 #endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   // Forward iterators return a copy.
   {
     int a[] = {1, 2, 3};

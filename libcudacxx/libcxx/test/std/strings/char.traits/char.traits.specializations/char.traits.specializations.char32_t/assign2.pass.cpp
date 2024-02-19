@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     char32_t c = U'1';
@@ -30,13 +30,11 @@ constexpr bool test_constexpr()
 int main(int, char**)
 {
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-#if TEST_STD_VER >= 11
     char32_t c = U'\0';
     std::char_traits<char32_t>::assign(c, U'a');
     assert(c == U'a');
-#endif
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );
 #endif
 #endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS

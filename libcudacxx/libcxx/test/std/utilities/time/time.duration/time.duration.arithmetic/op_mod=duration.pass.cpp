@@ -18,7 +18,7 @@
 #include "test_macros.h"
 #include "../../rep.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     std::chrono::microseconds us1(11);
@@ -39,18 +39,16 @@ int main(int, char**)
     assert(us1.count() == 2);
     }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "");
 #endif
 
-#if TEST_STD_VER >= 11
     { // This is PR#41130
     std::chrono::nanoseconds d(5);
     NotARep n;
     d %= n;
     assert(d.count() == 5);
     }
-#endif
 
   return 0;
 }

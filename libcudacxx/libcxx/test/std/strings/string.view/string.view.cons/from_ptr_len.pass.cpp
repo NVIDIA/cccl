@@ -36,7 +36,7 @@ int main(int, char**) {
     test ( "QBCDE", 5 );
     test ( "QBCDE", 2 );
     test ( "", 0 );
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const char *s = "QBCDE";
     constexpr std::basic_string_view<char> sv1 ( s, 2 );
@@ -48,7 +48,7 @@ int main(int, char**) {
     test ( L"QBCDE", 5 );
     test ( L"QBCDE", 2 );
     test ( L"", 0 );
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const wchar_t *s = L"QBCDE";
     constexpr std::basic_string_view<wchar_t> sv1 ( s, 2 );
@@ -57,23 +57,21 @@ int main(int, char**) {
     }
 #endif
 
-#if TEST_STD_VER >= 11
     test ( u"QBCDE", 5 );
     test ( u"QBCDE", 2 );
     test ( u"", 0 );
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const char16_t *s = u"QBCDE";
     constexpr std::basic_string_view<char16_t> sv1 ( s, 2 );
     static_assert ( sv1.size() == 2, "" );
     static_assert ( sv1.data() == s, "" );
     }
-#endif
 
     test ( U"QBCDE", 5 );
     test ( U"QBCDE", 2 );
     test ( U"", 0 );
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     constexpr const char32_t *s = U"QBCDE";
     constexpr std::basic_string_view<char32_t> sv1 ( s, 2 );

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator/tagged_allocator.h>
 #include <limits>
 
@@ -32,14 +34,14 @@ namespace detail
 
 
 template<typename T, typename Tag, typename Pointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_allocator<T,Tag,Pointer>
     ::tagged_allocator()
 {}
 
 
 template<typename T, typename Tag, typename Pointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_allocator<T,Tag,Pointer>
     ::tagged_allocator(const tagged_allocator<T,Tag,Pointer> &)
 {}
@@ -47,21 +49,21 @@ template<typename T, typename Tag, typename Pointer>
 
 template<typename T, typename Tag, typename Pointer>
   template<typename U, typename OtherPointer>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     tagged_allocator<T,Tag,Pointer>
       ::tagged_allocator(const tagged_allocator<U,Tag,OtherPointer> &)
 {}
 
 
 template<typename T, typename Tag, typename Pointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_allocator<T,Tag,Pointer>
     ::~tagged_allocator()
 {}
 
 
 template<typename T, typename Tag, typename Pointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename tagged_allocator<T,Tag,Pointer>::pointer
     tagged_allocator<T,Tag,Pointer>
       ::address(reference x) const
@@ -71,7 +73,7 @@ template<typename T, typename Tag, typename Pointer>
 
 
 template<typename T, typename Tag, typename Pointer>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename tagged_allocator<T,Tag,Pointer>::const_pointer
     tagged_allocator<T,Tag,Pointer>
       ::address(const_reference x) const
@@ -90,7 +92,7 @@ template<typename T, typename Tag, typename Pointer>
 
 
 template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &)
 {
   return true;
@@ -98,7 +100,7 @@ bool operator==(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocato
 
 
 template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &)
 {
   return false;

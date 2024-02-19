@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/mr/memory_resource.h>
 
@@ -39,10 +41,7 @@ namespace mr
  *  \{
  */
 
-/*! A memory resource that uses global operators new and delete to allocate and deallocate memory. Uses alignment-enabled
- *      overloads when available, otherwise uses regular overloads and implements alignment requirements by itself.
- */
-class new_delete_resource final : public memory_resource<>
+class new_delete_resource_base : public memory_resource<>
 {
 public:
     void * do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
@@ -87,9 +86,14 @@ public:
     }
 };
 
+/*! A memory resource that uses global operators new and delete to allocate and deallocate memory. Uses alignment-enabled
+ *      overloads when available, otherwise uses regular overloads and implements alignment requirements by itself.
+ */
+class new_delete_resource final : public new_delete_resource_base
+{};
+
 /*! \} // memory_resources
  */
 
 } // end mr
 THRUST_NAMESPACE_END
-

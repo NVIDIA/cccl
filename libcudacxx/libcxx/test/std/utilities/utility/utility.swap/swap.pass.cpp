@@ -19,7 +19,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
 struct CopyOnly {
     CopyOnly() {}
     CopyOnly(CopyOnly const&) noexcept {}
@@ -60,9 +59,8 @@ template <class Tp>
 constexpr bool can_swap() {
     return std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
-#endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 constexpr bool test_swap_constexpr()
 {
     int i = 1;
@@ -70,7 +68,7 @@ constexpr bool test_swap_constexpr()
     std::swap(i, j);
     return i == 2 && j == 1;
 }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**)
 {
@@ -82,7 +80,6 @@ int main(int, char**)
         assert(i == 2);
         assert(j == 1);
     }
-#if TEST_STD_VER >= 11
     {
 
         std::unique_ptr<int> i(new int(1));
@@ -108,11 +105,10 @@ int main(int, char**)
         static_assert(!noexcept(std::swap(m, m)), "");
         static_assert(noexcept(std::swap(nm, nm)), "");
     }
-#endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     static_assert(test_swap_constexpr());
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
   return 0;
 }

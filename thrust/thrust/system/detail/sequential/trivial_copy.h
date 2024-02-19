@@ -22,11 +22,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <cstring>
 #include <thrust/system/detail/sequential/general_copy.h>
 
@@ -42,11 +44,18 @@ namespace sequential
 
 
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T *trivial_copy_n(const T *first,
                     std::ptrdiff_t n,
                     T *result)
 {
+  if (n == 0)
+  {
+    // If `first` or `result` is an invalid pointer, 
+    // the behavior of `std::memmove` is undefined, even if `n` is zero. 
+    return result;
+  }
+
   T* return_value = NULL;
 
   NV_IF_TARGET(NV_IS_HOST, (

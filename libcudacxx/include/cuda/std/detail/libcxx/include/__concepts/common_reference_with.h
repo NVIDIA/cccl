@@ -14,6 +14,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__concepts/convertible_to.h"
 #include "../__concepts/same_as.h"
@@ -21,15 +29,9 @@
 #include "../__type_traits/copy_cv.h"
 #include "../__type_traits/copy_cvref.h"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.commonref]
 
@@ -39,7 +41,7 @@ concept common_reference_with =
   convertible_to<_Tp, common_reference_t<_Tp, _Up>> &&
   convertible_to<_Up, common_reference_t<_Tp, _Up>>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -65,7 +67,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT common_reference_with = _LIBCUDACXX_FRAGMENT(__common_reference_with_, _Tp, _Up);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

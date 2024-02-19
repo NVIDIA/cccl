@@ -24,18 +24,20 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
 
-#include <type_traits>
-#include <utility>
-#include <cstdint>
-#include <utility>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/cstdint>
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -61,18 +63,18 @@ THRUST_NAMESPACE_BEGIN
  *  \see integer_sequence_push_back
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::integer_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 template <typename T, T... Is>
-using integer_sequence = std::integer_sequence<T, Is...>;
+using integer_sequence = ::cuda::std::integer_sequence<T, Is...>;
 #else
 template <typename T, T... Is>
 struct integer_sequence
 {
   using type = integer_sequence;
   using value_type = T;
-  using size_type = std::size_t;
+  using size_type = ::cuda::std::size_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr size_type size() noexcept
   {
     return sizeof...(Is);
@@ -95,15 +97,15 @@ struct integer_sequence
  *  \see integer_sequence_push_back
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::index_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
-template <std::size_t... Is>
-using index_sequence = std::index_sequence<Is...>;
+#if _CCCL_STD_VER >= 2014
+template <::cuda::std::size_t... Is>
+using index_sequence = ::cuda::std::index_sequence<Is...>;
 #else
-template <std::size_t... Is>
-using index_sequence = integer_sequence<std::size_t, Is...>;
+template <::cuda::std::size_t... Is>
+using index_sequence = integer_sequence<::cuda::std::size_t, Is...>;
 #endif
 
-#if THRUST_CPP_DIALECT < 2014
+#if _CCCL_STD_VER < 2014
 /*! \cond
  */
 
@@ -129,7 +131,7 @@ template <typename Sequence0, typename Sequence1>
           Sequence0, Sequence1
       >::type;
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
   struct make_integer_sequence_impl;
 
 } // namespace detail
@@ -148,11 +150,11 @@ template <typename T, std::size_t N>
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_integer_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
-template <typename T, std::size_t N>
-using make_integer_sequence = std::make_integer_sequence<T, N>;
+#if _CCCL_STD_VER >= 2014
+template <typename T, ::cuda::std::size_t N>
+using make_integer_sequence = ::cuda::std::make_integer_sequence<T, N>;
 #else
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 using make_integer_sequence =
   typename detail::make_integer_sequence_impl<T, N>::type;
 
@@ -170,7 +172,7 @@ struct merge_and_renumber_integer_sequences_impl<
   using type = integer_sequence<T, Is0..., (sizeof...(Is0) + Is1)...>;
 };
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 struct make_integer_sequence_impl
 {
   using type = merge_and_renumber_integer_sequences<
@@ -210,13 +212,13 @@ struct make_integer_sequence_impl<T, 1>
  *  \see make_reversed_index_sequence
  *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::make_index_sequence</tt></a>
  */
-#if THRUST_CPP_DIALECT >= 2014
-template <std::size_t N>
-using make_index_sequence = std::make_index_sequence<N>;
+#if _CCCL_STD_VER >= 2014
+template <::cuda::std::size_t N>
+using make_index_sequence = ::cuda::std::make_index_sequence<N>;
 #else
-template <std::size_t N>
+template <::cuda::std::size_t N>
 using make_index_sequence =
-  make_integer_sequence<std::size_t, N>;
+  make_integer_sequence<::cuda::std::size_t, N>;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -248,7 +250,7 @@ template <typename Sequence0, typename Sequence1>
           Sequence0, Sequence1
       >::type;
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl;
 
 template <typename T, T Value, typename Sequence>
@@ -281,7 +283,7 @@ struct merge_and_renumber_reversed_integer_sequences_impl<
  *  \see make_index_sequence
  *  \see make_reversed_index_sequence
  */
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 using make_reversed_integer_sequence =
   typename detail::make_reversed_integer_sequence_impl<T, N>::type;
 
@@ -294,9 +296,9 @@ using make_reversed_integer_sequence =
  *  \see make_reversed_integer_sequence
  *  \see make_reversed_index_sequence
  */
-template <std::size_t N>
+template <::cuda::std::size_t N>
 using make_reversed_index_sequence =
-  make_reversed_integer_sequence<std::size_t, N>;
+  make_reversed_integer_sequence<::cuda::std::size_t, N>;
 
 /*! \brief Add a new element to the front of an \c integer_sequence.
  *
@@ -328,7 +330,7 @@ using integer_sequence_push_back =
 namespace detail
 {
 
-template <typename T, std::size_t N>
+template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl
 {
   using type = merge_and_renumber_reversed_integer_sequences<

@@ -53,7 +53,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), S("abcdefghij"), 10);
     test(S("abcdefghijklmnopqrst"), S("abcdefghijklmnopqrst"), 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), S(""), 0);
@@ -73,7 +72,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), S("abcdefghij"), 10);
     test(S("abcdefghijklmnopqrst"), S("abcdefghijklmnopqrst"), 0);
     }
-#endif
 
 #if TEST_STD_VER > 3
     {   // LWG 2946

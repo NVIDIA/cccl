@@ -20,11 +20,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/system/cuda/detail/util.h>
 
@@ -82,7 +84,7 @@ struct aligned_type;
 
 // implementing aligned_type portably is tricky:
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 // implement aligned_type with specialization because MSVC
 // requires literals as arguments to declspec(align(n))
 template <>
@@ -168,7 +170,7 @@ struct aligned_type<8192>
 {
   struct __align__(8192) type{};
 };
-#elif (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#elif defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
 // implement aligned_type with specialization because gcc 4.2
 // requires literals as arguments to __attribute__(aligned(n))
 template <>

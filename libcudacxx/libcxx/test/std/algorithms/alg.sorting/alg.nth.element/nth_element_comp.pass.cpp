@@ -76,7 +76,6 @@ int main(int, char**)
     test(1000);
     test(1009);
 
-#if TEST_STD_VER >= 11
     {
     std::vector<std::unique_ptr<int> > v(1000);
     for (int i = 0; static_cast<std::size_t>(i) < v.size(); ++i)
@@ -84,7 +83,6 @@ int main(int, char**)
     std::nth_element(v.begin(), v.begin() + v.size()/2, v.end(), indirect_less());
     assert(static_cast<std::size_t>(*v[v.size()/2]) == v.size()/2);
     }
-#endif
 
   return 0;
 }

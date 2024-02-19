@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/tuple.h>
 #include <thrust/detail/tuple_meta_transform.h>
@@ -45,7 +47,7 @@ template<typename Tuple,
          size_t... Is>
   struct tuple_transform_functor<Tuple,UnaryMetaFunction,UnaryFunction,thrust::index_sequence<Is...>>
 {
-  static __host__
+  static _CCCL_HOST
   typename tuple_meta_transform<Tuple,UnaryMetaFunction>::type
   do_it_on_the_host(const Tuple &t, UnaryFunction f)
   {
@@ -54,7 +56,7 @@ template<typename Tuple,
     return XfrmTuple(f(thrust::get<Is>(t))...);
   }
 
-  static __host__ __device__
+  static _CCCL_HOST_DEVICE
   typename tuple_meta_transform<Tuple,UnaryMetaFunction>::type
   do_it_on_the_host_or_device(const Tuple &t, UnaryFunction f)
   {
@@ -78,7 +80,7 @@ template<template<typename> class UnaryMetaFunction,
          typename Tuple,
          typename UnaryFunction>
 typename tuple_meta_transform<Tuple,UnaryMetaFunction>::type
-__host__ __device__
+_CCCL_HOST_DEVICE
 tuple_host_device_transform(const Tuple &t, UnaryFunction f)
 {
   return tuple_transform_functor<Tuple,UnaryMetaFunction,UnaryFunction>::do_it_on_the_host_or_device(t,f);

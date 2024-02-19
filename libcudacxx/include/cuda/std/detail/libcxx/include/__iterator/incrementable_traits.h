@@ -15,10 +15,20 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/arithmetic.h"
+#include "../__concepts/same_as.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_const.h"
+#include "../__type_traits/is_object.h"
 #include "../__type_traits/is_pointer.h"
 #include "../__type_traits/is_primary_template.h"
 #include "../__type_traits/make_signed.h"
@@ -27,15 +37,9 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [incrementable.traits]
 template<class> struct incrementable_traits {};
@@ -80,7 +84,7 @@ using iter_difference_t = typename conditional_t<__is_primary_template<iterator_
                                                  incrementable_traits<remove_cvref_t<_Ip> >,
                                                  iterator_traits<remove_cvref_t<_Ip> > >::difference_type;
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 // [incrementable.traits]
 template<class, class = void> struct incrementable_traits {};
@@ -131,7 +135,7 @@ using iter_difference_t = typename conditional_t<__is_primary_template<iterator_
                                                  incrementable_traits<remove_cvref_t<_Ip> >,
                                                  iterator_traits<remove_cvref_t<_Ip> > >::difference_type;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

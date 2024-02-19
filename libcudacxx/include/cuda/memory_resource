@@ -82,16 +82,23 @@ class resource_ref {
 
 #ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
-#include <cuda/stream_ref>
+#include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 
-#include <cuda/std/concepts>
-#include <cuda/std/type_traits>
+#include "__cccl_config"
 
-#include <cuda/std/detail/__config>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <cuda/std/detail/__pragma_push>
+#include "std/concepts"
+#include "std/type_traits"
+#include "stream_ref"
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,13 +158,13 @@ _LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstrea
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn {
-  _LIBCUDACXX_DISABLE_EXEC_CHECK
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Property)
     _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
-  _LIBCUDACXX_DISABLE_EXEC_CHECK
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
     _LIBCUDACXX_REQUIRES( property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
               __has_upstream_resource<_Derived2, _Upstream>)
@@ -172,16 +179,15 @@ template <class _Derived, class _Upstream>
 using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 /// class get_property
-/// \brief The \c get_property crtp temaplate simplifies the user facing side of forwarding properties
-///        We can always tell people to just derive from it to properly forward all properties
+/// \brief The \c get_property customization point ensures that `cuda::get_property` is always available
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__get_property)
 struct __fn {
-  _LIBCUDACXX_DISABLE_EXEC_CHECK
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     _LIBCUDACXX_REQUIRES( (!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(const _Upstream&, _Property) const noexcept {}
 
-  _LIBCUDACXX_DISABLE_EXEC_CHECK
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Upstream, class _Property)
     _LIBCUDACXX_REQUIRES( (property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_INLINE_VISIBILITY constexpr __property_value_t<_Property> operator()(
@@ -233,7 +239,7 @@ _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_FRAGMENT(__async_resource_, _Re
 /// \concept resource_with
 /// \brief The \c resource_with concept
 template <class _Resource, class... _Properties>
-#if _LIBCUDACXX_STD_VER < 17
+#if _CCCL_STD_VER < 2017
 _LIBCUDACXX_CONCEPT resource_with =
   resource<_Resource>&& _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<has_property<_Resource, _Properties>>...>;
 #else
@@ -243,7 +249,7 @@ _LIBCUDACXX_CONCEPT resource_with = resource<_Resource> && (has_property<_Resour
 /// \concept async_resource_with
 /// \brief The \c async_resource_with concept
 template <class _Resource, class... _Properties>
-#if _LIBCUDACXX_STD_VER < 17
+#if _CCCL_STD_VER < 2017
 _LIBCUDACXX_CONCEPT async_resource_with = async_resource<_Resource> &&
   _CUDA_VSTD::conjunction_v<_CUDA_VSTD::bool_constant<has_property<_Resource, _Properties>>...>;
 #else
@@ -530,7 +536,7 @@ public:
         , _Filtered_vtable<_Properties...>(_Filtered_vtable<_Properties...>::template _Create<_Resource>())
     {}
 
-    #if _LIBCUDACXX_STD_VER > 14
+    #if _CCCL_STD_VER > 2014
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
       _LIBCUDACXX_REQUIRES( (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
     #else
@@ -544,7 +550,7 @@ public:
         , _Filtered_vtable<_Properties...>(__ref)
     {}
 
-    #if _LIBCUDACXX_STD_VER > 14
+    #if _CCCL_STD_VER > 2014
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
       _LIBCUDACXX_REQUIRES( (_Alloc_type == _AllocType::_Default)
         && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
@@ -560,7 +566,7 @@ public:
         , _Filtered_vtable<_Properties...>(__ref)
     {}
 
-    #if _LIBCUDACXX_STD_VER > 14
+    #if _CCCL_STD_VER > 2014
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
       _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
@@ -576,7 +582,7 @@ public:
             && this->__static_vtable->__equal_fn(this->__object, __right.__object);
     }
 
-    #if _LIBCUDACXX_STD_VER > 14
+    #if _CCCL_STD_VER > 2014
     _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
       _LIBCUDACXX_REQUIRES( (sizeof...(_Properties) == sizeof...(_OtherProperties))
             && (_CUDA_VSTD::_One_of<_Properties, _OtherProperties...> && ...))
@@ -622,10 +628,10 @@ struct device_accessible{};
 struct host_accessible{};
 
 } // namespace mr
-_LIBCUDACXX_END_NAMESPACE_CUDA
-#endif // _LIBCUDACXX_STD_VER > 11
 
-#include <cuda/std/detail/__pragma_pop>
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_STD_VER > 2011
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

@@ -113,6 +113,14 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "__algorithm/equal.h"
 #include "__algorithm/fill_n.h"
 #include "__algorithm/lexicographical_compare.h"
@@ -158,12 +166,6 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 // [tuple.helper]
 #include "__tuple_dir/tuple_element.h"
 #include "__tuple_dir/tuple_size.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#  pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -465,9 +467,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
-#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
-    return *data();
-#endif  // _LIBCUDACXX_COMPILER_MSVC_2017
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
@@ -475,9 +474,6 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
-#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
-    return *data();
-#endif  // _LIBCUDACXX_COMPILER_MSVC_2017
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference at(size_type)
@@ -496,50 +492,34 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference front() noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-    return *data();
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
     _LIBCUDACXX_UNREACHABLE();
-#endif  // !_LIBCUDACXX_COMPILER_MSVC
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
   front() const noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-    return *data();
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
     _LIBCUDACXX_UNREACHABLE();
-#endif  // !_LIBCUDACXX_COMPILER_MSVC
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference back() noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-    return *data();
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
     _LIBCUDACXX_UNREACHABLE();
-#endif  // !_LIBCUDACXX_COMPILER_MSVC
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
   back() const noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-    return *data();
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC vvv
     _LIBCUDACXX_UNREACHABLE();
-#endif  // !_LIBCUDACXX_COMPILER_MSVC
   }
 };
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
 template <class _Tp, class... _Args, class = __enable_if_t<(is_same_v<_Tp, _Args> && ...)> >
 _LIBCUDACXX_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
 template <class _Tp, size_t _Size>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
@@ -632,7 +612,7 @@ get(const array<_Tp, _Size>&& __a) noexcept
   return _CUDA_VSTD::move(__a.__elems_[_Ip]);
 }
 
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
 
 template <typename _Tp, size_t _Size, size_t... _Index>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 array<remove_cv_t<_Tp>, _Size>
@@ -670,7 +650,7 @@ to_array(_Tp (&&__arr)[_Size]) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constr
   return _CUDA_VSTD::__to_array_rvalue_impl(_CUDA_VSTD::move(__arr), make_index_sequence<_Size>());
 }
 
-#endif // _LIBCUDACXX_STD_VER >= 14
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

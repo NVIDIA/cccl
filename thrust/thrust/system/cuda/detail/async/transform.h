@@ -31,14 +31,16 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
@@ -50,6 +52,8 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/distance.h>
 #include <thrust/advance.h>
+
+#include <cub/device/device_for.cuh>
 
 #include <type_traits>
 
@@ -65,13 +69,13 @@ struct async_transform_fn
   OutputIt output_;
   UnaryOperation op_;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   async_transform_fn(ForwardIt&& first, OutputIt&& output, UnaryOperation&& op)
     : first_(std::move(first)), output_(std::move(output)), op_(std::move(op))
   {}
 
   template <typename Index>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(Index idx)
   {
     output_[idx] = op_(thrust::raw_reference_cast(first_[idx]));
@@ -124,7 +128,7 @@ unique_eager_event async_transform_n(
   );
 
   thrust::cuda_cub::throw_on_error(
-    thrust::cuda_cub::__parallel_for::parallel_for(
+    cub::DeviceFor::Bulk(
       n, std::move(wrapped), e.stream().native_handle()
     )
   , "after transform launch"

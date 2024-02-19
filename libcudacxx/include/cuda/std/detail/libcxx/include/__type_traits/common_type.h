@@ -14,17 +14,19 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/decay.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,7 +40,7 @@ using __common_type_t = typename common_type<_Tp...>::type;
 template <class _Tp, class _Up>
 using __cond_type = decltype(false ? declval<_Tp>() : declval<_Up>());
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp, class _Up, class = void>
 struct __common_type3 {};
 
@@ -110,7 +112,7 @@ template <class _Tp, class _Up, class _Vp, class... _Rest>
 struct _LIBCUDACXX_TEMPLATE_VIS common_type<_Tp, _Up, _Vp, _Rest...>
     : __common_type_impl<__common_types<_Tp, _Up, _Vp, _Rest...> > {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class ..._Tp> using common_type_t = typename common_type<_Tp...>::type;
 
 template<class, class, class = void>

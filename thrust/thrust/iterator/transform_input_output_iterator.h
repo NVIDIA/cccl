@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/transform_input_output_iterator.inl>
 
 THRUST_NAMESPACE_BEGIN
@@ -118,7 +120,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
    * \param input_function An \c InputFunction to be executed on values read from the iterator
    * \param output_function An \c OutputFunction to be executed on values written to the iterator
    */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
       : super_t(io), input_function(input_function), output_function(output_function)
     {
@@ -128,7 +130,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
      */
   private:
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename super_t::reference dereference() const
     {
       return detail::transform_input_output_iterator_proxy<
@@ -154,7 +156,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
  */
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 transform_input_output_iterator<InputFunction, OutputFunction, Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
 {
     return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);

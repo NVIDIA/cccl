@@ -31,13 +31,11 @@ int main(int, char**)
     test(S());
     test(S("123"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S());
     test(S("123"));
     }
-#endif
 
   return 0;
 }

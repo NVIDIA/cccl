@@ -61,7 +61,7 @@ int main(int, char**)
         assert(std::string((char*)s) == "abc");
         assert(is.width() == 0);
     }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     {
         testbuf<char> sb("   abcdefghijk    ");
         std::istream is(&sb);
@@ -93,7 +93,7 @@ int main(int, char**)
         assert(std::string((char*)s) == "");
         assert(is.width() == 0);
     }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     {
         testbuf<char> sb("   abcdefghijk");
         std::istream is(&sb);

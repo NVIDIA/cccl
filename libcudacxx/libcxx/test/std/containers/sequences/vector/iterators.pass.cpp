@@ -79,7 +79,6 @@ int main(int, char**)
         (void) i;
         (void) j;
     }
-#if TEST_STD_VER >= 11
     {
         typedef int T;
         typedef std::vector<T, min_allocator<T>> C;
@@ -138,8 +137,7 @@ int main(int, char**)
         C::const_iterator j = i;
         assert(j->first == 3);
     }
-#endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     { // N3644 testing
         typedef std::vector<int> C;
         C::iterator ii1{}, ii2{};

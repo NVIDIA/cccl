@@ -19,9 +19,7 @@
 #include "count_new.h"
 #include "min_allocator.h"
 #include "private_constructor.h"
-#if TEST_STD_VER >= 11
 #include "container_test_types.h"
-#endif
 
 int main(int, char**)
 {
@@ -50,7 +48,6 @@ int main(int, char**)
     assert(m[6] == 6.5);
     assert(m.size() == 8);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::pair<const int, double> V;
     V ar[] =
@@ -110,8 +107,7 @@ int main(int, char**)
             }
         }
     }
-#endif
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     typedef std::pair<const int, double> V;
     V ar[] =

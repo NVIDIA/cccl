@@ -37,7 +37,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::multiset<int, std::less<int>, min_allocator<int>> M;
     M m;
@@ -55,7 +54,6 @@ int main(int, char**)
     m.erase(m.begin());
     assert(m.size() == 0);
     }
-#endif
 
   return 0;
 }

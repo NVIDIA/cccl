@@ -18,7 +18,7 @@ template <class T>
 void test_is_trivially_constructible()
 {
     static_assert(( std::is_trivially_constructible<T>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(( std::is_trivially_constructible_v<T>), "");
 #endif
 }
@@ -27,7 +27,7 @@ template <class T, class A0>
 void test_is_trivially_constructible()
 {
     static_assert(( std::is_trivially_constructible<T, A0>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(( std::is_trivially_constructible_v<T, A0>), "");
 #endif
 }
@@ -36,7 +36,7 @@ template <class T>
 void test_is_not_trivially_constructible()
 {
     static_assert((!std::is_trivially_constructible<T>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((!std::is_trivially_constructible_v<T>), "");
 #endif
 }
@@ -45,7 +45,7 @@ template <class T, class A0>
 void test_is_not_trivially_constructible()
 {
     static_assert((!std::is_trivially_constructible<T, A0>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((!std::is_trivially_constructible_v<T, A0>), "");
 #endif
 }
@@ -54,7 +54,7 @@ template <class T, class A0, class A1>
 void test_is_not_trivially_constructible()
 {
     static_assert((!std::is_trivially_constructible<T, A0, A1>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((!std::is_trivially_constructible_v<T, A0, A1>), "");
 #endif
 }

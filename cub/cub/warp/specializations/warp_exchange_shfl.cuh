@@ -29,11 +29,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -65,7 +67,7 @@ class WarpExchangeShfl
     InputT val;
 
     template <int NUM_ENTRIES>
-    __device__ void Foreach(const bool xor_bit_set, const unsigned mask)
+    _CCCL_DEVICE void Foreach(const bool xor_bit_set, const unsigned mask)
     {
       // The implementation here is a recursive divide-and-conquer approach
       // that takes inspiration from:
@@ -217,10 +219,10 @@ class WarpExchangeShfl
     }
 
     // terminate recursion
-    __device__ void TransposeImpl(unsigned int, unsigned int, Int2Type<0>) {}
+    _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, Int2Type<0>) {}
 
     template <int NUM_ENTRIES>
-    __device__ void TransposeImpl(const unsigned int lane_id,
+    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id,
                                   const unsigned int mask,
                                   Int2Type<NUM_ENTRIES>)
     {
@@ -231,15 +233,15 @@ class WarpExchangeShfl
     }
 
   public:
-    __device__ CompileTimeArray(const InputT (&input_items)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE CompileTimeArray(const InputT (&input_items)[ITEMS_PER_THREAD],
                                 OutputT (&output_items)[ITEMS_PER_THREAD])
         : CompileTimeArray<OutputT, IDX + 1, SIZE>{input_items, output_items}
         , val{input_items[IDX]}
     {}
 
-    __device__ ~CompileTimeArray() { this->output_items[IDX] = val; }
+    _CCCL_DEVICE ~CompileTimeArray() { this->output_items[IDX] = val; }
 
-    __device__ void Transpose(const unsigned int lane_id, const unsigned int mask)
+    _CCCL_DEVICE void Transpose(const unsigned int lane_id, const unsigned int mask)
     {
       TransposeImpl(lane_id, mask, Int2Type<ITEMS_PER_THREAD / 2>());
     }
@@ -254,11 +256,11 @@ class WarpExchangeShfl
     InputT (&output_items)[ITEMS_PER_THREAD];
 
     template <int>
-    __device__ void Foreach(bool, unsigned)
+    _CCCL_DEVICE void Foreach(bool, unsigned)
     {}
 
   public:
-    __device__ CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD],
+    _CCCL_DEVICE CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD],
                                 OutputT (&output_items)[ITEMS_PER_THREAD])
         : output_items{output_items}
     {}
@@ -274,14 +276,14 @@ public:
 
   WarpExchangeShfl() = delete;
 
-  explicit __device__ __forceinline__ WarpExchangeShfl(TempStorage &)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage &)
       : lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
       , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
   template <typename OutputT>
-  __device__ __forceinline__ void BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                                                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     CompileTimeArray<OutputT, 0, ITEMS_PER_THREAD> arr{input_items, output_items};
@@ -289,7 +291,7 @@ public:
   }
 
   template <typename OutputT>
-  __device__ __forceinline__ void StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
                                                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     BlockedToStriped(input_items, output_items);
@@ -304,7 +306,7 @@ public:
   };
 
   template <typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(InputT (&)[ITEMS_PER_THREAD],
                    OffsetT (&)[ITEMS_PER_THREAD])
   {
@@ -316,7 +318,7 @@ public:
 
   template <typename OutputT,
             typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(const InputT (&)[ITEMS_PER_THREAD],
                    OutputT (&)[ITEMS_PER_THREAD],
                    OffsetT (&)[ITEMS_PER_THREAD])

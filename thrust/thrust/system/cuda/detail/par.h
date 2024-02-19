@@ -28,12 +28,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
@@ -52,8 +53,8 @@ private:
   cudaStream_t stream;
 
 public:
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   execute_on_stream_base(cudaStream_t stream_ = default_stream())
       : stream(stream_){}
 
@@ -67,7 +68,7 @@ public:
   }
 
 private:
-  friend __host__ __device__
+  friend _CCCL_HOST_DEVICE
   cudaStream_t
   get_stream(const execute_on_stream_base &exec)
   {
@@ -82,7 +83,7 @@ private:
   cudaStream_t stream;
 
 public:
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_on_stream_nosync_base(cudaStream_t stream_ = default_stream())
       : stream(stream_){}
 
@@ -96,14 +97,14 @@ public:
   }
 
 private:
-  friend __host__ __device__
+  friend _CCCL_HOST_DEVICE
   cudaStream_t
   get_stream(const execute_on_stream_nosync_base &exec)
   {
     return exec.stream;
   }
 
-  friend __host__ __device__
+  friend _CCCL_HOST_DEVICE
   bool
   must_perform_optional_stream_synchronization(const execute_on_stream_nosync_base &)
   {
@@ -115,9 +116,9 @@ struct execute_on_stream : execute_on_stream_base<execute_on_stream>
 {
   typedef execute_on_stream_base<execute_on_stream> base_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_on_stream() : base_t(){};
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_on_stream(cudaStream_t stream)
   : base_t(stream){};
 };
@@ -126,9 +127,9 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
 {
   typedef execute_on_stream_nosync_base<execute_on_stream_nosync> base_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_on_stream_nosync() : base_t(){};
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_on_stream_nosync(cudaStream_t stream)
   : base_t(stream){};
 };
@@ -142,7 +143,7 @@ struct par_t : execution_policy<par_t>,
 {
   typedef execution_policy<par_t> base_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr par_t() : base_t() {}
 
   typedef execute_on_stream stream_attachment_type;
@@ -162,7 +163,7 @@ struct par_nosync_t : execution_policy<par_nosync_t>,
 {
   typedef execution_policy<par_nosync_t> base_t;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr par_nosync_t() : base_t() {}
 
   typedef execute_on_stream_nosync stream_attachment_type;
@@ -177,7 +178,7 @@ struct par_nosync_t : execution_policy<par_nosync_t>,
 private:
   //this function is defined to allow non-blocking calls on the default_stream() with thrust::cuda::par_nosync
   //without explicitly using thrust::cuda::par_nosync.on(default_stream())
-  friend __host__ __device__
+  friend _CCCL_HOST_DEVICE
   bool
   must_perform_optional_stream_synchronization(const par_nosync_t &)
   {

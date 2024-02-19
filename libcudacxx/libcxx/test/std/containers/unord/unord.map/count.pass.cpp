@@ -41,7 +41,6 @@ int main(int, char**)
         assert(c.count(30) == 1);
         assert(c.count(5) == 0);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_map<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -61,7 +60,6 @@ int main(int, char**)
         assert(c.count(30) == 1);
         assert(c.count(5) == 0);
     }
-#endif
 
   return 0;
 }

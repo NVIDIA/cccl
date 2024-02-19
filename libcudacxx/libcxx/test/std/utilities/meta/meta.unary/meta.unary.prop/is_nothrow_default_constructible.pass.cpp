@@ -20,7 +20,7 @@ void test_is_nothrow_default_constructible()
     static_assert( std::is_nothrow_default_constructible<const T>::value, "");
     static_assert( std::is_nothrow_default_constructible<volatile T>::value, "");
     static_assert( std::is_nothrow_default_constructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert( std::is_nothrow_default_constructible_v<T>, "");
     static_assert( std::is_nothrow_default_constructible_v<const T>, "");
     static_assert( std::is_nothrow_default_constructible_v<volatile T>, "");
@@ -35,7 +35,7 @@ void test_has_not_nothrow_default_constructor()
     static_assert(!std::is_nothrow_default_constructible<const T>::value, "");
     static_assert(!std::is_nothrow_default_constructible<volatile T>::value, "");
     static_assert(!std::is_nothrow_default_constructible<const volatile T>::value, "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(!std::is_nothrow_default_constructible_v<T>, "");
     static_assert(!std::is_nothrow_default_constructible_v<const T>, "");
     static_assert(!std::is_nothrow_default_constructible_v<volatile T>, "");
@@ -59,22 +59,18 @@ struct A
     A();
 };
 
-#if TEST_STD_VER >= 11
 struct DThrows
 {
     DThrows()  noexcept(true) {}
     ~DThrows() noexcept(false) {}
 };
-#endif
 
 int main(int, char**)
 {
     test_has_not_nothrow_default_constructor<void>();
     test_has_not_nothrow_default_constructor<int&>();
     test_has_not_nothrow_default_constructor<A>();
-#if TEST_STD_VER >= 11
     test_has_not_nothrow_default_constructor<DThrows>(); // This is LWG2116
-#endif
 
     test_is_nothrow_default_constructible<Union>();
     test_is_nothrow_default_constructible<Empty>();

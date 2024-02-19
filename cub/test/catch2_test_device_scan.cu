@@ -28,9 +28,6 @@
 #include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -38,15 +35,15 @@
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSum, device_inclusive_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
@@ -109,7 +106,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                                  gen_data_t::GEN_TYPE_CONST);
 
   // Generate input data
-  thrust::device_vector<input_t> in_items(num_items);
+  c2h::device_vector<input_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
     c2h::gen(CUB_SEED(2), in_items);
@@ -118,7 +115,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   {
     input_t default_constant{};
     init_default_constant(default_constant);
-    thrust::fill(in_items.begin(), in_items.end(), default_constant);
+    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
@@ -132,8 +129,8 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(host_items.cbegin(),
                                      host_items.cend(),
                                      expected_result.begin(),
@@ -141,7 +138,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                      accum_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_items);
+    c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_sum(d_in_it, d_out_it, num_items);
 
@@ -164,8 +161,8 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(host_items.cbegin(),
                                      host_items.cend(),
                                      expected_result.begin(),
@@ -173,7 +170,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                      op_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_items);
+    c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_exclusive_sum(d_in_it, d_out_it, num_items);
 
@@ -197,8 +194,8 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     using accum_t = cub::detail::accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(host_items.cbegin(),
                                      host_items.cend(),
                                      expected_result.begin(),
@@ -206,7 +203,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                      cub::NumericTraits<accum_t>::Max());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_items);
+    c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), op_t{}, num_items);
 
@@ -232,8 +229,8 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     auto scan_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(host_items.cbegin(),
                                      host_items.cend(),
                                      expected_result.begin(),
@@ -241,7 +238,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                      scan_op);
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_items);
+    c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
@@ -270,8 +267,8 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Prepare verification data
     accum_t init_value{};
     init_default_constant(init_value);
-    thrust::host_vector<input_t> host_items(in_items);
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<input_t> host_items(in_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_reference(host_items.cbegin(),
                                      host_items.cend(),
                                      expected_result.begin(),
@@ -279,10 +276,10 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
                                      scan_op);
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_items);
+    c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
-    thrust::device_vector<init_t> d_initial_value(1);
+    c2h::device_vector<init_t> d_initial_value(1);
     d_initial_value[0] = static_cast<init_t>(*unwrap_it(&init_value));
     auto future_init_value =
       cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));

@@ -14,16 +14,18 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/is_scalar.h"
 #include "../__type_traits/remove_all_extents.h"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,7 +34,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_C
     : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v = __is_literal_type(_Tp);
 #endif
@@ -42,8 +44,9 @@ _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
     : public integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value ||
                                      is_reference<__remove_all_extents_t<_Tp>>::value>
+{};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v
     = is_literal_type<_Tp>::value;

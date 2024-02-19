@@ -25,7 +25,7 @@
 #include <utility>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 # ifdef __cpp_lib_as_const
 #   error "__cpp_lib_as_const should not be defined before c++17"
@@ -51,7 +51,7 @@
 #   error "__cpp_lib_tuples_by_type should not be defined before c++14"
 # endif
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 # ifdef __cpp_lib_as_const
 #   error "__cpp_lib_as_const should not be defined before c++17"
@@ -86,7 +86,7 @@
 #   error "__cpp_lib_tuples_by_type should have the value 201304L in c++14"
 # endif
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 # ifndef __cpp_lib_as_const
 #   error "__cpp_lib_as_const should be defined in c++17"
@@ -133,7 +133,7 @@
 #   error "__cpp_lib_tuples_by_type should have the value 201304L in c++17"
 # endif
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 # ifndef __cpp_lib_as_const
 #   error "__cpp_lib_as_const should be defined in c++2a"
@@ -189,6 +189,6 @@
 #   error "__cpp_lib_tuples_by_type should have the value 201304L in c++2a"
 # endif
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) { return 0; }

@@ -484,11 +484,11 @@ feature_test_macros = sorted([ add_version_header(x) for x in [
    },
    "headers": ["new"],
    "depends":
-      "TEST_STD_VER > 17"
+      "TEST_STD_VER > 2017"
       " && defined(__cpp_impl_destroying_delete)"
       " && __cpp_impl_destroying_delete >= 201806L",
    "internal_depends":
-      "_LIBCUDACXX_STD_VER > 17"
+      "_CCCL_STD_VER > 2017"
       " && defined(__cpp_impl_destroying_delete)"
       " && __cpp_impl_destroying_delete >= 201806L",
    },
@@ -716,21 +716,23 @@ def produce_version_header():
 
 #include <__config>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 {cxx14_macros}
 #endif
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 {cxx17_macros}
 #endif
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 {cxx2a_macros}
 #endif
 
@@ -861,23 +863,23 @@ def produce_tests():
 #include <{header}>
 #include "test_macros.h"
 
-#if TEST_STD_VER < 14
+#if TEST_STD_VER < 2014
 
 {cxx11_tests}
 
-#elif TEST_STD_VER == 14
+#elif TEST_STD_VER == 2014
 
 {cxx14_tests}
 
-#elif TEST_STD_VER == 17
+#elif TEST_STD_VER == 2017
 
 {cxx17_tests}
 
-#elif TEST_STD_VER > 17
+#elif TEST_STD_VER > 2017
 
 {cxx2a_tests}
 
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 int main(int, char**) {{ return 0; }}
 """.format(script_name=script_name,

@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <thrust/detail/config/memory_resource.h>
 #ifdef THRUST_MR_STD_MR_HEADER
@@ -95,7 +97,7 @@ public:
      *  \param other the other resource to compare this resource to
      *  \return whether the two resources are equivalent.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool is_equal(const memory_resource & other) const noexcept
     {
         return do_is_equal(other);
@@ -126,7 +128,7 @@ public:
      *  \param other the other resource to compare this resource to
      *  \return whether the two resources are equivalent.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     virtual bool do_is_equal(const memory_resource & other) const noexcept
     {
         return this == &other;
@@ -155,7 +157,7 @@ public:
         do_deallocate(p, bytes, alignment);
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool is_equal(const memory_resource & other) const noexcept
     {
         return do_is_equal(other);
@@ -163,7 +165,7 @@ public:
 
     virtual pointer do_allocate(std::size_t bytes, std::size_t alignment) = 0;
     virtual void do_deallocate(pointer p, std::size_t bytes, std::size_t alignment) = 0;
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     virtual bool do_is_equal(const memory_resource & other) const noexcept
     {
         return this == &other;
@@ -188,7 +190,7 @@ public:
 /*! Compares the memory resources for equality, first by identity, then by \p is_equal.
  */
 template<typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const memory_resource<Pointer> & lhs, const memory_resource<Pointer> & rhs) noexcept
 {
     return &lhs == &rhs || rhs.is_equal(rhs);
@@ -197,7 +199,7 @@ bool operator==(const memory_resource<Pointer> & lhs, const memory_resource<Poin
 /*! Compares the memory resources for inequality, first by identity, then by \p is_equal.
  */
 template<typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const memory_resource<Pointer> & lhs, const memory_resource<Pointer> & rhs) noexcept
 {
     return !(lhs == rhs);
@@ -209,7 +211,7 @@ bool operator!=(const memory_resource<Pointer> & lhs, const memory_resource<Poin
  *  \return a pointer to a global instance of \p MR.
  */
 template<typename MR>
-__host__
+_CCCL_HOST
 MR * get_global_resource()
 {
     static MR resource;

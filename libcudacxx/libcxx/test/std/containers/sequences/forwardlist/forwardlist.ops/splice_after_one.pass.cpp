@@ -106,7 +106,6 @@ int main(int, char**)
         }
     }
     }
-#if TEST_STD_VER >= 11
     {
     // splicing different containers
     typedef std::forward_list<T, min_allocator<T>> C;
@@ -136,7 +135,6 @@ int main(int, char**)
         }
     }
     }
-#endif
 
   return 0;
 }

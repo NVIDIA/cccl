@@ -36,11 +36,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/block/block_load.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
@@ -144,7 +146,7 @@ struct AgentRadixSortHistogram
 
     DecomposerT decomposer;
 
-    __device__ __forceinline__ AgentRadixSortHistogram(TempStorage &temp_storage,
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortHistogram(TempStorage &temp_storage,
                                                        OffsetT *d_bins_out,
                                                        const KeyT *d_keys_in,
                                                        OffsetT num_items,
@@ -161,7 +163,7 @@ struct AgentRadixSortHistogram
         , decomposer(decomposer)
     {}
 
-    __device__ __forceinline__ void Init()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Init()
     {
         // Initialize bins to 0.
         #pragma unroll
@@ -180,7 +182,7 @@ struct AgentRadixSortHistogram
         CTA_SYNC();
     }
 
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     void LoadTileKeys(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
     {
         // tile_offset < num_items always, hence the line below works
@@ -204,7 +206,7 @@ struct AgentRadixSortHistogram
         }
     }
 
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     void AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
     {
         int part = LaneId() % NUM_PARTS;
@@ -224,7 +226,7 @@ struct AgentRadixSortHistogram
         }
     }
 
-    __device__ __forceinline__ void AccumulateGlobalHistograms()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
     {
         #pragma unroll
         for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
@@ -246,7 +248,7 @@ struct AgentRadixSortHistogram
         }
     }
 
-    __device__ __forceinline__ void Process()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
     {
         // Within a portion, avoid overflowing (u)int32 counters.
         // Between portions, accumulate results in global memory.
@@ -277,7 +279,7 @@ struct AgentRadixSortHistogram
         }
     }
 
-    __device__ __forceinline__ digit_extractor_t digit_extractor(int current_bit, int num_bits)
+    _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor(int current_bit, int num_bits)
     {
         return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit,
                                                                                num_bits,

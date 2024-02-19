@@ -89,7 +89,6 @@ int main(int, char**)
         assert(c.bucket_count() >= 16);
         test(c);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -117,7 +116,6 @@ int main(int, char**)
         assert(c.bucket_count() >= 16);
         test(c);
     }
-#endif
     reserve_invariant(20);
 
   return 0;

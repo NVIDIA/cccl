@@ -79,7 +79,6 @@ int main(int, char**)
         for (int j = 0; static_cast<std::size_t>(j) < c.size(); ++j)
             assert(c[j] == j);
     }
-#if TEST_STD_VER >= 11
     {
         std::vector<int, min_allocator<int>> c;
         c.push_back(0);
@@ -108,7 +107,6 @@ int main(int, char**)
         for (int j = 0; static_cast<std::size_t>(j) < c.size(); ++j)
             assert(c[j] == j);
     }
-#endif
 
   return 0;
 }

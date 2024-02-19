@@ -34,24 +34,28 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
+_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+#include <cuda/std/functional>
+_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
-
 
 CUB_NAMESPACE_BEGIN
 namespace detail {
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if CUB_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;

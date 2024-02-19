@@ -12,16 +12,18 @@
 #define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 
 #ifndef __cuda_std__
-
-#ifndef __cuda_std__
-#include <__config>
-#include <exception>
-#include <memory>
-#include <new>
-#include <typeinfo>
+#  include <__config>
 #endif // __cuda_std__
 
-#include "__assert"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "../__assert"
 #include "../__debug"
 #include "../__functional_base"
 #include "../__functional/binary_function.h"
@@ -44,11 +46,14 @@
 #include "../__utility/swap.h"
 #include "../tuple"
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#ifndef __cuda_std__
+#include <exception>
+#include <memory>
+#include <new>
+#include <typeinfo>
+#endif // __cuda_std__
+
+#ifndef __cuda_std__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1004,7 +1009,7 @@ public:
     template<class _Fp, class = _EnableIfLValueCallable<_Fp>>
     function(_Fp);
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
     template<class _Alloc>
       _LIBCUDACXX_INLINE_VISIBILITY
       function(allocator_arg_t, const _Alloc&) noexcept {}
@@ -1030,7 +1035,7 @@ public:
     // function modifiers:
     void swap(function&) noexcept;
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
     template<class _Fp, class _Alloc>
       _LIBCUDACXX_INLINE_VISIBILITY
       void assign(_Fp&& __f, const _Alloc& __a)
@@ -1060,7 +1065,7 @@ public:
 #endif // _LIBCUDACXX_NO_RTTI
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template<class _Rp, class ..._Ap>
 function(_Rp(*)(_Ap...)) -> function<_Rp(_Ap...)>;
 
@@ -1105,12 +1110,12 @@ struct __strip_signature<_Rp (_Gp::*) (_Ap...) const volatile & noexcept> { usin
 
 template<class _Fp, class _Stripped = typename __strip_signature<decltype(&_Fp::operator())>::type>
 function(_Fp) -> function<_Stripped>;
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 template<class _Rp, class ..._ArgTypes>
 function<_Rp(_ArgTypes...)>::function(const function& __f) : __f_(__f.__f_) {}
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
 template<class _Rp, class ..._ArgTypes>
 template <class _Alloc>
 function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc&,
@@ -1121,7 +1126,7 @@ template <class _Rp, class... _ArgTypes>
 function<_Rp(_ArgTypes...)>::function(function&& __f) noexcept
     : __f_(_CUDA_VSTD::move(__f.__f_)) {}
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
 template<class _Rp, class ..._ArgTypes>
 template <class _Alloc>
 function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc&,
@@ -1133,7 +1138,7 @@ template <class _Rp, class... _ArgTypes>
 template <class _Fp, class>
 function<_Rp(_ArgTypes...)>::function(_Fp __f) : __f_(_CUDA_VSTD::move(__f)) {}
 
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
 template <class _Rp, class... _ArgTypes>
 template <class _Fp, class _Alloc, class>
 function<_Rp(_ArgTypes...)>::function(allocator_arg_t, const _Alloc& __a,

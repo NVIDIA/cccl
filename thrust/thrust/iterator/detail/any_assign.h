@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -32,15 +34,15 @@ namespace detail
 // a type which may be assigned any other type
 struct any_assign
 {
-  inline __host__ __device__ any_assign()
+  inline _CCCL_HOST_DEVICE any_assign()
   {}
 
   template<typename T>
-  inline __host__ __device__ any_assign(T)
+  inline _CCCL_HOST_DEVICE any_assign(T)
   {}
 
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   any_assign &operator=(T)
   {
     if(0)

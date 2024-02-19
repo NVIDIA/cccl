@@ -24,11 +24,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <iostream>
 #include <thrust/detail/cstdint.h>
@@ -116,7 +118,7 @@ template<typename Engine, size_t p, size_t r>
     /*! This constructor constructs a new \p discard_block_engine and constructs
      *  its \p base_type engine using its null constructor.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     discard_block_engine();
 
     /*! This constructor constructs a new \p discard_block_engine using
@@ -125,20 +127,20 @@ template<typename Engine, size_t p, size_t r>
      *  \param urng A \p base_type to use to initialize this \p discard_block_engine's
      *         adapted base engine.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit discard_block_engine(const base_type &urng);
 
     /*! This constructor initializes a new \p discard_block_engine with a given seed.
      *
      *  \param s The seed used to intialize this \p discard_block_engine's adapted base engine.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit discard_block_engine(result_type s);
 
     /*! This method initializes the state of this \p discard_block_engine's adapted base engine
      *  by using its \p default_seed value.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void seed(void);
 
     /*! This method initializes the state of this \p discard_block_engine's adapted base engine
@@ -146,7 +148,7 @@ template<typename Engine, size_t p, size_t r>
      *
      *  \param s The seed with which to intialize this \p discard_block_engine's adapted base engine.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void seed(result_type s);
 
     // generating functions
@@ -154,7 +156,7 @@ template<typename Engine, size_t p, size_t r>
     /*! This member function produces a new random value and updates this \p discard_block_engine's state.
      *  \return A new random number.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type operator()(void);
 
     /*! This member function advances this \p discard_block_engine's state a given number of times
@@ -163,7 +165,7 @@ template<typename Engine, size_t p, size_t r>
      *  \param z The number of random values to discard.
      *  \note This function is provided because an implementation may be able to accelerate it.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void discard(unsigned long long z);
 
     // property functions
@@ -173,7 +175,7 @@ template<typename Engine, size_t p, size_t r>
      *
      *  \return A const reference to the base engine this \p discard_block_engine adapts.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const base_type &base(void) const;
 
     /*! \cond
@@ -184,7 +186,7 @@ template<typename Engine, size_t p, size_t r>
 
     friend struct thrust::random::detail::random_core_access;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool equal(const discard_block_engine &rhs) const;
 
     template<typename CharT, typename Traits>
@@ -203,7 +205,7 @@ template<typename Engine, size_t p, size_t r>
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template<typename Engine, size_t p, size_t r>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const discard_block_engine<Engine,p,r> &lhs,
                 const discard_block_engine<Engine,p,r> &rhs);
 
@@ -214,7 +216,7 @@ bool operator==(const discard_block_engine<Engine,p,r> &lhs,
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template<typename Engine, size_t p, size_t r>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const discard_block_engine<Engine,p,r> &lhs,
                 const discard_block_engine<Engine,p,r> &rhs);
 

@@ -19,7 +19,6 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER >= 11
 class MoveOnly
 {
     MoveOnly(const MoveOnly&);
@@ -35,7 +34,6 @@ public:
 
     int get() const {return data_;}
 };
-#endif
 
 
 template <class T>
@@ -44,7 +42,7 @@ void test()
     typedef std::reference_wrapper<T> Wrap;
     static_assert(std::is_copy_constructible<Wrap>::value, "");
     static_assert(std::is_copy_assignable<Wrap>::value, "");
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(std::is_trivially_copyable<Wrap>::value, "");
 #endif
 }
@@ -54,9 +52,7 @@ int main(int, char**)
     test<int>();
     test<double>();
     test<std::string>();
-#if TEST_STD_VER >= 11
     test<MoveOnly>();
-#endif
 
   return 0;
 }

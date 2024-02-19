@@ -28,13 +28,14 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
 
@@ -50,10 +51,10 @@ namespace cuda_cub {
     policy1 &sys1;
     policy2 &sys2;
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     cross_system(policy1 &sys1, policy2 &sys2) : sys1(sys1), sys2(sys2) {}
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     cross_system<Sys2, Sys1> rotate() const
     {
       return cross_system<Sys2, Sys1>(sys2, sys1);
@@ -62,7 +63,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   auto direction_of_copy(
     thrust::system::cuda::execution_policy<Sys1> const&
   , thrust::cpp::execution_policy<Sys2> const&
@@ -75,7 +76,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   auto direction_of_copy(
     thrust::cpp::execution_policy<Sys1> const&
   , thrust::system::cuda::execution_policy<Sys2> const&
@@ -88,7 +89,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class Sys1, class Sys2>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   auto direction_of_copy(
     thrust::system::cuda::execution_policy<Sys1> const&
   , thrust::system::cuda::execution_policy<Sys2> const&
@@ -101,7 +102,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class DerivedPolicy>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   auto direction_of_copy(execution_policy<DerivedPolicy> const &)
   THRUST_DECLTYPE_RETURNS(
     thrust::detail::integral_constant<
@@ -110,7 +111,7 @@ namespace cuda_cub {
   )
 
   template <class Sys1, class Sys2>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   auto direction_of_copy(
     execution_policy<cross_system<Sys1, Sys2>> const &systems
   )
@@ -127,7 +128,7 @@ namespace cuda_cub {
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy0>(),
                                          std::declval<ExecutionPolicy1>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyDeviceToHost == Direction::value
   >
@@ -143,7 +144,7 @@ namespace cuda_cub {
             // MSVC2015 WAR: put decltype here instead of in trailing return type
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyDeviceToHost == Direction::value
   >
@@ -158,7 +159,7 @@ namespace cuda_cub {
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy0>(),
                                          std::declval<ExecutionPolicy1>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyHostToDevice == Direction::value
   >
@@ -174,7 +175,7 @@ namespace cuda_cub {
             // MSVC2015 WAR: put decltype here instead of in trailing return type
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyHostToDevice == Direction::value
   >
@@ -189,7 +190,7 @@ namespace cuda_cub {
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy0>(),
                                          std::declval<ExecutionPolicy1>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyDeviceToDevice == Direction::value
   >
@@ -205,7 +206,7 @@ namespace cuda_cub {
             // MSVC2015 WAR: put decltype here instead of in trailing return type
             typename Direction =
               decltype(direction_of_copy(std::declval<ExecutionPolicy>()))>
-  constexpr __host__ __device__
+  constexpr _CCCL_HOST_DEVICE
   thrust::detail::integral_constant<
     bool, cudaMemcpyDeviceToDevice == Direction::value
   >
@@ -218,7 +219,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::cuda::execution_policy<Sys1> &sys1,
                        thrust::execution_policy<Sys2> &)
@@ -226,7 +227,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::cuda::execution_policy<Sys1> const &sys1,
                        thrust::execution_policy<Sys2> const &)
@@ -234,7 +235,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::execution_policy<Sys1> &,
                        thrust::cuda::execution_policy<Sys2> &sys2)
@@ -242,7 +243,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::execution_policy<Sys1> const &,
                        thrust::cuda::execution_policy<Sys2> const &sys2)
@@ -250,7 +251,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::cuda::execution_policy<Sys1> &sys1,
                        thrust::cuda::execution_policy<Sys2> &)
@@ -258,7 +259,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_device_system(thrust::cuda::execution_policy<Sys1> const &sys1,
                        thrust::cuda::execution_policy<Sys2> const &)
@@ -268,7 +269,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::cuda::execution_policy<Sys1> &,
                      thrust::execution_policy<Sys2> &sys2)
@@ -276,7 +277,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::cuda::execution_policy<Sys1> const &,
                      thrust::execution_policy<Sys2> const &sys2)
@@ -284,7 +285,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::execution_policy<Sys1> &sys1,
                      thrust::cuda::execution_policy<Sys2> &)
@@ -292,7 +293,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::execution_policy<Sys1> const &sys1,
                      thrust::cuda::execution_policy<Sys2> const &)
@@ -300,7 +301,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::execution_policy<Sys1> &sys1,
                      thrust::execution_policy<Sys2> &)
@@ -308,7 +309,7 @@ namespace cuda_cub {
 
   // Device to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto
   select_host_system(thrust::execution_policy<Sys1> const &sys1,
                      thrust::execution_policy<Sys2> const &)
@@ -316,7 +317,7 @@ namespace cuda_cub {
 
   // Device to host.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   cross_system<Sys1, Sys2>
   select_system(execution_policy<Sys1> const &             sys1,
                 thrust::cpp::execution_policy<Sys2> const &sys2)
@@ -328,7 +329,7 @@ namespace cuda_cub {
 
   // Host to device.
   template <class Sys1, class Sys2>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   cross_system<Sys1, Sys2>
   select_system(thrust::cpp::execution_policy<Sys1> const &sys1,
                 execution_policy<Sys2> const &             sys2)

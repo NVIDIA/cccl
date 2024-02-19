@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -46,13 +48,13 @@ template<typename Allocator, typename InputType, typename OutputType>
 {
   Allocator &a;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   copy_construct_with_allocator(Allocator &a)
     : a(a)
   {}
 
   template<typename Tuple>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Tuple t)
   {
     const InputType &in = thrust::get<0>(t);
@@ -92,7 +94,7 @@ template<typename U, typename T>
 //     perhaps generic::uninitialized_copy could call this routine
 //     with a default allocator
 template<typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if_convertible<
     FromSystem,
     ToSystem,
@@ -134,7 +136,7 @@ __host__ __device__
 //     perhaps generic::uninitialized_copy_n could call this routine
 //     with a default allocator
 template<typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if_convertible<
     FromSystem,
     ToSystem,
@@ -167,7 +169,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if_convertible<
     FromSystem,
     ToSystem,
@@ -187,7 +189,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename FromSystem, typename ToSystem, typename InputIterator, typename Size, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if_convertible<
     FromSystem,
     ToSystem,
@@ -207,7 +209,7 @@ __host__ __device__
 
 
 template<typename FromSystem, typename Allocator, typename InputIterator, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     needs_copy_construct_via_allocator<
       Allocator,
@@ -227,7 +229,7 @@ __host__ __device__
 
 
 template<typename FromSystem, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     needs_copy_construct_via_allocator<
       Allocator,
@@ -247,7 +249,7 @@ __host__ __device__
 
 
 template<typename FromSystem, typename Allocator, typename InputIterator, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     needs_copy_construct_via_allocator<
       Allocator,
@@ -266,7 +268,7 @@ __host__ __device__
 
 
 template<typename FromSystem, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     needs_copy_construct_via_allocator<
       Allocator,
@@ -288,7 +290,7 @@ __host__ __device__
 
 
 template<typename System, typename Allocator, typename InputIterator, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   Pointer copy_construct_range(thrust::execution_policy<System> &from_system,
                                Allocator &a,
                                InputIterator first,
@@ -300,7 +302,7 @@ __host__ __device__
 
 
 template<typename System, typename Allocator, typename InputIterator, typename Size, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
   Pointer copy_construct_range_n(thrust::execution_policy<System> &from_system,
                                  Allocator &a,
                                  InputIterator first,

@@ -35,6 +35,7 @@
 #   [HOST <default system>]          # Optionally change the default backend
 #   [DEVICE <default system>]        # Optionally change the default backend
 #   [ADVANCED]                       # Optionally mark options as advanced
+#   [GLOBAL]                         # Optionally mark the target as GLOBAL
 # )
 #
 # # Use a custom TBB, CUB, and/or OMP
@@ -107,6 +108,7 @@ set(THRUST_VERSION_COUNT ${${CMAKE_FIND_PACKAGE_NAME}_VERSION_COUNT} CACHE INTER
 function(thrust_create_target target_name)
   thrust_debug("Assembling target ${target_name}. Options: ${ARGN}" internal)
   set(options
+    GLOBAL
     ADVANCED
     FROM_OPTIONS
     IGNORE_CUB_VERSION_CHECK
@@ -180,7 +182,11 @@ function(thrust_create_target target_name)
   # We can just create an INTERFACE IMPORTED target here instead of going
   # through _thrust_declare_interface_alias as long as we aren't hanging any
   # Thrust/CUB include paths directly on ${target_name}.
-  add_library(${target_name} INTERFACE IMPORTED)
+  set(TCT_AS_GLOBAL )
+  if (TCT_GLOBAL)
+    set(TCT_AS_GLOBAL GLOBAL)
+  endif()
+  add_library(${target_name} INTERFACE IMPORTED ${TCT_AS_GLOBAL})
   target_link_libraries(${target_name}
     INTERFACE
     Thrust::${TCT_HOST}::Host
@@ -357,7 +363,7 @@ function(thrust_debug_internal_targets)
   thrust_debug_target(OpenMP::OpenMP_CXX "${THRUST_OMP_VERSION}")
 
   _thrust_debug_backend_targets(TBB "${THRUST_TBB_VERSION}")
-  thrust_debug_target(TBB:tbb "${THRUST_TBB_VERSION}")
+  thrust_debug_target(TBB::tbb "${THRUST_TBB_VERSION}")
 
   _thrust_debug_backend_targets(CUDA "CUB ${THRUST_CUB_VERSION}")
   thrust_debug_target(CUB::CUB "${THRUST_CUB_VERSION}")

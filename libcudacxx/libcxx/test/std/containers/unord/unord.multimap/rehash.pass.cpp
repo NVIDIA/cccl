@@ -112,7 +112,6 @@ int main(int, char**)
         LIBCPP_ASSERT(c.bucket_count() == 31);
         test(c);
     }
-#if TEST_STD_VER >= 11
     {
         typedef std::unordered_multimap<int, std::string, std::hash<int>, std::equal_to<int>,
                             min_allocator<std::pair<const int, std::string>>> C;
@@ -143,7 +142,6 @@ int main(int, char**)
         LIBCPP_ASSERT(c.bucket_count() == 31);
         test(c);
     }
-#endif
 
   return 0;
 }

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator/tagged_allocator.h>
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/pair.h>
@@ -54,25 +56,25 @@ template<typename T, typename System>
     typedef typename super_t::pointer   pointer;
     typedef typename super_t::size_type size_type;
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     temporary_allocator(const temporary_allocator &other) :
       super_t(),
       m_system(other.m_system)
     {}
 
-    inline __host__ __device__
+    inline _CCCL_HOST_DEVICE
     explicit temporary_allocator(thrust::execution_policy<System> &system) :
       super_t(),
       m_system(thrust::detail::derived_cast(system))
     {}
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer allocate(size_type cnt);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void deallocate(pointer p, size_type n);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline System &system()
     {
       return m_system;

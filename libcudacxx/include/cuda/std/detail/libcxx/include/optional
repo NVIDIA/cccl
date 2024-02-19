@@ -159,15 +159,21 @@ template<class T>
 
 */
 
-#include "__concepts/__concept_macros.h"
 #ifndef __cuda_std__
-#include <__config>
-#include <new>
-#include <stdexcept>
+#  include <__config>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__availability"
+#include "__concepts/__concept_macros.h"
 #include "__concepts/invocable.h"
 #include "__functional/hash.h"
 #include "__functional/invoke.h"
@@ -184,6 +190,7 @@ template<class T>
 #include "__type_traits/is_trivially_move_constructible.h"
 #include "__type_traits/is_object.h"
 #include "__type_traits/negation.h"
+#include "__type_traits/remove_cv.h"
 #include "__utility/declval.h"
 #include "__utility/forward.h"
 #include "__utility/in_place.h"
@@ -202,14 +209,13 @@ template<class T>
 #endif
 
 #ifndef __cuda_std__
-#include <__pragma_push>
+#include <new>
+#include <stdexcept>
 #endif // __cuda_std__
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif // __cuda_std__
 
 #ifndef __cuda_std__
 namespace std  // purposefully not using versioning namespace
@@ -227,7 +233,7 @@ public:
 } // namespace std
 #endif // __cuda_std__
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -264,7 +270,7 @@ struct __optional_destruct_base<_Tp, false>
     union
     {
         char __null_state_;
-        value_type __val_;
+        __remove_cv_t<value_type> __val_;
     };
     bool __engaged_;
 
@@ -311,7 +317,7 @@ struct __optional_destruct_base<_Tp, true>
     union
     {
         char __null_state_;
-        value_type __val_;
+        __remove_cv_t<value_type> __val_;
     };
     bool __engaged_;
 
@@ -348,16 +354,16 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     using value_type = _Tp;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __optional_storage_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
     constexpr __optional_storage_base() noexcept = default;
 
@@ -393,7 +399,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
     _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void __construct(_Args&&... __args)
     {
         _LIBCUDACXX_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
         _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
 #else
         ::new ((void*)_CUDA_VSTD::addressof(this->__val_)) value_type(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -434,8 +440,8 @@ struct __optional_copy_base : __optional_storage_base<_Tp>
     using __base = __optional_storage_base<_Tp>;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     constexpr __optional_copy_base() noexcept = default;
 
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
@@ -443,9 +449,9 @@ struct __optional_copy_base : __optional_storage_base<_Tp>
     __optional_copy_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 template <class _Tp>
@@ -454,16 +460,16 @@ struct __optional_copy_base<_Tp, false> : __optional_storage_base<_Tp>
     using __base = __optional_storage_base<_Tp>;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __optional_copy_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
     __optional_copy_base() = default;
 
@@ -487,8 +493,8 @@ struct __optional_move_base : __optional_copy_base<_Tp>
     using __base = __optional_copy_base<_Tp>;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     constexpr __optional_move_base() noexcept = default;
 
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
@@ -496,9 +502,9 @@ struct __optional_move_base : __optional_copy_base<_Tp>
     __optional_move_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 template <class _Tp>
@@ -508,16 +514,16 @@ struct __optional_move_base<_Tp, false> : __optional_copy_base<_Tp>
     using __base = __optional_copy_base<_Tp>;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __optional_move_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
     __optional_move_base() = default;
     __optional_move_base(const __optional_move_base&) = default;
@@ -541,8 +547,8 @@ struct __optional_copy_assign_base : __optional_move_base<_Tp>
 {
     using __base = __optional_move_base<_Tp>;
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     constexpr __optional_copy_assign_base() noexcept = default;
 
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
@@ -550,9 +556,9 @@ struct __optional_copy_assign_base : __optional_move_base<_Tp>
     __optional_copy_assign_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 template <class _Tp>
@@ -560,16 +566,16 @@ struct __optional_copy_assign_base<_Tp, false> : __optional_move_base<_Tp>
 {
     using __base = __optional_move_base<_Tp>;
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __optional_copy_assign_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
     __optional_copy_assign_base() = default;
     __optional_copy_assign_base(const __optional_copy_assign_base&) = default;
@@ -593,8 +599,8 @@ struct __optional_move_assign_base : __optional_copy_assign_base<_Tp>
 {
     using __base = __optional_copy_assign_base<_Tp>;
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     constexpr __optional_move_assign_base() noexcept = default;
 
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
@@ -602,9 +608,9 @@ struct __optional_move_assign_base : __optional_copy_assign_base<_Tp>
     __optional_move_assign_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 template <class _Tp>
@@ -614,16 +620,16 @@ struct __optional_move_assign_base<_Tp, false> : __optional_copy_assign_base<_Tp
     using __base = __optional_copy_assign_base<_Tp>;
 
 // nvbug3961621
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_LIBCUDACXX_COMPILER_CLANG))
+#if defined(_CCCL_COMPILER_NVRTC)  \
+ || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
     template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
    _LIBCUDACXX_INLINE_VISIBILITY constexpr
     __optional_move_assign_base(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
         : __base(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     using __base::__base;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
     __optional_move_assign_base() = default;
     __optional_move_assign_base(const __optional_move_assign_base& __opt) = default;
@@ -1148,7 +1154,7 @@ public:
     using __base::reset;
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template<class _Tp>
 _LIBCUDACXX_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 #endif
@@ -1530,7 +1536,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<
     __enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>
 >
 {
-#if _LIBCUDACXX_STD_VER <= 17 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
+#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
     _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef optional<_Tp> argument_type;
     _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef size_t        result_type;
 #endif
@@ -1545,7 +1551,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash<
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #ifndef __cuda_std__
 #include <__pragma_pop>

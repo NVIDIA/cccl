@@ -24,11 +24,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
@@ -37,12 +39,12 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include <type_traits>
 #include <utility>
 
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC && _MSC_VER < 1916 // MSVC 2017 version 15.9
+#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1916 // MSVC 2017 version 15.9
   #include <vector>
   #include <string>
   #include <array>
 
-  #if THRUST_CPP_DIALECT >= 2017
+  #if _CCCL_STD_VER >= 2017
     #include <string_view>
   #endif
 #endif
@@ -85,7 +87,7 @@ template <typename Iterator>
 using is_contiguous_iterator =
   detail::is_contiguous_iterator_impl<Iterator>;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c Iterator satisfies
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>,
  *  aka it points to elements that are contiguous in memory, and \c false
@@ -137,7 +139,11 @@ struct is_libcxx_wrap_iter : false_type {};
 #if defined(_LIBCPP_VERSION)
 template <typename Iterator>
 struct is_libcxx_wrap_iter<
+#  if _LIBCPP_VERSION < 14000
   _VSTD::__wrap_iter<Iterator>
+#  else
+  std::__wrap_iter<Iterator>
+#  endif
 > : true_type {};
 #endif
 
@@ -189,7 +195,7 @@ struct is_msvc_contiguous_iterator<
   ::std::_Array_iterator<T, N>
 > : true_type {};
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 template <typename Traits>
 struct is_msvc_contiguous_iterator<
   ::std::_String_view_iterator<Traits>
@@ -230,7 +236,7 @@ using contiguous_iterator_raw_pointer_t =
 
 // Converts a contiguous iterator to a raw pointer:
 template <typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 contiguous_iterator_raw_pointer_t<Iterator>
 contiguous_iterator_raw_pointer_cast(Iterator it)
 {
@@ -247,7 +253,7 @@ struct try_unwrap_contiguous_iterator_impl
 {
   using type = Iterator;
 
-  static __host__ __device__ type get(Iterator it) { return it; }
+  static _CCCL_HOST_DEVICE type get(Iterator it) { return it; }
 };
 
 // Implementation for contiguous iterators -- unwraps to raw pointer.
@@ -256,7 +262,7 @@ struct try_unwrap_contiguous_iterator_impl<Iterator, true /*is_contiguous*/>
 {
   using type = contiguous_iterator_raw_pointer_t<Iterator>;
 
-  static __host__ __device__ type get(Iterator it)
+  static _CCCL_HOST_DEVICE type get(Iterator it)
   {
     return contiguous_iterator_raw_pointer_cast(it);
   }
@@ -269,7 +275,7 @@ using try_unwrap_contiguous_iterator_return_t =
 // Casts to a raw pointer if iterator is marked as contiguous, otherwise returns
 // the input iterator.
 template <typename Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 try_unwrap_contiguous_iterator_return_t<Iterator>
 try_unwrap_contiguous_iterator(Iterator it)
 {

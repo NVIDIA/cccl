@@ -162,11 +162,13 @@ template <class charT, class traits, class T>
 #include <version>
 #include <ostream>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -572,7 +574,7 @@ __input_c_string(basic_istream<_CharT, _Traits>& __is, _CharT* __p, size_t __n)
     return __is;
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 template<class _CharT, class _Traits, size_t _Np>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -630,7 +632,7 @@ operator>>(basic_istream<char, _Traits>& __is, signed char* __s)
     return __is >> (char*)__s;
 }
 
-#endif  // _LIBCUDACXX_STD_VER > 17
+#endif  // _CCCL_STD_VER > 2017
 
 template<class _CharT, class _Traits>
 basic_istream<_CharT, _Traits>&

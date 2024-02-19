@@ -20,7 +20,7 @@ struct __cxx_atomic_base_impl {
 
   static constexpr int __sco = _Sco;
 
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || (__GNUC__ >= 5)
+#if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
   static_assert(is_trivially_copyable<_Tp>::value,
     "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
@@ -86,7 +86,7 @@ struct __cxx_atomic_ref_base_impl {
 
   static constexpr int __sco = _Sco;
 
-#if !defined(_LIBCUDACXX_COMPILER_GCC) || (__GNUC__ >= 5)
+#if !defined(_CCCL_COMPILER_GCC) || (__GNUC__ >= 5)
   static_assert(is_trivially_copyable<_Tp>::value,
     "std::atomic_ref<Tp> requires that 'Tp' be a trivially copyable type");
 #endif

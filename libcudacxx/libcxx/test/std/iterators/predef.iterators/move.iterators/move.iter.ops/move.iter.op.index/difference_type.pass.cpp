@@ -42,7 +42,6 @@ int main(int, char**)
         test(random_access_iterator<char*>(s+5), 4, '0');
         test(s+5, 4, '0');
     }
-#if TEST_STD_VER >= 11
     {
         int i[5];
         typedef std::unique_ptr<int, do_nothing> Ptr;
@@ -51,8 +50,7 @@ int main(int, char**)
             p[j].reset(i+j);
         test(p, 3, Ptr(i+3));
     }
-#endif
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     {
     constexpr const char *p = "123456789";
     typedef std::move_iterator<const char *> MI;
@@ -62,7 +60,7 @@ int main(int, char**)
     }
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   // Ensure the `iter_move` customization point is being used.
   {
     int a[] = {0, 1, 2};

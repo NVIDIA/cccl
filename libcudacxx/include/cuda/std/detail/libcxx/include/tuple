@@ -149,6 +149,14 @@ template <class... Types>
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__functional/unwrap_ref.h"
 #include "__functional_base"
@@ -186,12 +194,6 @@ template <class... Types>
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1005,7 +1007,7 @@ get(const tuple<_Tp...>&& __t) noexcept
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 namespace __find_detail {
 
@@ -1325,18 +1327,19 @@ template <class... _Tp, class _Alloc>
 struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator<tuple<_Tp...>, _Alloc>
     : true_type {};
 
-template <class _T1, class _T2>
+template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-pair<_T1, _T2>::pair(piecewise_construct_t, tuple<_Args1...> &__first_args,
-                     tuple<_Args2...> &__second_args, __tuple_indices<_I1...>,
-                     __tuple_indices<_I2...>)
-    : first(_CUDA_VSTD::forward<_Args1>(_CUDA_VSTD::get<_I1>(__first_args))...),
-      second(
-          _CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...) {
-}
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+  piecewise_construct_t,
+  tuple<_Args1...>& __first_args,
+  tuple<_Args2...>& __second_args,
+  __tuple_indices<_I1...>,
+  __tuple_indices<_I2...>)
+    : first(_CUDA_VSTD::forward<_Args1>(_CUDA_VSTD::get<_I1>(__first_args))...)
+    , second(_CUDA_VSTD::forward<_Args2>(_CUDA_VSTD::get<_I2>(__second_args))...)
+{}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 #define _LIBCUDACXX_NOEXCEPT_RETURN(...)                                       \
   noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
 
@@ -1369,7 +1372,7 @@ __apply_tuple_impl(_Fn &&__f, _Tuple &&__t, __tuple_indices<_Id...>)
 
 #undef _LIBCUDACXX_NOEXCEPT_RETURN
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
             _LIBCUDACXX_END_NAMESPACE_STD
 

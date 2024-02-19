@@ -36,7 +36,6 @@ test()
         assert(ia[i] == ib[i]);
 }
 
-#if TEST_STD_VER >= 11
 template <class InIter, class OutIter>
 void
 test1()
@@ -52,7 +51,6 @@ test1()
     for (unsigned i = 0; i < N; ++i)
         assert(*ib[i] == static_cast<int>(i));
 }
-#endif
 
 int main(int, char**)
 {
@@ -91,7 +89,6 @@ int main(int, char**)
     test<const int*, random_access_iterator<int*> >();
     test<const int*, int*>();
 
-#if TEST_STD_VER >= 11
     test1<cpp17_input_iterator<std::unique_ptr<int>*>, cpp17_output_iterator<std::unique_ptr<int>*> >();
     test1<cpp17_input_iterator<std::unique_ptr<int>*>, cpp17_input_iterator<std::unique_ptr<int>*> >();
     test1<cpp17_input_iterator<std::unique_ptr<int>*>, forward_iterator<std::unique_ptr<int>*> >();
@@ -126,7 +123,6 @@ int main(int, char**)
     test1<std::unique_ptr<int>*, bidirectional_iterator<std::unique_ptr<int>*> >();
     test1<std::unique_ptr<int>*, random_access_iterator<std::unique_ptr<int>*> >();
     test1<std::unique_ptr<int>*, std::unique_ptr<int>*>();
-#endif // TEST_STD_VER >= 11
 
   return 0;
 }

@@ -18,11 +18,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
 
@@ -50,9 +52,9 @@ using thrust::system::detail::generic::select_system;
 
 struct select_system_fn final
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
   ) const
@@ -62,9 +64,9 @@ struct select_system_fn final
     )
   )
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0, typename DerivedPolicy1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
   , thrust::detail::execution_policy_base<DerivedPolicy1> const& exec1

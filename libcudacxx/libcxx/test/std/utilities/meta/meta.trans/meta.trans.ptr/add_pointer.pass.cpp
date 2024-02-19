@@ -20,7 +20,7 @@ template <class T, class U>
 void test_add_pointer()
 {
     ASSERT_SAME_TYPE(U, typename std::add_pointer<T>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(U, std::add_pointer_t<T>);
 #endif
 }
@@ -29,7 +29,7 @@ template <class F>
 void test_function0()
 {
     ASSERT_SAME_TYPE(F*, typename std::add_pointer<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F*, std::add_pointer_t<F>);
 #endif
 }
@@ -38,7 +38,7 @@ template <class F>
 void test_function1()
 {
     ASSERT_SAME_TYPE(F, typename std::add_pointer<F>::type);
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(F, std::add_pointer_t<F>);
 #endif
 }
@@ -59,23 +59,19 @@ int main(int, char**)
 //  LWG 2101 specifically talks about add_pointer and functions.
 //  The term of art is "a referenceable type", which a cv- or ref-qualified function is not.
     test_function0<void()>();
-#if TEST_STD_VER >= 11
     test_function1<void() const>();
     test_function1<void() &>();
     test_function1<void() &&>();
     test_function1<void() const &>();
     test_function1<void() const &&>();
-#endif
 
 //  But a cv- or ref-qualified member function *is* "a referenceable type"
     test_function0<void (Foo::*)()>();
-#if TEST_STD_VER >= 11
     test_function0<void (Foo::*)() const>();
     test_function0<void (Foo::*)() &>();
     test_function0<void (Foo::*)() &&>();
     test_function0<void (Foo::*)() const &>();
     test_function0<void (Foo::*)() const &&>();
-#endif
 
   return 0;
 }

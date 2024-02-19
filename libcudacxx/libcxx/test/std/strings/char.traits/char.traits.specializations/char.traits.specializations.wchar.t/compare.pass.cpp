@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 constexpr bool test_constexpr()
 {
     return std::char_traits<wchar_t>::compare(L"123", L"223", 3) < 0
@@ -50,7 +50,7 @@ int main(int, char**)
     assert(std::char_traits<wchar_t>::compare(L"133", L"123", 3) > 0);
     assert(std::char_traits<wchar_t>::compare(L"124", L"123", 3) > 0);
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(test_constexpr(), "" );
 #endif
 

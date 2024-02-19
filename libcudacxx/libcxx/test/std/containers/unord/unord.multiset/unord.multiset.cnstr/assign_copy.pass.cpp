@@ -140,7 +140,6 @@ int main(int, char**)
         assert(fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#if TEST_STD_VER >= 11
     {
         typedef min_allocator<int> A;
         typedef std::unordered_multiset<int,
@@ -186,7 +185,6 @@ int main(int, char**)
         assert(fabs(c.load_factor() - (float)c.size()/c.bucket_count()) < FLT_EPSILON);
         assert(c.max_load_factor() == 1);
     }
-#endif
 
   return 0;
 }

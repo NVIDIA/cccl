@@ -48,7 +48,7 @@ struct some_comp2
     bool operator()(const T&, const T&) const { return false; }
 };
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
 template <typename T>
 void swap(some_comp2<T>&, some_comp2<T>&) noexcept {}
 #endif
@@ -112,7 +112,7 @@ int main(int, char**)
         static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");
     }
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     { // POCS allocator, throwable swap for comp
     typedef std::set<MoveOnly, some_comp <MoveOnly>, some_alloc <MoveOnly>> C;
     static_assert(!noexcept(swap(std::declval<C&>(), std::declval<C&>())), "");

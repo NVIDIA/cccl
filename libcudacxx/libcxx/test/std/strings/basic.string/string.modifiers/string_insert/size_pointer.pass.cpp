@@ -137,7 +137,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, "1234567890", S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, "12345678901234567890", S("can't happen"));
     }
-#if TEST_STD_VER >= 11
     {
     typedef std::basic_string<char, std::char_traits<char>, min_allocator<char>> S;
     test(S(""), 0, "", S(""));
@@ -221,7 +220,6 @@ int main(int, char**)
     test(S("abcdefghijklmnopqrst"), 21, "1234567890", S("can't happen"));
     test(S("abcdefghijklmnopqrst"), 21, "12345678901234567890", S("can't happen"));
     }
-#endif
 
     { // test inserting into self
     typedef std::string S;

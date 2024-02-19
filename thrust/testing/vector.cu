@@ -53,7 +53,7 @@ void TestVectorInitializerList(void)
     ASSERT_EQUAL(v[1], 2);
     ASSERT_EQUAL(v[2], 3);
     ASSERT_EQUAL(v[3], 4);
-    
+
     const auto alloc = v.get_allocator();
     Vector v2{{1, 2, 3}, alloc};
     ASSERT_EQUAL(v2.size(), 3lu);

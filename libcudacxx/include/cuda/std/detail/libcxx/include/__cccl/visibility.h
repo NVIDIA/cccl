@@ -15,19 +15,22 @@
 #error "<__cccl/visibility.h> should only be included in from <cuda/__cccl_config>"
 #endif // __CCCL_CONFIG
 
+#include "../__cccl/compiler.h"
+#include "../__cccl/system_header.h"
+
 // We want to ensure that all warning emmiting from this header are supressed
-// We define cub and thrust kernels as hidden. However, this triggers errors about missing external linkage iff the
-// definition of the _CCCL_ATTRIBUTE_HIDDEN macro is not in a system header :shrug:
-#if defined(_CCCL_COMPILER_NVHPC)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_FORCE_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_FORCE_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_FORCE_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_FORCE_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
 #if defined(_CCCL_COMPILER_NVHPC)
-#pragma nv_diag_suppress 1407
+#  pragma nv_diag_suppress 1407
 #endif // _CCCL_COMPILER_NVHPC
 
 // Enable us to hide kernels

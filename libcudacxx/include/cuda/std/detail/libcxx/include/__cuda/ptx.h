@@ -16,11 +16,13 @@
 #error "<__cuda/ptx.h> should only be included in from <cuda/std/barrier>"
 #endif // __cuda_std__
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
@@ -29,7 +31,6 @@ _CCCL_IMPLICIT_SYSTEM_HEADER
 #include "../__cuda/ptx/ptx_helper_functions.h"
 #include "../__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
 #include "../cstdint" // uint32_t
-
 /*
  * The cuda::ptx namespace intends to provide PTX wrappers for new hardware
  * features and new PTX instructions so that they can be experimented with
@@ -384,6 +385,137 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // 9.7.8.12. Data Movement and Conversion Instructions: st.async
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async
 
+/*
+// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.  PTX ISA 81, SM_90
+// .type      = { .b32, .b64 }
+template <typename Type>
+__device__ static inline void st_async(
+  Type* addr,
+  const Type& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+template <typename _Type>
+_LIBCUDACXX_DEVICE static inline void st_async(
+  _Type* __addr,
+  const _Type& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+      asm (
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %1, [%2];    // 1. "
+        :
+        : "r"(__as_ptr_remote_dsmem(__addr)),
+          "r"(__as_b32(__value)),
+          "r"(__as_ptr_remote_dsmem(__remote_bar))
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+      asm (
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %1, [%2];    // 1. "
+        :
+        : "r"(__as_ptr_remote_dsmem(__addr)),
+          "l"(__as_b64(__value)),
+          "r"(__as_ptr_remote_dsmem(__remote_bar))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2{.type} [addr], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
+// .type      = { .b32, .b64 }
+template <typename Type>
+__device__ static inline void st_async(
+  Type* addr,
+  const Type (&value)[2],
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+template <typename _Type>
+_LIBCUDACXX_DEVICE static inline void st_async(
+  _Type* __addr,
+  const _Type (&__value)[2],
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+      asm (
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%1, %2}, [%3]; // 2. "
+        :
+        : "r"(__as_ptr_remote_dsmem(__addr)),
+          "r"(__as_b32(__value[0])),
+          "r"(__as_b32(__value[1])),
+          "r"(__as_ptr_remote_dsmem(__remote_bar))
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+      asm (
+        "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b64 [%0], {%1, %2}, [%3]; // 2. "
+        :
+        : "r"(__as_ptr_remote_dsmem(__addr)),
+          "l"(__as_b64(__value[0])),
+          "l"(__as_b64(__value[1])),
+          "r"(__as_ptr_remote_dsmem(__remote_bar))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [addr], value, [remote_bar];    // 3.  PTX ISA 81, SM_90
+template <typename B32>
+__device__ static inline void st_async(
+  B32* addr,
+  const B32 (&value)[4],
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+template <typename _B32>
+_LIBCUDACXX_DEVICE static inline void st_async(
+  _B32* __addr,
+  const _B32 (&__value)[4],
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  static_assert(sizeof(_B32) == 4, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [%0], {%1, %2, %3, %4}, [%5];    // 3. "
+      :
+      : "r"(__as_ptr_remote_dsmem(__addr)),
+        "r"(__as_b32(__value[0])),
+        "r"(__as_b32(__value[1])),
+        "r"(__as_b32(__value[2])),
+        "r"(__as_b32(__value[3])),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
 // 9.7.8.13. Data Movement and Conversion Instructions: multimem.ld_reduce, multimem.st, multimem.red
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red
 
@@ -414,8 +546,76 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // 9.7.8.22. Data Movement and Conversion Instructions: mapa
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
 
+/*
+// mapa{.space}.u32  dest, addr, target_cta; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename Tp>
+__device__ static inline Tp* mapa(
+  cuda::ptx::space_cluster_t,
+  const Tp* addr,
+  uint32_t target_cta);
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mapa_is_not_supported_before_SM_90__();
+template <typename _Tp>
+_LIBCUDACXX_DEVICE static inline _Tp* mapa(
+  space_cluster_t,
+  const _Tp* __addr,
+  _CUDA_VSTD::uint32_t __target_cta)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __dest;
+    asm (
+      "mapa.shared::cluster.u32  %0, %1, %2;"
+      : "=r"(__dest)
+      : "r"(__as_ptr_smem(__addr)),
+        "r"(__target_cta)
+      :
+    );
+    return __from_ptr_dsmem<_Tp>(__dest);
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_mapa_is_not_supported_before_SM_90__();
+    return __from_ptr_dsmem<_Tp>(0);
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
 // 9.7.8.23. Data Movement and Conversion Instructions: getctarank
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+/*
+// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename=void>
+__device__ static inline uint32_t getctarank(
+  cuda::ptx::space_cluster_t,
+  const void* addr);
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(
+  space_cluster_t,
+  const void* __addr)
+{
+  // __space == space_cluster (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __dest;
+    asm (
+      "getctarank.shared::cluster.u32 %0, %1;"
+      : "=r"(__dest)
+      : "r"(__as_ptr_smem(__addr))
+      :
+    );
+    return __dest;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
 
 
 /*
@@ -459,7 +659,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.25. Data Movement and Conversion Instructions: tensormap.replace
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
-
 
 /*
  *  9.7.9. Texture Instructions
@@ -544,6 +743,361 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.4. Parallel Synchronization and Communication Instructions: membar/fence
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+/*
+// fence{.sem}.scope; // 1. PTX ISA 60, SM_70
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cta, .gpu, .sys }
+template <cuda::ptx::dot_sem Sem, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_t<Scope> scope);
+*/
+#if __cccl_ptx_isa >= 600
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
+template <dot_sem _Sem, dot_scope _Scope>
+_LIBCUDACXX_DEVICE static inline void fence(
+  sem_t<_Sem> __sem,
+  scope_t<_Scope> __scope)
+{
+  static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
+  static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_cta) {
+      asm volatile (
+        "fence.sc.cta; // 1."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_gpu) {
+      asm volatile (
+        "fence.sc.gpu; // 1."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_sys) {
+      asm volatile (
+        "fence.sc.sys; // 1."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_cta) {
+      asm volatile (
+        "fence.acq_rel.cta; // 1."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_gpu) {
+      asm volatile (
+        "fence.acq_rel.gpu; // 1."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_sys) {
+      asm volatile (
+        "fence.acq_rel.sys; // 1."
+        :
+        :
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_is_not_supported_before_SM_70__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 600
+
+/*
+// fence{.sem}.scope; // 2. PTX ISA 78, SM_90
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cluster }
+template <cuda::ptx::dot_sem Sem>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_cluster_t);
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
+template <dot_sem _Sem>
+_LIBCUDACXX_DEVICE static inline void fence(
+  sem_t<_Sem> __sem,
+  scope_cluster_t)
+{
+  static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
+  // __scope == scope_cluster (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc) {
+      asm volatile (
+        "fence.sc.cluster; // 2."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel) {
+      asm volatile (
+        "fence.acq_rel.cluster; // 2."
+        :
+        :
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+/*
+// fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
+// .sem       = { .release }
+// .scope     = { .cluster }
+template <typename=void>
+__device__ static inline void fence_mbarrier_init(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cluster_t);
+*/
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void fence_mbarrier_init(
+  sem_release_t,
+  scope_cluster_t)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  // __scope == scope_cluster (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm volatile (
+      "fence.mbarrier_init.release.cluster; // 3."
+      :
+      :
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 800
+/*
+// fence.proxy.alias; // 4. PTX ISA 75, SM_70
+template <typename=void>
+__device__ static inline void fence_proxy_alias();
+*/
+#if __cccl_ptx_isa >= 750
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void fence_proxy_alias()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
+    asm volatile (
+      "fence.proxy.alias; // 4."
+      :
+      :
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 750
+/*
+// fence.proxy.async; // 5. PTX ISA 80, SM_90
+template <typename=void>
+__device__ static inline void fence_proxy_async();
+*/
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void fence_proxy_async()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm volatile (
+      "fence.proxy.async; // 5."
+      :
+      :
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 800
+
+/*
+// fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+// .space     = { .global, .shared::cluster, .shared::cta }
+template <cuda::ptx::dot_space Space>
+__device__ static inline void fence_proxy_async(
+  cuda::ptx::space_t<Space> space);
+*/
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+template <dot_space _Space>
+_LIBCUDACXX_DEVICE static inline void fence_proxy_async(
+  space_t<_Space> __space)
+{
+  static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_global) {
+      asm volatile (
+        "fence.proxy.async.global; // 6."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_cluster) {
+      asm volatile (
+        "fence.proxy.async.shared::cluster; // 6."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_shared) {
+      asm volatile (
+        "fence.proxy.async.shared::cta; // 6."
+        :
+        :
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 800
+/*
+// fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
+// .sem       = { .release }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_t<Scope> scope);
+*/
+#if __cccl_ptx_isa >= 830
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+template <dot_scope _Scope>
+_LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
+  sem_release_t,
+  scope_t<_Scope> __scope)
+{
+  // __sem == sem_release (due to parameter type constraint)
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.release.cta; // 7."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.release.cluster; // 7."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.release.gpu; // 7."
+        :
+        :
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.release.sys; // 7."
+        :
+        :
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 830
+
+/*
+// fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <int N32, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  const void* addr,
+  cuda::ptx::n32_t<N32> size);
+*/
+#if __cccl_ptx_isa >= 830
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+template <int _N32, dot_scope _Scope>
+_LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
+  sem_acquire_t,
+  scope_t<_Scope> __scope,
+  const void* __addr,
+  n32_t<_N32> __size)
+{
+  // __sem == sem_acquire (due to parameter type constraint)
+  static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
+        :
+        : "l"(__addr),
+          "n"(__size)
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.acquire.cluster [%0], %1; // 8."
+        :
+        : "l"(__addr),
+          "n"(__size)
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.acquire.gpu [%0], %1; // 8."
+        :
+        : "l"(__addr),
+          "n"(__size)
+        : "memory"
+      );
+    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
+      asm volatile (
+        "fence.proxy.tensormap::generic.acquire.sys [%0], %1; // 8."
+        :
+        : "l"(__addr),
+          "n"(__size)
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 830
 
 // 9.7.12.5. Parallel Synchronization and Communication Instructions: atom
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
@@ -553,6 +1107,514 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.7. Parallel Synchronization and Communication Instructions: red.async
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .inc }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_inc_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_inc_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_inc (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .dec }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_dec_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_dec_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_dec (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_min_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .max }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_max_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_max_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint32_t* dest,
+  const uint32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::uint32_t* __dest,
+  const _CUDA_VSTD::uint32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .min }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_min_t,
+  int32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_min_t,
+  _CUDA_VSTD::int32_t* __dest,
+  const _CUDA_VSTD::int32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_min (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .max }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_max_t,
+  int32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_max_t,
+  _CUDA_VSTD::int32_t* __dest,
+  const _CUDA_VSTD::int32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_max (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .s32 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  int32_t* dest,
+  const int32_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::int32_t* __dest,
+  const _CUDA_VSTD::int32_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_s32 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
+// .op        = { .and }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_and_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename _B32>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_and_op_t,
+  _B32* __dest,
+  const _B32& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_and_op (due to parameter type constraint)
+  static_assert(sizeof(_B32) == 4, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.and.b32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__as_b32(__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
+// .op        = { .or }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_or_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename _B32>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_or_op_t,
+  _B32* __dest,
+  const _B32& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_or_op (due to parameter type constraint)
+  static_assert(sizeof(_B32) == 4, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.or.b32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__as_b32(__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .b32 }
+// .op        = { .xor }
+template <typename B32>
+__device__ static inline void red_async(
+  cuda::ptx::op_xor_op_t,
+  B32* dest,
+  const B32& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename _B32>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_xor_op_t,
+  _B32* __dest,
+  const _B32& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_b32 (due to parameter type constraint)
+  // __op == op_xor_op (due to parameter type constraint)
+  static_assert(sizeof(_B32) == 4, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.xor.b32  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "r"(__as_b32(__value)),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
+// .type      = { .u64 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  uint64_t* dest,
+  const uint64_t& value,
+  uint64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::uint64_t* __dest,
+  const _CUDA_VSTD::uint64_t& __value,
+  _CUDA_VSTD::uint64_t* __remote_bar)
+{
+  // __type == type_u64 (due to parameter type constraint)
+  // __op == op_add (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; "
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void red_async(
+  cuda::ptx::op_add_t,
+  int64_t* dest,
+  const int64_t& value,
+  int64_t* remote_bar);
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline void red_async(
+  op_add_t,
+  _CUDA_VSTD::int64_t* __dest,
+  const _CUDA_VSTD::int64_t& __value,
+  _CUDA_VSTD::int64_t* __remote_bar)
+{
+  // __op == op_add (due to parameter type constraint)
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    asm (
+      "red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [%0], %1, [%2]; // .u64 intentional"
+      :
+      : "r"(__as_ptr_remote_dsmem(__dest)),
+        "l"(__value),
+        "r"(__as_ptr_remote_dsmem(__remote_bar))
+      : "memory"
+    );
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+    return;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
 
 // 9.7.12.8. Parallel Synchronization and Communication Instructions: vote (deprecated)
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
@@ -713,6 +1775,1188 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.17.5. Miscellaneous Instructions: setmaxnreg
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
+
+// 10. Special Registers
+// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
+/*
+// mov.u32 sreg_value, %%tid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_x();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_x()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%tid.x;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%tid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_y();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_y()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%tid.y;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%tid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_z();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_z()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%tid.z;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ntid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_x();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_x()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm volatile (
+    "mov.u32 %0, %%ntid.x;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ntid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_y();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_y()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm volatile (
+    "mov.u32 %0, %%ntid.y;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ntid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_z();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_z()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm volatile (
+    "mov.u32 %0, %%ntid.z;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%laneid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_laneid();
+*/
+#if __cccl_ptx_isa >= 130
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_laneid()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%laneid;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 130
+
+/*
+// mov.u32 sreg_value, %%warpid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_warpid();
+*/
+#if __cccl_ptx_isa >= 130
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_warpid()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm volatile (
+    "mov.u32 %0, %%warpid;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 130
+
+/*
+// mov.u32 sreg_value, %%nwarpid; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nwarpid();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm volatile (
+      "mov.u32 %0, %%nwarpid;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ctaid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_x();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_x()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%ctaid.x;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ctaid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_y();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_y()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%ctaid.y;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%ctaid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_z();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_z()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%ctaid.z;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%nctaid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_x();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_x()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%nctaid.x;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%nctaid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_y();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_y()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%nctaid.y;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%nctaid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_z();
+*/
+#if __cccl_ptx_isa >= 200
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_z()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%nctaid.z;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%smid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_smid();
+*/
+#if __cccl_ptx_isa >= 130
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_smid()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm (
+    "mov.u32 %0, %%smid;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 130
+
+/*
+// mov.u32 sreg_value, %%nsmid; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nsmid();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm volatile (
+      "mov.u32 %0, %%nsmid;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u64 sreg_value, %%gridid; // PTX ISA 30
+template <typename=void>
+__device__ static inline uint64_t get_sreg_gridid();
+*/
+#if __cccl_ptx_isa >= 300
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_gridid()
+{
+  _CUDA_VSTD::uint64_t __sreg_value;
+  asm (
+    "mov.u64 %0, %%gridid;"
+    : "=l"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 300
+
+/*
+// mov.pred sreg_value, %%is_explicit_cluster; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool get_sreg_is_explicit_cluster();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_is_explicit_cluster_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline bool get_sreg_is_explicit_cluster()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "{\n\t .reg .pred P_OUT; \n\t"
+      "mov.pred P_OUT, %%is_explicit_cluster;\n\t"
+      "selp.b32 %0, 1, 0, P_OUT; \n"
+      "}"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return static_cast<bool>(__sreg_value);
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_is_explicit_cluster_is_not_supported_before_SM_90__();
+    return false;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%clusterid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_x();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%clusterid.x;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%clusterid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_y();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%clusterid.y;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%clusterid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_z();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%clusterid.z;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%nclusterid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_x();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%nclusterid.x;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%nclusterid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_y();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%nclusterid.y;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%nclusterid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_z();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%nclusterid.z;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_ctaid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_x();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_ctaid.x;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_ctaid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_y();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_ctaid.y;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_ctaid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_z();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_ctaid.z;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_nctaid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_x();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_nctaid.x;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_nctaid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_y();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_nctaid.y;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_nctaid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_z();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_nctaid.z;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_ctarank; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctarank();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_ctarank;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%cluster_nctarank; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctarank();
+*/
+#if __cccl_ptx_isa >= 780
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%cluster_nctarank;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 780
+
+/*
+// mov.u32 sreg_value, %%lanemask_eq; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_eq();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%lanemask_eq;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%lanemask_le; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_le();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%lanemask_le;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%lanemask_lt; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_lt();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%lanemask_lt;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%lanemask_ge; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_ge();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%lanemask_ge;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%lanemask_gt; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_gt();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%lanemask_gt;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u32 sreg_value, %%clock; // PTX ISA 10
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clock();
+*/
+#if __cccl_ptx_isa >= 100
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock()
+{
+  _CUDA_VSTD::uint32_t __sreg_value;
+  asm volatile (
+    "mov.u32 %0, %%clock;"
+    : "=r"(__sreg_value)
+    :
+    :
+  );
+  return __sreg_value;
+}
+#endif // __cccl_ptx_isa >= 100
+
+/*
+// mov.u32 sreg_value, %%clock_hi; // PTX ISA 50, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clock_hi();
+*/
+#if __cccl_ptx_isa >= 500
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm volatile (
+      "mov.u32 %0, %%clock_hi;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 500
+
+/*
+// mov.u64 sreg_value, %%clock64; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint64_t get_sreg_clock64();
+*/
+#if __cccl_ptx_isa >= 200
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint64_t __sreg_value;
+    asm volatile (
+      "mov.u64 %0, %%clock64;"
+      : "=l"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 200
+
+/*
+// mov.u64 sreg_value, %%globaltimer; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint64_t get_sreg_globaltimer();
+*/
+#if __cccl_ptx_isa >= 310
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint64_t __sreg_value;
+    asm volatile (
+      "mov.u64 %0, %%globaltimer;"
+      : "=l"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 310
+
+/*
+// mov.u32 sreg_value, %%globaltimer_lo; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_globaltimer_lo();
+*/
+#if __cccl_ptx_isa >= 310
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm volatile (
+      "mov.u32 %0, %%globaltimer_lo;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 310
+
+/*
+// mov.u32 sreg_value, %%globaltimer_hi; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_globaltimer_hi();
+*/
+#if __cccl_ptx_isa >= 310
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm volatile (
+      "mov.u32 %0, %%globaltimer_hi;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 310
+
+/*
+// mov.u32 sreg_value, %%total_smem_size; // PTX ISA 41, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_total_smem_size();
+*/
+#if __cccl_ptx_isa >= 410
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%total_smem_size;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 410
+
+/*
+// mov.u32 sreg_value, %%aggr_smem_size; // PTX ISA 81, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_aggr_smem_size();
+*/
+#if __cccl_ptx_isa >= 810
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%aggr_smem_size;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 810
+
+/*
+// mov.u32 sreg_value, %%dynamic_smem_size; // PTX ISA 41, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_dynamic_smem_size();
+*/
+#if __cccl_ptx_isa >= 410
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
+    _CUDA_VSTD::uint32_t __sreg_value;
+    asm (
+      "mov.u32 %0, %%dynamic_smem_size;"
+      : "=r"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 410
+
+/*
+// mov.u64 sreg_value, %%current_graph_exec; // PTX ISA 80, SM_50
+template <typename=void>
+__device__ static inline uint64_t get_sreg_current_graph_exec();
+*/
+#if __cccl_ptx_isa >= 800
+extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
+template <typename=void>
+_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_current_graph_exec()
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_50,(
+    _CUDA_VSTD::uint64_t __sreg_value;
+    asm (
+      "mov.u64 %0, %%current_graph_exec;"
+      : "=l"(__sreg_value)
+      :
+      :
+    );
+    return __sreg_value;
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
+    return 0;
+  ));
+}
+#endif // __cccl_ptx_isa >= 800
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

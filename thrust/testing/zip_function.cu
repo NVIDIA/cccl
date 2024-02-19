@@ -67,4 +67,4 @@ struct TestZipFunctionTransform
 };
 VariableUnitTest<TestZipFunctionTransform, ThirtyTwoBitTypes> TestZipFunctionTransformInstance;
 
-#endif // THRUST_CPP_DIALECT
+#endif // _CCCL_STD_VER

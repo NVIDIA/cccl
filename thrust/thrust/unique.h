@@ -23,11 +23,13 @@
 
 #include <thrust/detail/config.h>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/pair.h>
@@ -82,7 +84,7 @@ THRUST_NAMESPACE_BEGIN
  */
 template<typename DerivedPolicy,
          typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        ForwardIterator first,
                        ForwardIterator last);
@@ -175,7 +177,7 @@ ForwardIterator unique(ForwardIterator first,
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        ForwardIterator first,
                        ForwardIterator last,
@@ -282,7 +284,7 @@ ForwardIterator unique(ForwardIterator first,
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                            InputIterator first,
                            InputIterator last,
@@ -391,7 +393,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                            InputIterator first,
                            InputIterator last,
@@ -504,7 +506,7 @@ OutputIterator unique_copy(InputIterator first,
 template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<ForwardIterator1,ForwardIterator2>
   unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator1 keys_first,
@@ -625,7 +627,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<ForwardIterator1,ForwardIterator2>
     unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator1 keys_first,
@@ -751,7 +753,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        InputIterator1 keys_first,
@@ -886,7 +888,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        InputIterator1 keys_first,
@@ -1002,7 +1004,7 @@ template<typename InputIterator1,
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
@@ -1048,7 +1050,7 @@ __host__ __device__
  */
 template<typename DerivedPolicy,
          typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
@@ -1090,7 +1092,7 @@ __host__ __device__
  */
 template<typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(ForwardIterator first,
                  ForwardIterator last,
@@ -1131,7 +1133,7 @@ __host__ __device__
  *  \see reduce_by_key_copy
  */
 template<typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(ForwardIterator first,
                  ForwardIterator last);

@@ -52,13 +52,9 @@ struct Caster {
     struct apply {
         typedef typename std::remove_reference<T>::type RawType;
         typedef typename QualTag::template apply<RawType>::type CVType;
-#if TEST_STD_VER >= 11
         typedef typename std::conditional<RValue,
             CVType&&, CVType&
         >::type type;
-#else
-        typedef CVType& type;
-#endif
     };
 
     template <class T>
@@ -165,12 +161,6 @@ struct DerefPropType {
     template <class Up>
     explicit DerefPropType(Up const& val) : object(val) {}
 
-#if TEST_STD_VER < 11
-    To& operator*() { return object; }
-    To const& operator*() const { return object; }
-    To volatile& operator*() volatile  { return object; }
-    To const volatile& operator*() const volatile { return object; }
-#else
     To& operator*() & { return object; }
     To const& operator*() const & { return object; }
     To volatile& operator*() volatile  & { return object; }
@@ -179,7 +169,6 @@ struct DerefPropType {
     To const&& operator*() const && { return static_cast<To const&&>(object); }
     To volatile&& operator*() volatile  && { return static_cast<To volatile&&>(object); }
     To const volatile&& operator*() const volatile && { return static_cast<To const volatile&&>(object); }
-#endif
 };
 
 //==============================================================================
@@ -282,7 +271,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(ptr, object_cast(object)))
@@ -291,7 +279,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class MethodPtr, class ObjectT>
@@ -304,7 +291,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(ptr, object_cast(object), arg_cast(a0)))
@@ -313,7 +299,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class MethodPtr, class ObjectT>
@@ -326,7 +311,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1)))
@@ -335,7 +319,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class MethodPtr, class ObjectT>
@@ -348,7 +331,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2)))
@@ -357,7 +339,6 @@ private:
             CallRet ret = std::__invoke(ptr, object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     //==========================================================================
@@ -373,7 +354,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(object_cast(object)))
@@ -382,7 +362,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class ObjectT>
@@ -395,7 +374,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(object_cast(object), arg_cast(a0)))
@@ -404,7 +382,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class ObjectT>
@@ -417,7 +394,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1)))
@@ -426,7 +402,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 
     template <class ObjectT>
@@ -439,7 +414,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2));
             assert(ID::checkCalled(ret));
         }
-#if TEST_STD_VER >= 11
         {
             static_assert((std::is_same<
                 decltype(std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2)))
@@ -448,7 +422,6 @@ private:
             CallRet ret = std::__invoke(object_cast(object), arg_cast(a0), arg_cast(a1), arg_cast(a2));
             assert(ID::checkCalled(ret));
         }
-#endif
     }
 };
 

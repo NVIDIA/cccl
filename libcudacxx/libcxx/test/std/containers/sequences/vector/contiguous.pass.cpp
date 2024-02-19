@@ -40,7 +40,6 @@ int main(int, char**)
     test_contiguous(C(A(3)));
     test_contiguous(C(7, 9.0, A(5)));
     }
-#if TEST_STD_VER >= 11
     {
     typedef double T;
     typedef min_allocator<T> A;
@@ -48,7 +47,6 @@ int main(int, char**)
     test_contiguous(C(A{}));
     test_contiguous(C(9, 11.0, A{}));
     }
-#endif
 
   return 0;
 }

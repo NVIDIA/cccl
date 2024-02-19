@@ -129,7 +129,6 @@ test(S str, unsigned pos, unsigned n, const typename S::allocator_type& a)
 #endif
 }
 
-#if TEST_STD_VER >= 11
 #ifndef TEST_HAS_NO_EXCEPTIONS
 void test2583()
 {   // LWG #2583
@@ -142,7 +141,6 @@ void test2583()
     catch (const std::out_of_range&) { return; }
     assert(false);
 }
-#endif
 #endif
 
 int main(int, char**)
@@ -185,7 +183,6 @@ int main(int, char**)
     test(S("1234567890123456789012345678901234567890123456789012345678901234567890", A(7)), 50, 10, A(8));
     test(S("1234567890123456789012345678901234567890123456789012345678901234567890", A(7)), 50, 100, A(8));
     }
-#if TEST_STD_VER >= 11
     {
     typedef min_allocator<char> A;
     typedef std::basic_string<char, std::char_traits<char>, A> S;
@@ -227,7 +224,6 @@ int main(int, char**)
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
     test2583();
-#endif
 #endif
 
   return 0;

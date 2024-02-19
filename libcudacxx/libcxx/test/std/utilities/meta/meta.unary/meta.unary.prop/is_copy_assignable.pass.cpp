@@ -17,7 +17,7 @@ template <class T>
 void test_is_copy_assignable()
 {
     static_assert(( std::is_copy_assignable<T>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert(( std::is_copy_assignable_v<T>), "");
 #endif
 }
@@ -26,7 +26,7 @@ template <class T>
 void test_is_not_copy_assignable()
 {
     static_assert((!std::is_copy_assignable<T>::value), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     static_assert((!std::is_copy_assignable_v<T>), "");
 #endif
 }
@@ -73,12 +73,10 @@ int main(int, char**)
     test_is_copy_assignable<NotEmpty> ();
     test_is_copy_assignable<Empty> ();
 
-#if TEST_STD_VER >= 11
     test_is_not_copy_assignable<const int> ();
     test_is_not_copy_assignable<int[]> ();
     test_is_not_copy_assignable<int[3]> ();
     test_is_not_copy_assignable<B> ();
-#endif
     test_is_not_copy_assignable<void> ();
     test_is_not_copy_assignable<C> ();
 

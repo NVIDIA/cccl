@@ -49,8 +49,7 @@ struct custom_op
 };
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
-{
+static void basic(nvbench::state &state, nvbench::type_list<T>) {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
   thrust::device_vector<T> input = generate(elements);
@@ -60,9 +59,16 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::adjacent_difference(input.cbegin(), input.cend(), output.begin(), custom_op<T>{42});
-  });
+  caching_allocator_t alloc;
+  thrust::adjacent_difference(policy(alloc), input.cbegin(), input.cend(),
+                              output.begin(), custom_op<T>{42});
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::adjacent_difference(policy(alloc, launch),
+                                           input.cbegin(), input.cend(),
+                                           output.begin(), custom_op<T>{42});
+             });
 }
 
 using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;

@@ -29,11 +29,13 @@
 
 #include <cub/config.cuh>
 
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/type_traits.cuh>
@@ -159,7 +161,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   DifferenceOpT difference_op;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchAdjacentDifference(void *d_temp_storage,
                              std::size_t &temp_storage_bytes,
                              InputIteratorT d_input,
@@ -177,7 +179,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_DEPRECATED CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchAdjacentDifference(void *d_temp_storage,
                              std::size_t &temp_storage_bytes,
                              InputIteratorT d_input,
@@ -199,7 +201,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
   /// Invocation
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using AdjacentDifferencePolicyT =
       typename ActivePolicyT::AdjacentDifferencePolicy;

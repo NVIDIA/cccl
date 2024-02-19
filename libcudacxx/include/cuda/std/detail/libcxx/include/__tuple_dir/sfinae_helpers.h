@@ -14,6 +14,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__fwd/tuple.h"
 #include "../__tuple_dir/make_tuple_types.h"
 #include "../__tuple_dir/tuple_element.h"
@@ -29,12 +37,6 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/remove_reference.h"
 #include "../cstddef"
-
-#if defined(_CCCL_COMPILER_NVHPC) && defined(_CCCL_USE_IMPLICIT_SYSTEM_DEADER)
-#pragma GCC system_header
-#else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-_CCCL_IMPLICIT_SYSTEM_HEADER
-#endif // !_CCCL_COMPILER_NVHPC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -139,7 +141,7 @@ struct _LIBCUDACXX_TYPE_VIS __check_tuple_constructor_fail
   using __enable_assign = false_type;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <bool _CanCopy, bool _CanMove>
 struct __sfinae_ctor_base
@@ -202,7 +204,7 @@ struct __sfinae_assign_base<false, true>
   __sfinae_assign_base& operator=(__sfinae_assign_base const&) = delete;
   __sfinae_assign_base& operator=(__sfinae_assign_base&&)      = default;
 };
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
