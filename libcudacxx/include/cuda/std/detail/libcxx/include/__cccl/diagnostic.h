@@ -32,7 +32,7 @@
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
-#elif defined(_CCCL_COMPILER_GCC)
+#elif defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_ICC)
 #  define _CCCL_DIAG_PUSH _Pragma("GCC diagnostic push")
 #  define _CCCL_DIAG_POP  _Pragma("GCC diagnostic pop")
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
