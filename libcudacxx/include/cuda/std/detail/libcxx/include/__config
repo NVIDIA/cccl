@@ -2207,6 +2207,24 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
   _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
 #endif
 
+// NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
+// This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
+#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
+#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                       \
+      using __base = __baseclass<__VA_ARGS__>;                                                                 \
+      template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0> \
+      _LIBCUDACXX_INLINE_VISIBILITY constexpr __class(_Args&&... __args) noexcept(                             \
+        _LIBCUDACXX_TRAIT(is_nothrow_constructible, __base, _Args...))                                         \
+          : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                                      \
+      {}                                                                                                       \
+      constexpr __class() noexcept = default;
+#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
+      using __base = __baseclass<__VA_ARGS__>;                           \
+      using __base::__base;                                              \
+      constexpr __class() noexcept = default;
+#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+
 #define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
 #endif // __cplusplus
