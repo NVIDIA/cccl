@@ -341,7 +341,7 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(subrange_kind _Kind_ = _Kind)
-  _LIBCUDACXX_REQUIRES(_Kind_ == subrange_kind::sized)
+  _LIBCUDACXX_REQUIRES((_Kind_ == subrange_kind::sized))
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr make_unsigned_t<iter_difference_t<_Iter>>
   size() const
   {
