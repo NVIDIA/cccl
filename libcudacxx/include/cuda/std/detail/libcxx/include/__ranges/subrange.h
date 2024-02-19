@@ -349,6 +349,9 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
+#  if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+    _LIBCUDACXX_UNREACHABLE();
+#  endif // _LIBCUDACXX_CUDACC_BELOW_11_3
   }
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
@@ -398,6 +401,7 @@ public:
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
+    (void)__d;
     return *this;
   }
 };
