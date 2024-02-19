@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -49,21 +49,27 @@ namespace detail
 {
 
 /**
- * ChooseOffsetT checks NumItemsT, the type of the num_items parameter, and
+ * choose_offset checks NumItemsT, the type of the num_items parameter, and
  * selects the offset type based on it.
  */
 template <typename NumItemsT>
-struct ChooseOffsetT
+struct choose_offset
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(std::is_integral<NumItemsT>::value &&
-                  !std::is_same<typename std::remove_cv<NumItemsT>::type, bool>::value,
+  static_assert(::cuda::std::is_integral<NumItemsT>::value
+                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using Type =
-    typename std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
+  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
 };
+
+/**
+ * choose_offset_t is an alias template that checks NumItemsT, the type of the num_items parameter, and
+ * selects the offset type based on it.
+ */
+template <typename NumItemsT>
+using choose_offset_t = typename choose_offset<NumItemsT>::type;
 
 /**
  * common_iterator_value sets member type to the common_type of
