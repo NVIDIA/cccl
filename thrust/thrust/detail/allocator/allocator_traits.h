@@ -334,7 +334,7 @@ template<typename Alloc>
   inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, const Arg1 &arg1);
 
   template<typename T, typename... Args>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p, Args&&... args);
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, Args&&... args);
 
   template<typename T>
   inline _CCCL_HOST_DEVICE static void destroy(allocator_type &a, T *p);

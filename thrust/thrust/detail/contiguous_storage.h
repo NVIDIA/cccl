@@ -170,7 +170,7 @@ template<typename T, typename Alloc>
     _CCCL_HOST_DEVICE
     void propagate_allocator(const contiguous_storage &other);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void propagate_allocator(contiguous_storage &other);
 
     // allow move assignment for a sane implementation of allocator propagation
@@ -221,7 +221,7 @@ template<typename T, typename Alloc>
     _CCCL_HOST_DEVICE
     void propagate_allocator_dispatch(false_type, const contiguous_storage &other);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void propagate_allocator_dispatch(true_type, contiguous_storage &other);
 
     _CCCL_HOST_DEVICE
