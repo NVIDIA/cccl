@@ -526,7 +526,7 @@ _CCCL_HOST_DEVICE
 {
 } // end contiguous_storage::propagate_allocator()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
 _CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>

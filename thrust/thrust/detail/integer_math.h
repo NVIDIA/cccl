@@ -101,7 +101,7 @@ Integer log2_ri(Integer x)
 // x/y rounding towards +infinity for integers
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 // FIXME: Should use common_type.
 auto divide_ri(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
@@ -110,21 +110,21 @@ THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
 // x/y rounding towards zero for integers.
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto divide_rz(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(x / y)
 
 
 // Round x towards infinity to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto round_i(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_ri(x, y))
 
 
 // Round x towards 0 to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto round_z(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_rz(x, y))
 
