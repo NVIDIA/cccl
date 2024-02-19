@@ -309,7 +309,7 @@ public:
 
 #  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
   _LIBCUDACXX_TEMPLATE(class _Pair)
-  _LIBCUDACXX_REQUIRES(__subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
+  _LIBCUDACXX_REQUIRES(__pair_like<_Pair> _LIBCUDACXX_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
