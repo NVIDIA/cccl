@@ -203,6 +203,14 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 // If we are replacing the stl we need to define our own feature test macros.
 // However, if we are in __cuda_std__ we need to define our own symbols to not
 // conflict with the host stl.
@@ -214,14 +222,6 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #include <ciso646> // otherwise go for the smallest possible header
 #endif
 #endif // __cuda_std__
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 // We unconditionally define `__cccl_lib_meow` so that there is only one place to set the value
 #if _CCCL_STD_VER > 2011

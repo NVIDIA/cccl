@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
@@ -27,14 +35,6 @@
 #include "../__type_traits/nat.h"
 #include "../__utility/declval.h"
 #include "../cstddef"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

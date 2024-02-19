@@ -14,12 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/boolean_testable.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -27,6 +21,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__concepts/__concept_macros.h"
+#include "../__concepts/boolean_testable.h"
+#include "../__concepts/equality_comparable.h"
+#include "../__type_traits/common_reference.h"
+#include "../__type_traits/make_const_lvalue_ref.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

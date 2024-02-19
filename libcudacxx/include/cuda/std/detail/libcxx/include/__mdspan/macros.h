@@ -49,12 +49,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__mdspan/config.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -62,6 +56,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__mdspan/config.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_void.h"
+#include "../__type_traits/remove_reference.h"
+#include "../__utility/declval.h"
 
 #if _CCCL_STD_VER > 2011
 

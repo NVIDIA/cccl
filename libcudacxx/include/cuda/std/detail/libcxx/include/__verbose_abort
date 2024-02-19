@@ -15,8 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "__availability"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,6 +22,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "__availability"
 
 // Provide a default implementation of __libcpp_verbose_abort if we know that neither the built
 // library nor the user is providing one. Otherwise, just declare it and use the one from the

@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/class_or_enum.h"
 #include "../__concepts/swappable.h"
 #include "../__iterator/concepts.h"
@@ -23,14 +31,6 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 #if _CCCL_STD_VER > 2014
 

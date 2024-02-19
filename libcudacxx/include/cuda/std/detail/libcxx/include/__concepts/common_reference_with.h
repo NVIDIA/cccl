@@ -14,13 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/copy_cv.h"
-#include "../__type_traits/copy_cvref.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,6 +21,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__concepts/__concept_macros.h"
+#include "../__concepts/convertible_to.h"
+#include "../__concepts/same_as.h"
+#include "../__type_traits/common_reference.h"
+#include "../__type_traits/copy_cv.h"
+#include "../__type_traits/copy_cvref.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

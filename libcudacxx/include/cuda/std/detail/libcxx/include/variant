@@ -209,6 +209,14 @@ C++20
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__availability"
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
@@ -259,14 +267,6 @@ C++20
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include "compare"
 #endif
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 #ifndef __cuda_std__
 #  include <exception>

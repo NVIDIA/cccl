@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__functional/invoke.h"
 #include "../__functional/perfect_forward.h"
 #include "../__fwd/get.h"
@@ -27,14 +35,6 @@
 #include "../__utility/integer_sequence.h"
 
 #include "../tuple"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

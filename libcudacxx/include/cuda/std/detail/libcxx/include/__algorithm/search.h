@@ -14,6 +14,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__algorithm/comp.h"
 #include "../__functional/identity.h"
 #include "../__functional/invoke.h"
@@ -24,13 +32,6 @@
 #include "../__type_traits/enable_if.h"
 #include "../__utility/pair.h"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>

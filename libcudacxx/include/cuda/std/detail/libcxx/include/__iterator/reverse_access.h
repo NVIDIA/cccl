@@ -15,10 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/reverse_iterator.h"
-#include "../cstddef"
-#include "../initializer_list"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +22,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__iterator/reverse_iterator.h"
+#include "../cstddef"
+#include "../initializer_list"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
