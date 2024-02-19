@@ -113,7 +113,9 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
     test();
+#if !defined(TEST_COMPILER_MSVC) // MSVC gives an ICE here
     static_assert(test(), "");
+#endif // !TEST_COMPILER_MSVC
 
     return 0;
 }

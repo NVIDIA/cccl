@@ -89,6 +89,27 @@ concept __pair_like_convertible_from =
   !range<_Pair> && __pair_like<_Pair> && constructible_from<_Pair, _Iter, _Sent>
   && __convertible_to_non_slicing<_Iter, tuple_element_t<0, _Pair>> && convertible_to<_Sent, tuple_element_t<1, _Pair>>;
 
+// We have issues with MSVC and _StoreSize being unable to be properly determined in SFINAE, so we need to pull that out
+template <class _Iter, class _It, bool _StoreSize>
+concept __subrange_from_iter_sent = !_StoreSize && __convertible_to_non_slicing<_It, _Iter>;
+
+template <class _Iter, subrange_kind _Kind, class _It>
+concept __subrange_from_iter_sent_size = _Kind == subrange_kind::sized && __convertible_to_non_slicing<_It, _Iter>;
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Range, bool _StoreSize>
+concept __subrange_from_range =
+  _StoreSize && __different_from<_Range, subrange<_Iter, _Sent, _Kind>> && borrowed_range<_Range>
+  && __convertible_to_non_slicing<iterator_t<_Range>, _Iter> && convertible_to<sentinel_t<_Range>, _Sent>;
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Range>
+concept __subrange_from_range_size =
+  _Kind == subrange_kind::sized && borrowed_range<_Range> && __convertible_to_non_slicing<iterator_t<_Range>, _Iter>
+  && convertible_to<sentinel_t<_Range>, _Sent>;
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
+concept __subrange_to_pair = __different_from<_Pair, subrange<_Iter, _Sent, _Kind>>
+                          && __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>;
+
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
 template <class _From, class _To>
@@ -138,6 +159,64 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Pair, class _Iter, class _Sent>
 _LIBCUDACXX_CONCEPT __pair_like_convertible_from =
   _LIBCUDACXX_FRAGMENT(__pair_like_convertible_from_, _Pair, _Iter, _Sent);
+
+// We have issues with MSVC and _StoreSize being unable to be properly determined in SFINAE, so we need to pull that out
+template <class _Iter, class _It, class _StoreSize>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __subrange_from_iter_sent_,
+  requires()(requires(!_StoreSize::value), requires(__convertible_to_non_slicing<_It, _Iter>)));
+
+template <class _Iter, class _It, bool _StoreSize>
+_LIBCUDACXX_CONCEPT __subrange_from_iter_sent =
+  _LIBCUDACXX_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, integral_constant<bool, _StoreSize>);
+
+template <class _Iter, class _Kind, class _It>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __subrange_from_iter_sent_size_,
+  requires()(requires(_Kind::value == subrange_kind::sized), requires(__convertible_to_non_slicing<_It, _Iter>)));
+
+template <class _Iter, subrange_kind _Kind, class _It>
+_LIBCUDACXX_CONCEPT __subrange_from_iter_sent_size =
+  _LIBCUDACXX_FRAGMENT(__subrange_from_iter_sent_size_, _Iter, integral_constant<subrange_kind, _Kind>, _It);
+
+template <class _Iter, class _Sent, class _Kind, class _Range, class _StoreSize>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __subrange_from_range_,
+  requires()(requires(_StoreSize::value),
+             requires(__different_from<_Range, subrange<_Iter, _Sent, _Kind::value>>),
+             requires(borrowed_range<_Range>),
+             requires(__convertible_to_non_slicing<iterator_t<_Range>, _Iter>),
+             requires(convertible_to<sentinel_t<_Range>, _Sent>)));
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Range, bool _StoreSize>
+_LIBCUDACXX_CONCEPT __subrange_from_range = _LIBCUDACXX_FRAGMENT(
+  __subrange_from_range_,
+  _Iter,
+  _Sent,
+  integral_constant<subrange_kind, _Kind>,
+  _Range,
+  integral_constant<bool, _StoreSize>);
+
+template <class _Iter, class _Sent, class _Kind, class _Range>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __subrange_from_range_size_,
+  requires()(requires((_Kind::value == subrange_kind::sized)),
+             requires(borrowed_range<_Range>),
+             requires(__convertible_to_non_slicing<iterator_t<_Range>, _Iter>),
+             requires(convertible_to<sentinel_t<_Range>, _Sent>)));
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Range>
+_LIBCUDACXX_CONCEPT __subrange_from_range_size =
+  _LIBCUDACXX_FRAGMENT(__subrange_from_range_size_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range);
+
+template <class _Iter, class _Sent, class _Kind, class _Pair>
+_LIBCUDACXX_CONCEPT_FRAGMENT(__subrange_to_pair_,
+                             requires()(requires(__different_from<_Pair, subrange<_Iter, _Sent, _Kind::value>>),
+                                        requires(__pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)));
+
+template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
+_LIBCUDACXX_CONCEPT __subrange_to_pair =
+  _LIBCUDACXX_FRAGMENT(__subrange_to_pair_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Pair);
 #  endif // _CCCL_STD_VER <= 2017
 
 #  if _CCCL_STD_VER >= 2020
@@ -182,7 +261,7 @@ public:
 #  endif // _CCCL_STD_VER <= 2017
 
   _LIBCUDACXX_TEMPLATE(class _It)
-  _LIBCUDACXX_REQUIRES((!_StoreSize) _LIBCUDACXX_AND __convertible_to_non_slicing<_It, _Iter>)
+  _LIBCUDACXX_REQUIRES(__subrange_from_iter_sent<_Iter, _It, _StoreSize>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_It __iter, _Sent __sent)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
       , __begin_(_CUDA_VSTD::move(__iter))
@@ -190,8 +269,7 @@ public:
   {}
 
   _LIBCUDACXX_TEMPLATE(class _It)
-  _LIBCUDACXX_REQUIRES(sized_sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND(_Kind == subrange_kind::sized)
-                         _LIBCUDACXX_AND __convertible_to_non_slicing<_It, _Iter>)
+  _LIBCUDACXX_REQUIRES(__subrange_from_iter_sent_size<_Iter, _Kind, _It>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(
     _It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : view_interface<subrange<_Iter, _Sent, _Kind>>()
@@ -199,43 +277,27 @@ public:
       , __end_(_CUDA_VSTD::move(__sent))
       , __size_(__n)
   {
-    _LIBCUDACXX_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                       "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+    if constexpr (sized_sentinel_for<_Sent, _Iter>)
+    {
+      _LIBCUDACXX_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
+                         "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+    }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _It)
-  _LIBCUDACXX_REQUIRES((!sized_sentinel_for<_Sent, _Iter>) _LIBCUDACXX_AND(_Kind == subrange_kind::sized)
-                         _LIBCUDACXX_AND __convertible_to_non_slicing<_It, _Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(
-    _It __iter, _Sent __sent, make_unsigned_t<iter_difference_t<_Iter>> __n)
-      : view_interface<subrange<_Iter, _Sent, _Kind>>()
-      , __begin_(_CUDA_VSTD::move(__iter))
-      , __end_(_CUDA_VSTD::move(__sent))
-      , __size_(__n)
-  {}
-
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    (!_StoreSize) _LIBCUDACXX_AND __different_from<_Range, subrange> _LIBCUDACXX_AND
-      borrowed_range<_Range> _LIBCUDACXX_AND __convertible_to_non_slicing<iterator_t<_Range>, _Iter> _LIBCUDACXX_AND
-        convertible_to<sentinel_t<_Range>, _Sent>)
+  _LIBCUDACXX_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, !_StoreSize>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _StoreSize _LIBCUDACXX_AND sized_range<_Range> _LIBCUDACXX_AND __different_from<_Range, subrange> _LIBCUDACXX_AND
-      borrowed_range<_Range> _LIBCUDACXX_AND __convertible_to_non_slicing<iterator_t<_Range>, _Iter> _LIBCUDACXX_AND
-        convertible_to<sentinel_t<_Range>, _Sent>)
+  _LIBCUDACXX_REQUIRES(__subrange_from_range<_Iter, _Sent, _Kind, _Range, _StoreSize>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(_Range&& __range)
       : subrange(__range, _CUDA_VRANGES::size(__range))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    (_Kind == subrange_kind::sized) _LIBCUDACXX_AND borrowed_range<_Range> _LIBCUDACXX_AND
-      __convertible_to_non_slicing<iterator_t<_Range>, _Iter> _LIBCUDACXX_AND convertible_to<sentinel_t<_Range>, _Sent>)
+  _LIBCUDACXX_REQUIRES(__subrange_from_range_size<_Iter, _Sent, _Kind, _Range>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange(
     _Range&& __range, make_unsigned_t<iter_difference_t<_Iter>> __n)
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
@@ -243,8 +305,7 @@ public:
 
 #  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
   _LIBCUDACXX_TEMPLATE(class _Pair)
-  _LIBCUDACXX_REQUIRES(
-    __different_from<_Pair, subrange> _LIBCUDACXX_AND __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)
+  _LIBCUDACXX_REQUIRES(__subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
@@ -276,19 +337,18 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(subrange_kind _Kind_ = _Kind)
-  _LIBCUDACXX_REQUIRES((_Kind_ == subrange_kind::sized) _LIBCUDACXX_AND _StoreSize)
+  _LIBCUDACXX_REQUIRES(_Kind_ == subrange_kind::sized)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr make_unsigned_t<iter_difference_t<_Iter>>
   size() const
   {
-    return __size_;
-  }
-
-  _LIBCUDACXX_TEMPLATE(subrange_kind _Kind_ = _Kind)
-  _LIBCUDACXX_REQUIRES((_Kind_ == subrange_kind::sized) _LIBCUDACXX_AND(!_StoreSize))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr make_unsigned_t<iter_difference_t<_Iter>>
-  size() const
-  {
-    return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
+    if constexpr (_StoreSize)
+    {
+      return __size_;
+    }
+    else
+    {
+      return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
+    }
   }
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
@@ -318,50 +378,26 @@ public:
     return __tmp;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _It = _Iter)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_It> _LIBCUDACXX_AND _StoreSize)
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange& advance(iter_difference_t<_Iter> __n)
   {
-    if (__n < 0)
+    if constexpr (bidirectional_iterator<_Iter>)
     {
-      _CUDA_VRANGES::advance(__begin_, __n);
-      __size_ += _CUDA_VSTD::__to_unsigned_like(-__n);
-      return *this;
+      if (__n < 0)
+      {
+        _CUDA_VRANGES::advance(__begin_, __n);
+        if constexpr (_StoreSize)
+        {
+          __size_ += _CUDA_VSTD::__to_unsigned_like(-__n);
+        }
+        return *this;
+      }
     }
 
-    auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
-    __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
-    return *this;
-  }
-
-  _LIBCUDACXX_TEMPLATE(class _It = _Iter)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_It> _LIBCUDACXX_AND(!_StoreSize))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange& advance(iter_difference_t<_Iter> __n)
-  {
-    if (__n < 0)
+    const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
+    if constexpr (_StoreSize)
     {
-      _CUDA_VRANGES::advance(__begin_, __n);
-      return *this;
+      __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-
-    _CUDA_VRANGES::advance(__begin_, __n, __end_);
-    return *this;
-  }
-
-  _LIBCUDACXX_TEMPLATE(class _It = _Iter)
-  _LIBCUDACXX_REQUIRES((!bidirectional_iterator<_It>) _LIBCUDACXX_AND _StoreSize)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange& advance(iter_difference_t<_Iter> __n)
-  {
-    auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
-    __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
-    return *this;
-  }
-
-  _LIBCUDACXX_TEMPLATE(class _It = _Iter)
-  _LIBCUDACXX_REQUIRES((!bidirectional_iterator<_It>) _LIBCUDACXX_AND(!_StoreSize))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr subrange& advance(iter_difference_t<_Iter> __n)
-  {
-    _CUDA_VRANGES::advance(__begin_, __n, __end_);
     return *this;
   }
 };
