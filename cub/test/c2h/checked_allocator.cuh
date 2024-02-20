@@ -37,7 +37,11 @@
 
 #include <new>
 
-//#define DEBUG_CHECKED_ALLOC_FAILURE
+// #define DEBUG_CHECKED_ALLOC_FAILURE
+
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
+#  include <iostream>
+#endif
 
 namespace c2h
 {
@@ -58,7 +62,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
   constexpr std::size_t padding = 16 * 1024 * 1024; // 16 MiB
   if (free_bytes < (bytes + padding))
   {
-  #ifdef DEBUG_CHECKED_ALLOC_FAILURE
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
     const double total_GiB     = static_cast<double>(total_bytes) / (1024 * 1024 * 1024);
     const double free_GiB      = static_cast<double>(free_bytes) / (1024 * 1024 * 1024);
     const double requested_GiB = static_cast<double>(bytes) / (1024 * 1024 * 1024);
@@ -69,7 +73,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
       << "Free device mem:      " << free_GiB << " GiB\n" //
       << "Requested device mem: " << requested_GiB << " GiB\n" //
       << "Padded device mem:    " << padded_GiB << " GiB\n";
-  #endif
+#endif
     return cudaErrorMemoryAllocation;
   }
 

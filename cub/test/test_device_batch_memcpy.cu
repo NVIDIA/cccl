@@ -342,6 +342,7 @@ void RunTest(BufferOffsetT num_buffers,
   }
   catch (std::bad_alloc& e)
   {
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
     std::cout
       << "Skipping test 'RunTest(" //
       << num_buffers << ", " //
@@ -350,6 +351,7 @@ void RunTest(BufferOffsetT num_buffers,
       << TestDataGenToString(input_gen) << ", " //
       << TestDataGenToString(output_gen) << ")" //
       << "' due to insufficient memory: " << e.what() << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
   }
 }
 

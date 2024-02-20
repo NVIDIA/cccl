@@ -471,7 +471,7 @@ void do_large_offset_test(std::size_t num_items)
   try
   {
     large_array_sort_helper<key_t> arrays;
-    arrays.initialize_for_unstable_key_sort(num_items, is_descending);
+    arrays.initialize_for_unstable_key_sort(CUB_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
 
@@ -491,15 +491,15 @@ void do_large_offset_test(std::size_t num_items)
   }
   catch (std::bad_alloc& e)
   {
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
     const std::size_t num_bytes = num_items * sizeof(key_t);
     std::cerr
       << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
   }
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
-         "[large][keys][radix][sort][device]",
-         single_key_type)
+CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radix][sort][device]", single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint32_t;
@@ -514,9 +514,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
   do_large_offset_test<key_t, num_items_t>(num_items);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets",
-         "[large][keys][radix][sort][device]",
-         single_key_type)
+CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint64_t;

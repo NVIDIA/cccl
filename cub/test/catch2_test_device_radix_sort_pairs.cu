@@ -162,7 +162,7 @@ void do_large_offset_test(std::size_t num_items)
   try
   {
     large_array_sort_helper<key_t, value_t> arrays;
-    arrays.initialize_for_stable_key_value_sort(num_items, is_descending);
+    arrays.initialize_for_stable_pair_sort(CUB_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
 
@@ -180,13 +180,15 @@ void do_large_offset_test(std::size_t num_items)
     auto& keys   = arrays.keys_buffer.selector == 0 ? arrays.keys_in : arrays.keys_out;
     auto& values = arrays.values_buffer.selector == 0 ? arrays.values_in : arrays.values_out;
 
-    arrays.verify_stable_key_value_sort(num_items, is_descending, keys, values);
+    arrays.verify_stable_pair_sort(num_items, is_descending, keys, values);
   }
   catch (std::bad_alloc& e)
   {
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
     const std::size_t num_bytes = num_items * (sizeof(key_t) + sizeof(value_t));
     std::cerr
       << "Skipping radix sort test with " << num_items << " elements (" << num_bytes << " bytes): " << e.what() << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
   }
 }
 
