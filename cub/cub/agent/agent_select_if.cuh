@@ -52,6 +52,8 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -186,14 +188,14 @@ struct AgentSelectIf
       USE_STENCIL_WITH_OP
     };
 
-    static constexpr std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
-    static constexpr std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
-    static constexpr std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
-    static constexpr bool TWO_PHASE_SCATTER        = (ITEMS_PER_THREAD > 1);
+    static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
+    static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
+    static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+    static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
 
-    static constexpr bool has_select_op               = (!std::is_same<SelectOpT, NullType>::value);
-    static constexpr bool has_flags_it                = (!std::is_same<FlagT, NullType>::value);
-    static constexpr bool use_stencil_with_op         = has_select_op && has_flags_it;
+    static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
+    static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+    static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
     static constexpr auto SELECT_METHOD =
       use_stencil_with_op ? USE_STENCIL_WITH_OP
       : has_select_op     ? USE_SELECT_OP
@@ -203,22 +205,18 @@ struct AgentSelectIf
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
     // Wrap the native input pointer with CacheModifiedValuesInputIterator
     // or directly use the supplied input iterator type
-    using WrappedInputIteratorT = cub::detail::conditional_t<
-      std::is_pointer<InputIteratorT>::value,
-      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER,
-                                 InputT,
-                                 OffsetT>,
-      InputIteratorT>;
+    using WrappedInputIteratorT =
+      cub::detail::conditional_t< ::cuda::std::is_pointer<InputIteratorT>::value,
+                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                  InputIteratorT>;
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
     // Wrap the native input pointer with CacheModifiedValuesInputIterator
     // or directly use the supplied input iterator type
-    using WrappedFlagsInputIteratorT = cub::detail::conditional_t<
-      std::is_pointer<FlagsInputIteratorT>::value,
-      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER,
-                                 FlagT,
-                                 OffsetT>,
-      FlagsInputIteratorT>;
+    using WrappedFlagsInputIteratorT =
+      cub::detail::conditional_t< ::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
+                                  FlagsInputIteratorT>;
 
     // Parameterized BlockLoad type for input data
     using BlockLoadT = BlockLoad<InputT,
