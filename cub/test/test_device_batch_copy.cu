@@ -291,6 +291,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
+  (void)e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
   std::cout
     << "Skipping test 'RunTest("
