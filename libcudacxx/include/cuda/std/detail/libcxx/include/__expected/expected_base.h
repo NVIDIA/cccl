@@ -367,21 +367,7 @@ struct __expected_destruct<_Tp, _Err, true, true> {
 template <class _Tp, class _Err>
 struct __expected_storage : __expected_destruct<_Tp, _Err>
 {
-  using __base = __expected_destruct<_Tp, _Err>;
-
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_storage() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_storage(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, _Tp, _Err);
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...))
@@ -462,40 +448,13 @@ template <class _Tp, class _Err, bool =
            _LIBCUDACXX_TRAIT(is_trivially_copy_constructible, _Err)>
 struct __expected_copy : __expected_storage<_Tp, _Err>
 {
-  using __base = __expected_storage<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_copy() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
 {
-  using __base = __expected_storage<_Tp, _Err>;
-
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-
-  constexpr __expected_copy() noexcept = default;
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   __expected_copy(const __expected_copy& __other)
@@ -520,39 +479,14 @@ template <class _Tp, class _Err, bool =
            _LIBCUDACXX_TRAIT(is_trivially_move_constructible, _Err)>
 struct __expected_move : __expected_copy<_Tp, _Err>
 {
-  using __base = __expected_copy<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_move() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
 {
-  using __base = __expected_copy<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, _Tp, _Err);
 
-  __expected_move() = default;
   __expected_move(const __expected_move&) = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
@@ -581,39 +515,14 @@ template <class _Tp, class _Err, bool =
            _LIBCUDACXX_TRAIT(is_trivially_copy_assignable, _Err)>
 struct __expected_copy_assign : __expected_move<_Tp, _Err>
 {
-  using __base = __expected_move<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_copy_assign() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
 {
-  using __base = __expected_move<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, _Tp, _Err);
 
-  __expected_copy_assign() = default;
   __expected_copy_assign(const __expected_copy_assign&) = default;
   __expected_copy_assign(__expected_copy_assign&&) = default;
 
@@ -650,39 +559,14 @@ template <class _Tp, class _Err, bool =
           _LIBCUDACXX_TRAIT(is_trivially_move_assignable, _Err)>
 struct __expected_move_assign : __expected_copy_assign<_Tp, _Err>
 {
-  using __base = __expected_copy_assign<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_move_assign() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 };
 
 template <class _Tp, class _Err>
 struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _Err>
 {
-  using __base = __expected_copy_assign<_Tp, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, _Tp, _Err);
 
-  __expected_move_assign() = default;
   __expected_move_assign(const __expected_move_assign&) = default;
   __expected_move_assign(__expected_move_assign&&) = default;
   __expected_move_assign& operator=(const __expected_move_assign&) = default;
@@ -853,20 +737,7 @@ struct __expected_destruct<void, _Err, false, true> {
 template <class _Err>
 struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 {
-  using __base = __expected_destruct<void, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  constexpr __expected_storage() noexcept = default;
-
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_storage(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
   static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   void __swap_val_unex_impl(__expected_storage& __with_val, __expected_storage& __with_err)
@@ -881,20 +752,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 template <class _Err>
 struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
 {
-  using __base = __expected_storage<void, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-
-  constexpr __expected_copy() = default;
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
   __expected_copy(const __expected_copy& __other)
@@ -914,20 +772,8 @@ struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
 template <class _Err>
 struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
 {
-  using __base = __expected_copy<void, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move, __expected_copy, void, _Err);
 
-  __expected_move() = default;
   __expected_move(const __expected_move&) = default;
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
@@ -947,20 +793,8 @@ struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
 template <class _Err>
 struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
 {
-  using __base = __expected_move<void, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_copy_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy_assign, __expected_move, void, _Err);
 
-  __expected_copy_assign() = default;
   __expected_copy_assign(const __expected_copy_assign&) = default;
   __expected_copy_assign(__expected_copy_assign&&) = default;
 
@@ -989,20 +823,8 @@ struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
 template <class _Err>
 struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, _Err>
 {
-  using __base = __expected_copy_assign<void, _Err>;
-// nvbug3961621
-#if defined(_CCCL_COMPILER_NVRTC)  \
- || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0>
-   _LIBCUDACXX_INLINE_VISIBILITY constexpr
-  __expected_move_assign(_Args&&... __args) noexcept(noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-    : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
-  using __base::__base;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_move_assign, __expected_copy_assign, void, _Err);
 
-  __expected_move_assign() = default;
   __expected_move_assign(const __expected_move_assign&) = default;
   __expected_move_assign(__expected_move_assign&&) = default;
   __expected_move_assign& operator=(const __expected_move_assign&) = default;
