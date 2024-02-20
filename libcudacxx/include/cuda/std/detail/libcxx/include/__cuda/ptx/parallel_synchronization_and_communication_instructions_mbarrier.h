@@ -324,7 +324,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -366,7 +365,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -494,7 +492,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800

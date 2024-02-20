@@ -425,7 +425,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -473,7 +472,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -510,7 +508,6 @@ _LIBCUDACXX_DEVICE static inline void st_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_st_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -673,7 +670,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -720,7 +716,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -764,7 +759,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -805,7 +799,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -857,7 +850,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -904,7 +896,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -945,7 +936,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -990,7 +980,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1038,7 +1027,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1080,7 +1068,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1126,7 +1113,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1175,7 +1161,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1218,7 +1203,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1265,7 +1249,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1315,7 +1298,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1359,7 +1341,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1407,7 +1388,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1458,7 +1438,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1503,7 +1482,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1615,7 +1593,6 @@ _LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1733,7 +1710,6 @@ _LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1859,7 +1835,6 @@ _LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -1993,7 +1968,6 @@ _LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2135,7 +2109,6 @@ _LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2165,7 +2138,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_commit_group()
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2194,7 +2166,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_wait_group(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2220,7 +2191,6 @@ _LIBCUDACXX_DEVICE static inline void cp_async_bulk_wait_group_read(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2376,7 +2346,6 @@ _LIBCUDACXX_DEVICE static inline void fence(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_is_not_supported_before_SM_70__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 600
@@ -2418,7 +2387,6 @@ _LIBCUDACXX_DEVICE static inline void fence(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 780
@@ -2450,7 +2418,6 @@ _LIBCUDACXX_DEVICE static inline void fence_mbarrier_init(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2474,7 +2441,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_alias()
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 750
@@ -2498,7 +2464,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_async()
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2543,7 +2508,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 800
@@ -2598,7 +2562,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 830
@@ -2662,7 +2625,6 @@ _LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 830
@@ -2710,7 +2672,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2749,7 +2710,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2788,7 +2748,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2827,7 +2786,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2866,7 +2824,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2905,7 +2862,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2944,7 +2900,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -2983,7 +2938,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -3023,7 +2977,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -3063,7 +3016,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -3103,7 +3055,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -3142,7 +3093,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
@@ -3179,7 +3129,6 @@ _LIBCUDACXX_DEVICE static inline void red_async(
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_red_async_is_not_supported_before_SM_90__();
-    return;
   ));
 }
 #endif // __cccl_ptx_isa >= 810
