@@ -14,11 +14,6 @@
 #  include <__config>
 #endif // __cuda_std__
 
-#include "../__algorithm/copy.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__utility/convert_to_integral.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +21,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__algorithm/copy.h"
+#include "../__iterator/iterator_traits.h"
+#include "../__type_traits/enable_if.h"
+#include "../__utility/convert_to_integral.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

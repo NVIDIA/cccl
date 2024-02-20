@@ -15,9 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/concepts.h"
-#include "../__iterator/iter_swap.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +22,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__iterator/concepts.h"
+#include "../__iterator/iter_swap.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

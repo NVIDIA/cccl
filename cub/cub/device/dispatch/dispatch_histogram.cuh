@@ -311,7 +311,7 @@ struct dispatch_histogram
   template <typename ActivePolicyT,
             typename DeviceHistogramInitKernelT,
             typename DeviceHistogramSweepKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceHistogramInitKernelT histogram_init_kernel,
          DeviceHistogramSweepKernelT histogram_sweep_kernel)
   {

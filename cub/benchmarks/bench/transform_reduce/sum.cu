@@ -82,7 +82,7 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   using accum_t        = T;
   using input_it_t     = thrust::transform_iterator<square_t<T>, typename thrust::device_vector<T>::iterator>;
   using output_it_t    = T*;
-  using offset_t       = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
   using reduction_op_t = cub::Sum;
@@ -142,7 +142,7 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   using accum_t        = T;
   using input_it_t     = const T*;
   using output_it_t    = T*;
-  using offset_t       = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
   using reduction_op_t = cub::Sum;

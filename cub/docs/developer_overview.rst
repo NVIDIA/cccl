@@ -725,9 +725,9 @@ This solution has poor discoverability,
 since issues present themselves in forms of segmentation faults, hangs, wrong results, etc. 
 To eliminate the symbol visibility issues on our end, we follow the following rules: 
 
-    #. Hiding kernel launchers: 
-       it's important that kernel launchers like Thrust ``triple_chevron`` always reside in the same 
-       library as the API using these kernel launchers.  
+    #. Hiding symbols accpeting kernel pointers: 
+       it's important that API accepting kernel pointers (e.g. ``triple_chevron``) always reside in the same 
+       library as the code taking this pointers.  
 
     #. Hiding all kernels: 
        it's important that kernels always reside in the same library as the API using these kernels.  

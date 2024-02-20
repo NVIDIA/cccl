@@ -14,10 +14,6 @@
 #  include <__config>
 #endif // __cuda_std__
 
-#include "../__algorithm/find_if.h"
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__utility/move.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +21,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__algorithm/find_if.h"
+#include "../__type_traits/add_lvalue_reference.h"
+#include "../__utility/move.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

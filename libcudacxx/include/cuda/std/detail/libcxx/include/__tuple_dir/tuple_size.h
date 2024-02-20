@@ -14,14 +14,6 @@
 #  include <__config>
 #endif // __cuda_std__
 
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/tuple_types.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_const.h"
-#include "../__type_traits/is_volatile.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +21,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__fwd/tuple.h"
+#include "../__tuple_dir/tuple_types.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_const.h"
+#include "../__type_traits/is_volatile.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
