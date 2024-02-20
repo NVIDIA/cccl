@@ -200,7 +200,7 @@ struct DeviceReduce
                                                  cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchReduce<InputIteratorT,
                           OutputIteratorT,
@@ -330,7 +330,7 @@ struct DeviceReduce
                                               cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The output value type
     using OutputT =
@@ -460,7 +460,7 @@ struct DeviceReduce
                                               cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
     using InputT = cub::detail::value_t<InputIteratorT>;
@@ -737,7 +737,7 @@ struct DeviceReduce
                                               cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
     using InputT = cub::detail::value_t<InputIteratorT>;
@@ -1058,7 +1058,7 @@ struct DeviceReduce
     T init,
     cudaStream_t stream = 0)
   {
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT, T>::Dispatch(
       d_temp_storage,
@@ -1226,7 +1226,7 @@ struct DeviceReduce
               cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // FlagT iterator type (not used)
 
