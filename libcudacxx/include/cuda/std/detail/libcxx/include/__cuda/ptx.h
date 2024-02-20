@@ -394,9 +394,9 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
-_LIBCUDACXX_DEVICE static inline void st_async(
+_CCCL_DEVICE static inline void st_async(
   _Type* __addr,
   const _Type& __value,
   _CUDA_VSTD::uint64_t* __remote_bar)
@@ -439,9 +439,9 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _Type>
-_LIBCUDACXX_DEVICE static inline void st_async(
+_CCCL_DEVICE static inline void st_async(
   _Type* __addr,
   const _Type (&__value)[2],
   _CUDA_VSTD::uint64_t* __remote_bar)
@@ -485,9 +485,9 @@ __device__ static inline void st_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_st_async_is_not_supported_before_SM_90__();
 template <typename _B32>
-_LIBCUDACXX_DEVICE static inline void st_async(
+_CCCL_DEVICE static inline void st_async(
   _B32* __addr,
   const _B32 (&__value)[4],
   _CUDA_VSTD::uint64_t* __remote_bar)
@@ -552,9 +552,9 @@ __device__ static inline Tp* mapa(
   uint32_t target_cta);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_mapa_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_mapa_is_not_supported_before_SM_90__();
 template <typename _Tp>
-_LIBCUDACXX_DEVICE static inline _Tp* mapa(
+_CCCL_DEVICE static inline _Tp* mapa(
   space_cluster_t,
   const _Tp* __addr,
   _CUDA_VSTD::uint32_t __target_cta)
@@ -589,9 +589,9 @@ __device__ static inline uint32_t getctarank(
   const void* addr);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_getctarank_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(
   space_cluster_t,
   const void* __addr)
 {
@@ -645,9 +645,9 @@ __device__ static inline void cp_async_bulk(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE static inline void cp_async_bulk(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -689,9 +689,9 @@ __device__ static inline void cp_async_bulk(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE static inline void cp_async_bulk(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -734,9 +734,9 @@ __device__ static inline void cp_async_bulk(
   uint64_t* rdsmem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE static inline void cp_async_bulk(
   space_cluster_t,
   space_shared_t,
   void* __dstMem,
@@ -776,9 +776,9 @@ __device__ static inline void cp_async_bulk(
   const uint32_t& size);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk(
+_CCCL_DEVICE static inline void cp_async_bulk(
   space_global_t,
   space_shared_t,
   void* __dstMem,
@@ -825,9 +825,9 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -869,9 +869,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -913,9 +913,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   const void* __tensorMap,
@@ -954,9 +954,9 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -999,9 +999,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1044,9 +1044,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   const void* __tensorMap,
@@ -1086,9 +1086,9 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1132,9 +1132,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1178,9 +1178,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   const void* __tensorMap,
@@ -1221,9 +1221,9 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1268,9 +1268,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1315,9 +1315,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   const void* __tensorMap,
@@ -1359,9 +1359,9 @@ __device__ static inline void cp_async_bulk_tensor(
   uint64_t* smem_bar);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1407,9 +1407,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const uint16_t& ctaMask);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_cluster_t,
   space_global_t,
   void* __dstMem,
@@ -1455,9 +1455,9 @@ __device__ static inline void cp_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   const void* __tensorMap,
@@ -1503,9 +1503,9 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <dot_op _Op>
-_LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   op_t<_Op> __op,
@@ -1612,9 +1612,9 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <dot_op _Op>
-_LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   op_t<_Op> __op,
@@ -1729,9 +1729,9 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <dot_op _Op>
-_LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   op_t<_Op> __op,
@@ -1854,9 +1854,9 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <dot_op _Op>
-_LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   op_t<_Op> __op,
@@ -1987,9 +1987,9 @@ __device__ static inline void cp_reduce_async_bulk_tensor(
   const void* srcMem);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
 template <dot_op _Op>
-_LIBCUDACXX_DEVICE static inline void cp_reduce_async_bulk_tensor(
+_CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
   space_global_t,
   space_shared_t,
   op_t<_Op> __op,
@@ -2124,9 +2124,9 @@ template <typename=void>
 __device__ static inline void cp_async_bulk_commit_group();
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_commit_group()
+_CCCL_DEVICE static inline void cp_async_bulk_commit_group()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm volatile (
@@ -2151,9 +2151,9 @@ __device__ static inline void cp_async_bulk_wait_group(
   cuda::ptx::n32_t<N32> N);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();
 template <int _N32>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_wait_group(
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group(
   n32_t<_N32> __N)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
@@ -2176,9 +2176,9 @@ __device__ static inline void cp_async_bulk_wait_group_read(
   cuda::ptx::n32_t<N32> N);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();
 template <int _N32>
-_LIBCUDACXX_DEVICE static inline void cp_async_bulk_wait_group_read(
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(
   n32_t<_N32> __N)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
@@ -2291,9 +2291,9 @@ __device__ static inline void fence(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 600
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_70__();
 template <dot_sem _Sem, dot_scope _Scope>
-_LIBCUDACXX_DEVICE static inline void fence(
+_CCCL_DEVICE static inline void fence(
   sem_t<_Sem> __sem,
   scope_t<_Scope> __scope)
 {
@@ -2360,9 +2360,9 @@ __device__ static inline void fence(
   cuda::ptx::scope_cluster_t);
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_is_not_supported_before_SM_90__();
 template <dot_sem _Sem>
-_LIBCUDACXX_DEVICE static inline void fence(
+_CCCL_DEVICE static inline void fence(
   sem_t<_Sem> __sem,
   scope_cluster_t)
 {
@@ -2400,9 +2400,9 @@ __device__ static inline void fence_mbarrier_init(
   cuda::ptx::scope_cluster_t);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void fence_mbarrier_init(
+_CCCL_DEVICE static inline void fence_mbarrier_init(
   sem_release_t,
   scope_cluster_t)
 {
@@ -2427,9 +2427,9 @@ template <typename=void>
 __device__ static inline void fence_proxy_alias();
 */
 #if __cccl_ptx_isa >= 750
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void fence_proxy_alias()
+_CCCL_DEVICE static inline void fence_proxy_alias()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
     asm volatile (
@@ -2450,9 +2450,9 @@ template <typename=void>
 __device__ static inline void fence_proxy_async();
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void fence_proxy_async()
+_CCCL_DEVICE static inline void fence_proxy_async()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     asm volatile (
@@ -2476,9 +2476,9 @@ __device__ static inline void fence_proxy_async(
   cuda::ptx::space_t<Space> space);
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();
 template <dot_space _Space>
-_LIBCUDACXX_DEVICE static inline void fence_proxy_async(
+_CCCL_DEVICE static inline void fence_proxy_async(
   space_t<_Space> __space)
 {
   static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
@@ -2521,9 +2521,9 @@ __device__ static inline void fence_proxy_tensormap_generic(
   cuda::ptx::scope_t<Scope> scope);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <dot_scope _Scope>
-_LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
+_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   sem_release_t,
   scope_t<_Scope> __scope)
 {
@@ -2578,9 +2578,9 @@ __device__ static inline void fence_proxy_tensormap_generic(
   cuda::ptx::n32_t<N32> size);
 */
 #if __cccl_ptx_isa >= 830
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_tensormap_generic_is_not_supported_before_SM_90__();
 template <int _N32, dot_scope _Scope>
-_LIBCUDACXX_DEVICE static inline void fence_proxy_tensormap_generic(
+_CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   sem_acquire_t,
   scope_t<_Scope> __scope,
   const void* __addr,
@@ -2650,9 +2650,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_inc_t,
   _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::uint32_t& __value,
@@ -2688,9 +2688,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_dec_t,
   _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::uint32_t& __value,
@@ -2726,9 +2726,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_min_t,
   _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::uint32_t& __value,
@@ -2764,9 +2764,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_max_t,
   _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::uint32_t& __value,
@@ -2802,9 +2802,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_add_t,
   _CUDA_VSTD::uint32_t* __dest,
   const _CUDA_VSTD::uint32_t& __value,
@@ -2840,9 +2840,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_min_t,
   _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
@@ -2878,9 +2878,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_max_t,
   _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
@@ -2916,9 +2916,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_add_t,
   _CUDA_VSTD::int32_t* __dest,
   const _CUDA_VSTD::int32_t& __value,
@@ -2954,9 +2954,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_and_op_t,
   _B32* __dest,
   const _B32& __value,
@@ -2993,9 +2993,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_or_op_t,
   _B32* __dest,
   const _B32& __value,
@@ -3032,9 +3032,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename _B32>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_xor_op_t,
   _B32* __dest,
   const _B32& __value,
@@ -3071,9 +3071,9 @@ __device__ static inline void red_async(
   uint64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_add_t,
   _CUDA_VSTD::uint64_t* __dest,
   const _CUDA_VSTD::uint64_t& __value,
@@ -3108,9 +3108,9 @@ __device__ static inline void red_async(
   int64_t* remote_bar);
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_red_async_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline void red_async(
+_CCCL_DEVICE static inline void red_async(
   op_add_t,
   _CUDA_VSTD::int64_t* __dest,
   const _CUDA_VSTD::int64_t& __value,
@@ -3302,7 +3302,7 @@ __device__ static inline uint32_t get_sreg_tid_x();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_x()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3322,7 +3322,7 @@ __device__ static inline uint32_t get_sreg_tid_y();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_y()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3342,7 +3342,7 @@ __device__ static inline uint32_t get_sreg_tid_z();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_tid_z()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3362,7 +3362,7 @@ __device__ static inline uint32_t get_sreg_ntid_x();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_x()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
@@ -3382,7 +3382,7 @@ __device__ static inline uint32_t get_sreg_ntid_y();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_y()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
@@ -3402,7 +3402,7 @@ __device__ static inline uint32_t get_sreg_ntid_z();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ntid_z()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
@@ -3422,7 +3422,7 @@ __device__ static inline uint32_t get_sreg_laneid();
 */
 #if __cccl_ptx_isa >= 130
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_laneid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_laneid()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3442,7 +3442,7 @@ __device__ static inline uint32_t get_sreg_warpid();
 */
 #if __cccl_ptx_isa >= 130
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_warpid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_warpid()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
@@ -3461,9 +3461,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_nwarpid();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3489,7 +3489,7 @@ __device__ static inline uint32_t get_sreg_ctaid_x();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_x()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3509,7 +3509,7 @@ __device__ static inline uint32_t get_sreg_ctaid_y();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_y()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3529,7 +3529,7 @@ __device__ static inline uint32_t get_sreg_ctaid_z();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_ctaid_z()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3549,7 +3549,7 @@ __device__ static inline uint32_t get_sreg_nctaid_x();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_x()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3569,7 +3569,7 @@ __device__ static inline uint32_t get_sreg_nctaid_y();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_y()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3589,7 +3589,7 @@ __device__ static inline uint32_t get_sreg_nctaid_z();
 */
 #if __cccl_ptx_isa >= 200
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nctaid_z()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3609,7 +3609,7 @@ __device__ static inline uint32_t get_sreg_smid();
 */
 #if __cccl_ptx_isa >= 130
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_smid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_smid()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm (
@@ -3628,9 +3628,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_nsmid();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3656,7 +3656,7 @@ __device__ static inline uint64_t get_sreg_gridid();
 */
 #if __cccl_ptx_isa >= 300
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_gridid()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_gridid()
 {
   _CUDA_VSTD::uint64_t __sreg_value;
   asm (
@@ -3675,9 +3675,9 @@ template <typename=void>
 __device__ static inline bool get_sreg_is_explicit_cluster();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_is_explicit_cluster_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_is_explicit_cluster_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline bool get_sreg_is_explicit_cluster()
+_CCCL_DEVICE static inline bool get_sreg_is_explicit_cluster()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3705,9 +3705,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_x();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3732,9 +3732,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_y();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3759,9 +3759,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_clusterid_z();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3786,9 +3786,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_x();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3813,9 +3813,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_y();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3840,9 +3840,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_nclusterid_z();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3867,9 +3867,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_x();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3894,9 +3894,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_y();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3921,9 +3921,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctaid_z();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3948,9 +3948,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_x();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -3975,9 +3975,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_y();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4002,9 +4002,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctaid_z();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4029,9 +4029,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_ctarank();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4056,9 +4056,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_cluster_nctarank();
 */
 #if __cccl_ptx_isa >= 780
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4083,9 +4083,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_eq();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4110,9 +4110,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_le();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4137,9 +4137,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_lt();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4164,9 +4164,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_ge();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4191,9 +4191,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_lanemask_gt();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4219,7 +4219,7 @@ __device__ static inline uint32_t get_sreg_clock();
 */
 #if __cccl_ptx_isa >= 100
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock()
 {
   _CUDA_VSTD::uint32_t __sreg_value;
   asm volatile (
@@ -4238,9 +4238,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_clock_hi();
 */
 #if __cccl_ptx_isa >= 500
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4265,9 +4265,9 @@ template <typename=void>
 __device__ static inline uint64_t get_sreg_clock64();
 */
 #if __cccl_ptx_isa >= 200
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint64_t __sreg_value;
@@ -4292,9 +4292,9 @@ template <typename=void>
 __device__ static inline uint64_t get_sreg_globaltimer();
 */
 #if __cccl_ptx_isa >= 310
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint64_t __sreg_value;
@@ -4319,9 +4319,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_lo();
 */
 #if __cccl_ptx_isa >= 310
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4346,9 +4346,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_globaltimer_hi();
 */
 #if __cccl_ptx_isa >= 310
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4373,9 +4373,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_total_smem_size();
 */
 #if __cccl_ptx_isa >= 410
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4400,9 +4400,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_aggr_smem_size();
 */
 #if __cccl_ptx_isa >= 810
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4427,9 +4427,9 @@ template <typename=void>
 __device__ static inline uint32_t get_sreg_dynamic_smem_size();
 */
 #if __cccl_ptx_isa >= 410
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_35,(
     _CUDA_VSTD::uint32_t __sreg_value;
@@ -4454,9 +4454,9 @@ template <typename=void>
 __device__ static inline uint64_t get_sreg_current_graph_exec();
 */
 #if __cccl_ptx_isa >= 800
-extern "C" _LIBCUDACXX_DEVICE void __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
+extern "C" _CCCL_DEVICE void __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
 template <typename=void>
-_LIBCUDACXX_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_current_graph_exec()
+_CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_current_graph_exec()
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_50,(
     _CUDA_VSTD::uint64_t __sreg_value;
