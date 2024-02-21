@@ -25,6 +25,7 @@ set(files
   __algorithm/generate.h
   __algorithm/half_positive.h
   __algorithm/is_permutation.h
+  __algorithm/iter_swap.h
   __algorithm/lexicographical_compare.h
   __algorithm/mismatch.h
   __algorithm/move_backward.h

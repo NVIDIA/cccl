@@ -671,6 +671,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/generate.h"
 #include "__algorithm/half_positive.h"
 #include "__algorithm/is_permutation.h"
+#include "__algorithm/iter_swap.h"
 #include "__algorithm/lexicographical_compare.h"
 #include "__algorithm/mismatch.h"
 #include "__algorithm/move_backward.h"
