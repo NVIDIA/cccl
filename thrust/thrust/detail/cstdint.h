@@ -26,9 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_GCC) || \
-    defined(_CCCL_COMPILER_CLANG) || \
-    defined(_CCCL_COMPILER_ICC)
+#if !defined(_CCCL_COMPILER_MSVC)
 #include <stdint.h>
 #endif
 
