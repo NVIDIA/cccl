@@ -49,6 +49,8 @@ set(files
   __algorithm/move_backward.h
   __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/partial_sort_copy.h
+  __algorithm/partial_sort.h
   __algorithm/partition_copy.h
   __algorithm/partition_point.h
   __algorithm/partition.h
