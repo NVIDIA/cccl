@@ -43,6 +43,7 @@ __device__ constexpr cuda::std::array<uint32_t, 3> TEST_SMEM_COORDS[] = {
 };
 
 constexpr size_t gmem_len = tensor_len(GMEM_DIMS);
+constexpr size_t smem_len = tensor_len(SMEM_DIMS);
 
 __device__ int gmem_tensor[gmem_len];
 
@@ -56,10 +57,9 @@ int main(int, char**)
         ),
         NV_IS_DEVICE, (
             for (auto smem_coord : TEST_SMEM_COORDS) {
-                test(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor, gmem_len);
+                test<smem_len>(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor, gmem_len);
             }
         )
     );
-    (void)SMEM_DIMS;
     return 0;
 }
