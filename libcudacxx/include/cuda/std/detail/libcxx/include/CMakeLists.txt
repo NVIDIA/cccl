@@ -27,6 +27,8 @@ set(files
   __algorithm/generate_n.h
   __algorithm/generate.h
   __algorithm/half_positive.h
+  __algorithm/is_heap_until.h
+  __algorithm/is_heap.h
   __algorithm/is_partitioned.h
   __algorithm/is_permutation.h
   __algorithm/is_sorted_until.h
@@ -35,6 +37,7 @@ set(files
   __algorithm/iterator_operations.h
   __algorithm/lexicographical_compare.h
   __algorithm/lower_bound.h
+  __algorithm/make_heap.h
   __algorithm/max_element.h
   __algorithm/max.h
   __algorithm/merge.h
@@ -49,6 +52,8 @@ set(files
   __algorithm/partition_copy.h
   __algorithm/partition_point.h
   __algorithm/partition.h
+  __algorithm/pop_heap.h
+  __algorithm/push_heap.h
   __algorithm/ranges_iterator_concept.h
   __algorithm/remove_copy_if.h
   __algorithm/remove_copy.h
@@ -64,6 +69,8 @@ set(files
   __algorithm/rotate.h
   __algorithm/search_n.h
   __algorithm/search.h
+  __algorithm/sift_down.h
+  __algorithm/sort_heap.h
   __algorithm/swap_ranges.h
   __algorithm/transform.h
   __algorithm/unique_copy.h

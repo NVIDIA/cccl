@@ -673,6 +673,8 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/generate_n.h"
 #include "__algorithm/generate.h"
 #include "__algorithm/half_positive.h"
+#include "__algorithm/is_heap_until.h"
+#include "__algorithm/is_heap.h"
 #include "__algorithm/is_partitioned.h"
 #include "__algorithm/is_permutation.h"
 #include "__algorithm/is_sorted_until.h"
@@ -681,6 +683,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/iterator_operations.h"
 #include "__algorithm/lexicographical_compare.h"
 #include "__algorithm/lower_bound.h"
+#include "__algorithm/make_heap.h"
 #include "__algorithm/max_element.h"
 #include "__algorithm/max.h"
 #include "__algorithm/merge.h"
@@ -695,6 +698,8 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/partition_copy.h"
 #include "__algorithm/partition_point.h"
 #include "__algorithm/partition.h"
+#include "__algorithm/pop_heap.h"
+#include "__algorithm/push_heap.h"
 #include "__algorithm/ranges_iterator_concept.h"
 #include "__algorithm/remove_copy_if.h"
 #include "__algorithm/remove_copy.h"
@@ -710,6 +715,8 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/rotate.h"
 #include "__algorithm/search_n.h"
 #include "__algorithm/search.h"
+#include "__algorithm/sift_down.h"
+#include "__algorithm/sort_heap.h"
 #include "__algorithm/swap_ranges.h"
 #include "__algorithm/transform.h"
 #include "__algorithm/unique_copy.h"
@@ -2365,264 +2372,6 @@ void
 stable_sort(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
     _CUDA_VSTD::stable_sort(__first, __last, __less{});
-}
-
-// is_heap_until
-
-template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _RandomAccessIterator
-is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    typedef typename _CUDA_VSTD::iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-    difference_type __len = __last - __first;
-    difference_type __p = 0;
-    difference_type __c = 1;
-    _RandomAccessIterator __pp = __first;
-    while (__c < __len)
-    {
-        _RandomAccessIterator __cp = __first + __c;
-        if (__comp(*__pp, *__cp))
-            return __cp;
-        ++__c;
-        ++__cp;
-        if (__c == __len)
-            return __last;
-        if (__comp(*__pp, *__cp))
-            return __cp;
-        ++__p;
-        ++__pp;
-        __c = 2 * __p + 1;
-    }
-    return __last;
-}
-
-template<class _RandomAccessIterator>
-_LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_RandomAccessIterator
-is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    return _CUDA_VSTD::is_heap_until(__first, __last, __less{});
-}
-
-// is_heap
-
-template <class _RandomAccessIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
-is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    return _CUDA_VSTD::is_heap_until(__first, __last, __comp) == __last;
-}
-
-template<class _RandomAccessIterator>
-_LIBCUDACXX_NODISCARD_EXT inline
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-bool
-is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    return _CUDA_VSTD::is_heap(__first, __last, __less{});
-}
-
-// push_heap
-
-template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
-void
-__sift_up(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
-          typename iterator_traits<_RandomAccessIterator>::difference_type __len)
-{
-    typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
-    if (__len > 1)
-    {
-        __len = (__len - 2) / 2;
-        _RandomAccessIterator __ptr = __first + __len;
-        if (__comp(*__ptr, *--__last))
-        {
-            value_type __t(_CUDA_VSTD::move(*__last));
-            do
-            {
-                *__last = _CUDA_VSTD::move(*__ptr);
-                __last = __ptr;
-                if (__len == 0)
-                    break;
-                __len = (__len - 1) / 2;
-                __ptr = __first + __len;
-            } while (__comp(*__ptr, __t));
-            *__last = _CUDA_VSTD::move(__t);
-        }
-    }
-}
-
-template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    __sift_up<_Comp_ref>(__first, __last, __comp, __last - __first);
-}
-
-template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    _CUDA_VSTD::push_heap(__first, __last, __less{});
-}
-
-// pop_heap
-
-template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
-void
-__sift_down(_RandomAccessIterator __first, _RandomAccessIterator /*__last*/,
-            _Compare __comp,
-            typename iterator_traits<_RandomAccessIterator>::difference_type __len,
-            _RandomAccessIterator __start)
-{
-    typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-    typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
-    // left-child of __start is at 2 * __start + 1
-    // right-child of __start is at 2 * __start + 2
-    difference_type __child = __start - __first;
-
-    if (__len < 2 || (__len - 2) / 2 < __child)
-        return;
-
-    __child = 2 * __child + 1;
-    _RandomAccessIterator __child_i = __first + __child;
-
-    if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + 1))) {
-        // right-child exists and is greater than left-child
-        ++__child_i;
-        ++__child;
-    }
-
-    // check if we are in heap-order
-    if (__comp(*__child_i, *__start))
-        // we are, __start is larger than it's largest child
-        return;
-
-    value_type __top(_CUDA_VSTD::move(*__start));
-    do
-    {
-        // we are not in heap-order, swap the parent with it's largest child
-        *__start = _CUDA_VSTD::move(*__child_i);
-        __start = __child_i;
-
-        if ((__len - 2) / 2 < __child)
-            break;
-
-        // recompute the child based off of the updated parent
-        __child = 2 * __child + 1;
-        __child_i = __first + __child;
-
-        if ((__child + 1) < __len && __comp(*__child_i, *(__child_i + 1))) {
-            // right-child exists and is greater than left-child
-            ++__child_i;
-            ++__child;
-        }
-
-        // check if we are in heap-order
-    } while (!__comp(*__child_i, __top));
-    *__start = _CUDA_VSTD::move(__top);
-}
-
-template <class _Compare, class _RandomAccessIterator>
-inline _LIBCUDACXX_HOST_DEVICE
-void
-__pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp,
-           typename iterator_traits<_RandomAccessIterator>::difference_type __len)
-{
-    if (__len > 1)
-    {
-        swap(*__first, *--__last);
-        __sift_down<_Compare>(__first, __last, __comp, __len - 1, __first);
-    }
-}
-
-template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    __pop_heap<_Comp_ref>(__first, __last, __comp, __last - __first);
-}
-
-template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    _CUDA_VSTD::pop_heap(__first, __last, __less{});
-}
-
-// make_heap
-
-template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_INLINE_VISIBILITY
-void
-__make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-    difference_type __n = __last - __first;
-    if (__n > 1)
-    {
-        // start from the first parent, there is no need to consider children
-        for (difference_type __start = (__n - 2) / 2; __start >= 0; --__start)
-        {
-            __sift_down<_Compare>(__first, __last, __comp, __n, __first + __start);
-        }
-    }
-}
-
-template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    __make_heap<_Comp_ref>(__first, __last, __comp);
-}
-
-template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-make_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    _CUDA_VSTD::make_heap(__first, __last, __less{});
-}
-
-// sort_heap
-
-template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_HOST_DEVICE
-void
-__sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-    for (difference_type __n = __last - __first; __n > 1; --__last, (void) --__n)
-        __pop_heap<_Compare>(__first, __last, __comp, __n);
-}
-
-template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    __sort_heap<_Comp_ref>(__first, __last, __comp);
-}
-
-template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
-    _CUDA_VSTD::sort_heap(__first, __last, __less{});
 }
 
 // partial_sort
