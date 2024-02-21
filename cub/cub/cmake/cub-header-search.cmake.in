@@ -2,13 +2,7 @@
 unset(_CUB_VERSION_INCLUDE_DIR CACHE) # Clear old result to force search
 
 # Find CMAKE_INSTALL_INCLUDEDIR=@CMAKE_INSTALL_INCLUDEDIR@ directory"
-set(from_install_prefix "@install_location@")
-
-# Transform to a list of directories, replace each directoy with "../"
-# and convert back to a string
-string(REGEX REPLACE "/" ";" from_install_prefix "${from_install_prefix}")
-list(TRANSFORM from_install_prefix REPLACE ".+" "../")
-list(JOIN from_install_prefix "" from_install_prefix)
+set(from_install_prefix "@from_install_prefix@")
 
 find_path(_CUB_VERSION_INCLUDE_DIR cub/version.cuh
   NO_CMAKE_FIND_ROOT_PATH # Don't allow CMake to re-root the search
