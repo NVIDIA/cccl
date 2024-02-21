@@ -25,13 +25,6 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
-// Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
-// ::std::tuple_size<cuda::std::tuple> to enable structured bindings.
-// See https://github.com/NVIDIA/libcudacxx/issues/316
-#    include <utility>
-#  endif
-
 #  include <cuda/std/detail/libcxx/include/__fwd/get.h>
 #  include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
 #  include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
