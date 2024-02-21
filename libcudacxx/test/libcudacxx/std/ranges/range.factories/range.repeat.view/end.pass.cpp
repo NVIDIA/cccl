@@ -37,7 +37,6 @@ __host__ __device__ constexpr bool test()
     unused(iter);
   }
 
-#if 0 // Unimplemented take_view
   // unbound
   {
     cuda::std::ranges::repeat_view<int> rv(0);
@@ -45,12 +44,12 @@ __host__ __device__ constexpr bool test()
     decltype(auto) iter = rv.end();
     static_assert(cuda::std::same_as<cuda::std::unreachable_sentinel_t, decltype(iter)>);
     static_assert(noexcept(rv.end()));
-    for (const auto& i : rv | cuda::std::views::take(10)) {
+    for (const auto& i : rv | cuda::std::views::take(10))
+    {
       assert(i == 0);
     }
     unused(iter);
   }
-#endif // Unimplemented take_view
   return true;
 }
 
