@@ -808,7 +808,7 @@ struct __memcpy_completion_impl {
                 // bulk group to be used with shared memory barriers.
                 _LIBCUDACXX_UNREACHABLE();
             case __completion_mechanism::__mbarrier_complete_tx:
-#if __cccl_isa_ptx >= 800
+#if __cccl_ptx_isa >= 800
                 // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
                 NV_IF_TARGET(NV_PROVIDES_SM_90, (
                     // Only perform the expect_tx operation with the leader thread
@@ -818,7 +818,7 @@ struct __memcpy_completion_impl {
                 ),(
                     __cuda_ptx_mbarrier_complete_tx_is_not_supported_before_SM_90__();
                 ));
-#endif // __cccl_isa_ptx >= 800
+#endif // __cccl_ptx_isa >= 800
                 return async_contract_fulfillment::async;
             case __completion_mechanism::__sync:
                 // sync: In this case, we do not need to do anything. The user will have
