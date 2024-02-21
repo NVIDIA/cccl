@@ -52,6 +52,8 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
 
 CUB_NAMESPACE_BEGIN
@@ -180,40 +182,41 @@ struct AgentSelectIf
     // Constants
     enum
     {
-        USE_SELECT_OP,
-        USE_SELECT_FLAGS,
-        USE_DISCONTINUITY,
-
-        BLOCK_THREADS           = AgentSelectIfPolicyT::BLOCK_THREADS,
-        ITEMS_PER_THREAD        = AgentSelectIfPolicyT::ITEMS_PER_THREAD,
-        TILE_ITEMS              = BLOCK_THREADS * ITEMS_PER_THREAD,
-        TWO_PHASE_SCATTER       = (ITEMS_PER_THREAD > 1),
-
-      SELECT_METHOD =
-        (!std::is_same<SelectOpT, NullType>::value) ? USE_SELECT_OP
-        : (!std::is_same<FlagT, NullType>::value)   ? USE_SELECT_FLAGS
-                                                    : USE_DISCONTINUITY
+      USE_SELECT_OP,
+      USE_SELECT_FLAGS,
+      USE_DISCONTINUITY,
+      USE_STENCIL_WITH_OP
     };
+
+    static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
+    static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
+    static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+    static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
+
+    static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
+    static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+    static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
+    static constexpr auto SELECT_METHOD =
+      use_stencil_with_op ? USE_STENCIL_WITH_OP
+      : has_select_op     ? USE_SELECT_OP
+      : has_flags_it      ? USE_SELECT_FLAGS
+                          : USE_DISCONTINUITY;
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
     // Wrap the native input pointer with CacheModifiedValuesInputIterator
     // or directly use the supplied input iterator type
-    using WrappedInputIteratorT = cub::detail::conditional_t<
-      std::is_pointer<InputIteratorT>::value,
-      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER,
-                                 InputT,
-                                 OffsetT>,
-      InputIteratorT>;
+    using WrappedInputIteratorT =
+      cub::detail::conditional_t< ::cuda::std::is_pointer<InputIteratorT>::value,
+                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                  InputIteratorT>;
 
     // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
     // Wrap the native input pointer with CacheModifiedValuesInputIterator
     // or directly use the supplied input iterator type
-    using WrappedFlagsInputIteratorT = cub::detail::conditional_t<
-      std::is_pointer<FlagsInputIteratorT>::value,
-      CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER,
-                                 FlagT,
-                                 OffsetT>,
-      FlagsInputIteratorT>;
+    using WrappedFlagsInputIteratorT =
+      cub::detail::conditional_t< ::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
+                                  FlagsInputIteratorT>;
 
     // Parameterized BlockLoad type for input data
     using BlockLoadT = BlockLoad<InputT,
@@ -347,11 +350,53 @@ struct AgentSelectIf
             // Out-of-bounds items are selection_flags
             selection_flags[ITEM] = 1;
 
-            if (!IS_LAST_TILE || (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM < num_tile_items))
-                selection_flags[ITEM] = select_op(items[ITEM]);
+            if (!IS_LAST_TILE || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+            {
+              selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
+            }
         }
     }
 
+    /**
+     * Initialize selections (specialized for selection_op applied to d_flags_in)
+     */
+    template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+      OffsetT tile_offset,
+      OffsetT num_tile_items,
+      InputT (& /*items*/)[ITEMS_PER_THREAD],
+      OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+      Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
+    {
+        CTA_SYNC();
+
+        FlagT flags[ITEMS_PER_THREAD];
+        if (IS_LAST_TILE)
+        {
+            // Initialize the out-of-bounds flags
+#pragma unroll
+            for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+            {
+              selection_flags[ITEM] = true;
+            }
+            // Guarded loads
+            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items);
+        }
+        else
+        {
+            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
+        }
+
+#pragma unroll
+        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        {
+            // Set selection_flags for out-of-bounds items
+            if ((!IS_LAST_TILE) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+            {
+              selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
+            }
+        }
+    }
 
     /**
      * Initialize selections (specialized for valid flags)
@@ -825,7 +870,7 @@ struct AgentSelectIf
     {
         // Blocks are launched in increasing order, so just assign one tile per block
         int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
-        OffsetT tile_offset = tile_idx * TILE_ITEMS; // Global offset for the current tile
+        OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
 
         if (tile_idx < num_tiles - 1)
         {
