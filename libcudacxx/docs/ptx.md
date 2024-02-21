@@ -916,6 +916,8 @@ Similar functionality is provided through the builtins
 __cluster_barrier_wait()`, as well as the `cooperative_groups::cluster_group`
 [API](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group).
 
+The `.aligned` variants of the instructions are not exposed.
+
 **barrier_cluster**:
 ```cuda
 // barrier.cluster.arrive; // PTX ISA 78, SM_90
