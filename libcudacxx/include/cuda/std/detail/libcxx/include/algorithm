@@ -696,6 +696,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/mismatch.h"
 #include "__algorithm/move_backward.h"
 #include "__algorithm/move.h"
+#include "__algorithm/next_permutation.h"
 #include "__algorithm/none_of.h"
 #include "__algorithm/partial_sort_copy.h"
 #include "__algorithm/partial_sort.h"
@@ -703,6 +704,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/partition_point.h"
 #include "__algorithm/partition.h"
 #include "__algorithm/pop_heap.h"
+#include "__algorithm/prev_permutation.h"
 #include "__algorithm/push_heap.h"
 #include "__algorithm/ranges_iterator_concept.h"
 #include "__algorithm/remove_copy_if.h"
@@ -2587,102 +2589,6 @@ void
 nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _RandomAccessIterator __last)
 {
     _CUDA_VSTD::nth_element(__first, __nth, __last, __less{});
-}
-
-// next_permutation
-
-template <class _Compare, class _BidirectionalIterator>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
-{
-    _BidirectionalIterator __i = __last;
-    if (__first == __last || __first == --__i)
-        return false;
-    while (true)
-    {
-        _BidirectionalIterator __ip1 = __i;
-        if (__comp(*--__i, *__ip1))
-        {
-            _BidirectionalIterator __j = __last;
-            while (!__comp(*__i, *--__j))
-                ;
-            swap(*__i, *__j);
-            _CUDA_VSTD::reverse(__ip1, __last);
-            return true;
-        }
-        if (__i == __first)
-        {
-            _CUDA_VSTD::reverse(__first, __last);
-            return false;
-        }
-    }
-}
-
-template <class _BidirectionalIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    return __next_permutation<_Comp_ref>(__first, __last, __comp);
-}
-
-template <class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
-{
-    return _CUDA_VSTD::next_permutation(__first, __last,
-                                  __less{});
-}
-
-// prev_permutation
-
-template <class _Compare, class _BidirectionalIterator>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
-{
-    _BidirectionalIterator __i = __last;
-    if (__first == __last || __first == --__i)
-        return false;
-    while (true)
-    {
-        _BidirectionalIterator __ip1 = __i;
-        if (__comp(*__ip1, *--__i))
-        {
-            _BidirectionalIterator __j = __last;
-            while (!__comp(*--__j, *__i))
-                ;
-            swap(*__i, *__j);
-            _CUDA_VSTD::reverse(__ip1, __last);
-            return true;
-        }
-        if (__i == __first)
-        {
-            _CUDA_VSTD::reverse(__first, __last);
-            return false;
-        }
-    }
-}
-
-template <class _BidirectionalIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    return __prev_permutation<_Comp_ref>(__first, __last, __comp);
-}
-
-template <class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last)
-{
-    return _CUDA_VSTD::prev_permutation(__first, __last,
-                                  __less{});
 }
 
 #endif

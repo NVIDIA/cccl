@@ -49,6 +49,7 @@ set(files
   __algorithm/mismatch.h
   __algorithm/move_backward.h
   __algorithm/move.h
+  __algorithm/next_permutation.h
   __algorithm/none_of.h
   __algorithm/partial_sort_copy.h
   __algorithm/partial_sort.h
@@ -56,6 +57,7 @@ set(files
   __algorithm/partition_point.h
   __algorithm/partition.h
   __algorithm/pop_heap.h
+  __algorithm/prev_permutation.h
   __algorithm/push_heap.h
   __algorithm/ranges_iterator_concept.h
   __algorithm/remove_copy_if.h
