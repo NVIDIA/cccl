@@ -26,11 +26,13 @@ set(files
   __algorithm/half_positive.h
   __algorithm/is_permutation.h
   __algorithm/iter_swap.h
+  __algorithm/iterator_operations.h
   __algorithm/lexicographical_compare.h
   __algorithm/mismatch.h
   __algorithm/move_backward.h
   __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/ranges_iterator_concept.h
   __algorithm/remove_copy_if.h
   __algorithm/remove_copy.h
   __algorithm/remove_if.h
@@ -43,6 +45,7 @@ set(files
   __algorithm/search.h
   __algorithm/swap_ranges.h
   __algorithm/transform.h
+  __algorithm/unique.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
