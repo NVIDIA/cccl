@@ -23,7 +23,7 @@ public:
     TEST_CONSTEXPR_CXX14 unary_counting_predicate(Predicate p) : p_(p), count_(0) {}
 
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 bool operator () (const Arg &a) const { ++count_; return p_(a); }
+    TEST_CONSTEXPR_CXX14 bool operator () (const Arg &a) { ++count_; return p_(a); }
     __host__ __device__
     TEST_CONSTEXPR_CXX14 size_t count() const { return count_; }
     __host__ __device__
@@ -31,7 +31,7 @@ public:
 
 private:
     Predicate p_;
-    mutable size_t count_;
+    size_t count_;
 };
 
 

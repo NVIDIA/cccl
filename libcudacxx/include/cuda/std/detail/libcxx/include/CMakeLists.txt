@@ -25,6 +25,7 @@ set(files
   __algorithm/generate_n.h
   __algorithm/generate.h
   __algorithm/half_positive.h
+  __algorithm/is_partitioned.h
   __algorithm/is_permutation.h
   __algorithm/iter_swap.h
   __algorithm/iterator_operations.h
@@ -39,6 +40,9 @@ set(files
   __algorithm/move_backward.h
   __algorithm/move.h
   __algorithm/none_of.h
+  __algorithm/partition_copy.h
+  __algorithm/partition_point.h
+  __algorithm/partition.h
   __algorithm/ranges_iterator_concept.h
   __algorithm/remove_copy_if.h
   __algorithm/remove_copy.h
