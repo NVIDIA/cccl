@@ -418,7 +418,7 @@ _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 #if !defined(_CCCL_NO_CONCEPTS)
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires((_Index == 0) && copyable<_Iter>) || (_Index == 1)
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <size_t _Index,
           class _Iter,
           class _Sent,
@@ -441,7 +441,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>
 #if !defined(_CCCL_NO_CONCEPTS)
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
   requires(_Index < 2)
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <
   size_t _Index,
   class _Iter,
