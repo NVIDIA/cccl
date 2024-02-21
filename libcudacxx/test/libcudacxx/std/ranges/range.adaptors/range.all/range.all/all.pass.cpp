@@ -244,8 +244,7 @@ __host__ __device__ constexpr bool test()
       assert(&result.base() == &range);
     }
 
-#ifdef _LIBCUDACXX_HAS_RANGES
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // segfault
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // segfault
     // Test `adaptor | views::all`
     {
       Range range(0);
@@ -255,10 +254,10 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-#  endif // !TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
 
 // template instantiation resulted in unexpected function type
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
     // Test `views::all | adaptor`
     {
       Range range(0);
@@ -268,8 +267,8 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-#  endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
-#endif
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+
     {
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // ICE
       struct NotAView
