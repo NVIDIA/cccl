@@ -26,7 +26,6 @@
 
 #include "ptx_dot_variants.h"
 #include "ptx_helper_functions.h"
-#include "ptx_isa_target_macros.h"
 #include "../../cstdint"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
