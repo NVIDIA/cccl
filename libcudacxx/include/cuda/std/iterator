@@ -26,6 +26,7 @@
 #include <cuda/std/__iterator/back_insert_iterator.h>
 #include <cuda/std/__iterator/bounded_iter.h>
 #include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/counted_iterator.h>
 #include <cuda/std/__iterator/data.h>
 #include <cuda/std/__iterator/default_sentinel.h>
 #include <cuda/std/__iterator/distance.h>

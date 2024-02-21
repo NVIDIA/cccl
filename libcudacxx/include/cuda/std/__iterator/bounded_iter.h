@@ -227,7 +227,7 @@ private:
     return __iter >= __begin_ && __iter < __end_;
   }
 
-  template <class>
+  template <class, class>
   friend struct pointer_traits;
   _Iterator __current_; // current iterator
   _Iterator __begin_, __end_; // valid range represented as [begin, end)
