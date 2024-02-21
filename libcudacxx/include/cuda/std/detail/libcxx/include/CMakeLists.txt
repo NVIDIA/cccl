@@ -27,6 +27,7 @@ set(files
   __algorithm/generate_n.h
   __algorithm/generate.h
   __algorithm/half_positive.h
+  __algorithm/includes.h
   __algorithm/is_heap_until.h
   __algorithm/is_heap.h
   __algorithm/is_partitioned.h
@@ -71,6 +72,10 @@ set(files
   __algorithm/rotate.h
   __algorithm/search_n.h
   __algorithm/search.h
+  __algorithm/set_difference.h
+  __algorithm/set_intersection.h
+  __algorithm/set_symmetric_difference.h
+  __algorithm/set_union.h
   __algorithm/sift_down.h
   __algorithm/sort_heap.h
   __algorithm/swap_ranges.h
