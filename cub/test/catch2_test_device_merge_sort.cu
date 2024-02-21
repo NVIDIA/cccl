@@ -420,7 +420,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
       // Initialize random input data
       large_array_sort_helper<key_t> arrays;
       constexpr bool is_descending = false;
-      arrays.initialize_for_unstable_key_sort(num_items, is_descending);
+      arrays.initialize_for_unstable_key_sort(CUB_SEED(1), num_items, is_descending);
 
       // Free extra data buffer used during initialization, but not needed for the "in-place" merge sort
       arrays.deallocate_outputs();
