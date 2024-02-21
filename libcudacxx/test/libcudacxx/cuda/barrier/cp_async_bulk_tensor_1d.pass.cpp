@@ -17,6 +17,9 @@
 
 // <cuda/barrier>
 
+#include <cuda/barrier>
+#include <cuda/std/array>
+
 #include "cp_async_bulk_tensor_generic.h"
 
 // Define the size of contiguous tensor in global and shared memory.
@@ -26,14 +29,14 @@
 // offset.
 //
 // We have a separate variable for host and device because a constexpr
-// std::initializer_list cannot be shared between host and device as some of its
+// cuda::std::array cannot be shared between host and device as some of its
 // member functions take a const reference, which is unsupported by nvcc.
-           constexpr std::initializer_list<int> GMEM_DIMS    {256};
-__device__ constexpr std::initializer_list<int> GMEM_DIMS_DEV{256};
-           constexpr std::initializer_list<int> SMEM_DIMS    {32};
-__device__ constexpr std::initializer_list<int> SMEM_DIMS_DEV{32};
+           constexpr cuda::std::array<uint64_t, 1> GMEM_DIMS    {256};
+__device__ constexpr cuda::std::array<uint64_t, 1> GMEM_DIMS_DEV{256};
+           constexpr cuda::std::array<uint32_t, 1> SMEM_DIMS    {32};
+__device__ constexpr cuda::std::array<uint32_t, 1> SMEM_DIMS_DEV{32};
 
-__device__ constexpr std::initializer_list<int> TEST_SMEM_COORDS[] = {
+__device__ constexpr cuda::std::array<uint32_t, 1> TEST_SMEM_COORDS[] = {
     {0},
     {4},
     {8}
