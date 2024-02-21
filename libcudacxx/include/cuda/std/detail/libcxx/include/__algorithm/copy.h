@@ -45,16 +45,14 @@ __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
 __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
 {
-#if _CCCL_STD_VER >= 2020
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (__libcpp_is_constant_evaluated())
   {
     return false;
   }
   else
-#endif // _CCCL_STD_VER >= 2020
   {
     // For now, we only ever use memmove on host
     // clang-format off
@@ -72,7 +70,7 @@ template <class _Tp,
           class _Up,
           __enable_if_t<_LIBCUDACXX_TRAIT(is_same, __remove_const_t<_Tp>, _Up), int> = 0,
           __enable_if_t<_LIBCUDACXX_TRAIT(is_trivially_copy_assignable, _Up), int>   = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _Up*
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Up*
 __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;
@@ -91,7 +89,7 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
 }
 
 template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _OutputIterator
 copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   return _CUDA_VSTD::__copy(__unwrap_iter(__first), __unwrap_iter(__last), __unwrap_iter(__result));
