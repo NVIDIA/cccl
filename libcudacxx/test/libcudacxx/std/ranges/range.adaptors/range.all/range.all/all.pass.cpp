@@ -247,34 +247,34 @@ __host__ __device__ constexpr bool test()
       assert(&result.base() == &range);
     }
 
-#ifdef _LIBCUDACXX_HAS_RANGES
     // Test `adaptor | views::all`
     {
       Range range(0);
       auto f = [](int i) {
         return i;
       };
-      auto const partial = cuda::std::views::transform(f) | cuda::std::views::all;
-      using Result       = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
-      cuda::std::same_as<Result> auto result = partial(range);
+      auto const partial    = cuda::std::views::transform(f) | cuda::std::views::all;
+      using Result          = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
+      decltype(auto) result = partial(range);
+      static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
 
 // template instantiation resulted in unexpected function type
-#  if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
     // Test `views::all | adaptor`
     {
       Range range(0);
       auto f = [](int i) {
         return i;
       };
-      auto const partial = cuda::std::views::all | cuda::std::views::transform(f);
-      using Result       = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
-      cuda::std::same_as<Result> auto result = partial(range);
+      auto const partial    = cuda::std::views::all | cuda::std::views::transform(f);
+      using Result          = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
+      decltype(auto) result = partial(range);
+      static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-#  endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
-#endif
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
 
     {
       struct NotAView

@@ -43,6 +43,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/single_view.h>
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/subrange.h>
+#include <cuda/std/__ranges/transform_view.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__ranges/views.h>
 
