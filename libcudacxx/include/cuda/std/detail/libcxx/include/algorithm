@@ -725,6 +725,8 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/set_intersection.h"
 #include "__algorithm/set_symmetric_difference.h"
 #include "__algorithm/set_union.h"
+#include "__algorithm/shift_left.h"
+#include "__algorithm/shift_right.h"
 #include "__algorithm/sift_down.h"
 #include "__algorithm/sort_heap.h"
 #include "__algorithm/swap_ranges.h"

@@ -78,6 +78,8 @@ set(files
   __algorithm/set_intersection.h
   __algorithm/set_symmetric_difference.h
   __algorithm/set_union.h
+  __algorithm/shift_left.h
+  __algorithm/shift_right.h
   __algorithm/sift_down.h
   __algorithm/sort_heap.h
   __algorithm/swap_ranges.h

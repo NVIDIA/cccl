@@ -68,7 +68,7 @@ __move_backward(_Tp* __first, _Tp* __last, _Up* __result)
 }
 
 template <class _BidirectionalIterator1, class _BidirectionalIterator2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _BidirectionalIterator2
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator2
 move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
   return _CUDA_VSTD::__move_backward<_ClassicAlgPolicy>(

@@ -69,7 +69,7 @@ __move(_Tp* __first, _Tp* __last, _Up* __result)
 }
 
 template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _OutputIterator
 move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _InputIterator), "Iterators has to be copy constructible.");
