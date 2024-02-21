@@ -28,6 +28,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/all.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/counted.h>
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/empty.h>
