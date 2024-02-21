@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++11, c++14
+// UNSUPPORTED: msvc
 
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
@@ -296,7 +297,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_dim3() {
+__host__ __device__
+#if !defined(TEST_COMPILER_MSVC)
+TEST_CONSTEXPR_CXX14
+#endif // !TEST_COMPILER_MSVC
+bool test_dim3() {
   { // & overload
     dim3 val = get_val<dim3, unsigned int, 3>::create();
     auto&& [ret1, ret2, ret3] = val;
@@ -354,7 +359,9 @@ int main(int arg, char** argv) {
   test();
   test_dim3();
   static_assert(test(), "");
+#if !defined(TEST_COMPILER_MSVC)
   static_assert(test_dim3(), "");
+#endif // !TEST_COMPILER_MSVC
 
   return 0;
 }
