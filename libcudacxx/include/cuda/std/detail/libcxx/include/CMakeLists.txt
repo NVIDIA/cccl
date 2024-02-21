@@ -28,6 +28,12 @@ set(files
   __algorithm/iter_swap.h
   __algorithm/iterator_operations.h
   __algorithm/lexicographical_compare.h
+  __algorithm/max_element.h
+  __algorithm/max.h
+  __algorithm/min_element.h
+  __algorithm/min.h
+  __algorithm/minmax_element.h
+  __algorithm/minmax.h
   __algorithm/mismatch.h
   __algorithm/move_backward.h
   __algorithm/move.h
