@@ -689,6 +689,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/replace.h"
 #include "__algorithm/reverse_copy.h"
 #include "__algorithm/reverse.h"
+#include "__algorithm/rotate_copy.h"
 #include "__algorithm/rotate.h"
 #include "__algorithm/search_n.h"
 #include "__algorithm/search.h"
@@ -751,16 +752,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// rotate_copy
-
-template <class _ForwardIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-rotate_copy(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _OutputIterator __result)
-{
-    return _CUDA_VSTD::copy(__first, __middle, _CUDA_VSTD::copy(__middle, __last, __result));
-}
 
 #endif // __cuda_std__
 // min_element
