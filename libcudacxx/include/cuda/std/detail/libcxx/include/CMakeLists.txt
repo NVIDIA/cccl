@@ -41,6 +41,7 @@ set(files
   __algorithm/replace_copy.h
   __algorithm/replace_if.h
   __algorithm/replace.h
+  __algorithm/reverse_copy.h
   __algorithm/reverse.h
   __algorithm/search_n.h
   __algorithm/search.h

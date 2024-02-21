@@ -687,6 +687,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/replace_copy.h"
 #include "__algorithm/replace_if.h"
 #include "__algorithm/replace.h"
+#include "__algorithm/reverse_copy.h"
 #include "__algorithm/reverse.h"
 #include "__algorithm/search_n.h"
 #include "__algorithm/search.h"
@@ -749,18 +750,6 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const _T1& __x, const _T2& __y) {return __p_(__y, __x);}
 };
-
-// reverse_copy
-
-template <class _BidirectionalIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
-_OutputIterator
-reverse_copy(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
-{
-    for (; __first != __last; ++__result)
-        *__result = *--__last;
-    return __result;
-}
 
 // rotate
 
