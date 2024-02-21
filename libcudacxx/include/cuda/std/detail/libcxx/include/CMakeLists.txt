@@ -3,6 +3,7 @@ set(files
   __algorithm/adjacent_find.h
   __algorithm/all_of.h
   __algorithm/any_of.h
+  __algorithm/binary_search.h
   __algorithm/clamp.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
@@ -12,6 +13,7 @@ set(files
   __algorithm/copy.h
   __algorithm/count.h
   __algorithm/count_if.h
+  __algorithm/equal_range.h
   __algorithm/equal.h
   __algorithm/fill_n.h
   __algorithm/fill.h
@@ -32,6 +34,7 @@ set(files
   __algorithm/iter_swap.h
   __algorithm/iterator_operations.h
   __algorithm/lexicographical_compare.h
+  __algorithm/lower_bound.h
   __algorithm/max_element.h
   __algorithm/max.h
   __algorithm/min_element.h
@@ -64,6 +67,7 @@ set(files
   __algorithm/transform.h
   __algorithm/unique_copy.h
   __algorithm/unique.h
+  __algorithm/upper_bound.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
