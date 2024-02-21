@@ -3,6 +3,7 @@ set(files
   __algorithm/adjacent_find.h
   __algorithm/all_of.h
   __algorithm/any_of.h
+  __algorithm/clamp.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
   __algorithm/copy_backward.h
