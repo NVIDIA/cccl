@@ -48,6 +48,12 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
+_LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
+_LIBCUDACXX_BEGIN_NAMESPACE_CPO(__take)
+struct __fn;
+_LIBCUDACXX_END_NAMESPACE_CPO
+_LIBCUDACXX_END_NAMESPACE_VIEWS
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _Tp>
@@ -72,6 +78,8 @@ template <
 #  endif // _CCCL_STD_VER <= 2017
 class repeat_view : public view_interface<repeat_view<_Tp, _Bound>>
 {
+  friend _CUDA_VIEWS::__take::__fn;
+
 public:
   class __iterator
   {
