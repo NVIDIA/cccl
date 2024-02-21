@@ -45,6 +45,7 @@ set(files
   __algorithm/search.h
   __algorithm/swap_ranges.h
   __algorithm/transform.h
+  __algorithm/unique_copy.h
   __algorithm/unique.h
   __availability
   __bit_reference
