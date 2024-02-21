@@ -234,7 +234,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
       merge_partitions,
       compare_op,
       target_merged_tiles_number,
-      items_per_tile);
+      items_per_tile,
+      num_partitions);
 
     agent.Process();
   }

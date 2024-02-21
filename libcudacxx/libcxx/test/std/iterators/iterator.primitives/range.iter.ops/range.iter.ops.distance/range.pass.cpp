@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// XFAIL: c++20
 
 // template<range R>
 //   constexpr range_difference_t<R> ranges::distance(R&& r);
