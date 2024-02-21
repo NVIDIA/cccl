@@ -436,6 +436,9 @@ extern "C++" {
 #  define _ALIGNAS(x) __attribute__((__aligned__(x)))
 #endif // !_CCCL_COMPILER_MSVC && !__has_feature(cxx_alignas)
 
+#define _LIBCUDACXX_TOSTRING2(_STR) #_STR
+#define _LIBCUDACXX_TOSTRING(_STR) _LIBCUDACXX_TOSTRING2(_STR)
+
 // This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
 // [-Werror=unknown-pragmas]"
 #if defined(__CUDA_ARCH__)
@@ -850,9 +853,6 @@ extern "C++" {
  || defined(_CCCL_COMPILER_NVRTC)
 #define _LIBCUDACXX_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // __check_builtin(underlying_type)
-
-#define _LIBCUDACXX_TOSTRING2(_STR) #_STR
-#define _LIBCUDACXX_TOSTRING(_STR) _LIBCUDACXX_TOSTRING2(_STR)
 
 #if defined(_CCCL_COMPILER_CLANG)
 
