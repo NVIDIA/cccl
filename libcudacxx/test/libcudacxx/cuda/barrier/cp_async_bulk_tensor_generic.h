@@ -131,7 +131,7 @@ __constant__ fake_cutensormap global_fake_tensor_map;
  * 6. It checks that all the values in global are properly modified.
  */
 template <size_t smem_len, size_t num_dims>
-__device__ void test(cuda::std::array<uint32_t, smem_len> smem_coord,
+__device__ void test(cuda::std::array<uint32_t, num_dims> smem_coord,
                      cuda::std::array<uint32_t, num_dims> smem_dims,
                      cuda::std::array<uint64_t, num_dims> gmem_dims,
                      int* gmem_tensor,
