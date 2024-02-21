@@ -19,9 +19,7 @@
 #include "test_range.h"
 
 static_assert(cuda::std::ranges::borrowed_range<cuda::std::ranges::owning_view<BorrowedView>>);
-#if _LIBCUDACXX_HAS_RANGES
 static_assert(!cuda::std::ranges::borrowed_range<cuda::std::ranges::owning_view<NonBorrowedView>>);
-#endif
 
 int main(int, char**)
 {

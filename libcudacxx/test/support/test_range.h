@@ -99,10 +99,8 @@ using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
 
-#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
 static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");
-#endif // _LIBCUDACXX_HAS_RANGES
 
 #endif // LIBCXX_TEST_SUPPORT_TEST_RANGE_H
