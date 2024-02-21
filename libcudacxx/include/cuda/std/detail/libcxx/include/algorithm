@@ -683,6 +683,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/lower_bound.h"
 #include "__algorithm/max_element.h"
 #include "__algorithm/max.h"
+#include "__algorithm/merge.h"
 #include "__algorithm/min_element.h"
 #include "__algorithm/min.h"
 #include "__algorithm/minmax_element.h"
@@ -1980,53 +1981,6 @@ _LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplet
 _LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS bool __insertion_sort_incomplete<__less&, long double*>(long double*, long double*, __less&))
 
 _LIBCUDACXX_EXTERN_TEMPLATE(_LIBCUDACXX_FUNC_VIS unsigned __sort5<__less&, long double*>(long double*, long double*, long double*, long double*, long double*, __less&))
-
-// merge
-
-template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-__merge(_InputIterator1 __first1, _InputIterator1 __last1,
-        _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
-{
-    for (; __first1 != __last1; ++__result)
-    {
-        if (__first2 == __last2)
-            return _CUDA_VSTD::copy(__first1, __last1, __result);
-        if (__comp(*__first2, *__first1))
-        {
-            *__result = *__first2;
-            ++__first2;
-        }
-        else
-        {
-            *__result = *__first1;
-            ++__first1;
-        }
-    }
-    return _CUDA_VSTD::copy(__first2, __last2, __result);
-}
-
-template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-merge(_InputIterator1 __first1, _InputIterator1 __last1,
-      _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result, _Compare __comp)
-{
-    using _Comp_ref = __comp_ref_type<_Compare>;
-    return _CUDA_VSTD::__merge<_Comp_ref>(__first1, __last1, __first2, __last2, __result, __comp);
-}
-
-template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-_OutputIterator
-merge(_InputIterator1 __first1, _InputIterator1 __last1,
-      _InputIterator2 __first2, _InputIterator2 __last2, _OutputIterator __result)
-{
-    typedef typename iterator_traits<_InputIterator1>::value_type __v1;
-    typedef typename iterator_traits<_InputIterator2>::value_type __v2;
-    return _CUDA_VSTD::merge(__first1, __last1, __first2, __last2, __result, __less{});
-}
 
 // inplace_merge
 

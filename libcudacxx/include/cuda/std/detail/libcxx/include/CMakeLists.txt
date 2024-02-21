@@ -37,6 +37,7 @@ set(files
   __algorithm/lower_bound.h
   __algorithm/max_element.h
   __algorithm/max.h
+  __algorithm/merge.h
   __algorithm/min_element.h
   __algorithm/min.h
   __algorithm/minmax_element.h
