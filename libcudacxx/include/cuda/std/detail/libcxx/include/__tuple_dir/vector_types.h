@@ -264,44 +264,6 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-// Those need to be defined in the global namespace because we need ADL to find them
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(char, signed char)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(uchar, unsigned char)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(short, short)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(ushort, unsigned short)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(int, int)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(uint, unsigned int)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(long, long)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulong, unsigned long)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(longlong, long long)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(ulonglong, unsigned long long)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(float, float)
-_LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
-
-// This is a workaround for the fact that structured bindings require that the specializations of
-// `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
-// See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
-#  if _CCCL_STD_VER >= 2017
-namespace std
-{
-
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(char, signed char)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uchar, unsigned char)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(short, short)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ushort, unsigned short)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(int, int)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(uint, unsigned int)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(long, long)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulong, unsigned long)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(longlong, long long)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(ulonglong, unsigned long long)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(float, float)
-_LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(double, double)
-
-} // namespace std
-
-#  endif // _CCCL_STD_VER >= 2017
-
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR
 #  undef _LIBCUDACXX_SPECIALIZE_GET
