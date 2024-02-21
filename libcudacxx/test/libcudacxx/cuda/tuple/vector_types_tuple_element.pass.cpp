@@ -59,10 +59,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_dim3() {
+  test<dim3, unsigned int, 3, 0>();
+  test<dim3, unsigned int, 3, 1>();
+  test<dim3, unsigned int, 3, 2>();
+  return true;
+}
+
 int main(int arg, char** argv) {
-    test();
+  test();
+  test_dim3();
 #if TEST_STD_VER >= 2014
-    static_assert(test(), "");
+  static_assert(test(), "");
+  static_assert(test_dim3(), "");
 #endif // TEST_STD_VER >= 2014
 
   return 0;

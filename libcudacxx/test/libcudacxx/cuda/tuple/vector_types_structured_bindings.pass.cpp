@@ -221,26 +221,35 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
 
   {   // const&& overload
     { // vec1 structured bindings
-      auto&& [ret] = const_cast<const VType1&&>(get_val<VType1, BaseType, 1>::create());
-      static_assert(cuda::std::is_same<decltype(ret), const BaseType>::value, "");
+      auto&& [ret] =
+          const_cast<const VType1&&>(get_val<VType1, BaseType, 1>::create());
+      static_assert(cuda::std::is_same<decltype(ret), const BaseType>::value,
+                    "");
 
       assert(ret == (get_expected<BaseType, 0>::create()));
     }
 
     { // vec2 structured bindings
-      auto&& [ret1, ret2] = const_cast<const VType2&&>(get_val<VType2, BaseType, 2>::create());
-      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
+      auto&& [ret1, ret2] =
+          const_cast<const VType2&&>(get_val<VType2, BaseType, 2>::create());
+      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value,
+                    "");
 
       assert(ret1 == (get_expected<BaseType, 0>::create()));
       assert(ret2 == (get_expected<BaseType, 1>::create()));
     }
 
     { // vec3 structured bindings
-      auto&& [ret1, ret2, ret3] = const_cast<const VType3&&>(get_val<VType3, BaseType, 3>::create());
-      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
+      auto&& [ret1, ret2, ret3] =
+          const_cast<const VType3&&>(get_val<VType3, BaseType, 3>::create());
+      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value,
+                    "");
 
       assert(ret1 == (get_expected<BaseType, 0>::create()));
       assert(ret2 == (get_expected<BaseType, 1>::create()));
@@ -248,11 +257,16 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
     }
 
     { // vec4 structured bindings
-      auto&& [ret1, ret2, ret3, ret4] = const_cast<const VType4&&>(get_val<VType4, BaseType, 4>::create());
-      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value, "");
-      static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value, "");
+      auto&& [ret1, ret2, ret3, ret4] =
+          const_cast<const VType4&&>(get_val<VType4, BaseType, 4>::create());
+      static_assert(cuda::std::is_same<decltype(ret1), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret2), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret3), const BaseType>::value,
+                    "");
+      static_assert(cuda::std::is_same<decltype(ret4), const BaseType>::value,
+                    "");
 
       assert(ret1 == (get_expected<BaseType, 0>::create()));
       assert(ret2 == (get_expected<BaseType, 1>::create()));
@@ -282,9 +296,65 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_dim3() {
+  { // & overload
+    dim3 val = get_val<dim3, unsigned int, 3>::create();
+    auto&& [ret1, ret2, ret3] = val;
+    static_assert(cuda::std::is_same<decltype(ret1), unsigned int>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), unsigned int>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), unsigned int>::value, "");
+
+    assert(ret1 == (get_expected<unsigned int, 0>::create()));
+    assert(ret2 == (get_expected<unsigned int, 1>::create()));
+    assert(ret3 == (get_expected<unsigned int, 2>::create()));
+  }
+  { // const& overload
+    const dim3 val = get_val<dim3, unsigned int, 3>::create();
+    auto&& [ret1, ret2, ret3] = val;
+    static_assert(cuda::std::is_same<decltype(ret1), const unsigned int>::value,
+                  "");
+    static_assert(cuda::std::is_same<decltype(ret2), const unsigned int>::value,
+                  "");
+    static_assert(cuda::std::is_same<decltype(ret3), const unsigned int>::value,
+                  "");
+
+    assert(ret1 == (get_expected<unsigned int, 0>::create()));
+    assert(ret2 == (get_expected<unsigned int, 1>::create()));
+    assert(ret3 == (get_expected<unsigned int, 2>::create()));
+  }
+  { // && overload
+    auto&& [ret1, ret2, ret3] = get_val<dim3, unsigned int, 3>::create();
+    static_assert(cuda::std::is_same<decltype(ret1), unsigned int>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret2), unsigned int>::value, "");
+    static_assert(cuda::std::is_same<decltype(ret3), unsigned int>::value, "");
+
+    assert(ret1 == (get_expected<unsigned int, 0>::create()));
+    assert(ret2 == (get_expected<unsigned int, 1>::create()));
+    assert(ret3 == (get_expected<unsigned int, 2>::create()));
+  }
+  { // const&& overload
+    auto&& [ret1, ret2, ret3] =
+        const_cast<const dim3&&>(get_val<dim3, unsigned int, 3>::create());
+    static_assert(cuda::std::is_same<decltype(ret1), const unsigned int>::value,
+                  "");
+    static_assert(cuda::std::is_same<decltype(ret2), const unsigned int>::value,
+                  "");
+    static_assert(cuda::std::is_same<decltype(ret3), const unsigned int>::value,
+                  "");
+
+    assert(ret1 == (get_expected<unsigned int, 0>::create()));
+    assert(ret2 == (get_expected<unsigned int, 1>::create()));
+    assert(ret3 == (get_expected<unsigned int, 2>::create()));
+  }
+
+  return true;
+}
+
 int main(int arg, char** argv) {
   test();
-  //static_assert(test(), "");
+  test_dim3();
+  static_assert(test(), "");
+  static_assert(test_dim3(), "");
 
   return 0;
 }

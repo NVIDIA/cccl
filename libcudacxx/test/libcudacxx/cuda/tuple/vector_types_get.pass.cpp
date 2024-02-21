@@ -122,10 +122,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   test<VType, BaseType, VSize, 3>();
 }
 
-#define EXPAND_VECTOR_TYPE(Type, BaseType)                                               \
-  test<Type##1, BaseType, 1>();                                                    \
-  test<Type##2, BaseType, 2>();                                                    \
-  test<Type##3, BaseType, 3>();                                                    \
+#define EXPAND_VECTOR_TYPE(Type, BaseType)                                     \
+  test<Type##1, BaseType, 1>();                                                \
+  test<Type##2, BaseType, 2>();                                                \
+  test<Type##3, BaseType, 3>();                                                \
   test<Type##4, BaseType, 4>();
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
@@ -145,10 +145,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_dim3() {
+  test<dim3, unsigned int, 3, 0>();
+  test<dim3, unsigned int, 3, 1>();
+  test<dim3, unsigned int, 3, 2>();
+  return true;
+}
+
 int main(int arg, char** argv) {
   test();
+  test_dim3();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");
+  static_assert(test_dim3(), "");
 #endif // TEST_STD_VER >= 2014
 
   return 0;
