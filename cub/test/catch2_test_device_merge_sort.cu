@@ -415,8 +415,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
   {
     try
     {
-      TIME(c2h::cpu_timer timer);
-
       // Initialize random input data
       large_array_sort_helper<key_t> arrays;
       constexpr bool is_descending = false;
@@ -430,8 +428,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
 
       // Verify results
       arrays.verify_unstable_key_sort(num_items, is_descending, arrays.keys_in);
-
-      TIME(timer.print_elapsed_seconds_and_reset("Random merge sort"));
     }
     catch (std::bad_alloc& e)
     {
@@ -445,7 +441,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
   {
     try
     {
-      TIME(c2h::cpu_timer timer);
       c2h::device_vector<key_t> keys_in_out(num_items);
 
       // Pre-populated array with a constant value
@@ -460,8 +455,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
         thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.begin());
       REQUIRE(is_correct == true);
-
-      TIME(timer.print_elapsed_seconds_and_reset("Pre-sorted merge sort"));
     }
     catch (std::bad_alloc& e)
     {
@@ -475,7 +468,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
   {
     try
     {
-      TIME(c2h::cpu_timer timer);
       c2h::device_vector<key_t> keys_in_out(num_items);
 
       auto counting_it   = thrust::make_counting_iterator(std::size_t{0});
@@ -491,7 +483,6 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
         thrust::make_counting_iterator(std::size_t{}), index_to_expected_key_op<key_t>(num_items));
       bool is_correct = thrust::equal(expected_result_it, expected_result_it + num_items, keys_in_out.cbegin());
       REQUIRE(is_correct == true);
-      TIME(timer.print_elapsed_seconds_and_reset("Reverse-sorted merge sort"));
     }
     catch (std::bad_alloc& e)
     {
