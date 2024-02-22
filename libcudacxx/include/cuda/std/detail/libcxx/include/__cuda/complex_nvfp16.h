@@ -61,7 +61,7 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c);
 #  endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#  if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY complex(const ::std::complex<_Up>& __other)
       : __repr(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
@@ -74,7 +74,7 @@ public:
     __repr.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
     return *this;
   }
-#  endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#  endif // !defined(_CCCL_COMPILER_NVRTC)
 
   _LIBCUDACXX_INLINE_VISIBILITY __half real() const
   {
