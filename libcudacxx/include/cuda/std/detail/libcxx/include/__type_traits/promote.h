@@ -20,15 +20,15 @@
 #include "../cstddef"
 
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
 #include <cuda_fp16.h>
-#endif
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #include <cuda_bf16.h>
 _CCCL_DIAG_POP
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
 #endif
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -46,12 +46,12 @@ struct __numeric_type
 {
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
 #if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
    _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16
+#ifdef _LIBCUDACXX_HAS_NVBF16
    _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
-#endif // !defined(_LIBCUDACXX_HAS_NO_NVBF16)
-#endif // !defined(_LIBCUDACXX_HAS_NO_NVFP16)
+#endif // _LIBCUDACXX_HAS_NVFP16
 #endif // defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);

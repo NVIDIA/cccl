@@ -250,6 +250,14 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include "type_traits"
 #include "version"
 
+#ifdef _LIBCUDACXX_HAS_NVFP16
+#include <cuda_fp16.h>
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#ifdef _LIBCUDACXX_HAS_NVBF16
+#include <cuda_bf16.h>
+#endif // _LIBCUDACXX_HAS_NVBF16
+
 #if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) \
  && !defined(_LIBCUDACXX_COMPILER_NVRTC)
 #include <sstream> // for std::basic_ostringstream
@@ -292,18 +300,18 @@ template<class T> complex<T> tanh (const complex<T>&);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<class _Tp>
-struct __is_complex_float {
-    static constexpr auto value = is_floating_point<_Tp>::value
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
-        || is_same<_Tp, __half>::value
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
-        || is_same<_Tp, __nv_bfloat16>::value
-#endif
-#endif
-#endif
-    ;
+template <class _Tp>
+struct __is_nvfp16 : false_type
+{};
+
+template <class _Tp>
+struct __is_nvbf16 : false_type
+{};
+
+template <class _Tp>
+struct __is_complex_float
+{
+  static constexpr auto value = is_floating_point<_Tp>::value || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
 };
 
 template<class _Tp>
@@ -420,211 +428,13 @@ template<> class complex<double>;
 template<> class complex<long double>;
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
-template<>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__half2)) complex<__half>
-{
-    __half2 __repr;
-public:
-    typedef __half value_type;
+#ifdef _LIBCUDACXX_HAS_NVFP16
+#include "__cuda/complex_nvfp16.h"
+#endif // _LIBCUDACXX_HAS_NVFP16
 
-    _LIBCUDACXX_INLINE_VISIBILITY complex(__half __re = 0.0f, __half __im = 0.0f)
-        : __repr(__re, __im) {}
-    template <class _Int, typename = __enable_if_t<is_arithmetic<_Int>::value>>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(_Int __re = _Int(), _Int __im = _Int())
-        : __repr(__re, __im) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<float>& __c);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<double>& __c);
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<long double>& __c);
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-    template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex(const ::std::complex<_Up>& __other)
-        : __repr(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
-    {}
-
-    template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator=(const ::std::complex<_Up>& __other) {
-        __repr.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
-        __repr.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
-        return *this;
-    }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-
-    _LIBCUDACXX_INLINE_VISIBILITY __half real() const {return __repr.x;}
-    _LIBCUDACXX_INLINE_VISIBILITY __half imag() const {return __repr.y;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY void real(value_type __re) {__repr.x = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) {__repr.y = __im;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator= (__half __re) { __repr.x = __re; __repr.y = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator+=(__half __re) {__repr.x += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator-=(__half __re) {__repr.x -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator*=(__half __re) {__repr.x *= __re; __repr.y *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator/=(__half __re) {__repr.x /= __re; __repr.y /= __re; return *this;}
-
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator= (const complex<_Xp>& __c)
-        {
-            __repr.x = __c.real();
-            __repr.y = __c.imag();
-            return *this;
-        }
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex& __c)
-        {
-            __repr += __c.__repr;
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex<_Xp>& __c)
-        {
-            __repr.x += __c.real();
-            __repr.y += __c.imag();
-            return *this;
-        }
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex& __c)
-        {
-            __repr -= __c.__repr;
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex<_Xp>& __c)
-        {
-            __repr.x -= __c.real();
-            __repr.y -= __c.imag();
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const complex<_Xp>& __c)
-        {
-            *this = *this * complex(__c.real(), __c.imag());
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const complex<_Xp>& __c)
-        {
-            *this = *this / complex(__c.real(), __c.imag());
-            return *this;
-        }
-};
-
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
-template<>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
-{
-    __nv_bfloat162 __repr;
-public:
-    typedef __nv_bfloat16 value_type;
-
-    _LIBCUDACXX_INLINE_VISIBILITY complex(__nv_bfloat16 __re = 0.0f, __nv_bfloat16 __im = 0.0f)
-        : __repr(__re, __im) {}
-    template <class _Int, typename = __enable_if_t<is_arithmetic<_Int>::value>>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(_Int __re = _Int(), _Int __im = _Int())
-        : __repr(__re, __im) {}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<float>& __c);
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<double>& __c);
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit complex(const complex<long double>& __c);
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-    template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex(const ::std::complex<_Up>& __other)
-        : __repr(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
-    {}
-
-    template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator=(const ::std::complex<_Up>& __other) {
-        __repr.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
-        __repr.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
-        return *this;
-    }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
-
-    _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 real() const {return __repr.x;}
-    _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 imag() const {return __repr.y;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY void real(value_type __re) {__repr.x = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) {__repr.y = __im;}
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator= (__nv_bfloat16 __re) { __repr.x = __re; __repr.y = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator+=(__nv_bfloat16 __re) {__repr.x += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator-=(__nv_bfloat16 __re) {__repr.x -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator*=(__nv_bfloat16 __re) {__repr.x *= __re; __repr.y *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    complex& operator/=(__nv_bfloat16 __re) {__repr.x /= __re; __repr.y /= __re; return *this;}
-
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator= (const complex<_Xp>& __c)
-        {
-            __repr.x = __c.real();
-            __repr.y = __c.imag();
-            return *this;
-        }
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex& __c)
-        {
-            __repr += __c.__repr;
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex<_Xp>& __c)
-        {
-            __repr.x += __c.real();
-            __repr.y += __c.imag();
-            return *this;
-        }
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex& __c)
-        {
-            __repr -= __c.__repr;
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex<_Xp>& __c)
-        {
-            __repr.x -= __c.real();
-            __repr.y -= __c.imag();
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const complex<_Xp>& __c)
-        {
-            *this = *this * complex(__c.real(), __c.imag());
-            return *this;
-        }
-    template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const complex<_Xp>& __c)
-        {
-            *this = *this / complex(__c.real(), __c.imag());
-            return *this;
-        }
-};
-#endif
-#endif
-#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+#include "__cuda/complex_nvbf16.h"
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) complex<float>
@@ -636,16 +446,15 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(float __re = 0.0f, float __im = 0.0f)
         : __re_(__re), __im_(__im) {}
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#endif
-#endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
+
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<double>& __c);
 #ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
@@ -743,16 +552,15 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(double __re = 0.0, double __im = 0.0)
         : __re_(__re), __im_(__im) {}
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
     _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
-#endif
-#endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
+
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr complex(const complex<float>& __c);
 
@@ -1039,6 +847,20 @@ operator-(const _Tp& __x, const complex<_Tp>& __y)
 template<class _Tp>
 struct __type_to_vector;
 
+#ifdef _LIBCUDACXX_HAS_NVFP16
+template<>
+struct __type_to_vector<__half> {
+    using __type = __half2;
+};
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#ifdef _LIBCUDACXX_HAS_NVBF16
+template<>
+struct __type_to_vector<__nv_bfloat16> {
+    using __type = __nv_bfloat162;
+};
+#endif // _LIBCUDACXX_HAS_NVBF16
+
 template<class _Tp, typename = void>
 struct __has_vector_type : _CUDA_VSTD::false_type {};
 
@@ -1085,16 +907,6 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
     };
 }
 
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
-template<>
-struct __type_to_vector<__half> { using __type = __half2; };
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
-template<>
-struct __type_to_vector<__nv_bfloat16> { using __type = __nv_bfloat162; };
-#endif
-#endif
-
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
 __enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
@@ -1138,7 +950,6 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 
     return __ret;
 }
-#endif
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
@@ -1488,26 +1299,23 @@ struct __libcpp_complex_overload_traits<_Tp, false, true>
     typedef complex<_Tp> _ComplexType;
 };
 
-#ifdef __cuda_std__
-// __half and __nvbfloat
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
 template <>
 struct __libcpp_complex_overload_traits<__half, false, false>
 {
     typedef __half _ValueType;
     typedef complex<__half> _ComplexType;
 };
+#endif // _LIBCUDACXX_HAS_NVFP16
 
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#ifdef _LIBCUDACXX_HAS_NVBF16
 template <>
 struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 {
     typedef __nv_bfloat16 _ValueType;
     typedef complex<__nv_bfloat16> _ComplexType;
 };
-#endif
-#endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 // real
 
@@ -1602,33 +1410,19 @@ arg(_Tp __re)
     return _CUDA_VSTD::atan2f(0.F, __re);
 }
 
-#ifdef __cuda_std__
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t<
-    is_same<_Tp, __half>::value,
-    __half
->
-arg(_Tp __re)
+#ifdef _LIBCUDACXX_HAS_NVFP16
+inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {
-    return _CUDA_VSTD::atan2f(__half(0), __re);
+  return _CUDA_VSTD::atan2f(__half(0), __re);
 }
+#endif // _LIBCUDACXX_HAS_NVFP16
 
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t<
-    is_same<_Tp, __nv_bfloat16>::value,
-    __nv_bfloat16
->
-arg(_Tp __re)
+#ifdef _LIBCUDACXX_HAS_NVBF16
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
-    return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
+  return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
 }
-#endif
-#endif
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 // norm
 

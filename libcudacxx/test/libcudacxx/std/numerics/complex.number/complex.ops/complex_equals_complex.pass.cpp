@@ -74,10 +74,10 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
-#ifndef _LIBCUDACXX_HAS_NO_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVFP16
     test_nonconstexpr<__half>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_NVBF16
+#ifdef _LIBCUDACXX_HAS_NVBF16
     test_nonconstexpr<__nv_bfloat16>();
 #endif
 // CUDA treats long double as double
