@@ -30,7 +30,6 @@
 #include <cub/device/device_copy.cuh>
 #include <cub/util_type.cuh>
 
-#include <thrust/device_vector.h>
 #include <thrust/distance.h>
 #include <thrust/execution_policy.h>
 #include <thrust/find.h>
@@ -44,8 +43,10 @@
 #include <cstdint>
 
 #include <c2h/custom_type.cuh>
+#include <c2h/device_policy.cuh>
 #include <c2h/extended_types.cuh>
 #include <c2h/generators.cuh>
+#include <c2h/vector.cuh>
 #include <fill_striped.cuh>
 
 #if C2H_HAS_CURAND
@@ -82,12 +83,12 @@ public:
 
   template <typename T>
   void operator()(seed_t seed,
-                  thrust::device_vector<T> &data,
+                  c2h::device_vector<T> &data,
                   T min = std::numeric_limits<T>::min(),
                   T max = std::numeric_limits<T>::max());
 
   template <typename T>
-  void operator()(modulo_t modulo, thrust::device_vector<T> &data);
+  void operator()(modulo_t modulo, c2h::device_vector<T> &data);
 
   float *distribution();
 
@@ -105,7 +106,7 @@ private:
 #else
   thrust::default_random_engine m_re;
 #endif
-  thrust::device_vector<float> m_distribution;
+  c2h::device_vector<float> m_distribution;
 };
 
 template <typename T, cub::Category = cub::Traits<T>::CATEGORY>
@@ -194,7 +195,7 @@ void generator_t::generate()
 #if C2H_HAS_CURAND
   curandGenerateUniform(m_gen, this->distribution(), this->m_distribution.size());
 #else
-  thrust::tabulate(this->m_distribution.begin(), this->m_distribution.end(), i_to_rnd_t{m_re});
+  thrust::tabulate(c2h::device_policy, this->m_distribution.begin(), this->m_distribution.end(), i_to_rnd_t{m_re});
   m_re.discard(this->m_distribution.size());
 #endif
 }
@@ -248,11 +249,12 @@ struct random_to_custom_t
 };
 
 template <class T>
-void generator_t::operator()(seed_t seed, thrust::device_vector<T> &data, T min, T max)
+void generator_t::operator()(seed_t seed, c2h::device_vector<T> &data, T min, T max)
 {
   prepare_random_generator(seed, data.size());
 
-  thrust::transform(m_distribution.begin(),
+  thrust::transform(c2h::device_policy,
+                    m_distribution.begin(),
                     m_distribution.end(),
                     data.begin(),
                     random_to_item_t<T>(min, max));
@@ -276,9 +278,9 @@ struct count_to_item_t
 };
 
 template <typename T>
-void generator_t::operator()(modulo_t mod, thrust::device_vector<T> &data)
+void generator_t::operator()(modulo_t mod, c2h::device_vector<T> &data)
 {
-  thrust::tabulate(data.begin(), data.end(), count_to_item_t<T>{mod.get()});
+  thrust::tabulate(c2h::device_policy, data.begin(), data.end(), count_to_item_t<T>{mod.get()});
 }
 
 generator_t &generator_t::instance()
@@ -303,14 +305,14 @@ void gen(seed_t seed,
   generator_t &generator = generator_t::instance();
   float *d_in            = generator.prepare_random_generator(seed, elements);
 
-  thrust::for_each(thrust::device,
+  thrust::for_each(c2h::device_policy,
                    cnt_begin,
                    cnt_end,
                    random_to_custom_t<true>{d_in, d_out, element_size});
 
   generator.generate();
 
-  thrust::for_each(thrust::device,
+  thrust::for_each(c2h::device_policy,
                    cnt_begin,
                    cnt_end,
                    random_to_custom_t<false>{d_in, d_out, element_size});
@@ -395,7 +397,7 @@ struct offset_to_size_t
  * `gen_uniform_offset`.
  */
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
                        KeyT *d_out,
                        std::size_t element_size)
 {
@@ -418,7 +420,7 @@ void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
                            d_range_sizes,
                            total_segments);
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   cub::DeviceCopy::Batched(d_temp_storage,
@@ -430,41 +432,42 @@ void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
   cudaDeviceSynchronize();
 }
 
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 std::int32_t *out,
                                 std::size_t element_size);
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 std::uint8_t *out,
                                 std::size_t element_size);
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 float *out,
                                 std::size_t element_size);
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 custom_type_state_t *out,
                                 std::size_t element_size);
 #ifdef TEST_HALF_T
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 half_t *out,
                                 std::size_t element_size);
 #endif
 
 #ifdef TEST_BF_T
-template void init_key_segments(const thrust::device_vector<std::uint32_t> &segment_offsets,
+template void init_key_segments(const c2h::device_vector<std::uint32_t> &segment_offsets,
                                 bfloat16_t *out,
                                 std::size_t element_size);
 #endif
 } // namespace detail
 
 template <typename T>
-thrust::device_vector<T>
+c2h::device_vector<T>
 gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size)
 {
-  thrust::device_vector<T> segment_offsets(total_elements + 2);
+  c2h::device_vector<T> segment_offsets(total_elements + 2);
   gen(seed, segment_offsets, min_segment_size, max_segment_size);
   segment_offsets[total_elements] = total_elements + 1;
-  thrust::exclusive_scan(segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
-  typename thrust::device_vector<T>::iterator iter =
-    thrust::find_if(segment_offsets.begin(),
+  thrust::exclusive_scan(c2h::device_policy, segment_offsets.begin(), segment_offsets.end(), segment_offsets.begin());
+  typename c2h::device_vector<T>::iterator iter =
+    thrust::find_if(c2h::device_policy,
+                    segment_offsets.begin(),
                     segment_offsets.end(),
                     detail::greater_equal_op<T>{total_elements});
   *iter = total_elements;
@@ -472,40 +475,40 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
   return segment_offsets;
 }
 
-template thrust::device_vector<int32_t> gen_uniform_offsets(seed_t seed,
+template c2h::device_vector<int32_t> gen_uniform_offsets(seed_t seed,
                                                              int32_t total_elements,
                                                              int32_t min_segment_size,
                                                              int32_t max_segment_size);
 
-template thrust::device_vector<uint32_t> gen_uniform_offsets(seed_t seed,
+template c2h::device_vector<uint32_t> gen_uniform_offsets(seed_t seed,
                                                              uint32_t total_elements,
                                                              uint32_t min_segment_size,
                                                              uint32_t max_segment_size);
-template thrust::device_vector<int64_t> gen_uniform_offsets(seed_t seed,
+template c2h::device_vector<int64_t> gen_uniform_offsets(seed_t seed,
                                                              int64_t total_elements,
                                                              int64_t min_segment_size,
                                                              int64_t max_segment_size);
-template thrust::device_vector<uint64_t> gen_uniform_offsets(seed_t seed,
+template c2h::device_vector<uint64_t> gen_uniform_offsets(seed_t seed,
                                                              uint64_t total_elements,
                                                              uint64_t min_segment_size,
                                                              uint64_t max_segment_size);
 
 template <typename T>
-void gen(seed_t seed, thrust::device_vector<T> &data, T min, T max)
+void gen(seed_t seed, c2h::device_vector<T> &data, T min, T max)
 {
   generator_t::instance()(seed, data, min, max);
 }
 
 template <typename T>
-void gen(modulo_t mod, thrust::device_vector<T> &data)
+void gen(modulo_t mod, c2h::device_vector<T> &data)
 {
   generator_t::instance()(mod, data);
 }
 
 #define INSTANTIATE_RND(TYPE)                                                                      \
-  template void gen<TYPE>(seed_t, thrust::device_vector<TYPE> & data, TYPE min, TYPE max)
+  template void gen<TYPE>(seed_t, c2h::device_vector<TYPE> & data, TYPE min, TYPE max)
 
-#define INSTANTIATE_MOD(TYPE) template void gen<TYPE>(modulo_t, thrust::device_vector<TYPE> & data)
+#define INSTANTIATE_MOD(TYPE) template void gen<TYPE>(modulo_t, c2h::device_vector<TYPE> & data)
 
 #define INSTANTIATE(TYPE)                                                                          \
   INSTANTIATE_RND(TYPE);                                                                           \
@@ -545,13 +548,13 @@ struct vec_gen_helper_t;
 template <typename T>
 struct vec_gen_helper_t<T, -1>
 {
-  static void gen(thrust::device_vector<T> &, T, T) {}
+  static void gen(c2h::device_vector<T> &, T, T) {}
 };
 
 template <typename T, int VecItem>
 struct vec_gen_helper_t
 {
-  static void gen(thrust::device_vector<T> &data, T min, T max)
+  static void gen(c2h::device_vector<T> &data, T min, T max)
   {
     thrust::counting_iterator<std::size_t> cnt_begin(0);
     thrust::counting_iterator<std::size_t> cnt_end(data.size());
@@ -562,7 +565,7 @@ struct vec_gen_helper_t
 
     generator.generate();
 
-    thrust::for_each(thrust::device,
+    thrust::for_each(c2h::device_policy,
                      cnt_begin,
                      cnt_end,
                      random_to_vec_item_t<T, VecItem>{min, max, d_in, d_out});
@@ -574,7 +577,7 @@ struct vec_gen_helper_t
 #define VEC_SPECIALIZATION(TYPE, SIZE)                                                             \
   template <>                                                                                      \
   void gen<TYPE##SIZE>(seed_t seed,                                                                \
-                       thrust::device_vector<TYPE##SIZE> & data,                                   \
+                       c2h::device_vector<TYPE##SIZE> & data,                                   \
                        TYPE##SIZE min,                                                             \
                        TYPE##SIZE max)                                                             \
   {                                                                                                \
@@ -620,9 +623,9 @@ struct vec_gen_t
 
 #define VEC_GEN_MOD_SPECIALIZATION(VEC_TYPE, SCALAR_TYPE)                                          \
   template <>                                                                                      \
-  void gen<VEC_TYPE>(modulo_t mod, thrust::device_vector<VEC_TYPE> & data)                         \
+  void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                         \
   {                                                                                                \
-    thrust::tabulate(data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()});       \
+    thrust::tabulate(c2h::device_policy, data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()});       \
   }
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);

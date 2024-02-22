@@ -30,8 +30,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
+#include "catch2_test_helper.h"
 
 /**
  * @brief Helper class template to facilitate specifying input/output type pairs along with the key
@@ -141,15 +140,15 @@ template <typename ValueT,
           typename ScanOpT,
           typename EqualityOpT,
           typename InitT>
-void compute_exclusive_scan_by_key_reference(const thrust::device_vector<ValueT> &d_values,
-                                             const thrust::device_vector<KeyT> &d_keys,
+void compute_exclusive_scan_by_key_reference(const c2h::device_vector<ValueT> &d_values,
+                                             const c2h::device_vector<KeyT> &d_keys,
                                              ValuesOutItT result_out_it,
                                              ScanOpT scan_op,
                                              EqualityOpT equality_op,
                                              InitT init)
 {
-  thrust::host_vector<ValueT> host_values(d_values);
-  thrust::host_vector<KeyT> host_keys(d_keys);
+  c2h::host_vector<ValueT> host_values(d_values);
+  c2h::host_vector<KeyT> host_keys(d_keys);
 
   std::size_t num_items = host_values.size();
 
@@ -195,14 +194,14 @@ void compute_inclusive_scan_by_key_reference(ValueInItT h_values_it,
 }
 
 template <typename ValueT, typename KeyT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT>
-void compute_inclusive_scan_by_key_reference(const thrust::device_vector<ValueT> &d_values,
-                                             const thrust::device_vector<KeyT> &d_keys,
+void compute_inclusive_scan_by_key_reference(const c2h::device_vector<ValueT> &d_values,
+                                             const c2h::device_vector<KeyT> &d_keys,
                                              ValuesOutItT result_out_it,
                                              ScanOpT scan_op,
                                              EqualityOpT equality_op)
 {
-  thrust::host_vector<ValueT> host_values(d_values);
-  thrust::host_vector<KeyT> host_keys(d_keys);
+  c2h::host_vector<ValueT> host_values(d_values);
+  c2h::host_vector<KeyT> host_keys(d_keys);
 
   std::size_t num_items = host_values.size();
 

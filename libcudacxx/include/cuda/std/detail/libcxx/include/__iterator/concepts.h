@@ -15,6 +15,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/arithmetic.h"
 #include "../__concepts/assignable.h"
 #include "../__concepts/common_reference_with.h"
@@ -44,14 +52,6 @@
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -476,7 +476,7 @@ template<class _Ip>
 _LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
-#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if defined(_CCCL_COMPILER_MSVC_2017)
 // For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -489,7 +489,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-#  else // ^^^ _LIBCUDACXX_COMPILER_MSVC_2017 ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
@@ -501,7 +501,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-#  endif // !_LIBCUDACXX_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER_MSVC_2017
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __random_access_iterator_operations = _LIBCUDACXX_FRAGMENT(__random_access_iterator_operations_, _Ip);
 

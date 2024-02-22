@@ -15,6 +15,14 @@
 #  include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__concepts/__concept_macros.h"
 #include "../__iterator/access.h"
@@ -32,22 +40,14 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
-#ifdef _LIBCUDACXX_COMPILER_CLANG_CUDA
+#ifdef _CCCL_CUDA_COMPILER_CLANG
 #  include <new>
-#endif // _LIBCUDACXX_COMPILER_CLANG_CUDA
+#endif // _CCCL_CUDA_COMPILER_CLANG
 
 #if defined(__cuda_std__) && _CCCL_STD_VER > 2017 // need to backfill ::std::construct_at
-#  ifndef _LIBCUDACXX_COMPILER_NVRTC
+#  ifndef _CCCL_COMPILER_NVRTC
 #    include <memory>
-#  endif // _LIBCUDACXX_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER_NVRTC
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std

@@ -3,13 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
-// XFAIL: c++17, c++20
 
 // template<range R>
 //   constexpr range_difference_t<R> ranges::distance(R&& r);
@@ -47,7 +46,6 @@ __host__ __device__ constexpr bool test() {
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ptrdiff_t);
     ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ranges::range_difference_t<R>);
   }
-#ifdef _LIBCUDACXX_HAS_RANGES
   {
     // Unsized range, non-copyable iterator type, rvalue-ref-qualified begin()
     using It = cpp20_input_iterator<int*>;
@@ -74,7 +72,6 @@ __host__ __device__ constexpr bool test() {
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&&>);
   }
-#endif
   {
     // Sized range (sized sentinel type), non-copyable iterator type
     test_ordinary<cpp20_input_iterator<int*>, sized_sentinel<cpp20_input_iterator<int*>>>();

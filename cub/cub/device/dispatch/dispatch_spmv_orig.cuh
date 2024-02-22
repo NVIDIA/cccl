@@ -649,7 +649,7 @@ struct DispatchSpmv
               typename SpmvKernelT,
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
-    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -939,7 +939,7 @@ struct DispatchSpmv
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,

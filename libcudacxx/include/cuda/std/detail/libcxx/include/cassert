@@ -24,9 +24,9 @@ Macros:
 
 #else
 
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef _CCCL_COMPILER_NVRTC
 #include <cassert>
 #include <assert.h>
-#endif //_LIBCUDACXX_COMPILER_NVRTC
+#endif //_CCCL_COMPILER_NVRTC
 
 #endif // __cuda_std__

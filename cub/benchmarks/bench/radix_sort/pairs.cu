@@ -133,7 +133,7 @@ void radix_sort_values(std::integral_constant<bool, true>,
                        nvbench::state &state,
                        nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using offset_t = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   using key_t   = KeyT;
   using value_t = ValueT;
@@ -214,7 +214,7 @@ void radix_sort_values(std::integral_constant<bool, false>,
 template <typename KeyT, typename ValueT, typename OffsetT>
 void radix_sort_values(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT> tl)
 {
-  using offset_t = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   radix_sort_values(std::integral_constant<bool, fits_in_default_shared_memory<KeyT, ValueT, offset_t>()>{},
                     state,

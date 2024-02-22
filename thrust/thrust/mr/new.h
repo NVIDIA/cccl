@@ -41,10 +41,7 @@ namespace mr
  *  \{
  */
 
-/*! A memory resource that uses global operators new and delete to allocate and deallocate memory. Uses alignment-enabled
- *      overloads when available, otherwise uses regular overloads and implements alignment requirements by itself.
- */
-class new_delete_resource final : public memory_resource<>
+class new_delete_resource_base : public memory_resource<>
 {
 public:
     void * do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
@@ -89,9 +86,14 @@ public:
     }
 };
 
+/*! A memory resource that uses global operators new and delete to allocate and deallocate memory. Uses alignment-enabled
+ *      overloads when available, otherwise uses regular overloads and implements alignment requirements by itself.
+ */
+class new_delete_resource final : public new_delete_resource_base
+{};
+
 /*! \} // memory_resources
  */
 
 } // end mr
 THRUST_NAMESPACE_END
-

@@ -12,10 +12,9 @@
 #ifndef _CUDA_PTX_PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_
 #define _CUDA_PTX_PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_
 
-#include "ptx_dot_variants.h"
-#include "ptx_helper_functions.h"
-#include "ptx_isa_target_macros.h"
-#include "../../cstdint"
+#ifndef __cuda_std__
+#  include <__config>
+#endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +23,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "ptx_dot_variants.h"
+#include "ptx_helper_functions.h"
+#include "../../cstdint"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -318,7 +321,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
       : "r"(__as_ptr_remote_dsmem(__addr))
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
@@ -361,7 +363,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive(
         "r"(__count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
@@ -490,7 +491,6 @@ _LIBCUDACXX_DEVICE static inline void mbarrier_arrive_expect_tx(
         "r"(__tx_count)
       : "memory"
     );
-
   ),(
     // Unsupported architectures will have a linker error with a semi-decent error message
     __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();

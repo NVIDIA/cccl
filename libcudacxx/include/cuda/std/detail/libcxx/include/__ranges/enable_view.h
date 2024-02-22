@@ -15,13 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__concepts/derived_from.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/void_t.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +22,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__concepts/derived_from.h"
+#include "../__concepts/same_as.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_class.h"
+#include "../__type_traits/remove_cv.h"
+#include "../__type_traits/void_t.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_STD_VER >= 2017

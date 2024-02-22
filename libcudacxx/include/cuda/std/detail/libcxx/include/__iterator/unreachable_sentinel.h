@@ -16,8 +16,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/concepts.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +23,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__iterator/concepts.h"
 
 #if _CCCL_STD_VER > 2014
 
@@ -37,11 +37,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
     ;
 namespace __unreachable_sentinel_detail {
 struct __unreachable_base
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 {
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
@@ -75,11 +75,11 @@ struct __unreachable_base
 #endif // _CCCL_STD_VER < 2020
 };
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 } // namespace __unreachable_sentinel_detail
 struct unreachable_sentinel_t
     : __unreachable_sentinel_detail::__unreachable_base {};
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 

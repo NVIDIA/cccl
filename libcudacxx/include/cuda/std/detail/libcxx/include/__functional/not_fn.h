@@ -15,14 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__functional/invoke.h"
-#include "../__functional/perfect_forward.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__utility/forward.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -30,6 +22,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__functional/invoke.h"
+#include "../__functional/perfect_forward.h"
+#include "../__type_traits/decay.h"
+#include "../__type_traits/enable_if.h"
+#include "../__type_traits/is_constructible.h"
+#include "../__type_traits/is_move_constructible.h"
+#include "../__utility/forward.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -47,7 +47,7 @@ struct __not_fn_op {
 template <class _Fn>
 struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn> {
     using __base = __perfect_forward<__not_fn_op, _Fn>;
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) // nvbug 3961621
+#if defined(_CCCL_COMPILER_NVRTC) // nvbug 3961621
     constexpr __not_fn_t() noexcept = default;
 
     _LIBCUDACXX_TEMPLATE(class _OrigFn)

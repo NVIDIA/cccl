@@ -81,7 +81,7 @@ __global__ void example_kernel() {
 }
 ```
 
-[See it on Godbolt](https://godbolt.org/z/oK7Tazszx){: .btn }
+[See it on Godbolt](https://godbolt.org/z/PGTa76Ef7){: .btn }
 
 [`cuda::thread_scope`]: ./memory_model.md
 [Tracking asynchronous operations by the mbarrier object]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#tracking-asynchronous-operations-by-the-mbarrier-object

@@ -76,6 +76,6 @@ int main(int, char**)
     return 0;
 }
 
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef TEST_COMPILER_NVRTC
 float zero = 0;
 #endif

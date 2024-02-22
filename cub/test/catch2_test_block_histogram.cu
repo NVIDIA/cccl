@@ -37,9 +37,6 @@
 
 #include <cub/block/block_histogram.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include "catch2_test_helper.h"
 
 template <int BINS,
@@ -70,8 +67,8 @@ template <int ItemsPerThread,
           int Bins,
           cub::BlockHistogramAlgorithm Algorithm,
           typename SampleT>
-void block_histogram(thrust::device_vector<SampleT> &d_samples,
-                     thrust::device_vector<int> &d_histogram)
+void block_histogram(c2h::device_vector<SampleT> &d_samples,
+                     c2h::device_vector<int> &d_histogram)
 {
   block_histogram_kernel<Bins, ThreadsInBlock, ItemsPerThread, Algorithm>
     <<<1, ThreadsInBlock>>>(thrust::raw_pointer_cast(d_samples.data()),
@@ -118,13 +115,13 @@ CUB_TEST("Block histogram can be computed with uniform input",
   const sample_t uniform_value =
     static_cast<sample_t>(GENERATE_COPY(take(10, random(0, params::bins - 1))));
 
-  thrust::host_vector<sample_t> h_samples(params::num_samples, uniform_value);
-  thrust::host_vector<int> h_reference(params::bins);
+  c2h::host_vector<sample_t> h_samples(params::num_samples, uniform_value);
+  c2h::host_vector<int> h_reference(params::bins);
   h_reference[static_cast<std::size_t>(uniform_value)] = params::num_samples;
 
   // Allocate problem device arrays
-  thrust::device_vector<sample_t> d_samples = h_samples;
-  thrust::device_vector<int> d_histogram(params::bins);
+  c2h::device_vector<sample_t> d_samples = h_samples;
+  c2h::device_vector<int> d_histogram(params::bins);
 
   // Run kernel
   block_histogram<params::items_per_thread,
@@ -136,10 +133,10 @@ CUB_TEST("Block histogram can be computed with uniform input",
 }
 
 template <typename SampleT>
-thrust::host_vector<int>
-compute_host_reference(int bins, const thrust::host_vector<SampleT> &h_samples)
+c2h::host_vector<int>
+compute_host_reference(int bins, const c2h::host_vector<SampleT> &h_samples)
 {
-  thrust::host_vector<int> h_reference(bins);
+  c2h::host_vector<int> h_reference(bins);
   for (const SampleT &sample : h_samples)
   {
     h_reference[sample]++;
@@ -160,12 +157,12 @@ CUB_TEST("Block histogram can be computed with modulo input",
   using sample_t = typename params::sample_t;
 
   // Allocate problem device arrays
-  thrust::device_vector<int> d_histogram(params::bins);
-  thrust::device_vector<sample_t> d_samples(params::num_samples);
+  c2h::device_vector<int> d_histogram(params::bins);
+  c2h::device_vector<sample_t> d_samples(params::num_samples);
 
   c2h::gen(c2h::modulo_t{params::bins}, d_samples);
 
-  thrust::host_vector<sample_t> h_samples = d_samples;
+  c2h::host_vector<sample_t> h_samples = d_samples;
   auto h_reference = compute_host_reference(params::bins, h_samples);
 
   // Run kernel
@@ -189,18 +186,18 @@ CUB_TEST("Block histogram can be computed with random input",
   using sample_t = typename params::sample_t;
 
   // Allocate problem device arrays
-  thrust::device_vector<int> d_histogram(params::bins);
-  thrust::device_vector<sample_t> d_samples(params::num_samples);
+  c2h::device_vector<int> d_histogram(params::bins);
+  c2h::device_vector<sample_t> d_samples(params::num_samples);
 
   const sample_t min_bin = static_cast<sample_t>(0);
-  const sample_t max_bin = 
+  const sample_t max_bin =
     static_cast<sample_t>(
       std::min(static_cast<std::int32_t>(std::numeric_limits<sample_t>::max()),
                static_cast<std::int32_t>(params::bins - 1)));
 
   c2h::gen(CUB_SEED(10), d_samples, min_bin, max_bin);
 
-  thrust::host_vector<sample_t> h_samples = d_samples;
+  c2h::host_vector<sample_t> h_samples = d_samples;
   auto h_reference = compute_host_reference(params::bins, h_samples);
 
   // Run kernel
@@ -211,4 +208,3 @@ CUB_TEST("Block histogram can be computed with random input",
 
   REQUIRE(h_reference == d_histogram);
 }
-

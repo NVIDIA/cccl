@@ -233,9 +233,16 @@ template<class T> complex<T> tanh (const complex<T>&);
 */
 
 #ifndef __cuda_std__
-#include <__config>
-#include <stdexcept>
+#  include <__config>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__type_traits/enable_if.h"
@@ -258,30 +265,26 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda_bf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
+#ifndef __cuda_std__
+#include <stdexcept>
+#endif // __cuda_std__
+
 #if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) \
- && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+ && !defined(_CCCL_COMPILER_NVRTC)
 #include <sstream> // for std::basic_ostringstream
-#endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_LIBCUDACXX_COMPILER_NVRTC
+#endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER_NVRTC
 
 // Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 #include <complex>
 
 #define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up (&)[2]>(__c)[0]
 #define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up (&)[2]>(__c)[1]
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 # if _LIBCUDACXX_CUDA_ABI_VERSION > 3
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS(V) _ALIGNAS(V)
@@ -343,7 +346,7 @@ public:
     complex(const complex<_Xp>& __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
     template <class _Up>
     _LIBCUDACXX_INLINE_VISIBILITY
     complex(const ::std::complex<_Up>& __other)
@@ -360,7 +363,7 @@ public:
 
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<_Tp>() const { return { __re_, __im_ }; }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type imag() const {return __im_;}
@@ -462,7 +465,7 @@ public:
     explicit constexpr complex(const complex<long double>& __c);
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
     template <class _Up>
     _LIBCUDACXX_INLINE_VISIBILITY
     complex(const ::std::complex<_Up>& __other)
@@ -479,7 +482,7 @@ public:
 
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<float>() const { return { __re_, __im_ }; }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr float real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr float imag() const {return __im_;}
@@ -569,7 +572,7 @@ public:
     explicit constexpr complex(const complex<long double>& __c);
 #endif //_LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
     template <class _Up>
     _LIBCUDACXX_INLINE_VISIBILITY
     complex(const ::std::complex<_Up>& __other)
@@ -586,7 +589,7 @@ public:
 
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<double>() const { return { __re_, __im_ }; }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr double real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr double imag() const {return __im_;}
@@ -665,7 +668,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr complex(const complex<double>& __c);
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
     template <class _Up>
     _LIBCUDACXX_INLINE_VISIBILITY
     complex(const ::std::complex<_Up>& __other)
@@ -682,7 +685,7 @@ public:
 
     _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
     operator ::std::complex<long double>() const { return { __re_, __im_ }; }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr long double real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr long double imag() const {return __im_;}
@@ -1218,7 +1221,7 @@ operator==(const _Tp& __x, const complex<_Tp>& __y)
     return __x == __y.real() && _Tp(0) == __y.imag();
 }
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
@@ -1234,7 +1237,7 @@ operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
     return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
         && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
 }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
 template<class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -1260,7 +1263,7 @@ operator!=(const _Tp& __x, const complex<_Tp>& __y)
     return !(__x == __y);
 }
 
-#if defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 bool
@@ -1274,7 +1277,7 @@ bool
 operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
     return !(__x == __y);
 }
-#endif // defined(__cuda_std__) && !defined(_LIBCUDACXX_COMPILER_NVRTC)
+#endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
 // 26.3.7 values:
 
@@ -1974,7 +1977,7 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 }
 #endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION
 #else // ^^^ !__cuda_std__ ^^^ / vvv __cuda_std__
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef _CCCL_COMPILER_NVRTC
 template<typename ValueType,class charT, class traits>
 ::std::basic_ostream<charT, traits>& operator<<(::std::basic_ostream<charT, traits>& os, const complex<ValueType>& z)
 {
@@ -2023,7 +2026,7 @@ operator>>(::std::basic_istream<charT, traits>& is, complex<ValueType>& z)
     }
   return is;
 }
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)

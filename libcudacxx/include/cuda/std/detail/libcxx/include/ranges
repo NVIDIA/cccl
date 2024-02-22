@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -310,14 +310,31 @@ namespace std {
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4848)
+
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__ranges/access.h"
+#include "__ranges/concepts.h"
+#include "__ranges/dangling.h"
 #include "__ranges/data.h"
+#include "__ranges/empty.h"
 #include "__ranges/enable_borrowed_range.h"
 #include "__ranges/enable_view.h"
 #include "__ranges/rbegin.h"
 #include "__ranges/rend.h"
 #include "__ranges/size.h"
+#include "__ranges/subrange.h"
+#include "__ranges/view_interface.h"
 
 // standard-mandated includes
 #include "version"
@@ -333,12 +350,6 @@ namespace std {
 #include "__tuple_dir/tuple_element.h"
 #include "__tuple_dir/tuple_size.h"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX_RANGES

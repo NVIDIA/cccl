@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/common_type.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/copy_cv.h"
@@ -31,21 +39,13 @@
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // common_reference
 #if _CCCL_STD_VER > 2011
 
 // Let COND_RES(X, Y) be:
-#ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 

@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__functional/invoke.h"
 #include "../__functional/perfect_forward.h"
@@ -24,14 +32,6 @@
 #include "../__type_traits/is_move_constructible.h"
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__utility/forward.h"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -49,7 +49,7 @@ struct __bind_front_op {
 template <class _Fn, class ..._BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...> {
     using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(_CCCL_COMPILER_NVRTC)
     constexpr __bind_front_t() noexcept = default;
 
     template<class... _Args>

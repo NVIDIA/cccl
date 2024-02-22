@@ -15,6 +15,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__algorithm/unwrap_iter.h"
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include "../__compare/compare_three_way_result.h"
@@ -45,14 +53,6 @@
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -265,7 +265,7 @@ public:
     return _CUDA_VRANGES::iter_move(--__tmp);
   }
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+#if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
   template<class _Iter2, class _Iter1 = _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
   iter_swap(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
@@ -276,7 +276,7 @@ public:
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
-#else // ^^^ _LIBCUDACXX_COMPILER_MSVC_2017 ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC_2017 vvv
+#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
   template<class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
   iter_swap(const reverse_iterator& __x, const reverse_iterator<_Iter2>& __y)
@@ -286,11 +286,11 @@ public:
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
-#if defined(_LIBCUDACXX_COMPILER_ICC)
+#if defined(_CCCL_COMPILER_ICC)
   _LIBCUDACXX_UNREACHABLE();
-#endif // _LIBCUDACXX_COMPILER_ICC
+#endif // _CCCL_COMPILER_ICC
   }
-#endif // !_LIBCUDACXX_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014
 };
 

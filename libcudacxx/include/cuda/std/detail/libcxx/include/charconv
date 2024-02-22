@@ -161,7 +161,7 @@ struct _LIBCUDACXX_HIDDEN __traits_base
 {
     using type = uint64_t;
 
-#if !defined(_LIBCUDACXX_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_MSVC)
     static _LIBCUDACXX_INLINE_VISIBILITY int __width(_Tp __v)
     {
         auto __t = (64 - __builtin_clzll(__v | 1)) * 1233 >> 12;
@@ -183,7 +183,7 @@ struct _LIBCUDACXX_HIDDEN
 {
     using type = uint32_t;
 
-#if !defined(_LIBCUDACXX_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_MSVC)
     static _LIBCUDACXX_INLINE_VISIBILITY int __width(_Tp __v)
     {
         auto __t = (32 - __builtin_clz(__v | 1)) * 1233 >> 12;
@@ -222,7 +222,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY bool
 __mul_overflowed(_Tp __a, _Tp __b, _Tp& __r)
 {
     static_assert(is_unsigned<_Tp>::value, "");
-#if !defined(_LIBCUDACXX_COMPILER_MSVC) && !defined(_LIBCUDACXX_COMPILER_NVHPC)
+#if !defined(_CCCL_COMPILER_MSVC) && !defined(_CCCL_COMPILER_NVHPC)
     return __builtin_mul_overflow(__a, __b, &__r);
 #else
     bool __did = __b && ((numeric_limits<_Tp>::max)() / __b) < __a;
@@ -314,7 +314,7 @@ __to_chars_itoa(char* __first, char* __last, _Tp __value, false_type)
     using __tx = __itoa::__traits<_Tp>;
     auto __diff = __last - __first;
 
-#if !defined(_LIBCUDACXX_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_MSVC)
     if (__tx::digits <= __diff || __tx::__width(__value) <= __diff)
         return {__tx::__convert(__value, __first), errc(0)};
     else

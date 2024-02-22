@@ -63,8 +63,8 @@ CUB_TEST("Scatter to striped works",
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
   using out_type = typename params::out_type;
-  thrust::device_vector<out_type> d_out(params::total_item_count);
-  thrust::device_vector<in_type> d_in(params::total_item_count);
+  c2h::device_vector<out_type> d_out(params::total_item_count);
+  c2h::device_vector<in_type> d_in(params::total_item_count);
 
   c2h::gen(c2h::modulo_t{d_in.size()}, d_in);
 
@@ -85,8 +85,8 @@ CUB_TEST("Blocked to striped works",
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
   using out_type = typename params::out_type;
-  thrust::device_vector<out_type> d_out(params::total_item_count, out_type{});
-  thrust::device_vector<in_type> d_in(params::total_item_count);
+  c2h::device_vector<out_type> d_out(params::total_item_count, out_type{});
+  c2h::device_vector<in_type> d_in(params::total_item_count);
 
   c2h::gen(c2h::modulo_t{d_in.size()}, d_in);
 
@@ -94,7 +94,7 @@ CUB_TEST("Blocked to striped works",
     d_in,
     d_out,
     blocked_to_striped{});
-  thrust::host_vector<out_type> h_expected_output(d_out.size());
+  c2h::host_vector<out_type> h_expected_output(d_out.size());
   fill_striped<params::logical_warp_threads,
                params::items_per_thread,
                params::logical_warp_threads * params::total_warps>(h_expected_output.begin());
@@ -111,19 +111,19 @@ CUB_TEST("Striped to blocked works",
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
   using out_type = typename params::out_type;
-  thrust::device_vector<out_type> d_out(params::total_item_count, out_type{});
+  c2h::device_vector<out_type> d_out(params::total_item_count, out_type{});
 
-  thrust::host_vector<in_type> h_in(params::total_item_count);
+  c2h::host_vector<in_type> h_in(params::total_item_count);
   fill_striped<params::logical_warp_threads,
                params::items_per_thread,
                params::logical_warp_threads * params::total_warps>(h_in.begin());
-  thrust::device_vector<in_type> d_in = h_in;
+  c2h::device_vector<in_type> d_in = h_in;
 
   warp_exchange<params::logical_warp_threads, params::items_per_thread, params::total_warps, cub::WARP_EXCHANGE_SMEM>(
     d_in,
     d_out,
     striped_to_blocked{});
-  thrust::device_vector<out_type> d_expected_output(d_out.size());
+  c2h::device_vector<out_type> d_expected_output(d_out.size());
   c2h::gen(c2h::modulo_t{d_out.size()}, d_expected_output);
 
   REQUIRE(d_expected_output == d_out);

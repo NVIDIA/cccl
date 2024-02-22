@@ -14,13 +14,6 @@
 #  include <__config>
 #endif // __cuda_std__
 
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_types.h"
-#include "../__type_traits/add_const.h"
-#include "../__type_traits/add_cv.h"
-#include "../__type_traits/add_volatile.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,6 +21,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__tuple_dir/tuple_indices.h"
+#include "../__tuple_dir/tuple_types.h"
+#include "../__type_traits/add_const.h"
+#include "../__type_traits/add_cv.h"
+#include "../__type_traits/add_volatile.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -55,7 +55,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_cv<__tuple_element_t<_Ip, _Tp>>::type type;
 };
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 
 namespace __indexer_detail {
 

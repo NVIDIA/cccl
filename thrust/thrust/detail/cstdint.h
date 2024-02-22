@@ -26,9 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC) || \
-    (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG) || \
-    (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_INTEL)
+#if !defined(_CCCL_COMPILER_MSVC)
 #include <stdint.h>
 #endif
 
@@ -37,7 +35,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-#if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 
 #if (_MSC_VER < 1300)
    typedef signed   char     int8_t;

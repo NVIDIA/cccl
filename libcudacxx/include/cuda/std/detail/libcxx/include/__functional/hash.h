@@ -12,8 +12,15 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstring>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "../__functional/invoke.h"
 #include "../__functional/unary_function.h"
@@ -31,13 +38,9 @@
 #include "../__utility/swap.h"
 #include "../cstdint"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#ifndef __cuda_std__
+#include <cstring>
+#endif // __cuda_std__
 
 #ifndef __cuda_std__
 

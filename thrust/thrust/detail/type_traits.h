@@ -103,11 +103,10 @@ template<typename T> struct is_pod
    : public integral_constant<
        bool,
        is_void<T>::value || is_pointer<T>::value || is_arithmetic<T>::value
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC || \
-    THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_CLANG)
 // use intrinsic type traits
        || __is_pod(T)
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 // only use the intrinsic for >= 4.3
 #if (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)
        || __is_pod(T)
@@ -441,6 +440,8 @@ template<typename T1, typename T2, typename T = void>
     : enable_if< is_convertible<T1,T2>::value, T >
 {};
 
+template<typename T1, typename T2, typename T = void>
+using enable_if_convertible_t = typename enable_if_convertible<T1, T2, T>::type;
 
 template<typename T1, typename T2, typename T = void>
   struct disable_if_convertible
@@ -452,7 +453,6 @@ template<typename T1, typename T2, typename Result = void>
   struct enable_if_different
     : enable_if<is_different<T1,T2>::value, Result>
 {};
-
 
 template<typename T>
   struct is_numeric

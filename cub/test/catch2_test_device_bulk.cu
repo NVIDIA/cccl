@@ -29,7 +29,6 @@
 
 #include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
 
 #include <cuda/std/type_traits>
 
@@ -69,12 +68,12 @@ CUB_TEST("Device bulk works", "[bulk][device]", offset_type)
       max_items,
     })));
 
-  thrust::device_vector<int> counts(num_items);
+  c2h::device_vector<int> counts(num_items);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
 
   device_bulk(num_items, incrementer_t<offset_t>{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }

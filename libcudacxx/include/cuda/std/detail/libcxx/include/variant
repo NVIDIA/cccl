@@ -209,6 +209,14 @@ C++20
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__availability"
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
@@ -260,14 +268,6 @@ C++20
 #  include "compare"
 #endif
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 #ifndef __cuda_std__
 #  include <exception>
 
@@ -283,7 +283,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif // __cuda_std__
 
-#if _CCCL_STD_VER >= 2014 && !defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -2184,6 +2184,6 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr auto&& __unchecked_get(variant<_Types...
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER >= 2014 && !_LIBCUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX_VARIANT

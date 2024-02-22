@@ -81,6 +81,14 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "__assert" // all public C++ headers provide the assertion handler
 #include "__type_traits/integral_constant.h"
 #include "climits"
@@ -90,14 +98,6 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -14,12 +14,20 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_same.h"
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#if defined(__cuda_std__) && defined(_LIBCUDACXX_CUDACC)
+#if defined(_LIBCUDACXX_CUDACC)
 #ifdef _LIBCUDACXX_HAS_NVFP16
 #include <cuda_fp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16
@@ -29,15 +37,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #include <cuda_bf16.h>
 _CCCL_DIAG_POP
 #endif // _LIBCUDACXX_HAS_NVBF16
-#endif
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#endif // _LIBCUDACXX_CUDACC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

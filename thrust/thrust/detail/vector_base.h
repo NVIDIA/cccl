@@ -573,8 +573,6 @@ template<typename T, typename Alloc>
                            storage_type &new_storage);
 }; // end vector_base
 
-} // end detail
-
 /*! This function assigns the contents of vector a to vector b and the
  *  contents of vector b to vector a.
  *
@@ -584,8 +582,8 @@ template<typename T, typename Alloc>
  *           of a will be returned here.
  */
 template<typename T, typename Alloc>
-  void swap(detail::vector_base<T,Alloc> &a,
-            detail::vector_base<T,Alloc> &b);
+  void swap(vector_base<T,Alloc> &a,
+            vector_base<T,Alloc> &b);
 
 
 /*! This operator allows comparison between two vectors.
@@ -596,18 +594,18 @@ template<typename T, typename Alloc>
  */
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+bool operator==(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator==(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator==(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+                const vector_base<T2,Alloc2>& rhs);
 
 /*! This operator allows comparison between two vectors.
  *  \param lhs The first \p vector to compare.
@@ -617,20 +615,21 @@ bool operator==(const std::vector<T1,Alloc1>&         lhs,
  */
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+                const vector_base<T2,Alloc2>& rhs);
+
+} // end detail
 
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/vector_base.inl>
-

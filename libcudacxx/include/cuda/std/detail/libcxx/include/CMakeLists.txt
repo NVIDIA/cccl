@@ -48,7 +48,11 @@ set(files
   __bsd_locale_fallbacks.h
   __errc
   __cccl_config
+  __cccl/compiler.h
+  __cccl/diagnostic.h
   __cccl/dialect.h
+  __cccl/execution_space.h
+  __cccl/system_header.h
   __cccl/version.h
   __cccl/visibility.h
   __concepts/__concept_macros.h
@@ -126,6 +130,7 @@ set(files
   __fwd/get.h
   __fwd/hash.h
   __fwd/pair.h
+  __fwd/subrange.h
   __fwd/tuple.h
   __hash_table
   __iterator/access.h
@@ -191,12 +196,17 @@ set(files
   __node_handle
   __nullptr
   __ranges/access.h
+  __ranges/concepts.h
+  __ranges/dangling.h
   __ranges/data.h
+  __ranges/empty.h
   __ranges/enable_borrowed_range.h
   __ranges/enable_view.h
   __ranges/rbegin.h
   __ranges/rend.h
   __ranges/size.h
+  __ranges/subrange.h
+  __ranges/view_interface.h
   __split_buffer
   __sso_allocator
   __std_stream
@@ -209,6 +219,7 @@ set(files
   __tuple_dir/structured_bindings.h
   __tuple_dir/tuple_element.h
   __tuple_dir/tuple_indices.h
+  __tuple_dir/tuple_like_ext.h
   __tuple_dir/tuple_like.h
   __tuple_dir/tuple_size.h
   __tuple_dir/tuple_types.h

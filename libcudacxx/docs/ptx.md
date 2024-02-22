@@ -281,8 +281,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`cvta`]                                          | No                      |
 | [`cvt`]                                           | No                      |
 | [`cvt.pack`]                                      | No                      |
-| [`mapa`]                                          | No                      |
-| [`getctarank`]                                    | No                      |
+| [`mapa`]                                          | CTK-FUTURE, CCCL v2.4.0 |
+| [`getctarank`]                                    | CTK-FUTURE, CCCL v2.4.0 |
 
 [`mov`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
 [`shfl (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated
@@ -302,8 +302,8 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`cvta`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta
 [`cvt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt
 [`cvt.pack`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack
-[`mapa`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa
-[`getctarank`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank
+[`mapa`]: #mapa
+[`getctarank`]: #getctarank
 
 #### `st.async`
 
@@ -337,7 +337,6 @@ __device__ static inline void st_async(
   const B32 (&value)[4],
   uint64_t* remote_bar);
 ```
-
 
 **Usage**:
 ```cuda
@@ -417,6 +416,36 @@ int main() {
   cudaDeviceSynchronize();
 }
 ```
+
+#### `mapa`
+
+- PTX ISA: [`mapa`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa)
+
+**mapa**:
+```cuda
+// mapa{.space}.u32  dest, addr, target_cta; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename Tp>
+__device__ static inline Tp* mapa(
+  cuda::ptx::space_cluster_t,
+  const Tp* addr,
+  uint32_t target_cta);
+```
+
+#### `getctarank`
+
+- PTX ISA: [`getctarank`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank)
+
+**getctarank**:
+```cuda
+// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
+// .space     = { .shared::cluster }
+template <typename=void>
+__device__ static inline uint32_t getctarank(
+  cuda::ptx::space_cluster_t,
+  const void* addr);
+```
+
 ### [9.7.8.24. Data Movement and Conversion Instructions: Asynchronous copy](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy)
 
 | Instruction                              | Available in libcu++ |
@@ -502,7 +531,8 @@ int main() {
 | [`bar, barrier`]      | No                      |
 | [`bar.warp.sync`]     | No                      |
 | [`barrier.cluster`]   | No                      |
-| [`membar/fence`]      | No                      |
+| [`membar`]            | No                      |
+| [`fence`]             | CTK-FUTURE, CCCL v2.4.0 |
 | [`atom`]              | No                      |
 | [`red`]               | No                      |
 | [`red.async`]         | CTK-FUTURE, CCCL v2.3.0 |
@@ -517,7 +547,8 @@ int main() {
 [`bar, barrier`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
 [`bar.warp.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
 [`barrier.cluster`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster
-[`membar/fence`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+[`membar`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
+[`fence`]: #fence
 [`atom`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
 [`red`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
 [`red.async`]: #redasync
@@ -528,6 +559,77 @@ int main() {
 [`redux.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
 [`griddepcontrol`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
 [`elect.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+
+#### `fence`
+
+- PTX ISA: [`fence`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence)
+
+**fence**:
+```cuda
+// fence{.sem}.scope; // 1. PTX ISA 60, SM_70
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cta, .gpu, .sys }
+template <cuda::ptx::dot_sem Sem, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_t<Scope> scope);
+
+// fence{.sem}.scope; // 2. PTX ISA 78, SM_90
+// .sem       = { .sc, .acq_rel }
+// .scope     = { .cluster }
+template <cuda::ptx::dot_sem Sem>
+__device__ static inline void fence(
+  cuda::ptx::sem_t<Sem> sem,
+  cuda::ptx::scope_cluster_t);
+```
+**fence_mbarrier_init**:
+```cuda
+// fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
+// .sem       = { .release }
+// .scope     = { .cluster }
+template <typename=void>
+__device__ static inline void fence_mbarrier_init(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_cluster_t);
+```
+**fence_proxy_alias**:
+```cuda
+// fence.proxy.alias; // 4. PTX ISA 75, SM_70
+template <typename=void>
+__device__ static inline void fence_proxy_alias();
+```
+**fence_proxy_async**:
+```cuda
+// fence.proxy.async; // 5. PTX ISA 80, SM_90
+template <typename=void>
+__device__ static inline void fence_proxy_async();
+
+// fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
+// .space     = { .global, .shared::cluster, .shared::cta }
+template <cuda::ptx::dot_space Space>
+__device__ static inline void fence_proxy_async(
+  cuda::ptx::space_t<Space> space);
+```
+**fence_proxy_tensormap_generic**:
+```cuda
+// fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
+// .sem       = { .release }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_release_t,
+  cuda::ptx::scope_t<Scope> scope);
+
+// fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
+// .sem       = { .acquire }
+// .scope     = { .cta, .cluster, .gpu, .sys }
+template <int N32, cuda::ptx::dot_scope Scope>
+__device__ static inline void fence_proxy_tensormap_generic(
+  cuda::ptx::sem_acquire_t,
+  cuda::ptx::scope_t<Scope> scope,
+  const void* addr,
+  cuda::ptx::n32_t<N32> size);
+```
 
 #### `red.async`
 
@@ -678,7 +780,6 @@ __device__ static inline void red_async(
   int64_t* remote_bar);
 ```
 
-
 ### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
 | Instruction                              | Available in libcu++    |
@@ -771,7 +872,6 @@ __device__ static inline void mbarrier_arrive(
   const uint32_t& count);
 ```
 
-
 **mbarrier_arrive_no_complete**:
 ```cuda
 // mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.  PTX ISA 70, SM_80
@@ -780,7 +880,6 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   uint64_t* addr,
   const uint32_t& count);
 ```
-
 
 **mbarrier_arrive_expect_tx**:
 ```cuda
@@ -808,7 +907,6 @@ __device__ static inline void mbarrier_arrive_expect_tx(
   uint64_t* addr,
   const uint32_t& tx_count);
 ```
-
 
 Usage:
 ```cuda
@@ -873,7 +971,6 @@ __device__ static inline bool mbarrier_test_wait(
   const uint64_t& state);
 ```
 
-
 **mbarrier_test_wait_parity**:
 ```cuda
 // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
@@ -892,7 +989,6 @@ __device__ static inline bool mbarrier_test_wait_parity(
   uint64_t* addr,
   const uint32_t& phaseParity);
 ```
-
 
 **mbarrier_try_wait**:
 ```cuda
@@ -930,7 +1026,6 @@ __device__ static inline bool mbarrier_try_wait(
   const uint64_t& state,
   const uint32_t& suspendTimeHint);
 ```
-
 
 **mbarrier_try_wait_parity**:
 ```cuda
@@ -1062,3 +1157,283 @@ __device__ static inline bool mbarrier_try_wait_parity(
 [`pmevent`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-pmevent
 [`trap`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap
 [`setmaxnreg`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
+
+## [10. Special registers](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers)
+
+| Register                       | PTX ISA | SM Version | Available in libcu++    |
+|--------------------------------|---------|------------|-------------------------|
+| [`tid`]                        | 20      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`ntid`]                       | 20      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`laneid`]                     | 13      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`warpid`]                     | 13      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`nwarpid`]                    | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`ctaid`]                      | 20      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`nctaid`]                     | 20      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`smid`]                       | 13      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`nsmid`]                      | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`gridid`]                     | 30      | 30         | CTK-FUTURE, CCCL v2.4.0 |
+| [`is_explicit_cluster`]        | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`clusterid`]                  | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`nclusterid`]                 | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`cluster_ctaid`]              | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`cluster_nctaid`]             | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`cluster_ctarank`]            | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`cluster_nctarank`]           | 78      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`lanemask_eq`]                | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`lanemask_le`]                | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`lanemask_lt`]                | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`lanemask_ge`]                | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`lanemask_gt`]                | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`clock`]                      | 10      | All        | CTK-FUTURE, CCCL v2.4.0 |
+| [`clock_hi`]                   | 50      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`clock64`]                    | 20      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`pm0`]                        |         |            | No                      |
+| [`pm0_64`]                     |         |            | No                      |
+| [`envreg`]                     |         |            | No                      |
+| [`globaltimer`]                | 31      | 30         | CTK-FUTURE, CCCL v2.4.0 |
+| [`globaltimer_lo`]             | 31      | 30         | CTK-FUTURE, CCCL v2.4.0 |
+| [`globaltimer_hi`]             | 31      | 30         | CTK-FUTURE, CCCL v2.4.0 |
+| [`reserved_smem_offset_begin`] |         |            | No                      |
+| [`reserved_smem_offset_end`]   |         |            | No                      |
+| [`reserved_smem_offset_cap`]   |         |            | No                      |
+| [`reserved_smem_offset_2`]     |         |            | No                      |
+| [`total_smem_size`]            | 41      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`aggr_smem_size`]             | 81      | 90         | CTK-FUTURE, CCCL v2.4.0 |
+| [`dynamic_smem_size`]          | 41      | 20         | CTK-FUTURE, CCCL v2.4.0 |
+| [`current_graph_exec`]         | 80      | 50         | CTK-FUTURE, CCCL v2.4.0 |
+
+[`tid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-tid
+[`ntid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-ntid
+[`laneid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-laneid
+[`warpid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-warpid
+[`nwarpid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nwarpid
+[`ctaid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-ctaid
+[`nctaid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nctaid
+[`smid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-smid
+[`nsmid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nsmid
+[`gridid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-gridid
+[`is_explicit_cluster`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-is-explicit-cluster
+[`clusterid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clusterid
+[`nclusterid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-nclusterid
+[`cluster_ctaid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctaid
+[`cluster_nctaid`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctaid
+[`cluster_ctarank`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-ctarank
+[`cluster_nctarank`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-cluster-nctarank
+[`lanemask_eq`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-eq
+[`lanemask_le`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-le
+[`lanemask_lt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-lt
+[`lanemask_ge`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-ge
+[`lanemask_gt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-lanemask-gt
+[`clock`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clock-clock-hi
+[`clock_hi`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clock-clock-hi
+[`clock64`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-clock64
+[`pm0`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-pm0-pm7
+[`pm0_64`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-pm0-64-pm7-64
+[`envreg`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-envreg-32
+[`globaltimer`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer-globaltimer-lo-globaltimer-hi
+[`globaltimer_lo`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer-globaltimer-lo-globaltimer-hi
+[`globaltimer_hi`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-globaltimer-globaltimer-lo-globaltimer-hi
+[`reserved_smem_offset_begin`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-reserved-smem-offset-begin-reserved-smem-offset-end-reserved-smem-offset-cap-reserved-smem-offset-2
+[`reserved_smem_offset_end`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-reserved-smem-offset-begin-reserved-smem-offset-end-reserved-smem-offset-cap-reserved-smem-offset-2
+[`reserved_smem_offset_cap`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-reserved-smem-offset-begin-reserved-smem-offset-end-reserved-smem-offset-cap-reserved-smem-offset-2
+[`reserved_smem_offset_2`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-reserved-smem-offset-begin-reserved-smem-offset-end-reserved-smem-offset-cap-reserved-smem-offset-2
+[`total_smem_size`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-total-smem-size
+[`aggr_smem_size`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-aggr-smem-size
+[`dynamic_smem_size`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-dynamic-smem-size
+[`current_graph_exec`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-current-graph-exec
+
+
+**get_sreg**:
+```cuda
+// mov.u32 sreg_value, %%tid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_x();
+
+// mov.u32 sreg_value, %%tid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_y();
+
+// mov.u32 sreg_value, %%tid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_tid_z();
+
+// mov.u32 sreg_value, %%ntid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_x();
+
+// mov.u32 sreg_value, %%ntid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_y();
+
+// mov.u32 sreg_value, %%ntid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ntid_z();
+
+// mov.u32 sreg_value, %%laneid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_laneid();
+
+// mov.u32 sreg_value, %%warpid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_warpid();
+
+// mov.u32 sreg_value, %%nwarpid; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nwarpid();
+
+// mov.u32 sreg_value, %%ctaid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_x();
+
+// mov.u32 sreg_value, %%ctaid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_y();
+
+// mov.u32 sreg_value, %%ctaid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_ctaid_z();
+
+// mov.u32 sreg_value, %%nctaid.x; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_x();
+
+// mov.u32 sreg_value, %%nctaid.y; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_y();
+
+// mov.u32 sreg_value, %%nctaid.z; // PTX ISA 20
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nctaid_z();
+
+// mov.u32 sreg_value, %%smid; // PTX ISA 13
+template <typename=void>
+__device__ static inline uint32_t get_sreg_smid();
+
+// mov.u32 sreg_value, %%nsmid; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nsmid();
+
+// mov.u64 sreg_value, %%gridid; // PTX ISA 30
+template <typename=void>
+__device__ static inline uint64_t get_sreg_gridid();
+
+// mov.pred sreg_value, %%is_explicit_cluster; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline bool get_sreg_is_explicit_cluster();
+
+// mov.u32 sreg_value, %%clusterid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_x();
+
+// mov.u32 sreg_value, %%clusterid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_y();
+
+// mov.u32 sreg_value, %%clusterid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clusterid_z();
+
+// mov.u32 sreg_value, %%nclusterid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_x();
+
+// mov.u32 sreg_value, %%nclusterid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_y();
+
+// mov.u32 sreg_value, %%nclusterid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_nclusterid_z();
+
+// mov.u32 sreg_value, %%cluster_ctaid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_x();
+
+// mov.u32 sreg_value, %%cluster_ctaid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_y();
+
+// mov.u32 sreg_value, %%cluster_ctaid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctaid_z();
+
+// mov.u32 sreg_value, %%cluster_nctaid.x; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_x();
+
+// mov.u32 sreg_value, %%cluster_nctaid.y; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_y();
+
+// mov.u32 sreg_value, %%cluster_nctaid.z; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctaid_z();
+
+// mov.u32 sreg_value, %%cluster_ctarank; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_ctarank();
+
+// mov.u32 sreg_value, %%cluster_nctarank; // PTX ISA 78, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_cluster_nctarank();
+
+// mov.u32 sreg_value, %%lanemask_eq; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_eq();
+
+// mov.u32 sreg_value, %%lanemask_le; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_le();
+
+// mov.u32 sreg_value, %%lanemask_lt; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_lt();
+
+// mov.u32 sreg_value, %%lanemask_ge; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_ge();
+
+// mov.u32 sreg_value, %%lanemask_gt; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_lanemask_gt();
+
+// mov.u32 sreg_value, %%clock; // PTX ISA 10
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clock();
+
+// mov.u32 sreg_value, %%clock_hi; // PTX ISA 50, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_clock_hi();
+
+// mov.u64 sreg_value, %%clock64; // PTX ISA 20, SM_35
+template <typename=void>
+__device__ static inline uint64_t get_sreg_clock64();
+
+// mov.u64 sreg_value, %%globaltimer; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint64_t get_sreg_globaltimer();
+
+// mov.u32 sreg_value, %%globaltimer_lo; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_globaltimer_lo();
+
+// mov.u32 sreg_value, %%globaltimer_hi; // PTX ISA 31, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_globaltimer_hi();
+
+// mov.u32 sreg_value, %%total_smem_size; // PTX ISA 41, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_total_smem_size();
+
+// mov.u32 sreg_value, %%aggr_smem_size; // PTX ISA 81, SM_90
+template <typename=void>
+__device__ static inline uint32_t get_sreg_aggr_smem_size();
+
+// mov.u32 sreg_value, %%dynamic_smem_size; // PTX ISA 41, SM_35
+template <typename=void>
+__device__ static inline uint32_t get_sreg_dynamic_smem_size();
+
+// mov.u64 sreg_value, %%current_graph_exec; // PTX ISA 80, SM_50
+template <typename=void>
+__device__ static inline uint64_t get_sreg_current_graph_exec();
+```

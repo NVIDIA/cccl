@@ -48,6 +48,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__fwd/span.h" // dynamic_extent
 #include "../__mdspan/dynamic_extent.h"
 #include "../__mdspan/macros.h"
@@ -57,14 +65,6 @@
 #include "../__utility/integer_sequence.h"
 #include "../array"
 #include "../cstddef"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 #if !__MDSPAN_PRESERVE_STANDARD_LAYOUT
 
@@ -266,7 +266,7 @@ class __partially_static_array_with_sentinal
 private:
   using __base_t = typename __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base;
 public:
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   constexpr __partially_static_array_with_sentinal() = default;
 
@@ -275,9 +275,9 @@ public:
   __partially_static_array_with_sentinal(_Args&&... __args) noexcept(noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 };
 
 //==============================================================================
@@ -291,7 +291,7 @@ private:
   using __base_t = __partially_static_array_with_sentinal<
     T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
 public:
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   constexpr __partially_static_sizes() = default;
 
@@ -300,9 +300,9 @@ public:
   __partially_static_sizes(_Args&&... __args) noexcept(noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes<T, _static_t, __values_or_sentinals...>
   __with_tag() const noexcept {
