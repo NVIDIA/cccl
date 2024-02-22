@@ -774,7 +774,6 @@ _CUDA_VSTD::uint64_t * __try_get_barrier_handle<::cuda::thread_scope_block, _CUD
 // The user is still responsible for arriving and waiting on (or otherwise
 // synchronizing with) the barrier or pipeline barrier to see the results of
 // copies from other threads participating in the synchronization object.
-extern "C" _LIBCUDACXX_HOST_DEVICE void __cuda_ptx_mbarrier_complete_tx_is_not_supported_before_SM_90__();
 struct __memcpy_completion_impl {
 
     template<typename _Group>
@@ -815,8 +814,6 @@ struct __memcpy_completion_impl {
                     if (__group.thread_rank() == 0) {
                         ::cuda::device::barrier_expect_tx(__barrier, __size);
                     }
-                ),(
-                    __cuda_ptx_mbarrier_complete_tx_is_not_supported_before_SM_90__();
                 ));
 #endif // __cccl_ptx_isa >= 800
                 return async_contract_fulfillment::async;
