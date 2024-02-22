@@ -8,6 +8,8 @@
 
 #include <tuple>
 
+#include "test_macros.h"
+
 template <class> struct TestLayoutCtors;
 template <class Mapping, size_t... DynamicSizes>
 struct TestLayoutCtors<std::tuple<
@@ -162,7 +164,3 @@ struct is_stride_avail< T
 
 template< class T, class RankType >
 constexpr bool is_stride_avail_v = is_stride_avail< T, RankType >::value;
-
-// Workaround for variables that are only used in static_assert's
-template< typename T >
-constexpr bool unused( T && ) { return true; }
