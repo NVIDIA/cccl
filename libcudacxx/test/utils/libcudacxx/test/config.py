@@ -672,12 +672,14 @@ class Configuration(object):
         pre_sm_70 = True
         pre_sm_80 = True
         pre_sm_90 = True
+        pre_sm_90a = True
         if compute_archs and (self.cxx.type == 'nvcc' or self.cxx.type == 'clang' or self.cxx.type == 'nvrtcc'):
             pre_sm_32 = False
             pre_sm_60 = False
             pre_sm_70 = False
             pre_sm_80 = False
             pre_sm_90 = False
+            pre_sm_90a = False
 
             self.lit_config.note('Compute Archs: %s' % compute_archs)
             if compute_archs == 'native':
@@ -686,14 +688,24 @@ class Configuration(object):
             compute_archs = set(sorted(re.split('\s|;|,', compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
-                arch, *mode = re.split('-', s)
+                orig_arch, *mode = re.split('-', s)
+
+                # With Hopper there are new subarchitectures like 90a we need to handle those
+                subarchitecture = '_'
+                arch = orig_arch
+                if not isinstance(arch, int):
+                    subarchitecture = arch[-1]
+                    arch = arch[:-1]
+                else:
+                    arch = orig_arch
                 arch = int(arch)
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
                 if arch < 70: pre_sm_70 = True
                 if arch < 80: pre_sm_80 = True
                 if arch < 90: pre_sm_90 = True
-                arch_flag = real_arch_format.format(arch)
+                if arch < 90 or (arch == 90 and subarchitecture < 'a') : pre_sm_90a = True
+                arch_flag = real_arch_format.format(orig_arch)
                 if mode.count("virtual"):
                     arch_flag = virt_arch_format.format(arch)
                 self.cxx.compile_flags += [arch_flag]
@@ -707,6 +719,8 @@ class Configuration(object):
             self.config.available_features.add("pre-sm-80")
         if pre_sm_90:
             self.config.available_features.add("pre-sm-90")
+        if pre_sm_90a:
+            self.config.available_features.add("pre-sm-90a")
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
