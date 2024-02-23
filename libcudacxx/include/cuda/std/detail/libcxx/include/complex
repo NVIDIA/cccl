@@ -431,6 +431,8 @@ template<> class complex<double>;
 template<> class complex<long double>;
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
+_LIBCUDACXX_END_NAMESPACE_STD
+
 #ifdef _LIBCUDACXX_HAS_NVFP16
 #include "__cuda/complex_nvfp16.h"
 #endif // _LIBCUDACXX_HAS_NVFP16
@@ -438,6 +440,8 @@ template<> class complex<long double>;
 #ifdef _LIBCUDACXX_HAS_NVBF16
 #include "__cuda/complex_nvbf16.h"
 #endif // _LIBCUDACXX_HAS_NVBF16
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) complex<float>
