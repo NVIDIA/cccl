@@ -688,16 +688,13 @@ class Configuration(object):
             compute_archs = set(sorted(re.split('\s|;|,', compute_archs)))
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
-                orig_arch, *mode = re.split('-', s)
+                arch, *mode = re.split('-', s)
 
                 # With Hopper there are new subarchitectures like 90a we need to handle those
-                subarchitecture = '_'
-                arch = orig_arch
+                subarchitecture = ''
                 if not isinstance(arch, int):
                     subarchitecture = arch[-1]
                     arch = arch[:-1]
-                else:
-                    arch = orig_arch
                 arch = int(arch)
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
@@ -705,9 +702,9 @@ class Configuration(object):
                 if arch < 80: pre_sm_80 = True
                 if arch < 90: pre_sm_90 = True
                 if arch < 90 or (arch == 90 and subarchitecture < 'a') : pre_sm_90a = True
-                arch_flag = real_arch_format.format(orig_arch)
+                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(arch)
+                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
                 self.cxx.compile_flags += [arch_flag]
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
