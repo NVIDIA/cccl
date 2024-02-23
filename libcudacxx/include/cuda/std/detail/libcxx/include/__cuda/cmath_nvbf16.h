@@ -40,47 +40,47 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // trigonometric functions
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 sin(__nv_bfloat16 __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsin(__v);), (return __nv_bfloat16(_CUDA_VSTD::sin(float(__v)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsin(__v);), (return __nv_bfloat16(::sin(float(__v)));))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 sinh(__nv_bfloat16 __v)
 {
-  return __nv_bfloat16(_CUDA_VSTD::sinh(float(__v)));
+  return __nv_bfloat16(::sinh(float(__v)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 cos(__nv_bfloat16 __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return hcos(__v);), (return __nv_bfloat16(_CUDA_VSTD::cos(float(__v)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return hcos(__v);), (return __nv_bfloat16(::cos(float(__v)));))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 cosh(__nv_bfloat16 __v)
 {
-  return __nv_bfloat16(_CUDA_VSTD::cosh(float(__v)));
+  return __nv_bfloat16(::cosh(float(__v)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 exp(__nv_bfloat16 __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hexp(__v);), (return __nv_bfloat16(_CUDA_VSTD::exp(float(__v)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hexp(__v);), (return __nv_bfloat16(::exp(float(__v)));))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 hypot(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
-  return __nv_bfloat16(_CUDA_VSTD::hypot(float(__x), float(__y)));
+  return __nv_bfloat16(::hypot(float(__x), float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
-  return __nv_bfloat16(_CUDA_VSTD::atan2(float(__x), float(__y)));
+  return __nv_bfloat16(::atan2(float(__x), float(__y)));
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 log(__nv_bfloat16 __x)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hlog(__x);), (return __nv_bfloat16(_CUDA_VSTD::log(float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hlog(__x);), (return __nv_bfloat16(::log(float(__x)));))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 sqrt(__nv_bfloat16 __x)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __nv_bfloat16(_CUDA_VSTD::sqrt(float(__x)));))
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __nv_bfloat16(::sqrt(float(__x)));))
 }
 
 // floating point helper
@@ -89,9 +89,70 @@ inline _LIBCUDACXX_INLINE_VISIBILITY bool signbit(__nv_bfloat16 __v)
   return ::signbit(::__bfloat162float(__v));
 }
 
+inline _LIBCUDACXX_INLINE_VISIBILITY bool __constexpr_isnan(__nv_bfloat16 __x) noexcept
+{
+  return ::__hisnan(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isnan(__nv_bfloat16 __v)
+{
+  return __constexpr_isnan(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY bool __constexpr_isinf(__nv_bfloat16 __x) noexcept
+{
+#  if _CCCL_STD_VER >= 2020
+  // There's some sort of a bug with C++20 here.
+  // XXX nvbug number pending
+  return !::__hisnan(__x) && ::__hisnan(__x - __x);
+#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+  return ::__hisinf(__x) != 0;
+#  endif // _CCCL_STD_VER <= 2017
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isinf(__nv_bfloat16 __v)
+{
+  return __constexpr_isinf(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY bool __constexpr_isfinite(__nv_bfloat16 __x) noexcept
+{
+  return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isfinite(__nv_bfloat16 __v)
+{
+  return __constexpr_isfinite(__v);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+{
+  return __nv_bfloat16(::copysignf(float(__x), float(__y)));
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y)
+{
+  return __constexpr_copysign(__x, __y);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
+{
+  return ::__habs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 fabs(__nv_bfloat16 __x)
+{
+  return __constexpr_fabs(__x);
+}
+
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 abs(__nv_bfloat16 __x)
 {
   return __constexpr_fabs(__x);
+}
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+{
+  return ::__hmax(__x, __y);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
