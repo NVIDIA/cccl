@@ -257,14 +257,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include "type_traits"
 #include "version"
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
-#include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-#include <cuda_bf16.h>
-#endif // _LIBCUDACXX_HAS_NVBF16
-
 #ifndef __cuda_std__
 #include <stdexcept>
 #endif // __cuda_std__
@@ -322,7 +314,33 @@ struct __is_complex_arithmetic {
     static constexpr auto value = is_arithmetic<_Tp>::value || __is_complex_float<_Tp>::value;
 };
 
+template<class _Tp>
+struct __type_to_vector;
+
 template<class _Tp> class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(_Tp)) complex;
+
+// 26.3.7 values:
+
+template <class _Tp, bool = is_integral<_Tp>::value,
+                     bool = is_floating_point<_Tp>::value
+                     >
+struct __libcpp_complex_overload_traits {};
+
+// Integral Types
+template <class _Tp>
+struct __libcpp_complex_overload_traits<_Tp, true, false>
+{
+    typedef double _ValueType;
+    typedef complex<double> _ComplexType;
+};
+
+// Floating point types
+template <class _Tp>
+struct __libcpp_complex_overload_traits<_Tp, false, true>
+{
+    typedef _Tp _ValueType;
+    typedef complex<_Tp> _ComplexType;
+};
 
 template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
 complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w);
@@ -851,23 +869,6 @@ operator-(const _Tp& __x, const complex<_Tp>& __y)
     return __t;
 }
 
-template<class _Tp>
-struct __type_to_vector;
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-template<>
-struct __type_to_vector<__half> {
-    using __type = __half2;
-};
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-template<>
-struct __type_to_vector<__nv_bfloat16> {
-    using __type = __nv_bfloat162;
-};
-#endif // _LIBCUDACXX_HAS_NVBF16
-
 template<class _Tp, typename = void>
 struct __has_vector_type : _CUDA_VSTD::false_type {};
 
@@ -1283,47 +1284,6 @@ operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
 }
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
-// 26.3.7 values:
-
-template <class _Tp, bool = is_integral<_Tp>::value,
-                     bool = is_floating_point<_Tp>::value
-                     >
-struct __libcpp_complex_overload_traits {};
-
-// Integral Types
-template <class _Tp>
-struct __libcpp_complex_overload_traits<_Tp, true, false>
-{
-    typedef double _ValueType;
-    typedef complex<double> _ComplexType;
-};
-
-// Floating point types
-template <class _Tp>
-struct __libcpp_complex_overload_traits<_Tp, false, true>
-{
-    typedef _Tp _ValueType;
-    typedef complex<_Tp> _ComplexType;
-};
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-template <>
-struct __libcpp_complex_overload_traits<__half, false, false>
-{
-    typedef __half _ValueType;
-    typedef complex<__half> _ComplexType;
-};
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-template <>
-struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
-{
-    typedef __nv_bfloat16 _ValueType;
-    typedef complex<__nv_bfloat16> _ComplexType;
-};
-#endif // _LIBCUDACXX_HAS_NVBF16
-
 // real
 
 template<class _Tp>
@@ -1416,20 +1376,6 @@ arg(_Tp __re)
 {
     return _CUDA_VSTD::atan2f(0.F, __re);
 }
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
-{
-  return _CUDA_VSTD::atan2f(__half(0), __re);
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
-{
-  return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 // norm
 

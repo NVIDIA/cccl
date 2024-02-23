@@ -40,6 +40,18 @@ template <>
 struct __is_nvfp16<__half> : true_type
 {};
 
+template<>
+struct __type_to_vector<__half> {
+    using __type = __half2;
+};
+
+template <>
+struct __libcpp_complex_overload_traits<__half, false, false>
+{
+    typedef __half _ValueType;
+    typedef complex<__half> _ComplexType;
+};
+
 template <>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__half2)) complex<__half>
 {
@@ -167,6 +179,11 @@ public:
     return *this;
   }
 };
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
+{
+  return _CUDA_VSTD::atan2f(__half(0), __re);
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -43,6 +43,18 @@ template <>
 struct __is_nvbf16<__nv_bfloat16> : true_type
 {};
 
+template<>
+struct __type_to_vector<__nv_bfloat16> {
+    using __type = __nv_bfloat162;
+};
+
+template <>
+struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
+{
+    typedef __nv_bfloat16 _ValueType;
+    typedef complex<__nv_bfloat16> _ComplexType;
+};
+
 template <>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
 {
@@ -170,6 +182,11 @@ public:
     return *this;
   }
 };
+
+inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
+{
+  return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
