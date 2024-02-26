@@ -677,16 +677,11 @@ _LIBCUDACXX_DEVICE inline async_contract_fulfillment memcpy_async_tx(
     _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    auto __bh = __cvta_generic_to_shared(barrier_native_handle(__b));
     if (__isShared(__dest) && __isGlobal(__src)) {
-        asm volatile(
-            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
-            :
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__bh))
-            : "memory");
+        _CUDA_VPTX::cp_async_bulk(
+            _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global,
+            __dest, __src, static_cast<uint32_t>(__size),
+            barrier_native_handle(__b));
     } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
@@ -950,14 +945,9 @@ void __cp_async_bulk_shared_global(const _Group &__g, char * __dest, const char 
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     if (__g.thread_rank() == 0) {
-        asm volatile(
-            "cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3];\n"
-            :
-            : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-              "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__size)),
-              "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bar_handle)))
-            : "memory");
+        _CUDA_VPTX::cp_async_bulk(
+            _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global,
+            __dest, __src, __size, __bar_handle);
     }
   ),(
     __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
