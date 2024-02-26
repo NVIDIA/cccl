@@ -40,7 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 // capability 9.0 and above. The check for (!defined(__CUDA_MINIMUM_ARCH__)) is
 // necessary to prevent cudafe from ripping out the device functions before
 // device compilation begins.
-#if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__)
+#ifdef __cccl_lib_experimental_ctk12_cp_async_exposure
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
 inline _LIBCUDACXX_DEVICE
@@ -278,7 +278,7 @@ void cp_async_bulk_wait_group_read()
                : "memory");
 }
 
-#endif // __CUDA_MINIMUM_ARCH__
+#endif // __cccl_lib_experimental_ctk12_cp_async_exposure
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 

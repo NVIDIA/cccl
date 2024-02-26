@@ -187,6 +187,8 @@
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #endif // other compilers
 
+#include "__cccl/ptx_isa.h"
+#include "__cccl/version.h"
 #include "__cccl/visibility.h"
 
 #endif // __CCCL_CONFIG
