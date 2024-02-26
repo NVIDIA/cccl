@@ -32,6 +32,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__ranges/data.h>
 #include <cuda/std/__ranges/drop_view.h>
+#include <cuda/std/__ranges/drop_while_view.h>
 #include <cuda/std/__ranges/empty.h>
 #include <cuda/std/__ranges/empty_view.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
