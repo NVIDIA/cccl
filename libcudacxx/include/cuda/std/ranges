@@ -37,6 +37,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/empty_view.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
 #include <cuda/std/__ranges/enable_view.h>
+#include <cuda/std/__ranges/filter_view.h>
 #include <cuda/std/__ranges/iota_view.h>
 #include <cuda/std/__ranges/owning_view.h>
 #include <cuda/std/__ranges/rbegin.h>
