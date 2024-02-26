@@ -448,34 +448,380 @@ __device__ static inline uint32_t getctarank(
 
 ### [9.7.8.24. Data Movement and Conversion Instructions: Asynchronous copy](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy)
 
-| Instruction                              | Available in libcu++ |
-|------------------------------------------|----------------------|
-| [`cp.async`]                             | No                   |
-| [`cp.async.commit_group`]                | No                   |
-| [`cp.async.wait_group / cp.async.wait_all`] | No                   |
-| [`cp.async.bulk`]                        | No                   |
-| [`cp.reduce.async.bulk`]                 | No                   |
-| [`cp.async.bulk.prefetch`]               | No                   |
-| [`cp.async.bulk.tensor`]                 | No                   |
-| [`cp.reduce.async.bulk.tensor`]          | No                   |
-| [`cp.async.bulk.prefetch.tensor`]        | No                   |
-| [`cp.async.bulk.commit_group`]           | No                   |
-| [`cp.async.bulk.wait_group`]             | No                   |
-| [`tensormap.replace`]                    | No                   |
+| Instruction                                 | Available in libcu++    |
+|---------------------------------------------|-------------------------|
+| [`cp.async`]                                | No                      |
+| [`cp.async.commit_group`]                   | No                      |
+| [`cp.async.wait_group / cp.async.wait_all`] | No                      |
+| [`cp.async.bulk`]                           | CTK-FUTURE, CCCL v2.4.0 |
+| [`cp.reduce.async.bulk`]                    | No                      |
+| [`cp.async.bulk.prefetch`]                  | No                      |
+| [`cp.async.bulk.tensor`]                    | CTK-FUTURE, CCCL v2.4.0 |
+| [`cp.reduce.async.bulk.tensor`]             | CTK-FUTURE, CCCL v2.4.0 |
+| [`cp.async.bulk.prefetch.tensor`]           | No                      |
+| [`cp.async.bulk.commit_group`]              | CTK-FUTURE, CCCL v2.4.0 |
+| [`cp.async.bulk.wait_group`]                | CTK-FUTURE, CCCL v2.4.0 |
+| [`tensormap.replace`]                       | No                      |
 
 [`cp.async`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 [`cp.async.commit_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-commit-group
 [`cp.async.wait_group / cp.async.wait_all`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-wait-group-cp-async-wait-all
-[`cp.async.bulk`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
+[`cp.async.bulk`]: #cpasyncbulk
 [`cp.reduce.async.bulk`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
 [`cp.async.bulk.prefetch`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch
-[`cp.async.bulk.tensor`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor
-[`cp.reduce.async.bulk.tensor`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor
+[`cp.async.bulk.tensor`]: #cpasyncbulktensor
+[`cp.reduce.async.bulk.tensor`]: #cpreduceasyncbulktensor
 [`cp.async.bulk.prefetch.tensor`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor
-[`cp.async.bulk.commit_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
-[`cp.async.bulk.wait_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group
+[`cp.async.bulk.commit_group`]: #cpasyncbulkcommit_group
+[`cp.async.bulk.wait_group`]: #cpasyncbulkwait_group
 [`tensormap.replace`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
 
+
+#### `cp.async.bulk`
+
+-  PTX ISA: [`cp.async.bulk`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk)
+
+**NOTE.** Both `srcMem` and `dstMem` must be 16-byte aligned, and `size` must be a multiple of 16.
+
+**cp_async_bulk**:
+```cuda
+// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // 1a. unicast PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* srcMem,
+  const uint32_t& size,
+  uint64_t* smem_bar);
+
+// cp.async.bulk{.dst}{.src}.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.  PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* srcMem,
+  const uint32_t& size,
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // 2.  PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_shared_t,
+  void* dstMem,
+  const void* srcMem,
+  const uint32_t& size,
+  uint64_t* rdsmem_bar);
+
+// cp.async.bulk.dst.src.bulk_group [dstMem], [srcMem], size; // 3.  PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  void* dstMem,
+  const void* srcMem,
+  const uint32_t& size);
+```
+
+#### `cp.async.bulk.tensor`
+
+- PTX ISA: [`cp.async.bulk.tensor`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor)
+
+**cp_async_bulk_tensor**:
+```cuda
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1a. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar);
+
+// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.tensor.1d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3a. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  const void* srcMem);
+
+// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1b. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  uint64_t* smem_bar);
+
+// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3b. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  const void* srcMem);
+
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1c. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar);
+
+// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3c. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  const void* srcMem);
+
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1d. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar);
+
+// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3d. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  const void* srcMem);
+
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1e. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar);
+
+// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .global }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_global_t,
+  void* dstMem,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  uint64_t* smem_bar,
+  const uint16_t& ctaMask);
+
+// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3e. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+template <typename=void>
+__device__ static inline void cp_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  const void* srcMem);
+```
+
+#### `cp.reduce.async.bulk.tensor`
+
+- PTX ISA: [`cp.reduce.async.bulk.tensor`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor)
+
+**cp_reduce_async_bulk_tensor**:
+```cuda
+// cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
+template <cuda::ptx::dot_op Op>
+__device__ static inline void cp_reduce_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_t<Op> op,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[1],
+  const void* srcMem);
+
+// cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
+template <cuda::ptx::dot_op Op>
+__device__ static inline void cp_reduce_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_t<Op> op,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[2],
+  const void* srcMem);
+
+// cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
+template <cuda::ptx::dot_op Op>
+__device__ static inline void cp_reduce_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_t<Op> op,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[3],
+  const void* srcMem);
+
+// cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
+template <cuda::ptx::dot_op Op>
+__device__ static inline void cp_reduce_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_t<Op> op,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[4],
+  const void* srcMem);
+
+// cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
+template <cuda::ptx::dot_op Op>
+__device__ static inline void cp_reduce_async_bulk_tensor(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_t<Op> op,
+  const void* tensorMap,
+  const int32_t (&tensorCoords)[5],
+  const void* srcMem);
+```
+
+#### `cp.async.bulk.commit_group`
+
+- PTX ISA: [`cp.async.bulk.commit_group`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group)
+
+**cp_async_bulk_commit_group**:
+```cuda
+// cp.async.bulk.commit_group; // PTX ISA 80, SM_90
+template <typename=void>
+__device__ static inline void cp_async_bulk_commit_group();
+```
+
+#### `cp.async.bulk.wait_group`
+
+- PTX ISA: [`cp.async.bulk.wait_group`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group)
+
+**cp_async_bulk_wait_group**:
+```cuda
+// cp.async.bulk.wait_group N; // PTX ISA 80, SM_90
+template <int N32>
+__device__ static inline void cp_async_bulk_wait_group(
+  cuda::ptx::n32_t<N32> N);
+```
+**cp_async_bulk_wait_group_read**:
+```cuda
+// cp.async.bulk.wait_group.read N; // PTX ISA 80, SM_90
+template <int N32>
+__device__ static inline void cp_async_bulk_wait_group_read(
+  cuda::ptx::n32_t<N32> N);
+```
 ### [9.7.9. Texture Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions)
 
 | Instruction                              | Available in libcu++ |
