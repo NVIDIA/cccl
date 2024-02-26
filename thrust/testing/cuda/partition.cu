@@ -1,8 +1,10 @@
-#include <unittest/unittest.h>
-#include <thrust/partition.h>
 #include <thrust/count.h>
 #include <thrust/execution_policy.h>
+#include <thrust/iterator/discard_iterator.h>
+#include <thrust/partition.h>
 
+#include "thrust/detail/raw_pointer_cast.h"
+#include <unittest/unittest.h>
 
 template<typename T>
 struct is_even
@@ -11,6 +13,27 @@ struct is_even
   bool operator()(T x) const { return ((int) x % 2) == 0; }
 };
 
+
+template <typename T>
+struct mod_n
+{
+  T mod;
+  bool negate;
+  __host__ __device__ bool operator()(T x)
+  {
+    return (x % mod == 0) ? (!negate) : negate;
+  }
+};
+
+template <typename T>
+struct multiply_n
+{
+  T multiplier;
+  __host__ __device__ T operator()(T x)
+  {
+    return x * multiplier;
+  }
+};
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template<typename ExecutionPolicy, typename Iterator1, typename Predicate, typename Iterator2>
@@ -553,12 +576,84 @@ void TestStablePartitionCopyStencilDeviceDevice()
 }
 DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceDevice);
 
-
 void TestStablePartitionCopyStencilDeviceNoSync()
 {
   TestStablePartitionCopyStencilDevice(thrust::cuda::par_nosync);
 }
 DECLARE_UNITTEST(TestStablePartitionCopyStencilDeviceNoSync);
+
+void TestPartitionIfWithMagnitude(int magnitude)
+{
+  using offset_t = std::size_t;
+
+  // Prepare input
+  offset_t num_items = offset_t{1ull} << magnitude;
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  auto end = begin + num_items;
+  thrust::counting_iterator<offset_t> stencil(offset_t{0});
+  ASSERT_EQUAL(static_cast<offset_t>(thrust::distance(begin, end)), num_items);
+
+  // Run algorithm on large number of items
+  offset_t match_every_nth      = 1000000;
+  offset_t expected_num_written = (num_items + match_every_nth - 1) / match_every_nth;
+
+  // Tests input is correctly dereferenced for large offsets and selected items are correctly written
+  {
+    // Initialize input
+    thrust::device_vector<offset_t> partitioned_out(expected_num_written);
+
+    // Run test
+    constexpr bool negate_matches = false;
+    auto select_op                = mod_n<offset_t>{match_every_nth, negate_matches};
+    auto partitioned_out_ends =
+      thrust::stable_partition_copy(begin, end, partitioned_out.begin(), thrust::make_discard_iterator(), select_op);
+    const auto selected_out_end = partitioned_out_ends.first;
+
+    // Ensure number of selected items are correct
+    const offset_t num_selected_out =
+      static_cast<offset_t>(thrust::distance(partitioned_out.begin(), selected_out_end));
+    ASSERT_EQUAL(num_selected_out, expected_num_written);
+    partitioned_out.resize(expected_num_written);
+
+    // Ensure selected items are correct
+    auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+    bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
+    ASSERT_EQUAL(all_results_correct, true);
+  }
+
+  // Tests input is correctly dereferenced for large offsets and rejected items are correctly written
+  {
+    // Initialize input
+    thrust::device_vector<offset_t> partitioned_out(expected_num_written);
+
+    // Run test
+    constexpr bool negate_matches = true;
+    auto select_op                = mod_n<offset_t>{match_every_nth, negate_matches};
+    const auto partitioned_out_ends =
+      thrust::stable_partition_copy(begin, end, thrust::make_discard_iterator(), partitioned_out.begin(), select_op);
+    const auto rejected_out_end = partitioned_out_ends.second;
+
+    // Ensure number of rejected items are correct
+    const offset_t num_rejected_out =
+      static_cast<offset_t>(thrust::distance(partitioned_out.begin(), rejected_out_end));
+    ASSERT_EQUAL(num_rejected_out, expected_num_written);
+    partitioned_out.resize(expected_num_written);
+
+    // Ensure rejected items are correct
+    auto expected_out_it     = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+    bool all_results_correct = thrust::equal(partitioned_out.begin(), partitioned_out.end(), expected_out_it);
+    ASSERT_EQUAL(all_results_correct, true);
+  }
+}
+
+void TestPartitionIfWithLargeNumberOfItems()
+{
+  TestPartitionIfWithMagnitude(30);
+  TestPartitionIfWithMagnitude(31);
+  TestPartitionIfWithMagnitude(32);
+  TestPartitionIfWithMagnitude(33);
+}
+DECLARE_UNITTEST(TestPartitionIfWithLargeNumberOfItems);
 #endif
 
 
