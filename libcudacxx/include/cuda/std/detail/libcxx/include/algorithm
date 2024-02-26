@@ -705,6 +705,8 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__algorithm/pop_heap.h>
 #include <cuda/std/__algorithm/prev_permutation.h>
 #include <cuda/std/__algorithm/push_heap.h>
+#include <cuda/std/__algorithm/ranges_find_if.h>
+#include <cuda/std/__algorithm/ranges_find_if_not.h>
 #include <cuda/std/__algorithm/ranges_iterator_concept.h>
 #include <cuda/std/__algorithm/ranges_min.h>
 #include <cuda/std/__algorithm/ranges_min_element.h>
