@@ -248,7 +248,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 # if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 // #   define __cccl_lib_shared_timed_mutex                 201402L
 # endif
-# define __cccl_lib_span                                 201902L
+# define __cccl_lib_span                                 202002L
 // # define __cccl_lib_string_udls                          201304L
 # define __cccl_lib_transformation_trait_aliases         201304L
 # define __cccl_lib_transparent_operators                201210L
