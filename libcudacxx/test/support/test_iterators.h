@@ -1189,6 +1189,53 @@ public:
 
 static_assert(cuda::std::output_iterator<cpp20_output_iterator<int*>, int>, "");
 
+// an `input_iterator` that can be used in a `common_range`
+template <class Base>
+struct common_input_iterator
+{
+  Base it_;
+
+  using value_type       = cuda::std::iter_value_t<Base>;
+  using difference_type  = cuda::std::intptr_t;
+  using iterator_concept = cuda::std::input_iterator_tag;
+
+  constexpr common_input_iterator() = default;
+  __host__ __device__ constexpr explicit common_input_iterator(Base it)
+      : it_(it)
+  {}
+
+  __host__ __device__ constexpr common_input_iterator& operator++()
+  {
+    ++it_;
+    return *this;
+  }
+  __host__ __device__ constexpr void operator++(int)
+  {
+    ++it_;
+  }
+
+  __host__ __device__ constexpr cuda::std::iter_reference_t<Base> operator*() const
+  {
+    return *it_;
+  }
+
+#  if TEST_STD_VER >= 2020
+  __host__ __device__ friend constexpr bool
+  operator==(common_input_iterator const&, common_input_iterator const&) = default;
+#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+  __host__ __device__ constexpr friend bool
+  operator==(const common_input_iterator& lhs, const common_input_iterator& rhs)
+  {
+    return lhs.it_ == rhs.it_;
+  }
+  __host__ __device__ constexpr friend bool
+  operator!=(const common_input_iterator& lhs, const common_input_iterator& rhs)
+  {
+    return lhs.it_ != rhs.it_;
+  }
+#  endif // TEST_STD_VER <= 2017
+};
+
 // Iterator adaptor that counts the number of times the iterator has had a successor/predecessor
 // operation called. Has two recorders:
 // * `stride_count`, which records the total number of calls to an op++, op--, op+=, or op-=.
