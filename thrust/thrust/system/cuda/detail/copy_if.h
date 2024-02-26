@@ -226,7 +226,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
     dispatch64_t::dispatch,
     num_items,
     (policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed, output_end));
-  cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
+  cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 
   return output_end;
 }

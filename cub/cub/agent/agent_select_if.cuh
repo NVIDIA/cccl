@@ -857,7 +857,7 @@ struct AgentSelectIf
         OffsetT num_tile_selections     = prefix_op.GetBlockAggregate();
         OffsetT num_selections          = prefix_op.GetInclusivePrefix();
         OffsetT num_selections_prefix   = prefix_op.GetExclusivePrefix();
-        OffsetT num_rejected_prefix     = (tile_idx * TILE_ITEMS) - num_selections_prefix;
+        OffsetT num_rejected_prefix     = tile_offset - num_selections_prefix;
 
         // Discount any out-of-bounds selections
         if (IS_LAST_TILE)
