@@ -692,7 +692,7 @@ class Configuration(object):
 
                 # With Hopper there are new subarchitectures like 90a we need to handle those
                 subarchitecture = ''
-                if not isinstance(arch, int):
+                if not arch.isnumeric():
                     subarchitecture = arch[-1]
                     arch = arch[:-1]
                 arch = int(arch)
