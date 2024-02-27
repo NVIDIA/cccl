@@ -281,7 +281,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`cvta`]                                          | No                      |
 | [`cvt`]                                           | No                      |
 | [`cvt.pack`]                                      | No                      |
-| [`mapa`]                                          | CTK-FUTURE, CCCL v2.4.0 |
+| [`mapa`]                                          | No                      |
 | [`getctarank`]                                    | CTK-FUTURE, CCCL v2.4.0 |
 
 [`mov`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mov-2
@@ -421,15 +421,32 @@ int main() {
 
 - PTX ISA: [`mapa`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa)
 
-**mapa**:
+This instruction can [currently not be
+implemented](https://github.com/NVIDIA/cccl/issues/1414) by libcu++. The
+instruction can be accessed through the cooperative groups
+[cluster_group](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group)
+API:
+
+Usage:
 ```cuda
-// mapa{.space}.u32  dest, addr, target_cta; // PTX ISA 78, SM_90
-// .space     = { .shared::cluster }
-template <typename Tp>
-__device__ static inline Tp* mapa(
-  cuda::ptx::space_cluster_t,
-  const Tp* addr,
-  uint32_t target_cta);
+#include <cooperative_groups.h>
+
+__cluster_dims__(2)
+__global__ void kernel() {
+    __shared__ int x;
+    x = 1;
+    namespace cg = cooperative_groups;
+    cg::cluster_group cluster = cg::this_cluster();
+
+    cluster.sync();
+
+    // Get address of remote shared memory value:
+    unsigned int other_block_rank = cluster.block_rank() ^ 1;
+    int * remote_x = cluster.map_shared_rank(&bar, other_block_rank);
+
+    // Write to remote value:
+    *remote_x = 2;
+}
 ```
 
 #### `getctarank`
