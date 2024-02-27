@@ -150,8 +150,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER >= 2014
+#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 2014 && _LIBCUDACXX_IS_CONSTANT_EVALUATED
   return 0;
 }
