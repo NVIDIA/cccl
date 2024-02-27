@@ -171,7 +171,7 @@ THRUST_RUNTIME_FUNCTION std::size_t partition(
 {
   using size_type = typename iterator_traits<InputIt>::difference_type;
 
-  size_type num_items = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items = thrust::distance(first, last);
   std::size_t num_selected{};
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
@@ -222,6 +222,10 @@ THRUST_RUNTIME_FUNCTION pair<SelectedOutIt, RejectedOutIt> stable_partition_copy
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
+  if(thrust::distance(first, last) <= 0){
+    return thrust::make_pair(selected_result, rejected_result);
+  }
+
   using output_it_wrapper_t = cub::detail::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
   std::size_t num_items    = static_cast<std::size_t>(thrust::distance(first, last));
   std::size_t num_selected = partition(
@@ -233,6 +237,10 @@ template <typename Derived, typename InputIt, typename StencilIt, typename Predi
 THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
+  if(thrust::distance(first, last) <= 0){
+    return first;
+  }
+
   // Element type of the input iterator
   using value_t         = typename iterator_traits<InputIt>::value_type;
   std::size_t num_items = static_cast<std::size_t>(thrust::distance(first, last));
