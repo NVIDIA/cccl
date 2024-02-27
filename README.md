@@ -402,6 +402,7 @@ Does your project use CCCL? [Open a PR to add your project to this list!](https:
 - [Hydra](https://github.com/MultithreadCorner/Hydra) - High-energy Physics Data Analysis
 - [Hypre](https://github.com/hypre-space/hypre) - Multigrid linear solvers
 - [LightSeq](https://github.com/bytedance/lightseq) - Training and inference for sequence processing and generation
+- [MatX](https://github.com/NVIDIA/matx) - Numerical computing library using expression templates to provide efficient, Python-like syntax
 - [PyTorch](https://github.com/pytorch/pytorch) - Tensor and neural network computations
 - [Qiskit](https://github.com/Qiskit/qiskit-aer) - High performance simulator for quantum circuits
 - [QUDA](https://github.com/lattice/quda) - Lattice quantum chromodynamics (QCD) computations
