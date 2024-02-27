@@ -34,10 +34,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/detail/libcxx/include/__iterator/readable_traits.h"
-#include "cuda/std/detail/libcxx/include/__type_traits/integral_constant.h"
-#include "cuda/std/detail/libcxx/include/__type_traits/is_integral.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -86,7 +82,7 @@ private:
             typename OffsetT,
             typename ReductionOpT,
             typename InitT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_segmented_reduce(
+  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::false_type,
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -106,7 +102,7 @@ private:
             typename OffsetT,
             typename ReductionOpT,
             typename InitT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_segmented_reduce(
+  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::true_type,
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -289,9 +285,9 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{}, // feels like integral_offset_check::type{}
       d_temp_storage,
       temp_storage_bytes,
@@ -300,7 +296,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Sum(),
+      reduction_op,
       initial_value, // zero-initialize
       stream);
   }
@@ -462,9 +458,9 @@ public:
     using OutputT               = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{}, // feels like integral_offset_check::type{}
       d_temp_storage,
       temp_storage_bytes,
@@ -606,18 +602,16 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Min(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              int num_segments,
-                                              BeginOffsetIteratorT d_begin_offsets,
-                                              EndOffsetIteratorT d_end_offsets,
-                                              cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Min(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      int num_segments,
+      BeginOffsetIteratorT d_begin_offsets,
+      EndOffsetIteratorT d_end_offsets,
+      cudaStream_t stream = nullptr)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -626,9 +620,9 @@ public:
     using InputT = cub::detail::value_t<InputIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{}, // feels like integral_offset_check::type{}
       d_temp_storage,
       temp_storage_bytes,
@@ -638,7 +632,10 @@ public:
       d_begin_offsets,
       d_end_offsets,
       cub::Min(),
-      Traits<InputT>::Max(),
+      Traits<InputT>::Max(), // replace with
+                             // std::numeric_limits<T>::max()
+                             // when C++11 support is
+                             // more prevalent
       stream);
   }
 
@@ -780,18 +777,16 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_segments,
-                                                 BeginOffsetIteratorT d_begin_offsets,
-                                                 EndOffsetIteratorT d_end_offsets,
-                                                 cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = nullptr)
   {
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -821,22 +816,10 @@ public:
     // TODO Address https://github.com/NVIDIA/cub/issues/651
     InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
 
-    // Trying to work something like
-    // using integral_offset_check = ::cuda::std::integral_constant<bool, ::cuda::std::is_integral<
-    //                                       ::cuda::std::iter_value_t<BeginOffsetIteratorT>>::value &&
-    //                                   ::cuda::std::is_integral<
-    //                                     ::cuda::std::iter_value_t<EndOffsetIteratorT>>::value &&
-    //                                   ::cuda::std::is_integral<OffsetT>::value>;
-    // static_assert(integral_offset_check::value_type, "Offset iterator type should be integral.");
-
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<ArgIndexInputIteratorT,
-                                   OutputIteratorT,
-                                   BeginOffsetIteratorT,
-                                   EndOffsetIteratorT,
-                                   OffsetT>(
+    return segmented_reduce<ArgIndexInputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -978,18 +961,16 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Max(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              int num_segments,
-                                              BeginOffsetIteratorT d_begin_offsets,
-                                              EndOffsetIteratorT d_end_offsets,
-                                              cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Max(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      int num_segments,
+      BeginOffsetIteratorT d_begin_offsets,
+      EndOffsetIteratorT d_end_offsets,
+      cudaStream_t stream = nullptr)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -998,9 +979,9 @@ public:
     using InputT = cub::detail::value_t<InputIteratorT>;
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{}, // feels like integral_offset_check::type{}
       d_temp_storage,
       temp_storage_bytes,
@@ -1010,7 +991,10 @@ public:
       d_begin_offsets,
       d_end_offsets,
       cub::Max(),
-      Traits<InputT>::Lowest(),
+      Traits<InputT>::Lowest(), // replace with
+                                // std::numeric_limits<T>::lowest()
+                                // when C++11 support is
+                                // more prevalent
       stream);
   }
 
@@ -1155,18 +1139,16 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_segments,
-                                                 BeginOffsetIteratorT d_begin_offsets,
-                                                 EndOffsetIteratorT d_end_offsets,
-                                                 cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = nullptr)
   {
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -1197,13 +1179,9 @@ public:
     InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
-    static_assert(integral_offset_check::value, "Offset iterator type should be integral.");
+    static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return custom_segmented_reduce<ArgIndexInputIteratorT,
-                                   OutputIteratorT,
-                                   BeginOffsetIteratorT,
-                                   EndOffsetIteratorT,
-                                   OffsetT>(
+    return segmented_reduce<ArgIndexInputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,

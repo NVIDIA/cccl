@@ -1,3 +1,5 @@
+// %PARAM% TEST_ERR err 0:1:2:3:4:5
+
 #include <cub/device/device_segmented_reduce.cuh>
 
 int main()
@@ -9,22 +11,29 @@ int main()
   std::size_t temp_storage_bytes{};
   std::uint8_t* d_temp_storage{};
 
+#if TEST_ERR == 0
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1, cub::Min(), 0);
 
+#elif TEST_ERR == 1
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
 
+#elif TEST_ERR == 2
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
 
+#elif TEST_ERR == 3
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
 
+#elif TEST_ERR == 4
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
 
+#elif TEST_ERR == 5
   // expected-error {{"Offset iterator type should be integral."}}
   cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+#endif
 }
