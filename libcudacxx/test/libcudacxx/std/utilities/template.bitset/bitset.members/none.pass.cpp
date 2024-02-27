@@ -8,15 +8,16 @@
 
 // bool none() const; // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_none() {
-    std::bitset<N> v;
+    cuda::std::bitset<N> v;
     v.reset();
     assert(v.none() == true);
     v.set();
@@ -30,6 +31,7 @@ TEST_CONSTEXPR_CXX23 void test_none() {
     }
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_none<0>();
   test_none<1>();
@@ -46,7 +48,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

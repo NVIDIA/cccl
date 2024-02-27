@@ -7,32 +7,41 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCPP___BIT_REFERENCE
-#define _LIBCPP___BIT_REFERENCE
+#ifndef _LIBCUDACXX___BIT_REFERENCE
+#define _LIBCUDACXX___BIT_REFERENCE
 
-#include <__algorithm/copy_n.h>
-#include <__algorithm/fill_n.h>
-#include <__algorithm/min.h>
-#include <__bit/countr.h>
-#include <__bit/invert_if.h>
-#include <__bit/popcount.h>
+#ifndef __cuda_std__
 #include <__config>
-#include <__fwd/bit_reference.h>
-#include <__iterator/iterator_traits.h>
-#include <__memory/construct_at.h>
-#include <__memory/pointer_traits.h>
-#include <__type_traits/conditional.h>
-#include <__utility/swap.h>
-#include <cstring>
-
-#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
-#  pragma GCC system_header
 #endif
 
-_LIBCPP_PUSH_MACROS
-#include <__undef_macros>
+#include "__algorithm/copy_n.h"
+#include "__algorithm/fill_n.h"
+#include "__algorithm/min.h"
+// TODO: modularize bit, will do soon
+#include "bit"
+// #include "__bit/countr.h"
+// #include "__bit/invert_if.h"
+// #include "__bit/popcount.h"
+#include "__fwd/bit_reference.h"
+#include "__iterator/iterator_traits.h"
+#include "__memory/construct_at.h"
+#include "__memory/pointer_traits.h"
+#include "__type_traits/conditional.h"
+#include "__utility/swap.h"
+#include "cstring"
 
-_LIBCPP_BEGIN_NAMESPACE_STD
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+_LIBCUDACXX_PUSH_MACROS
+#include "__undef_macros"
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Cp>
 class __bit_const_reference;
@@ -58,16 +67,16 @@ class __bit_reference {
 public:
   using __container = typename _Cp::__self;
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_reference(const __bit_reference&) = default;
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX17 __bit_reference(const __bit_reference&) = default;
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 operator bool() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 operator bool() const noexcept {
     return static_cast<bool>(*__seg_ & __mask_);
   }
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 bool operator~() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 bool operator~() const noexcept {
     return !static_cast<bool>(*this);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_reference& operator=(bool __x) _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_reference& operator=(bool __x) noexcept {
     if (__x)
       *__seg_ |= __mask_;
     else
@@ -75,8 +84,8 @@ public:
     return *this;
   }
 
-#if _LIBCPP_STD_VER >= 23
-  _LIBCPP_HIDE_FROM_ABI constexpr const __bit_reference& operator=(bool __x) const noexcept {
+#if _LIBCUDACXX_STD_VER >= 2023
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const __bit_reference& operator=(bool __x) const noexcept {
     if (__x)
       *__seg_ |= __mask_;
     else
@@ -85,18 +94,18 @@ public:
   }
 #endif
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_reference& operator=(const __bit_reference& __x) _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_reference& operator=(const __bit_reference& __x) noexcept {
     return operator=(static_cast<bool>(__x));
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void flip() _NOEXCEPT { *__seg_ ^= __mask_; }
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator<_Cp, false> operator&() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void flip() noexcept { *__seg_ ^= __mask_; }
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator<_Cp, false> operator&() const noexcept {
     return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(std::__libcpp_ctz(__mask_)));
   }
 
 private:
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 explicit __bit_reference(
-      __storage_pointer __s, __storage_type __m) _NOEXCEPT
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 explicit __bit_reference(
+      __storage_pointer __s, __storage_type __m) noexcept
       : __seg_(__s),
         __mask_(__m) {}
 };
@@ -105,30 +114,30 @@ template <class _Cp>
 class __bit_reference<_Cp, false> {};
 
 template <class _Cp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) _NOEXCEPT {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void
+swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept {
   bool __t = __x;
   __x      = __y;
   __y      = __t;
 }
 
 template <class _Cp, class _Dp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
-swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) _NOEXCEPT {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void
+swap(__bit_reference<_Cp> __x, __bit_reference<_Dp> __y) noexcept {
   bool __t = __x;
   __x      = __y;
   __y      = __t;
 }
 
 template <class _Cp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void swap(__bit_reference<_Cp> __x, bool& __y) _NOEXCEPT {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void swap(__bit_reference<_Cp> __x, bool& __y) noexcept {
   bool __t = __x;
   __x      = __y;
   __y      = __t;
 }
 
 template <class _Cp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void swap(bool& __x, __bit_reference<_Cp> __y) _NOEXCEPT {
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void swap(bool& __x, __bit_reference<_Cp> __y) noexcept {
   bool __t = __x;
   __x      = __y;
   __y      = __t;
@@ -148,23 +157,23 @@ class __bit_const_reference {
 public:
   using __container = typename _Cp::__self;
 
-  _LIBCPP_HIDE_FROM_ABI __bit_const_reference(const __bit_const_reference&) = default;
+  _LIBCUDACXX_HIDE_FROM_ABI __bit_const_reference(const __bit_const_reference&) = default;
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_const_reference(const __bit_reference<_Cp>& __x) _NOEXCEPT
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_const_reference(const __bit_reference<_Cp>& __x) noexcept
       : __seg_(__x.__seg_),
         __mask_(__x.__mask_) {}
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR operator bool() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr operator bool() const noexcept {
     return static_cast<bool>(*__seg_ & __mask_);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator<_Cp, true> operator&() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator<_Cp, true> operator&() const noexcept {
     return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(std::__libcpp_ctz(__mask_)));
   }
 
 private:
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR explicit __bit_const_reference(
-      __storage_pointer __s, __storage_type __m) _NOEXCEPT
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __bit_const_reference(
+      __storage_pointer __s, __storage_type __m) noexcept
       : __seg_(__s),
         __mask_(__m) {}
 
@@ -174,7 +183,7 @@ private:
 // fill_n
 
 template <bool _FillVal, class _Cp>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI void
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void
 __fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n) {
   using _It            = __bit_iterator<_Cp, false>;
   using __storage_type = typename _It::__storage_type;
@@ -208,7 +217,7 @@ __fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n) {
 }
 
 template <class _Cp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void
 fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __value) {
   if (__n > 0) {
     if (__value)
@@ -221,7 +230,7 @@ fill_n(__bit_iterator<_Cp, false> __first, typename _Cp::size_type __n, bool __v
 // fill
 
 template <class _Cp>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 void
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 void
 fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool __value) {
   std::fill_n(__first, static_cast<typename _Cp::size_type>(__last - __first), __value);
 }
@@ -229,7 +238,7 @@ fill(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __last, bool
 // copy
 
 template <class _Cp, bool _IsConst>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_aligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> __copy_aligned(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   using _In             = __bit_iterator<_Cp, _IsConst>;
   using difference_type = typename _In::difference_type;
@@ -272,7 +281,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> _
 }
 
 template <class _Cp, bool _IsConst>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_unaligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> __copy_unaligned(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   using _In             = __bit_iterator<_Cp, _IsConst>;
   using difference_type = typename _In::difference_type;
@@ -343,7 +352,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> _
 }
 
 template <class _Cp, bool _IsConst>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator<_Cp, false>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator<_Cp, false>
 copy(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   if (__first.__ctz_ == __result.__ctz_)
     return std::__copy_aligned(__first, __last, __result);
@@ -353,7 +362,7 @@ copy(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last
 // copy_backward
 
 template <class _Cp, bool _IsConst>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_backward_aligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> __copy_backward_aligned(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   using _In             = __bit_iterator<_Cp, _IsConst>;
   using difference_type = typename _In::difference_type;
@@ -395,7 +404,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> _
 }
 
 template <class _Cp, bool _IsConst>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> __copy_backward_unaligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> __copy_backward_unaligned(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   using _In             = __bit_iterator<_Cp, _IsConst>;
   using difference_type = typename _In::difference_type;
@@ -471,7 +480,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> _
 }
 
 template <class _Cp, bool _IsConst>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator<_Cp, false> copy_backward(
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator<_Cp, false> copy_backward(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   if (__last.__ctz_ == __result.__ctz_)
     return std::__copy_backward_aligned(__first, __last, __result);
@@ -481,7 +490,7 @@ inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator<_Cp, f
 // move
 
 template <class _Cp, bool _IsConst>
-inline _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false>
 move(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   return std::copy(__first, __last, __result);
 }
@@ -489,7 +498,7 @@ move(__bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last
 // move_backward
 
 template <class _Cp, bool _IsConst>
-inline _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> move_backward(
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false> move_backward(
     __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result) {
   return std::copy_backward(__first, __last, __result);
 }
@@ -497,7 +506,7 @@ inline _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false> move_backward(
 // swap_ranges
 
 template <class _Cl, class _Cr>
-_LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_aligned(
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cr, false> __swap_ranges_aligned(
     __bit_iterator<_Cl, false> __first, __bit_iterator<_Cl, false> __last, __bit_iterator<_Cr, false> __result) {
   using _I1             = __bit_iterator<_Cl, false>;
   using difference_type = typename _I1::difference_type;
@@ -543,7 +552,7 @@ _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_aligned(
 }
 
 template <class _Cl, class _Cr>
-_LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cr, false> __swap_ranges_unaligned(
     __bit_iterator<_Cl, false> __first, __bit_iterator<_Cl, false> __last, __bit_iterator<_Cr, false> __result) {
   using _I1             = __bit_iterator<_Cl, false>;
   using difference_type = typename _I1::difference_type;
@@ -633,7 +642,7 @@ _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cr, false> __swap_ranges_unaligned(
 }
 
 template <class _Cl, class _Cr>
-inline _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cr, false> swap_ranges(
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cr, false> swap_ranges(
     __bit_iterator<_Cl, false> __first1, __bit_iterator<_Cl, false> __last1, __bit_iterator<_Cr, false> __first2) {
   if (__first1.__ctz_ == __first2.__ctz_)
     return std::__swap_ranges_aligned(__first1, __last1, __first2);
@@ -655,26 +664,26 @@ struct __bit_array {
   difference_type __size_;
   __storage_type __word_[_Np];
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 static difference_type capacity() {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 static difference_type capacity() {
     return static_cast<difference_type>(_Np * __bits_per_word);
   }
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 explicit __bit_array(difference_type __s) : __size_(__s) {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 explicit __bit_array(difference_type __s) : __size_(__s) {
     if (__libcpp_is_constant_evaluated()) {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
         std::__construct_at(__word_ + __i, 0);
     }
   }
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 iterator begin() {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 iterator begin() {
     return iterator(pointer_traits<__storage_pointer>::pointer_to(__word_[0]), 0);
   }
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 iterator end() {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 iterator end() {
     return iterator(pointer_traits<__storage_pointer>::pointer_to(__word_[0]) + __size_ / __bits_per_word,
                     static_cast<unsigned>(__size_ % __bits_per_word));
   }
 };
 
 template <class _Cp>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI __bit_iterator<_Cp, false>
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY __bit_iterator<_Cp, false>
 rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, __bit_iterator<_Cp, false> __last) {
   using _I1             = __bit_iterator<_Cp, false>;
   using difference_type = typename _I1::difference_type;
@@ -715,7 +724,7 @@ rotate(__bit_iterator<_Cp, false> __first, __bit_iterator<_Cp, false> __middle, 
 // equal
 
 template <class _Cp, bool _IC1, bool _IC2>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __equal_unaligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY bool __equal_unaligned(
     __bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2) {
   using _It             = __bit_iterator<_Cp, _IC1>;
   using difference_type = typename _It::difference_type;
@@ -787,7 +796,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __equal_unaligned(
 }
 
 template <class _Cp, bool _IC1, bool _IC2>
-_LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __equal_aligned(
+_CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY bool __equal_aligned(
     __bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2) {
   using _It             = __bit_iterator<_Cp, _IC1>;
   using difference_type = typename _It::difference_type;
@@ -826,7 +835,7 @@ _LIBCPP_CONSTEXPR_SINCE_CXX20 _LIBCPP_HIDE_FROM_ABI bool __equal_aligned(
 }
 
 template <class _Cp, bool _IC1, bool _IC2>
-inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 bool
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 bool
 equal(__bit_iterator<_Cp, _IC1> __first1, __bit_iterator<_Cp, _IC1> __last1, __bit_iterator<_Cp, _IC2> __first2) {
   if (__first1.__ctz_ == __first2.__ctz_)
     return std::__equal_aligned(__first1, __last1, __first2);
@@ -839,7 +848,7 @@ public:
   using difference_type = typename _Cp::difference_type;
   using value_type      = bool;
   using pointer         = __bit_iterator;
-#ifndef _LIBCPP_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
+#ifndef _LIBCUDACXX_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
   using reference = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp> >;
 #else
   using reference = __conditional_t<_IsConst, bool, __bit_reference<_Cp> >;
@@ -857,8 +866,8 @@ private:
   unsigned __ctz_;
 
 public:
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator() _NOEXCEPT
-#if _LIBCPP_STD_VER >= 14
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator() noexcept
+#if _LIBCUDACXX_STD_VER >= 2014
       : __seg_(nullptr),
         __ctz_(0)
 #endif
@@ -870,7 +879,7 @@ public:
   // When _IsConst=true, this is a converting constructor;
   // the copy and move constructors are implicitly generated
   // and trivial.
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator(const __bit_iterator<_Cp, false>& __it) _NOEXCEPT
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator(const __bit_iterator<_Cp, false>& __it) noexcept
       : __seg_(__it.__seg_),
         __ctz_(__it.__ctz_) {}
 
@@ -879,19 +888,19 @@ public:
   // the implicit generation of a defaulted one is deprecated.
   // When _IsConst=true, the assignment operators are
   // implicitly generated and trivial.
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator&
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator&
   operator=(const _If<_IsConst, struct __private_nat, __bit_iterator>& __it) {
     __seg_ = __it.__seg_;
     __ctz_ = __it.__ctz_;
     return *this;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 reference operator*() const _NOEXCEPT {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reference operator*() const noexcept {
     return __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp> >(
         __seg_, __storage_type(1) << __ctz_);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator& operator++() {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator& operator++() {
     if (__ctz_ != __bits_per_word - 1)
       ++__ctz_;
     else {
@@ -901,13 +910,13 @@ public:
     return *this;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator operator++(int) {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator operator++(int) {
     __bit_iterator __tmp = *this;
     ++(*this);
     return __tmp;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator& operator--() {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator& operator--() {
     if (__ctz_ != 0)
       --__ctz_;
     else {
@@ -917,13 +926,13 @@ public:
     return *this;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator operator--(int) {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator operator--(int) {
     __bit_iterator __tmp = *this;
     --(*this);
     return __tmp;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator& operator+=(difference_type __n) {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator& operator+=(difference_type __n) {
     if (__n >= 0)
       __seg_ += (__n + __ctz_) / __bits_per_word;
     else
@@ -934,69 +943,69 @@ public:
     return *this;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator& operator-=(difference_type __n) {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator& operator-=(difference_type __n) {
     return *this += -__n;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator operator+(difference_type __n) const {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator operator+(difference_type __n) const {
     __bit_iterator __t(*this);
     __t += __n;
     return __t;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 __bit_iterator operator-(difference_type __n) const {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 __bit_iterator operator-(difference_type __n) const {
     __bit_iterator __t(*this);
     __t -= __n;
     return __t;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend __bit_iterator
   operator+(difference_type __n, const __bit_iterator& __it) {
     return __it + __n;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend difference_type
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend difference_type
   operator-(const __bit_iterator& __x, const __bit_iterator& __y) {
     return (__x.__seg_ - __y.__seg_) * __bits_per_word + __x.__ctz_ - __y.__ctz_;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 reference operator[](difference_type __n) const {
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 reference operator[](difference_type __n) const {
     return *(*this + __n);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator==(const __bit_iterator& __x, const __bit_iterator& __y) {
     return __x.__seg_ == __y.__seg_ && __x.__ctz_ == __y.__ctz_;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator!=(const __bit_iterator& __x, const __bit_iterator& __y) {
     return !(__x == __y);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator<(const __bit_iterator& __x, const __bit_iterator& __y) {
     return __x.__seg_ < __y.__seg_ || (__x.__seg_ == __y.__seg_ && __x.__ctz_ < __y.__ctz_);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator>(const __bit_iterator& __x, const __bit_iterator& __y) {
     return __y < __x;
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator<=(const __bit_iterator& __x, const __bit_iterator& __y) {
     return !(__y < __x);
   }
 
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 friend bool
   operator>=(const __bit_iterator& __x, const __bit_iterator& __y) {
     return !(__x < __y);
   }
 
 private:
-  _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20 explicit __bit_iterator(
-      __storage_pointer __s, unsigned __ctz) _NOEXCEPT
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 explicit __bit_iterator(
+      __storage_pointer __s, unsigned __ctz) noexcept
       : __seg_(__s),
         __ctz_(__ctz) {}
 
@@ -1008,57 +1017,57 @@ private:
   template <class _Dp>
   friend struct __bit_array;
   template <bool _FillVal, class _Dp>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend void __fill_n(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend void __fill_n(__bit_iterator<_Dp, false> __first, typename _Dp::size_type __n);
 
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false> __copy_aligned(
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false> __copy_aligned(
       __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false> __copy_unaligned(
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false> __copy_unaligned(
       __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false>
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false>
   copy(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false> __copy_backward_aligned(
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false> __copy_backward_aligned(
       __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false> __copy_backward_unaligned(
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false> __copy_backward_unaligned(
       __bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false>
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false>
   copy_backward(__bit_iterator<_Dp, _IC> __first, __bit_iterator<_Dp, _IC> __last, __bit_iterator<_Dp, false> __result);
   template <class _Cl, class _Cr>
-  friend __bit_iterator<_Cr, false>
+  _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Cr, false>
       __swap_ranges_aligned(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Cl, class _Cr>
-  friend __bit_iterator<_Cr, false>
+  _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Cr, false>
       __swap_ranges_unaligned(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Cl, class _Cr>
-  friend __bit_iterator<_Cr, false>
+  _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Cr, false>
       swap_ranges(__bit_iterator<_Cl, false>, __bit_iterator<_Cl, false>, __bit_iterator<_Cr, false>);
   template <class _Dp>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, false>
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, false>
       rotate(__bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>, __bit_iterator<_Dp, false>);
   template <class _Dp, bool _IC1, bool _IC2>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend bool
       __equal_aligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend bool
       __equal_unaligned(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <class _Dp, bool _IC1, bool _IC2>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend bool
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend bool
       equal(__bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC1>, __bit_iterator<_Dp, _IC2>);
   template <bool _ToFind, class _Dp, bool _IC>
-  _LIBCPP_CONSTEXPR_SINCE_CXX20 friend __bit_iterator<_Dp, _IC>
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend __bit_iterator<_Dp, _IC>
       __find_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
   template <bool _ToCount, class _Dp, bool _IC>
-  friend typename __bit_iterator<_Dp, _IC>::difference_type _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX20
+  _CCCL_CONSTEXPR_CXX17 _LIBCUDACXX_INLINE_VISIBILITY friend typename __bit_iterator<_Dp, _IC>::difference_type
       __count_bool(__bit_iterator<_Dp, _IC>, typename _Dp::size_type);
 };
 
-_LIBCPP_END_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_STD
 
-_LIBCPP_POP_MACROS
+_LIBCUDACXX_POP_MACROS
 
-#endif // _LIBCPP___BIT_REFERENCE
+#endif // _LIBCUDACXX___BIT_REFERENCE

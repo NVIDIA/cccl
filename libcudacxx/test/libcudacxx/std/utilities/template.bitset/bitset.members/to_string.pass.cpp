@@ -20,20 +20,28 @@
 //
 // basic_string<char, char_traits<char>, allocator<char> > to_string() const; // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
-#include <memory> // for std::allocator
-#include <string>
-#include <vector>
+#include <cuda/std/version>
+
+#ifndef __LIBCUDACXX_HAS_STRING
+
+int main(int, char **) { return 0; }
+
+#else
+
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
+#include <cuda/std/memory> // for cuda::std::allocator
+#include <cuda/std/string>
+#include <cuda/std/vector>
 
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
-template <class CharT, std::size_t N>
-TEST_CONSTEXPR_CXX23 void check_equal(std::basic_string<CharT> const& s, std::bitset<N> const& b, CharT zero, CharT one) {
+template <class CharT, cuda::std::size_t N>
+TEST_CONSTEXPR_CXX23 void check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one) {
     assert(s.size() == b.size());
-    for (std::size_t i = 0; i < b.size(); ++i) {
+    for (cuda::std::size_t i = 0; i < b.size(); ++i) {
         if (b[i]) {
             assert(s[b.size() - 1 - i] == one);
         } else {
@@ -42,37 +50,37 @@ TEST_CONSTEXPR_CXX23 void check_equal(std::basic_string<CharT> const& s, std::bi
     }
 }
 
-template <std::size_t N>
+template <cuda::std::size_t N>
 TEST_CONSTEXPR_CXX23 bool test_to_string() {
-    std::vector<std::bitset<N> > const cases = get_test_cases<N>();
-    for (std::size_t c = 0; c != cases.size(); ++c) {
-        std::bitset<N> const v = cases[c];
+    cuda::std::vector<cuda::std::bitset<N> > const cases = get_test_cases<N>();
+    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
+        cuda::std::bitset<N> const v = cases[c];
         {
-            std::string s = v.template to_string<char>();
+            cuda::std::string s = v.template to_string<char>();
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.to_string();
+            cuda::std::string s = v.to_string();
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.template to_string<char>('0');
+            cuda::std::string s = v.template to_string<char>('0');
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.to_string('0');
+            cuda::std::string s = v.to_string('0');
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.template to_string<char>('0', '1');
+            cuda::std::string s = v.template to_string<char>('0', '1');
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.to_string('0', '1');
+            cuda::std::string s = v.to_string('0', '1');
             check_equal(s, v, '0', '1');
         }
         {
-            std::string s = v.to_string('x', 'y');
+            cuda::std::string s = v.to_string('x', 'y');
             check_equal(s, v, 'x', 'y');
         }
     }
@@ -80,33 +88,33 @@ TEST_CONSTEXPR_CXX23 bool test_to_string() {
 }
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
-template <std::size_t N>
+template <cuda::std::size_t N>
 TEST_CONSTEXPR_CXX23 bool test_to_string_wchar() {
-    std::vector<std::bitset<N> > const cases = get_test_cases<N>();
-    for (std::size_t c = 0; c != cases.size(); ++c) {
-        std::bitset<N> const v = cases[c];
+    cuda::std::vector<cuda::std::bitset<N> > const cases = get_test_cases<N>();
+    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
+        cuda::std::bitset<N> const v = cases[c];
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> >();
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t>, cuda::std::allocator<wchar_t> >();
             check_equal(s, v, L'0', L'1');
         }
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t> >();
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t> >();
             check_equal(s, v, L'0', L'1');
         }
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> >('0');
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t>, cuda::std::allocator<wchar_t> >('0');
             check_equal(s, v, L'0', L'1');
         }
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t> >('0');
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t> >('0');
             check_equal(s, v, L'0', L'1');
         }
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t>, std::allocator<wchar_t> >('0', '1');
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t>, cuda::std::allocator<wchar_t> >('0', '1');
             check_equal(s, v, L'0', L'1');
         }
         {
-            std::wstring s = v.template to_string<wchar_t, std::char_traits<wchar_t> >('0', '1');
+            cuda::std::wstring s = v.template to_string<wchar_t, cuda::std::char_traits<wchar_t> >('0', '1');
             check_equal(s, v, L'0', L'1');
         }
     }
@@ -156,3 +164,5 @@ int main(int, char**) {
 #endif
   return 0;
 }
+
+#endif

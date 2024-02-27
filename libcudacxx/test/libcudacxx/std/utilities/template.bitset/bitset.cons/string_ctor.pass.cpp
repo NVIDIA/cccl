@@ -8,115 +8,121 @@
 
 // bitset(string, pos, n, zero, one); // constexpr since C++23
 
-#include <algorithm> // for 'min' and 'max'
-#include <bitset>
-#include <cassert>
-#include <stdexcept> // for 'invalid_argument'
-#include <string>
-#include <type_traits>
+#include <cuda/std/version>
+
+#ifndef _LIBCUDACXX_HAS_STRING
+int main(int, char **) { return 0; }
+#else
+
+#include <cuda/std/algorithm> // for 'min' and 'max'
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/stdexcept> // for 'invalid_argument'
+#include <cuda/std/string>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
 TEST_CONSTEXPR_CXX23 void test_string_ctor() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   if (!TEST_IS_CONSTANT_EVALUATED) {
     try {
-        std::string s("xxx1010101010xxxx");
-        std::bitset<N> v(s, s.size()+1);
+        cuda::std::string s("xxx1010101010xxxx");
+        cuda::std::bitset<N> v(s, s.size()+1);
         assert(false);
     }
-    catch (std::out_of_range&)
+    catch (cuda::std::out_of_range&)
     {
     }
     try {
-        std::string s("xxx1010101010xxxx");
-        std::bitset<N> v(s, s.size()+1, 10);
+        cuda::std::string s("xxx1010101010xxxx");
+        cuda::std::bitset<N> v(s, s.size()+1, 10);
         assert(false);
     }
-    catch (std::out_of_range&)
+    catch (cuda::std::out_of_range&)
     {
     }
     try {
-        std::string s("xxx1010101010xxxx");
-        std::bitset<N> v(s);
+        cuda::std::string s("xxx1010101010xxxx");
+        cuda::std::bitset<N> v(s);
         assert(false);
     }
-    catch (std::invalid_argument&)
+    catch (cuda::std::invalid_argument&)
     {
     }
     try {
-        std::string s("xxx1010101010xxxx");
-        std::bitset<N> v(s, 2);
+        cuda::std::string s("xxx1010101010xxxx");
+        cuda::std::bitset<N> v(s, 2);
         assert(false);
     }
-    catch (std::invalid_argument&)
+    catch (cuda::std::invalid_argument&)
     {
     }
     try {
-        std::string s("xxx1010101010xxxx");
-        std::bitset<N> v(s, 2, 10);
+        cuda::std::string s("xxx1010101010xxxx");
+        cuda::std::bitset<N> v(s, 2, 10);
         assert(false);
     }
-    catch (std::invalid_argument&)
+    catch (cuda::std::invalid_argument&)
     {
     }
     try {
-        std::string s("xxxbababababaxxxx");
-        std::bitset<N> v(s, 2, 10, 'a', 'b');
+        cuda::std::string s("xxxbababababaxxxx");
+        cuda::std::bitset<N> v(s, 2, 10, 'a', 'b');
         assert(false);
     }
-    catch (std::invalid_argument&)
+    catch (cuda::std::invalid_argument&)
     {
     }
   }
 #endif // TEST_HAS_NO_EXCEPTIONS
 
-  static_assert(!std::is_convertible<std::string, std::bitset<N> >::value, "");
-  static_assert(std::is_constructible<std::bitset<N>, std::string>::value, "");
+  static_assert(!cuda::std::is_convertible<cuda::std::string, cuda::std::bitset<N> >::value, "");
+  static_assert(cuda::std::is_constructible<cuda::std::bitset<N>, cuda::std::string>::value, "");
   {
-    std::string s("1010101010");
-    std::bitset<N> v(s);
-    std::size_t M = std::min<std::size_t>(v.size(), 10);
-    for (std::size_t i = 0; i < M; ++i)
+    cuda::std::string s("1010101010");
+    cuda::std::bitset<N> v(s);
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 10);
+    for (cuda::std::size_t i = 0; i < M; ++i)
         assert(v[i] == (s[M - 1 - i] == '1'));
-    for (std::size_t i = 10; i < v.size(); ++i)
+    for (cuda::std::size_t i = 10; i < v.size(); ++i)
         assert(v[i] == false);
   }
   {
-    std::string s("xxx1010101010");
-    std::bitset<N> v(s, 3);
-    std::size_t M = std::min<std::size_t>(v.size(), 10);
-    for (std::size_t i = 0; i < M; ++i)
+    cuda::std::string s("xxx1010101010");
+    cuda::std::bitset<N> v(s, 3);
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 10);
+    for (cuda::std::size_t i = 0; i < M; ++i)
         assert(v[i] == (s[3 + M - 1 - i] == '1'));
-    for (std::size_t i = 10; i < v.size(); ++i)
+    for (cuda::std::size_t i = 10; i < v.size(); ++i)
         assert(v[i] == false);
   }
   {
-    std::string s("xxx1010101010xxxx");
-    std::bitset<N> v(s, 3, 10);
-    std::size_t M = std::min<std::size_t>(v.size(), 10);
-    for (std::size_t i = 0; i < M; ++i)
+    cuda::std::string s("xxx1010101010xxxx");
+    cuda::std::bitset<N> v(s, 3, 10);
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 10);
+    for (cuda::std::size_t i = 0; i < M; ++i)
         assert(v[i] == (s[3 + M - 1 - i] == '1'));
-    for (std::size_t i = 10; i < v.size(); ++i)
+    for (cuda::std::size_t i = 10; i < v.size(); ++i)
         assert(v[i] == false);
   }
   {
-    std::string s("xxx1a1a1a1a1axxxx");
-    std::bitset<N> v(s, 3, 10, 'a');
-    std::size_t M = std::min<std::size_t>(v.size(), 10);
-    for (std::size_t i = 0; i < M; ++i)
+    cuda::std::string s("xxx1a1a1a1a1axxxx");
+    cuda::std::bitset<N> v(s, 3, 10, 'a');
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 10);
+    for (cuda::std::size_t i = 0; i < M; ++i)
         assert(v[i] == (s[3 + M - 1 - i] == '1'));
-    for (std::size_t i = 10; i < v.size(); ++i)
+    for (cuda::std::size_t i = 10; i < v.size(); ++i)
         assert(v[i] == false);
   }
   {
-    std::string s("xxxbababababaxxxx");
-    std::bitset<N> v(s, 3, 10, 'a', 'b');
-    std::size_t M = std::min<std::size_t>(v.size(), 10);
-    for (std::size_t i = 0; i < M; ++i)
+    cuda::std::string s("xxxbababababaxxxx");
+    cuda::std::bitset<N> v(s, 3, 10, 'a', 'b');
+    cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 10);
+    for (cuda::std::size_t i = 0; i < M; ++i)
         assert(v[i] == (s[3 + M - 1 - i] == 'b'));
-    for (std::size_t i = 10; i < v.size(); ++i)
+    for (cuda::std::size_t i = 10; i < v.size(); ++i)
         assert(v[i] == false);
   }
 }
@@ -126,11 +132,11 @@ struct Nonsense {
 };
 
 TEST_CONSTEXPR_CXX23 void test_for_non_eager_instantiation() {
-    // Ensure we don't accidentally instantiate `std::basic_string<Nonsense>`
+    // Ensure we don't accidentally instantiate `cuda::std::basic_string<Nonsense>`
     // since it may not be well formed and can cause an error in the
     // non-immediate context.
-    static_assert(!std::is_constructible<std::bitset<3>, Nonsense*>::value, "");
-    static_assert(!std::is_constructible<std::bitset<3>, Nonsense*, std::size_t, Nonsense&, Nonsense&>::value, "");
+    static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*>::value, "");
+    static_assert(!cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
 }
 
 TEST_CONSTEXPR_CXX23 bool test() {
@@ -156,3 +162,5 @@ int main(int, char**) {
 
   return 0;
 }
+
+#endif

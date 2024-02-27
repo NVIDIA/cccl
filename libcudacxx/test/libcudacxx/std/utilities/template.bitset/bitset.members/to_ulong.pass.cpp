@@ -8,33 +8,34 @@
 
 // unsigned long to_ulong() const; // constexpr since C++23
 
-#include <bitset>
-#include <algorithm>
-#include <type_traits>
-#include <limits>
-#include <climits>
-#include <cassert>
+#include <cuda/std/bitset>
+// #include <cuda/std/algorithm>
+#include <cuda/std/type_traits>
+#include <cuda/std/limits>
+#include <cuda/std/climits>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_to_ulong() {
-    const std::size_t M = sizeof(unsigned long) * CHAR_BIT < N ? sizeof(unsigned long) * CHAR_BIT : N;
-    const bool is_M_zero = std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
-    const std::size_t X = is_M_zero ? sizeof(unsigned long) * CHAR_BIT - 1 : sizeof(unsigned long) * CHAR_BIT - M;
-    const std::size_t max = is_M_zero ? 0 : std::size_t(std::numeric_limits<unsigned long>::max()) >> X;
-    std::size_t tests[] = {
+    const cuda::std::size_t M = sizeof(unsigned long) * CHAR_BIT < N ? sizeof(unsigned long) * CHAR_BIT : N;
+    const bool is_M_zero = cuda::std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
+    const cuda::std::size_t X = is_M_zero ? sizeof(unsigned long) * CHAR_BIT - 1 : sizeof(unsigned long) * CHAR_BIT - M;
+    const cuda::std::size_t max = is_M_zero ? 0 : cuda::std::size_t(cuda::std::numeric_limits<unsigned long>::max()) >> X;
+    cuda::std::size_t tests[] = {
         0,
-        std::min<std::size_t>(1, max),
-        std::min<std::size_t>(2, max),
-        std::min<std::size_t>(3, max),
-        std::min(max, max-3),
-        std::min(max, max-2),
-        std::min(max, max-1),
+        cuda::std::min<cuda::std::size_t>(1, max),
+        cuda::std::min<cuda::std::size_t>(2, max),
+        cuda::std::min<cuda::std::size_t>(3, max),
+        cuda::std::min(max, max-3),
+        cuda::std::min(max, max-2),
+        cuda::std::min(max, max-1),
         max
     };
-    for (std::size_t j : tests) {
-        std::bitset<N> v(j);
+    for (cuda::std::size_t j : tests) {
+        cuda::std::bitset<N> v(j);
         assert(j == v.to_ulong());
     }
 
@@ -42,11 +43,12 @@ TEST_CONSTEXPR_CXX23 void test_to_ulong() {
         const unsigned long val = 0x5AFFFFA5UL;
         const bool canFit = N < sizeof(unsigned long) * CHAR_BIT;
         const unsigned long mask = canFit ? (1UL << (canFit ? N : 0)) - 1 : (unsigned long)(-1); // avoid compiler warnings
-        std::bitset<N> v(val);
+        cuda::std::bitset<N> v(val);
         assert(v.to_ulong() == (val & mask)); // we shouldn't return bit patterns from outside the limits of the bitset.
     }
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_to_ulong<0>();
   test_to_ulong<1>();
@@ -63,7 +65,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

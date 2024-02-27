@@ -8,43 +8,45 @@
 
 // unsigned long long to_ullong() const; // constexpr since C++23
 
-#include <bitset>
-#include <algorithm>
-#include <type_traits>
-#include <climits>
-#include <cassert>
+#include <cuda/std/bitset>
+// #include <cuda/std/algorithm>
+#include <cuda/std/type_traits>
+#include <cuda/std/climits>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_to_ullong() {
-    const std::size_t M = sizeof(unsigned long long) * CHAR_BIT < N ? sizeof(unsigned long long) * CHAR_BIT : N;
-    const bool is_M_zero = std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
-    const std::size_t X = is_M_zero ? sizeof(unsigned long long) * CHAR_BIT - 1 : sizeof(unsigned long long) * CHAR_BIT - M;
+    const cuda::std::size_t M = sizeof(unsigned long long) * CHAR_BIT < N ? sizeof(unsigned long long) * CHAR_BIT : N;
+    const bool is_M_zero = cuda::std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
+    const cuda::std::size_t X = is_M_zero ? sizeof(unsigned long long) * CHAR_BIT - 1 : sizeof(unsigned long long) * CHAR_BIT - M;
     const unsigned long long max = is_M_zero ? 0 : (unsigned long long)(-1) >> X;
     unsigned long long tests[] = {
         0,
-        std::min<unsigned long long>(1, max),
-        std::min<unsigned long long>(2, max),
-        std::min<unsigned long long>(3, max),
-        std::min(max, max-3),
-        std::min(max, max-2),
-        std::min(max, max-1),
+        cuda::std::min<unsigned long long>(1, max),
+        cuda::std::min<unsigned long long>(2, max),
+        cuda::std::min<unsigned long long>(3, max),
+        cuda::std::min(max, max-3),
+        cuda::std::min(max, max-2),
+        cuda::std::min(max, max-1),
         max
     };
     for (unsigned long long j : tests) {
-         std::bitset<N> v(j);
+         cuda::std::bitset<N> v(j);
         assert(j == v.to_ullong());
     }
     { // test values bigger than can fit into the bitset
         const unsigned long long val = 0x55AAAAFFFFAAAA55ULL;
         const bool canFit = N < sizeof(unsigned long long) * CHAR_BIT;
         const unsigned long long mask = canFit ? (1ULL << (canFit ? N : 0)) - 1 : (unsigned long long)(-1); // avoid compiler warnings
-        std::bitset<N> v(val);
+        cuda::std::bitset<N> v(val);
         assert(v.to_ullong() == (val & mask)); // we shouldn't return bit patterns from outside the limits of the bitset.
     }
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_to_ullong<0>();
   test_to_ullong<1>();
@@ -61,7 +63,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

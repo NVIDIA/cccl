@@ -29,6 +29,7 @@
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/is_trivially_copy_assignable.h"
 #include "../__type_traits/remove_const.h"
+#include "../cstdint"
 #include "../cstdlib"
 #include "../cstring"
 
@@ -83,9 +84,19 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
     {
       return {__last, __result + __n};
     }
-    for (ptrdiff_t __i = 0; __i < __n; ++__i)
+    if (reinterpret_cast<uintptr_t>(__result) > reinterpret_cast<uintptr_t>(__first))
     {
-      *(__result + __i) = *(__first + __i);
+      for (ptrdiff_t __i = __n; __i > 0; --__i)
+      {
+        *(__result + __i - 1) = *(__first + __i - 1);
+      }
+    }
+    else
+    {
+      for (ptrdiff_t __i = 0; __i < __n; ++__i)
+      {
+        *(__result + __i) = *(__first + __i);
+      }
     }
   }
   return {__last, __result + __n};

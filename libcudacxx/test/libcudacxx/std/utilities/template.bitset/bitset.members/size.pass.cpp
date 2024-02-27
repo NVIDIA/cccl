@@ -8,17 +8,19 @@
 
 // size_t count() const; // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_size() {
-    const std::bitset<N> v;
+    const cuda::std::bitset<N> v;
     assert(v.size() == N);
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_size<0>();
   test_size<1>();
@@ -35,7 +37,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

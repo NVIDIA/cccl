@@ -1975,6 +1975,12 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #  define _LIBCUDACXX_FALLTHROUGH() ((void)0)
 #endif
 
+#if __has_cpp_attribute(clang::lifetimebound)
+#define _LIBCUDACXX_LIFETIMEBOUND [[clang::lifetimebound]]
+#else
+#define _LIBCUDACXX_LIFETIMEBOUND
+#endif
+
 #if __has_attribute(__nodebug__)
 #define _LIBCUDACXX_NODEBUG __attribute__((__nodebug__))
 #else

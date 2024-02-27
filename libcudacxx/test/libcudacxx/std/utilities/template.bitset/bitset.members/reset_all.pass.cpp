@@ -8,21 +8,25 @@
 
 // bitset<N>& reset(); // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+_CCCL_NV_DIAG_SUPPRESS(186)
+
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_reset_all() {
-    std::bitset<N> v;
+    cuda::std::bitset<N> v;
     v.set();
     v.reset();
-    for (std::size_t i = 0; i < v.size(); ++i)
+    for (cuda::std::size_t i = 0; i < v.size(); ++i)
         assert(!v[i]);
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_reset_all<0>();
   test_reset_all<1>();
@@ -39,7 +43,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

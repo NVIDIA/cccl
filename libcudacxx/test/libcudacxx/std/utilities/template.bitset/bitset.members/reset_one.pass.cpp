@@ -8,28 +8,32 @@
 
 // bitset<N>& reset(size_t pos); // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
-#include <vector>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
+
 
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
-TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.
+//TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.
 
-template <std::size_t N>
+_CCCL_NV_DIAG_SUPPRESS(186)
+
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_reset_one() {
-    std::vector<std::bitset<N> > const cases = get_test_cases<N>();
-    for (std::size_t c = 0; c != cases.size(); ++c) {
-        for (std::size_t i = 0; i != N; ++i) {
-            std::bitset<N> v = cases[c];
+    span_stub<const char *> const cases = get_test_cases<N>();
+    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
+        for (cuda::std::size_t i = 0; i != N; ++i) {
+            cuda::std::bitset<N> v(cases[c]);
             v.reset(i);
             assert(v[i] == false);
         }
     }
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_reset_one<0>();
   test_reset_one<1>();
@@ -46,7 +50,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 int main(int, char**) {
   test();
   test_reset_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

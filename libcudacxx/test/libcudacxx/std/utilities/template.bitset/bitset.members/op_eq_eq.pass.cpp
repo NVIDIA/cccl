@@ -11,20 +11,21 @@
 // bool operator==(const bitset<N>& rhs) const; // constexpr since C++23
 // bool operator!=(const bitset<N>& rhs) const; // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <cstddef>
-#include <vector>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/cstddef>
+
 
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_equality() {
-    std::vector<std::bitset<N> > const cases = get_test_cases<N>();
-    for (std::size_t c = 0; c != cases.size(); ++c) {
-        std::bitset<N> const v1 = cases[c];
-        std::bitset<N> v2 = v1;
+    span_stub<const char *> const cases = get_test_cases<N>();
+    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
+        cuda::std::bitset<N> const v1(cases[c]);
+        cuda::std::bitset<N> v2 = v1;
         assert(v1 == v2);
         if (v1.size() > 0) {
             v2[N/2].flip();
@@ -33,6 +34,7 @@ TEST_CONSTEXPR_CXX23 void test_equality() {
     }
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_equality<0>();
   test_equality<1>();
@@ -49,7 +51,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 int main(int, char**) {
   test();
   test_equality<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

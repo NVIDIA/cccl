@@ -52,13 +52,16 @@ template <> struct char_traits<char8_t>;  // c++20
 
 */
 
+#ifndef __cuda_std__
 #include <__config>
-#include <algorithm>  // for search and min
-#include <cstdio>     // For EOF.
-#include <memory>     // for __murmur2_or_cityhash
+#include "cstdio"     // For EOF.
+#include "memory"     // for __murmur2_or_cityhash
+#endif
+
+#include "algorithm"  // for search and min
 
 #include "__assert" // all public C++ headers provide the assertion handler
-#include <__debug>
+#include "__debug"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -69,7 +72,7 @@ template <> struct char_traits<char8_t>;  // c++20
 #endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
-#include <__undef_macros>
+#include "__undef_macros"
 
 #include "__fwd/string.h"
 
@@ -83,13 +86,18 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
     typedef _CharT    char_type;
     typedef int       int_type;
     typedef streamoff off_type;
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
     typedef streampos pos_type;
     typedef mbstate_t state_type;
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline void _CCCL_CONSTEXPR_CXX17
         assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
@@ -105,16 +113,25 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a);
 
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+#endif // !__cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  to_int_type(char_type __c) noexcept
         {return int_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool      eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  eof() noexcept
         {return int_type(EOF);}
+#endif
 };
 
 template <class _CharT>
@@ -178,7 +195,7 @@ char_traits<_CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
 
 template <class _CharT>
 inline
-_CharT*
+_LIBCUDACXX_INLINE_VISIBILITY _CharT*
 char_traits<_CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
 {
     _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
@@ -190,7 +207,7 @@ char_traits<_CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
 
 template <class _CharT>
 inline
-_CharT*
+_LIBCUDACXX_INLINE_VISIBILITY _CharT*
 char_traits<_CharT>::assign(char_type* __s, size_t __n, char_type __a)
 {
     char_type* __r = __s;
@@ -207,42 +224,69 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     typedef char      char_type;
     typedef int       int_type;
     typedef streamoff off_type;
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
     typedef streampos pos_type;
     typedef mbstate_t state_type;
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline _CCCL_CONSTEXPR_CXX17
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
             {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return (unsigned char)__c1 < (unsigned char)__c2;}
 
     static _CCCL_CONSTEXPR_CXX17
     int compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    static inline size_t _CCCL_CONSTEXPR_CXX17
-    length(const char_type* __s)  noexcept {return __builtin_strlen(__s);}
+    _LIBCUDACXX_INLINE_VISIBILITY
+    static inline size_t _CCCL_CONSTEXPR_CXX14
+    length(const char_type* __s)  noexcept {
+        NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+            size_t __len = 0;
+            for (; !eq(*__s, char(0)); ++__s)
+                ++__len;
+            return __len;
+        ), (
+            return __builtin_strlen(__s);
+        ))
+    }
     static _CCCL_CONSTEXPR_CXX17
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
         {return __n == 0 ? __s1 : (char_type*) memmove(__s1, __s2, __n);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
         {
             _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
             return __n == 0 ? __s1 : (char_type*)memcpy(__s1, __s2, __n);
         }
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)memset(__s, to_int_type(__a), __n);}
 
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+#endif // !__cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type((unsigned char)__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  eof() noexcept
         {return int_type(EOF);}
+#endif
 };
 
 inline _CCCL_CONSTEXPR_CXX17
@@ -291,6 +335,7 @@ char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) 
 
 // char_traits<wchar_t>
 
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
 {
@@ -300,10 +345,13 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
     typedef streampos pos_type;
     typedef mbstate_t state_type;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline _CCCL_CONSTEXPR_CXX17
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
@@ -313,26 +361,38 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
     size_t length(const char_type* __s) noexcept;
     static _CCCL_CONSTEXPR_CXX17
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
         {return __n == 0 ? __s1 : (char_type*)wmemmove(__s1, __s2, __n);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
         {
             _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
             return __n == 0 ? __s1 : (char_type*)wmemcpy(__s1, __s2, __n);
         }
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)wmemset(__s, __a, __n);}
 
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+#endif // !__cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type eof() noexcept
         {return int_type(WEOF);}
+#endif // !__cuda_std__
 };
 
 inline _CCCL_CONSTEXPR_CXX17
@@ -356,6 +416,7 @@ char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size
     return 0;
 #endif
 }
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
 
 template <class _Traits>
@@ -368,6 +429,7 @@ inline constexpr size_t __char_traits_length_checked(const typename _Traits::cha
 #endif
 }
 
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
 inline _CCCL_CONSTEXPR_CXX17
 size_t
 char_traits<wchar_t>::length(const char_type* __s) noexcept
@@ -404,6 +466,7 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
     return nullptr;
 #endif
 }
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
 
 #ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
@@ -414,13 +477,18 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
     typedef char8_t        char_type;
     typedef unsigned int   int_type;
     typedef streamoff      off_type;
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
     typedef u8streampos    pos_type;
     typedef mbstate_t      state_type;
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
         {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
@@ -445,16 +513,25 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)memset(__s, to_int_type(__a), __n);}
 
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+#endif // !__cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+#ifndef __cuda_std__
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type eof() noexcept
         {return int_type(EOF);}
+#endif // !__cuda_std__
 };
 
 // TODO use '__builtin_strlen' if it ever supports char8_t ??
@@ -510,13 +587,18 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
     typedef char16_t       char_type;
     typedef uint_least16_t int_type;
     typedef streamoff      off_type;
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
     typedef u16streampos   pos_type;
     typedef mbstate_t      state_type;
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline _CCCL_CONSTEXPR_CXX17
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
@@ -533,14 +615,19 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type eof() noexcept
         {return int_type(0xFFFF);}
 };
@@ -583,7 +670,7 @@ char_traits<char16_t>::find(const char_type* __s, size_t __n, const char_type& _
 }
 
 inline
-char16_t*
+_LIBCUDACXX_INLINE_VISIBILITY char16_t*
 char_traits<char16_t>::move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
     char_type* __r = __s1;
@@ -603,7 +690,7 @@ char_traits<char16_t>::move(char_type* __s1, const char_type* __s2, size_t __n) 
 }
 
 inline
-char16_t*
+_LIBCUDACXX_INLINE_VISIBILITY char16_t*
 char_traits<char16_t>::copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
     _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
@@ -614,7 +701,7 @@ char_traits<char16_t>::copy(char_type* __s1, const char_type* __s2, size_t __n) 
 }
 
 inline
-char16_t*
+_LIBCUDACXX_INLINE_VISIBILITY char16_t*
 char_traits<char16_t>::assign(char_type* __s, size_t __n, char_type __a) noexcept
 {
     char_type* __r = __s;
@@ -629,13 +716,18 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
     typedef char32_t       char_type;
     typedef uint_least32_t int_type;
     typedef streamoff      off_type;
+#ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
     typedef u32streampos   pos_type;
     typedef mbstate_t      state_type;
+#endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline _CCCL_CONSTEXPR_CXX17
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
@@ -652,14 +744,19 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type  not_eof(int_type __c) noexcept
         {return eq_int_type(__c, eof()) ? ~eof() : __c;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr char_type to_char_type(int_type __c) noexcept
         {return char_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type to_int_type(char_type __c) noexcept
         {return int_type(__c);}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
         {return __c1 == __c2;}
+    _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr int_type eof() noexcept
         {return int_type(0xFFFFFFFF);}
 };
@@ -702,7 +799,7 @@ char_traits<char32_t>::find(const char_type* __s, size_t __n, const char_type& _
 }
 
 inline
-char32_t*
+_LIBCUDACXX_INLINE_VISIBILITY char32_t*
 char_traits<char32_t>::move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
     char_type* __r = __s1;
@@ -722,7 +819,7 @@ char_traits<char32_t>::move(char_type* __s1, const char_type* __s2, size_t __n) 
 }
 
 inline
-char32_t*
+_LIBCUDACXX_INLINE_VISIBILITY char32_t*
 char_traits<char32_t>::copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
     _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
@@ -733,7 +830,7 @@ char_traits<char32_t>::copy(char_type* __s1, const char_type* __s2, size_t __n) 
 }
 
 inline
-char32_t*
+_LIBCUDACXX_INLINE_VISIBILITY char32_t*
 char_traits<char32_t>::assign(char_type* __s, size_t __n, char_type __a) noexcept
 {
     char_type* __r = __s;
@@ -962,6 +1059,7 @@ __str_find_last_not_of(const _CharT *__p, _SizeT __sz,
     return __npos;
 }
 
+#ifndef __cuda_std__
 template<class _Ptr>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 size_t __do_string_hash(_Ptr __p, _Ptr __e)
@@ -969,6 +1067,7 @@ size_t __do_string_hash(_Ptr __p, _Ptr __e)
     typedef typename iterator_traits<_Ptr>::value_type value_type;
     return __murmur2_or_cityhash<size_t>()(__p, (__e-__p)*sizeof(value_type));
 }
+#endif // !__cuda_std__
 
 template <class _CharT, class _Iter, class _Traits=char_traits<_CharT> >
 struct __quoted_output_proxy

@@ -8,28 +8,32 @@
 
 // default ctor
 
-#include <bitset>
-#include <cassert>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-template <std::size_t N>
+TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+                           //
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_default_ctor()
 {
     {
-        TEST_CONSTEXPR std::bitset<N> v1;
+        TEST_CONSTEXPR cuda::std::bitset<N> v1;
         assert(v1.size() == N);
-        for (std::size_t i = 0; i < v1.size(); ++i)
+        for (cuda::std::size_t i = 0; i < v1.size(); ++i)
             assert(v1[i] == false);
     }
 #if TEST_STD_VER >= 11
     {
-        constexpr std::bitset<N> v1;
+        constexpr cuda::std::bitset<N> v1;
         static_assert(v1.size() == N, "");
     }
 #endif
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_default_ctor<0>();
   test_default_ctor<1>();
@@ -47,7 +51,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 

@@ -6,28 +6,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: no-exceptions
+// UNSUPPORTED: libcpp-no-exceptions
 
 // bitset<N>& reset(size_t pos); // constexpr since C++23
 
-// Make sure we throw std::out_of_range when calling reset() on an OOB index.
+// Make sure we throw cuda::std::out_of_range when calling reset() on an OOB index.
 
-#include <bitset>
-#include <cassert>
-#include <stdexcept>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+#include <cuda/std/stdexcept>
 
 int main(int, char**) {
     {
-        std::bitset<0> v;
-        try { v.reset(0); assert(false); } catch (std::out_of_range const&) { }
+        cuda::std::bitset<0> v;
+        try { v.reset(0); assert(false); } catch (cuda::std::out_of_range const&) { }
     }
     {
-        std::bitset<1> v("0");
-        try { v.reset(2); assert(false); } catch (std::out_of_range const&) { }
+        cuda::std::bitset<1> v("0");
+        try { v.reset(2); assert(false); } catch (cuda::std::out_of_range const&) { }
     }
     {
-        std::bitset<10> v("0000000000");
-        try { v.reset(10); assert(false); } catch (std::out_of_range const&) { }
+        cuda::std::bitset<10> v("0000000000");
+        try { v.reset(10); assert(false); } catch (cuda::std::out_of_range const&) { }
     }
 
     return 0;

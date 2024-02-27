@@ -694,6 +694,7 @@ template <class BidirectionalIterator, class Compare>
 #include "__algorithm/minmax_element.h"
 #include "__algorithm/minmax.h"
 #include "__algorithm/mismatch.h"
+#include "__algorithm/min_element.h"
 #include "__algorithm/move_backward.h"
 #include "__algorithm/move.h"
 #include "__algorithm/next_permutation.h"

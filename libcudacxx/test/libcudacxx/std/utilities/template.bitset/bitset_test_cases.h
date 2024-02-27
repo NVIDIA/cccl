@@ -9,171 +9,231 @@
 #ifndef LIBCPP_TEST_BITSET_TEST_CASES_H
 #define LIBCPP_TEST_BITSET_TEST_CASES_H
 
-#include <bitset>
-#include <string>
-#include <vector>
+#include <cuda/std/bitset>
 
 #include "test_macros.h"
+#include "template_cost_testing.h" // for base cases of REPEAT_*
+
+template<typename T>
+class span_stub {
+public:
+    template<cuda::std::size_t Size>
+    __host__ __device__
+    span_stub(T (&arr)[Size]) : _ptr(arr), _len(Size) {}
+
+    __host__ __device__
+    cuda::std::size_t size() const {
+        return _len;
+    }
+
+    __host__ __device__
+    const T & operator[](cuda::std::size_t idx) const {
+        return _ptr[idx];
+    }
+
+private:
+    T * _ptr;
+    cuda::std::size_t _len;
+};
 
 template <int N>
-TEST_CONSTEXPR_CXX23 std::vector<std::bitset<N> > get_test_cases();
+__host__ __device__
+TEST_CONSTEXPR_CXX23 span_stub<const char *> get_test_cases();
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<0> > get_test_cases<0>() {
-    std::vector<std::bitset<0> > cases;
-    cases.push_back(std::bitset<0>());
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<0>() {
+    static const char * cases[] = {
+        "",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<1> > get_test_cases<1>() {
-    std::vector<std::bitset<1> > cases;
-    cases.push_back(std::bitset<1>("0"));
-    cases.push_back(std::bitset<1>("1"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<1>() {
+    static const char * cases[] = {
+        "0",
+        "1",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<2> > get_test_cases<2>() {
-    std::vector<std::bitset<2> > cases;
-    cases.push_back(std::bitset<2>("00"));
-    cases.push_back(std::bitset<2>("01"));
-    cases.push_back(std::bitset<2>("10"));
-    cases.push_back(std::bitset<2>("11"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<2>() {
+    static const char * cases[] = {
+        "00",
+        "01",
+        "10",
+        "11",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<31> > get_test_cases<31>() {
-    std::vector<std::bitset<31> > cases;
-    cases.push_back(std::bitset<31>("0000000000000000000000000000000"));
-    cases.push_back(std::bitset<31>("0000000000000000000000000000001"));
-    cases.push_back(std::bitset<31>("1000000000000000000000000000000"));
-    cases.push_back(std::bitset<31>("1000000000000000000000000000001"));
-    cases.push_back(std::bitset<31>("1000000000000000000001000000001"));
-    cases.push_back(std::bitset<31>("0000000000000000111111111111111"));
-    cases.push_back(std::bitset<31>("1000000000000000111111111111111"));
-    cases.push_back(std::bitset<31>("1111111111111111000000000000000"));
-    cases.push_back(std::bitset<31>("1111111111111111000000000000001"));
-    cases.push_back(std::bitset<31>("1010101010101010101010101010101"));
-    cases.push_back(std::bitset<31>("0101010101010101010101010101010"));
-    cases.push_back(std::bitset<31>("1111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<31>() {
+    static const char * cases[] = {
+        "0000000000000000000000000000000",
+        "0000000000000000000000000000001",
+        "1000000000000000000000000000000",
+        "1000000000000000000000000000001",
+        "1000000000000000000001000000001",
+        "0000000000000000111111111111111",
+        "1000000000000000111111111111111",
+        "1111111111111111000000000000000",
+        "1111111111111111000000000000001",
+        "1010101010101010101010101010101",
+        "0101010101010101010101010101010",
+        "1111111111111111111111111111111",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<32> > get_test_cases<32>() {
-    std::vector<std::bitset<32> > cases;
-    cases.push_back(std::bitset<32>("00000000000000000000000000000000"));
-    cases.push_back(std::bitset<32>("00000000000000000000000000000001"));
-    cases.push_back(std::bitset<32>("10000000000000000000000000000000"));
-    cases.push_back(std::bitset<32>("10000000000000000000000000000001"));
-    cases.push_back(std::bitset<32>("10000000000000000000111000000001"));
-    cases.push_back(std::bitset<32>("00000000000000001111111111111111"));
-    cases.push_back(std::bitset<32>("10000000000000001111111111111111"));
-    cases.push_back(std::bitset<32>("11111111111111110000000000000000"));
-    cases.push_back(std::bitset<32>("11111111111111110000000000000001"));
-    cases.push_back(std::bitset<32>("10101010101010101010101010101010"));
-    cases.push_back(std::bitset<32>("01010101010101010101010101010101"));
-    cases.push_back(std::bitset<32>("11111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<32>() {
+    static const char * cases[] = {
+        "00000000000000000000000000000000",
+        "00000000000000000000000000000001",
+        "10000000000000000000000000000000",
+        "10000000000000000000000000000001",
+        "10000000000000000000111000000001",
+        "00000000000000001111111111111111",
+        "10000000000000001111111111111111",
+        "11111111111111110000000000000000",
+        "11111111111111110000000000000001",
+        "10101010101010101010101010101010",
+        "01010101010101010101010101010101",
+        "11111111111111111111111111111111",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<33> > get_test_cases<33>() {
-    std::vector<std::bitset<33> > cases;
-    cases.push_back(std::bitset<33>("000000000000000000000000000000000"));
-    cases.push_back(std::bitset<33>("000000000000000000000000000000001"));
-    cases.push_back(std::bitset<33>("100000000000000000000000000000000"));
-    cases.push_back(std::bitset<33>("100000000000000000000000000000001"));
-    cases.push_back(std::bitset<33>("100000000000000000001110000000001"));
-    cases.push_back(std::bitset<33>("000000000000000011111111111111111"));
-    cases.push_back(std::bitset<33>("100000000000000011111111111111111"));
-    cases.push_back(std::bitset<33>("111111111111111100000000000000000"));
-    cases.push_back(std::bitset<33>("111111111111111100000000000000001"));
-    cases.push_back(std::bitset<33>("101010101010101010101010101010101"));
-    cases.push_back(std::bitset<33>("010101010101010101010101010101010"));
-    cases.push_back(std::bitset<33>("111111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<33>() {
+    static const char * cases[] = {
+        "000000000000000000000000000000000",
+        "000000000000000000000000000000001",
+        "100000000000000000000000000000000",
+        "100000000000000000000000000000001",
+        "100000000000000000001110000000001",
+        "000000000000000011111111111111111",
+        "100000000000000011111111111111111",
+        "111111111111111100000000000000000",
+        "111111111111111100000000000000001",
+        "101010101010101010101010101010101",
+        "010101010101010101010101010101010",
+        "111111111111111111111111111111111",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<63> > get_test_cases<63>() {
-    std::vector<std::bitset<63> > cases;
-    cases.push_back(std::bitset<63>("000000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<63>("000000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<63>("100000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<63>("100000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<63>("100000000000000000000000001111100000000000000000000000000000001"));
-    cases.push_back(std::bitset<63>("000000000000000000000000000000001111111111111111111111111111111"));
-    cases.push_back(std::bitset<63>("100000000000000000000000000000001111111111111111111111111111111"));
-    cases.push_back(std::bitset<63>("111111111111111111111111111111110000000000000000000000000000000"));
-    cases.push_back(std::bitset<63>("111111111111111111111111111111110000000000000000000000000000001"));
-    cases.push_back(std::bitset<63>("101010101010101010101010101010101010101010101010101010101010101"));
-    cases.push_back(std::bitset<63>("010101010101010101010101010101010101010101010101010101010101010"));
-    cases.push_back(std::bitset<63>("111111111111111111111111111111111111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<63>() {
+    static const char * cases[] = {
+        "000000000000000000000000000000000000000000000000000000000000000",
+        "000000000000000000000000000000000000000000000000000000000000001",
+        "100000000000000000000000000000000000000000000000000000000000000",
+        "100000000000000000000000000000000000000000000000000000000000001",
+        "100000000000000000000000001111100000000000000000000000000000001",
+        "000000000000000000000000000000001111111111111111111111111111111",
+        "100000000000000000000000000000001111111111111111111111111111111",
+        "111111111111111111111111111111110000000000000000000000000000000",
+        "111111111111111111111111111111110000000000000000000000000000001",
+        "101010101010101010101010101010101010101010101010101010101010101",
+        "010101010101010101010101010101010101010101010101010101010101010",
+        "111111111111111111111111111111111111111111111111111111111111111",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<64> > get_test_cases<64>() {
-    std::vector<std::bitset<64> > cases;
-    cases.push_back(std::bitset<64>("0000000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<64>("0000000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<64>("1000000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<64>("1000000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<64>("1000000000000000000000000011111000000000000000000000000000000001"));
-    cases.push_back(std::bitset<64>("0000000000000000000000000000000011111111111111111111111111111111"));
-    cases.push_back(std::bitset<64>("1000000000000000000000000000000011111111111111111111111111111111"));
-    cases.push_back(std::bitset<64>("1111111111111111111111111111111100000000000000000000000000000000"));
-    cases.push_back(std::bitset<64>("1111111111111111111111111111111100000000000000000000000000000001"));
-    cases.push_back(std::bitset<64>("1010101010101010101010101010101010101010101010101010101010101010"));
-    cases.push_back(std::bitset<64>("0101010101010101010101010101010101010101010101010101010101010101"));
-    cases.push_back(std::bitset<64>("1111111111111111111111111111111111111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<64>() {
+    static const char * cases[] = {
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000000000000000000000000000000000000000000000000000000000001",
+        "1000000000000000000000000000000000000000000000000000000000000000",
+        "1000000000000000000000000000000000000000000000000000000000000001",
+        "1000000000000000000000000011111000000000000000000000000000000001",
+        "0000000000000000000000000000000011111111111111111111111111111111",
+        "1000000000000000000000000000000011111111111111111111111111111111",
+        "1111111111111111111111111111111100000000000000000000000000000000",
+        "1111111111111111111111111111111100000000000000000000000000000001",
+        "1010101010101010101010101010101010101010101010101010101010101010",
+        "0101010101010101010101010101010101010101010101010101010101010101",
+        "1111111111111111111111111111111111111111111111111111111111111111",
+    };
     return cases;
 }
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<65> > get_test_cases<65>() {
-    std::vector<std::bitset<65> > cases;
-    cases.push_back(std::bitset<65>("00000000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<65>("00000000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<65>("10000000000000000000000000000000000000000000000000000000000000000"));
-    cases.push_back(std::bitset<65>("10000000000000000000000000000000000000000000000000000000000000001"));
-    cases.push_back(std::bitset<65>("10000000000000000000000000011111000000000000000000000000000000001"));
-    cases.push_back(std::bitset<65>("00000000000000000000000000000000011111111111111111111111111111111"));
-    cases.push_back(std::bitset<65>("10000000000000000000000000000000011111111111111111111111111111111"));
-    cases.push_back(std::bitset<65>("11111111111111111111111111111111000000000000000000000000000000000"));
-    cases.push_back(std::bitset<65>("11111111111111111111111111111111000000000000000000000000000000001"));
-    cases.push_back(std::bitset<65>("10101010101010101010101010101010101010101010101010101010101010101"));
-    cases.push_back(std::bitset<65>("01010101010101010101010101010101010101010101010101010101010101010"));
-    cases.push_back(std::bitset<65>("11111111111111111111111111111111111111111111111111111111111111111"));
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<65>() {
+    static const char * cases[] = {
+        "00000000000000000000000000000000000000000000000000000000000000000",
+        "00000000000000000000000000000000000000000000000000000000000000001",
+        "10000000000000000000000000000000000000000000000000000000000000000",
+        "10000000000000000000000000000000000000000000000000000000000000001",
+        "10000000000000000000000000011111000000000000000000000000000000001",
+        "00000000000000000000000000000000011111111111111111111111111111111",
+        "10000000000000000000000000000000011111111111111111111111111111111",
+        "11111111111111111111111111111111000000000000000000000000000000000",
+        "11111111111111111111111111111111000000000000000000000000000000001",
+        "10101010101010101010101010101010101010101010101010101010101010101",
+        "01010101010101010101010101010101010101010101010101010101010101010",
+        "11111111111111111111111111111111111111111111111111111111111111111",
+    };
     return cases;
 }
 
-TEST_CONSTEXPR_CXX23 inline std::string str_repeat(std::string s, unsigned int n) {
-    std::string res = s;
-    for (; n != 0; --n)
-        res += s;
-    return res;
-}
+#define BITSET_ZERO() "0"
+#define BITSET_ONE() "1"
+#define BITSET_ONEZERO() "10"
+#define BITSET_ZEROONE() "10"
+
+#define REPEAT_8(DO_IT) \
+    DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() \
+    DO_IT() DO_IT() DO_IT()
+#define REPEAT_9(DO_IT) \
+    REPEAT_8(DO_IT) DO_IT()
+#define REPEAT_90(DO_IT) \
+    REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) \
+    REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT)
+#define REPEAT_99(DO_IT) \
+    REPEAT_90(DO_IT) REPEAT_9(DO_IT)
+#define REPEAT_400(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
+#define REPEAT_499(DO_IT) \
+    REPEAT_400(DO_IT) REPEAT_99(DO_IT)
+#define REPEAT_900(DO_IT) \
+    REPEAT_500(DO_IT) REPEAT_400(DO_IT)
+#define REPEAT_998(DO_IT) \
+    REPEAT_900(DO_IT) REPEAT_90(DO_IT) REPEAT_8(DO_IT)
+#define REPEAT_999(DO_IT) \
+    REPEAT_900(DO_IT) REPEAT_99(DO_IT)
 
 template <>
-TEST_CONSTEXPR_CXX23 inline std::vector<std::bitset<1000> > get_test_cases<1000>() {
-    std::vector<std::bitset<1000> > cases;
-    cases.push_back(std::bitset<1000>(std::string(1000, '0')));
-    cases.push_back(std::bitset<1000>(std::string(999, '0') + std::string(1, '1')));
-    cases.push_back(std::bitset<1000>(std::string(1, '1') + std::string(999, '0')));
-    cases.push_back(std::bitset<1000>(std::string(1, '1') + std::string(998, '0') + std::string(1, '1')));
-    cases.push_back(std::bitset<1000>(std::string(1, '1') + std::string(400, '0') + std::string(99, '1') + std::string(499, '0') + std::string(1, '1')));
-    cases.push_back(std::bitset<1000>(std::string(500, '0') + std::string(500, '1')));
-    cases.push_back(std::bitset<1000>(std::string(1, '1') + std::string(499, '0') + std::string(500, '1')));
-    cases.push_back(std::bitset<1000>(std::string(500, '1') + std::string(500, '0')));
-    cases.push_back(std::bitset<1000>(std::string(500, '1') + std::string(499, '0') + std::string(1, '1')));
-    cases.push_back(std::bitset<1000>(str_repeat("10", 500)));
-    cases.push_back(std::bitset<1000>(str_repeat("01", 500)));
-    cases.push_back(std::bitset<1000>(std::string(1000, '1')));
-
+__host__ __device__
+TEST_CONSTEXPR_CXX23 inline span_stub<const char *> get_test_cases<1000>() {
+    static const char * cases[] = {
+        REPEAT_1000(BITSET_ZERO),
+        REPEAT_999(BITSET_ZERO) BITSET_ONE(),
+        BITSET_ONE() REPEAT_999(BITSET_ZERO),
+        BITSET_ONE() REPEAT_998(BITSET_ZERO) BITSET_ONE(),
+        BITSET_ONE() REPEAT_400(BITSET_ZERO) REPEAT_99(BITSET_ONE) REPEAT_499(BITSET_ZERO) BITSET_ONE(),
+        REPEAT_500(BITSET_ZERO) REPEAT_500(BITSET_ONE),
+        BITSET_ONE() REPEAT_499(BITSET_ZERO) REPEAT_500(BITSET_ONE),
+        REPEAT_500(BITSET_ONE) REPEAT_500(BITSET_ZERO),
+        REPEAT_500(BITSET_ONE) REPEAT_499(BITSET_ZERO) BITSET_ONE(),
+        REPEAT_500(BITSET_ONEZERO),
+        REPEAT_500(BITSET_ZEROONE),
+        REPEAT_1000(BITSET_ONE),
+    };
     return cases;
 }
 

@@ -8,35 +8,38 @@
 
 // bitset(unsigned long long val); // constexpr since C++23
 
-#include <bitset>
-#include <cassert>
-#include <algorithm> // for 'min' and 'max'
-#include <cstddef>
+#include <cuda/std/bitset>
+#include <cuda/std/cassert>
+// #include <cuda/std/algorithm> // for 'min' and 'max'
+#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
-TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.
+// TEST_MSVC_DIAGNOSTIC_IGNORED(6294) // Ill-defined for-loop:  initial condition does not satisfy test.  Loop body not executed.
+_CCCL_NV_DIAG_SUPPRESS(186)
 
-template <std::size_t N>
+template <cuda::std::size_t N>
+__host__ __device__
 TEST_CONSTEXPR_CXX23 void test_val_ctor()
 {
     {
-        TEST_CONSTEXPR std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
+        TEST_CONSTEXPR cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
         assert(v.size() == N);
-        std::size_t M = std::min<std::size_t>(v.size(), 64);
-        for (std::size_t i = 0; i < M; ++i)
+        cuda::std::size_t M = cuda::std::min<cuda::std::size_t>(v.size(), 64);
+        for (cuda::std::size_t i = 0; i < M; ++i)
             assert(v[i] == ((i & 1) != 0));
-        for (std::size_t i = M; i < v.size(); ++i)
+        for (cuda::std::size_t i = M; i < v.size(); ++i)
             assert(v[i] == false);
     }
 #if TEST_STD_VER >= 11
     {
-        constexpr std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
+        constexpr cuda::std::bitset<N> v(0xAAAAAAAAAAAAAAAAULL);
         static_assert(v.size() == N, "");
     }
 #endif
 }
 
+__host__ __device__
 TEST_CONSTEXPR_CXX23 bool test() {
   test_val_ctor<0>();
   test_val_ctor<1>();
@@ -54,7 +57,7 @@ TEST_CONSTEXPR_CXX23 bool test() {
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 20
+#if TEST_STD_VER > 2020
   static_assert(test());
 #endif
 
