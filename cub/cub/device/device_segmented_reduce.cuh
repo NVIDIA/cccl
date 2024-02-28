@@ -49,8 +49,9 @@
 #include <cub/util_deprecated.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <iterator>
-#include <type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -81,7 +82,8 @@ private:
             typename EndOffsetIteratorT,
             typename OffsetT,
             typename ReductionOpT,
-            typename InitT>
+            typename InitT,
+            typename... Ts>
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::false_type,
     void* d_temp_storage,
@@ -101,7 +103,8 @@ private:
             typename EndOffsetIteratorT,
             typename OffsetT,
             typename ReductionOpT,
-            typename InitT>
+            typename InitT,
+            typename... Ts>
   CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
     ::cuda::std::true_type,
     void* d_temp_storage,
@@ -121,7 +124,8 @@ private:
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
       OffsetT,
-      ReductionOpT>::Dispatch(d_temp_storage,
+      ReductionOpT,
+      Ts...>::Dispatch(d_temp_storage,
                               temp_storage_bytes,
                               d_in,
                               d_out,
@@ -160,47 +164,11 @@ public:
   //!
   //! The code snippet below illustrates a custom min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!
-  //!    // CustomMin functor
-  //!    struct CustomMin
-  //!    {
-  //!        template <typename T>
-  //!        __device__ __forceinline__
-  //!        T operator()(const T &a, const T &b) const {
-  //!            return (b < a) ? b : a;
-  //!        }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int          num_segments;   // e.g., 3
-  //!    int          *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int          *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int          *d_out;         // e.g., [-, -, -]
-  //!    CustomMin    min_op;
-  //!    int          initial_value;           // e.g., INT_MAX
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::Reduce(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run reduction
-  //!    cub::DeviceSegmentedReduce::Reduce(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1, min_op, initial_value);
-  //!
-  //!    // d_out <-- [6, INT_MAX, 0]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-reduce
+  //!     :end-before: example-end segmented-reduce-reduce
   //!
   //! @endrst
   //!
@@ -279,7 +247,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
     T initial_value,
-    cudaStream_t stream = nullptr)
+    cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -287,8 +255,8 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
-      integral_offset_check{}, // feels like integral_offset_check::type{}
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, ReductionOpT>(
+      integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -360,35 +328,11 @@ public:
   //!
   //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int num_segments;   // e.g., 3
-  //!    int *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int *d_out;         // e.g., [-, -, -]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::Sum(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run sum-reduction
-  //!    cub::DeviceSegmentedReduce::Sum(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // d_out <-- [21, 0, 17]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-sum
+  //!     :end-before: example-end segmented-reduce-sum
   //!
   //! @endrst
   //!
@@ -449,7 +393,7 @@ public:
       int num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -460,8 +404,8 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
-      integral_offset_check{}, // feels like integral_offset_check::type{}
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Sum>(
+      integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -523,35 +467,11 @@ public:
   //!
   //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int num_segments;   // e.g., 3
-  //!    int *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int *d_out;         // e.g., [-, -, -]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::Min(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run min-reduction
-  //!    cub::DeviceSegmentedReduce::Min(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // d_out <-- [6, INT_MAX, 0]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-min
+  //!     :end-before: example-end segmented-reduce-min
   //!
   //! @endrst
   //!
@@ -611,7 +531,7 @@ public:
       int num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -622,8 +542,8 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
-      integral_offset_check{}, // feels like integral_offset_check::type{}
+    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Min>(
+      integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -695,35 +615,11 @@ public:
   //!
   //! The code snippet below illustrates the argmin-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int                      num_segments;   // e.g., 3
-  //!    int                      *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    cub::KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}, {-,-}, {-,-}]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::ArgMin(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run argmin-reduction
-  //!    cub::DeviceSegmentedReduce::ArgMin(
-  //!      d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!      num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // d_out <-- [{1,6}, {1,INT_MAX}, {2,0}]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-argmin
+  //!     :end-before: example-end segmented-reduce-argmin
   //!
   //! @endrst
   //!
@@ -786,7 +682,7 @@ public:
     int num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -819,7 +715,14 @@ public:
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<ArgIndexInputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<ArgIndexInputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            cub::ArgMin,
+                            InitT,
+                            AccumT>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -882,35 +785,11 @@ public:
   //!
   //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int num_segments;   // e.g., 3
-  //!    int *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    int *d_out;         // e.g., [-, -, -]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::Max(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run max-reduction
-  //!    cub::DeviceSegmentedReduce::Max(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // d_out <-- [8, INT_MIN, 9]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-max
+  //!     :end-before: example-end segmented-reduce-max
   //!
   //! @endrst
   //!
@@ -970,7 +849,7 @@ public:
       int num_segments,
       BeginOffsetIteratorT d_begin_offsets,
       EndOffsetIteratorT d_end_offsets,
-      cudaStream_t stream = nullptr)
+      cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
@@ -982,7 +861,7 @@ public:
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
     return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
-      integral_offset_check{}, // feels like integral_offset_check::type{}
+      integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -1055,35 +934,11 @@ public:
   //! The code snippet below illustrates the argmax-reduction of a device vector
   //! of `int` data elements.
   //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_reduce.cuh>
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers
-  //!    // for input and output
-  //!    int                      num_segments;   // e.g., 3
-  //!    int                      *d_offsets;     // e.g., [0, 3, 3, 7]
-  //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    KeyValuePair<int, int>   *d_out;         // e.g., [{-,-}, {-,-}, {-,-}]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSegmentedReduce::ArgMax(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run argmax-reduction
-  //!    cub::DeviceSegmentedReduce::ArgMax(
-  //!        d_temp_storage, temp_storage_bytes, d_in, d_out,
-  //!        num_segments, d_offsets, d_offsets + 1);
-  //!
-  //!    // d_out <-- [{0,8}, {1,INT_MIN}, {3,9}]
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-argmax
+  //!     :end-before: example-end segmented-reduce-argmax
   //!
   //! @endrst
   //!
@@ -1148,7 +1003,7 @@ public:
     int num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream = nullptr)
+    cudaStream_t stream = 0)
   {
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
@@ -1181,7 +1036,14 @@ public:
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<ArgIndexInputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>(
+    return segmented_reduce<ArgIndexInputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            cub::ArgMax,
+                            InitT,
+                            AccumT>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
