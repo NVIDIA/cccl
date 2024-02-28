@@ -135,8 +135,7 @@ git clone https://github.com/NVIDIA/cccl.git
 nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 ```
 > **Note**
-> Ensure to use `-I` and not `-isystem` in order to ensure the cloned headers are found before those included in the CUDA Toolkit.
-> Warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information. 
+> Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information. 
 
 ##### CMake Integration
 
