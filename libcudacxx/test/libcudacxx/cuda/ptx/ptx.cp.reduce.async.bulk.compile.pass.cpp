@@ -263,6 +263,8 @@ __global__ void test_cp_reduce_async_bulk(void ** fn_ptr) {
 #endif // __cccl_ptx_isa >= 800
 }
 
+
+#ifdef _LIBCUDACXX_HAS_NVF16
 __global__ void test_cp_reduce_async_bulk_f16(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
@@ -286,6 +288,9 @@ __global__ void test_cp_reduce_async_bulk_f16(void ** fn_ptr) {
 #endif // __cccl_ptx_isa >= 800
 }
 
+#endif  // _LIBCUDACXX_HAS_NVF16
+
+#ifdef _LIBCUDACXX_HAS_NVBF16
 __global__ void test_cp_reduce_async_bulk_bf16(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
@@ -308,6 +313,8 @@ __global__ void test_cp_reduce_async_bulk_bf16(void ** fn_ptr) {
   ));
 #endif // __cccl_ptx_isa >= 800
 }
+
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 int main(int, char**)
 {
