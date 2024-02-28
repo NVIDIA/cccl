@@ -450,7 +450,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   }
 #endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 
-#if _CCCL_STD_VER > 2020
+#if _CCCL_STD_VER >= 2023
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const pair& operator=(pair const& __p) const
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, const _T1)
              && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, const _T2))
@@ -535,7 +535,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     return *this;
   }
 #  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-#endif // _CCCL_STD_VER > 2020
+#endif // _CCCL_STD_VER >= 2023
 
   _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void
   swap(pair& __p) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
@@ -545,7 +545,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     swap(this->second, __p.second);
   }
 
-#if _CCCL_STD_VER > 2020
+#if _CCCL_STD_VER >= 2023
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(const pair& __p) const
     noexcept(__is_nothrow_swappable<const _T1>::value && __is_nothrow_swappable<const _T2>::value)
   {
@@ -553,7 +553,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
     swap(this->first, __p.first);
     swap(this->second, __p.second);
   }
-#endif // _CCCL_STD_VER > 2020
+#endif // _CCCL_STD_VER >= 2023
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
   _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 operator ::std::pair<_T1, _T2>() const
@@ -631,7 +631,7 @@ operator<=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2023
 template <class _T1, class _T2, class _U1, class _U2, template <class> class _TQual, template <class> class _UQual>
   requires requires {
     typename pair<common_reference_t<_TQual<_T1>, _UQual<_U1>>, common_reference_t<_TQual<_T2>, _UQual<_U2>>>;
@@ -647,7 +647,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 {
   using type = pair<common_type_t<_T1, _U1>, common_type_t<_T2, _U2>>;
 };
-#endif // _CCCL_STD_VER > 2017
+#endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -658,7 +658,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
   __x.swap(__y);
 }
 
-#if _CCCL_STD_VER > 2020
+#if _CCCL_STD_VER >= 2023
 template <class _T1, class _T2>
   requires(__is_swappable<const _T1>::value && __is_swappable<const _T2>::value)
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void
@@ -666,7 +666,7 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 {
   __x.swap(__y);
 }
-#endif // _CCCL_STD_VER > 2020
+#endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
@@ -790,7 +790,7 @@ get(const pair<_T1, _T2>&& __p) noexcept
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _T1& get(pair<_T1, _T2>& __p) noexcept
 {
@@ -839,7 +839,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _T1 const&& get(pair<_T2, _T1> co
   return __get_pair<1>::get(_CUDA_VSTD::move(__p));
 }
 
-#endif // _CCCL_STD_VER > 2011
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
