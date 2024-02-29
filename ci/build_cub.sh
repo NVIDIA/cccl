@@ -33,6 +33,10 @@ if [[ "$HOST_COMPILER" == *icpc* ]]; then
     ENABLE_CUB_BENCHMARKS="false"
 fi
 
+if [[ $DISABLE_CUB_BENCHMARKS ]]; then
+    ENABLE_CUB_BENCHMARKS="false"
+fi
+
 PRESET="cub-cpp$CXX_STANDARD"
 
 CMAKE_OPTIONS="
