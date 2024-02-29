@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
-// XFAIL: c++20 && (nvrtc || nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3)
+// XFAIL: nvrtc || nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3
 // nvbug 3885350
 
 // cuda::std::forward_iterator;
