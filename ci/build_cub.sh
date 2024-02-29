@@ -16,7 +16,10 @@ version_compare() {
 
 ENABLE_CUB_BENCHMARKS="false"
 ENABLE_CUB_RDC="false"
-if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
+
+if [[ -n "${DISABLE_CUB_BENCHMARKS}" ]]; then
+    echo "Benchmarks have been forcefully disabled."
+elif [[ "$CUDA_COMPILER" == *nvcc* ]]; then
     ENABLE_CUB_RDC="true"
     NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
     if [[ $(version_compare $NVCC_VERSION 11.5) == "true" ]]; then
@@ -30,10 +33,6 @@ else
 fi
 
 if [[ "$HOST_COMPILER" == *icpc* ]]; then
-    ENABLE_CUB_BENCHMARKS="false"
-fi
-
-if [[ -n "${DISABLE_CUB_BENCHMARKS}" ]]; then
     ENABLE_CUB_BENCHMARKS="false"
 fi
 
