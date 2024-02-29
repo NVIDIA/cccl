@@ -7,9 +7,9 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/iterator/retag.h>
 
-// There is a unfortunate miscompilation of the gcc-12 vectorizer leading to OOB writes
+// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 12
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
 #define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
 #else
 #define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
