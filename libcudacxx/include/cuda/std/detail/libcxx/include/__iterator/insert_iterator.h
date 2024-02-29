@@ -34,14 +34,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Container>
 using __insert_iterator_iter_t = typename _Container::iterator;
 
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
 class _LIBCUDACXX_TEMPLATE_VIS insert_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
 {
-_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 protected:
     _Container* container;
     __insert_iterator_iter_t<_Container> iter;

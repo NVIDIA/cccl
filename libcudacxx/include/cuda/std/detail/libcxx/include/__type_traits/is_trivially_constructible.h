@@ -48,7 +48,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
 {
 };
 
-_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp>
 #if defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
@@ -58,7 +58,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp>
 #endif // defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
 {
 };
-_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&&>

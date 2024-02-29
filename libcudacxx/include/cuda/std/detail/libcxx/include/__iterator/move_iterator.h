@@ -280,10 +280,8 @@ public:
     return static_cast<reference>(*__current_);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC)
-#    pragma warning(push)
-#    pragma warning(disable : 4172) // returning address of local variable or temporary
-#  endif // _CCCL_COMPILER_MSVC
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference
   operator[](difference_type __n) const
@@ -291,9 +289,7 @@ public:
     return static_cast<reference>(__current_[__n]);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC)
-#    pragma warning(pop)
-#  endif // _CCCL_COMPILER_MSVC
+_CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 move_iterator operator++(int)
   {

@@ -50,9 +50,9 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

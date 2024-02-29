@@ -32,7 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp, class _CharT = char,
           class _Traits = char_traits<_CharT>, class _Distance = ptrdiff_t>
 class _LIBCUDACXX_TEMPLATE_VIS istream_iterator
@@ -40,7 +40,7 @@ class _LIBCUDACXX_TEMPLATE_VIS istream_iterator
     : public iterator<input_iterator_tag, _Tp, _Distance, const _Tp*, const _Tp&>
 #endif
 {
-_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 public:
     typedef input_iterator_tag iterator_category;
     typedef _Tp value_type;

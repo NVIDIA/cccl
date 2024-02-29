@@ -30,14 +30,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS ostreambuf_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
 {
-_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 public:
     typedef output_iterator_tag                 iterator_category;
     typedef void                                value_type;

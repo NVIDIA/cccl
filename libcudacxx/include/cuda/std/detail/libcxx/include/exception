@@ -193,15 +193,11 @@ make_exception_ptr(_Ep __e) noexcept
 
 class _LIBCUDACXX_EXCEPTION_ABI exception_ptr
 {
-#if defined(_CCCL_COMPILER_CLANG)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-private-field"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-private-field")
     void* __ptr1_;
     void* __ptr2_;
-#if defined(_CCCL_COMPILER_CLANG)
-#pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP
 public:
     exception_ptr() noexcept;
     exception_ptr(nullptr_t) noexcept;
