@@ -27,7 +27,7 @@ Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS` disables canonic
 
 Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` or `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` disables canonicalization for multiplication or division individually.
 
-### Support for half and bfloat16 (since libcu++ 2.x.x)
+### Support for half and bfloat16 (since libcu++ 2.4.0)
 
 Our implementation includes support for the `__half` type from `<cuda_fp16.h>`, when the CUDA toolkit version is at
 least 12.2. This is detected automatically when compiling through NVCC. If you are compiling a host-only translation
