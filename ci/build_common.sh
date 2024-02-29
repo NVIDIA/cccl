@@ -11,7 +11,7 @@ CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 GLOBAL_CMAKE_OPTIONS=()
-DISABLE_CUB_BENCHMARKS=0 # Enable to force-disable building CUB benchmarks.
+DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 
 # Check if the correct number of arguments has been provided
 function usage {
