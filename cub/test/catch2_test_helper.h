@@ -27,6 +27,7 @@
 
 #pragma once
 
+#include "cuda/std/detail/libcxx/include/__cccl/diagnostic.h"
 #include <metal.hpp>
 #include <type_traits>
 #include <cstdint>
@@ -34,6 +35,10 @@
 
 #include <cub/util_compiler.cuh>
 #include "test_util_vec.h"
+
+#if __CUDACC_VER_MAJOR__ == 11
+_CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
+#endif // nvcc-11
 
 #include <c2h/device_policy.cuh>
 #include <c2h/utility.cuh>
