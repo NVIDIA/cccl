@@ -37,12 +37,12 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
 
 #elif defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
 
-_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
     : public integral_constant<bool, is_destructible<_Tp>::value && _LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR(_Tp)>
 {};
-_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 #else
 

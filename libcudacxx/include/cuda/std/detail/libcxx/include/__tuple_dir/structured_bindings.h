@@ -24,10 +24,8 @@
 
 #ifdef __cuda_std__
 
-#  if defined(_CCCL_COMPILER_CLANG)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
-#  endif // _CCCL_COMPILER_CLANG
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
@@ -206,9 +204,7 @@ struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>
 } // namespace std
 #  endif // _CCCL_STD_VER >= 2017
 
-#  if defined(_CCCL_COMPILER_CLANG)
 _CCCL_DIAG_POP
-#  endif // _CCCL_COMPILER_CLANG
 
 #endif // __cuda_std__
 

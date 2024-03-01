@@ -64,10 +64,8 @@
 
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"
-#if defined(__clang__)
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wpass-failed"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
 
@@ -2987,7 +2985,4 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
 CUB_NAMESPACE_END
 
-
-#if defined(__clang__)
-#  pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP

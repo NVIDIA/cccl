@@ -27,46 +27,46 @@ struct NonTrivialMove {
   bool move_assigned_from = false;
 
   NonTrivialMove() = default;
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  __host__ __device__ TEST_CONSTEXPR_CXX14
   NonTrivialMove(const NonTrivialMove& other) noexcept
       : data(other.data),
         move_assigned_from(false) {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  __host__ __device__ TEST_CONSTEXPR_CXX14
   NonTrivialMove(NonTrivialMove&& other) noexcept : data(other.data),
                                                     move_assigned_from(false) {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialMove&
   operator=(const NonTrivialMove& other) noexcept {
     data = other.data;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialMove&
   operator=(NonTrivialMove&& other) noexcept {
     data = other.data;
     move_assigned_from = true;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20
+  __host__ __device__ TEST_CONSTEXPR_CXX14
   NonTrivialMove(const int val) noexcept : data(val),
                                            move_assigned_from(false) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 NonTrivialMove&
+  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialMove&
   operator=(const int val) noexcept {
     data = val;
     move_assigned_from = false;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 friend bool
+  __host__ __device__ TEST_CONSTEXPR_CXX14 friend bool
   operator==(const NonTrivialMove& lhs, const NonTrivialMove& rhs) noexcept {
     // NOTE: This uses implicit knowledge that the right hand side has been moved from
     return lhs.data == rhs.data && !lhs.move_assigned_from &&
            rhs.move_assigned_from;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX20 bool
+  __host__ __device__ TEST_CONSTEXPR_CXX14 bool
   operator==(const int& other) const noexcept {
     // NOTE: This uses implicit knowledge that the only elements we compare against were untouched
     return data == other && !move_assigned_from;
@@ -74,7 +74,7 @@ struct NonTrivialMove {
 };
 
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   using value_type = typename cuda::std::iterator_traits<InIter>::value_type;
   {
     constexpr int N = 1000;
@@ -110,7 +110,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
 
 #if defined(_LIBCUDACXX_HAS_MEMORY)
 template <class InIter, class OutIter>
-TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   constexpr unsigned N = 100;
   cuda::std::unique_ptr<int> ia[N];
   for (unsigned i = 0; i < N; ++i)
@@ -124,7 +124,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
 }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   test<cpp17_input_iterator<int*>, cpp17_output_iterator<int*> >();
   test<cpp17_input_iterator<int*>, cpp17_input_iterator<int*> >();
   test<cpp17_input_iterator<int*>, forward_iterator<int*> >();

@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template<class _CharT, class _Traits>
 class _LIBCUDACXX_TEMPLATE_VIS istreambuf_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
@@ -39,7 +39,7 @@ class _LIBCUDACXX_TEMPLATE_VIS istreambuf_iterator
                       _CharT>
 #endif
 {
-_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 public:
     typedef input_iterator_tag              iterator_category;
     typedef _CharT                          value_type;

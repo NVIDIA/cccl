@@ -9,7 +9,7 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 // UNSUPPORTED: msvc-19.16
-// XFAIL: c++20 && !nvhpc && !(clang && !nvcc)
+// XFAIL: nvrtc || nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3
 // nvbug 3885350
 
 // <ranges>
