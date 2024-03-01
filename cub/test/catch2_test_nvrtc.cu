@@ -30,10 +30,6 @@
 #include <cuda.h>
 #include <string>
 
-#if __CUDACC_VER_MAJOR__ == 11 && __CUDACC_VER_MINOR__ == 8 // silence unused variable warning
-#pragma nv_diag_suppress 177
-#endif // nvcc 11.8
-
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {
   nvrtcProgram prog{};
