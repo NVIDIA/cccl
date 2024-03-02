@@ -82,6 +82,13 @@ struct half_t
         *this = half_t(float(a));
     }
 
+    /// Constructor from double
+    __host__ __device__ __forceinline__
+    half_t(double a)
+    {
+        *this = half_t(float(a));
+    }
+
     /// Constructor from unsigned long long int
     template < typename T,
                typename = typename ::cuda::std::enable_if<

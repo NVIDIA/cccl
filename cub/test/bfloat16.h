@@ -80,6 +80,13 @@ struct bfloat16_t
         *this = bfloat16_t(float(a));
     }
 
+    /// Constructor from double
+    __host__ __device__ __forceinline__
+    bfloat16_t(double a)
+    {
+        *this = bfloat16_t(float(a));
+    }
+
     /// Constructor from unsigned long long int
     template < typename T,
                typename = typename ::cuda::std::enable_if<
