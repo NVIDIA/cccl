@@ -142,16 +142,16 @@ struct bfloat16_t
 
     /// Equality
     __host__ __device__ __forceinline__
-    bool operator ==(const bfloat16_t &other) const
+    friend bool operator ==(const bfloat16_t &a, const bfloat16_t &b)
     {
-        return (this->__x == other.__x);
+        return (a.__x == b.__x);
     }
 
     /// Inequality
     __host__ __device__ __forceinline__
-    bool operator !=(const bfloat16_t &other) const
+    friend bool operator !=(const bfloat16_t &a, const bfloat16_t &b)
     {
-        return (this->__x != other.__x);
+        return (a.__x != b.__x);
     }
 
     /// Assignment by sum

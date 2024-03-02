@@ -223,16 +223,16 @@ struct half_t
 
     /// Equality
     __host__ __device__ __forceinline__
-    bool operator ==(const half_t &other) const
+    friend bool operator ==(const half_t &a, const half_t &b)
     {
-        return (this->__x == other.__x);
+        return (a.__x == b.__x);
     }
 
     /// Inequality
     __host__ __device__ __forceinline__
-    bool operator !=(const half_t &other) const
+    friend bool operator !=(const half_t &a, const half_t &b)
     {
-        return (this->__x != other.__x);
+        return (a.__x != b.__x);
     }
 
     /// Assignment by sum
@@ -249,7 +249,7 @@ struct half_t
     {
         return half_t(float(*this) * float(other));
     }
-    
+
     /// Divide
     __host__ __device__ __forceinline__
     half_t operator/(const half_t &other) const
@@ -263,7 +263,7 @@ struct half_t
     {
         return half_t(float(*this) + float(other));
     }
-    
+
     /// Sub
     __host__ __device__ __forceinline__
     half_t operator-(const half_t &other) const
