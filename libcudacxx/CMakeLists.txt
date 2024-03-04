@@ -50,17 +50,14 @@ endif ()
 
 option(LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS "Enable libcu++ tests." ON)
 if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
+  enable_testing()
+
   include(FindPythonInterp)
   if (NOT PYTHONINTERP_FOUND)
     message(FATAL_ERROR
       "Failed to find python interpreter, which is required for running tests and "
       "building a libcu++ static library.")
   endif ()
-endif ()
-
-# Configure options needed to run tests.
-if (LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS)
-  enable_testing()
 
   # Determine the host triple to avoid invoking `${CXX} -dumpmachine`.
   include(GetHostTriple)
