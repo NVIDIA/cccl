@@ -124,6 +124,7 @@ _CCCL_HOST_DEVICE constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_deca
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
+_CCCL_DIAG_SUPPRESS_NVHPC(probable_guiding_friend)
 _CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
 // __zip/__unzip is for keeping type names short. It has the unfortunate side
