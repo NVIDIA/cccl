@@ -9,6 +9,7 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
+// UNSUPPORTED: nvcc-11
 // XFAIL: !pre-sm-90 && pre-sm-90a
 
 // <cuda/ptx>
