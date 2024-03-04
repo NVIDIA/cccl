@@ -5,9 +5,14 @@
 
 # CCCL Dev Containers
 
-CCCL uses [Development Containers](https://containers.dev/) to provide consistent and convenient development environments for both local development and for CI. This guide covers setup in [Visual Studio Code](#quickstart-vscode-recommended) and [Docker](#quickstart-docker-manual-approach).
+CCCL uses [Development Containers](https://containers.dev/) to provide consistent and convenient development environments for both local development and for CI. This guide covers setup in [Visual Studio Code](#quickstart-vscode-recommended) and [Docker](#quickstart-docker-manual-approach). The guide also provides additional instructions in case the user wants to use WSL.
 
-## Quickstart: VSCode (Recommended)
+## Table of Contents
+1. [Quickstart: VSCode (Recommended)](#vscode)
+2. [Quickstart: Docker (Manual Approach)](#docker)
+3. [Quickstart: Using WSL](#wsl)
+
+## Quickstart: VSCode (Recommended) <a name="vscode"></a>
 
 ### Prerequisites
 - [Visual Studio Code](https://code.visualstudio.com/)
@@ -55,7 +60,7 @@ To manually trigger this authentication, execute the `devcontainer-utils-vault-s
 
 For more information about the sccache configuration and authentication, see the documentation at [`rapidsai/devcontainers`](https://github.com/rapidsai/devcontainers/blob/branch-23.10/USAGE.md#build-caching-with-sccache).
 
-## Quickstart: Docker (Manual Approach)
+## Quickstart: Docker (Manual Approach) <a name="docker"></a>
 
 ### Prerequisites
 - [Docker](https://docs.docker.com/desktop/install/linux-install/)
@@ -117,7 +122,7 @@ For more information, see the `.devcontainer/make_devcontainers.sh --help` messa
 
 **Note**: When adding or updating supported environments, modify `matrix.yaml` and then rerun this script to synchronize the `devcontainer` configurations.
 
-## Dev Containers on WSL
+## Quickstart: Using WSL <a name="wsl"></a>
 
 > [!NOTE]
 > _Make sure you have the Nvidia driver installed on your Windows host before moving further_. Type in `nvidia-smi` for verification.
@@ -141,7 +146,6 @@ This should probably install Ubuntu distro as a default.
 
 4. Launch your WSL/Ubuntu terminal by running `wsl` in Powershell.
 
-
 5. Install the [WSL extension](ms-vscode-remote.remote-wsl) on VS Code.
 
     - `Ctrl + Shift + P` and select `WSL: Connect to WSL` (it will prompt you to install the WSL extension).
@@ -154,7 +158,7 @@ This should probably install Ubuntu distro as a default.
 
 7. Install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). **Make sure you install the WSL 2 version and not the native Linux one**. This builds on top of Docker so make sure you have Docker properly installed (run `docker --version`).
 
-8. Open `/etc/docker/daemon.json` (if the file does not exist, create it) and add the following:
+8. Open `/etc/docker/daemon.json` from within your WSL system (if the file does not exist, create it) and add the following:
 
 ```json
 {
@@ -192,4 +196,3 @@ From that point on, the guide aligns with our [existing Dev Containers native Li
   Please try entering the URL in your browser manually
 
 In that case type in the address manually in your web browser https://github.com/login/device and fill in the one-time code.
-
