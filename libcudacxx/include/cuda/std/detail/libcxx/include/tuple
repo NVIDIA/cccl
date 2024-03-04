@@ -1093,11 +1093,7 @@ template <class _Up> struct __ignore_t {
 };
 
 namespace {
-#ifdef __CUDA_ARCH__
-static
-#endif
-    _LIBCUDACXX_INLINE_VAR constexpr __ignore_t<unsigned char>
-        ignore = __ignore_t<unsigned char>();
+  _LIBCUDACXX_CPO_ACCESSIBILITY __ignore_t<unsigned char> ignore{};
 } // namespace
 
 template <class... _Tp>
