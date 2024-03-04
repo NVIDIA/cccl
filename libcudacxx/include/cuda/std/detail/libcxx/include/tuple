@@ -227,6 +227,9 @@ swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcep
   swap(__x.get(), __y.get());
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
+
 template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
@@ -270,9 +273,6 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
-
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -300,8 +300,6 @@ public:
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
-
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -344,9 +342,6 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
-
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -386,8 +381,6 @@ public:
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
-
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -484,6 +477,8 @@ public:
     return static_cast<const _Hp&>(*this);
   }
 };
+
+_CCCL_DIAG_POP
 
 template <class... _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI void __swallow(_Tp&&...) noexcept
