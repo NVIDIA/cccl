@@ -85,7 +85,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1,
@@ -126,7 +126,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1);
@@ -165,7 +165,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1);
@@ -204,7 +204,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1);
@@ -243,7 +243,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1);
@@ -282,7 +282,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[se
     d_temp_storage,
     temp_storage_bytes,
     d_in.begin(),
-    d_out.data(),
+    d_out.begin(),
     num_segments,
     d_offsets.begin(),
     d_offsets.begin() + 1);
