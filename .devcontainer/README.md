@@ -185,7 +185,7 @@ then run `sudo systemctl restart docker.service`.
     
     - If you are not prompted just type `Ctrl + Shift + P` and `Dev Containers: Open Folder in Container ...`.
 
-12. Verify that Dev Container was configured properly by running `./nvidia-smi` in your Dev Container terminal. For a proper configuration it is important for the steps in [Install prerequisites and VS Code extensions](#prereqs) to be followed in a precise order.
+12. Verify that Dev Container was configured properly by running `nvidia-smi` in your Dev Container terminal. For a proper configuration it is important for the steps in [Install prerequisites and VS Code extensions](#prereqs) to be followed in a precise order.
 
 From that point on, the guide aligns with our [existing Dev Containers native Linux guide](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md) with just one minor potential alteration:
 
