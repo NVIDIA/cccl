@@ -2,6 +2,17 @@
 
 - PTX ISA: [`cp.async.bulk.tensor`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor)
 
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+## Unicast
+
 | C++ | PTX |
 | [(0)](#0-cp_async_bulk_tensor) `cuda::ptx::cp_async_bulk_tensor`| `cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes` |
 | [(1)](#1-cp_async_bulk_tensor) `cuda::ptx::cp_async_bulk_tensor`| `cp.async.bulk.tensor.1d.global.shared::cta.tile.bulk_group` |
@@ -169,6 +180,8 @@ __device__ static inline void cp_async_bulk_tensor(
   const int32_t (&tensorCoords)[5],
   const void* srcMem);
 ```
+
+## Multicast
 
 | C++ | PTX |
 | [(0)](#0-cp_async_bulk_tensor_multicast) `cuda::ptx::cp_async_bulk_tensor`| `cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster` |
