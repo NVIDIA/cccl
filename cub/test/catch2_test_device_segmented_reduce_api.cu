@@ -58,6 +58,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
   // example-begin segmented-reduce-reduce
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
   CustomMin min_op;
@@ -72,8 +73,8 @@ CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
     d_in.begin(),
     d_out.begin(),
     num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1,
+    d_offsets_it,
+    d_offsets_it + 1,
     min_op,
     initial_value);
 
@@ -87,8 +88,8 @@ CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
     d_in.begin(),
     d_out.begin(),
     num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1,
+    d_offsets_it,
+    d_offsets_it + 1,
     min_op,
     initial_value);
 
@@ -103,6 +104,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
   // example-begin segmented-reduce-sum
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
@@ -110,26 +112,14 @@ CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedReduce::Sum(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::Sum(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<int> expected{21, 0, 17};
   // example-end segmented-reduce-sum
@@ -142,6 +132,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
   // example-begin segmented-reduce-min
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
@@ -149,26 +140,14 @@ CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedReduce::Min(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::Min(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<int> expected{6, INT_MAX, 0};
   // example-end segmented-reduce-min
@@ -181,6 +160,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
   // example-begin segmented-reduce-argmin
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
@@ -188,26 +168,14 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedReduce::ArgMin(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::ArgMin(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{1, 6}, {1, INT_MAX}, {2, 0}};
   // example-end segmented-reduce-argmin
@@ -220,6 +188,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
   // example-begin segmented-reduce-max
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<int> d_out(3);
 
@@ -227,26 +196,14 @@ CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedReduce::Max(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::Max(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<int> expected{8, INT_MIN, 9};
   // example-end segmented-reduce-max
@@ -259,6 +216,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[se
   // example-begin segmented-reduce-argmax
   int num_segments                     = 3;
   thrust::device_vector<int> d_offsets = {0, 3, 3, 7};
+  auto d_offsets_it                    = thrust::raw_pointer_cast(d_offsets.data());
   thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
   thrust::device_vector<cub::KeyValuePair<int, int>> d_out(3);
 
@@ -266,26 +224,14 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[se
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceSegmentedReduce::ArgMax(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::ArgMax(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in.begin(),
-    d_out.begin(),
-    num_segments,
-    d_offsets.begin(),
-    d_offsets.begin() + 1);
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, d_offsets_it, d_offsets_it + 1);
 
   thrust::device_vector<cub::KeyValuePair<int, int>> expected{{0, 8}, {1, INT_MIN}, {3, 9}};
   // example-end segmented-reduce-argmax
