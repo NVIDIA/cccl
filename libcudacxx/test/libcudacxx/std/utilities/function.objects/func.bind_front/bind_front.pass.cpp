@@ -416,7 +416,7 @@ __host__ __device__ constexpr bool test() {
     takeAnything();
   }
 
-#ifndef TEST_COMPILER_ICC
+#if !defined(TEST_COMPILER_ICC) && !defined(TEST_COMPILER_MSVC_2017)
   // Make sure bind_front's unspecified type's operator() is SFINAE-friendly
   {
     using T = decltype(cuda::std::bind_front(cuda::std::declval<int(*)(int, int)>(), 1));
@@ -425,7 +425,7 @@ __host__ __device__ constexpr bool test() {
     static_assert(!cuda::std::is_invocable<T, void*>::value);
     static_assert(!cuda::std::is_invocable<T, int, int>::value);
   }
-#endif // TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_ICC && !TEST_COMPILER_MSVC_2017
 
   return true;
 }

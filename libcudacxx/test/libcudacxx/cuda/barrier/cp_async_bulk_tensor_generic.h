@@ -41,7 +41,7 @@ namespace cde = cuda::device::experimental;
 template<class T, size_t num_dims>
 constexpr __host__ __device__ int tensor_len(cuda::std::array<T, num_dims> dims) {
     T len = 1;
-    for (int d : dims) {
+    for (T d : dims) {
         len *= d;
     }
     return static_cast<int>(len);
