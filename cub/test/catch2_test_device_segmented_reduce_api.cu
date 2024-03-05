@@ -36,6 +36,7 @@
 #include "catch2_test_helper.h"
 #include "thrust/detail/raw_pointer_cast.h"
 
+// example-begin segmented-reduce-custommin
 struct CustomMin
 {
   template <typename T>
@@ -44,6 +45,8 @@ struct CustomMin
     return (b < a) ? b : a;
   }
 };
+
+// example-end segmented-reduce-custommin
 
 struct is_equal
 {

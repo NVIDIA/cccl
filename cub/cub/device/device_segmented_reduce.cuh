@@ -470,6 +470,12 @@ public:
   //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
   //!     :language: c++
   //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-custommin
+  //!     :end-before: example-end segmented-reduce-custommin
+  //!
+  //! .. literalinclude:: ../../test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
   //!     :start-after: example-begin segmented-reduce-min
   //!     :end-before: example-end segmented-reduce-min
   //!
