@@ -3954,6 +3954,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_wait_group(
   ));
 }
 #endif // __cccl_ptx_isa >= 800
+
 /*
 // cp.async.bulk.wait_group.read N; // PTX ISA 80, SM_90
 template <int N32>
