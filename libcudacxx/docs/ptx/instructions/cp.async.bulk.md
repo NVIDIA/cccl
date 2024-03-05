@@ -2,7 +2,20 @@
 
 -  PTX ISA: [`cp.async.bulk`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk)
 
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+## Implementation notes
+
 **NOTE.** Both `srcMem` and `dstMem` must be 16-byte aligned, and `size` must be a multiple of 16.
+
+## Unicast
 
 | C++ | PTX |
 | [(0)](#0-cp_async_bulk) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes` |
@@ -56,6 +69,8 @@ __device__ static inline void cp_async_bulk(
   const void* srcMem,
   const uint32_t& size);
 ```
+
+## Multicast
 
 | C++ | PTX |
 | [(0)](#0-cp_async_bulk_multicast) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster` |

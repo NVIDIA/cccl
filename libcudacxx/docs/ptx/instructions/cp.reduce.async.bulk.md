@@ -2,38 +2,17 @@
 
 - PTX ISA: [`cp.reduce.async.bulk`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk)
 
-PTX does not currently (CTK 12.3) expose `cp.reduce.async.bulk.add.s64`. This exposure is emulated in `cuda::ptx` using:
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
 
-```cuda
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.u64 [dstMem], [srcMem], size, [rdsmem_bar]; // 2. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
 
-// cp.reduce.async.bulk.dst.src.bulk_group.op.u64  [dstMem], [srcMem], size; // 6. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size);
-```
+## Integer and floating point instructions
 
 | C++ | PTX |
 | [(0)](#0-cp_reduce_async_bulk) `cuda::ptx::cp_reduce_async_bulk`| `cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.and.b32` |
@@ -662,6 +641,43 @@ __device__ static inline void cp_reduce_async_bulk(
   uint32_t size);
 ```
 
+## Emulation of `.s64` instruction
+
+PTX does not currently (CTK 12.3) expose `cp.reduce.async.bulk.add.s64`. This exposure is emulated in `cuda::ptx` using:
+
+```cuda
+// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.u64 [dstMem], [srcMem], size, [rdsmem_bar]; // 2. PTX ISA 80, SM_90
+// .dst       = { .shared::cluster }
+// .src       = { .shared::cta }
+// .type      = { .s64 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void cp_reduce_async_bulk(
+  cuda::ptx::space_cluster_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_add_t,
+  int64_t* dstMem,
+  const int64_t* srcMem,
+  uint32_t size,
+  uint64_t* rdsmem_bar);
+
+// cp.reduce.async.bulk.dst.src.bulk_group.op.u64  [dstMem], [srcMem], size; // 6. PTX ISA 80, SM_90
+// .dst       = { .global }
+// .src       = { .shared::cta }
+// .type      = { .s64 }
+// .op        = { .add }
+template <typename=void>
+__device__ static inline void cp_reduce_async_bulk(
+  cuda::ptx::space_global_t,
+  cuda::ptx::space_shared_t,
+  cuda::ptx::op_add_t,
+  int64_t* dstMem,
+  const int64_t* srcMem,
+  uint32_t size);
+```
+
+## FP16 instructions
+
 | C++ | PTX |
 | [(0)](#0-cp_reduce_async_bulk_f16) `cuda::ptx::cp_reduce_async_bulk`| `cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16` |
 | [(1)](#1-cp_reduce_async_bulk_f16) `cuda::ptx::cp_reduce_async_bulk`| `cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16` |
@@ -721,6 +737,8 @@ __device__ static inline void cp_reduce_async_bulk(
   const __half* srcMem,
   uint32_t size);
 ```
+
+## BF16 instructions
 
 | C++ | PTX |
 | [(0)](#0-cp_reduce_async_bulk_bf16) `cuda::ptx::cp_reduce_async_bulk`| `cp.reduce.async.bulk.global.shared::cta.bulk_group.min.bf16` |
