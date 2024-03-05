@@ -2,6 +2,17 @@
 
 - PTX ISA: [`mbarrier.test_wait`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait)
 
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+## mbarrier.test_wait
+
 | C++ | PTX |
 | [(0)](#0-mbarrier_test_wait) `cuda::ptx::mbarrier_test_wait`| `mbarrier.test_wait.shared.b64` |
 | [(1)](#1-mbarrier_test_wait) `cuda::ptx::mbarrier_test_wait`| `mbarrier.test_wait.acquire.cta.shared::cta.b64` |
@@ -31,6 +42,8 @@ __device__ static inline bool mbarrier_test_wait(
   uint64_t* addr,
   const uint64_t& state);
 ```
+
+## mbarrier.test_wait.parity
 
 | C++ | PTX |
 | [(0)](#0-mbarrier_test_wait_parity) `cuda::ptx::mbarrier_test_wait_parity`| `mbarrier.test_wait.parity.shared.b64` |

@@ -2,6 +2,17 @@
 
 - PTX ISA: [`fence`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence)
 
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+## fence
+
 | C++ | PTX |
 | [(0)](#0-fence) `cuda::ptx::fence`| `fence.sc.cta;` |
 | [(0)](#0-fence) `cuda::ptx::fence`| `fence.sc.gpu;` |
@@ -37,6 +48,8 @@ __device__ static inline void fence(
   cuda::ptx::scope_cluster_t);
 ```
 
+## fence.mbarrier_init
+
 | C++ | PTX |
 | [(0)](#0-fence_mbarrier_init) `cuda::ptx::fence_mbarrier_init`| `fence.mbarrier_init.release.cluster;` |
 
@@ -53,6 +66,8 @@ __device__ static inline void fence_mbarrier_init(
   cuda::ptx::scope_cluster_t);
 ```
 
+## fence.proxy.alias
+
 | C++ | PTX |
 | [(0)](#0-fence_proxy_alias) `cuda::ptx::fence_proxy_alias`| `fence.proxy.alias;` |
 
@@ -64,6 +79,8 @@ __device__ static inline void fence_mbarrier_init(
 template <typename=void>
 __device__ static inline void fence_proxy_alias();
 ```
+
+## fence.proxy.async
 
 | C++ | PTX |
 | [(0)](#0-fence_proxy_async) `cuda::ptx::fence_proxy_async`| `fence.proxy.async;` |
@@ -89,6 +106,8 @@ template <cuda::ptx::dot_space Space>
 __device__ static inline void fence_proxy_async(
   cuda::ptx::space_t<Space> space);
 ```
+
+## fence.proxy.tensormap
 
 | C++ | PTX |
 | [(0)](#0-fence_proxy_tensormap_generic) `cuda::ptx::fence_proxy_tensormap_generic`| `fence.proxy.tensormap::generic.release.cta;` |
