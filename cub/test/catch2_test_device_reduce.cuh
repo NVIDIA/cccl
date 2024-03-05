@@ -35,6 +35,7 @@
 
 #include <iostream>
 #include <numeric>
+#include <type_traits>
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
@@ -212,6 +213,9 @@ cub::ConstantInputIterator<__nv_bfloat16, OffsetT> inline unwrap_it(
   return cub::ConstantInputIterator<__nv_bfloat16, OffsetT>(val);
 }
 #endif
+
+template <typename T>
+using unwrap_value_t = typename std::remove_reference<decltype(*unwrap_it(std::declval<T*>()))>::type;
 
 template <class WrappedItT, //
           class ItT = decltype(unwrap_it(std::declval<WrappedItT>()))>

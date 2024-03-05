@@ -61,28 +61,28 @@ struct bfloat16_t
 
     /// Constructor from __nv_bfloat16
     __host__ __device__ __forceinline__
-    bfloat16_t(const __nv_bfloat16 &other)
+    explicit bfloat16_t(const __nv_bfloat16 &other)
     {
         __x = reinterpret_cast<const uint16_t&>(other);
     }
 
     /// Constructor from integer
     __host__ __device__ __forceinline__
-    bfloat16_t(int a)
+    explicit bfloat16_t(int a)
     {
         *this = bfloat16_t(float(a));
     }
 
     /// Constructor from std::size_t
     __host__ __device__ __forceinline__
-    bfloat16_t(std::size_t a)
+    explicit bfloat16_t(std::size_t a)
     {
         *this = bfloat16_t(float(a));
     }
 
     /// Constructor from double
     __host__ __device__ __forceinline__
-    bfloat16_t(double a)
+    explicit bfloat16_t(double a)
     {
         *this = bfloat16_t(float(a));
     }
@@ -92,7 +92,7 @@ struct bfloat16_t
                typename = typename ::cuda::std::enable_if<
                  ::cuda::std::is_same<T, unsigned long long int>::value
                  && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
-    __host__ __device__ __forceinline__ bfloat16_t(T a)
+    __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
     {
       *this = bfloat16_t(float(a));
     }
@@ -102,7 +102,7 @@ struct bfloat16_t
 
     /// Constructor from float
     __host__ __device__ __forceinline__
-    bfloat16_t(float a)
+    explicit bfloat16_t(float a)
     {
         // Refrence:
         // https://github.com/pytorch/pytorch/blob/44cc873fba5e5ffc4d4d4eef3bd370b653ce1ce1/c10/util/BFloat16.h#L51
