@@ -115,6 +115,13 @@ defaults:
       has_toc: false
       parent: PTX Instructions
       grand_parent: PTX
+  - scope:
+      path: "ptx/examples"
+    values:
+      has_children: false
+      has_toc: false
+      parent: Examples
+      grand_parent: PTX
   -
     scope:
       path: releases/changelog.md
