@@ -51,7 +51,7 @@ TEST_CASE("Custom level", "[hierarchy]")
   REQUIRE(custom_block_back2.dummy == 2);
 
   // Check creating a custom level type works
-  auto custom_level_dims = cuda_next::dimensions<cuda_next::index_type, 2, 2, 2>();
+  auto custom_level_dims = cuda_next::dimensions<cuda_next::dimensions_index_type, 2, 2, 2>();
   auto custom_hierarchy  = cuda_next::make_hierarchy(
     cuda_next::grid_dims(42),
     cuda_next::level_dimensions<custom_level, decltype(custom_level_dims)>(custom_level_dims),

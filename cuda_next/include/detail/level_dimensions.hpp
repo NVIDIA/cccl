@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,7 +27,7 @@ struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
     using ::cuda::std::extents<T, Extents...>::extents;
 
     template <typename ::cuda::std::extents<T, Extents...>::rank_type Id>
-    constexpr auto _CCCL_HOST_DEVICE extent_corrected() const {
+    _CCCL_HOST_DEVICE constexpr auto extent_corrected() const {
         if constexpr (::cuda::std::extents<T, Extents...>::static_extent(Id) != ::cuda::std::dynamic_extent) {
             return this->static_extent(Id);
         }
@@ -40,14 +40,14 @@ struct extents_corrected : public ::cuda::std::extents<T, Extents...> {
 
 // TODO might want to remove the below alias
 template <size_t... Extents>
-using dims = dimensions<index_type, Extents...>;
+using dims = dimensions<dimensions_index_type, Extents...>;
 
 template <typename Dims>
 struct dimensions_handler
 {
-  static constexpr bool is_type_supported = std::is_integral_v<Dims>;
+  static constexpr bool is_type_supported = ::cuda::std::is_integral_v<Dims>;
 
-  static constexpr _CCCL_HOST_DEVICE auto translate(const Dims& d) noexcept
+  static _CCCL_HOST_DEVICE constexpr auto translate(const Dims& d) noexcept
   {
     return dims<::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(d));
   }
@@ -58,18 +58,18 @@ struct dimensions_handler<dim3>
 {
   static constexpr bool is_type_supported = true;
 
-  static constexpr _CCCL_HOST_DEVICE auto translate(const dim3& d) noexcept
+  static _CCCL_HOST_DEVICE constexpr auto translate(const dim3& d) noexcept
   {
     return dims<::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>(d.x, d.y, d.z);
   }
 };
 
 template <typename Dims, Dims Val>
-struct dimensions_handler<std::integral_constant<Dims, Val>>
+struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
 {
   static constexpr bool is_type_supported = true;
 
-  static constexpr _CCCL_HOST_DEVICE auto translate(const Dims& d) noexcept
+  static _CCCL_HOST_DEVICE constexpr auto translate(const Dims& d) noexcept
   {
     return dims<size_t(d), 1, 1>();
   }
@@ -82,7 +82,7 @@ struct dimensions_handler<std::integral_constant<Dims, Val>>
 template <typename Level, typename Dimensions>
 struct level_dimensions
 {
-  static_assert(std::is_base_of_v<hierarchy_level, Level>);
+  static_assert(::cuda::std::is_base_of_v<hierarchy_level, Level>);
   using level_type = Level;
   const Dimensions dims; // Unit for dimensions is implicit
 
@@ -96,14 +96,14 @@ struct level_dimensions
 };
 
 template <size_t X, size_t Y = 1, size_t Z = 1>
-auto constexpr _CCCL_HOST_DEVICE grid_dims() noexcept
+_CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 {
   detail::dims<X, Y, Z> dims;
   return level_dimensions<grid_level, decltype(dims)>(dims);
 }
 
 template <typename T>
-auto constexpr _CCCL_HOST_DEVICE grid_dims(T t) noexcept
+_CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
 {
   static_assert(detail::dimensions_handler<T>::is_type_supported);
   auto dims = detail::dimensions_handler<T>::translate(t);
@@ -111,14 +111,14 @@ auto constexpr _CCCL_HOST_DEVICE grid_dims(T t) noexcept
 }
 
 template <size_t X, size_t Y = 1, size_t Z = 1>
-auto constexpr _CCCL_HOST_DEVICE cluster_dims() noexcept
+_CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 {
   detail::dims<X, Y, Z> dims;
   return level_dimensions<cluster_level, decltype(dims)>(dims);
 }
 
 template <typename T>
-auto constexpr _CCCL_HOST_DEVICE cluster_dims(T t) noexcept
+_CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
 {
   static_assert(detail::dimensions_handler<T>::is_type_supported);
   auto dims = detail::dimensions_handler<T>::translate(t);
@@ -126,14 +126,14 @@ auto constexpr _CCCL_HOST_DEVICE cluster_dims(T t) noexcept
 }
 
 template <size_t X, size_t Y = 1, size_t Z = 1>
-auto constexpr _CCCL_HOST_DEVICE block_dims() noexcept
+_CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 {
   detail::dims<X, Y, Z> dims;
   return level_dimensions<block_level, decltype(dims)>(dims);
 }
 
 template <typename T>
-auto constexpr _CCCL_HOST_DEVICE block_dims(T t) noexcept
+_CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 {
   static_assert(detail::dimensions_handler<T>::is_type_supported);
   auto dims = detail::dimensions_handler<T>::translate(t);

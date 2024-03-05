@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,17 +20,17 @@ template <typename T, size_t... Extents>
 using dimensions = ::cuda::std::extents<T, Extents...>;
 
 // not unsigned because of a bug in ::cuda::std::extents
-using index_type = int;
+using dimensions_index_type = int;
 
 template <typename T, size_t... Extents>
 struct hierarchy_query_result : public dimensions<T, Extents...>
 {
   using Dims = dimensions<T, Extents...>;
   using Dims::Dims;
-  constexpr explicit _CCCL_HOST_DEVICE hierarchy_query_result(const Dims& dims)
+  _CCCL_HOST_DEVICE explicit constexpr hierarchy_query_result(const Dims& dims)
       : Dims(dims)
   {}
-  static_assert(Dims::rank() > 0);
+  static_assert(Dims::rank() > 0 && Dims::rank() <= 3);
 
   T x = Dims::extent(0);
   T y = Dims::rank() > 1 ? Dims::extent(1) : 1;
@@ -45,7 +45,7 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
 namespace detail
 {
 template <typename OpType>
-constexpr size_t _CCCL_HOST_DEVICE merge_extents(size_t e1, size_t e2)
+_CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size_t e2)
 {
   if (e1 == ::cuda::std::dynamic_extent || e2 == ::cuda::std::dynamic_extent)
   {
@@ -59,7 +59,7 @@ constexpr size_t _CCCL_HOST_DEVICE merge_extents(size_t e1, size_t e2)
 }
 
 template <typename DstType, typename OpType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-constexpr auto _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE constexpr auto
 dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   // For now target only 3 dim extents
@@ -71,29 +71,31 @@ dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimension
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-constexpr auto _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE constexpr auto
 dims_product(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   return dims_op<DstType>(::cuda::std::multiplies(), h1, h2);
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-constexpr auto _CCCL_HOST_DEVICE
+_CCCL_HOST_DEVICE constexpr auto
 dims_sum(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   return dims_op<DstType>(::cuda::std::plus(), h1, h2);
 }
 
 template <typename T, size_t... Extents>
-auto constexpr _CCCL_HOST_DEVICE convert_to_query_result(const dimensions<T, Extents...>& result)
+_CCCL_HOST_DEVICE constexpr auto convert_to_query_result(const dimensions<T, Extents...>& result)
 {
   return hierarchy_query_result<T, Extents...>(result);
 }
 
-auto constexpr _CCCL_HOST_DEVICE dim3_to_query_result(const dim3& dims)
+_CCCL_HOST_DEVICE constexpr auto dim3_to_query_result(const dim3& dims)
 {
-  return dimensions<index_type, ::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent, ::cuda::std::dynamic_extent>(
-    dims.x, dims.y, dims.z);
+  return dimensions<dimensions_index_type,
+                    ::cuda::std::dynamic_extent,
+                    ::cuda::std::dynamic_extent,
+                    ::cuda::std::dynamic_extent>(dims.x, dims.y, dims.z);
 }
 
 template <typename TyTrunc, typename Index, typename Dims>
