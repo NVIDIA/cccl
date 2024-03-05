@@ -422,7 +422,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 
 | Instruction                  | Available in libcu++    |
 |------------------------------|-------------------------|
-| [`mbarrier.init`]            | No                      |
+| [`mbarrier.init`]            | CTK-FUTURE, CCCL v2.5.0 |
 | [`mbarrier.inval`]           | No                      |
 | [`mbarrier.expect_tx`]       | No                      |
 | [`mbarrier.complete_tx`]     | No                      |
@@ -434,7 +434,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`mbarrier.pending_count`]   | No                      |
 | [`tensormap.cp_fenceproxy`]  | CTK-FUTURE, CCCL v2.4.0 |
 
-[`mbarrier.init`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
+[`mbarrier.init`]: ptx/instructions/mbarrier.init.md
 [`mbarrier.inval`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval
 [`mbarrier.expect_tx`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx
 [`mbarrier.complete_tx`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx
