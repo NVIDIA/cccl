@@ -4,6 +4,7 @@
 
 | C++ | PTX |
 | [(0)](#0-cp_async_bulk_wait_group) `cuda::ptx::cp_async_bulk_wait_group`| `cp.async.bulk.wait_group` |
+| [(1)](#1-cp_async_bulk_wait_group) `cuda::ptx::cp_async_bulk_wait_group_read`| `cp.async.bulk.wait_group.read` |
 
 
 ### [(0)](#0-cp_async_bulk_wait_group) `cp_async_bulk_wait_group`
@@ -15,11 +16,7 @@ __device__ static inline void cp_async_bulk_wait_group(
   cuda::ptx::n32_t<N32> N);
 ```
 
-| C++ | PTX |
-| [(0)](#0-cp_async_bulk_wait_group_read) `cuda::ptx::cp_async_bulk_wait_group_read`| `cp.async.bulk.wait_group.read` |
-
-
-### [(0)](#0-cp_async_bulk_wait_group_read) `cp_async_bulk_wait_group_read`
+### [(1)](#1-cp_async_bulk_wait_group) `cp_async_bulk_wait_group`
 {: .no_toc }
 ```cuda
 // cp.async.bulk.wait_group.read N; // PTX ISA 80, SM_90
