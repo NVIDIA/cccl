@@ -2,7 +2,12 @@
 
 - PTX ISA: [`getctarank`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank)
 
-**getctarank**:
+| C++ | PTX |
+| [(0)](#0-getctarank) `cuda::ptx::getctarank`| `getctarank.shared::cluster.u32` |
+
+
+### [(0)](#0-getctarank) `getctarank`
+{: .no_toc }
 ```cuda
 // getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
 // .space     = { .shared::cluster }
