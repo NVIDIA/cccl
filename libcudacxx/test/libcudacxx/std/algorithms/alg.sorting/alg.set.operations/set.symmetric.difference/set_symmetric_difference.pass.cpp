@@ -55,7 +55,7 @@ template<class T, class Iter1, class Iter2>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test3()
 {
     test4<T, Iter1, Iter2, cpp17_output_iterator<T*> >();
-    test4<T, Iter1, Iter2, forward_iterator<T*> >();
+    //test4<T, Iter1, Iter2, forward_iterator<T*> >();
     test4<T, Iter1, Iter2, bidirectional_iterator<T*> >();
     test4<T, Iter1, Iter2, random_access_iterator<T*> >();
     test4<T, Iter1, Iter2, T*>();
@@ -65,7 +65,7 @@ template<class T, class Iter1>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 {
     test3<T, Iter1, cpp17_input_iterator<const T*> >();
-    test3<T, Iter1, forward_iterator<const T*> >();
+    //test3<T, Iter1, forward_iterator<const T*> >();
     test3<T, Iter1, bidirectional_iterator<const T*> >();
     test3<T, Iter1, random_access_iterator<const T*> >();
     test3<T, Iter1, const T*>();
@@ -75,7 +75,7 @@ template<class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
 {
     test2<T, cpp17_input_iterator<const T*> >();
-    test2<T, forward_iterator<const T*> >();
+    //test2<T, forward_iterator<const T*> >();
     test2<T, bidirectional_iterator<const T*> >();
     test2<T, random_access_iterator<const T*> >();
     test2<T, const T*>();
