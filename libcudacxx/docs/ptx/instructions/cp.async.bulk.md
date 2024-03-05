@@ -4,7 +4,14 @@
 
 **NOTE.** Both `srcMem` and `dstMem` must be 16-byte aligned, and `size` must be a multiple of 16.
 
-**cp_async_bulk**:
+| C++ | PTX |
+| [(0)](#0-cp_async_bulk) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes` |
+| [(1)](#1-cp_async_bulk) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes` |
+| [(2)](#2-cp_async_bulk) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.global.shared::cta.bulk_group` |
+
+
+### [(0)](#0-cp_async_bulk) `cp_async_bulk`
+{: .no_toc }
 ```cuda
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // 1a. unicast PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
@@ -17,7 +24,11 @@ __device__ static inline void cp_async_bulk(
   const void* srcMem,
   const uint32_t& size,
   uint64_t* smem_bar);
+```
 
+### [(1)](#1-cp_async_bulk) `cp_async_bulk`
+{: .no_toc }
+```cuda
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // 2.  PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .shared::cta }
@@ -29,7 +40,11 @@ __device__ static inline void cp_async_bulk(
   const void* srcMem,
   const uint32_t& size,
   uint64_t* rdsmem_bar);
+```
 
+### [(2)](#2-cp_async_bulk) `cp_async_bulk`
+{: .no_toc }
+```cuda
 // cp.async.bulk.dst.src.bulk_group [dstMem], [srcMem], size; // 3.  PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
@@ -42,7 +57,12 @@ __device__ static inline void cp_async_bulk(
   const uint32_t& size);
 ```
 
-**cp_async_bulk_multicast**:
+| C++ | PTX |
+| [(0)](#0-cp_async_bulk_multicast) `cuda::ptx::cp_async_bulk`| `cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster` |
+
+
+### [(0)](#0-cp_async_bulk_multicast) `cp_async_bulk_multicast`
+{: .no_toc }
 ```cuda
 // cp.async.bulk{.dst}{.src}.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.  PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
