@@ -2,6 +2,21 @@
 
 -  PTX ISA: [`mbarrier.arrive`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
 
+<details open markdown="block">
+  <summary>
+    Table of contents
+  </summary>
+  {: .text-delta }
+1. TOC
+{:toc}
+</details>
+
+## mbarrier.arrive
+
+Some of the listed PTX instructions below are semantically equivalent. They
+differ in one important way: the shorter instructions are typically supported on
+older compilers.
+
 | C++ | PTX |
 | [(0)](#0-mbarrier_arrive) `cuda::ptx::mbarrier_arrive`| `mbarrier.arrive.shared.b64` |
 | [(1)](#1-mbarrier_arrive) `cuda::ptx::mbarrier_arrive`| `mbarrier.arrive.shared::cta.b64` |
@@ -94,6 +109,8 @@ __device__ static inline void mbarrier_arrive(
   const uint32_t& count);
 ```
 
+## mbarrier.arrive.no_complete
+
 | C++ | PTX |
 | [(0)](#0-mbarrier_arrive_no_complete) `cuda::ptx::mbarrier_arrive_no_complete`| `mbarrier.arrive.noComplete.shared.b64` |
 
@@ -107,6 +124,8 @@ __device__ static inline uint64_t mbarrier_arrive_no_complete(
   uint64_t* addr,
   const uint32_t& count);
 ```
+
+## mbarrier.arrive.expect_tx
 
 | C++ | PTX |
 | [(0)](#0-mbarrier_arrive_expect_tx) `cuda::ptx::mbarrier_arrive_expect_tx`| `mbarrier.arrive.expect_tx.release.cta.shared::cta.b64` |
@@ -146,7 +165,8 @@ __device__ static inline void mbarrier_arrive_expect_tx(
   const uint32_t& tx_count);
 ```
 
-Usage:
+## Usage
+
 ```cuda
 #include <cuda/ptx>
 #include <cuda/barrier>
@@ -167,7 +187,6 @@ __global__ void kernel() {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         // Arrive on local shared memory barrier:
         uint64_t token;
-        token = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared, &bar, 1);
         token = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1);
 
         // Get address of remote cluster barrier:
@@ -180,7 +199,6 @@ __global__ void kernel() {
         cluster.sync();
 
         // Arrive on remote cluster barrier:
-        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_cluster, remote_bar, 1);
         cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, remote_bar, 1);
     )
 }

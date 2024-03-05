@@ -8,7 +8,8 @@ instruction can be accessed through the cooperative groups
 [cluster_group](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group)
 API:
 
-Usage:
+## Usage:
+
 ```cuda
 #include <cooperative_groups.h>
 
