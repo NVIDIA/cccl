@@ -47,7 +47,7 @@ jobs:
       CCCL_INFRA_MATRIX: ${{steps.set-outputs.outputs.CCCL_INFRA_MATRIX}}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Compute matrix outputs
         id: set-outputs
         run: |

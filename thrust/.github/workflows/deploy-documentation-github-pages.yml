@@ -14,7 +14,7 @@ jobs:
     container: gpuci/cccl:cuda11.7.0-devel-ubuntu20.04-gcc9
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Generate documentation markdown
         run: ./docs/generate_markdown.bash --clean
       - name: Deploy generated documentation markdown to gh-pages branch

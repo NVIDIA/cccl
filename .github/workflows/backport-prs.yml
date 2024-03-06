@@ -8,8 +8,8 @@ permissions:
   contents: write # so it can comment
   pull-requests: write # so it can create pull requests
 
-  
-jobs:        
+
+jobs:
   backport:
     name: Backport pull request
     runs-on: ubuntu-latest
@@ -27,7 +27,7 @@ jobs:
         contains(github.event.comment.body, '/backport')
       )
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create backport pull requests
         uses: korthout/backport-action@v1
         with:
