@@ -364,7 +364,7 @@ struct rank_helper
 
 // Type to represent (possibly partial) hierarchy of CUDA threads. Each level is an instance of level_dimensions
 // template or derived type.
-//  Dimesnsions of a given level are expressed in using that is the next level in Levels. Unit for last level is
+//  Dimensions of a given level are expressed in using what is the next level in Levels. Unit for last level is
 //  BottomUnit
 template <typename BottomUnit, typename... Levels>
 struct hierarchy_dimensions_fragment
