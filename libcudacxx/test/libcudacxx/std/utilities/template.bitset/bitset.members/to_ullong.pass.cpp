@@ -18,7 +18,7 @@
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_to_ullong() {
+TEST_CONSTEXPR_CXX14 void test_to_ullong() {
     const cuda::std::size_t M = sizeof(unsigned long long) * CHAR_BIT < N ? sizeof(unsigned long long) * CHAR_BIT : N;
     const bool is_M_zero = cuda::std::integral_constant<bool, M == 0>::value; // avoid compiler warnings
     const cuda::std::size_t X = is_M_zero ? sizeof(unsigned long long) * CHAR_BIT - 1 : sizeof(unsigned long long) * CHAR_BIT - M;
@@ -47,7 +47,7 @@ TEST_CONSTEXPR_CXX23 void test_to_ullong() {
 }
 
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+TEST_CONSTEXPR_CXX14 bool test() {
   test_to_ullong<0>();
   test_to_ullong<1>();
   test_to_ullong<31>();
@@ -63,8 +63,8 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test(), "");
 #endif
 
   return 0;

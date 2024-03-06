@@ -92,7 +92,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static inline void _CCCL_CONSTEXPR_CXX17
+    static inline void _CCCL_CONSTEXPR_CXX14
         assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
@@ -101,11 +101,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n);
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     size_t length(const char_type* __s);
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a);
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n);
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -135,7 +135,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
 };
 
 template <class _CharT>
-_CCCL_CONSTEXPR_CXX17 int
+_CCCL_CONSTEXPR_CXX14 int
 char_traits<_CharT>::compare(const char_type* __s1, const char_type* __s2, size_t __n)
 {
     for (; __n; --__n, ++__s1, ++__s2)
@@ -150,7 +150,7 @@ char_traits<_CharT>::compare(const char_type* __s1, const char_type* __s2, size_
 
 template <class _CharT>
 inline
-_CCCL_CONSTEXPR_CXX17 size_t
+_CCCL_CONSTEXPR_CXX14 size_t
 char_traits<_CharT>::length(const char_type* __s)
 {
     size_t __len = 0;
@@ -161,7 +161,7 @@ char_traits<_CharT>::length(const char_type* __s)
 
 template <class _CharT>
 inline
-_CCCL_CONSTEXPR_CXX17 const _CharT*
+_CCCL_CONSTEXPR_CXX14 const _CharT*
 char_traits<_CharT>::find(const char_type* __s, size_t __n, const char_type& __a)
 {
     for (; __n; --__n)
@@ -230,7 +230,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static inline _CCCL_CONSTEXPR_CXX17
+    static inline _CCCL_CONSTEXPR_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
@@ -239,7 +239,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return (unsigned char)__c1 < (unsigned char)__c2;}
 
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline size_t _CCCL_CONSTEXPR_CXX14
@@ -253,7 +253,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
             return __builtin_strlen(__s);
         ))
     }
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
@@ -289,7 +289,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
 #endif
 };
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 int
 char_traits<char>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
@@ -311,7 +311,7 @@ char_traits<char>::compare(const char_type* __s1, const char_type* __s2, size_t 
 #endif
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 const char*
 char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {
@@ -346,7 +346,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
     typedef mbstate_t state_type;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static inline _CCCL_CONSTEXPR_CXX17
+    static inline _CCCL_CONSTEXPR_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
@@ -355,11 +355,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     size_t length(const char_type* __s) noexcept;
-    static _CCCL_CONSTEXPR_CXX17
+    static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
@@ -395,7 +395,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<wchar_t>
 #endif // !__cuda_std__
 };
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 int
 char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
@@ -430,7 +430,7 @@ inline constexpr size_t __char_traits_length_checked(const typename _Traits::cha
 }
 
 #ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 size_t
 char_traits<wchar_t>::length(const char_type* __s) noexcept
 {
@@ -446,7 +446,7 @@ char_traits<wchar_t>::length(const char_type* __s) noexcept
 #endif
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 const wchar_t*
 char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {
@@ -593,7 +593,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static inline _CCCL_CONSTEXPR_CXX17
+    static inline _CCCL_CONSTEXPR_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
@@ -602,11 +602,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     int              compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     size_t           length(const char_type* __s) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
@@ -632,7 +632,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char16_t>
         {return int_type(0xFFFF);}
 };
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 int
 char_traits<char16_t>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
@@ -646,7 +646,7 @@ char_traits<char16_t>::compare(const char_type* __s1, const char_type* __s2, siz
     return 0;
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 size_t
 char_traits<char16_t>::length(const char_type* __s) noexcept
 {
@@ -656,7 +656,7 @@ char_traits<char16_t>::length(const char_type* __s) noexcept
     return __len;
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 const char16_t*
 char_traits<char16_t>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {
@@ -722,7 +722,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    static inline _CCCL_CONSTEXPR_CXX17
+    static inline _CCCL_CONSTEXPR_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
@@ -731,11 +731,11 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     int              compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     size_t           length(const char_type* __s) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept;
@@ -761,7 +761,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char32_t>
         {return int_type(0xFFFFFFFF);}
 };
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 int
 char_traits<char32_t>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
@@ -775,7 +775,7 @@ char_traits<char32_t>::compare(const char_type* __s1, const char_type* __s2, siz
     return 0;
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 size_t
 char_traits<char32_t>::length(const char_type* __s) noexcept
 {
@@ -785,7 +785,7 @@ char_traits<char32_t>::length(const char_type* __s) noexcept
     return __len;
 }
 
-inline _CCCL_CONSTEXPR_CXX17
+inline _CCCL_CONSTEXPR_CXX14
 const char32_t*
 char_traits<char32_t>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {

@@ -22,7 +22,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_reset_one() {
+TEST_CONSTEXPR_CXX14 bool test_reset_one() {
     span_stub<const char *> const cases = get_test_cases<N>();
     for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
         for (cuda::std::size_t i = 0; i != N; ++i) {
@@ -31,10 +31,11 @@ TEST_CONSTEXPR_CXX23 void test_reset_one() {
             assert(v[i] == false);
         }
     }
+
+    return true;
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+int main(int, char**) {
   test_reset_one<0>();
   test_reset_one<1>();
   test_reset_one<31>();
@@ -42,16 +43,16 @@ TEST_CONSTEXPR_CXX23 bool test() {
   test_reset_one<33>();
   test_reset_one<63>();
   test_reset_one<64>();
-  test_reset_one<65>();
-
-  return true;
-}
-
-int main(int, char**) {
-  test();
+  test_reset_one<65>(); // not in constexpr because of constexpr evaluation step limit
   test_reset_one<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test_reset_one<0>(), "");
+  static_assert(test_reset_one<1>(), "");
+  static_assert(test_reset_one<31>(), "");
+  static_assert(test_reset_one<32>(), "");
+  static_assert(test_reset_one<33>(), "");
+  static_assert(test_reset_one<63>(), "");
+  static_assert(test_reset_one<64>(), "");
 #endif
 
   return 0;

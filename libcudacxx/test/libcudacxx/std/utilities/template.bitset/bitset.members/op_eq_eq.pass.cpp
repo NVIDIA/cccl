@@ -21,7 +21,7 @@
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_equality() {
+TEST_CONSTEXPR_CXX14 void test_equality() {
     span_stub<const char *> const cases = get_test_cases<N>();
     for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
         cuda::std::bitset<N> const v1(cases[c]);
@@ -35,7 +35,7 @@ TEST_CONSTEXPR_CXX23 void test_equality() {
 }
 
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+TEST_CONSTEXPR_CXX14 bool test() {
   test_equality<0>();
   test_equality<1>();
   test_equality<31>();
@@ -51,8 +51,8 @@ TEST_CONSTEXPR_CXX23 bool test() {
 int main(int, char**) {
   test();
   test_equality<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test(), "");
 #endif
 
   return 0;

@@ -20,7 +20,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test_op_xor_eq() {
+TEST_CONSTEXPR_CXX14 bool test_op_xor_eq() {
     span_stub<const char *> const cases = get_test_cases<N>();
     for (cuda::std::size_t c1 = 0; c1 != cases.size(); ++c1) {
         for (cuda::std::size_t c2 = 0; c2 != cases.size(); ++c2) {
@@ -45,15 +45,15 @@ int main(int, char**) {
   test_op_xor_eq<64>();
   test_op_xor_eq<65>();
   test_op_xor_eq<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2020
-  static_assert(test_op_xor_eq<0>());
-  static_assert(test_op_xor_eq<1>());
-  static_assert(test_op_xor_eq<31>());
-  static_assert(test_op_xor_eq<32>());
-  static_assert(test_op_xor_eq<33>());
-  static_assert(test_op_xor_eq<63>());
-  static_assert(test_op_xor_eq<64>());
-  static_assert(test_op_xor_eq<65>());
+#if TEST_STD_VER > 2011
+  static_assert(test_op_xor_eq<0>(), "");
+  static_assert(test_op_xor_eq<1>(), "");
+  static_assert(test_op_xor_eq<31>(), "");
+  static_assert(test_op_xor_eq<32>(), "");
+  static_assert(test_op_xor_eq<33>(), "");
+  static_assert(test_op_xor_eq<63>(), "");
+  static_assert(test_op_xor_eq<64>(), "");
+  static_assert(test_op_xor_eq<65>(), "");
 #endif
 
   return 0;

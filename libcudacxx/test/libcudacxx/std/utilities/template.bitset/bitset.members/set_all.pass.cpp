@@ -18,7 +18,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_set_all() {
+TEST_CONSTEXPR_CXX14 void test_set_all() {
     cuda::std::bitset<N> v;
     v.set();
     for (cuda::std::size_t i = 0; i < v.size(); ++i)
@@ -26,7 +26,7 @@ TEST_CONSTEXPR_CXX23 void test_set_all() {
 }
 
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+TEST_CONSTEXPR_CXX14 bool test() {
   test_set_all<0>();
   test_set_all<1>();
   test_set_all<31>();
@@ -42,8 +42,8 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test(), "");
 #endif
 
   return 0;

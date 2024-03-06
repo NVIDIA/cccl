@@ -18,7 +18,7 @@
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_op_not() {
+TEST_CONSTEXPR_CXX14 bool test_op_not() {
     span_stub<const char *> const cases = get_test_cases<N>();
     for (cuda::std::size_t c1 = 0; c1 != cases.size(); ++c1) {
         for (cuda::std::size_t c2 = 0; c2 != cases.size(); ++c2) {
@@ -28,10 +28,11 @@ TEST_CONSTEXPR_CXX23 void test_op_not() {
             assert((v1 ^ v2) == (v3 ^= v2));
         }
     }
+
+    return true;
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+int main(int, char**) {
   test_op_not<0>();
   test_op_not<1>();
   test_op_not<31>();
@@ -40,15 +41,16 @@ TEST_CONSTEXPR_CXX23 bool test() {
   test_op_not<63>();
   test_op_not<64>();
   test_op_not<65>();
-
-  return true;
-}
-
-int main(int, char**) {
-  test();
   test_op_not<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test_op_not<0>(), "");
+  static_assert(test_op_not<1>(), "");
+  static_assert(test_op_not<31>(), "");
+  static_assert(test_op_not<32>(), "");
+  static_assert(test_op_not<33>(), "");
+  static_assert(test_op_not<63>(), "");
+  static_assert(test_op_not<64>(), "");
+  static_assert(test_op_not<65>(), "");
 #endif
 
   return 0;

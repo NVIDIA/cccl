@@ -84,7 +84,7 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
     {
       return {__last, __result + __n};
     }
-    if (reinterpret_cast<uintptr_t>(__result) > reinterpret_cast<uintptr_t>(__first))
+    if (__result - __first > 0)
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
       {

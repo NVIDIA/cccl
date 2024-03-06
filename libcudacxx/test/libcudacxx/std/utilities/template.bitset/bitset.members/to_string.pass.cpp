@@ -39,7 +39,7 @@ int main(int, char **) { return 0; }
 #include "test_macros.h"
 
 template <class CharT, cuda::std::size_t N>
-TEST_CONSTEXPR_CXX23 void check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one) {
+TEST_CONSTEXPR_CXX14 void check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one) {
     assert(s.size() == b.size());
     for (cuda::std::size_t i = 0; i < b.size(); ++i) {
         if (b[i]) {
@@ -51,7 +51,7 @@ TEST_CONSTEXPR_CXX23 void check_equal(cuda::std::basic_string<CharT> const& s, c
 }
 
 template <cuda::std::size_t N>
-TEST_CONSTEXPR_CXX23 bool test_to_string() {
+TEST_CONSTEXPR_CXX14 bool test_to_string() {
     cuda::std::vector<cuda::std::bitset<N> > const cases = get_test_cases<N>();
     for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
         cuda::std::bitset<N> const v = cases[c];
@@ -89,7 +89,7 @@ TEST_CONSTEXPR_CXX23 bool test_to_string() {
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
 template <cuda::std::size_t N>
-TEST_CONSTEXPR_CXX23 bool test_to_string_wchar() {
+TEST_CONSTEXPR_CXX14 bool test_to_string_wchar() {
     cuda::std::vector<cuda::std::bitset<N> > const cases = get_test_cases<N>();
     for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
         cuda::std::bitset<N> const v = cases[c];
@@ -133,14 +133,14 @@ int main(int, char**) {
   test_to_string<65>();
   test_to_string<1000>(); // not in constexpr because of constexpr evaluation step limits
 #if TEST_STD_VER > 20
-  static_assert(test_to_string<0>());
-  static_assert(test_to_string<1>());
-  static_assert(test_to_string<31>());
-  static_assert(test_to_string<32>());
-  static_assert(test_to_string<33>());
-  static_assert(test_to_string<63>());
-  static_assert(test_to_string<64>());
-  static_assert(test_to_string<65>());
+  static_assert(test_to_string<0>(), "");
+  static_assert(test_to_string<1>(), "");
+  static_assert(test_to_string<31>(), "");
+  static_assert(test_to_string<32>(), "");
+  static_assert(test_to_string<33>(), "");
+  static_assert(test_to_string<63>(), "");
+  static_assert(test_to_string<64>(), "");
+  static_assert(test_to_string<65>(), "");
 #endif
 
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
@@ -154,12 +154,12 @@ int main(int, char**) {
   test_to_string_wchar<65>();
   test_to_string_wchar<1000>(); // not in constexpr because of constexpr evaluation step limits
 #if TEST_STD_VER > 20
-  static_assert(test_to_string_wchar<0>());
-  static_assert(test_to_string_wchar<1>());
-  static_assert(test_to_string_wchar<31>());
-  static_assert(test_to_string_wchar<32>());
-  static_assert(test_to_string_wchar<33>());
-  static_assert(test_to_string_wchar<63>());
+  static_assert(test_to_string_wchar<0>(), "");
+  static_assert(test_to_string_wchar<1>(), "");
+  static_assert(test_to_string_wchar<31>(), "");
+  static_assert(test_to_string_wchar<32>(), "");
+  static_assert(test_to_string_wchar<33>(), "");
+  static_assert(test_to_string_wchar<63>(), "");
 #endif
 #endif
   return 0;

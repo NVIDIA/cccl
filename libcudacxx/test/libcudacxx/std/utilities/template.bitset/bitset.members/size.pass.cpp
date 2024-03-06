@@ -15,13 +15,13 @@
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 void test_size() {
+TEST_CONSTEXPR_CXX14 void test_size() {
     const cuda::std::bitset<N> v;
     assert(v.size() == N);
 }
 
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test() {
+TEST_CONSTEXPR_CXX14 bool test() {
   test_size<0>();
   test_size<1>();
   test_size<31>();
@@ -37,8 +37,8 @@ TEST_CONSTEXPR_CXX23 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 2020
-  static_assert(test());
+#if TEST_STD_VER > 2011
+  static_assert(test(), "");
 #endif
 
   return 0;

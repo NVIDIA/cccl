@@ -18,11 +18,13 @@
 
 _CCCL_NV_DIAG_SUPPRESS(186)
 
-template <cuda::std::size_t N>
+template <cuda::std::size_t N,
+          cuda::std::size_t Start = 0, cuda::std::size_t End = static_cast<cuda::std::size_t>(-1)>
 __host__ __device__
-TEST_CONSTEXPR_CXX23 bool test_right_shift() {
+TEST_CONSTEXPR_CXX14 bool test_right_shift() {
     span_stub<const char *> const cases = get_test_cases<N>();
-    for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
+    if (Start != 0) { assert(End >= cases.size()); }
+    for (cuda::std::size_t c = Start; c != cases.size() && c != End; ++c) {
         for (cuda::std::size_t s = 0; s <= N+1; ++s) {
             cuda::std::bitset<N> v1(cases[c]);
             cuda::std::bitset<N> v2 = v1;
@@ -43,15 +45,18 @@ int main(int, char**) {
   test_right_shift<64>();
   test_right_shift<65>();
   test_right_shift<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2020
-  static_assert(test_right_shift<0>());
-  static_assert(test_right_shift<1>());
-  static_assert(test_right_shift<31>());
-  static_assert(test_right_shift<32>());
-  static_assert(test_right_shift<33>());
-  static_assert(test_right_shift<63>());
-  static_assert(test_right_shift<64>());
-  static_assert(test_right_shift<65>());
+#if TEST_STD_VER > 2011
+  static_assert(test_right_shift<0>(), "");
+  static_assert(test_right_shift<1>(), "");
+  static_assert(test_right_shift<31>(), "");
+  static_assert(test_right_shift<32>(), "");
+  static_assert(test_right_shift<33>(), "");
+  static_assert(test_right_shift<63, 0, 6>(), "");
+  static_assert(test_right_shift<63, 6>(), "");
+  static_assert(test_right_shift<64, 0, 6>(), "");
+  static_assert(test_right_shift<64, 6>(), "");
+  static_assert(test_right_shift<65, 0, 6>(), "");
+  static_assert(test_right_shift<65, 6>(), "");
 #endif
 
   return 0;

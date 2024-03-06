@@ -73,8 +73,8 @@ constexpr void test_string_ctor() {
   }
 #endif // TEST_HAS_NO_EXCEPTIONS
 
-  static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>);
-  static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>);
+  static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>, "");
+  static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>, "");
   {
     cuda::std::string_view s("1010101010");
     cuda::std::bitset<N> v(s);
@@ -151,7 +151,7 @@ constexpr bool test() {
 
 int main(int, char**) {
   test();
-  static_assert(test());
+  static_assert(test(), "");
 
   return 0;
 }
