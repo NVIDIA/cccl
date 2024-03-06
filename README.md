@@ -5,7 +5,7 @@
 
 # CUDA C++ Core Libraries (CCCL)
 
-Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
+Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.  
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository:
 
