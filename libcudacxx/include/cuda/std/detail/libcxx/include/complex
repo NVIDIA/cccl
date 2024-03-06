@@ -232,7 +232,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 
 */
 
-#include "__cccl/diagnostic.h"
 #ifndef __cuda_std__
 #  include <__config>
 #endif // __cuda_std__
@@ -1777,57 +1776,6 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
     return __os << __s.str();
 }
 #endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION
-#else // ^^^ !__cuda_std__ ^^^ / vvv __cuda_std__
-#ifndef _CCCL_COMPILER_NVRTC
-template<typename ValueType,class charT, class traits>
-::std::basic_ostream<charT, traits>& operator<<(::std::basic_ostream<charT, traits>& os, const complex<ValueType>& z)
-{
-  os << '(' << z.real() << ',' << z.imag() << ')';
-  return os;
-}
-
-template<typename ValueType, typename charT, class traits>
-::std::basic_istream<charT, traits>&
-operator>>(::std::basic_istream<charT, traits>& is, complex<ValueType>& z)
-{
-  ValueType re, im;
-
-  charT ch;
-  is >> ch;
-
-  if(ch == '(')
-    {
-      is >> re >> ch;
-      if (ch == ',')
-        {
-          is >> im >> ch;
-          if (ch == ')')
-	    {
-	      z = complex<ValueType>(re, im);
-	    }
-          else
-	    {
-	      is.setstate(::std::ios_base::failbit);
-	    }
-        }
-      else if (ch == ')')
-        {
-          z = re;
-        }
-      else
-        {
-          is.setstate(::std::ios_base::failbit);
-        }
-    }
-  else
-    {
-      is.putback(ch);
-      is >> re;
-      z = re;
-    }
-  return is;
-}
-#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
