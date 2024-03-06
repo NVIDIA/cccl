@@ -1003,10 +1003,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_POP_MACROS
 
-#if !defined(_LIBCUDACXX_REMOVE_TRANSITIVE_INCLUDES) && _LIBCUDACXX_STD_VER <= 2020
-#  include <concepts>
-#  include <cstdlib>
-#  include <type_traits>
-#endif
-
 #endif // _LIBCUDACXX_BITSET
