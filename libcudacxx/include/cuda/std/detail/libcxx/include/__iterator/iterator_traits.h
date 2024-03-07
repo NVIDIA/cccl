@@ -34,6 +34,7 @@
 #include "../__iterator/incrementable_traits.h"
 #include "../__iterator/readable_traits.h"
 #include "../__type_traits/add_const.h"
+#include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_primary_template.h"
 #include "../__type_traits/remove_cv.h"
@@ -41,7 +42,25 @@
 #include "../cstddef"
 
 #if !defined(_CCCL_COMPILER_NVRTC) && defined(__cuda_std__)
-#include <iterator> // for ::std::input_iterator_tag
+#  include <iterator> // for ::std::input_iterator_tag
+
+#  if _CCCL_STD_VER >= 2020
+template <class _Tp, class = void>
+struct __cccl_type_is_defined : _CUDA_VSTD::false_type
+{};
+
+template <class _Tp>
+struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::__void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+{};
+
+// detect whether the used STL has contiguous_iterator_tag defined
+namespace std
+{
+struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
+{};
+} // namespace std
+#  endif // _CCCL_STD_VER >= 2020
+
 #endif // !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -130,8 +149,14 @@ using output_iterator_tag        = ::std::output_iterator_tag;
 using forward_iterator_tag       = ::std::forward_iterator_tag;
 using bidirectional_iterator_tag = ::std::bidirectional_iterator_tag;
 using random_access_iterator_tag = ::std::random_access_iterator_tag;
+
 #  if _CCCL_STD_VER >= 2020
-using contiguous_iterator_tag = ::std::contiguous_iterator_tag;
+struct _LIBCUDACXX_TEMPLATE_VIS __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
+{};
+using contiguous_iterator_tag =
+  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+      ::std::contiguous_iterator_tag,
+      __contiguous_iterator_tag_backfill>;
 #  elif _CCCL_STD_VER >= 2014
 struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag : public random_access_iterator_tag
 {};
