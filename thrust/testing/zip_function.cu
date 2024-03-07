@@ -5,6 +5,7 @@
 #  include <thrust/device_vector.h>
 #  include <thrust/iterator/zip_iterator.h>
 #  include <thrust/remove.h>
+#  include <thrust/sort.h>
 #  include <thrust/transform.h>
 #  include <thrust/zip_function.h>
 
@@ -137,4 +138,27 @@ struct TestNestedZipFunction
 };
 SimpleUnitTest<TestNestedZipFunction, type_list<int, float> > TestNestedZipFunctionInstance;
 
+struct SortPred {
+    __device__ __forceinline__
+    bool operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a,
+                    const thrust::tuple<thrust::tuple<int, int>, int>& b) {
+        return thrust::get<1>(a) < thrust::get<1>(b);
+    }
+};
+template <typename T>
+struct TestNestedZipFunction2
+{
+  void operator()()
+  {
+    thrust::device_vector<int> A(5);
+    thrust::device_vector<int> B(5);
+    thrust::device_vector<int> C(5);
+    auto n = A.size();
+
+    auto tupleIt = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
+    auto nestedTupleIt = thrust::make_zip_iterator(tupleIt, cuda::std::begin(C));
+    thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
+  }
+};
+SimpleUnitTest<TestNestedZipFunction2, type_list<int, float> > TestNestedZipFunctionInstance2;
 #endif // _CCCL_STD_VER
