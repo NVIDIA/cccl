@@ -1440,6 +1440,8 @@ typedef __char32_t char32_t;
 #  define _CUDA_VSTD    ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VRANGES ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VIEWS   ::cuda::std::ranges::views::_LIBCUDACXX_CUDA_ABI_NAMESPACE
+#  define _CUDA_VMR     ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_VPTX    ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #else
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION namespace std {
 #  define _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION }
@@ -1451,11 +1453,12 @@ typedef __char32_t char32_t;
 #ifdef __cuda_std__
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA namespace cuda { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA  } }
+#define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR namespace cuda { namespace mr { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#define _LIBCUDACXX_END_NAMESPACE_CUDA_MR  } } }
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE namespace cuda { namespace device { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE  } } }
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX namespace cuda { namespace ptx { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_PTX  } } }
-#define _CUDA_VPTX ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #define _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL namespace cuda { namespace device { namespace experimental { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #define _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL  } } } }
 #endif
