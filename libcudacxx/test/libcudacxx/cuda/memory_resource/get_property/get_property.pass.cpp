@@ -13,8 +13,6 @@
 
 // cuda::get_property
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
 #include <cuda/std/cassert>
 #include <cuda/memory_resource>
 

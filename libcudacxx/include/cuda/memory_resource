@@ -80,8 +80,6 @@ class resource_ref {
 */
 // clang-format on
 
-#ifdef LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
 #  include <cuda_runtime_api.h> // cuda_runtime_api needs to come first
 
 #  include "__cccl_config"
@@ -626,7 +624,5 @@ struct host_accessible
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
-
-#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_LIBCUDACXX_BEGIN_NAMESPACE_CUDA

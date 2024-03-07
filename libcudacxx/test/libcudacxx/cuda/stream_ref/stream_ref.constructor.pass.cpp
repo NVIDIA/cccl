@@ -9,8 +9,6 @@
 
 // UNSUPPORTED: nvrtc
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
 #include <cuda/stream_ref>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>

@@ -13,8 +13,6 @@
 
 // cuda::mr::async_resource_ref construction
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
 #include <cuda/memory_resource>
 
 #include <cuda/std/cstdint>
