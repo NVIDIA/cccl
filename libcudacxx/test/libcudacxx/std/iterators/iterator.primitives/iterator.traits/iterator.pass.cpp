@@ -24,6 +24,12 @@
 
 #include "test_macros.h"
 
+#if !defined(TEST_COMPILER_NVRTC)
+#define THRUST_IGNORE_DEPRECATED_CPP_DIALECT
+#include <thrust/iterator/counting_iterator.h>
+#include <vector>
+#endif // !TEST_COMPILER_NVRTC
+
 struct A {};
 
 struct test_iterator
@@ -37,12 +43,42 @@ struct test_iterator
 
 int main(int, char**)
 {
+  {
     typedef cuda::std::iterator_traits<test_iterator> It;
     static_assert((cuda::std::is_same<It::difference_type, int>::value), "");
     static_assert((cuda::std::is_same<It::value_type, A>::value), "");
     static_assert((cuda::std::is_same<It::pointer, A*>::value), "");
     static_assert((cuda::std::is_same<It::reference, A&>::value), "");
     static_assert((cuda::std::is_same<It::iterator_category, cuda::std::forward_iterator_tag>::value), "");
+  }
+
+#if !defined(TEST_COMPILER_NVRTC)
+  { // thrust iterator
+    typedef cuda::std::iterator_traits<thrust::counting_iterator<int>> It;
+    using category = thrust::detail::iterator_category_with_system_and_traversal<std::random_access_iterator_tag,
+                                                                                 thrust::any_system_tag,
+                                                                                 thrust::random_access_traversal_tag>;
+
+    static_assert(cuda::std::is_same<It::difference_type, ptrdiff_t>::value, "");
+    static_assert(cuda::std::is_same<It::value_type, int>::value, "");
+    static_assert(cuda::std::is_same<It::pointer, void>::value, "");
+    static_assert(cuda::std::is_same<It::reference, signed int>::value, "");
+    static_assert(cuda::std::is_same<It::iterator_category, category>::value, "");
+
+    static_assert(cuda::std::__is_cpp17_random_access_iterator<thrust::counting_iterator<int>>::value, "");
+  }
+
+  { // std::vector
+    typedef cuda::std::iterator_traits<typename std::vector<int>::iterator> It;
+    static_assert((cuda::std::is_same<It::difference_type, std::ptrdiff_t>::value), "");
+    static_assert((cuda::std::is_same<It::value_type, int>::value), "");
+    static_assert((cuda::std::is_same<It::pointer, int*>::value), "");
+    static_assert((cuda::std::is_same<It::reference, int&>::value), "");
+    static_assert((cuda::std::is_same<It::iterator_category, std::random_access_iterator_tag>::value), "");
+
+    static_assert(cuda::std::__is_cpp17_random_access_iterator<typename std::vector<int>::iterator>::value, "");
+  }
+#endif // !TEST_COMPILER_NVRTC
 
   return 0;
 }
