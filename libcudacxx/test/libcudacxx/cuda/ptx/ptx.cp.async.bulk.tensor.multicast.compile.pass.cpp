@@ -34,7 +34,7 @@
  *
  */
 
-__global__ void test_cp_async_bulk_tensor(void ** fn_ptr) {
+__global__ void test_cp_async_bulk_tensor_multicast(void ** fn_ptr) {
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(NV_PROVIDES_SM_90, (
     // cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2a.

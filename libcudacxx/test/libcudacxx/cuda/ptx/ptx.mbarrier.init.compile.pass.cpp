@@ -9,9 +9,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: libcpp-has-no-threads
 
-// UNSUPPORTED: nvcc-11
-// XFAIL: !pre-sm-90 && pre-sm-90a
-
 // <cuda/ptx>
 
 #include <cuda/ptx>
@@ -34,13 +31,13 @@
  *
  */
 
-__global__ void test_cp_async_bulk_multicast(void ** fn_ptr) {
-#if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (
-    // cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.
-    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(cuda::ptx::space_cluster_t, cuda::ptx::space_global_t, void* , const void* , const uint32_t& , uint64_t* , const uint16_t& )>(cuda::ptx::cp_async_bulk));
+__global__ void test_mbarrier_init(void ** fn_ptr) {
+#if __cccl_ptx_isa >= 700
+  NV_IF_TARGET(NV_PROVIDES_SM_80, (
+    // mbarrier.init.b64 [addr], count;
+    *fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(uint64_t* , const uint32_t& )>(cuda::ptx::mbarrier_init));
   ));
-#endif // __cccl_ptx_isa >= 800
+#endif // __cccl_ptx_isa >= 700
 }
 
 int main(int, char**)
