@@ -164,6 +164,7 @@
         "CCCL_ENABLE_CUB": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
+        "CUB_SEPARATE_CATCH2": true,
         "CUB_ENABLE_DIALECT_CPP11": false,
         "CUB_ENABLE_DIALECT_CPP14": false,
         "CUB_ENABLE_DIALECT_CPP17": false,
