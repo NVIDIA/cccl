@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::async_resource_ref properties
 

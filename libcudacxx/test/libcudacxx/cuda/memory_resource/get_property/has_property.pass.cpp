@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::has_property, cuda::has_property_with
 

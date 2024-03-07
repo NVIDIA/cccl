@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::resource_ref properties
 
@@ -50,51 +49,55 @@ struct resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  _LIBCUDACXX_REQUIRES((
+      !cuda::property_with_value<Property>)&&_CUDA_VSTD::_One_of<Property,
+                                                                 Properties...>)
   friend void get_property(const resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const resource& res, Property) noexcept {
-    return res._val;
+  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&&
+                           _CUDA_VSTD::_One_of<Property, Properties...>)
+  friend typename Property::value_type get_property(const resource& res,
+                                                    Property) noexcept {
+    return static_cast<typename Property::value_type>(res._val);
   }
 };
 
 // Ensure we have the right size
 static_assert(sizeof(cuda::mr::resource_ref<property_with_value<short>,
                                             property_with_value<int> >) ==
-              (4 * sizeof(void*)), "");
+                  (4 * sizeof(void*)),
+              "");
 static_assert(sizeof(cuda::mr::resource_ref<property_with_value<short>,
                                             property_without_value<int> >) ==
-              (3 * sizeof(void*)), "");
+                  (3 * sizeof(void*)),
+              "");
 static_assert(sizeof(cuda::mr::resource_ref<property_without_value<short>,
                                             property_with_value<int> >) ==
-              (3 * sizeof(void*)), "");
+                  (3 * sizeof(void*)),
+              "");
 static_assert(sizeof(cuda::mr::resource_ref<property_without_value<short>,
                                             property_without_value<int> >) ==
-              (2 * sizeof(void*)), "");
+                  (2 * sizeof(void*)),
+              "");
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>)) //
-    int InvokeIfWithValue(const Ref& ref) {
-  return -1;
-}
+_LIBCUDACXX_REQUIRES((!cuda::property_with_value<Property>)) //
+int InvokeIfWithValue(const Ref& ref) { return -1; }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property>) //
-    typename Property::value_type InvokeIfWithValue(const Ref& ref) {
+_LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>) //
+typename Property::value_type InvokeIfWithValue(const Ref& ref) {
   return get_property(ref, Property{});
 }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property>) //
-    int InvokeIfWithoutValue(const Ref& ref) {
-  return -1;
-}
+_LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>) //
+int InvokeIfWithoutValue(const Ref& ref) { return -1; }
 
 _LIBCUDACXX_TEMPLATE(class Property, class Ref)
-  _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>)) //
-    int InvokeIfWithoutValue(const Ref& ref) {
+_LIBCUDACXX_REQUIRES((!cuda::property_with_value<Property>)) //
+int InvokeIfWithoutValue(const Ref& ref) {
   get_property(ref, Property{});
   return 1;
 }
@@ -108,8 +111,7 @@ void test_resource_ref() {
   // Check all the potentially stateful properties
   const int properties_with_value[] = {InvokeIfWithValue<Properties>(ref)...};
   const int expected_with_value[] = {
-      ((cuda::property_with_value<Properties>) ? expected_initially
-                                                   : -1)...};
+      ((cuda::property_with_value<Properties>) ? expected_initially : -1)...};
   for (std::size_t i = 0; i < sizeof...(Properties); ++i) {
     assert(properties_with_value[i] == expected_with_value[i]);
   }
@@ -127,9 +129,8 @@ void test_resource_ref() {
 
   // Check whether we truly get the right value
   const int properties_with_value2[] = {InvokeIfWithValue<Properties>(ref)...};
-  const int expected_with_value2[] = {
-      ((cuda::property_with_value<Properties>) ? expected_after_change
-                                                   : -1)...};
+  const int expected_with_value2[] = {(
+      (cuda::property_with_value<Properties>) ? expected_after_change : -1)...};
   for (std::size_t i = 0; i < sizeof...(Properties); ++i) {
     assert(properties_with_value2[i] == expected_with_value2[i]);
   }
@@ -140,9 +141,11 @@ void test_property_forwarding() {
   using ref = cuda::mr::resource_ref<property_with_value<short> >;
 
   static_assert(cuda::mr::resource_with<res, property_with_value<short>,
-                                        property_with_value<int> >, "");
+                                        property_with_value<int> >,
+                "");
   static_assert(!cuda::mr::resource_with<ref, property_with_value<short>,
-                                         property_with_value<int> >, "");
+                                         property_with_value<int> >,
+                "");
 
   static_assert(cuda::mr::resource_with<res, property_with_value<short> >, "");
 }
@@ -168,9 +171,7 @@ void test_resource_ref() {
 } // namespace resource_test
 
 int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,(
-        resource_test::test_resource_ref();
-    ))
+  NV_IF_TARGET(NV_IS_HOST, (resource_test::test_resource_ref();))
 
-    return 0;
+  return 0;
 }

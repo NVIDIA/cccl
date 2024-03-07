@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::async_resource_ref properties
 
@@ -65,7 +64,7 @@ struct async_resource {
   _LIBCUDACXX_TEMPLATE(class Property)
     _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend typename Property::value_type get_property(const async_resource& res, Property) noexcept {
-    return res._val;
+    return static_cast<typename Property::value_type>(res._val);
   }
 };
 
