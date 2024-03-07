@@ -24,6 +24,10 @@
 
 #include "test_macros.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#pragma warning(disable: 4324) // structure was padded due to alignment specifier
+#endif // TEST_COMPILER_MSVC
+
 #if !defined(TEST_COMPILER_NVRTC)
 #define THRUST_IGNORE_DEPRECATED_CPP_DIALECT
 #include <thrust/iterator/counting_iterator.h>
