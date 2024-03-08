@@ -32,6 +32,12 @@ endif()
 include(CTest)
 enable_testing()
 
+# Add codegen module
+option(libcudacxx_ENABLE_CODEGEN_BUILD "Enable ctest-based testing." ON)
+if (libcudacxx_ENABLE_CODEGEN_BUILD)
+add_subdirectory(codegen)
+endif()
+
 # Note that this currently returns and skips the rest of the build
 # system.
 option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." ON)
