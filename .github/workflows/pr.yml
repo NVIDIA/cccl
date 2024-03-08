@@ -177,6 +177,9 @@ jobs:
       - name: Run libcudacxx codegen verification
         id: verify-codegen
         run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build
+          export CXX="g++"
           ./ci/verify_codegen.sh
 
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
