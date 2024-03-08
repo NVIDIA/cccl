@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -71,7 +71,12 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   get_cuda_arch_from_kernel(thrust::raw_pointer_cast(cuda_arch.data()), ptx_version);
   int kernel_cuda_arch = cuda_arch[0];
 
+  // Host cub::PtxVersion
+  int host_ptx_version{};
+  cub::PtxVersion(host_ptx_version);
+
   REQUIRE(*ptx_version == kernel_cuda_arch);
+  REQUIRE(host_ptx_version == kernel_cuda_arch);
 
   std::cout << "ptx_version: " << *ptx_version << "\n";
   std::cout << "kernel_cuda_arch: " << kernel_cuda_arch << "\n";
