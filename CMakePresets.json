@@ -64,6 +64,7 @@
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
         "libcudacxx_ENABLE_CMAKE_TESTS": false,
+        "libcudacxx_ENABLE_CODEGEN": true,
         "LIBCUDACXX_ENABLE_CUDA": false
       }
     },

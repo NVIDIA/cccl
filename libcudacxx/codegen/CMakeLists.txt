@@ -38,11 +38,6 @@ add_custom_target(
 
 add_dependencies(libcudacxx.atomics.codegen.install libcudacxx.atomics.codegen.execute)
 
-# This prevents the codegen from being built with all. The config should be explicitly built.
-set_target_properties(libcudacxx.atomics.codegen PROPERTIES EXCLUDE_FROM_ALL true)
-set_target_properties(libcudacxx.atomics.codegen.execute PROPERTIES EXCLUDE_FROM_ALL true)
-set_target_properties(libcudacxx.atomics.codegen.install PROPERTIES EXCLUDE_FROM_ALL true)
-
 add_test(
     NAME libcudacxx.atomics.codegen.diff
     COMMAND ${CMAKE_COMMAND} -E compare_files "${atomic_install_location}/atomic_cuda_generated.h" "${atomic_generated_output}"

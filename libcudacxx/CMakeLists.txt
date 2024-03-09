@@ -33,8 +33,8 @@ include(CTest)
 enable_testing()
 
 # Add codegen module
-option(libcudacxx_ENABLE_CODEGEN_BUILD "Enable ctest-based testing." ON)
-if (libcudacxx_ENABLE_CODEGEN_BUILD)
+option(libcudacxx_ENABLE_CODEGEN "Enable ctest-based testing." OFF)
+if (libcudacxx_ENABLE_CODEGEN)
 add_subdirectory(codegen)
 endif()
 
