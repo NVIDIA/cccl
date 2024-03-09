@@ -15,6 +15,8 @@
 
 #include <cuda/std/cassert>
 
+#include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 template <class T, class Fn, class... As>
@@ -93,8 +95,19 @@ int main(int argc, char ** argv)
   auto f = cuda::proclaim_return_type<bool>([] __device__() { return false; });
   auto g = cuda::proclaim_return_type<bool>([f] __device__() { return f(); });
 
+    // Ensure type can be queried from cuda::std::invoke_result_t 
+  auto d_lm = [] __device__ () -> float { return 3.14f; };
+  auto hd_lm = [] __host__ __device__ () -> float { return 3.14f; };
+  using Td = decltype(d_lm);
+  using Thd = decltype(hd_lm);
+
+  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Td>, float);
+  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Thd>, float);
+
   unused(f);
   unused(g);
+  unused(d_lm);
+  unused(hd_lm);
 #endif // !TEST_COMPILER_NVRTC
 
 
