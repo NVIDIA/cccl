@@ -37,27 +37,27 @@
 
 CUB_NAMESPACE_BEGIN
 
-CUB_DETAIL_KERNEL_ATTRIBUTES void WritePtxVersionKernel(int* d_kernel_cuda_arch)
+CUB_DETAIL_KERNEL_ATTRIBUTES void write_ptx_version_kernel(int* d_kernel_cuda_arch)
 {
   *d_kernel_cuda_arch = CUB_PTX_ARCH;
 }
 
-CUB_RUNTIME_FUNCTION static cudaError_t
-GetCudaArchFromKernel(void* d_temp_storage, size_t& temp_storage_bytes, int* d_kernel_cuda_arch, int* ptx_version, cudaStream_t stream = 0)
+CUB_RUNTIME_FUNCTION static cudaError_t get_cuda_arch_from_kernel(
+  void* d_temp_storage, size_t& temp_storage_bytes, int* d_kernel_cuda_arch, int* ptx_version, cudaStream_t stream = 0)
 {
   if (d_temp_storage == nullptr)
   {
     temp_storage_bytes = 1;
     return cudaSuccess;
   }
-  WritePtxVersionKernel<<<1, 1, 0, stream>>>(d_kernel_cuda_arch);
+  write_ptx_version_kernel<<<1, 1, 0, stream>>>(d_kernel_cuda_arch);
   return cub::PtxVersion(*ptx_version);
 }
 
 CUB_NAMESPACE_END
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-DECLARE_LAUNCH_WRAPPER(cub::GetCudaArchFromKernel, get_cuda_arch_from_kernel);
+DECLARE_LAUNCH_WRAPPER(cub::get_cuda_arch_from_kernel, get_cuda_arch_from_kernel);
 
 CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
 {
@@ -75,9 +75,10 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
   int host_ptx_version{};
   cub::PtxVersion(host_ptx_version);
 
+  // Ensure variable was properly populated
+  REQUIRE(0 != kernel_cuda_arch);
+
+  // Ensure that the ptx version corresponds to the arch the kernel was compiled for
   REQUIRE(*ptx_version == kernel_cuda_arch);
   REQUIRE(host_ptx_version == kernel_cuda_arch);
-
-  std::cout << "ptx_version: " << *ptx_version << "\n";
-  std::cout << "kernel_cuda_arch: " << kernel_cuda_arch << "\n";
 }
