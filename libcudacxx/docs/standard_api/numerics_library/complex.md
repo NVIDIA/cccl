@@ -25,7 +25,7 @@ Our implementation by default recovers infinite values during multiplication and
 
 Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS` disables canonicalization for both multiplication *and* division.
 
-Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` or `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` disables canonicalization for multiplication or division individually.
+Definition of `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION` or `LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION` disables canonicalization for multiplication or division individually.
 
 ### Support for half and bfloat16 (since libcu++ 2.4.0)
 
