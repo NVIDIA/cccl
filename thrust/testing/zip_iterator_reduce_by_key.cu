@@ -144,7 +144,7 @@ struct TestZipIteratorReduceByKey
         thrust::make_zip_iterator(thrust::make_tuple(h_begin4, h_begin5)),
         h_begin6);
 
-      // run on host
+      // run on device
       const T* d_begin1     = thrust::raw_pointer_cast(d_data1.data());
       const T* d_begin2     = thrust::raw_pointer_cast(d_data2.data());
       const float* d_begin3 = thrust::raw_pointer_cast(d_data3.data());
