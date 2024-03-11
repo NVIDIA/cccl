@@ -11,6 +11,7 @@ CXX_STANDARD=17
 CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
 CUDA_ARCHS= # Empty, use presets by default.
 GLOBAL_CMAKE_OPTIONS=()
+DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 
 # Check if the correct number of arguments has been provided
 function usage {
@@ -47,7 +48,7 @@ while [ "${#args[@]}" -ne 0 ]; do
     -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
     -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
     -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
-    -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; args=("${args[@]:1}");;
+    -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
         if [ -n "${args[1]}" ]; then
             IFS=' ' read -ra split_args <<< "${args[1]}"

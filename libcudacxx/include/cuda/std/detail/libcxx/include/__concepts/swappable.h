@@ -39,9 +39,9 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_CCCL_COMPILER_MSVC)
-_LIBCUDACXX_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
-#endif // _CCCL_COMPILER_MSVC
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+_CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 #if _CCCL_STD_VER > 2011
 
@@ -97,7 +97,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__swap)
 #if _CCCL_STD_VER > 2017 && !defined(_CCCL_COMPILER_NVHPC) // nvbug4051640
   struct __fn;
 
-_LIBCUDACXX_NV_DIAG_SUPPRESS(2642)
+_CCCL_NV_DIAG_SUPPRESS(2642)
   template<class _Tp, class _Up, size_t _Size>
   concept __swappable_arrays =
     !__unqualified_swappable_with<_Tp(&)[_Size], _Up(&)[_Size]> &&
@@ -105,7 +105,7 @@ _LIBCUDACXX_NV_DIAG_SUPPRESS(2642)
     requires(_Tp(& __t)[_Size], _Up(& __u)[_Size], const __fn& __swap) {
       __swap(__t[0], __u[0]);
     };
-_LIBCUDACXX_NV_DIAG_DEFAULT(2642)
+_CCCL_NV_DIAG_DEFAULT(2642)
 
 #else
   template<class _Tp, class _Up, size_t _Size, class = void>
@@ -220,9 +220,9 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2011
 
-#if defined(_CCCL_COMPILER_MSVC)
-_LIBCUDACXX_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
-#endif // _CCCL_COMPILER_MSVC
+#if defined(_LIBCUDACXX_COMPILER_MSVC)
+_CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
+#endif // _LIBCUDACXX_COMPILER_MSVC
 
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

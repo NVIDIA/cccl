@@ -808,7 +808,7 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
           asm ("{\n"
               "    .reg .pred p;\n"
               "    and.b32 %0, %1, %2;"
-              "    setp.eq.u32 p, %0, %2;\n"
+              "    setp.ne.u32 p, %0, 0;\n"
               "    vote.ballot.sync.b32 %0, p, 0xffffffff;\n"
               "    @!p not.b32 %0, %0;\n"
               "}\n" : "=r"(mask) : "r"(label), "r"(current_bit));

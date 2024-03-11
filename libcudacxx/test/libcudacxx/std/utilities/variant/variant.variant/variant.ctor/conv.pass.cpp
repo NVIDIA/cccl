@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
+// UNSUPPORTED: clang-7, clang-8
 
 // <cuda/std/variant>
 
@@ -23,7 +24,9 @@
 
 int main(int, char**)
 {
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 7
   static_assert(!cuda::std::is_constructible<cuda::std::variant<int, int>, int>::value, "");
+#endif // !gcc-6
   static_assert(!cuda::std::is_constructible<cuda::std::variant<long, long long>, int>::value, "");
   static_assert(cuda::std::is_constructible<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions, "");
 

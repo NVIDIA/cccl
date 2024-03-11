@@ -74,7 +74,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter
   noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
 #endif // _CCCL_STD_VER >= 2017
 
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
 class _LIBCUDACXX_TEMPLATE_VIS reverse_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
@@ -85,7 +85,7 @@ class _LIBCUDACXX_TEMPLATE_VIS reverse_iterator
                       typename iterator_traits<_Iter>::reference>
 #endif
 {
-  _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
 private:
 #ifndef _LIBCUDACXX_ABI_NO_ITERATOR_BASES

@@ -57,7 +57,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
+// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
@@ -606,7 +606,7 @@ using __expected_sfinae_assign_base_t = __sfinae_assign_base<
 >;
 
 // expected<void, E> base classtemplate <class _Tp, class _Err>
-// MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
+// MSVC complains about [[no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 

@@ -13,6 +13,10 @@ cd $SCRIPT_PATH
 rm -rf img
 mkdir -p img
 
+if [ ! -d cubimg ]; then
+    git clone -b gh-pages https://github.com/NVlabs/cub.git cubimg
+fi 
+
 if [ ! -n "$(find img -name '*.png')" ]; then
     wget -q https://docs.nvidia.com/cuda/_static/Logo_and_CUDA.png -O img/logo.png
 
@@ -23,7 +27,7 @@ if [ ! -n "$(find img -name '*.png')" ]; then
     for img in "${imgs[@]}"
     do
         echo ${img}
-        wget -q https://nvlabs.github.io/cub/${img} -O img/${img} || echo "!!! Failed to fetch $img"
+        cp cubimg/${img} img/${img}
     done
 fi
 

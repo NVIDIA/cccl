@@ -34,15 +34,42 @@
 #include "../__iterator/incrementable_traits.h"
 #include "../__iterator/readable_traits.h"
 #include "../__type_traits/add_const.h"
+#include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_primary_template.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/void_t.h"
 #include "../cstddef"
 
+#if !defined(_CCCL_COMPILER_NVRTC) && defined(__cuda_std__)
+#if defined(_CCCL_COMPILER_MSVC)
+#  include <xutility> // for ::std::input_iterator_tag
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  include <iterator> // for ::std::input_iterator_tag
+#endif // !_CCCL_COMPILER_MSVC
+
+#  if _CCCL_STD_VER >= 2020
+template <class _Tp, class = void>
+struct __cccl_type_is_defined : _CUDA_VSTD::false_type
+{};
+
+template <class _Tp>
+struct __cccl_type_is_defined<_Tp, _CUDA_VSTD::__void_t<decltype(sizeof(_Tp))>> : _CUDA_VSTD::true_type
+{};
+
+// detect whether the used STL has contiguous_iterator_tag defined
+namespace std
+{
+struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
+{};
+} // namespace std
+#  endif // _CCCL_STD_VER >= 2020
+
+#endif // !_CCCL_COMPILER_NVRTC
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -64,7 +91,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER >= 2017
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -78,19 +105,15 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __can_reference = _LIBCUDACXX_FRAGMENT(__can_reference_, _Tp);
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wvoid-ptr-dereference"
-#endif
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __dereferenceable_,
   requires(_Tp& __t)(
     requires(__can_reference<decltype(*__t)>)
   ));
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
+_CCCL_DIAG_POP
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __dereferenceable = _LIBCUDACXX_FRAGMENT(__dereferenceable_, _Tp);
@@ -101,19 +124,49 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*_CUDA_VST
 
 template <class, class>
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
-#else
+#else // ^^^ _CCCL_STD_VER >= 2017 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class>
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits;
-#endif // _CCCL_STD_VER > 2011
+#endif // _CCCL_STD_VER <= 2014
 
-struct _LIBCUDACXX_TEMPLATE_VIS input_iterator_tag {};
-struct _LIBCUDACXX_TEMPLATE_VIS output_iterator_tag {};
-struct _LIBCUDACXX_TEMPLATE_VIS forward_iterator_tag       : public input_iterator_tag {};
-struct _LIBCUDACXX_TEMPLATE_VIS bidirectional_iterator_tag : public forward_iterator_tag {};
-struct _LIBCUDACXX_TEMPLATE_VIS random_access_iterator_tag : public bidirectional_iterator_tag {};
-#if _CCCL_STD_VER > 2011
-struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag    : public random_access_iterator_tag {};
-#endif
+#if defined(_CCCL_COMPILER_NVRTC) || !defined(__cuda_std__)
+
+struct _LIBCUDACXX_TEMPLATE_VIS input_iterator_tag
+{};
+struct _LIBCUDACXX_TEMPLATE_VIS output_iterator_tag
+{};
+struct _LIBCUDACXX_TEMPLATE_VIS forward_iterator_tag : public input_iterator_tag
+{};
+struct _LIBCUDACXX_TEMPLATE_VIS bidirectional_iterator_tag : public forward_iterator_tag
+{};
+struct _LIBCUDACXX_TEMPLATE_VIS random_access_iterator_tag : public bidirectional_iterator_tag
+{};
+#  if _CCCL_STD_VER >= 2014
+struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag : public random_access_iterator_tag
+{};
+#  endif // _CCCL_STD_VER >= 2014
+
+#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+
+using input_iterator_tag         = ::std::input_iterator_tag;
+using output_iterator_tag        = ::std::output_iterator_tag;
+using forward_iterator_tag       = ::std::forward_iterator_tag;
+using bidirectional_iterator_tag = ::std::bidirectional_iterator_tag;
+using random_access_iterator_tag = ::std::random_access_iterator_tag;
+
+#  if _CCCL_STD_VER >= 2020
+struct _LIBCUDACXX_TEMPLATE_VIS __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
+{};
+using contiguous_iterator_tag =
+  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+      ::std::contiguous_iterator_tag,
+      __contiguous_iterator_tag_backfill>;
+#  elif _CCCL_STD_VER >= 2014
+struct _LIBCUDACXX_TEMPLATE_VIS contiguous_iterator_tag : public random_access_iterator_tag
+{};
+#  endif // _CCCL_STD_VER >= 2014
+
+#endif // !_CCCL_COMPILER_NVRTC
 
 template <class _Iter>
 struct __iter_traits_cache {
@@ -197,7 +250,7 @@ public:
     static const bool value = decltype(__test<_Tp>(nullptr))::value;
 };
 
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -424,7 +477,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits : __iterator_traits<_Ip> {
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER >= 2017
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -694,7 +747,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits : __iterator_traits<_Ip> {
   using __primary_template = iterator_traits;
 };
 
-#else // _CCCL_STD_VER > 2011
+#else // _CCCL_STD_VER >= 2014
 
 template <class _Iter, bool> struct __iterator_traits {};
 
@@ -725,16 +778,17 @@ struct __iterator_traits<_Iter, true>
 //    conforming extension which allows some programs to compile and behave as
 //    the client expects instead of failing at compile time.
 
+
 template <class _Iter>
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits
     : __iterator_traits<_Iter, __has_iterator_typedefs<_Iter>::value> {
 
   using __primary_template = iterator_traits;
 };
-#endif // _CCCL_STD_VER < 2017
+#endif // _CCCL_STD_VER <= 2014
 
 template<class _Tp>
-#if _CCCL_STD_VER > 2017
+#if _CCCL_STD_VER >= 2020
 requires is_object_v<_Tp>
 #endif
 struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits<_Tp*>
@@ -744,7 +798,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS iterator_traits<_Tp*>
     typedef _Tp* pointer;
     typedef typename add_lvalue_reference<_Tp>::type reference;
     typedef random_access_iterator_tag iterator_category;
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
     typedef contiguous_iterator_tag    iterator_concept;
 #endif
 };
@@ -784,7 +838,7 @@ struct __is_cpp17_random_access_iterator : public __has_iterator_category_conver
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator : _Or<
     __has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,

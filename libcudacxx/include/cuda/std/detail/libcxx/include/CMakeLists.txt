@@ -3,6 +3,8 @@ set(files
   __algorithm/adjacent_find.h
   __algorithm/all_of.h
   __algorithm/any_of.h
+  __algorithm/binary_search.h
+  __algorithm/clamp.h
   __algorithm/comp_ref_type.h
   __algorithm/comp.h
   __algorithm/copy_backward.h
@@ -11,6 +13,7 @@ set(files
   __algorithm/copy.h
   __algorithm/count.h
   __algorithm/count_if.h
+  __algorithm/equal_range.h
   __algorithm/equal.h
   __algorithm/fill_n.h
   __algorithm/fill.h
@@ -24,12 +27,39 @@ set(files
   __algorithm/generate_n.h
   __algorithm/generate.h
   __algorithm/half_positive.h
+  __algorithm/includes.h
+  __algorithm/is_heap_until.h
+  __algorithm/is_heap.h
+  __algorithm/is_partitioned.h
   __algorithm/is_permutation.h
+  __algorithm/is_sorted_until.h
+  __algorithm/is_sorted.h
+  __algorithm/iter_swap.h
+  __algorithm/iterator_operations.h
   __algorithm/lexicographical_compare.h
+  __algorithm/lower_bound.h
+  __algorithm/make_heap.h
+  __algorithm/max_element.h
+  __algorithm/max.h
+  __algorithm/merge.h
+  __algorithm/min_element.h
+  __algorithm/min.h
+  __algorithm/minmax_element.h
+  __algorithm/minmax.h
   __algorithm/mismatch.h
   __algorithm/move_backward.h
   __algorithm/move.h
+  __algorithm/next_permutation.h
   __algorithm/none_of.h
+  __algorithm/partial_sort_copy.h
+  __algorithm/partial_sort.h
+  __algorithm/partition_copy.h
+  __algorithm/partition_point.h
+  __algorithm/partition.h
+  __algorithm/pop_heap.h
+  __algorithm/prev_permutation.h
+  __algorithm/push_heap.h
+  __algorithm/ranges_iterator_concept.h
   __algorithm/remove_copy_if.h
   __algorithm/remove_copy.h
   __algorithm/remove_if.h
@@ -38,10 +68,25 @@ set(files
   __algorithm/replace_copy.h
   __algorithm/replace_if.h
   __algorithm/replace.h
+  __algorithm/reverse_copy.h
+  __algorithm/reverse.h
+  __algorithm/rotate_copy.h
+  __algorithm/rotate.h
   __algorithm/search_n.h
   __algorithm/search.h
+  __algorithm/set_difference.h
+  __algorithm/set_intersection.h
+  __algorithm/set_symmetric_difference.h
+  __algorithm/set_union.h
+  __algorithm/shift_left.h
+  __algorithm/shift_right.h
+  __algorithm/sift_down.h
+  __algorithm/sort_heap.h
   __algorithm/swap_ranges.h
   __algorithm/transform.h
+  __algorithm/unique_copy.h
+  __algorithm/unique.h
+  __algorithm/upper_bound.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
