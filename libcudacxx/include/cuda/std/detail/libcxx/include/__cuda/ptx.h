@@ -30,6 +30,18 @@
 #include "../__cuda/ptx/ptx_helper_functions.h"
 #include "../__cuda/ptx/parallel_synchronization_and_communication_instructions_mbarrier.h"
 #include "../cstdint" // uint32_t
+
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _LIBCUDACXX_HAS_NVBF16
+
 /*
  * The cuda::ptx namespace intends to provide PTX wrappers for new hardware
  * features and new PTX instructions so that they can be experimented with
