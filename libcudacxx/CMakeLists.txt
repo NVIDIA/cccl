@@ -35,7 +35,7 @@ enable_testing()
 # Add codegen module
 option(libcudacxx_ENABLE_CODEGEN "Enable ctest-based testing." OFF)
 if (libcudacxx_ENABLE_CODEGEN)
-add_subdirectory(codegen)
+  add_subdirectory(codegen)
 endif()
 
 # Note that this currently returns and skips the rest of the build
