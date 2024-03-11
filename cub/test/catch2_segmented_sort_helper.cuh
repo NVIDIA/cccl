@@ -321,7 +321,7 @@ void generate_unsorted_derived_inputs(
   KeyT* keys             = thrust::raw_pointer_cast(d_keys.data());
   ValueT* values         = thrust::raw_pointer_cast(d_values.data());
 
-  cuda::std::ignore = values; // Unused for key-only sort.
+  (void) values; // Unused for key-only sort.
 
   // Build keys in reversed order from how they'll eventually be sorted:
   thrust::for_each(c2h::nosync_device_policy,
@@ -375,7 +375,7 @@ void generate_random_unsorted_inputs(c2h::seed_t seed, //
 {
   C2H_TIME_SCOPE("generate_random_unsorted_inputs");
 
-  cuda::std::ignore = d_values; // Unused for key-only sort.
+  (void) d_values; // Unused for key-only sort.
 
   c2h::gen(make_key_seed(seed), d_keys);
 
@@ -400,7 +400,7 @@ void host_sort_random_inputs(
 
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
-  cuda::std::ignore = h_unsorted_values; // Unused for key-only sort.
+  (void) h_unsorted_values; // Unused for key-only sort.
 
   for (int segment_i = 0; segment_i < num_segments; segment_i++)
   {
@@ -457,8 +457,8 @@ void validate_sorted_random_outputs(
 
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
-  cuda::std::ignore = d_ref_values; // Unused for key-only sort.
-  cuda::std::ignore = d_sorted_values; // Unused for key-only sort.
+  (void) d_ref_values; // Unused for key-only sort.
+  (void) d_sorted_values; // Unused for key-only sort.
 
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
   CUB_IF_CONSTEXPR(sort_pairs)
@@ -500,9 +500,9 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
   // Unused for key-only sort.
-  cuda::std::ignore = values_selector;
-  cuda::std::ignore = input_values;
-  cuda::std::ignore = output_values;
+  (void) values_selector;
+  (void) input_values;
+  (void) output_values;
 
   auto input_keys  = reinterpret_cast<KeyT*>(wrapped_input_keys);
   auto output_keys = reinterpret_cast<KeyT*>(wrapped_output_keys);

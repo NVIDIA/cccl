@@ -38,12 +38,12 @@
 #ifdef C2H_DEBUG_TIMING
 #  define C2H_TIME_SECTION_INIT() \
     c2h::cpu_timer _c2h_timer_;   \
-    cuda::std::ignore = _c2h_timer_
+    (void) _c2h_timer_
 #  define C2H_TIME_SECTION_RESET() _c2h_timer_.reset()
 #  define C2H_TIME_SECTION(label)  _c2h_timer_.print_elapsed_seconds_and_reset(label)
 #  define C2H_TIME_SCOPE(label)                          \
     c2h::scoped_cpu_timer _c2h_scoped_cpu_timer_(label); \
-    cuda::std::ignore = _c2h_scoped_cpu_timer_
+    (void) _c2h_scoped_cpu_timer_
 #else
 #  define C2H_TIME_SECTION_INIT()  /* no-op */ []() {}()
 #  define C2H_TIME_SECTION_RESET() /* no-op */ []() {}()
