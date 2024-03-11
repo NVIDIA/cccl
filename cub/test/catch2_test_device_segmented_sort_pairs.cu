@@ -63,18 +63,19 @@ CUB_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][devi
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  Sort(sort_descending,
-       sort_buffer,
-       stable_sort,
-       static_cast<KeyT*>(nullptr),
-       static_cast<KeyT*>(nullptr),
-       static_cast<ValueT*>(nullptr),
-       static_cast<ValueT*>(nullptr),
-       int{},
-       int{},
-       nullptr,
-       &keys_buffer.selector,
-       &values_buffer.selector);
+  call_cub_segmented_sort_api(
+    sort_descending,
+    sort_buffer,
+    stable_sort,
+    static_cast<KeyT*>(nullptr),
+    static_cast<KeyT*>(nullptr),
+    static_cast<ValueT*>(nullptr),
+    static_cast<ValueT*>(nullptr),
+    int{},
+    int{},
+    nullptr,
+    &keys_buffer.selector,
+    &values_buffer.selector);
 
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
@@ -100,27 +101,30 @@ CUB_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   cub::DoubleBuffer<ValueT> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  Sort(sort_descending,
-       sort_buffer,
-       sort_stable,
-       static_cast<KeyT*>(nullptr),
-       static_cast<KeyT*>(nullptr),
-       static_cast<ValueT*>(nullptr),
-       static_cast<ValueT*>(nullptr),
-       int{},
-       num_segments,
-       d_offsets,
-       &keys_buffer.selector,
-       &values_buffer.selector);
+  call_cub_segmented_sort_api(
+    sort_descending,
+    sort_buffer,
+    sort_stable,
+    static_cast<KeyT*>(nullptr),
+    static_cast<KeyT*>(nullptr),
+    static_cast<ValueT*>(nullptr),
+    static_cast<ValueT*>(nullptr),
+    int{},
+    num_segments,
+    d_offsets,
+    &keys_buffer.selector,
+    &values_buffer.selector);
 
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values", "[pairs][segmented][sort][device]", pair_types)
+CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
+         "[pairs][segmented][sort][device]",
+         pair_types)
 {
-  using PairT = c2h::get<0, TestType>;
-  using KeyT = c2h::get<0, PairT>;
+  using PairT  = c2h::get<0, TestType>;
+  using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
   const int segment_size = GENERATE_COPY(
@@ -131,13 +135,15 @@ CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values", "[
   const int segments = GENERATE_COPY(take(2, random(1 << 0, 1 << 5)), //
                                      take(2, random(1 << 5, 1 << 10)));
 
-  TestSameSizeSegmentsDerived<KeyT, ValueT>(segment_size, segments);
+  test_same_size_segments_derived<KeyT, ValueT>(segment_size, segments);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values", "[pairs][segmented][sort][device]", pair_types)
+CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
+         "[pairs][segmented][sort][device]",
+         pair_types)
 {
-  using PairT = c2h::get<0, TestType>;
-  using KeyT = c2h::get<0, PairT>;
+  using PairT  = c2h::get<0, TestType>;
+  using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
   const int max_items   = 1 << 22;
@@ -149,13 +155,15 @@ CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
     take(2, random(1 << 10, 1 << 15)),
     take(2, random(1 << 15, 1 << 20)));
 
-  TestRandomSizeSegmentsDerived<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_derived<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values", "[pairs][segmented][sort][device]", pair_types)
+CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
+         "[pairs][segmented][sort][device]",
+         pair_types)
 {
-  using PairT = c2h::get<0, TestType>;
-  using KeyT = c2h::get<0, PairT>;
+  using PairT  = c2h::get<0, TestType>;
+  using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
   const int max_items   = 1 << 22;
@@ -163,7 +171,7 @@ CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values"
 
   const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
 
-  TestRandomSizeSegmentsRandom<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_random<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
@@ -174,7 +182,7 @@ CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
-  TestEdgeCaseSegmentsRandom<KeyT, ValueT>(CUB_SEED(4));
+  test_edge_case_segments_random<KeyT, ValueT>(CUB_SEED(4));
 }
 
 CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random keys", "[pairs][segmented][sort][device]", pair_types)
@@ -183,5 +191,5 @@ CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random keys", "[pairs]
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
-  TestUnspecifiedSegmentsRandom<KeyT, ValueT>(CUB_SEED(4));
+  test_unspecified_segments_random<KeyT, ValueT>(CUB_SEED(4));
 }

@@ -40,6 +40,7 @@
 #include <thrust/sort.h>
 
 #include <cuda/std/limits>
+#include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include <cstdio>
@@ -85,56 +86,59 @@ MAKE_SEED_MOD_FUNCTION(offset_eraser, 0x3333333333333333)
 #undef MAKE_SEED_MOD_FUNCTION
 
 template <typename T>
-struct UnwrapHalfAndBfloat16
+struct unwrap_value_t_impl
 {
-  using Type = T;
+  using type = T;
 };
 
 #if TEST_HALF_T
 template <>
-struct UnwrapHalfAndBfloat16<half_t>
+struct unwrap_value_t_impl<half_t>
 {
-  using Type = __half;
+  using type = __half;
 };
 #endif
 
 #if TEST_BF_T
 template <>
-struct UnwrapHalfAndBfloat16<bfloat16_t>
+struct unwrap_value_t_impl<bfloat16_t>
 {
-  using Type = __nv_bfloat16;
+  using type = __nv_bfloat16;
 };
 #endif
+
+template <typename T>
+using unwrap_value_t = typename unwrap_value_t_impl<T>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Derived element gen/validation
 
 template <typename T>
-_CCCL_HOST_DEVICE __forceinline__ double ComputeConversionFactor(int segment_size, T)
+_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, T)
 {
   const double max_value = static_cast<double>(::cuda::std::numeric_limits<T>::max());
   return (max_value + 1) / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double ComputeConversionFactor(int segment_size, double)
+_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int segment_size, double)
 {
   const double max_value = ::cuda::std::numeric_limits<double>::max();
   return max_value / segment_size;
 }
 
-_CCCL_HOST_DEVICE __forceinline__ double ComputeConversionFactor(int, cub::NullType)
+_CCCL_HOST_DEVICE __forceinline__ double compute_conversion_factor(int, cub::NullType)
 {
   return 1.0;
 }
 
 template <typename T>
-struct SegmentFiller : public thrust::unary_function<int, T>
+struct segment_filler
 {
   T* d_data{};
   const int* d_offsets{};
   bool descending{};
 
-  SegmentFiller(T* d_data, const int* d_offsets, bool descending)
+  segment_filler(T* d_data, const int* d_offsets, bool descending)
       : d_data(d_data)
       , d_offsets(d_offsets)
       , descending(descending)
@@ -150,7 +154,7 @@ struct SegmentFiller : public thrust::unary_function<int, T>
       return;
     }
 
-    const double conversion = ComputeConversionFactor(segment_size, T{});
+    const double conversion = compute_conversion_factor(segment_size, T{});
 
     if (descending)
     {
@@ -172,14 +176,14 @@ struct SegmentFiller : public thrust::unary_function<int, T>
 };
 
 template <typename KeyT, typename ValueT = cub::NullType>
-struct SegmentChecker
+struct segment_checker
 {
   const KeyT* d_keys{};
   const ValueT* d_values{};
   const int* d_offsets{};
   bool sort_descending{};
 
-  SegmentChecker(const KeyT* d_keys, const ValueT* d_values, const int* d_offsets, bool sort_descending)
+  segment_checker(const KeyT* d_keys, const ValueT* d_values, const int* d_offsets, bool sort_descending)
       : d_keys(d_keys)
       , d_values(d_values)
       , d_offsets(d_offsets)
@@ -212,7 +216,7 @@ private:
     int segment_size,
     cub::NullType)
   {
-    const double conversion = ComputeConversionFactor(segment_size, KeyT{});
+    const double conversion = compute_conversion_factor(segment_size, KeyT{});
 
     for (int i = 0; i < segment_size; i++)
     {
@@ -237,8 +241,8 @@ private:
     // Computing values is trickier, since there may be duplicate keys and the segmented sort implementation is
     // (currently) always stable. We need to determine the corresponding input key index and then compute the original
     // input value from it.
-    const double key_conversion   = ComputeConversionFactor(segment_size, KeyT{});
-    const double value_conversion = ComputeConversionFactor(segment_size, ValueT{});
+    const double key_conversion   = compute_conversion_factor(segment_size, KeyT{});
+    const double value_conversion = compute_conversion_factor(segment_size, ValueT{});
 
     // Find ranges of duplicate keys in the output:
     int key_out_dup_begin = 0;
@@ -300,15 +304,15 @@ private:
 // d_values may be left empty if ValueT == cub::NullType.
 // If descending_sort is true, the keys will ascend and the values will descend.
 // Duplicate keys will be generated if the segment size exceeds the max KeyT.
-// Sorted results may be validated with ValidateSortedDerivedOutputs.
+// Sorted results may be validated with validate_sorted_derived_outputs.
 template <typename KeyT, typename ValueT = cub::NullType>
-void GenerateUnsortedDerivedInputs(
+void generate_unsorted_derived_inputs(
   bool descending_sort, //
   const c2h::device_vector<int>& d_offsets,
   c2h::device_vector<KeyT>& d_keys,
   c2h::device_vector<ValueT>& d_values = {})
 {
-  C2H_TIME_SCOPE("GenerateUnsortedInputs");
+  C2H_TIME_SCOPE("GenerateUnsortedDerivedInputs");
 
   static constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
@@ -317,37 +321,37 @@ void GenerateUnsortedDerivedInputs(
   KeyT* keys             = thrust::raw_pointer_cast(d_keys.data());
   ValueT* values         = thrust::raw_pointer_cast(d_values.data());
 
-  (void) values; // Unused for key-only sort.
+  cuda::std::ignore = values; // Unused for key-only sort.
 
   // Build keys in reversed order from how they'll eventually be sorted:
   thrust::for_each(c2h::nosync_device_policy,
                    thrust::make_counting_iterator(0),
                    thrust::make_counting_iterator(num_segments),
-                   SegmentFiller<KeyT>{keys, offsets, !descending_sort});
+                   segment_filler<KeyT>{keys, offsets, !descending_sort});
   CUB_IF_CONSTEXPR(sort_pairs)
   {
     // Values are generated in reversed order from keys:
     thrust::for_each(c2h::nosync_device_policy,
                      thrust::make_counting_iterator(0),
                      thrust::make_counting_iterator(num_segments),
-                     SegmentFiller<ValueT>{values, offsets, descending_sort});
+                     segment_filler<ValueT>{values, offsets, descending_sort});
   }
 
   // The for_each calls are using nosync policies:
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-// Verifies the results of stable-sorting the segmented key/value arrays produced by GenerateUnsortedDerivedInputs.
+// Verifies the results of stable-sorting the segmented key/value arrays produced by generate_unsorted_derived_inputs.
 // Reference values are computed on-the-fly, avoiding the need for host/device transfers and reference array sorting.
 // d_values may be left empty if ValueT == cub::NullType.
 template <typename KeyT, typename ValueT = cub::NullType>
-void ValidateSortedDerivedOutputs(
+void validate_sorted_derived_outputs(
   bool descending_sort, //
   const c2h::device_vector<int>& d_offsets,
   const c2h::device_vector<KeyT>& d_keys,
   const c2h::device_vector<ValueT>& d_values = {})
 {
-  C2H_TIME_SCOPE("ValidateSortedOutputs");
+  C2H_TIME_SCOPE("ValidateSortedDerivedOutputs");
   const int num_segments = static_cast<int>(d_offsets.size() - 1);
   const KeyT* keys       = thrust::raw_pointer_cast(d_keys.data());
   const ValueT* values   = thrust::raw_pointer_cast(d_values.data());
@@ -356,7 +360,7 @@ void ValidateSortedDerivedOutputs(
   REQUIRE(thrust::all_of(c2h::device_policy,
                          thrust::make_counting_iterator(0),
                          thrust::make_counting_iterator(num_segments),
-                         SegmentChecker<KeyT, ValueT>{keys, values, offsets, descending_sort}));
+                         segment_checker<KeyT, ValueT>{keys, values, offsets, descending_sort}));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -365,13 +369,13 @@ void ValidateSortedDerivedOutputs(
 // Generates random key/value pairs in keys/values.
 // d_values may be left empty if ValueT == cub::NullType.
 template <typename KeyT, typename ValueT = cub::NullType>
-void GenerateUnsortedRandomInputs(c2h::seed_t seed, //
-                                  c2h::device_vector<KeyT>& d_keys,
-                                  c2h::device_vector<ValueT>& d_values = {})
+void generate_random_unsorted_inputs(c2h::seed_t seed, //
+                                     c2h::device_vector<KeyT>& d_keys,
+                                     c2h::device_vector<ValueT>& d_values = {})
 {
-  C2H_TIME_SCOPE("GenerateUnsortedRandomInputs");
+  C2H_TIME_SCOPE("generate_random_unsorted_inputs");
 
-  (void) d_values; // Unused for key-only sort.
+  cuda::std::ignore = d_values; // Unused for key-only sort.
 
   c2h::gen(make_key_seed(seed), d_keys);
 
@@ -384,7 +388,7 @@ void GenerateUnsortedRandomInputs(c2h::seed_t seed, //
 // Stable sort the segmented key/values pairs in the host arrays.
 // d_values may be left empty if ValueT == cub::NullType.
 template <typename KeyT, typename ValueT = cub::NullType>
-void HostSortRandomInputs(
+void host_sort_random_inputs(
   bool sort_descending, //
   int num_segments,
   const int* h_begin_offsets,
@@ -392,11 +396,11 @@ void HostSortRandomInputs(
   c2h::host_vector<KeyT>& h_unsorted_keys,
   c2h::host_vector<ValueT>& h_unsorted_values = {})
 {
-  C2H_TIME_SCOPE("HostSortRandomInputs");
+  C2H_TIME_SCOPE("host_sort_random_inputs");
 
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
-  (void) h_unsorted_values; // Unused for key-only sort.
+  cuda::std::ignore = h_unsorted_values; // Unused for key-only sort.
 
   for (int segment_i = 0; segment_i < num_segments; segment_i++)
   {
@@ -443,18 +447,18 @@ void HostSortRandomInputs(
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void ValidateSortedRandomOutputs(
+void validate_sorted_random_outputs(
   const c2h::device_vector<KeyT>& d_ref_keys,
   const c2h::device_vector<KeyT>& d_sorted_keys,
   const c2h::device_vector<ValueT>& d_ref_values    = {},
   const c2h::device_vector<ValueT>& d_sorted_values = {})
 {
-  C2H_TIME_SCOPE("ValidateSortedRandomOutputs");
+  C2H_TIME_SCOPE("validate_sorted_random_outputs");
 
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
-  (void) d_ref_values; // Unused for key-only sort.
-  (void) d_sorted_values; // Unused for key-only sort.
+  cuda::std::ignore = d_ref_values; // Unused for key-only sort.
+  cuda::std::ignore = d_sorted_values; // Unused for key-only sort.
 
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
   CUB_IF_CONSTEXPR(sort_pairs)
@@ -467,7 +471,7 @@ void ValidateSortedRandomOutputs(
 // Sorting abstraction/launcher
 
 template <typename WrappedKeyT, typename ValueT>
-CUB_RUNTIME_FUNCTION cudaError_t Sort(
+CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   bool descending,
   bool double_buffer,
   bool stable_sort,
@@ -492,13 +496,13 @@ CUB_RUNTIME_FUNCTION cudaError_t Sort(
 
   cudaStream_t stream = 0)
 {
-  using KeyT                = typename UnwrapHalfAndBfloat16<WrappedKeyT>::Type;
+  using KeyT                = unwrap_value_t<WrappedKeyT>;
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
 
   // Unused for key-only sort.
-  (void) values_selector;
-  (void) input_values;
-  (void) output_values;
+  cuda::std::ignore = values_selector;
+  cuda::std::ignore = input_values;
+  cuda::std::ignore = output_values;
 
   auto input_keys  = reinterpret_cast<KeyT*>(wrapped_input_keys);
   auto output_keys = reinterpret_cast<KeyT*>(wrapped_output_keys);
@@ -873,7 +877,7 @@ public:
   template <class... As>
   CUB_RUNTIME_FUNCTION cudaError_t operator()(std::uint8_t* d_temp_storage, std::size_t& temp_storage_bytes, As... as)
   {
-    const cudaError_t status = Sort(
+    const cudaError_t status = call_cub_segmented_sort_api(
       m_is_descending, //
       m_double_buffer,
       m_stable_sort,
@@ -888,7 +892,7 @@ public:
 };
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void Sort(
+void call_cub_segmented_sort_api(
   bool descending,
   bool double_buffer,
   bool stable_sort,
@@ -960,11 +964,11 @@ constexpr bool unstable = false;
 constexpr bool stable   = true;
 
 // Uses analytically derived key/value pairs for generation and validation.
-// Much faster that TestSegmentsRandom, as this avoids H<->D copies and host reference sorting.
+// Much faster that test_segments_random, as this avoids H<->D copies and host reference sorting.
 // Drawback is that the unsorted keys are always reversed (though duplicate keys introduce some sorting variation due to
 // stability).
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestSegmentsDerived(const c2h::device_vector<int>& d_offsets_vec)
+void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 {
   C2H_TIME_SECTION_INIT();
   constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
@@ -1000,7 +1004,7 @@ void TestSegmentsDerived(const c2h::device_vector<int>& d_offsets_vec)
           sort_descending,
           sort_buffers);
 
-  GenerateUnsortedDerivedInputs(sort_descending, d_offsets_vec, keys_input, values_input);
+  generate_unsorted_derived_inputs(sort_descending, d_offsets_vec, keys_input, values_input);
 
   int keys_selector   = 0;
   int values_selector = 1;
@@ -1021,28 +1025,29 @@ void TestSegmentsDerived(const c2h::device_vector<int>& d_offsets_vec)
   ValueT* d_values_input     = thrust::raw_pointer_cast(values_input.data());
   ValueT* d_values_output    = thrust::raw_pointer_cast(values_output.data());
 
-  Sort(sort_descending,
-       sort_buffers,
-       stable_sort,
-       d_keys_input,
-       d_keys_output,
-       d_values_input,
-       d_values_output,
-       num_items,
-       num_segments,
-       d_begin_offsets,
-       d_end_offsets,
-       &keys_selector,
-       &values_selector);
+  call_cub_segmented_sort_api(
+    sort_descending,
+    sort_buffers,
+    stable_sort,
+    d_keys_input,
+    d_keys_output,
+    d_values_input,
+    d_values_output,
+    num_items,
+    num_segments,
+    d_begin_offsets,
+    d_end_offsets,
+    &keys_selector,
+    &values_selector);
 
   auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
   auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
-  ValidateSortedDerivedOutputs(sort_descending, d_offsets_vec, keys, values);
+  validate_sorted_derived_outputs(sort_descending, d_offsets_vec, keys, values);
 }
 
-// Uses fully random key/value pairs. Slower than TestSegmentsDerived.
+// Uses fully random key/value pairs. Slower than test_segments_derived.
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestSegmentsRandom(
+void test_segments_random(
   c2h::seed_t seed, //
   int num_items,
   int num_segments,
@@ -1074,7 +1079,7 @@ void TestSegmentsRandom(
 
   const bool sort_descending = GENERATE(ascending, descending);
 
-  GenerateUnsortedRandomInputs(seed, keys_input, values_input);
+  generate_random_unsorted_inputs(seed, keys_input, values_input);
 
   // Initialize the output values to the inputs so unused segments will be filled with the expected random values:
   keys_output   = keys_input;
@@ -1104,7 +1109,7 @@ void TestSegmentsRandom(
 
   C2H_TIME_SECTION("Clone input arrays on device");
 
-  HostSortRandomInputs(
+  host_sort_random_inputs(
     sort_descending,
     num_segments,
     thrust::raw_pointer_cast(h_begin_offsets.data()),
@@ -1155,35 +1160,36 @@ void TestSegmentsRandom(
       ValueT* d_values_input  = thrust::raw_pointer_cast(values_input.data());
       ValueT* d_values_output = thrust::raw_pointer_cast(values_output.data());
 
-      Sort(sort_descending,
-           sort_buffers,
-           stable_sort,
-           d_keys_input,
-           d_keys_output,
-           d_values_input,
-           d_values_output,
-           num_items,
-           num_segments,
-           d_begin_offsets,
-           d_end_offsets,
-           &keys_selector,
-           &values_selector);
+      call_cub_segmented_sort_api(
+        sort_descending,
+        sort_buffers,
+        stable_sort,
+        d_keys_input,
+        d_keys_output,
+        d_values_input,
+        d_values_output,
+        num_items,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        &keys_selector,
+        &values_selector);
 
       need_reset         = true;
       const auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
       const auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
-      ValidateSortedRandomOutputs(keys_ref, keys, values_ref, values);
+      validate_sorted_random_outputs(keys_ref, keys, values_ref, values);
     }
   }
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestSegmentsRandom(c2h::seed_t seed, const c2h::device_vector<int>& d_offsets_vec)
+void test_segments_random(c2h::seed_t seed, const c2h::device_vector<int>& d_offsets_vec)
 {
   const int num_items    = d_offsets_vec.back();
   const int num_segments = static_cast<int>(d_offsets_vec.size() - 1);
 
-  TestSegmentsRandom<KeyT, ValueT>(
+  test_segments_random<KeyT, ValueT>(
     seed, //
     num_items,
     num_segments,
@@ -1194,14 +1200,14 @@ void TestSegmentsRandom(c2h::seed_t seed, const c2h::device_vector<int>& d_offse
 ///////////////////////////////////////////////////////////////////////////////
 // Offset generators
 
-inline c2h::device_vector<int> GenerateSameSizeOffsets(int segment_size, int num_segments)
+inline c2h::device_vector<int> generate_same_size_offsets(int segment_size, int num_segments)
 {
   c2h::device_vector<int> offsets(num_segments + 1);
   thrust::sequence(c2h::device_policy, offsets.begin(), offsets.end(), int{}, segment_size);
   return offsets;
 }
 
-struct OffsetScanOpT
+struct offset_scan_op_t
 {
   int max_items;
 
@@ -1212,9 +1218,10 @@ struct OffsetScanOpT
   }
 };
 
-inline c2h::device_vector<int> GenerateRandomOffsets(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
+inline c2h::device_vector<int>
+generate_random_offsets(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
-  C2H_TIME_SCOPE("GenerateRandomOffsets");
+  C2H_TIME_SCOPE("generate_random_offsets");
   const int expected_segment_length = cub::DivideAndRoundUp(max_items, num_segments);
   const int max_segment_length      = CUB_MIN(max_segment, (expected_segment_length * 2) + 1);
 
@@ -1227,12 +1234,12 @@ inline c2h::device_vector<int> GenerateRandomOffsets(c2h::seed_t seed, int max_i
     offsets.cend(),
     offsets.begin(),
     0,
-    OffsetScanOpT{max_items});
+    offset_scan_op_t{max_items});
 
   return offsets;
 }
 
-struct GenerateEdgeCaseOffsetsDispatch
+struct generate_edge_case_offsets_dispatch
 {
   // Edge cases that needs to be tested
   static constexpr int empty_short_circuit_segment_size = 0;
@@ -1268,7 +1275,7 @@ struct GenerateEdgeCaseOffsetsDispatch
     return cudaSuccess;
   }
 
-  c2h::device_vector<int> GenerateOffsets() const
+  c2h::device_vector<int> generate_offsets() const
   {
     c2h::host_vector<int> h_offsets;
 
@@ -1307,32 +1314,32 @@ struct GenerateEdgeCaseOffsetsDispatch
 };
 
 template <typename KeyT, typename ValueT>
-c2h::device_vector<int> GenerateEdgeCaseOffsets()
+c2h::device_vector<int> generate_edge_case_offsets()
 {
-  C2H_TIME_SCOPE("GenerateEdgeCaseOffsets");
+  C2H_TIME_SCOPE("generate_edge_case_offsets");
 
   using MaxPolicyT = typename cub::DeviceSegmentedSortPolicy<KeyT, ValueT>::MaxPolicy;
 
   int ptx_version = 0;
   REQUIRE(cudaSuccess == CubDebug(cub::PtxVersion(ptx_version)));
 
-  GenerateEdgeCaseOffsetsDispatch dispatch;
+  generate_edge_case_offsets_dispatch dispatch;
   REQUIRE(cudaSuccess == CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch)));
 
-  return dispatch.GenerateOffsets();
+  return dispatch.generate_offsets();
 }
 
 // Returns num_items
-inline int GenerateUnspecifiedSegmentsOffsets(
+inline int generate_unspecified_segments_offsets(
   c2h::seed_t seed, c2h::device_vector<int>& d_begin_offsets, c2h::device_vector<int>& d_end_offsets)
 {
-  C2H_TIME_SCOPE("GenerateUnspecifiedSegmentsOffsets");
+  C2H_TIME_SCOPE("generate_unspecified_segments_offsets");
 
   const int max_items        = 1 << 18;
   const int max_segment_size = 1000;
   const int num_segments     = 4000;
 
-  d_begin_offsets = GenerateRandomOffsets(seed, max_items, max_segment_size, num_segments);
+  d_begin_offsets = generate_random_offsets(seed, max_items, max_segment_size, num_segments);
   d_end_offsets.resize(num_segments);
 
   // Skip the first offset -- it's always 0 at this point (exclusive_scan generates begin offsets, end offsets are
@@ -1363,49 +1370,49 @@ inline int GenerateUnspecifiedSegmentsOffsets(
 // Entry points
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestSameSizeSegmentsDerived(int segment_size, int num_segments)
+void test_same_size_segments_derived(int segment_size, int num_segments)
 {
   CAPTURE(segment_size, num_segments);
-  c2h::device_vector<int> offsets = GenerateSameSizeOffsets(segment_size, num_segments);
-  TestSegmentsDerived<KeyT, ValueT>(offsets);
+  c2h::device_vector<int> offsets = generate_same_size_offsets(segment_size, num_segments);
+  test_segments_derived<KeyT, ValueT>(offsets);
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestRandomSizeSegmentsDerived(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
+void test_random_size_segments_derived(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = GenerateRandomOffsets(seed, max_items, max_segment, num_segments);
-  TestSegmentsDerived<KeyT, ValueT>(offsets);
+  c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
+  test_segments_derived<KeyT, ValueT>(offsets);
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestRandomSizeSegmentsRandom(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
+void test_random_size_segments_random(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = GenerateRandomOffsets(seed, max_items, max_segment, num_segments);
-  TestSegmentsRandom<KeyT, ValueT>(seed, offsets);
+  c2h::device_vector<int> offsets = generate_random_offsets(seed, max_items, max_segment, num_segments);
+  test_segments_random<KeyT, ValueT>(seed, offsets);
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestEdgeCaseSegmentsRandom(c2h::seed_t seed)
+void test_edge_case_segments_random(c2h::seed_t seed)
 {
   CAPTURE(seed.get());
-  c2h::device_vector<int> offsets = GenerateEdgeCaseOffsets<KeyT, ValueT>();
-  TestSegmentsRandom<KeyT, ValueT>(seed, offsets);
+  c2h::device_vector<int> offsets = generate_edge_case_offsets<KeyT, ValueT>();
+  test_segments_random<KeyT, ValueT>(seed, offsets);
 }
 
 template <typename KeyT, typename ValueT = cub::NullType>
-void TestUnspecifiedSegmentsRandom(c2h::seed_t seed)
+void test_unspecified_segments_random(c2h::seed_t seed)
 {
   CAPTURE(seed.get());
 
   c2h::device_vector<int> d_begin_offsets;
   c2h::device_vector<int> d_end_offsets;
-  const int num_items = GenerateUnspecifiedSegmentsOffsets(seed, d_begin_offsets, d_end_offsets);
+  const int num_items = generate_unspecified_segments_offsets(seed, d_begin_offsets, d_end_offsets);
 
   const int num_segments = static_cast<int>(d_begin_offsets.size());
 
-  TestSegmentsRandom<KeyT, ValueT>(
+  test_segments_random<KeyT, ValueT>(
     seed,
     num_items,
     num_segments,

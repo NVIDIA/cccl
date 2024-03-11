@@ -62,18 +62,19 @@ CUB_TEST("DeviceSegmentedSortKeys: No segments", "[keys][segmented][sort][device
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  Sort(sort_descending,
-       sort_buffer,
-       stable_sort,
-       static_cast<KeyT*>(nullptr),
-       static_cast<KeyT*>(nullptr),
-       static_cast<cub::NullType*>(nullptr),
-       static_cast<cub::NullType*>(nullptr),
-       int{},
-       int{},
-       nullptr,
-       &keys_buffer.selector,
-       &values_buffer.selector);
+  call_cub_segmented_sort_api(
+    sort_descending,
+    sort_buffer,
+    stable_sort,
+    static_cast<KeyT*>(nullptr),
+    static_cast<KeyT*>(nullptr),
+    static_cast<cub::NullType*>(nullptr),
+    static_cast<cub::NullType*>(nullptr),
+    int{},
+    int{},
+    nullptr,
+    &keys_buffer.selector,
+    &values_buffer.selector);
 
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
@@ -98,18 +99,19 @@ CUB_TEST("DeviceSegmentedSortKeys: Empty segments", "[keys][segmented][sort][dev
   cub::DoubleBuffer<cub::NullType> values_buffer(nullptr, nullptr);
   values_buffer.selector = 1;
 
-  Sort(sort_descending,
-       sort_buffer,
-       sort_stable,
-       static_cast<KeyT*>(nullptr),
-       static_cast<KeyT*>(nullptr),
-       static_cast<cub::NullType*>(nullptr),
-       static_cast<cub::NullType*>(nullptr),
-       int{},
-       num_segments,
-       d_offsets,
-       &keys_buffer.selector,
-       &values_buffer.selector);
+  call_cub_segmented_sort_api(
+    sort_descending,
+    sort_buffer,
+    sort_stable,
+    static_cast<KeyT*>(nullptr),
+    static_cast<KeyT*>(nullptr),
+    static_cast<cub::NullType*>(nullptr),
+    static_cast<cub::NullType*>(nullptr),
+    int{},
+    num_segments,
+    d_offsets,
+    &keys_buffer.selector,
+    &values_buffer.selector);
 
   REQUIRE(keys_buffer.selector == 0);
   REQUIRE(values_buffer.selector == 1);
@@ -127,7 +129,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Same size segments, derived keys", "[keys][se
   const int segments = GENERATE_COPY(take(2, random(1 << 0, 1 << 5)), //
                                      take(2, random(1 << 5, 1 << 10)));
 
-  TestSameSizeSegmentsDerived<KeyT>(segment_size, segments);
+  test_same_size_segments_derived<KeyT>(segment_size, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys", "[keys][segmented][sort][device]", key_types)
@@ -143,7 +145,7 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, derived keys", "[key
     take(2, random(1 << 10, 1 << 15)),
     take(2, random(1 << 15, 1 << 20)));
 
-  TestRandomSizeSegmentsDerived<KeyT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_derived<KeyT>(CUB_SEED(1), max_items, max_segment, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys", "[keys][segmented][sort][device]", key_types)
@@ -155,17 +157,17 @@ CUB_TEST("DeviceSegmentedSortKeys: Randomly sized segments, random keys", "[keys
 
   const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
 
-  TestRandomSizeSegmentsRandom<KeyT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_random<KeyT>(CUB_SEED(1), max_items, max_segment, segments);
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Edge case segments, random keys", "[keys][segmented][sort][device]", key_types)
 {
   using KeyT = c2h::get<0, TestType>;
-  TestEdgeCaseSegmentsRandom<KeyT>(CUB_SEED(4));
+  test_edge_case_segments_random<KeyT>(CUB_SEED(4));
 }
 
 CUB_TEST("DeviceSegmentedSortKeys: Unspecified segments, random keys", "[keys][segmented][sort][device]", key_types)
 {
   using KeyT = c2h::get<0, TestType>;
-  TestUnspecifiedSegmentsRandom<KeyT>(CUB_SEED(4));
+  test_unspecified_segments_random<KeyT>(CUB_SEED(4));
 }
