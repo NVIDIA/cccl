@@ -688,7 +688,7 @@ namespace __reduce_by_key {
         }
 
         key_type tile_pred_key = (threadIdx.x == 0)
-                                     ? keys_load_it[tile_offset - 1]
+                                     ? key_type(keys_load_it[tile_offset - 1])
                                      : key_type();
 
         sync_threadblock();
