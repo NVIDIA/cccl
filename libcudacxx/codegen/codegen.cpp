@@ -70,7 +70,7 @@ int main() {
         { "bitwise", std::map<std::string, std::string>{ { "", ".b" } } },
         { "arithmetic", std::map<std::string, std::string>{ { "u", ".u" }, { "s", ".s" }, { "f", ".f" } } } };
 
-    std::vector<std::string> cv_qualifier{ "volatile "/*, ""*/ };
+    std::vector<std::string> cv_qualifier{ "volatile ", "" };
 
     std::ofstream out("atomic_cuda_generated.h");
 
