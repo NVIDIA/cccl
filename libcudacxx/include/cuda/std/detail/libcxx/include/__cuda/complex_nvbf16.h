@@ -196,12 +196,12 @@ _CCCL_DIAG_POP
   }
 };
 
-inline complex<float>::complex(const complex<__nv_bfloat16>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(__c.real())
     , __im_(__c.imag())
 {}
 
-inline complex<double>::complex(const complex<__nv_bfloat16>& __c)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__nv_bfloat16>& __c)
     : __re_(__c.real())
     , __im_(__c.imag())
 {}
