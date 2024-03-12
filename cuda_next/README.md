@@ -1,6 +1,6 @@
 ## CUDA Next: Library for experimental features in CUDA C++ Core Libraries.
 CUDA Next serves as a distribution channel for features that are considered experimental in the CUDA C++ Core Libraries.
-Some of them are still activelly designed or developed and their API is evolving.
+Some of them are still actively designed or developed and their API is evolving.
 Some of them are specific to one hardware architecture and are still looking for a generic and forward compatible exposure.
 Finally, some of them need to prove useful enough to deserve long term support.
 
