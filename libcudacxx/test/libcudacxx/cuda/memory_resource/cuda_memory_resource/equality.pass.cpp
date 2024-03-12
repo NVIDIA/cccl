@@ -72,19 +72,25 @@ void test() {
     assert(!(first != second));
   }
 
-  { // comparison against a cuda_memory_resource wrapped inside a resource_ref
+  { // comparison against a cuda_memory_resource wrapped inside a resource_ref<device_accessible>
     cuda::mr::cuda_memory_resource second{};
-    assert(first ==
-           cuda::mr::resource_ref<cuda::mr::device_accessible>{second});
-    assert(!(first !=
-             cuda::mr::resource_ref<cuda::mr::device_accessible>{second}));
-    assert(cuda::mr::resource_ref<cuda::mr::device_accessible>{second} ==
-           first);
-    assert(!(cuda::mr::resource_ref<cuda::mr::device_accessible>{second} !=
-             first));
+    cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
   }
 
-  { // comparison against a different resource through resource_ref
+  { // comparison against a cuda_memory_resource wrapped inside a resource_ref<>
+    cuda::mr::cuda_memory_resource second{};
+    cuda::mr::resource_ref<> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
+  }
+
+  { // comparison against a different resource
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     assert(!(first == host_resource));
@@ -101,13 +107,15 @@ void test() {
   { // comparison against a different resource through resource_ref
     async_resource<AccessibilityType::Host> host_async_resource{};
     async_resource<AccessibilityType::Device> device_async_resource{};
-    assert(!(first == host_async_resource));
-    assert(first != host_async_resource);
+    cuda::mr::resource_ref<> host_ref{host_async_resource};
+    cuda::mr::resource_ref<> device_ref{device_async_resource};
+    assert(!(first == host_ref));
+    assert(first != host_ref);
     assert(!(first == device_async_resource));
     assert(first != device_async_resource);
 
-    assert(!(host_async_resource == first));
-    assert(host_async_resource != first);
+    assert(!(host_ref == first));
+    assert(host_ref != first);
     assert(!(device_async_resource == first));
     assert(device_async_resource != first);
   }

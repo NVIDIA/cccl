@@ -42,23 +42,22 @@ struct cuda_memory_resource
   /**
    * @brief Allocate device memory of size at least \p __bytes.
    * @param __bytes The size in bytes of the allocation.
-   * @param __alignment The requested alignment of the allocation. Is ignored!
+   * @param __alignment The requested alignment of the allocation.
+   * @throw cuda::cuda_error of the returned error code
    * @return void* Pointer to the newly allocated memory
    */
-  void* allocate(const size_t __bytes, const size_t __alignment) const
+  void* allocate(const size_t __bytes, const size_t __alignment = __default_cuda_malloc_alignment) const
   {
-    _LIBCUDACXX_ASSERT(__alignment <= 256 && (256 % __alignment == 0),
-                       "cuda_memory_resource::allocate invalid alignment");
-    return allocate(__bytes);
-  }
+    // We need to ensure that the provided alignment matches the minimal provided alignment
+    if (__alignment <= __default_cuda_malloc_alignment || (__alignment % __default_cuda_malloc_alignment != 0))
+    {
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+      throw ::cuda::cuda_error{cudaErrorInvalidValue, "Invalid alignment passed to cuda_memory_resource::allocate."};
+#  else
+      _LIBCUDACXX_UNREACHABLE();
+#  endif
+    }
 
-  /**
-   * @brief Allocate device memory of size at least \p __bytes.
-   * @param __bytes The size in bytes of the allocation.
-   * @return void* Pointer to the newly allocated memory
-   */
-  void* allocate(const size_t __bytes) const
-  {
     void* __ptr{nullptr};
     const ::cudaError_t __status = ::cudaMalloc(&__ptr, __bytes);
     switch (__status)
@@ -68,7 +67,7 @@ struct cuda_memory_resource
       default:
         ::cudaGetLastError(); // Clear CUDA error state
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
-        throw cuda::cuda_error{__status, "Failed to allocate memory with cudaMalloc."};
+        throw ::cuda::cuda_error{__status, "Failed to allocate memory with cudaMalloc."};
 #  else
         _LIBCUDACXX_UNREACHABLE();
 #  endif
@@ -77,31 +76,23 @@ struct cuda_memory_resource
 
   /**
    * @brief Deallocate memory pointed to by \p __ptr.
-   * @param __ptr Pointer to be deallocated
-   * @param __bytes The size in bytes of the allocation.
-   * @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr. Is ignored!
+   * @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
+   * @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
+   * @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
    */
-  void deallocate(void* __ptr, const size_t __bytes, const size_t __alignment) const
+  void deallocate(void* __ptr, const size_t __bytes, const size_t __alignment = __default_cuda_malloc_alignment) const
   {
-    _LIBCUDACXX_ASSERT(__alignment <= 256 && (256 % __alignment == 0),
-                       "cuda_memory_resource::deallocate invalid alignment");
-    deallocate(__ptr, __bytes);
-  }
-
-  /**
-   * @brief Deallocate memory pointed to by \p __ptr.
-   * @param __ptr Pointer to be deallocated
-   * @param __bytes The size in bytes of the allocation.
-   */
-  void deallocate(void* __ptr, size_t) const
-  {
+    // We need to ensure that the provided alignment matches the minimal provided alignment
+    _LIBCUDACXX_ASSERT(
+      __default_cuda_malloc_alignment <= __alignment && (__alignment % __default_cuda_malloc_alignment == 0),
+      "Invalid alignment passed to cuda_memory_resource::deallocate.");
     const ::cudaError_t __status = ::cudaFree(__ptr);
-    (void)__status;
+    (void) __status;
     _LIBCUDACXX_ASSERT(__status == cudaSuccess, "cuda_memory_resource::deallocate failed");
   }
 
   /**
-   * @brief Equality comparison operator between two cuda_memory_resource's
+   * @brief Equality comparison with another cuda_memory_resource
    * @return true
    */
   _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr bool operator==(cuda_memory_resource const&) const noexcept
@@ -110,7 +101,7 @@ struct cuda_memory_resource
   }
 #  if _CCCL_STD_VER <= 2017
   /**
-   * @brief Inequality comparison operator between two cuda_memory_resource's
+   * @brief Inequality comparison with another cuda_memory_resource
    * @return false
    */
   _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr bool operator!=(cuda_memory_resource const&) const noexcept
@@ -120,82 +111,50 @@ struct cuda_memory_resource
 #  endif // _CCCL_STD_VER <= 2017
 
   /**
-   * @brief Equality comparison operator between a cuda_memory_resource and a device_accessible resource
+   * @brief Equality comparison between a cuda_memory_resource and another resource
+   *
+   * We want to ensure that we can compare any cuda_memory_resource too a resource_ref that holds a cuda_memory_resource
+   * Therefore, we convert both to a resource_ref<> which is the lowest common denominator. The resource_ref<>
+   * internally checks whether both resources are of the same kind and if so returns the comparison of the two.
+   * Otherwise, the comparison will always return false, which is what we want for any other memory resource.
    *
    * @param __lhs The cuda_memory_resource
    * @param __rhs The resource to compare to
-   * @return false
+   * @return Comparison of both resources converted to a resource_ref<>
    */
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>)
-                         _LIBCUDACXX_AND resource<_Resource> _LIBCUDACXX_AND has_property<_Resource, device_accessible>)
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+  template <class _Resource>
+  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
-    return resource_ref<device_accessible>{const_cast<cuda_memory_resource&>(__lhs)}
-        == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #  if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>)
-                         _LIBCUDACXX_AND resource<_Resource> _LIBCUDACXX_AND has_property<_Resource, device_accessible>)
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
-  {
-    return resource_ref<device_accessible>{const_cast<cuda_memory_resource&>(__lhs)}
-        == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>)
-                         _LIBCUDACXX_AND resource<_Resource> _LIBCUDACXX_AND has_property<_Resource, device_accessible>)
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-  {
-    return resource_ref<device_accessible>{const_cast<cuda_memory_resource&>(__lhs)}
-        != resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>)
-                         _LIBCUDACXX_AND resource<_Resource> _LIBCUDACXX_AND has_property<_Resource, device_accessible>)
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
-  {
-    return resource_ref<device_accessible>{const_cast<cuda_memory_resource&>(__lhs)}
-        != resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-#  endif // _CCCL_STD_VER <= 2017
-
   /**
-   * @brief Equality comparison operator between a cuda_memory_resource and an arbitrary resource
-   *
-   * @param __lhs The cuda_memory_resource
-   * @param __rhs The resource to compare to
-   * @return false
+   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
    */
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>) _LIBCUDACXX_AND resource<_Resource>
-                         _LIBCUDACXX_AND(!has_property<_Resource, device_accessible>))
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator==(cuda_memory_resource const&, _Resource const&) noexcept
+  template <class _Resource>
+  _LIBCUDACXX_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
-    return false;
+    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-#  if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>) _LIBCUDACXX_AND resource<_Resource>
-                         _LIBCUDACXX_AND(!has_property<_Resource, device_accessible>))
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator==(_Resource const&, cuda_memory_resource const&) noexcept
+  /**
+   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
+   */
+  template <class _Resource>
+  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
-    return false;
+    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>) _LIBCUDACXX_AND resource<_Resource>
-                         _LIBCUDACXX_AND(!has_property<_Resource, device_accessible>))
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator!=(cuda_memory_resource const&, _Resource const&) noexcept
+  /**
+   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
+   */
+  template <class _Resource>
+  _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<cuda_memory_resource, _Resource>)
   {
-    return true;
-  }
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_Resource, cuda_memory_resource>) _LIBCUDACXX_AND resource<_Resource>
-                         _LIBCUDACXX_AND(!has_property<_Resource, device_accessible>))
-  _LIBCUDACXX_NODISCARD_FRIEND bool operator!=(_Resource const&, cuda_memory_resource const&) noexcept
-  {
-    return true;
+    return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
 #  endif // _CCCL_STD_VER <= 2017
 

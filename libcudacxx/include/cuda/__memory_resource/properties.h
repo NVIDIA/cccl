@@ -25,6 +25,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
+/**
+ * @brief The default alignment by a cudaMalloc{...} call
+ */
+_LIBCUDACXX_INLINE_VAR constexpr size_t __default_cuda_malloc_alignment = 256;
+
 /// \struct device_accessible
 /// \brief The \c device_accessible property signals that the allocated memory is device accessible
 struct device_accessible

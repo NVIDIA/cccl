@@ -16,6 +16,8 @@
 #include <cuda/std/cstdint>
 #include <cuda/stream_ref>
 
+#include "test_macros.h"
+
 void ensure_device_ptr(void* ptr) {
     assert(ptr != nullptr);
     cudaPointerAttributes attributes;
@@ -36,12 +38,36 @@ void test() {
   }
 
   { // allocate / deallocate with alignment
-    auto* ptr = res.allocate(42, 4);
+    auto* ptr = res.allocate(42, 256);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
     ensure_device_ptr(ptr);
 
-    res.deallocate(ptr, 42, 4);
+    res.deallocate(ptr, 42, 256);
   }
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  { // allocate with too small alignment
+    while(true) {
+      try {
+        auto* ptr = res.allocate(5, 42);
+      } catch(const cuda::error&) {
+        break;
+      }
+      assert(false);
+    }
+  }
+
+  { // allocate with non matching alignment
+    while(true) {
+      try {
+        auto* ptr = res.allocate(5, 1337);
+      } catch(const cuda::error&) {
+        break;
+      }
+      assert(false);
+    }
+  }
+#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
 int main(int, char**) {
