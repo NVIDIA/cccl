@@ -210,22 +210,22 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 
 // We have performance issues with some trigonometric functions with __half
 template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x.real(), __x.imag()})};
 }
 template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x.real(), __x.imag()})};
 }
 template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x.real(), __x.imag()})};
 }
 template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
 {
   return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
 }
