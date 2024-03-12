@@ -1871,6 +1871,52 @@ tan(const complex<_Tp>& __x)
     return complex<_Tp>(__z.imag(), -__z.real());
 }
 
+// We have performance issues with some trigonometric functions with __half / __nv_bfloat16
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
+{
+    return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
+{
+    return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
+{
+    return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
+{
+    return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVFP16
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+{
+    return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+{
+    return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+{
+    return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+{
+    return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
+}
+#endif // _LIBCUDACXX_HAS_NVBF16
+
 #ifndef __cuda_std__
 #if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
 template<class _Tp, class _CharT, class _Traits>
