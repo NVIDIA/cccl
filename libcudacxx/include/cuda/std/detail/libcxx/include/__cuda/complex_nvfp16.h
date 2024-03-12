@@ -40,16 +40,17 @@ template <>
 struct __is_nvfp16<__half> : true_type
 {};
 
-template<>
-struct __type_to_vector<__half> {
-    using __type = __half2;
+template <>
+struct __type_to_vector<__half>
+{
+  using __type = __half2;
 };
 
 template <>
 struct __libcpp_complex_overload_traits<__half, false, false>
 {
-    typedef __half _ValueType;
-    typedef complex<__half> _ComplexType;
+  typedef __half _ValueType;
+  typedef complex<__half> _ComplexType;
 };
 
 template <>
@@ -67,11 +68,23 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(_Int __re = _Int(), _Int __im = _Int())
       : __repr(__re, __im)
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c);
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c);
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
+
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
 #  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c);
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
 #  endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+
+_CCCL_DIAG_POP
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
@@ -180,9 +193,41 @@ public:
   }
 };
 
+inline complex<float>::complex(const complex<__half>& __c)
+    : __re_(__c.real())
+    , __im_(__c.imag())
+{}
+
+inline complex<double>::complex(const complex<__half>& __c)
+    : __re_(__c.real())
+    , __im_(__c.imag())
+{}
+
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {
   return _CUDA_VSTD::atan2f(__half(0), __re);
+}
+
+// We have performance issues with some trigonometric functions with __half
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
+{
+  return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
+{
+  return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
+{
+  return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
+{
+  return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

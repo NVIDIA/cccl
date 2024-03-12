@@ -449,18 +449,6 @@ template<> class complex<double>;
 template<> class complex<long double>;
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
-_LIBCUDACXX_END_NAMESPACE_STD
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
-#include "__cuda/complex_nvfp16.h"
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#ifdef _LIBCUDACXX_HAS_NVBF16
-#include "__cuda/complex_nvbf16.h"
-#endif // _LIBCUDACXX_HAS_NVBF16
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 template<>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(2*sizeof(float)) complex<float>
 {
@@ -472,12 +460,10 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(float __re = 0.0f, float __im = 0.0f)
         : __re_(__re), __im_(__im) {}
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
-        : __re_(__c.real()), __im_(__c.imag()) {}
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c);
 #endif // _LIBCUDACXX_HAS_NVFP16
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
-        : __re_(__c.real()), __im_(__c.imag()) {}
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c);
 #endif // _LIBCUDACXX_HAS_NVBF16
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -578,12 +564,10 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(double __re = 0.0, double __im = 0.0)
         : __re_(__re), __im_(__im) {}
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c)
-        : __re_(__c.real()), __im_(__c.imag()) {}
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c);
 #endif // _LIBCUDACXX_HAS_NVFP16
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c)
-        : __re_(__c.real()), __im_(__c.imag()) {}
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c);
 #endif // _LIBCUDACXX_HAS_NVBF16
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -799,32 +783,6 @@ inline constexpr
 complex<long double>::complex(const complex<double>& __c)
     : __re_(__c.real()), __im_(__c.imag()) {}
 #endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-inline complex<__half>::complex(const complex<double>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-
-inline complex<__half>::complex(const complex<float>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-inline complex<__half>::complex(const complex<long double>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-inline complex<__nv_bfloat16>::complex(const complex<double>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-
-inline complex<__nv_bfloat16>::complex(const complex<float>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-inline complex<__nv_bfloat16>::complex(const complex<long double>& __c)
-    : __repr(__c.real(), __c.imag()) {}
-#endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-#endif // _LIBCUDACXX_HAS_NVBF16
 
 _CCCL_DIAG_POP
 
@@ -1871,52 +1829,6 @@ tan(const complex<_Tp>& __x)
     return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-// We have performance issues with some trigonometric functions with __half / __nv_bfloat16
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
-{
-    return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
-{
-    return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
-{
-    return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
-{
-    return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVFP16
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
-{
-    return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
-{
-    return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
-{
-    return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x})};
-}
-template <>
-_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
-{
-    return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
-}
-#endif // _LIBCUDACXX_HAS_NVBF16
-
 #ifndef __cuda_std__
 #if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
 template<class _Tp, class _CharT, class _Traits>
@@ -2076,6 +1988,14 @@ _CCCL_DIAG_POP
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#ifdef _LIBCUDACXX_HAS_NVFP16
+#include "__cuda/complex_nvfp16.h"
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#ifdef _LIBCUDACXX_HAS_NVBF16
+#include "__cuda/complex_nvbf16.h"
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG

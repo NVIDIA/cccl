@@ -43,16 +43,17 @@ template <>
 struct __is_nvbf16<__nv_bfloat16> : true_type
 {};
 
-template<>
-struct __type_to_vector<__nv_bfloat16> {
-    using __type = __nv_bfloat162;
+template <>
+struct __type_to_vector<__nv_bfloat16>
+{
+  using __type = __nv_bfloat162;
 };
 
 template <>
 struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 {
-    typedef __nv_bfloat16 _ValueType;
-    typedef complex<__nv_bfloat16> _ComplexType;
+  typedef __nv_bfloat16 _ValueType;
+  typedef complex<__nv_bfloat16> _ComplexType;
 };
 
 template <>
@@ -70,11 +71,23 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(_Int __re = _Int(), _Int __im = _Int())
       : __repr(__re, __im)
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c);
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c);
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
+
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
 #  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c);
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c)
+      : __repr(__c.real(), __c.imag())
+  {}
 #  endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
+
+_CCCL_DIAG_POP
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
@@ -183,9 +196,41 @@ public:
   }
 };
 
+inline complex<float>::complex(const complex<__nv_bfloat16>& __c)
+    : __re_(__c.real())
+    , __im_(__c.imag())
+{}
+
+inline complex<double>::complex(const complex<__nv_bfloat16>& __c)
+    : __re_(__c.real())
+    , __im_(__c.imag())
+{}
+
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
   return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
+}
+
+// We have performance issues with some trigonometric functions with __nv_bfloat16
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x.real(), __x.imag()})};
+}
+template <>
+_LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
+{
+  return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
