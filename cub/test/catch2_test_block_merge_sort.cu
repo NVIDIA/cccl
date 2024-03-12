@@ -40,14 +40,6 @@
 
 #include "catch2_test_helper.h"
 
-struct CustomLess
-{
-  template <typename DataType>
-  __device__ __host__ bool operator()(const DataType &lhs, const DataType &rhs)
-  {
-    return lhs < rhs;
-  }
-};
 
 template <int ThreadsInBlock,
           int ItemsPerThread,
@@ -140,6 +132,7 @@ __global__ void block_merge_sort_kernel(
   }
 }
 
+template <class CompareOp>
 struct stable_sort_keys_partial_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class DefaultT>
@@ -148,10 +141,11 @@ struct stable_sort_keys_partial_tile_t
                              int valid_items,
                              DefaultT oob_default) const
  {
-   sort.StableSort(thread_data, CustomLess{}, valid_items, oob_default);
+   sort.StableSort(thread_data, CompareOp{}, valid_items, oob_default);
  }
 };
 
+template <class CompareOp>
 struct stable_sort_pairs_partial_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
@@ -163,12 +157,13 @@ struct stable_sort_pairs_partial_tile_t
  {
    sort.StableSort(thread_keys,
                    thread_vals,
-                   CustomLess{},
+                   CompareOp{},
                    valid_items,
                    oob_default);
  }
 };
 
+template <class CompareOp>
 struct stable_sort_pairs_full_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
@@ -178,10 +173,11 @@ struct stable_sort_pairs_full_tile_t
                              int /* valid_items */,
                              DefaultT /* oob_default */) const
  {
-   sort.StableSort(thread_keys, thread_vals, CustomLess());
+   sort.StableSort(thread_keys, thread_vals, CompareOp{});
  }
 };
 
+template <class CompareOp>
 struct stable_sort_keys_full_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class DefaultT>
@@ -190,7 +186,7 @@ struct stable_sort_keys_full_tile_t
                              int /* valid_items */,
                              DefaultT /* oob_default */) const
  {
-   sort.StableSort(thread_keys, CustomLess());
+   sort.StableSort(thread_keys, CompareOp{});
  }
 };
 
@@ -271,11 +267,11 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
   std::stable_sort(
       thrust::raw_pointer_cast(h_reference.data()),
       thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-      CustomLess{});
+      cub::Less{});
 
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
     d_keys,
-    stable_sort_keys_partial_tile_t{});
+    stable_sort_keys_partial_tile_t<cub::Less>{});
 
   REQUIRE( h_reference == d_keys );
 }
@@ -297,11 +293,11 @@ CUB_TEST("Block merge sort can sort keys in full tiles",
   std::stable_sort(
       thrust::raw_pointer_cast(h_reference.data()),
       thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-      CustomLess{});
+      cub::Less{});
 
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
     d_keys,
-    stable_sort_keys_full_tile_t{});
+    stable_sort_keys_full_tile_t<cub::Less>{});
 
   REQUIRE( h_reference == d_keys );
 }
@@ -350,7 +346,7 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
     d_keys,
     d_vals,
-    stable_sort_pairs_partial_tile_t{});
+    stable_sort_pairs_partial_tile_t<cub::Less>{});
 
   REQUIRE( h_keys == d_keys );
   REQUIRE( h_vals == d_vals );
@@ -399,7 +395,7 @@ CUB_TEST("Block merge sort can sort pairs in full tiles",
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
     d_keys,
     d_vals,
-    stable_sort_pairs_full_tile_t{});
+    stable_sort_pairs_full_tile_t<cub::Less>{});
 
   REQUIRE( h_keys == d_keys );
   REQUIRE( h_vals == d_vals );
@@ -450,7 +446,7 @@ CUB_TEST("Block merge sort can sort pairs with mixed types",
   block_merge_sort<items_per_thread, threads_in_block>(
     d_keys,
     d_vals,
-    stable_sort_pairs_full_tile_t{});
+    stable_sort_pairs_full_tile_t<cub::Less>{});
 
   REQUIRE( h_keys == d_keys );
   REQUIRE( h_vals == d_vals );
@@ -479,11 +475,11 @@ CUB_TEST("Block merge sort can sort large tiles",
   std::stable_sort(
       thrust::raw_pointer_cast(h_reference.data()),
       thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-      CustomLess{});
+      cub::Less{});
 
   block_merge_sort<items_per_thread, threads_in_block>(
     d_keys,
-    stable_sort_keys_full_tile_t{});
+    stable_sort_keys_full_tile_t<cub::Less>{});
 
   REQUIRE( h_reference == d_keys );
 }
@@ -506,11 +502,60 @@ CUB_TEST("Block merge sort is stable",
   std::stable_sort(
       thrust::raw_pointer_cast(h_reference.data()),
       thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-      CustomLess{});
+      cub::Less{});
 
   block_merge_sort<items_per_thread, threads_in_block>(
     d_keys,
-    stable_sort_keys_full_tile_t{});
+    stable_sort_keys_full_tile_t<cub::Less>{});
 
   REQUIRE( h_reference == d_keys );
+}
+
+CUB_TEST("Block merge sort can sort pairs in descending order",
+         "[merge sort][block]",
+         key_types,
+         items_per_thread,
+         threads_in_block)
+{
+  using params = params_t<TestType>;
+  using key_t = typename params::key_t;
+  using value_t = key_t;
+  using pair_t = std::pair<key_t, value_t>;
+
+  c2h::device_vector<key_t> d_keys(params::tile_size);
+  c2h::device_vector<value_t> d_vals(d_keys.size());
+
+  c2h::gen(CUB_SEED(5), d_keys);
+  c2h::gen(CUB_SEED(5), d_vals);
+
+  c2h::host_vector<key_t> h_keys = d_keys;
+  c2h::host_vector<value_t> h_vals = d_vals;
+
+  c2h::host_vector<pair_t> h_ref(d_keys.size());
+
+  for (std::size_t idx = 0; idx < h_ref.size(); idx++)
+  {
+    h_ref[idx] = std::make_pair(h_keys[idx], h_vals[idx]);
+  }
+
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
+      [](pair_t l, pair_t r) -> bool {
+        return l.first > r.first;
+      });
+
+  for (std::size_t idx = 0; idx < h_ref.size(); idx++)
+  {
+    h_keys[idx] = h_ref[idx].first;
+    h_vals[idx] = h_ref[idx].second;
+  }
+
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(
+    d_keys,
+    d_vals,
+    stable_sort_pairs_full_tile_t<cub::Greater>{});
+
+  REQUIRE( h_keys == d_keys );
+  REQUIRE( h_vals == d_vals );
 }

@@ -25,37 +25,34 @@
  *
  ******************************************************************************/
 
-#include "test_util.h"
-#include "cub/thread/thread_sort.cuh"
-
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
-#include <thrust/random.h>
+#include <cuda/std/bit>
 
+#include "cub/thread/thread_operators.cuh"
+#include "cub/thread/thread_sort.cuh"
+#include "test_util.h"
 
-struct CustomLess
+struct PopcountLess
 {
   template <typename DataType>
-  __host__ __device__ bool operator()(DataType &lhs, DataType &rhs)
+  __host__ __device__ bool operator()(DataType& lhs, DataType& rhs)
   {
-    return lhs < rhs;
+    return cuda::std::popcount(lhs) < cuda::std::popcount(rhs);
   }
 };
 
-
-template <typename KeyT,
-          typename ValueT,
-          int ItemsPerThread>
-__global__ void kernel(const KeyT *keys_in,
-                       KeyT *keys_out,
-                       const ValueT *values_in,
-                       ValueT *values_out)
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
+__global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values_in, ValueT* values_out)
 {
+  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, cub::NullType>::value;
+
   KeyT thread_keys[ItemsPerThread];
-  KeyT thread_values[ItemsPerThread];
+  ValueT thread_values[ItemsPerThread];
 
   const auto thread_offset = ItemsPerThread * threadIdx.x;
   keys_in += thread_offset;
@@ -66,26 +63,32 @@ __global__ void kernel(const KeyT *keys_in,
   for (int item = 0; item < ItemsPerThread; item++)
   {
     thread_keys[item] = keys_in[item];
-    thread_values[item] = values_in[item];
+    if (!KEYS_ONLY)
+    {
+      thread_values[item] = values_in[item];
+    }
   }
 
-  cub::StableOddEvenSort(thread_keys, thread_values, CustomLess{});
+  cub::StableOddEvenSort(thread_keys, thread_values, CompareOp{});
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
     keys_out[item] = thread_keys[item];
-    values_out[item] = thread_values[item];
+    if (!KEYS_ONLY)
+    {
+      values_out[item] = thread_values[item];
+    }
   }
 }
 
-
-template <typename KeyT,
-          typename ValueT,
-          int ItemsPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
 void Test()
 {
+  constexpr bool KEYS_ONLY                = ::cuda::std::is_same<ValueT, cub::NullType>::value;
   constexpr unsigned int threads_in_block = 1024;
-  constexpr unsigned int elements = threads_in_block * ItemsPerThread;
+  constexpr unsigned int elements         = threads_in_block * ItemsPerThread;
+
+  using MaskedValueT = cub::detail::conditional_t< std::is_same<ValueT, cub::NullType>::value, KeyT, ValueT>;
 
   thrust::default_random_engine re;
   thrust::device_vector<std::uint8_t> data_source(elements);
@@ -98,53 +101,77 @@ void Test()
     thrust::device_vector<KeyT> out_keys(elements);
 
     thrust::shuffle(data_source.begin(), data_source.end(), re);
-    thrust::device_vector<ValueT> in_values(data_source);
-    thrust::device_vector<ValueT> out_values(elements);
+    thrust::device_vector<MaskedValueT> in_values(data_source);
+    thrust::device_vector<MaskedValueT> out_values(elements);
 
     thrust::host_vector<KeyT> host_keys(in_keys);
-    thrust::host_vector<ValueT> host_values(in_values);
+    thrust::host_vector<MaskedValueT> host_values(in_values);
 
-    kernel<KeyT, ValueT, ItemsPerThread><<<1, threads_in_block>>>(
-      thrust::raw_pointer_cast(in_keys.data()),
-      thrust::raw_pointer_cast(out_keys.data()),
-      thrust::raw_pointer_cast(in_values.data()),
-      thrust::raw_pointer_cast(out_values.data()));
+    if (KEYS_ONLY)
+    {
+      kernel<KeyT, ValueT, CompareOp, ItemsPerThread><<<1, threads_in_block>>>(
+        thrust::raw_pointer_cast(in_keys.data()),
+        thrust::raw_pointer_cast(out_keys.data()),
+        (ValueT*) nullptr,
+        (ValueT*) nullptr);
+    }
+    else
+    {
+      kernel<KeyT, MaskedValueT, CompareOp, ItemsPerThread><<<1, threads_in_block>>>(
+        thrust::raw_pointer_cast(in_keys.data()),
+        thrust::raw_pointer_cast(out_keys.data()),
+        thrust::raw_pointer_cast(in_values.data()),
+        thrust::raw_pointer_cast(out_values.data()));
+    }
 
     for (unsigned int tid = 0; tid < threads_in_block; tid++)
     {
       const auto thread_begin = tid * ItemsPerThread;
-      const auto thread_end = thread_begin + ItemsPerThread;
+      const auto thread_end   = thread_begin + ItemsPerThread;
 
-      thrust::sort_by_key(host_keys.begin() + thread_begin,
-                          host_keys.begin() + thread_end,
-                          host_values.begin() + thread_begin,
-                          CustomLess{});
+      if (KEYS_ONLY)
+      {
+        thrust::stable_sort(host_keys.begin() + thread_begin, host_keys.begin() + thread_end, CompareOp{});
+      }
+      else
+      {
+        thrust::stable_sort_by_key(
+          host_keys.begin() + thread_begin,
+          host_keys.begin() + thread_end,
+          host_values.begin() + thread_begin,
+          CompareOp{});
+      }
     }
 
     AssertEquals(host_keys, out_keys);
-    AssertEquals(host_values, out_values);
+    if (!KEYS_ONLY)
+    {
+      AssertEquals(host_values, out_values);
+    }
   }
 }
 
-
-template <typename KeyT,
-          typename ValueT>
+template <typename KeyT, typename ValueT, typename CompareOp>
 void Test()
 {
-  Test<KeyT, ValueT, 2>();
-  Test<KeyT, ValueT, 3>();
-  Test<KeyT, ValueT, 4>();
-  Test<KeyT, ValueT, 5>();
-  Test<KeyT, ValueT, 7>();
-  Test<KeyT, ValueT, 8>();
-  Test<KeyT, ValueT, 9>();
-  Test<KeyT, ValueT, 11>();
+  Test<KeyT, ValueT, CompareOp, 2>();
+  Test<KeyT, ValueT, CompareOp, 3>();
+  Test<KeyT, ValueT, CompareOp, 4>();
+  Test<KeyT, ValueT, CompareOp, 5>();
+  Test<KeyT, ValueT, CompareOp, 7>();
+  Test<KeyT, ValueT, CompareOp, 8>();
+  Test<KeyT, ValueT, CompareOp, 9>();
+  Test<KeyT, ValueT, CompareOp, 11>();
 }
 
 int main()
 {
-  Test<std::uint32_t, std::uint32_t>();
-  Test<std::uint32_t, std::uint64_t>();
+  Test<std::uint32_t, std::uint32_t, PopcountLess>();
+  Test<std::uint32_t, std::uint64_t, PopcountLess>();
+  Test<std::uint32_t, cub::NullType, cub::Less>();
+  Test<float, cub::NullType, cub::Less>();
+  Test<std::uint32_t, cub::NullType, cub::Greater>();
+  Test<float, cub::NullType, cub::Greater>();
 
   return 0;
 }

@@ -81,6 +81,8 @@ struct InequalityWrapper
 #if _CCCL_STD_VER > 2011
 using Equality = ::cuda::std::equal_to<>;
 using Inequality = ::cuda::std::not_equal_to<>;
+using Less = ::cuda::std::less<>;
+using Greater = ::cuda::std::greater<>;
 using Sum = ::cuda::std::plus<>;
 using Difference = ::cuda::std::minus<>;
 using Division = ::cuda::std::divides<>;
@@ -104,6 +106,28 @@ struct Inequality
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
   {
     return ::cuda::std::forward<T>(t) != ::cuda::std::forward<U>(u);
+  }
+};
+
+/// @brief Default less functor
+struct Less
+{
+  /// Boolean less operator, returns `t < u`
+  template <typename T, typename U>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
+  {
+    return ::cuda::std::forward<T>(t) < ::cuda::std::forward<U>(u);
+  }
+};
+
+/// @brief Default greater functor
+struct Greater
+{
+  /// Boolean greater operator, returns `t > u`
+  template <typename T, typename U>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
+  {
+    return ::cuda::std::forward<T>(t) > ::cuda::std::forward<U>(u);
   }
 };
 

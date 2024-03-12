@@ -244,7 +244,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -280,7 +281,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -317,7 +319,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -356,7 +359,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @tparam IS_LAST_TILE
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
@@ -518,7 +522,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -548,7 +553,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -589,7 +595,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @param[in,out] keys
    *   Keys to sort
@@ -633,7 +640,8 @@ public:
    *
    * @tparam CompareOp
    *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering].
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
    *
    * @tparam IS_LAST_TILE
    *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`

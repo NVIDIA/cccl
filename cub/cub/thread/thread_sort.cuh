@@ -37,25 +37,73 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
-
 template <typename T>
-_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T &lhs, T &rhs)
+_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 {
   T temp = lhs;
   lhs    = rhs;
   rhs    = temp;
 }
 
+template <typename KeyT>
+_CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwapMinMaxAsc(KeyT& key_lhs, KeyT& key_rhs)
+{
+  KeyT pair_min = (cub::min)(key_lhs, key_rhs);
+  KeyT pair_max = (cub::max)(key_lhs, key_rhs);
+  key_lhs       = pair_min;
+  key_rhs       = pair_max;
+}
+
+template <typename KeyT, typename ValueT, typename CompareOp>
+_CCCL_DEVICE _CCCL_FORCEINLINE void
+CompareSwap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, CompareOp compare_op)
+{
+  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+
+  if (compare_op(key_rhs, key_lhs))
+  {
+    Swap(key_lhs, key_rhs);
+    CUB_IF_CONSTEXPR(!KEYS_ONLY)
+    {
+      Swap(item_lhs, item_rhs);
+    }
+  }
+}
+
+#define SPECIALIZE_SORT_ASC(T)                                                            \
+  template <>                                                                             \
+  _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwap(                                        \
+    T& key_lhs, T& key_rhs, NullType& item_lhs, NullType& item_rhs, cub::Less compare_op) \
+  {                                                                                       \
+    CompareSwapMinMaxAsc(key_lhs, key_rhs);                                               \
+  }
+
+#define SPECIALIZE_SORT_DESC(T)                                                              \
+  template <>                                                                                \
+  _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwap(                                           \
+    T& key_lhs, T& key_rhs, NullType& item_lhs, NullType& item_rhs, cub::Greater compare_op) \
+  {                                                                                          \
+    CompareSwapMinMaxAsc(key_rhs, key_lhs);                                                  \
+  }
+
+SPECIALIZE_SORT_ASC(::cuda::std::int32_t)
+SPECIALIZE_SORT_ASC(::cuda::std::uint32_t)
+SPECIALIZE_SORT_ASC(float)
+SPECIALIZE_SORT_DESC(::cuda::std::int32_t)
+SPECIALIZE_SORT_DESC(::cuda::std::uint32_t)
+SPECIALIZE_SORT_DESC(float)
 
 /**
- * @brief Sorts data using odd-even sort method
+ * @brief Sorts data using odd-even transposition sort method
  *
  * The sorting method is stable. Further details can be found in:
  * A. Nico Habermann. Parallel neighbor sort (or the glory of the induction
@@ -83,34 +131,19 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T &lhs, T &rhs)
  *   Comparison function object which returns true if the first argument is
  *   ordered before the second
  */
-template <typename KeyT,
-          typename ValueT,
-          typename CompareOp,
-          int ITEMS_PER_THREAD>
+template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THREAD>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD],
-                  ValueT (&items)[ITEMS_PER_THREAD],
-                  CompareOp compare_op)
+StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
-
-  #pragma unroll
+#pragma unroll
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)
   {
-  #pragma unroll
+#pragma unroll
     for (int j = 1 & i; j < ITEMS_PER_THREAD - 1; j += 2)
     {
-      if (compare_op(keys[j + 1], keys[j]))
-      {
-        Swap(keys[j], keys[j + 1]);
-        if (!KEYS_ONLY)
-        {
-          Swap(items[j], items[j + 1]);
-        }
-      }
+      CompareSwap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
     } // inner loop
-  }   // outer loop
+  } // outer loop
 }
-
 
 CUB_NAMESPACE_END
