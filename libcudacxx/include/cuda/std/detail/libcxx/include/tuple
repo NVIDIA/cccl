@@ -197,6 +197,10 @@ template <class... Types>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template<class>
+struct  __is_tuple_of_iterator_references : false_type
+{};
+
 // __tuple_leaf
 struct __tuple_leaf_default_constructor_tag {};
 
@@ -851,6 +855,15 @@ public:
               _Tp...>::template __tuple_like_constraints<_Tuple>,
           __invalid_tuple_constraints>;
 
+  // Horrible hack to make tuple_of_iterator_references work
+  template <class _TupleOfIteratorReferences,
+            __enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
+            __enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 tuple(_TupleOfIteratorReferences&& __t)
+      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t).template __to_tuple<_Tp...>(
+        __make_tuple_indices_t<sizeof...(_Tp)>()))
+  {}
+
   template <
       class _Tuple, class _Constraints = __tuple_like_constraints<_Tuple>,
       __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
@@ -1093,11 +1106,7 @@ template <class _Up> struct __ignore_t {
 };
 
 namespace {
-#ifdef __CUDA_ARCH__
-static
-#endif
-    _LIBCUDACXX_INLINE_VAR constexpr __ignore_t<unsigned char>
-        ignore = __ignore_t<unsigned char>();
+  _LIBCUDACXX_CPO_ACCESSIBILITY __ignore_t<unsigned char> ignore{};
 } // namespace
 
 template <class... _Tp>

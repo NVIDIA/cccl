@@ -522,7 +522,7 @@ template<typename T1, typename T2, typename Enable = void> struct promoted_numer
 
 template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_floating_point<T1>::type, typename is_floating_point<T2>::type>
+  <typename is_floating_point<T1>::type,typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef typename larger_type<T1,T2>::type type;
@@ -530,7 +530,7 @@ template<typename T1, typename T2>
 
 template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_integral<T1>::type, typename is_floating_point<T2>::type>
+  <typename is_integral<T1>::type,typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef T2 type;
@@ -543,13 +543,6 @@ template<typename T1, typename T2>
   {
   typedef T1 type;
   };
-
-template<typename T1, typename T2, typename = void>
-struct has_promoted_numerical_type : public false_type {};
-
-template<typename T1, typename T2>
-struct has_promoted_numerical_type<T1, T2, ::cuda::std::__void_t<typename promoted_numerical_type<T1, T2>::type>>
-  : public true_type {};
 
 template<typename T>
   struct is_empty_helper : public T

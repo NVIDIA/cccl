@@ -6,7 +6,7 @@ ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
 
 RUN apt-get -y -qq update; \
     apt-get -y -qq upgrade; \
-    apt-get -y -qq install doxygen unzip wget
+    apt-get -y -qq install doxygen unzip wget git
 
 RUN mkdir -p /opt/doxybook2; \
     cd /opt/doxybook2; \

@@ -200,8 +200,14 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     endif() # config_c2h_target
 
     if (CUB_SEPARATE_CATCH2)
+      set(catch2_main_objects ${config_prefix}.catch2_main_objects)
+      if (NOT TARGET ${catch2_main_objects})
+        add_library(${catch2_main_objects} OBJECT catch2_runner.cpp catch2_runner_helper.cu)
+        target_link_libraries(${catch2_main_objects} PUBLIC Catch2::Catch2)
+      endif()
+
       add_executable(${test_target} "${test_src}")
-      target_compile_definitions(${test_target} PRIVATE "CUB_CONFIG_MAIN")
+      target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
       add_dependencies(${config_meta_target} ${test_target})
 
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")

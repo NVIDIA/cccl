@@ -289,14 +289,18 @@ try
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
-catch (std::bad_alloc &e)
+catch (std::bad_alloc& e)
 {
-  std::cout << "Skipping test 'RunTest("
-            << num_ranges << ", "
-            << min_range_size << ", "
-            << max_range_size << ", "
-            << TestDataGenToString(output_gen) << ")"
-            << "' due to insufficient memory: " << e.what() << "\n";
+  (void)e;
+#ifdef DEBUG_CHECKED_ALLOC_FAILURE
+  std::cout
+    << "Skipping test 'RunTest("
+    << num_ranges << ", " //
+    << min_range_size << ", " //
+    << max_range_size << ", " //
+    << TestDataGenToString(output_gen) << ")" //
+    << "' due to insufficient memory: " << e.what() << "\n";
+#endif // DEBUG_CHECKED_ALLOC_FAILURE
 }
 
 struct object_with_non_trivial_ctor

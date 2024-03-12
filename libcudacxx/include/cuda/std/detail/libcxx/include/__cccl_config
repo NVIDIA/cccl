@@ -15,6 +15,7 @@
 #include "__cccl/diagnostic.h"
 #include "__cccl/dialect.h"
 #include "__cccl/execution_space.h"
+#include "__cccl/ptx_isa.h"
 #include "__cccl/system_header.h"
 #include "__cccl/version.h"
 #include "__cccl/visibility.h"

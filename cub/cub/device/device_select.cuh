@@ -978,7 +978,7 @@ struct DeviceSelect
       EqualityOpT equality_op,
       cudaStream_t stream = 0)
   {
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchUniqueByKey<
       KeyInputIteratorT,

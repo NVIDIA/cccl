@@ -1,6 +1,7 @@
 
-cuda_oldest: &cuda_oldest '11.1'
-cuda_newest: &cuda_newest '12.3'
+cuda_prev_min: &cuda_prev_min '11.1'
+cuda_prev_max:  &cuda_prev_max  '11.8'
+cuda_curr: &cuda_curr '12.3'
 
 # The GPUs to test on
 gpus:
@@ -56,37 +57,39 @@ oneapi: &oneapi { name: 'oneapi', version: '2023.2.0', exe: 'icpc' }
 # Configurations that will run for every PR
 pull_request:
   nvcc:
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc6,     std: [11, 14],         jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_oldest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm10,   std: [11, 14, 17],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm11,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm12,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm13,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm14,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc6,     std: [11, 14],         jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_prev_min, os: 'windows2022', cpu: 'amd64', compiler: *msvc2017, std: [14, 17],         jobs: ['build']}
+    - {cuda: *cuda_prev_max, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17],     jobs: ['build'], extra_build_args: '-cmake-options -DCMAKE_CUDA_ARCHITECTURES=90'}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build'], extra_build_args: '-cmake-options -DCMAKE_CUDA_ARCHITECTURES=90a'}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build', 'test']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'arm64', compiler: *gcc12,    std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm9,    std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm10,   std: [11, 14, 17],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm11,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm12,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm13,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm14,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build', 'test']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'arm64', compiler: *llvm16,   std: [11, 14, 17, 20], jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [14, 17],         jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
   nvrtc:
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', gpu_build_archs: '70', std: [11, 14, 17, 20]}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', std: [11, 14, 17, 20]}
   clang-cuda:
-    - {lib: ['thrust', 'cub', 'libcudacxx'], cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest, std: [17, 20]}
+    - {lib: ['thrust', 'cub', 'libcudacxx'], cuda: *cuda_curr, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest, std: [17, 20]}
   cccl-infra:
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc-oldest}
-    - {cuda: *cuda_oldest, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm-oldest}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc-newest}
-    - {cuda: *cuda_newest, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc-oldest}
+    - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm-oldest}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc-newest}
+    - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest}

@@ -35,9 +35,11 @@ $search-background-color: $grey-dk-250;
 $table-background-color: $grey-dk-250;
 $feedback-color: darken($sidebar-color, 3%);
 
-div.highlighter-rouge,
-pre.highlight code
-{ background-color: #111 !important; }
+.highlighter-rouge div.highlight
+{ background: #1a1a1a; }
+
+.highlighter-rouge div.highlight pre
+{ background: #1a1a1a; }
 
 .highlight span.err { color: #ff0000; font-weight: bold; } /* Error */
 

@@ -313,6 +313,7 @@ struct AgentPartition
   CompareOpT compare_op;
   OffsetT target_merged_tiles_number;
   int items_per_tile;
+  OffsetT num_partitions;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(bool ping,
                                             KeyIteratorT keys_ping,
@@ -322,7 +323,8 @@ struct AgentPartition
                                             OffsetT *merge_partitions,
                                             CompareOpT compare_op,
                                             OffsetT target_merged_tiles_number,
-                                            int items_per_tile)
+                                            int items_per_tile,
+                                            OffsetT num_partitions)
       : ping(ping)
       , keys_ping(keys_ping)
       , keys_pong(keys_pong)
@@ -332,6 +334,7 @@ struct AgentPartition
       , compare_op(compare_op)
       , target_merged_tiles_number(target_merged_tiles_number)
       , items_per_tile(items_per_tile)
+      , num_partitions(num_partitions)
   {}
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
@@ -352,27 +355,37 @@ struct AgentPartition
     OffsetT local_tile_idx = mask & partition_idx;
 
     OffsetT keys1_beg = (cub::min)(keys_count, start);
-    OffsetT keys1_end = (cub::min)(keys_count, start + size);
+    OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
     OffsetT keys2_beg = keys1_end;
-    OffsetT keys2_end = (cub::min)(keys_count, keys2_beg + size);
+    OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
-    OffsetT partition_at = (cub::min)(keys2_end - keys1_beg,
-                                      items_per_tile * local_tile_idx);
+    // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
+    if (partition_idx + 1 == num_partitions)
+    {
+      merge_partitions[partition_idx] = keys1_end;
+    }
+    else
+    {
+      OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
-    OffsetT partition_diag = ping ? MergePath<KeyT>(keys_ping + keys1_beg,
-                                                    keys_ping + keys2_beg,
-                                                    keys1_end - keys1_beg,
-                                                    keys2_end - keys2_beg,
-                                                    partition_at,
-                                                    compare_op)
-                                  : MergePath<KeyT>(keys_pong + keys1_beg,
-                                                    keys_pong + keys2_beg,
-                                                    keys1_end - keys1_beg,
-                                                    keys2_end - keys2_beg,
-                                                    partition_at,
-                                                    compare_op);
+      OffsetT partition_diag =
+        ping ? MergePath<KeyT>(
+          keys_ping + keys1_beg,
+          keys_ping + keys2_beg,
+          keys1_end - keys1_beg,
+          keys2_end - keys2_beg,
+          partition_at,
+          compare_op)
+             : MergePath<KeyT>(
+               keys_pong + keys1_beg,
+               keys_pong + keys2_beg,
+               keys1_end - keys1_beg,
+               keys2_end - keys2_beg,
+               partition_at,
+               compare_op);
 
-    merge_partitions[partition_idx] = keys1_beg + partition_diag;
+      merge_partitions[partition_idx] = keys1_beg + partition_diag;
+    }
   }
 };
 
@@ -525,16 +538,25 @@ struct AgentMerge
 
     OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
 
-    OffsetT keys1_beg = partition_beg;
-    OffsetT keys1_end = partition_end;
-    OffsetT keys2_beg = (cub::min)(keys_count, 2 * start + size + diag - partition_beg);
-    OffsetT keys2_end = (cub::min)(keys_count, 2 * start + size + diag + ITEMS_PER_TILE - partition_end);
+    OffsetT keys1_beg = partition_beg - start;
+    OffsetT keys1_end = partition_end - start;
+
+    OffsetT keys_end_dist_from_start = keys_count - start;
+    OffsetT max_keys2                = (keys_end_dist_from_start > size) ? (keys_end_dist_from_start - size) : 0;
+
+    // We have the following invariants:
+    // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
+    // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
+    // and keys1_end is key1's component of that path
+    OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
+    OffsetT keys2_end =
+      (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (cub::min)(keys_count, start + size);
-      keys2_end = (cub::min)(keys_count, start + size * 2);
+      keys1_end = (cub::min)(keys_count-start, size);
+      keys2_end = (cub::min)(max_keys2, size);
     }
 
     // number of keys per tile
@@ -547,16 +569,16 @@ struct AgentMerge
     if (ping)
     {
       gmem_to_reg<IS_FULL_TILE>(keys_local,
-                                keys_in_ping + keys1_beg,
-                                keys_in_ping + keys2_beg,
+                                keys_in_ping + start + keys1_beg,
+                                keys_in_ping + start + size + keys2_beg,
                                 num_keys1,
                                 num_keys2);
     }
     else
     {
       gmem_to_reg<IS_FULL_TILE>(keys_local,
-                                keys_in_pong + keys1_beg,
-                                keys_in_pong + keys2_beg,
+                                keys_in_pong + start + keys1_beg,
+                                keys_in_pong + start + size + keys2_beg,
                                 num_keys1,
                                 num_keys2);
     }
@@ -570,16 +592,16 @@ struct AgentMerge
       if (ping)
       {
         gmem_to_reg<IS_FULL_TILE>(items_local,
-                                  items_in_ping + keys1_beg,
-                                  items_in_ping + keys2_beg,
+                                  items_in_ping + start + keys1_beg,
+                                  items_in_ping + start + size + keys2_beg,
                                   num_keys1,
                                   num_keys2);
       }
       else
       {
         gmem_to_reg<IS_FULL_TILE>(items_local,
-                                  items_in_pong + keys1_beg,
-                                  items_in_pong + keys2_beg,
+                                  items_in_pong + start + keys1_beg,
+                                  items_in_pong + start + size + keys2_beg,
                                   num_keys1,
                                   num_keys2);
       }

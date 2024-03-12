@@ -293,8 +293,8 @@ struct DispatchReduceByKey
   //---------------------------------------------------------------------
 
   template <typename ActivePolicyT, typename ScanInitKernelT, typename ReduceByKeyKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ScanInitKernelT init_kernel,
-                                                          ReduceByKeyKernelT reduce_by_key_kernel)
+  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
     using AgentReduceByKeyPolicyT = typename ActivePolicyT::ReduceByKeyPolicyT;
     constexpr int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;

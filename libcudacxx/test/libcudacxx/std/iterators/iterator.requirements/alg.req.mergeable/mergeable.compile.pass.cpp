@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
-// UNSUPPORTED: msvc-19.16 && nvcc-11.1
+// UNSUPPORTED: msvc-19.16
 
 // template<class I1, class I2, class Out,
 //     class R = ranges::less, class P1 = identity, class P2 = identity>

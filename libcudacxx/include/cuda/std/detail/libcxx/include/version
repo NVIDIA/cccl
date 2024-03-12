@@ -223,16 +223,6 @@ __cpp_lib_void_t                                        201411L <type_traits>
 #endif
 #endif // __cuda_std__
 
-// We define certain feature test macros depending on availability. When
-// __CUDA_MINIMUM_ARCH__ is not available, we define the following features
-// unconditionally. This permits checking for the feature in host code. When
-// __CUDA_MINIMUM_ARCH__ is available, we only enable the feature when the
-// hardware supports it.
-#if (!defined(__CUDA_MINIMUM_ARCH__)) || (defined(__CUDA_MINIMUM_ARCH__) && 900 <= __CUDA_MINIMUM_ARCH__)
-# define __cccl_lib_local_barrier_arrive_tx
-# define __cccl_lib_experimental_ctk12_cp_async_exposure
-#endif
-
 // We unconditionally define `__cccl_lib_meow` so that there is only one place to set the value
 #if _CCCL_STD_VER > 2011
 # define __cccl_lib_chrono_udls                          201304L
@@ -258,7 +248,7 @@ __cpp_lib_void_t                                        201411L <type_traits>
 # if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 // #   define __cccl_lib_shared_timed_mutex                 201402L
 # endif
-# define __cccl_lib_span                                 201902L
+# define __cccl_lib_span                                 202002L
 // # define __cccl_lib_string_udls                          201304L
 # define __cccl_lib_transformation_trait_aliases         201304L
 # define __cccl_lib_transparent_operators                201210L

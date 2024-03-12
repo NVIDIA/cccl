@@ -35,16 +35,17 @@ test()
     test(cuda::std::complex<T>(2, 3), T(2), cuda::std::complex<T>(-5, 12));
 }
 
+template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases();
+    auto testcases = get_testcases<T>();
     const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
     for (unsigned i = 0; i < N; ++i)
     {
         for (unsigned j = 0; j < N; ++j)
         {
-            cuda::std::complex<double> r = pow(testcases[i], real(testcases[j]));
-            cuda::std::complex<double> z = exp(cuda::std::complex<double>(real(testcases[j])) * log(testcases[i]));
+            cuda::std::complex<T> r = pow(testcases[i], real(testcases[j]));
+            cuda::std::complex<T> z = exp(cuda::std::complex<T>(real(testcases[j])) * log(testcases[i]));
             if (cuda::std::isnan(real(r)))
                 assert(cuda::std::isnan(real(z)));
             else
@@ -67,7 +68,19 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
-    test_edges();
+#ifdef _LIBCUDACXX_HAS_NVFP16
+    test<__half>();
+#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+    test<__nv_bfloat16>();
+#endif
+    test_edges<double>();
+#ifdef _LIBCUDACXX_HAS_NVFP16
+    test_edges<__half>();
+#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+    test_edges<__nv_bfloat16>();
+#endif
 
   return 0;
 }

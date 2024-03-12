@@ -1,3 +1,4 @@
+#include "thrust/iterator/transform_iterator.h"
 #include <unittest/unittest.h>
 #include <thrust/copy.h>
 #include <thrust/sequence.h>
@@ -18,6 +19,25 @@ struct mod_3
   unsigned int operator()(T x) { return static_cast<unsigned int>(x) % 3; }
 };
 
+template <typename T>
+struct mod_n
+{
+  T mod;
+  __host__ __device__ bool operator()(T x)
+  {
+    return (x % mod == 0) ? true : false;
+  }
+};
+
+template <typename T>
+struct multiply_n
+{
+  T multiplier;
+  __host__ __device__ T operator()(T x)
+  {
+    return x * multiplier;
+  }
+};
 
 #ifdef THRUST_TEST_DEVICE_SIDE
 template<typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Predicate, typename Iterator3>
@@ -284,3 +304,75 @@ void TestCopyIfStencilCudaStreamsNoSync()
 }
 DECLARE_UNITTEST(TestCopyIfStencilCudaStreamsNoSync);
 
+void TestCopyIfWithMagnitude(int magnitude)
+{
+  using offset_t = std::size_t;
+
+  // Prepare input
+  offset_t num_items = offset_t{1ull} << magnitude;
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  auto end = begin + num_items;
+  ASSERT_EQUAL(static_cast<offset_t>(thrust::distance(begin, end)), num_items);
+
+  // Run algorithm on large number of items
+  offset_t match_every_nth     = 1000000;
+  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  thrust::device_vector<offset_t> copied_out(expected_num_copied);
+  auto selected_out_end = thrust::copy_if(begin, end, copied_out.begin(), mod_n<offset_t>{match_every_nth});
+
+  // Ensure number of selected items are correct
+  offset_t num_selected_out = static_cast<offset_t>(thrust::distance(copied_out.begin(), selected_out_end));
+  ASSERT_EQUAL(num_selected_out, expected_num_copied);
+  copied_out.resize(expected_num_copied);
+
+  // Ensure selected items are correct
+  auto expected_out_it = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  ASSERT_EQUAL(all_results_correct, true);
+}
+
+void TestCopyIfWithLargeNumberOfItems()
+{
+  TestCopyIfWithMagnitude(30);
+  TestCopyIfWithMagnitude(31);
+  TestCopyIfWithMagnitude(32);
+  TestCopyIfWithMagnitude(33);
+}
+DECLARE_UNITTEST(TestCopyIfWithLargeNumberOfItems);
+
+void TestCopyIfStencilWithMagnitude(int magnitude)
+{
+  using offset_t = std::size_t;
+
+  // Prepare input
+  offset_t num_items = offset_t{1ull} << magnitude;
+  thrust::counting_iterator<offset_t> begin(offset_t{0});
+  auto end = begin + num_items;
+  thrust::counting_iterator<offset_t> stencil(offset_t{0});
+  ASSERT_EQUAL(static_cast<offset_t>(thrust::distance(begin, end)), num_items);
+
+  // Run algorithm on large number of items
+  offset_t match_every_nth     = 1000000;
+  offset_t expected_num_copied = (num_items + match_every_nth - 1) / match_every_nth;
+  thrust::device_vector<offset_t> copied_out(expected_num_copied);
+  auto selected_out_end = thrust::copy_if(begin, end, stencil, copied_out.begin(), mod_n<offset_t>{match_every_nth});
+
+  // Ensure number of selected items are correct
+  offset_t num_selected_out = static_cast<offset_t>(thrust::distance(copied_out.begin(), selected_out_end));
+  ASSERT_EQUAL(num_selected_out, expected_num_copied);
+  copied_out.resize(expected_num_copied);
+
+  // Ensure selected items are correct
+  auto expected_out_it = thrust::make_transform_iterator(begin, multiply_n<offset_t>{match_every_nth});
+  bool all_results_correct = thrust::equal(copied_out.begin(), copied_out.end(), expected_out_it);
+  ASSERT_EQUAL(all_results_correct, true);
+}
+
+void TestCopyIfStencilWithLargeNumberOfItems()
+{
+  TestCopyIfStencilWithMagnitude(30);
+  TestCopyIfStencilWithMagnitude(31);
+  TestCopyIfStencilWithMagnitude(32);
+  TestCopyIfStencilWithMagnitude(33);
+}
+DECLARE_UNITTEST(TestCopyIfStencilWithLargeNumberOfItems);

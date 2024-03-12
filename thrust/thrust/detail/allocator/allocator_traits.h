@@ -81,7 +81,7 @@ template<typename Alloc, typename U>
   typedef thrust::detail::integral_constant<bool, value> type;
 };
 
-_CCCL_DIAG_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
@@ -189,7 +189,7 @@ template<typename Alloc>
   static const bool value = type::value;
 };
 
-_CCCL_DIAG_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template<class Alloc, class U, bool = has_rebind<Alloc, U>::value>
   struct rebind_alloc

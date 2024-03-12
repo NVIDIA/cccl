@@ -11,10 +11,14 @@
 // UNSUPPORTED: c++11
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
+// UNSUPPORTED: nvcc-11
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
 
 // <cuda/barrier>
+
+#include <cuda/barrier>
+#include <cuda/std/array>
 
 #include "cp_async_bulk_tensor_generic.h"
 
@@ -25,14 +29,14 @@
 // offset.
 //
 // We have a separate variable for host and device because a constexpr
-// std::initializer_list cannot be shared between host and device as some of its
+// cuda::std::array cannot be shared between host and device as some of its
 // member functions take a const reference, which is unsupported by nvcc.
-           constexpr std::initializer_list<int> GMEM_DIMS    {8, 11, 13};
-__device__ constexpr std::initializer_list<int> GMEM_DIMS_DEV{8, 11, 13};
-           constexpr std::initializer_list<int> SMEM_DIMS    {4,  2,  4};
-__device__ constexpr std::initializer_list<int> SMEM_DIMS_DEV{4,  2,  4};
+           constexpr cuda::std::array<uint64_t, 3> GMEM_DIMS    {8, 11, 13};
+__device__ constexpr cuda::std::array<uint64_t, 3> GMEM_DIMS_DEV{8, 11, 13};
+           constexpr cuda::std::array<uint32_t, 3> SMEM_DIMS    {4,  2,  4};
+__device__ constexpr cuda::std::array<uint32_t, 3> SMEM_DIMS_DEV{4,  2,  4};
 
-__device__ constexpr std::initializer_list<int> TEST_SMEM_COORDS[] = {
+__device__ constexpr cuda::std::array<uint32_t, 3> TEST_SMEM_COORDS[] = {
     {0, 0, 0},
     {4, 1, 3},
     {4, 5, 1}

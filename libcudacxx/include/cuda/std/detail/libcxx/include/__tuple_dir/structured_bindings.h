@@ -3,21 +3,31 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
 #define _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
 
+#ifndef __cuda_std__
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #ifdef __cuda_std__
 
-#  if defined(_CCCL_COMPILER_CLANG)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wmismatched-tags"
-#  endif // _CCCL_COMPILER_CLANG
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#  if !defined(__CUDACC_RTC__)
+#  if !defined(_CCCL_COMPILER_NVRTC)
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
 // ::std::tuple_size<cuda::std::tuple> to enable structured bindings.
 // See https://github.com/NVIDIA/libcudacxx/issues/316
@@ -26,6 +36,7 @@
 
 #  include "../__fwd/array.h"
 #  include "../__fwd/pair.h"
+#  include "../__fwd/subrange.h"
 #  include "../__fwd/tuple.h"
 #  include "../__tuple_dir/tuple_element.h"
 #  include "../__tuple_dir/tuple_size.h"
@@ -34,9 +45,9 @@
 // This is a workaround for the fact that structured bindings require that the specializations of
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
-#  if _CCCL_STD_VER > 2014
+#  if _CCCL_STD_VER >= 2017
 namespace std {
-#    if defined(__CUDACC_RTC__)
+#    if defined(_CCCL_COMPILER_NVRTC)
 template <class... _Tp>
 struct tuple_size;
 
@@ -144,16 +155,56 @@ struct tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
     : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
 
-template <size_t _Ip, class... _Tp>
+template<size_t _Ip, class... _Tp>
 struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
-    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
+  : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
-} // namespace std
-#  endif // _CCCL_STD_VER > 2014
 
-#  if defined(_CCCL_COMPILER_CLANG)
-#    pragma clang diagnostic pop
-#  endif // _CCCL_COMPILER_CLANG
+#if !defined(_CCCL_COMPILER_MSVC_2017)
+template<class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_size<const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_size<volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_size<const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_element<_Idx, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_element<_Idx, _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_element<_Idx, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_element<_Idx, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_element<_Idx, volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_element<_Idx, volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+
+template<size_t _Idx, class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
+struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+  : _CUDA_VSTD::tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
+{};
+#endif // !_CCCL_COMPILER_MSVC_2017
+} // namespace std
+#  endif // _CCCL_STD_VER >= 2017
+
+_CCCL_DIAG_POP
 
 #endif // __cuda_std__
 
