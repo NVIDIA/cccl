@@ -69,7 +69,7 @@ struct TestZipIteratorReduceByKey
       ASSERT_EQUAL(h_data4, d_data4);
       ASSERT_EQUAL(h_data5, d_data5);
     }
-    
+
     // The tests below get miscompiled on Tesla hw for 8b types
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
@@ -112,6 +112,51 @@ struct TestZipIteratorReduceByKey
             make_zip_iterator(make_tuple(d_data5.begin(), d_data6.begin())),
             equal_to<Tuple>(),
             TuplePlus<Tuple>());
+
+      ASSERT_EQUAL(h_data3, d_data3);
+      ASSERT_EQUAL(h_data4, d_data4);
+      ASSERT_EQUAL(h_data5, d_data5);
+      ASSERT_EQUAL(h_data6, d_data6);
+    }
+
+    // const inputs, see #1527
+    {
+      host_vector<float> h_data3(n, 0.0f);
+      host_vector<T> h_data4(n, 0);
+      host_vector<T> h_data5(n, 0);
+      host_vector<float> h_data6(n, 0.0f);
+      device_vector<float> d_data3(n, 0.0f);
+      device_vector<T> d_data4(n, 0);
+      device_vector<T> d_data5(n, 0);
+      device_vector<float> d_data6(n, 0.0f);
+
+      // run on host
+      const T* h_begin1     = thrust::raw_pointer_cast(h_data1.data());
+      const T* h_begin2     = thrust::raw_pointer_cast(h_data2.data());
+      const float* h_begin3 = thrust::raw_pointer_cast(h_data3.data());
+      T* h_begin4           = thrust::raw_pointer_cast(h_data4.data());
+      T* h_begin5           = thrust::raw_pointer_cast(h_data5.data());
+      float* h_begin6       = thrust::raw_pointer_cast(h_data6.data());
+      thrust::reduce_by_key(thrust::host,
+        thrust::make_zip_iterator(thrust::make_tuple(h_begin1, h_begin2)),
+        thrust::make_zip_iterator(thrust::make_tuple(h_begin1, h_begin2)) + n,
+        h_begin3,
+        thrust::make_zip_iterator(thrust::make_tuple(h_begin4, h_begin5)),
+        h_begin6);
+
+      // run on device
+      const T* d_begin1     = thrust::raw_pointer_cast(d_data1.data());
+      const T* d_begin2     = thrust::raw_pointer_cast(d_data2.data());
+      const float* d_begin3 = thrust::raw_pointer_cast(d_data3.data());
+      T* d_begin4           = thrust::raw_pointer_cast(d_data4.data());
+      T* d_begin5           = thrust::raw_pointer_cast(d_data5.data());
+      float* d_begin6       = thrust::raw_pointer_cast(d_data6.data());
+      thrust::reduce_by_key(thrust::device,
+        thrust::make_zip_iterator(thrust::make_tuple(d_begin1, d_begin2)),
+        thrust::make_zip_iterator(thrust::make_tuple(d_begin1, d_begin2)) + n,
+        d_begin3,
+        thrust::make_zip_iterator(thrust::make_tuple(d_begin4, d_begin5)),
+        d_begin6);
 
       ASSERT_EQUAL(h_data3, d_data3);
       ASSERT_EQUAL(h_data4, d_data4);
