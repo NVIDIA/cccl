@@ -81,11 +81,6 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
       : __repr(__c.real(), __c.imag())
   {}
-#  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<long double>& __c)
-      : __repr(__c.real(), __c.imag())
-  {}
-#  endif // _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 
 _CCCL_DIAG_POP
 
