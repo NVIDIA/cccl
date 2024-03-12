@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,29 +25,42 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_radix_sort.cuh>
+// %PARAM% TEST_ERR err 0:1:2:3:4:5
 
-struct custom_t
-{
-  std::uint16_t i;
-  float f;
-};
-
-struct decomposer_t
-{
-  // expected-error {{"DecomposerT must be a callable object returning a tuple of references"}}
-  __host__ __device__ std::uint16_t& operator()(custom_t& key) const
-  {
-    return key.i;
-  }
-};
+#include <cub/device/device_segmented_reduce.cuh>
 
 int main()
 {
-  custom_t *d_in{};
-  custom_t *d_out{};
+  using offset_t = float; // error
+  // using offset_t = int; // ok
+  float *d_in{}, *d_out{};
+  offset_t* d_offsets{};
   std::size_t temp_storage_bytes{};
-  std::uint8_t *d_temp_storage{};
+  std::uint8_t* d_temp_storage{};
 
-  cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, decomposer_t{});
+#if TEST_ERR == 0
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::Reduce(
+    d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1, cub::Min(), 0);
+
+#elif TEST_ERR == 1
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::Sum(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+
+#elif TEST_ERR == 2
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::Min(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+
+#elif TEST_ERR == 3
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+
+#elif TEST_ERR == 4
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::Max(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+
+#elif TEST_ERR == 5
+  // expected-error {{"Offset iterator type should be integral."}}
+  cub::DeviceSegmentedReduce::ArgMax(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, d_offsets, d_offsets + 1);
+#endif
 }
