@@ -1,19 +1,44 @@
-cmake_minimum_required(VERSION 3.8)
+## Codegen adds the following build targets
+#    libcudacxx.atomics.codegen
+#    libcudacxx.atomics.codegen.execute
+#    libcudacxx.atomics.codegen.install
+## Test targets:
+#    libcudacxx.atomics.codegen.diff
 
-project(cuda-atomics-codegen LANGUAGES CXX)
+add_custom_target(libcudacxx.atomics.codegen)
 
-set(CMAKE_CXX_STANDARD 14)
-add_executable(codegen
+add_executable(
+    codegen
+    EXCLUDE_FROM_ALL
     codegen.cpp
 )
 
-add_custom_target(
-    run ALL
-    COMMAND codegen
-    BYPRODUCS "${libcudacxx_BINARY_DIR}/__atomic_generated"
+target_compile_features(
+    codegen PRIVATE cxx_std_14
 )
 
-install(
-    FILES "${libcudacxx_BINARY_DIR}/__atomic_generated"
-    DESTINATION "${libcudacxx_SOURCE_DIR}/../include/cuda/std/detail/"
+add_dependencies(libcudacxx.atomics.codegen codegen)
+
+set(atomic_generated_output "${libcudacxx_BINARY_DIR}/codegen/atomic_cuda_generated.h")
+set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/support/atomic")
+
+add_custom_target(
+    libcudacxx.atomics.codegen.execute
+    COMMAND codegen
+    BYPRODUCTS "${atomic_generated_output}"
+)
+
+add_dependencies(libcudacxx.atomics.codegen libcudacxx.atomics.codegen.execute)
+
+add_custom_target(
+    libcudacxx.atomics.codegen.install
+    COMMAND ${CMAKE_COMMAND} -E copy "${atomic_generated_output}" "${atomic_install_location}/atomic_cuda_generated.h"
+    BYPRODUCTS "${atomic_install_location}/atomic_cuda_generated.h"
+)
+
+add_dependencies(libcudacxx.atomics.codegen.install libcudacxx.atomics.codegen.execute)
+
+add_test(
+    NAME libcudacxx.atomics.codegen.diff
+    COMMAND ${CMAKE_COMMAND} -E compare_files "${atomic_install_location}/atomic_cuda_generated.h" "${atomic_generated_output}"
 )
