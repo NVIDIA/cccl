@@ -38,6 +38,5 @@ int main(int, char**)
     test_lambda<double>([] __device__ () -> double { return 42.0; });
     }
 #endif
-  static_assert(1 == 0,  "fail");
   return 0;
 }
