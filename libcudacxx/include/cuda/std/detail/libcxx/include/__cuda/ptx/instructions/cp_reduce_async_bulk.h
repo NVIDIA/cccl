@@ -30,6 +30,17 @@
 #include "../ptx_helper_functions.h"
 #include "../../../cstdint"
 
+#if defined(_LIBCUDACXX_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#if defined(_LIBCUDACXX_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _LIBCUDACXX_HAS_NVBF16
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
