@@ -102,6 +102,7 @@ void  operator delete[](void* ptr, void*) noexcept;
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__new/align_val.h>
 #include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
+#include <cuda/std/detail/libcxx/include/__new/nothrow.h>
 #include <cuda/std/detail/libcxx/include/exception>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -139,8 +140,6 @@ namespace std  // purposefully not using versioning namespace
 {
 
 #if !defined(_LIBCUDACXX_ABI_VCRUNTIME)
-struct _LIBCUDACXX_TYPE_VIS nothrow_t { explicit nothrow_t() = default; };
-extern _LIBCUDACXX_FUNC_VIS const nothrow_t nothrow;
 
 typedef void (*new_handler)();
 _LIBCUDACXX_FUNC_VIS new_handler set_new_handler(new_handler) noexcept;
