@@ -368,16 +368,14 @@ public:
     return !(*this == __right);
   }
 
-  template <class _Property>
-  friend auto get_property(const basic_resource_ref&, _Property) noexcept _LIBCUDACXX_TRAILING_REQUIRES(void)(
-    (!property_with_value<_Property>) &&_CUDA_VSTD::_One_of<_Property, _Properties...>)
-  {
-    return;
-  }
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  friend void get_property(const basic_resource_ref&, _Property) noexcept {}
 
-  template <class _Property>
-  friend auto get_property(const basic_resource_ref& __res, _Property) noexcept _LIBCUDACXX_TRAILING_REQUIRES(
-    __property_value_t<_Property>)(property_with_value<_Property>&& _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  friend __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }
