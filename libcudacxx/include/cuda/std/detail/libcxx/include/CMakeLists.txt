@@ -242,6 +242,7 @@ set(files
   __mutex_base
   __new/align_val.h
   __new/bad_alloc.h
+  __new/new_handler.h
   __new/nothrow.h
   __node_handle
   __nullptr
