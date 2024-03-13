@@ -38,11 +38,16 @@ void test() {
   }
 
   { // allocate / deallocate with alignment
-    auto* ptr = res.allocate(42, 256);
+    constexpr size_t desired_alignment = 64;
+    auto* ptr = res.allocate(42, desired_alignment);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    inline bool
     ensure_device_ptr(ptr);
 
-    res.deallocate(ptr, 42, 256);
+    // also check the alignment
+    const auto alignment = reinterpret_cast<cuda::std::uintptr_t>(ptr);
+    assert(alignment >= desired_alignment);
+    res.deallocate(ptr, 42, desired_alignment);
   }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS

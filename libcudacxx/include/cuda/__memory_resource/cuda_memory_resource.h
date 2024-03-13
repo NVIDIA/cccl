@@ -49,7 +49,7 @@ struct cuda_memory_resource
   void* allocate(const size_t __bytes, const size_t __alignment = __default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    if (__alignment <= __default_cuda_malloc_alignment || (__alignment % __default_cuda_malloc_alignment != 0))
+    if (!__is_valid_alignment(__alignment))
     {
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
       throw ::cuda::cuda_error{cudaErrorInvalidValue, "Invalid alignment passed to cuda_memory_resource::allocate."};
@@ -83,9 +83,8 @@ struct cuda_memory_resource
   void deallocate(void* __ptr, const size_t __bytes, const size_t __alignment = __default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _LIBCUDACXX_ASSERT(
-      __default_cuda_malloc_alignment <= __alignment && (__alignment % __default_cuda_malloc_alignment == 0),
-      "Invalid alignment passed to cuda_memory_resource::deallocate.");
+    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
+                       "Invalid alignment passed to cuda_memory_resource::deallocate.");
     const ::cudaError_t __status = ::cudaFree(__ptr);
     (void) __status;
     _LIBCUDACXX_ASSERT(__status == cudaSuccess, "cuda_memory_resource::deallocate failed");
@@ -156,6 +155,14 @@ struct cuda_memory_resource
    * @brief Enables the `device_accessible` property
    */
   friend constexpr void get_property(cuda_memory_resource const&, device_accessible) noexcept {}
+
+  /**
+   * @brief Checks whether the passed in alignment is valid
+   */
+  static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  {
+    return __alignment <= __default_cuda_malloc_alignment && (__default_cuda_malloc_alignment % __alignment == 0);
+  }
 };
 static_assert(resource_with<cuda_memory_resource, device_accessible>, "");
 
