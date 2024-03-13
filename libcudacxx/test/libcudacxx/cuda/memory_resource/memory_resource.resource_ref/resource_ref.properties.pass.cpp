@@ -27,10 +27,10 @@ template <class T>
 struct property_without_value {};
 
 namespace properties_test {
-static_assert(cuda::property_with_value<property<int> >, "");
-static_assert(cuda::property_with_value<property<struct someStruct> >, "");
+static_assert(cuda::property_with_value<property<int>>, "");
+static_assert(cuda::property_with_value<property<struct someStruct>>, "");
 
-static_assert(!cuda::property_with_value<property_without_value<int> >, "");
+static_assert(!cuda::property_with_value<property_without_value<int>>, "");
 static_assert(
     !cuda::property_with_value<property_without_value<struct otherStruct> >,
     "");

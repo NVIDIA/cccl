@@ -41,10 +41,11 @@ _LIBCUDACXX_INLINE_VAR constexpr bool has_property<_Resource, _Property, _CUDA_V
 template <class _Property>
 using __property_value_t = typename _Property::value_type;
 
+template <class _Property, class = void>
+_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value = false;
+
 template <class _Property>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__property_with_value_, requires()(typename(__property_value_t<_Property>)));
-template <class _Property>
-_LIBCUDACXX_CONCEPT property_with_value = _LIBCUDACXX_FRAGMENT(__property_with_value_, _Property);
+_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> = true;
 
 /// \concept has_property_with
 /// \brief The \c has_property_with concept
