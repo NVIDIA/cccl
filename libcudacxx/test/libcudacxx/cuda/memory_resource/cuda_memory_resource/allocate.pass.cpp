@@ -42,7 +42,6 @@ void test() {
     constexpr size_t desired_alignment = 64;
     auto* ptr = res.allocate(42, desired_alignment);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
-    inline bool
     ensure_device_ptr(ptr);
 
     // also check the alignment

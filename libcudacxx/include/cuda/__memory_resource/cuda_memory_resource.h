@@ -80,13 +80,14 @@ struct cuda_memory_resource
    * @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
    * @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
    */
-  void deallocate(void* __ptr, const size_t __bytes, const size_t __alignment = __default_cuda_malloc_alignment) const
+  void deallocate(void* __ptr, const size_t, const size_t __alignment = __default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
                        "Invalid alignment passed to cuda_memory_resource::deallocate.");
     const ::cudaError_t __status = ::cudaFree(__ptr);
     (void) __status;
+    (void) __alignment;
     _LIBCUDACXX_ASSERT(__status == cudaSuccess, "cuda_memory_resource::deallocate failed");
   }
 
