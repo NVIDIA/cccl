@@ -240,6 +240,7 @@ set(files
   __memory/pointer_traits.h
   __memory/voidify.h
   __mutex_base
+  __new/bad_alloc.h
   __node_handle
   __nullptr
   __ranges/access.h
