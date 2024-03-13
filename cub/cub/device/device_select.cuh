@@ -697,6 +697,123 @@ struct DeviceSelect
                                                          stream);
   }
 
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    SelectOp select_op,
+    cudaStream_t stream = 0)
+  {
+    using OffsetT    = int; // Signed integer type for global offsets
+    using EqualityOp = NullType; // Equality operator (not used)
+
+    return DispatchSelectIf<
+      InputIteratorT,
+      FlagIterator,
+      OutputIteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       d_flags,
+                       d_out,
+                       d_num_selected_out,
+                       select_op,
+                       EqualityOp(),
+                       num_items,
+                       stream);
+  }
+
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    SelectOp select_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
+  {
+    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
+
+    return FlaggedIf<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
+      d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, select_op, stream);
+  }
+
+  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT, typename SelectOp>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    FlagIterator d_flags,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    SelectOp select_op,
+    cudaStream_t stream = 0)
+  {
+    using OffsetT    = int; // Signed integer type for global offsets
+    using EqualityOp = NullType; // Equality operator (not used)
+
+    constexpr bool may_alias = true;
+
+    return DispatchSelectIf<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false,
+      may_alias>::Dispatch(d_temp_storage,
+                           temp_storage_bytes,
+                           d_data, // in
+                           d_flags,
+                           d_data, // out
+                           d_num_selected_out,
+                           select_op,
+                           EqualityOp(),
+                           num_items,
+                           stream);
+  }
+
+  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT, typename SelectOp>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    FlagIterator d_flags,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    SelectOp select_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
+  {
+    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
+
+    return FlaggedIf<IteratorT, FlagIterator, NumSelectedIteratorT, SelectOp>(
+      d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, select_op, stream);
+  }
+
   //! @rst
   //! Given an input sequence ``d_in`` having runs of consecutive equal-valued keys,
   //! only the first key from each run is selectively copied to ``d_out``.
