@@ -87,7 +87,7 @@ pull_request:
   nvrtc:
     - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', std: [11, 14, 17, 20]}
   clang-cuda:
-    - {lib: ['thrust', 'cub', 'libcudacxx'], cuda: *cuda_curr, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest, std: [17, 20]}
+    - {lib: ['thrust', 'cub', 'libcudacxx', 'cuda_next'], cuda: *cuda_curr, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm-newest, std: [17, 20]}
   cccl-infra:
     - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *gcc-oldest}
     - {cuda: *cuda_prev_min, os: 'ubuntu18.04', cpu: 'amd64', compiler: *llvm-oldest}

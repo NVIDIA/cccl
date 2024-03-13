@@ -14,7 +14,7 @@ foreach (root_type IN ITEMS SOURCE INSTALL)
     set(cccl_root "${CCCL_SOURCE_DIR}")
   endif()
 
-  foreach (components IN ITEMS DEFAULT Thrust CUB libcudacxx)
+  foreach (components IN ITEMS DEFAULT Thrust CUB libcudacxx CudaNext)
     set(package_types CCCL)
     if (NOT components STREQUAL "DEFAULT")
       list(APPEND package_types NATIVE)

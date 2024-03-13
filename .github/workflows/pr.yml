@@ -42,6 +42,8 @@ jobs:
       DEVCONTAINER_VERSION: ${{steps.set-outputs.outputs.DEVCONTAINER_VERSION}}
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
       PER_CUDA_COMPILER_KEYS: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_KEYS}}
+      PER_CUDA_COMPILER_MATRIX_MINSTD_17: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX_MINSTD_17}}
+      PER_CUDA_COMPILER_KEYS_MINSTD_17: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_KEYS_MINSTD_17}}
       NVRTC_MATRIX: ${{steps.set-outputs.outputs.NVRTC_MATRIX}}
       CLANG_CUDA_MATRIX: ${{steps.set-outputs.outputs.CLANG_CUDA_MATRIX}}
       CCCL_INFRA_MATRIX: ${{steps.set-outputs.outputs.CCCL_INFRA_MATRIX}}
@@ -123,6 +125,24 @@ jobs:
       devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
       is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
 
+  # Note that the MINSTD_17 variants of the matrix are used, as this is a C++17 library.
+  cuda-next:
+    name: CudaNext CUDA${{ matrix.cuda_host_combination }}
+    permissions:
+      id-token: write
+      contents: read
+    needs: compute-matrix
+    uses: ./.github/workflows/dispatch-build-and-test.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda_host_combination: ${{ fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_KEYS_MINSTD_17) }}
+    with:
+      project_name: "cuda_next"
+      per_cuda_compiler_matrix: ${{ toJSON(fromJSON(needs.compute-matrix.outputs.PER_CUDA_COMPILER_MATRIX_MINSTD_17)[ matrix.cuda_host_combination ]) }}
+      devcontainer_version: ${{ needs.compute-matrix.outputs.DEVCONTAINER_VERSION }}
+      is_windows: ${{ contains(matrix.cuda_host_combination, 'cl') }}
+
   clang-cuda:
     name: ${{matrix.lib}} Clang CUDA
     permissions:
@@ -181,6 +201,7 @@ jobs:
       - libcudacxx
       - nvrtc
       - thrust
+      - cuda-next
       - cccl-infra
       - verify-devcontainers
     steps:

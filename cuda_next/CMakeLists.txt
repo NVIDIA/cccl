@@ -1,24 +1,44 @@
+# 3.15 is the minimum for including the project with add_subdirectory.
+# 3.21 is the minimum for the developer build.
+cmake_minimum_required(VERSION 3.15)
+
+# FIXME Tests currently fail when this is defined to Release. Temporary WAR to validate CMake changes:
+set(CMAKE_BUILD_TYPE "")
+
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(CUDA_NEXT_TOPLEVEL_PROJECT ON)
+  set(CudaNext_TOPLEVEL_PROJECT ON)
 endif()
 
-if (CCCL_ENABLE_CUDA_NEXT OR CUDA_NEXT_TOPLEVEL_PROJECT)
-    cmake_minimum_required(VERSION 3.15)
+# This must be done before any languages are enabled:
+if (CudaNext_TOPLEVEL_PROJECT)
+  cmake_minimum_required(VERSION 3.21)
+endif()
 
-    project(CUDA_NEXT VERSION 0.1)
+project(CudaNext LANGUAGES CUDA)
 
-    enable_language(CUDA)
+option(CudaNext_ENABLE_INSTALL_RULES "Enable installation of CudaNext" ${CudaNext_TOPLEVEL_PROJECT})
+if (CudaNext_ENABLE_INSTALL_RULES)
+  include(cmake/CudaNextInstallRules.cmake)
+endif()
 
-    add_library(CUDA_Next INTERFACE)
-    target_compile_features(CUDA_Next INTERFACE cxx_std_17)
+if (NOT CudaNext_TOPLEVEL_PROJECT)
+  include(cmake/CudaNextAddSubdir.cmake)
+  return()
+endif()
 
-    target_link_libraries(CUDA_Next INTERFACE libcudacxx::libcudacxx)
-    target_include_directories(CUDA_Next INTERFACE "${CMAKE_CURRENT_LIST_DIR}/include")
+option(CudaNext_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
+option(CudaNext_ENABLE_TESTING "Build CUDA Next tests." ON)
 
-    option(CUDA_NEXT_ENABLE_TESTING "Build CUDA Next tests." ON)
-    if (CUDA_NEXT_ENABLE_TESTING)
-        enable_testing()
-        add_subdirectory(test)
-    endif()
+include(cmake/CudaNextBuildTargetList.cmake)
 
+CudaNext_build_target_list()
+
+if (CudaNext_ENABLE_HEADER_TESTING)
+  include(cmake/CudaNextHeaderTesting.cmake)
+endif()
+
+if (CudaNext_ENABLE_TESTING)
+  include(CTest)
+  enable_testing() # Must be in root directory
+  add_subdirectory(test)
 endif()

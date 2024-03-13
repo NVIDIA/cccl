@@ -15,7 +15,7 @@
 #include <iostream>
 
 #include <catch2/catch.hpp>
-#include <hierarchy_dimensions.hpp>
+#include <cuda/next/hierarchy_dimensions.hpp>
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 

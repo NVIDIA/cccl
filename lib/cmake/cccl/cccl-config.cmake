@@ -16,7 +16,7 @@ if (DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS AND
     ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
   set(components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 else()
-  set(components Thrust CUB libcudacxx CUDA_Next)
+  set(components Thrust CUB libcudacxx CudaNext)
 endif()
 
 if (NOT TARGET CCCL::CCCL)
@@ -92,16 +92,19 @@ foreach(component IN LISTS components)
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()
     endif()
-  elseif(component_lower STREQUAL "cuda_next")
-    find_package(CUDA_Next 0.1 EXACT CONFIG
+  elseif(component_lower STREQUAL "cudanext")
+    find_package(CudaNext ${CCCL_VERSION} EXACT CONFIG
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
       HINTS
         "${cccl_cmake_dir}/../../../cuda_next/lib/cmake/" # Source layout (GitHub)
-                                                          # No install layout for now
+        "${cccl_cmake_dir}/.."                            # Install layout
     )
-    target_link_libraries(CCCL::CCCL INTERFACE CUDA_Next)
+    if (TARGET CudaNext::CudaNext AND NOT TARGET CCCL::CudaNext)
+      add_library(CCCL::CudaNext ALIAS CudaNext::CudaNext)
+      target_link_libraries(CCCL::CCCL INTERFACE CCCL::CudaNext)
+    endif()
   else()
     message(FATAL_ERROR "Invalid CCCL component requested: '${component}'")
   endif()
