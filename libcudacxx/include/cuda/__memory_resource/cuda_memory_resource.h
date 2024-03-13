@@ -112,15 +112,9 @@ struct cuda_memory_resource
 
   /**
    * @brief Equality comparison between a cuda_memory_resource and another resource
-   *
-   * We want to ensure that we can compare any cuda_memory_resource too a resource_ref that holds a cuda_memory_resource
-   * Therefore, we convert both to a resource_ref<> which is the lowest common denominator. The resource_ref<>
-   * internally checks whether both resources are of the same kind and if so returns the comparison of the two.
-   * Otherwise, the comparison will always return false, which is what we want for any other memory resource.
-   *
    * @param __lhs The cuda_memory_resource
    * @param __rhs The resource to compare to
-   * @return Comparison of both resources converted to a resource_ref<>
+   * @return Result of equality comparison of both resources converted to a resource_ref<>
    */
   template <class _Resource>
   _LIBCUDACXX_NODISCARD_FRIEND auto operator==(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
@@ -130,7 +124,7 @@ struct cuda_memory_resource
   }
 #  if _CCCL_STD_VER <= 2017
   /**
-   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
+   * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
   _LIBCUDACXX_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
@@ -139,7 +133,7 @@ struct cuda_memory_resource
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
   /**
-   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
+   * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
   _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(cuda_memory_resource const& __lhs, _Resource const& __rhs) noexcept
@@ -148,7 +142,7 @@ struct cuda_memory_resource
     return resource_ref<>{const_cast<cuda_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
   }
   /**
-   * @copydoc cuda_memory_resource::operator==(cuda_memory_resource const&, _Resource const&)
+   * @copydoc cuda_memory_resource::operator==<_Resource>(cuda_memory_resource const&, _Resource const&)
    */
   template <class _Resource>
   _LIBCUDACXX_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, cuda_memory_resource const& __lhs) noexcept
