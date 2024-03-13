@@ -485,7 +485,7 @@ struct __invoke_of
     static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
                   "Attempt to use an extended __device__ lambda in a context "
                   "that requires querying its return type in host code. Use a "
-                  "named function object, a __host__ __device__ lambda, or "
+                  "named function object, an extended __host__ __device__ lambda, or "
                   "cuda::proclaim_return_type instead.");
   #else  // ^^^ _LIBCUDACXX_CUDACC_BELOW_12_3 ^^^ / vvv !_LIBCUDACXX_CUDACC_BELOW_12_3 vvv
     static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp) ||
@@ -493,7 +493,7 @@ struct __invoke_of
                    __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
                    "Attempt to use an extended __device__ lambda in a context "
                    "that requires querying its return type in host code. Use a "
-                   "named function object, a __host__ __device__ lambda, "
+                   "named function object, an extended __host__ __device__ lambda, "
                    "cuda::proclaim_return_type, or an extended __device__ lambda "
                    "with preserved return type instead.");
   #endif // !_LIBCUDACXX_CUDACC_BELOW_12_3

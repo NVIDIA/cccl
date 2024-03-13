@@ -8,7 +8,7 @@
 
 // Mandates: invoke result must fail to compile when used with device lambdas.
 // UNSUPPORTED: clang && (!nvcc)
-// UNSUPPORTED: nvcc-12.3 && nvcc-12.4
+// UNSUPPORTED: nvcc-12.3, nvcc-12.4
 
 // <cuda/std/functional>
 
@@ -22,8 +22,7 @@ template <class Ret, class Fn>
 __host__ __device__
 void test_lambda(Fn &&)
 {
-    ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type);
-    
+    ASSERT_SAME_TYPE(Ret, typename cuda::std::result_of<Fn()>::type); 
 
 #if TEST_STD_VER > 2011
     ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn>::type);
@@ -38,5 +37,6 @@ int main(int, char**)
     test_lambda<double>([] __device__ () -> double { return 42.0; });
     }
 #endif
+
   return 0;
 }

@@ -19,6 +19,27 @@
 
 #include "test_macros.h"
 
+#if !defined(TEST_COMPILER_CUDACC_BELOW_12_3) && TEST_STD_VER >= 2017
+template <typename ReturnT>
+__host__ __device__
+void test_lambda_return_type() {
+  //Ensure type can be queried from cuda::std::invoke_result_t 
+  auto d_lm = [] __device__ () -> ReturnT { return ReturnT{}; };
+  auto hd_lm = [] __host__ __device__ () -> ReturnT { return ReturnT{}; };
+  using Td = decltype(d_lm);
+  using Thd = decltype(hd_lm);
+
+  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Td>, ReturnT);
+  ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Thd>, ReturnT);
+  unused(d_lm);
+  unused(hd_lm);
+}
+
+struct custom_type {
+  char arr[16];
+};
+#endif // !TEST_COMPILER_CUDACC_BELOW_12_3 && TEST_STD_VER >= 2017
+
 template <class T, class Fn, class... As>
 __host__ __device__
 void test_proclaim_return_type(Fn&& fn, T expected, As... as)
@@ -93,24 +114,19 @@ int main(int argc, char ** argv)
 
   // Ensure that we can always declare functions even on host
   auto f = cuda::proclaim_return_type<bool>([] __device__() { return false; });
-  auto g = cuda::proclaim_return_type<bool>([f] __device__() { return f(); });
-
-  #if !defined(TEST_COMPILER_CUDACC_BELOW_12_3) && TEST_STD_VER >= 2017
-    // Ensure type can be queried from cuda::std::invoke_result_t 
-    auto d_lm = [] __device__ () -> float { return 3.14f; };
-    auto hd_lm = [] __host__ __device__ () -> float { return 3.14f; };
-    using Td = decltype(d_lm);
-    using Thd = decltype(hd_lm);
-
-    ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Td>, float);
-    ASSERT_SAME_TYPE(cuda::std::invoke_result_t<Thd>, float);
-    unused(d_lm);
-    unused(hd_lm);
-  #endif // !TEST_COMPILER_CUDACC_BELOW_12_3 && TEST_STD_VER >= 2017
-
+  auto g = cuda::proclaim_return_type<bool>([f] __device__() { return f(); });  
   unused(f);
   unused(g);
 
+  #if !defined(TEST_COMPILER_CUDACC_BELOW_12_3) && TEST_STD_VER >= 2017
+    test_lambda_return_type<int>();
+    test_lambda_return_type<long>();
+    test_lambda_return_type<bool>();
+    test_lambda_return_type<float>();
+    test_lambda_return_type<double>();
+    test_lambda_return_type<char>();
+    test_lambda_return_type<custom_type>();
+  #endif // !TEST_COMPILER_CUDACC_BELOW_12_3 && TEST_STD_VER >= 2017
 #endif // !TEST_COMPILER_NVRTC
 
 
