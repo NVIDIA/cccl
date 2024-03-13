@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
 
 // cuda::mr::resource_ref properties
@@ -18,7 +19,7 @@
 #include <cuda/std/cstdint>
 
 template <class T>
-struct property_with_value {
+struct property {
   using value_type = T;
 };
 
@@ -26,9 +27,8 @@ template <class T>
 struct property_without_value {};
 
 namespace properties_test {
-static_assert(cuda::property_with_value<property_with_value<int> >, "");
-static_assert(
-    cuda::property_with_value<property_with_value<struct someStruct> >, "");
+static_assert(cuda::property_with_value<property<int> >, "");
+static_assert(cuda::property_with_value<property<struct someStruct> >, "");
 
 static_assert(!cuda::property_with_value<property_without_value<int> >, "");
 static_assert(
@@ -64,16 +64,15 @@ struct resource {
 };
 
 // Ensure we have the right size
-static_assert(sizeof(cuda::mr::resource_ref<property_with_value<short>,
-                                            property_with_value<int> >) ==
+static_assert(sizeof(cuda::mr::resource_ref<property<short>, property<int> >) ==
                   (4 * sizeof(void*)),
               "");
-static_assert(sizeof(cuda::mr::resource_ref<property_with_value<short>,
+static_assert(sizeof(cuda::mr::resource_ref<property<short>,
                                             property_without_value<int> >) ==
                   (3 * sizeof(void*)),
               "");
 static_assert(sizeof(cuda::mr::resource_ref<property_without_value<short>,
-                                            property_with_value<int> >) ==
+                                            property<int> >) ==
                   (3 * sizeof(void*)),
               "");
 static_assert(sizeof(cuda::mr::resource_ref<property_without_value<short>,
@@ -137,29 +136,26 @@ void test_resource_ref() {
 }
 
 void test_property_forwarding() {
-  using res = resource<property_with_value<short>, property_with_value<int> >;
-  using ref = cuda::mr::resource_ref<property_with_value<short> >;
+  using res = resource<property<short>, property<int> >;
+  using ref = cuda::mr::resource_ref<property<short> >;
 
-  static_assert(cuda::mr::resource_with<res, property_with_value<short>,
-                                        property_with_value<int> >,
+  static_assert(cuda::mr::resource_with<res, property<short>, property<int> >,
                 "");
-  static_assert(!cuda::mr::resource_with<ref, property_with_value<short>,
-                                         property_with_value<int> >,
+  static_assert(!cuda::mr::resource_with<ref, property<short>, property<int> >,
                 "");
 
-  static_assert(cuda::mr::resource_with<res, property_with_value<short> >, "");
+  static_assert(cuda::mr::resource_with<res, property<short> >, "");
 }
 
 void test_resource_ref() {
   // Test some basic combinations of properties w/o state
-  test_resource_ref<property_with_value<short>, property_with_value<int> >();
-  test_resource_ref<property_with_value<short>, property_without_value<int> >();
+  test_resource_ref<property<short>, property<int> >();
+  test_resource_ref<property<short>, property_without_value<int> >();
   test_resource_ref<property_without_value<short>,
                     property_without_value<int> >();
 
   // Test duplicated properties
-  test_resource_ref<property_with_value<short>, property_with_value<int>,
-                    property_with_value<short> >();
+  test_resource_ref<property<short>, property<int>, property<short> >();
 
   test_resource_ref<property_without_value<short>, property_without_value<int>,
                     property_without_value<short> >();

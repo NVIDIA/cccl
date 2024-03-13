@@ -277,14 +277,6 @@ _LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
 template <class>
 _LIBCUDACXX_INLINE_VAR constexpr bool _Is_basic_resource_ref = false;
 
-template <class... _Properties>
-struct __basic_resource_ref_constraints
-{
-  template <class... _OtherProperties>
-  static constexpr bool __matching_properties =
-    _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
-};
-
 template <_AllocType _Alloc_type, class... _Properties>
 class basic_resource_ref
     : public _Resource_ref_base<_Alloc_type>
@@ -297,8 +289,7 @@ private:
   template <class...>
   friend struct _Resource_vtable;
 
-  using __vtable      = _Filtered_vtable<_Properties...>;
-  using __constraints = __basic_resource_ref_constraints<_Properties...>;
+  using __vtable = _Filtered_vtable<_Properties...>;
 
 public:
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
@@ -334,7 +325,7 @@ public:
   {}
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(__constraints::template __matching_properties<_OtherProperties...>)
+  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
   basic_resource_ref(basic_resource_ref<_Alloc_type, _OtherProperties...> __ref) noexcept
       : _Resource_ref_base<_Alloc_type>(__ref.__object, __ref.__static_vtable)
       , __vtable(__ref)
@@ -342,7 +333,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _AllocType::_Async) _LIBCUDACXX_AND(_OtherAllocType != _Alloc_type)
-                         _LIBCUDACXX_AND __constraints::template __matching_properties<_OtherProperties...>)
+                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
   basic_resource_ref(basic_resource_ref<_OtherAllocType, _OtherProperties...> __ref) noexcept
       : _Resource_ref_base<_Alloc_type>(__ref.__object, __ref.__static_vtable)
       , __vtable(__ref)
@@ -350,7 +341,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND __constraints::template __matching_properties<_OtherProperties...>)
+                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
   bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return (this->__static_vtable->__equal_fn == __right.__static_vtable->__equal_fn) //
@@ -359,20 +350,20 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND __constraints::template __matching_properties<_OtherProperties...>)
+                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
   bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return !(*this == __right);
   }
 
-  template <class _Property>
-  friend auto get_property(const basic_resource_ref&, _Property) noexcept _LIBCUDACXX_TRAILING_REQUIRES(void)(
-    (!property_with_value<_Property>) &&_CUDA_VSTD::_One_of<_Property, _Properties...>)
-  {}
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  friend void get_property(const basic_resource_ref&, _Property) noexcept {}
 
-  template <class _Property>
-  friend auto get_property(const basic_resource_ref& __res, _Property) noexcept _LIBCUDACXX_TRAILING_REQUIRES(
-    __property_value_t<_Property>)(property_with_value<_Property>&& _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
+  friend __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }
