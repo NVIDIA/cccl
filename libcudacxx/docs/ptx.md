@@ -400,7 +400,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`activemask`]        | No                      |
 | [`redux.sync`]        | No                      |
 | [`griddepcontrol`]    | No                      |
-| [`elect.sync`]        | No                      |
+| [`elect.sync`]        | CTK-FUTURE, CCCL v2.5.0 |
 
 [`bar, barrier`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
 [`bar.warp.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
@@ -416,7 +416,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`activemask`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-activemask
 [`redux.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
 [`griddepcontrol`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
-[`elect.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+[`elect.sync`]: ptx/instructions/elect.sync.md
 
 ### [Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
