@@ -9,8 +9,9 @@ add_custom_target(cuda_next.all.headers)
 
 file(GLOB_RECURSE headers
   RELATIVE "${CudaNext_SOURCE_DIR}/include"
-  CONFIGURE_DEPENDS
-  "${CudaNext_SOURCE_DIR}/include/*.hpp"
+  CONFIGURE_DEPENDS1
+  "${CudaNext_SOURCE_DIR}/include/*.cuh"
+  "${CudaNext_SOURCE_DIR}/include/*.h"
 )
 
 set(headertest_srcs)

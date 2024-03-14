@@ -113,7 +113,6 @@ foreach (component IN LISTS COMPONENTS)
   add_test(NAME ${test_target} COMMAND ${test_target})
 
   if (component STREQUAL "libcudacxx")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${LIBCUDACXX_VERSION_MAJOR} * 1000000) +
         ${LIBCUDACXX_VERSION_MINOR} * 1000 +
@@ -123,7 +122,6 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=_LIBCUDACXX_CUDA_API_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "CUB")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${CUB_VERSION_MAJOR} * 100000) +
         ${CUB_VERSION_MINOR} * 100 +
@@ -133,7 +131,6 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=CUB_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
   elseif (component STREQUAL "Thrust")
-    # TODO Should this be a genex? Will these stay correct as versions change?
     math(EXPR component_cmake_version
       "(${THRUST_VERSION_MAJOR} * 100000) +
         ${THRUST_VERSION_MINOR} * 100 +
@@ -143,13 +140,12 @@ foreach (component IN LISTS COMPONENTS)
       "VERSION_MACRO=THRUST_VERSION"
       "EXPECTED_VERSION=${component_cmake_version}")
     elseif (component STREQUAL "CudaNext")
-      # TODO Should this be a genex? Will these stay correct as versions change?
       math(EXPR component_cmake_version
       "(${CudaNext_VERSION_MAJOR} * 1000000) +
         ${CudaNext_VERSION_MINOR} * 1000 +
         ${CudaNext_VERSION_PATCH}")
       target_compile_definitions(${test_target} PRIVATE
-        "VERSION_HEADER=cuda/next/version.hpp"
+        "VERSION_HEADER=cuda/next/version.cuh"
         "VERSION_MACRO=CUDA_NEXT_VERSION"
         "EXPECTED_VERSION=${component_cmake_version}")
   else()

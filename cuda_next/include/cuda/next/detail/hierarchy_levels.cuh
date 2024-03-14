@@ -11,7 +11,7 @@
 #ifndef _CUDA_NEXT_DETAIL_HIERARCHY_LEVELS
 #define _CUDA_NEXT_DETAIL_HIERARCHY_LEVELS
 
-#include "dimensions.hpp"
+#include "dimensions.cuh"
 #include <nv/target>
 
 namespace cuda_next

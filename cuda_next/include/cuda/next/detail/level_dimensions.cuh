@@ -13,7 +13,7 @@
 
 #include <cuda/std/type_traits>
 
-#include "hierarchy_levels.hpp"
+#include "hierarchy_levels.cuh"
 
 namespace cuda_next
 {

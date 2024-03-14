@@ -13,7 +13,7 @@
 
 #include <cuda/std/tuple>
 
-#include "level_dimensions.hpp"
+#include "level_dimensions.cuh"
 #include <nv/target>
 
 namespace cuda_next

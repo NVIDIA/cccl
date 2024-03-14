@@ -11,6 +11,6 @@
 #ifndef __CUDA_NEXT_HIERARCHY_DIMENSIONS___
 #define __CUDA_NEXT_HIERARCHY_DIMENSIONS___
 
-#include "detail/hierarchy_dimensions.hpp"
+#include "detail/hierarchy_dimensions.cuh"
 
 #endif

@@ -11,7 +11,7 @@
 #include <cassert>
 #include <iostream>
 
-#include "catch2_helpers/testing_common.hpp"
+#include "catch2_helpers/testing_common.cuh"
 #include <cooperative_groups.h>
 
 struct custom_level : public cuda_next::hierarchy_level
