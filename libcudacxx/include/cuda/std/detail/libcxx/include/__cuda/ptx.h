@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___CUDA_PTX_H
-#define  _LIBCUDACXX___CUDA_PTX_H
+#define _LIBCUDACXX___CUDA_PTX_H
 
 #ifndef __cuda_std__
 #error "<__cuda/ptx.h> should only be included in from <cuda/ptx>"
@@ -78,6 +78,7 @@
 #include "ptx/instructions/cp_async_bulk_wait_group.h"
 #include "ptx/instructions/cp_reduce_async_bulk.h"
 #include "ptx/instructions/cp_reduce_async_bulk_tensor.h"
+#include "ptx/instructions/elect_sync.h"
 #include "ptx/instructions/fence.h"
 #include "ptx/instructions/get_sreg.h"
 #include "ptx/instructions/getctarank.h"
