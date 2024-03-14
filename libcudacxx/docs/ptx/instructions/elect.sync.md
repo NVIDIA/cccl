@@ -6,6 +6,10 @@
 variant of the instruction that returns both a predicate and an updated
 membermask is not supported.
 
+This instruction can also be accessed through the cooperative groups
+~invoke_one~
+[API](https://docs.nvidia.com/cuda/cuda-c-programming-guide/#invoke-one-and-invoke-one-broadcast).
+
 | C++ | PTX |
 | [(0)](#0-elect_sync) `cuda::ptx::elect_sync`| `elect.sync` |
 
