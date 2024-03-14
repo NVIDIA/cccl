@@ -86,6 +86,9 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
 fi
 
+# Where CCCL utility CMake scripts are stored:
+CCCL_CMAKE_SCRIPT_DIR="../cmake"
+
 # Presets will be configured in this directory:
 BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
 
@@ -113,6 +116,7 @@ print_environment_details() {
   echo "pwd=$(pwd)"
 
   print_var_values \
+      CCCL_CMAKE_SCRIPT_DIR \
       BUILD_DIR \
       CXX_STANDARD \
       CXX \
@@ -140,6 +144,22 @@ fail_if_no_gpu() {
     if ! nvidia-smi &> /dev/null; then
         echo "Error: No NVIDIA GPU detected. Please ensure you have an NVIDIA GPU installed and the drivers are properly configured." >&2
         exit 1
+    fi
+}
+
+function print_test_time_summary()
+{
+    ctest_log=${1}
+
+    if [ -f ${ctest_log} ]; then
+        begin_group "⏱️ Longest Test Steps"
+        # Only print the full output in CI:
+        if [ -n "${GITHUB_ACTIONS:-}" ]; then
+            cmake -DLOGFILE=${ctest_log} -P ${CCCL_CMAKE_SCRIPT_DIR}/PrintCTestRunTimes.cmake
+        else
+            cmake -DLOGFILE=${ctest_log} -P ${CCCL_CMAKE_SCRIPT_DIR}/PrintCTestRunTimes.cmake | head -n 15
+        fi
+        end_group "⏱️ Longest Test Steps"
     fi
 }
 
@@ -204,10 +224,18 @@ function test_preset()
 
     fail_if_no_gpu
 
+
+    ctest_log_dir="${BUILD_DIR}/log/ctest"
+    ctest_log="${ctest_log_dir}/${PRESET}"
+    mkdir -p "${ctest_log_dir}"
+
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" ctest --preset=$PRESET
+    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET
     status=$?
     popd > /dev/null
+
+    print_test_time_summary ${ctest_log}
+
     return $status
 }
 
