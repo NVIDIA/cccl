@@ -27,12 +27,80 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/count.h>
+
 // #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "thrust/functional.h"
+
+template <class T, class FlagT, class Pred>
+static c2h::host_vector<T>
+get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags, Pred const& if_predicate)
+{
+  struct selector
+  {
+    const T* ref_begin      = nullptr;
+    const FlagT* flag_begin = nullptr;
+    Pred const& if_pred;
+
+    constexpr selector(const T* ref, const FlagT* flag, Pred const& pred) noexcept
+        : ref_begin(ref)
+        , flag_begin(flag)
+        , if_pred(pred)
+    {}
+
+    bool operator()(const T& val) const
+    {
+      const auto pos = &val - ref_begin;
+      return static_cast<bool>(if_pred(flag_begin[pos]));
+    }
+  };
+
+  c2h::host_vector<T> reference   = in;
+  c2h::host_vector<FlagT> h_flags = flags;
+
+  const selector pred{
+    thrust::raw_pointer_cast(reference.data()), thrust::raw_pointer_cast(h_flags.data()), if_predicate};
+  const auto boundary = std::stable_partition(reference.begin(), reference.end(), pred);
+  reference.erase(boundary, reference.end());
+  return reference;
+}
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::FlaggedIf, select_flagged_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+
+struct is_even
+{
+  __host__ __device__ bool operator()(int const& elem) const
+  {
+    return !(elem % 2);
+  }
+};
+
+template <typename T>
+struct less_than_t
+{
+  T compare;
+
+  explicit __host__ less_than_t(T compare)
+      : compare(compare)
+  {}
+
+  __host__ __device__ bool operator()(const T& a) const
+  {
+    return a < compare;
+  }
+};
+
+struct always_false_t
+{
+  template <typename T>
+  __device__ bool operator()(const T&) const
+  {
+    return false;
+  }
+};
 
 struct always_true_t
 {
@@ -54,7 +122,8 @@ using all_types =
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::equal_comparable_t>>;
+using types = c2h::
+  type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
 CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
 {
@@ -74,7 +143,7 @@ CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::If handles all matched", "[device][select_flagged_if]", types)
+CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -92,4 +161,133 @@ CUB_TEST("DeviceSelect::If handles all matched", "[device][select_flagged_if]", 
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
+}
+
+CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(0);
+  c2h::gen(CUB_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items, 0);
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_first_num_selected_out, num_items, always_false_t{});
+
+  REQUIRE(num_selected_out[0] == 0);
+}
+
+CUB_TEST("DeviceSelect::FlaggedIf does not change input", "[device][select_flagged_if]", types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(CUB_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 0));
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // copy input first
+  c2h::device_vector<type> reference = in;
+
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, is_even{});
+
+  REQUIRE(num_selected == num_selected_out[0]);
+  REQUIRE(reference == in);
+}
+
+CUB_TEST("DeviceSelect::FlaggedIf is stable",
+         "[device][select_flagged_if]",
+         c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t>>)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(CUB_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 0));
+  const c2h::host_vector<type> reference = get_reference(in, flags, is_even{});
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  select_flagged_if(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items, is_even{});
+
+  out.resize(num_selected_out[0]);
+  REQUIRE(num_selected == num_selected_out[0]);
+  REQUIRE(reference == out);
+}
+
+CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_flagged_if]", all_types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(CUB_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 0));
+  const c2h::host_vector<type> reference = get_reference(in, flags, is_even{});
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  select_flagged_if(in.data(), flags.begin(), out.data(), d_num_selected_out, num_items, is_even{});
+
+  out.resize(num_selected_out[0]);
+  REQUIRE(num_selected == num_selected_out[0]);
+  REQUIRE(reference == out);
+}
+
+CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged_if]", types)
+{
+  using type = typename c2h::get<0, TestType>;
+
+  const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::gen(CUB_SEED(2), in);
+
+  c2h::device_vector<int> flags(num_items);
+  c2h::gen(CUB_SEED(1), flags, 0, 1);
+
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 0));
+  const c2h::host_vector<type> reference = get_reference(in, flags, is_even{});
+
+  // Needs to be device accessible
+  c2h::device_vector<int> num_selected_out(1, 0);
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  select_flagged_if(thrust::raw_pointer_cast(in.data()),
+                 thrust::raw_pointer_cast(flags.data()),
+                 thrust::raw_pointer_cast(out.data()),
+                 d_num_selected_out,
+                 num_items,
+                 is_even{});
+
+  out.resize(num_selected_out[0]);
+  REQUIRE(num_selected == num_selected_out[0]);
+  REQUIRE(reference == out);
 }
