@@ -30,23 +30,35 @@
 #include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
-#include <thrust/sort.h>
+
 #include <cuda/std/bit>
+#include <cuda/std/type_traits>
+
+#include <algorithm>
 
 #include "cub/thread/thread_operators.cuh"
 #include "cub/thread/thread_sort.cuh"
 #include "test_util.h"
+#include "test_util_sort.h"
 
+/**
+ * Population-count comparison operator.
+ *
+ * This operator can only be used with unsigned integral keys.
+ * It allows to test:
+ *  (a) A non-trivial comparison operator.
+ *  (b) Stability, because many different keys have the same population count.
+ */
 struct PopcountLess
 {
-  template <typename DataType>
-  __host__ __device__ bool operator()(DataType& lhs, DataType& rhs)
+  template <typename T>
+  __host__ __device__ inline bool operator()(const T& lhs, const T& rhs) const
   {
     return cuda::std::popcount(lhs) < cuda::std::popcount(rhs);
   }
 };
 
-template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread, bool IsStable>
 __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values_in, ValueT* values_out)
 {
   constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, cub::NullType>::value;
@@ -69,7 +81,7 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
     }
   }
 
-  cub::StableOddEvenSort(thread_keys, thread_values, CompareOp{});
+  cub::ThreadNetworkSort<KeyT, ValueT, CompareOp, ItemsPerThread, IsStable>(thread_keys, thread_values, CompareOp{});
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
@@ -81,7 +93,7 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
   }
 }
 
-template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread>
+template <typename KeyT, typename ValueT, typename CompareOp, int ItemsPerThread, bool IsStable>
 void Test()
 {
   constexpr bool KEYS_ONLY                = ::cuda::std::is_same<ValueT, cub::NullType>::value;
@@ -109,7 +121,7 @@ void Test()
 
     if (KEYS_ONLY)
     {
-      kernel<KeyT, ValueT, CompareOp, ItemsPerThread><<<1, threads_in_block>>>(
+      kernel<KeyT, ValueT, CompareOp, ItemsPerThread, IsStable><<<1, threads_in_block>>>(
         thrust::raw_pointer_cast(in_keys.data()),
         thrust::raw_pointer_cast(out_keys.data()),
         (ValueT*) nullptr,
@@ -117,61 +129,129 @@ void Test()
     }
     else
     {
-      kernel<KeyT, MaskedValueT, CompareOp, ItemsPerThread><<<1, threads_in_block>>>(
+      kernel<KeyT, MaskedValueT, CompareOp, ItemsPerThread, IsStable><<<1, threads_in_block>>>(
         thrust::raw_pointer_cast(in_keys.data()),
         thrust::raw_pointer_cast(out_keys.data()),
         thrust::raw_pointer_cast(in_values.data()),
         thrust::raw_pointer_cast(out_values.data()));
     }
 
-    for (unsigned int tid = 0; tid < threads_in_block; tid++)
+    if (IsStable)
     {
-      const auto thread_begin = tid * ItemsPerThread;
-      const auto thread_end   = thread_begin + ItemsPerThread;
+      // If the sort is stable, we expect perfect equality of the keys and values
+      // with a reference stable sort such as the C++ standard library.
 
-      if (KEYS_ONLY)
+      for (unsigned int tid = 0; tid < threads_in_block; tid++)
       {
-        thrust::stable_sort(host_keys.begin() + thread_begin, host_keys.begin() + thread_end, CompareOp{});
+        const auto thread_begin = tid * ItemsPerThread;
+        const auto thread_end   = thread_begin + ItemsPerThread;
+
+        if (KEYS_ONLY)
+        {
+          std::stable_sort(thrust::raw_pointer_cast(host_keys.data() + thread_begin),
+                           thrust::raw_pointer_cast(host_keys.data() + thread_end),
+                           CompareOp{});
+        }
+        else
+        {
+          // Pack pairs.
+          std::vector<std::pair<KeyT, MaskedValueT>> h_pairs(ItemsPerThread);
+          for (int item_idx = 0; item_idx < ItemsPerThread; item_idx++)
+          {
+            h_pairs[item_idx] =
+              std::make_pair(host_keys[thread_begin + item_idx], host_values[thread_begin + item_idx]);
+          }
+
+          std::stable_sort(
+            h_pairs.begin(),
+            h_pairs.end(),
+            [](const std::pair<KeyT, MaskedValueT>& lhs, const std::pair<KeyT, MaskedValueT>& rhs) -> bool {
+              CompareOp compare_op;
+              return compare_op(lhs.first, rhs.first);
+            });
+
+          // Unpack pairs.
+          for (int item_idx = 0; item_idx < ItemsPerThread; item_idx++)
+          {
+            host_keys[thread_begin + item_idx]   = h_pairs[item_idx].first;
+            host_values[thread_begin + item_idx] = h_pairs[item_idx].second;
+          }
+        }
       }
-      else
+
+      AssertEquals(host_keys, out_keys);
+      if (!KEYS_ONLY)
       {
-        thrust::stable_sort_by_key(
-          host_keys.begin() + thread_begin,
-          host_keys.begin() + thread_end,
-          host_values.begin() + thread_begin,
-          CompareOp{});
+        AssertEquals(host_values, out_values);
       }
     }
-
-    AssertEquals(host_keys, out_keys);
-    if (!KEYS_ONLY)
+    else
     {
-      AssertEquals(host_values, out_values);
+      // If the sort is unstable, there are multiple valid outputs.
+      // We check that the output is a permutation of the input and that it is sorted.
+
+      thrust::host_vector<KeyT> host_out_keys(out_keys);
+      thrust::host_vector<MaskedValueT> host_out_values(out_values);
+
+      for (unsigned int tid = 0; tid < threads_in_block; tid++)
+      {
+        const auto thread_begin = tid * ItemsPerThread;
+
+        AssertTrue(IsSorted(
+          host_out_keys.begin() + thread_begin, host_out_keys.begin() + thread_begin + ItemsPerThread, CompareOp{}));
+        if (KEYS_ONLY)
+        {
+          AssertTrue(IsPermutationOf(thrust::raw_pointer_cast(host_out_keys.data() + thread_begin),
+                                     thrust::raw_pointer_cast(host_keys.data() + thread_begin),
+                                     ItemsPerThread));
+        }
+        else
+        {
+          AssertTrue(IsPermutationOf(
+            thrust::raw_pointer_cast(host_out_keys.data() + thread_begin),
+            thrust::raw_pointer_cast(host_keys.data() + thread_begin),
+            thrust::raw_pointer_cast(host_out_values.data() + thread_begin),
+            thrust::raw_pointer_cast(host_values.data() + thread_begin),
+            ItemsPerThread));
+        }
+      }
     }
   }
 }
 
-template <typename KeyT, typename ValueT, typename CompareOp>
+template <typename KeyT, typename ValueT, typename CompareOp, bool IsStable>
 void Test()
 {
-  Test<KeyT, ValueT, CompareOp, 2>();
-  Test<KeyT, ValueT, CompareOp, 3>();
-  Test<KeyT, ValueT, CompareOp, 4>();
-  Test<KeyT, ValueT, CompareOp, 5>();
-  Test<KeyT, ValueT, CompareOp, 7>();
-  Test<KeyT, ValueT, CompareOp, 8>();
-  Test<KeyT, ValueT, CompareOp, 9>();
-  Test<KeyT, ValueT, CompareOp, 11>();
+  Test<KeyT, ValueT, CompareOp, 2, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 3, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 4, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 5, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 7, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 8, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 9, IsStable>();
+  Test<KeyT, ValueT, CompareOp, 11, IsStable>();
 }
 
 int main()
 {
-  Test<std::uint32_t, std::uint32_t, PopcountLess>();
-  Test<std::uint32_t, std::uint64_t, PopcountLess>();
-  Test<std::uint32_t, cub::NullType, cub::Less>();
-  Test<float, cub::NullType, cub::Less>();
-  Test<std::uint32_t, cub::NullType, cub::Greater>();
-  Test<float, cub::NullType, cub::Greater>();
+  Test<std::uint32_t, std::uint32_t, PopcountLess, true>();
+  Test<std::uint32_t, std::uint32_t, PopcountLess, false>();
+  Test<std::uint32_t, std::uint64_t, PopcountLess, true>();
+  Test<std::uint32_t, std::uint64_t, PopcountLess, false>();
+  Test<std::uint64_t, std::uint32_t, PopcountLess, true>();
+  Test<std::uint64_t, std::uint32_t, PopcountLess, false>();
+  Test<std::uint64_t, std::uint64_t, PopcountLess, true>();
+  Test<std::uint64_t, std::uint64_t, PopcountLess, false>();
+  Test<std::uint32_t, cub::NullType, PopcountLess, true>();
+  Test<std::uint32_t, cub::NullType, PopcountLess, false>();
+  Test<std::int32_t, cub::NullType, cub::Less, true>();
+  Test<std::int32_t, cub::NullType, cub::Less, false>();
+  Test<std::int32_t, cub::NullType, cub::Greater, true>();
+  Test<std::int32_t, cub::NullType, cub::Greater, false>();
+  Test<float, cub::NullType, cub::Less, true>();
+  Test<float, cub::NullType, cub::Less, false>();
+  Test<float, cub::NullType, cub::Greater, true>();
+  Test<float, cub::NullType, cub::Greater, false>();
 
   return 0;
 }

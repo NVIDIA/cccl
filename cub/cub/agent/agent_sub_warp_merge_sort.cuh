@@ -277,7 +277,7 @@ public:
         WARP_SYNC(warp_merge_sort.get_member_mask());
       }
 
-      warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      warp_merge_sort.StableSort(keys, values, BinaryOpT{}, segment_size, oob_default);
       WARP_SYNC(warp_merge_sort.get_member_mask());
 
       WarpStoreKeysT(storage.store_keys).Store(keys_output, keys, segment_size);

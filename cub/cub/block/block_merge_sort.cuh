@@ -211,187 +211,16 @@ private:
 
   const unsigned int linear_tid;
 
-public:
-  /// \smemstorage{BlockMergeSort}
-  struct TempStorage : Uninitialized<_TempStorage> {};
-
-  BlockMergeSortStrategy() = delete;
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
-  BlockMergeSortStrategy(unsigned int linear_tid)
-      : temp_storage(PrivateStorage())
-      , linear_tid(linear_tid)
-  {}
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage &temp_storage,
-                                                    unsigned int linear_tid)
-      : temp_storage(temp_storage.Alias())
-      , linear_tid(linear_tid)
-  {}
-
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_linear_tid() const
-  {
-    return linear_tid;
-  }
-
-  /**
-   * @brief Sorts items partitioned across a CUDA thread block using
-   *        a merge sorting method.
-   *
-   * @par
-   * Sort is not guaranteed to be stable. That is, suppose that i and j are
-   * equivalent: neither one is less than the other. It is not guaranteed
-   * that the relative order of these two elements will be preserved by sort.
-   *
-   * @tparam CompareOp
-   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
-   *   use CUB's default operators such as `cub::Less` when suitable.
-   *
-   * @param[in,out] keys
-   *   Keys to sort
-   *
-   * @param[in] compare_op
-   *   Comparison function object which returns true if the first argument is
-   *   ordered before the second
-   *
-   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-   */
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op)
-  {
-    ValueT items[ITEMS_PER_THREAD];
-    Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
-  }
-
-  /**
-   * @brief Sorts items partitioned across a CUDA thread block using
-   *        a merge sorting method.
-   *
-   * @par
-   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-   *   are equivalent: neither one is less than the other. It is not guaranteed
-   *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
-   *   after `oob_default`, it won't be placed within `valid_items` boundaries.
-   *
-   * @tparam CompareOp
-   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
-   *   use CUB's default operators such as `cub::Less` when suitable.
-   *
-   * @param[in,out] keys
-   *   Keys to sort
-   *
-   * @param[in] compare_op
-   *   Comparison function object which returns true if the first argument is
-   *   ordered before the second
-   *
-   * @param[in] valid_items
-   *   Number of valid items to sort
-   *
-   * @param[in] oob_default
-   *   Default value to assign out-of-bound items
-   *
-   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-   */
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op,
-                                       int valid_items,
-                                       KeyT oob_default)
-  {
-    ValueT items[ITEMS_PER_THREAD];
-    Sort<CompareOp, true>(keys, items, compare_op, valid_items, oob_default);
-  }
-
-  /**
-   * @brief Sorts items partitioned across a CUDA thread block using a merge sorting method.
-   *
-   * @par
-   * Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are
-   * equivalent: neither one is less than the other. It is not guaranteed
-   * that the relative order of these two elements will be preserved by sort.
-   *
-   * @tparam CompareOp
-   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
-   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
-   *   use CUB's default operators such as `cub::Less` when suitable.
-   *
-   * @param[in,out] keys
-   *   Keys to sort
-   *
-   * @param[in,out] items
-   *   Values to sort
-   *
-   * @param[in] compare_op
-   *   Comparison function object which returns true if the first argument is
-   *   ordered before the second
-   *
-   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-   */
-  template <typename CompareOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       ValueT (&items)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op)
-  {
-    Sort<CompareOp, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
-  }
-
-  /**
-   * @brief Sorts items partitioned across a CUDA thread block using
-   *        a merge sorting method.
-   *
-   * @par
-   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
-   *   are equivalent: neither one is less than the other. It is not guaranteed
-   *   that the relative order of these two elements will be preserved by sort.
-   * - The value of `oob_default` is assigned to all elements that are out of
-   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
-   *   after any value in the `valid_items` boundaries. The algorithm always
-   *   sorts a fixed amount of elements, which is equal to
-   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
-   *   after `oob_default`, it won't be placed within `valid_items` boundaries.
-   *
-   * @tparam CompareOp
-   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
-   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
-   *   use CUB's default operators such as `cub::Less` when suitable.
-   *
-   * @tparam IS_LAST_TILE
-   *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
-   *
-   * @param[in,out] keys
-   *   Keys to sort
-   *
-   * @param[in,out] items
-   *   Values to sort
-   *
-   * @param[in] compare_op
-   *   Comparison function object which returns true if the first argument is
-   *   ordered before the second
-   *
-   * @param[in] valid_items
-   *   Number of valid items to sort
-   *
-   * @param[in] oob_default
-   *   Default value to assign out-of-bound items
-   *
-   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
-   */
   template <typename CompareOp,
+            bool IS_STABLE,
             bool IS_LAST_TILE = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SortCommon(KeyT (&keys)[ITEMS_PER_THREAD],
                                        ValueT (&items)[ITEMS_PER_THREAD],
                                        CompareOp compare_op,
                                        int valid_items,
                                        KeyT oob_default)
   {
-    if (IS_LAST_TILE)
+    CUB_IF_CONSTEXPR(IS_LAST_TILE)
     {
       // if last tile, find valid max_key
       // and fill the remaining keys with it
@@ -412,11 +241,13 @@ public:
       }
     }
 
-    // if first element of thread is in input range, stable sort items
+    // if first element of thread is in input range, run per-thread sort
     //
     if (!IS_LAST_TILE || ITEMS_PER_THREAD * linear_tid < valid_items)
     {
-      StableOddEvenSort(keys, items, compare_op);
+      // Note: ThreadNetworkSort guarantees that it is valid to pad with max_key even when using
+      // unstable sorting networks.
+      ThreadNetworkSort<KeyT, ValueT, CompareOp, ITEMS_PER_THREAD, IS_STABLE>(keys, items, compare_op);
     }
 
     // each thread has sorted keys
@@ -508,7 +339,190 @@ public:
         }
       }
     }
-  } // func block_merge_sort
+  }
+
+public:
+  /// \smemstorage{BlockMergeSort}
+  struct TempStorage : Uninitialized<_TempStorage> {};
+
+  BlockMergeSortStrategy() = delete;
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
+  BlockMergeSortStrategy(unsigned int linear_tid)
+      : temp_storage(PrivateStorage())
+      , linear_tid(linear_tid)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockMergeSortStrategy(TempStorage &temp_storage,
+                                                    unsigned int linear_tid)
+      : temp_storage(temp_storage.Alias())
+      , linear_tid(linear_tid)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_linear_tid() const
+  {
+    return linear_tid;
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method.
+   *
+   * @par
+   * Sort is not guaranteed to be stable. That is, suppose that i and j are
+   * equivalent: neither one is less than the other. It is not guaranteed
+   * that the relative order of these two elements will be preserved by sort.
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                       CompareOp compare_op)
+  {
+    ValueT items[ITEMS_PER_THREAD];
+    SortCommon<CompareOp, false, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method.
+   *
+   * @par
+   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
+   *   are equivalent: neither one is less than the other. It is not guaranteed
+   *   that the relative order of these two elements will be preserved by sort.
+   * - The value of `oob_default` is assigned to all elements that are out of
+   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
+   *   after any value in the `valid_items` boundaries. The algorithm always
+   *   sorts a fixed amount of elements, which is equal to
+   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
+   *   after `oob_default`, it won't be placed within `valid_items` boundaries.
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * @param[in] oob_default
+   *   Default value to assign out-of-bound items
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                       CompareOp compare_op,
+                                       int valid_items,
+                                       KeyT oob_default)
+  {
+    ValueT items[ITEMS_PER_THREAD];
+    SortCommon<CompareOp, false, true>(keys, items, compare_op, valid_items, oob_default);
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using a merge sorting method.
+   *
+   * @par
+   * Sort is not guaranteed to be stable. That is, suppose that `i` and `j` are
+   * equivalent: neither one is less than the other. It is not guaranteed
+   * that the relative order of these two elements will be preserved by sort.
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`.
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in,out] items
+   *   Values to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                       ValueT (&items)[ITEMS_PER_THREAD],
+                                       CompareOp compare_op)
+  {
+    SortCommon<CompareOp, false, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+  }
+
+  /**
+   * @brief Sorts items partitioned across a CUDA thread block using
+   *        a merge sorting method.
+   *
+   * @par
+   * - Sort is not guaranteed to be stable. That is, suppose that `i` and `j`
+   *   are equivalent: neither one is less than the other. It is not guaranteed
+   *   that the relative order of these two elements will be preserved by sort.
+   * - The value of `oob_default` is assigned to all elements that are out of
+   *   `valid_items` boundaries. It's expected that `oob_default` is ordered
+   *   after any value in the `valid_items` boundaries. The algorithm always
+   *   sorts a fixed amount of elements, which is equal to
+   *   `ITEMS_PER_THREAD * BLOCK_THREADS`. If there is a value that is ordered
+   *   after `oob_default`, it won't be placed within `valid_items` boundaries.
+   *
+   * @tparam CompareOp
+   *   functor type having member `bool operator()(KeyT lhs, KeyT rhs)`
+   *   `CompareOp` is a model of [Strict Weak Ordering]. It is recommended to
+   *   use CUB's default operators such as `cub::Less` when suitable.
+   *
+   * @tparam IS_LAST_TILE
+   *   True if `valid_items` isn't equal to the `ITEMS_PER_TILE`
+   *
+   * @param[in,out] keys
+   *   Keys to sort
+   *
+   * @param[in,out] items
+   *   Values to sort
+   *
+   * @param[in] compare_op
+   *   Comparison function object which returns true if the first argument is
+   *   ordered before the second
+   *
+   * @param[in] valid_items
+   *   Number of valid items to sort
+   *
+   * @param[in] oob_default
+   *   Default value to assign out-of-bound items
+   *
+   * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
+   */
+  template <typename CompareOp,
+            bool IS_LAST_TILE = true>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                       ValueT (&items)[ITEMS_PER_THREAD],
+                                       CompareOp compare_op,
+                                       int valid_items,
+                                       KeyT oob_default)
+  {
+    SortCommon<CompareOp, false, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
+  }
 
   /**
    * @brief Sorts items partitioned across a CUDA thread block using
@@ -538,7 +552,8 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void StableSort(KeyT (&keys)[ITEMS_PER_THREAD],
                                              CompareOp compare_op)
   {
-    Sort(keys, compare_op);
+    ValueT items[ITEMS_PER_THREAD];
+    SortCommon<CompareOp, true, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -573,7 +588,7 @@ public:
                                              ValueT (&items)[ITEMS_PER_THREAD],
                                              CompareOp compare_op)
   {
-    Sort(keys, items, compare_op);
+    SortCommon<CompareOp, true, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -619,7 +634,8 @@ public:
                                              int valid_items,
                                              KeyT oob_default)
   {
-    Sort(keys, compare_op, valid_items, oob_default);
+    ValueT items[ITEMS_PER_THREAD];
+    SortCommon<CompareOp, true, true>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**
@@ -672,11 +688,11 @@ public:
                                              int valid_items,
                                              KeyT oob_default)
   {
-    Sort<CompareOp, IS_LAST_TILE>(keys,
-                                  items,
-                                  compare_op,
-                                  valid_items,
-                                  oob_default);
+    SortCommon<CompareOp, true, IS_LAST_TILE>(keys,
+                                              items,
+                                              compare_op,
+                                              valid_items,
+                                              oob_default);
   }
 
 private:

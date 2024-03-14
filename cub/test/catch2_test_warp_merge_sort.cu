@@ -39,7 +39,7 @@
 struct CustomLess
 {
   template <typename T>
-  __device__ __host__ bool operator()(const T &lhs, const T &rhs)
+  __device__ __host__ inline bool operator()(const T &lhs, const T &rhs) const
   {
     return lhs < rhs;
   }
@@ -174,6 +174,7 @@ __global__ void warp_merge_sort_kernel(KeyT *keys_in,
 /**
  * @brief Delegate wrapper for WarpMergeSort::StableSort on keys-only
  */
+template <class CompareOp>
 struct warp_stable_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -182,13 +183,14 @@ struct warp_stable_sort_keys_t
                              int /*valid_items*/,
                              T /*oob_default*/) const
   {
-    warp_sort.StableSort(thread_data, CustomLess{});
+    warp_sort.StableSort(thread_data, CompareOp{});
   }
 };
 
 /**
  * @brief Delegate wrapper for partial WarpMergeSort::StableSort keys-only
  */
+template <class CompareOp>
 struct warp_partial_stable_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -197,13 +199,14 @@ struct warp_partial_stable_sort_keys_t
                              int valid_items,
                              T oob_default) const
   {
-    warp_sort.StableSort(thread_data, CustomLess{}, valid_items, oob_default);
+    warp_sort.StableSort(thread_data, CompareOp{}, valid_items, oob_default);
   }
 };
 
 /**
  * @brief Delegate wrapper for WarpMergeSort::Sort on keys-only
  */
+template <class CompareOp>
 struct warp_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -212,13 +215,14 @@ struct warp_sort_keys_t
                              int /*valid_items*/,
                              T /*oob_default*/) const
   {
-    warp_sort.Sort(thread_data, CustomLess{});
+    warp_sort.Sort(thread_data, CompareOp{});
   }
 };
 
 /**
  * @brief Delegate wrapper for partial WarpMergeSort::StableSort keys-only
  */
+template <class CompareOp>
 struct warp_partial_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -227,13 +231,14 @@ struct warp_partial_sort_keys_t
                              int valid_items,
                              T oob_default) const
   {
-    warp_sort.Sort(thread_data, CustomLess{}, valid_items, oob_default);
+    warp_sort.Sort(thread_data, CompareOp{}, valid_items, oob_default);
   }
 };
 
 /**
  * @brief Delegate wrapper for WarpMergeSort::StableSort on key-value pairs
  */
+template <class CompareOp>
 struct warp_stable_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -243,13 +248,14 @@ struct warp_stable_sort_pairs_t
                              int /*valid_items*/,
                              KeyT /*oob_default*/) const
   {
-    warp_sort.StableSort(keys, values, CustomLess{});
+    warp_sort.StableSort(keys, values, CompareOp{});
   }
 };
 
 /**
  * @brief Delegate wrapper for partial WarpMergeSort::StableSort key-value pairs
  */
+template <class CompareOp>
 struct warp_partial_stable_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -259,13 +265,14 @@ struct warp_partial_stable_sort_pairs_t
                              int valid_items,
                              KeyT oob_default) const
   {
-    warp_sort.StableSort(keys, values, CustomLess{}, valid_items, oob_default);
+    warp_sort.StableSort(keys, values, CompareOp{}, valid_items, oob_default);
   }
 };
 
 /**
  * @brief Delegate wrapper for WarpMergeSort::Sort on key-value pairs
  */
+template <class CompareOp>
 struct warp_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -275,13 +282,14 @@ struct warp_sort_pairs_t
                              int /*valid_items*/,
                              KeyT /*oob_default*/) const
   {
-    warp_sort.Sort(keys, values, CustomLess{});
+    warp_sort.Sort(keys, values, CompareOp{});
   }
 };
 
 /**
  * @brief Delegate wrapper for partial WarpMergeSort::StableSort key-value pairs
  */
+template <class CompareOp>
 struct warp_partial_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
@@ -291,7 +299,7 @@ struct warp_partial_sort_pairs_t
                              int valid_items,
                              KeyT oob_default) const
   {
-    warp_sort.Sort(keys, values, CustomLess{}, valid_items, oob_default);
+    warp_sort.Sort(keys, values, CompareOp{}, valid_items, oob_default);
   }
 };
 
@@ -356,17 +364,18 @@ void warp_merge_sort(c2h::device_vector<KeyT> &keys_in,
  * @brief Performs a stable sort on per-warp segments of data and assigns oob_default to items that
  * are out-of-bounds.
  */
-template <typename RandomItT, typename SegmentSizeItT, typename T>
-void compute_host_reference(RandomItT h_data,
-                            SegmentSizeItT segment_sizes,
-                            unsigned int num_segments,
-                            T oob_default,
-                            int logical_warp_items)
+template <typename RandomItT, typename SegmentSizeItT, typename T, typename CompareOp>
+void compute_stable_host_reference(RandomItT h_data,
+                                   SegmentSizeItT segment_sizes,
+                                   unsigned int num_segments,
+                                   T oob_default,
+                                   int logical_warp_items,
+                                   CompareOp compare_op)
 {
   for (unsigned int segment_id = 0; segment_id < num_segments; segment_id++)
   {
     unsigned int segment_size = segment_sizes[segment_id];
-    std::stable_sort(h_data, h_data + segment_size);
+    std::stable_sort(h_data, h_data + segment_size, compare_op);
     std::fill(h_data + segment_size, h_data + logical_warp_items, oob_default);
     h_data += logical_warp_items;
   }
@@ -420,8 +429,9 @@ CUB_TEST("Warp sort on keys-only works",
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
+  using CompareOp = CustomLess;
   using warp_sort_delegate =
-    cub::detail::conditional_t<params::is_stable, warp_stable_sort_keys_t, warp_sort_keys_t>;
+    cub::detail::conditional_t<params::is_stable, warp_stable_sort_keys_t<CompareOp>, warp_sort_keys_t<CompareOp>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -438,16 +448,33 @@ CUB_TEST("Warp sort on keys-only works",
     oob_default,
     warp_sort_delegate{});
 
-  // Prepare verification data
-  c2h::host_vector<type> h_in_out = d_in;
-  compute_host_reference(h_in_out.begin(),
-                         segment_sizes,
-                         params::total_warps,
-                         oob_default,
-                         params::logical_warp_items);
+  if(params::is_stable) {
+    c2h::host_vector<type> h_in_out = d_in;
+    compute_stable_host_reference(h_in_out.begin(),
+                                  segment_sizes,
+                                  params::total_warps,
+                                  oob_default,
+                                  params::logical_warp_items,
+                                  CompareOp{});
 
-  // Verify results
-  REQUIRE(h_in_out == d_out);
+    REQUIRE(h_in_out == d_out);
+  } else {
+    c2h::host_vector<type> h_in = d_in;
+    c2h::host_vector<type> h_out = d_out;
+
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+      unsigned int segment_offset = params::logical_warp_items * segment_id;
+      unsigned int segment_size = params::logical_warp_items;
+
+      std::vector<type> h_in_segment(h_in.begin() + segment_offset,
+                                     h_in.begin() + segment_offset + segment_size);
+      std::vector<type> h_out_segment(h_out.begin() + segment_offset,
+                                      h_out.begin() + segment_offset + segment_size);
+
+      REQUIRE_THAT(h_out_segment, Catch::Matchers::UnorderedEquals(h_in_segment));
+      REQUIRE_SORTED(h_out_segment, CompareOp{});
+    }
+  }
 }
 
 CUB_TEST("Warp sort keys-only on partial warp-tile works",
@@ -459,8 +486,9 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
+  using CompareOp = CustomLess;
   using warp_sort_delegate = cub::detail::
-    conditional_t<params::is_stable, warp_partial_stable_sort_keys_t, warp_partial_sort_keys_t>;
+    conditional_t<params::is_stable, warp_partial_stable_sort_keys_t<CompareOp>, warp_partial_sort_keys_t<CompareOp>>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -478,17 +506,40 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
     oob_default,
     warp_sort_delegate{});
 
-  // Prepare verification data
-  c2h::host_vector<type> h_in_out     = d_in;
   c2h::host_vector<int> segment_sizes = d_segment_sizes;
-  compute_host_reference(h_in_out.begin(),
-                         segment_sizes,
-                         params::total_warps,
-                         oob_default,
-                         params::logical_warp_items);
 
-  // Verify results
-  REQUIRE(h_in_out == d_out);
+  if(params::is_stable) {
+    c2h::host_vector<type> h_in_out = d_in;
+    compute_stable_host_reference(h_in_out.begin(),
+                          segment_sizes,
+                          params::total_warps,
+                          oob_default,
+                          params::logical_warp_items,
+                          CompareOp{});
+
+    REQUIRE(h_in_out == d_out);
+  } else {
+    c2h::host_vector<type> h_in = d_in;
+    c2h::host_vector<type> h_out = d_out;
+
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+      unsigned int segment_offset = params::logical_warp_items * segment_id;
+      unsigned int segment_size = segment_sizes[segment_id];
+
+      // Separate in-bounds and out-of-bounds parts
+      std::vector<type> h_in_ib(h_in.begin() + segment_offset,
+                                h_in.begin() + segment_offset + segment_size);
+      std::vector<type> h_out_ib(h_out.begin() + segment_offset,
+                                 h_out.begin() + segment_offset + segment_size);
+      std::vector<type> h_ref_oob(params::logical_warp_items - segment_size, oob_default);
+      std::vector<type> h_out_oob(h_out.begin() + segment_offset + segment_size,
+                                  h_out.begin() + segment_offset + params::logical_warp_items);
+
+      REQUIRE_THAT(h_out_ib, Catch::Matchers::UnorderedEquals(h_in_ib));
+      REQUIRE(h_out_oob == h_ref_oob);
+      REQUIRE_SORTED(h_out_ib, CompareOp{});
+    }
+  }
 }
 
 CUB_TEST("Warp sort on keys-value pairs works",
@@ -502,8 +553,9 @@ CUB_TEST("Warp sort on keys-value pairs works",
   using params     = params_t<TestType>;
   using key_type   = typename params::type;
   using value_type = typename c2h::get<4, TestType>;
+  using CompareOp = CustomLess;
   using warp_sort_delegate =
-    cub::detail::conditional_t<params::is_stable, warp_stable_sort_pairs_t, warp_sort_pairs_t>;
+    cub::detail::conditional_t<params::is_stable, warp_stable_sort_pairs_t<CompareOp>, warp_sort_pairs_t<CompareOp>>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);
@@ -512,7 +564,8 @@ CUB_TEST("Warp sort on keys-value pairs works",
   c2h::device_vector<value_type> d_values_out(params::tile_size);
   auto segment_sizes     = thrust::make_constant_iterator(params::logical_warp_items);
   const auto oob_default = std::numeric_limits<key_type>::max();
-  c2h::gen(CUB_SEED(10), d_keys_in);
+  c2h::gen(CUB_SEED(3), d_keys_in);
+  c2h::gen(CUB_SEED(3), d_values_in);
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -522,21 +575,52 @@ CUB_TEST("Warp sort on keys-value pairs works",
     d_values_out,
     segment_sizes,
     oob_default,
-    warp_stable_sort_pairs_t{});
+    warp_sort_delegate{});
 
-  // Prepare verification data
-  c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
-  c2h::host_vector<value_type> h_values_in_out = d_values_in;
-  auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-  compute_host_reference(cpu_kv_pairs,
-                         segment_sizes,
-                         params::total_warps,
-                         thrust::make_tuple(oob_default, value_type{}),
-                         params::logical_warp_items);
+  if(params::is_stable) {
+    c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
+    c2h::host_vector<value_type> h_values_in_out = d_values_in;
+    auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
+    compute_stable_host_reference(cpu_kv_pairs,
+                                  segment_sizes,
+                                  params::total_warps,
+                                  thrust::make_tuple(oob_default, value_type{}),
+                                  params::logical_warp_items,
+                                  [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
+                                    CompareOp compare_op;
+                                    return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
+                                  });
 
-  // Verify results
-  REQUIRE(h_keys_in_out == d_keys_out);
-  REQUIRE(h_values_in_out == d_values_out);
+    REQUIRE(h_keys_in_out == d_keys_out);
+    REQUIRE(h_values_in_out == d_values_out);
+  } else {
+    c2h::host_vector<key_type> h_keys_in      = d_keys_in;
+    c2h::host_vector<value_type> h_values_in  = d_values_in;
+    c2h::host_vector<key_type> h_keys_out     = d_keys_out;
+    c2h::host_vector<value_type> h_values_out = d_values_out;
+
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+      unsigned int segment_offset = params::logical_warp_items * segment_id;
+      unsigned int segment_size = params::logical_warp_items;
+
+      std::vector<std::pair<key_type, value_type>> h_pairs_in_segment(segment_size);
+      std::vector<std::pair<key_type, value_type>> h_pairs_out_segment(segment_size);
+      for(unsigned int item_id = 0; item_id < segment_size; item_id++) {
+        h_pairs_in_segment[item_id] = std::make_pair(h_keys_in[item_id + segment_offset],
+                                                     h_values_in[item_id + segment_offset]);
+        h_pairs_out_segment[item_id] = std::make_pair(h_keys_out[item_id + segment_offset],
+                                                      h_values_out[item_id + segment_offset]);
+      }
+
+      REQUIRE_THAT(h_pairs_out_segment, Catch::Matchers::UnorderedEquals(h_pairs_in_segment));
+      REQUIRE_SORTED(
+        h_pairs_out_segment,
+        [](const std::pair<key_type, value_type>& lhs, const std::pair<key_type, value_type>& rhs) -> bool {
+          CompareOp compare_op;
+          return compare_op(lhs.first, rhs.first);
+        });
+    }
+  }
 }
 
 CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
@@ -550,8 +634,9 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   using params             = params_t<TestType>;
   using key_type           = typename params::type;
   using value_type         = typename c2h::get<4, TestType>;
+  using CompareOp = CustomLess;
   using warp_sort_delegate = cub::detail::
-    conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t, warp_partial_sort_pairs_t>;
+    conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t<CompareOp>, warp_partial_sort_pairs_t<CompareOp>>;
 
   // Prepare test data
   c2h::device_vector<key_type> d_keys_in(params::tile_size);
@@ -560,8 +645,9 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   c2h::device_vector<value_type> d_values_out(params::tile_size);
   c2h::device_vector<int> d_segment_sizes(params::total_warps);
   const auto oob_default = std::numeric_limits<key_type>::max();
-  c2h::gen(CUB_SEED(5), d_keys_in);
-  c2h::gen(CUB_SEED(5), d_segment_sizes, 0, params::logical_warp_items);
+  c2h::gen(CUB_SEED(3), d_keys_in);
+  c2h::gen(CUB_SEED(3), d_values_in);
+  c2h::gen(CUB_SEED(3), d_segment_sizes, 0, params::logical_warp_items);
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
@@ -573,18 +659,59 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
     oob_default,
     warp_sort_delegate{});
 
-  // Prepare verification data
-  c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
-  c2h::host_vector<value_type> h_values_in_out = d_values_in;
   c2h::host_vector<int> segment_sizes          = d_segment_sizes;
-  auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-  compute_host_reference(cpu_kv_pairs,
-                         segment_sizes,
-                         params::total_warps,
-                         thrust::make_tuple(oob_default, value_type{}),
-                         params::logical_warp_items);
 
-  // Verify results
-  REQUIRE(h_keys_in_out == d_keys_out);
-  REQUIRE(h_values_in_out == d_values_out);
+  if(params::is_stable) {
+    c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
+    c2h::host_vector<value_type> h_values_in_out = d_values_in;
+    auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
+    compute_stable_host_reference(cpu_kv_pairs,
+                                  segment_sizes,
+                                  params::total_warps,
+                                  thrust::make_tuple(oob_default, value_type{}),
+                                  params::logical_warp_items,
+                                  [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
+                                    CompareOp compare_op;
+                                    return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
+                                  });
+
+    REQUIRE(h_keys_in_out == d_keys_out);
+    REQUIRE(h_values_in_out == d_values_out);
+  } else {
+    c2h::host_vector<key_type> h_keys_in      = d_keys_in;
+    c2h::host_vector<value_type> h_values_in  = d_values_in;
+    c2h::host_vector<key_type> h_keys_out     = d_keys_out;
+    c2h::host_vector<value_type> h_values_out = d_values_out;
+
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+      unsigned int segment_offset = params::logical_warp_items * segment_id;
+      unsigned int segment_size = segment_sizes[segment_id];
+
+      std::vector<std::pair<key_type, value_type>> h_pairs_in_ib(segment_size);
+      std::vector<std::pair<key_type, value_type>> h_pairs_out_ib(segment_size);
+      for(unsigned int item_id = 0; item_id < segment_size; item_id++) {
+        h_pairs_in_ib[item_id] = std::make_pair(h_keys_in[item_id + segment_offset],
+                                                h_values_in[item_id + segment_offset]);
+        h_pairs_out_ib[item_id] = std::make_pair(h_keys_out[item_id + segment_offset],
+                                                 h_values_out[item_id + segment_offset]);
+      }
+      std::vector<std::pair<key_type, value_type>> h_pairs_ref_oob(
+        params::logical_warp_items - segment_size, std::make_pair(oob_default, value_type{}));
+      std::vector<std::pair<key_type, value_type>> h_pairs_out_oob(
+        params::logical_warp_items - segment_size);
+      for(unsigned int item_id = 0; item_id < params::logical_warp_items - segment_size; item_id++) {
+        h_pairs_out_oob[item_id] = std::make_pair(h_keys_out[item_id + segment_offset + segment_size],
+                                                  h_values_out[item_id + segment_offset + segment_size]);
+      }
+
+      REQUIRE_THAT(h_pairs_out_ib, Catch::Matchers::UnorderedEquals(h_pairs_in_ib));
+      REQUIRE(h_pairs_out_oob == h_pairs_ref_oob);
+      REQUIRE_SORTED(
+        h_pairs_out_ib,
+        [](const std::pair<key_type, value_type>& lhs, const std::pair<key_type, value_type>& rhs) -> bool {
+          CompareOp compare_op;
+          return compare_op(lhs.first, rhs.first);
+        });
+    }
+  }
 }

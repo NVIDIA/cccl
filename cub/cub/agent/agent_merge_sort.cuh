@@ -213,11 +213,11 @@ struct AgentBlockSort
     if (IS_LAST_TILE)
     {
       BlockMergeSortT(storage.block_merge)
-        .Sort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
+        .StableSort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
     }
     else
     {
-      BlockMergeSortT(storage.block_merge).Sort(keys_local, items_local, compare_op);
+      BlockMergeSortT(storage.block_merge).StableSort(keys_local, items_local, compare_op);
     }
 
     CTA_SYNC();
