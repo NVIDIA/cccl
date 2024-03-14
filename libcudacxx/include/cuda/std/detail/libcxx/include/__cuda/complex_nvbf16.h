@@ -37,6 +37,10 @@ _CCCL_DIAG_POP
 #  include "../__type_traits/is_same.h"
 #  include "../cmath"
 
+#  if !defined(_CCCL_COMPILER_NVRTC)
+#    include <sstream> // for std::basic_ostringstream
+#  endif // !_CCCL_COMPILER_NVRTC
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <>
@@ -72,8 +76,8 @@ public:
       : __repr(__re, __im)
   {}
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
 
   _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
       : __repr(__c.real(), __c.imag())
@@ -82,7 +86,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
       : __repr(__c.real(), __c.imag())
   {}
 
-_CCCL_DIAG_POP
+  _CCCL_DIAG_POP
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
@@ -227,6 +231,25 @@ inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acos(const complex<_
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
 }
+
+#  if !defined(_CCCL_COMPILER_NVRTC)
+template <class _CharT, class _Traits>
+::std::basic_istream<_CharT, _Traits>&
+operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& __x)
+{
+  ::std::complex<float> __temp;
+  __is >> __temp;
+  __x = __temp;
+  return __is;
+}
+
+template <class _CharT, class _Traits>
+::std::basic_ostream<_CharT, _Traits>&
+operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloat16>& __x)
+{
+  return __os << complex<float>{__x.real(), __x.imag()};
+}
+#  endif // !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
