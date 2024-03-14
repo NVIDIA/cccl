@@ -291,6 +291,9 @@ private:
 
   using __vtable = _Filtered_vtable<_Properties...>;
 
+  template<class... _OtherProperties>
+  static constexpr bool __properties_match = _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
+
 public:
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
   _LIBCUDACXX_REQUIRES((!_Is_basic_resource_ref<_Resource>) _LIBCUDACXX_AND(_Alloc_type2 == _AllocType::_Default)
@@ -325,7 +328,7 @@ public:
   {}
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
+  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_Alloc_type, _OtherProperties...> __ref) noexcept
       : _Resource_ref_base<_Alloc_type>(__ref.__object, __ref.__static_vtable)
       , __vtable(__ref)
@@ -333,7 +336,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((_OtherAllocType == _AllocType::_Async) _LIBCUDACXX_AND(_OtherAllocType != _Alloc_type)
-                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
+                         _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   basic_resource_ref(basic_resource_ref<_OtherAllocType, _OtherProperties...> __ref) noexcept
       : _Resource_ref_base<_Alloc_type>(__ref.__object, __ref.__static_vtable)
       , __vtable(__ref)
@@ -341,7 +344,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
+                         _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return (this->__static_vtable->__equal_fn == __right.__static_vtable->__equal_fn) //
@@ -350,13 +353,13 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
   _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>)
+                         _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
   bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __right) const
   {
     return !(*this == __right);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Property)
+    _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(
     (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
   friend void get_property(const basic_resource_ref&, _Property) noexcept {}
