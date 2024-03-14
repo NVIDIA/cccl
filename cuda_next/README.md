@@ -12,7 +12,15 @@ Once we become confident a feature is ready and would be a great permanent addit
 ## Installation
 CUDA Next library is **not** distributed with the CUDA Toolkit like the rest of CCCL. It is only avaiable on the [CCCL GitHub repository](https://github.com/NVIDIA/cccl).
 
-CUDA Next compilation requires C++17 standard or newer. Supported compiler is NVCC 12.0+ with GCC 11+ as the host compiler, but support matrix will be expanded in the future.
+CUDA Next compilation requires C++17 standard or newer. Supported compilers are:
+
+CUDA Compilers:
+- NVCC 12.3+
+
+NVCC host compilers:
+- GCC 7+
+- Clang 9+
+- MSVC 2019+
 
 Everything in CUDA Next is header-only, so cloning and including it in a simple project is as easy as the following:
 ```bash

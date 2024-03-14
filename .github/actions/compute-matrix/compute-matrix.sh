@@ -8,11 +8,6 @@ write_output() {
   echo "$key=$value" | tee --append "${GITHUB_OUTPUT:-/dev/null}"
 }
 
-# Only configs with std >= 17
-filter_minstd_17() {
-  jq -cr 'map(.std |= map(select(. >= 17)) | select(.std | length > 0))'
-}
-
 explode_std_versions() {
   jq -cr 'map(. as $o | {std: $o.std[]} + del($o.std))'
 }
@@ -32,10 +27,10 @@ extract_matrix() {
   write_output "PER_CUDA_COMPILER_MATRIX"  "$per_cuda_compiler_matrix"
   write_output "PER_CUDA_COMPILER_KEYS" "$(echo "$per_cuda_compiler_matrix" | jq -r 'keys | @json')"
 
-  local nvcc_full_matrix_minstd_17="$(echo "$matrix" | jq -cr '.nvcc' | filter_minstd_17 | explode_std_versions)"
-  local per_cuda_compiler_matrix_minstd_17="$(echo "$nvcc_full_matrix_minstd_17" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
-  write_output "PER_CUDA_COMPILER_MATRIX_MINSTD_17"  "$per_cuda_compiler_matrix_minstd_17"
-  write_output "PER_CUDA_COMPILER_KEYS_MINSTD_17" "$(echo "$per_cuda_compiler_matrix_minstd_17" | jq -r 'keys | @json')"
+  local cuda_next_nvcc_full_matrix="$(echo "$matrix" | jq -cr '.["nvcc-cuda-next"]' | explode_std_versions)"
+  local cuda_next_per_cuda_compiler_matrix="$(echo "$cuda_next_nvcc_full_matrix" | jq -cr ' group_by(.cuda + .compiler.name) | map({(.[0].cuda + "-" + .[0].compiler.name): .}) | add')"
+  write_output "CUDA_NEXT_PER_CUDA_COMPILER_MATRIX"  "$cuda_next_per_cuda_compiler_matrix"
+  write_output "CUDA_NEXT_PER_CUDA_COMPILER_KEYS" "$(echo "$cuda_next_per_cuda_compiler_matrix" | jq -r 'keys | @json')"
 
   write_output "NVRTC_MATRIX" "$(echo "$matrix" | jq '.nvrtc' | explode_std_versions)"
 
