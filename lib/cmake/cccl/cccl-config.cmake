@@ -16,7 +16,10 @@ if (DEFINED ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS AND
     ${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS)
   set(components ${${CMAKE_FIND_PACKAGE_NAME}_FIND_COMPONENTS})
 else()
-  set(components Thrust CUB libcudacxx CudaNext)
+  set(components Thrust CUB libcudacxx)
+  if (CCCL_ENABLE_UNSTABLE)
+    list(APPEND components CudaNext)
+  endif()
 endif()
 
 if (NOT TARGET CCCL::CCCL)

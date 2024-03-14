@@ -99,7 +99,10 @@ else()
 endif()
 
 if (COMPONENTS STREQUAL "DEFAULT")
-  set(COMPONENTS libcudacxx CUB Thrust CudaNext)
+  set(COMPONENTS libcudacxx CUB Thrust)
+  if (CCCL_ENABLE_UNSTABLE)
+    list(APPEND COMPONENTS CudaNext)
+  endif()
 endif()
 
 foreach (component IN LISTS COMPONENTS)

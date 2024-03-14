@@ -34,10 +34,16 @@ cmake_minimum_required(VERSION 3.21)
 option(CCCL_ENABLE_LIBCUDACXX "Enable the libcu++ developer build." ON)
 option(CCCL_ENABLE_CUB "Enable the CUB developer build." ON)
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ON)
-option(CCCL_ENABLE_CudaNext "Enable the CUDA Next developer build." ON)
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ON)
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ON)
 option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
+
+option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
+
+if (CCCL_ENABLE_UNSTABLE)
+  option(CCCL_ENABLE_CudaNext "Enable the CUDA Next developer build." ON)
+endif()
+
 
 include(CTest)
 enable_testing()
@@ -49,10 +55,6 @@ if (CCCL_ENABLE_LIBCUDACXX)
   set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
 endif()
 
-if (CCCL_ENABLE_CudaNext)
-  set(CudaNext_TOPLEVEL_PROJECT ON)
-endif()
-
 if (CCCL_ENABLE_CUB)
   set(CUB_TOPLEVEL_PROJECT ON)
 endif()
@@ -61,10 +63,17 @@ if (CCCL_ENABLE_THRUST)
   set(THRUST_TOPLEVEL_PROJECT ON)
 endif()
 
+if (CCCL_ENABLE_CudaNext)
+  set(CudaNext_TOPLEVEL_PROJECT ON)
+endif()
+
 add_subdirectory(libcudacxx)
-add_subdirectory(cuda_next)
 add_subdirectory(cub)
 add_subdirectory(thrust)
+
+if (CCCL_ENABLE_UNSTABLE)
+  add_subdirectory(cuda_next)
+endif()
 
 if (CCCL_ENABLE_TESTING)
   add_subdirectory(test)
