@@ -103,6 +103,7 @@ void  operator delete[](void* ptr, void*) noexcept;
 #include <cuda/std/detail/libcxx/include/__new/align_val.h>
 #include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
 #include <cuda/std/detail/libcxx/include/__new/destroying_delete.h>
+#include <cuda/std/detail/libcxx/include/__new/launder.h>
 #include <cuda/std/detail/libcxx/include/__new/new_handler.h>
 #include <cuda/std/detail/libcxx/include/__new/nothrow.h>
 #include <cuda/std/detail/libcxx/include/exception>
@@ -301,28 +302,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __pt
   _DeallocateCaller::__do_deallocate_handle_align(__ptr, __align);
 }
 
-template <class _Tp>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline
-constexpr _Tp* __launder(_Tp* __p) noexcept
-{
-    static_assert (!(is_function<_Tp>::value), "can't launder functions" );
-    static_assert (!(is_same<void, __remove_cv_t<_Tp>>::value), "can't launder cv-void" );
-#if defined(_LIBCUDACXX_LAUNDER)
-    return _LIBCUDACXX_LAUNDER(__p);
-#else
-    return __p;
-#endif // defined(_LIBCUDACXX_LAUNDER)
-}
-
-
 #if _CCCL_STD_VER > 2014
-template <class _Tp>
-_LIBCUDACXX_NODISCARD_AFTER_CXX17 inline _LIBCUDACXX_INLINE_VISIBILITY
-constexpr _Tp* launder(_Tp* __p) noexcept
-{
-    return _CUDA_VSTD::__launder(__p);
-}
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -243,6 +243,7 @@ set(files
   __new/align_val.h
   __new/bad_alloc.h
   __new/destroying_delete.h
+  __new/launder.h
   __new/new_handler.h
   __new/nothrow.h
   __node_handle
