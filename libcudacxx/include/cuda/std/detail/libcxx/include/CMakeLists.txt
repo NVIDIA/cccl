@@ -241,6 +241,7 @@ set(files
   __memory/voidify.h
   __mutex_base
   __new/align_val.h
+  __new/allocate.h
   __new/bad_alloc.h
   __new/destroying_delete.h
   __new/launder.h

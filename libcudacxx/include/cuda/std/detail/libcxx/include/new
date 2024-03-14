@@ -101,6 +101,7 @@ void  operator delete[](void* ptr, void*) noexcept;
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__new/align_val.h>
+#include <cuda/std/detail/libcxx/include/__new/allocate.h>
 #include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
 #include <cuda/std/detail/libcxx/include/__new/destroying_delete.h>
 #include <cuda/std/detail/libcxx/include/__new/launder.h>
@@ -120,23 +121,9 @@ void  operator delete[](void* ptr, void*) noexcept;
 #  include <__pragma_push>
 #endif // __cuda_std__
 
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation  < 201309L
-#define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
-#endif
-
 #if !defined(_LIBCUDACXX_BUILDING_LIBRARY) && _CCCL_STD_VER < 2014 && \
-    defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
+    (!defined(__cpp_sized_deallocation) || __cpp_sized_deallocation  < 201309L)
 # define _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
-#endif
-
-#if defined(_LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION) || \
-    defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
-# define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
-#endif
-
-#if !__has_builtin(__builtin_operator_new) || \
-   __has_builtin(__builtin_operator_new) < 201802L
-#define _LIBCUDACXX_HAS_NO_BUILTIN_OVERLOADED_OPERATOR_NEW_DELETE
 #endif
 
 #if !defined(_LIBCUDACXX_ABI_VCRUNTIME)
@@ -183,124 +170,6 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void  operator delete[](void*, void*) noexc
 #endif // !_LIBCUDACXX_ABI_VCRUNTIME
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-constexpr inline _LIBCUDACXX_INLINE_VISIBILITY bool __is_overaligned_for_new(size_t __align) noexcept {
-#ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
-  return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
-#else
-  return __align > alignment_of<max_align_t>::value;
-#endif
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY void *__libcpp_allocate(size_t __size, size_t __align) {
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-  if (__is_overaligned_for_new(__align)) {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
-# ifdef _LIBCUDACXX_HAS_NO_BUILTIN_OVERLOADED_OPERATOR_NEW_DELETE
-    return ::operator new(__size, __align_val);
-# else
-    return __builtin_operator_new(__size, __align_val);
-# endif
-  }
-#else
-  ((void)__align);
-#endif
-#ifdef _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
-  return ::operator new(__size);
-#else
-  return __builtin_operator_new(__size);
-#endif
-}
-
-struct _DeallocateCaller {
-  static inline _LIBCUDACXX_INLINE_VISIBILITY
-  void __do_deallocate_handle_size_align(void *__ptr, size_t __size, size_t __align) {
-#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
-    ((void)__align);
-    return __do_deallocate_handle_size(__ptr, __size);
-#else
-    if (__is_overaligned_for_new(__align)) {
-      const align_val_t __align_val = static_cast<align_val_t>(__align);
-      return __do_deallocate_handle_size(__ptr, __size, __align_val);
-    } else {
-      return __do_deallocate_handle_size(__ptr, __size);
-    }
-#endif
-  }
-
-  static inline _LIBCUDACXX_INLINE_VISIBILITY
-  void __do_deallocate_handle_align(void *__ptr, size_t __align) {
-#if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)
-    ((void)__align);
-    return __do_call(__ptr);
-#else
-    if (__is_overaligned_for_new(__align)) {
-      const align_val_t __align_val = static_cast<align_val_t>(__align);
-      return __do_call(__ptr, __align_val);
-    } else {
-      return __do_call(__ptr);
-    }
-#endif
-  }
-
- private:
-  static inline void __do_deallocate_handle_size(void *__ptr, size_t __size) {
-#ifdef _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
-    ((void)__size);
-    return __do_call(__ptr);
-#else
-    return __do_call(__ptr, __size);
-#endif
-  }
-
-#ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-  static inline void __do_deallocate_handle_size(void *__ptr, size_t __size, align_val_t __align) {
-#ifdef _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
-    ((void)__size);
-    return __do_call(__ptr, __align);
-#else
-    return __do_call(__ptr, __size, __align);
-#endif
-  }
-#endif
-
-private:
-  template <class _A1, class _A2>
-  static inline void __do_call(void *__ptr, _A1 __a1, _A2 __a2) {
-#if defined(_LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE) || \
-    defined(_LIBCUDACXX_HAS_NO_BUILTIN_OVERLOADED_OPERATOR_NEW_DELETE)
-    return ::operator delete(__ptr, __a1, __a2);
-#else
-    return __builtin_operator_delete(__ptr, __a1, __a2);
-#endif
-  }
-
-  template <class _A1>
-  static inline void __do_call(void *__ptr, _A1 __a1) {
-#if defined(_LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE) || \
-    defined(_LIBCUDACXX_HAS_NO_BUILTIN_OVERLOADED_OPERATOR_NEW_DELETE)
-    return ::operator delete(__ptr, __a1);
-#else
-    return __builtin_operator_delete(__ptr, __a1);
-#endif
-  }
-
-  static inline void __do_call(void *__ptr) {
-#ifdef _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
-    return ::operator delete(__ptr);
-#else
-    return __builtin_operator_delete(__ptr);
-#endif
-  }
-};
-
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate(void* __ptr, size_t __size, size_t __align) {
-  _DeallocateCaller::__do_deallocate_handle_size_align(__ptr, __size, __align);
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __ptr, size_t __align) {
-  _DeallocateCaller::__do_deallocate_handle_align(__ptr, __align);
-}
 
 #if _CCCL_STD_VER > 2014
 
