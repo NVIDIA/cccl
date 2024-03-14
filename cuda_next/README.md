@@ -4,7 +4,7 @@ Some of them are still actively designed or developed and their API is evolving.
 Some of them are specific to one hardware architecture and are still looking for a generic and forward compatible exposure.
 Finally, some of them need to prove useful enough to deserve long term support.
 
-**All APIs available in CUDA Next are not considered stable and can change without a notice.** They can also be deprecated or removed on a much faster cadence than in other CCCL libraries. 
+**All APIs available in CUDA Next are not considered stable and can change without a notice.** They can also be deprecated or removed on a much faster cadence than in other CCCL libraries.
 
 Features are exposed here for the CUDA C++ community to experiment with and provide feedback on how to shape it to best fit their use cases.
 Once we become confident a feature is ready and would be a great permanent addition in CCCL, it will become a part of some other CCCL library with a stable API.
@@ -20,3 +20,5 @@ git clone https://github.com/NVIDIA/cccl.git
 # Note:
 nvcc -Icccl/cuda_next/include main.cu -o main
 ```
+
+A CMake target `CudaNext::CudaNext` is available as part of the CCCL package when `CCCL_ENABLE_UNSTABLE` is set to a truthy value before calling `find_package` or `add_subdirectory`.
