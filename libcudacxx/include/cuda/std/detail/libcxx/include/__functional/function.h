@@ -45,11 +45,11 @@
 #include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
 #include <cuda/std/detail/libcxx/include/__utility/swap.h>
 #include <cuda/std/detail/libcxx/include/exception>
+#include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
 #include <memory>
-#include <new>
 #include <typeinfo>
 #endif // __cuda_std__
 

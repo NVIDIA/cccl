@@ -240,13 +240,9 @@ set(files
   __memory/pointer_traits.h
   __memory/voidify.h
   __mutex_base
-  __new/align_val.h
   __new/allocate.h
   __new/bad_alloc.h
-  __new/destroying_delete.h
   __new/launder.h
-  __new/new_handler.h
-  __new/nothrow.h
   __node_handle
   __nullptr
   __ranges/access.h

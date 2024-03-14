@@ -25,7 +25,6 @@
 #endif // no system header
 
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__new/align_val.h>
 
 #if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #include <new> // for ::std::std::align_val_t
@@ -44,6 +43,10 @@
     defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
 # define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
 #endif
+
+#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
+#include <new> // for ::std::align_val_t
+#endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -81,7 +84,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void* __libcpp_allocate(size_t __size, size
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const ::std::align_val_t __align_val = static_cast<::std::align_val_t>(__align);
     return __libcpp_operator_new(__size, __align_val);
   }
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
@@ -105,7 +108,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate(void* __ptr, size_
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const ::std::align_val_t __align_val = static_cast<::std::align_val_t>(__align);
     return __do_deallocate_handle_size(__ptr, __size, __align_val);
   }
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
@@ -118,7 +121,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __pt
 #ifndef _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
   if (__is_overaligned_for_new(__align))
   {
-    const align_val_t __align_val = static_cast<align_val_t>(__align);
+    const ::std::align_val_t __align_val = static_cast<::std::align_val_t>(__align);
     return __libcpp_operator_delete(__ptr, __align_val);
   }
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
