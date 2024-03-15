@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // trigonometric functions
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return hsin(__v);), ({
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsin(__v);), ({
                       float __vf            = __v;
                       __vf                  = ::sin(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
