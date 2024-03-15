@@ -495,7 +495,7 @@ struct __invoke_of
                    "that requires querying its return type in host code. Use a "
                    "named function object, an extended __host__ __device__ lambda, "
                    "cuda::proclaim_return_type, or an extended __device__ lambda "
-                   "with preserved return type instead.");
+                   "with a trailing return type instead ([] __device__ (...) -> RETURN_TYPE {...}).");
   #endif // !_LIBCUDACXX_CUDACC_BELOW_12_3
 #endif
 };
