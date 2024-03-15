@@ -295,6 +295,10 @@
 #define LIBCPP_ONLY(...) ((void)0)
 #endif
 
+#ifndef __has_cpp_attribute
+#define __has_cpp_attribute(__x) 0
+#endif // !__has_cpp_attribute
+
 #if __has_cpp_attribute(nodiscard)
 #  define TEST_NODISCARD [[nodiscard]]
 #else

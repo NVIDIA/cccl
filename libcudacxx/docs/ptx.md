@@ -1,16 +1,15 @@
 ---
+title: PTX
 has_children: true
 has_toc: false
 nav_order: 4
 ---
 
-## PTX instructions
+# PTX
 
 The `cuda::ptx` namespace contains functions that map one-to-one to
 [PTX instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html). These can be used for maximal control of the generated code, or to
 experiment with new hardware features before a high-level C++ API is available.
-
-### Variants
 
 ### Versions and compatibility
 
@@ -73,8 +72,8 @@ For more information on which compilers correspond to which PTX ISA, see the
 [PTX ISA release
 notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes).
 
-
-### [9.7.1. Integer Arithmetic Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions)
+## Instructions by section
+### [Integer Arithmetic Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -116,7 +115,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`dp4a`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp4a
 [`dp2a`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-dp2a
 
-### [9.7.2. Extended-Precision Integer Arithmetic Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-integer-arithmetic-instructions)
+### [Extended-Precision Integer Arithmetic Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-integer-arithmetic-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -134,7 +133,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`mad.cc`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-mad-cc
 [`madc`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#extended-precision-arithmetic-instructions-madc
 
-### [9.7.3. Floating-Point Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions)
+### [Floating-Point Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -184,7 +183,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`ex2`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-ex2
 [`tanh`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#floating-point-instructions-tanh
 
-### [9.7.4. Half Precision Floating-Point Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions)
+### [Half Precision Floating-Point Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -210,7 +209,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`tanh`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-tanh
 [`ex2`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-floating-point-instructions-ex2
 
-### [9.7.5. Comparison and Selection Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions)
+### [Comparison and Selection Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -224,7 +223,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`selp`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-selp
 [`slct`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#comparison-and-selection-instructions-slct
 
-### [9.7.6. Half Precision Comparison Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions)
+### [Half Precision Comparison Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -234,7 +233,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`set`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-set
 [`setp`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#half-precision-comparison-instructions-setp
 
-### [9.7.7. Logic and Shift Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions)
+### [Logic and Shift Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -258,7 +257,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`shl`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shl
 [`shr`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#logic-and-shift-instructions-shr
 
-### [9.7.8. Data Movement and Conversion Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions)
+### [Data Movement and Conversion Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions)
 
 | Instruction                                       | Available in libcu++    |
 |---------------------------------------------------|-------------------------|
@@ -271,7 +270,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 | [`ld.global.nc`]                                  | No                      |
 | [`ldu`]                                           | No                      |
 | [`st`]                                            | No                      |
-| [`st.async`]                                      | CTK-FUTURE, CCCL v2.3.0 |
+| [`st.async`]                                      | [CTK 12.4, CCCL v2.3.0] |
 | [`multimem.ld_reduce, multimem.st, multimem.red`] | No                      |
 | [`prefetch, prefetchu`]                           | No                      |
 | [`applypriority`]                                 | No                      |
@@ -292,7 +291,7 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`ld.global.nc`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc
 [`ldu`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ldu
 [`st`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st
-[`st.async`]: #stasync
+[`st.async`]: ptx/instructions/st.async.md
 [`multimem.ld_reduce, multimem.st, multimem.red`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-multimem-ld-reduce-multimem-st-multimem-red
 [`prefetch, prefetchu`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prefetch-prefetchu
 [`applypriority`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-applypriority
@@ -302,168 +301,10 @@ notes](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release
 [`cvta`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvta
 [`cvt`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt
 [`cvt.pack`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cvt-pack
-[`mapa`]: #mapa
-[`getctarank`]: #getctarank
+[`mapa`]: ptx/instructions/mapa.md
+[`getctarank`]: ptx/instructions/getctarank.md
 
-#### `st.async`
-
--  PTX ISA: [`st.async`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async)
-
-**NOTE.** Alignment of `addr` must be a multiple of vector size. For instance,
-the `addr` supplied to the `v2.b32` variant must be aligned to `2 x 4 = 8` bytes.
-
-**st_async**:
-```cuda
-// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.  PTX ISA 81, SM_90
-// .type      = { .b32, .b64 }
-template <typename Type>
-__device__ static inline void st_async(
-  Type* addr,
-  const Type& value,
-  uint64_t* remote_bar);
-
-// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2{.type} [addr], value, [remote_bar]; // 2.  PTX ISA 81, SM_90
-// .type      = { .b32, .b64 }
-template <typename Type>
-__device__ static inline void st_async(
-  Type* addr,
-  const Type (&value)[2],
-  uint64_t* remote_bar);
-
-// st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v4.b32 [addr], value, [remote_bar];    // 3.  PTX ISA 81, SM_90
-template <typename B32>
-__device__ static inline void st_async(
-  B32* addr,
-  const B32 (&value)[4],
-  uint64_t* remote_bar);
-```
-
-**Usage**:
-```cuda
-#include <cstdio>
-#include <cuda/ptx>
-#include <cuda/barrier>
-#include <cooperative_groups.h>
-
-__global__ void __cluster_dims__(8, 1, 1) kernel()
-{
-  using cuda::ptx::sem_release;
-  using cuda::ptx::sem_acquire;
-  using cuda::ptx::space_cluster;
-  using cuda::ptx::space_shared;
-  using cuda::ptx::scope_cluster;
-
-  namespace cg = cooperative_groups;
-  cg::cluster_group cluster = cg::this_cluster();
-
-  using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-
-  __shared__ int receive_buffer[4];
-  __shared__ barrier_t bar;
-  init(&bar, blockDim.x);
-
-  // Sync cluster to ensure remote barrier is initialized.
-  cluster.sync();
-
-  // Get address of remote cluster barrier:
-  unsigned int other_block_rank = cluster.block_rank() ^ 1;
-  uint64_t * remote_bar = cluster.map_shared_rank(cuda::device::barrier_native_handle(bar), other_block_rank);
-  // int * remote_buffer = cluster.map_shared_rank(&receive_buffer, other_block_rank);
-  int * remote_buffer = cluster.map_shared_rank(&receive_buffer[0], other_block_rank);
-
-  // Arrive on local barrier:
-  uint64_t arrival_token;
-  if (threadIdx.x == 0) {
-    // Thread 0 arrives and indicates it expects to receive a certain number of bytes as well
-    arrival_token = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, cuda::device::barrier_native_handle(bar), sizeof(receive_buffer));
-  } else {
-    arrival_token = cuda::ptx::mbarrier_arrive(sem_release, scope_cluster, space_shared, cuda::device::barrier_native_handle(bar));
-  }
-
-  if (threadIdx.x == 0) {
-    printf("[block %d] arrived with expected tx count = %llu\n", cluster.block_rank(), sizeof(receive_buffer));
-  }
-
-  // Send bytes to remote buffer, arriving on remote barrier
-  if (threadIdx.x == 0) {
-    cuda::ptx::st_async(remote_buffer, {int(cluster.block_rank()), 2, 3, 4}, remote_bar);
-  }
-
-  if (threadIdx.x == 0) {
-    printf("[block %d] st_async to %p, %p\n",
-           cluster.block_rank(),
-           remote_buffer,
-           remote_bar
-    );
-  }
-
-  // Wait on local barrier:
-  while(!cuda::ptx::mbarrier_try_wait(sem_acquire, scope_cluster, cuda::device::barrier_native_handle(bar), arrival_token)) {}
-
-  // Print received values:
-  if (threadIdx.x == 0) {
-    printf(
-      "[block %d] receive_buffer = { %d, %d, %d, %d }\n",
-      cluster.block_rank(),
-      receive_buffer[0], receive_buffer[1], receive_buffer[2], receive_buffer[3]
-    );
-  }
-
-}
-
-int main() {
-  kernel<<<8, 128>>>();
-  cudaDeviceSynchronize();
-}
-```
-
-#### `mapa`
-
-- PTX ISA: [`mapa`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-mapa)
-
-This instruction can [currently not be
-implemented](https://github.com/NVIDIA/cccl/issues/1414) by libcu++. The
-instruction can be accessed through the cooperative groups
-[cluster_group](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group)
-API:
-
-Usage:
-```cuda
-#include <cooperative_groups.h>
-
-__cluster_dims__(2)
-__global__ void kernel() {
-    __shared__ int x;
-    x = 1;
-    namespace cg = cooperative_groups;
-    cg::cluster_group cluster = cg::this_cluster();
-
-    cluster.sync();
-
-    // Get address of remote shared memory value:
-    unsigned int other_block_rank = cluster.block_rank() ^ 1;
-    int * remote_x = cluster.map_shared_rank(&bar, other_block_rank);
-
-    // Write to remote value:
-    *remote_x = 2;
-}
-```
-
-#### `getctarank`
-
-- PTX ISA: [`getctarank`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-getctarank)
-
-**getctarank**:
-```cuda
-// getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
-// .space     = { .shared::cluster }
-template <typename=void>
-__device__ static inline uint32_t getctarank(
-  cuda::ptx::space_cluster_t,
-  const void* addr);
-```
-
-### [9.7.8.24. Data Movement and Conversion Instructions: Asynchronous copy](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy)
+### [Data Movement and Conversion Instructions: Asynchronous copy](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-asynchronous-copy)
 
 | Instruction                                 | Available in libcu++    |
 |---------------------------------------------|-------------------------|
@@ -483,1130 +324,17 @@ __device__ static inline uint32_t getctarank(
 [`cp.async`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async
 [`cp.async.commit_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-commit-group
 [`cp.async.wait_group / cp.async.wait_all`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-wait-group-cp-async-wait-all
-[`cp.async.bulk`]: #cpasyncbulk
-[`cp.reduce.async.bulk`]: #cpreduceasyncbulk
+[`cp.reduce.async.bulk`]: ptx/instructions/cp.reduce.async.bulk.md
+[`cp.async.bulk`]: ptx/instructions/cp.async.bulk.md
 [`cp.async.bulk.prefetch`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch
-[`cp.async.bulk.tensor`]: #cpasyncbulktensor
-[`cp.reduce.async.bulk.tensor`]: #cpreduceasyncbulktensor
+[`cp.async.bulk.tensor`]: ptx/instructions/cp.async.bulk.tensor.md
+[`cp.reduce.async.bulk.tensor`]: ptx/instructions/cp.reduce.async.bulk.tensor.md
 [`cp.async.bulk.prefetch.tensor`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-prefetch-tensor
-[`cp.async.bulk.commit_group`]: #cpasyncbulkcommit_group
-[`cp.async.bulk.wait_group`]: #cpasyncbulkwait_group
-[`tensormap.replace`]: #tensormapreplace
-
-
-#### `cp.reduce.async.bulk`
-
-- PTX ISA: [`cp.reduce.async.bulk`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk)
-
-PTX does not currently (CTK 12.3) expose `cp.reduce.async.bulk.add.s64`. This exposure is emulated in `cuda::ptx` using:
-
-```cuda
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.u64 [dstMem], [srcMem], size, [rdsmem_bar]; // 2. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.u64  [dstMem], [srcMem], size; // 6. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size);
-```
-
-**cp_reduce_async_bulk**:
-```cuda
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .b32 }
-// .op        = { .and }
-template <typename B32>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_and_op_t,
-  B32* dstMem,
-  const B32* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .b32 }
-// .op        = { .or }
-template <typename B32>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_or_op_t,
-  B32* dstMem,
-  const B32* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .b32 }
-// .op        = { .xor }
-template <typename B32>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_xor_op_t,
-  B32* dstMem,
-  const B32* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .inc }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_inc_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .dec }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_dec_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .u64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  uint64_t* dstMem,
-  const uint64_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.u64 [dstMem], [srcMem], size, [rdsmem_bar]; // 2. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size,
-  uint64_t* rdsmem_bar);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 3. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .b32, .b64 }
-// .op        = { .and }
-template <typename Type>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_and_op_t,
-  Type* dstMem,
-  const Type* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 3. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .b32, .b64 }
-// .op        = { .or }
-template <typename Type>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_or_op_t,
-  Type* dstMem,
-  const Type* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 3. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .b32, .b64 }
-// .op        = { .xor }
-template <typename Type>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_xor_op_t,
-  Type* dstMem,
-  const Type* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .inc }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_inc_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u32 }
-// .op        = { .dec }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_dec_t,
-  uint32_t* dstMem,
-  const uint32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int32_t* dstMem,
-  const int32_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u64 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  uint64_t* dstMem,
-  const uint64_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u64 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  uint64_t* dstMem,
-  const uint64_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .u64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  uint64_t* dstMem,
-  const uint64_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .f32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  float* dstMem,
-  const float* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .f64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  double* dstMem,
-  const double* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.u64  [dstMem], [srcMem], size; // 6. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .s64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  int64_t* dstMem,
-  const int64_t* srcMem,
-  uint32_t size);
-```
-
-**cp_reduce_async_bulk_f16**:
-```cuda
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .f16 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  __half* dstMem,
-  const __half* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .f16 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  __half* dstMem,
-  const __half* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.noftz.type  [dstMem], [srcMem], size; // 5. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .f16 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  __half* dstMem,
-  const __half* srcMem,
-  uint32_t size);
-```
-
-**cp_reduce_async_bulk_bf16**:
-```cuda
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .bf16 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_min_t,
-  __nv_bfloat16* dstMem,
-  const __nv_bfloat16* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.type  [dstMem], [srcMem], size; // 4. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .bf16 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_max_t,
-  __nv_bfloat16* dstMem,
-  const __nv_bfloat16* srcMem,
-  uint32_t size);
-
-// cp.reduce.async.bulk.dst.src.bulk_group.op.noftz.type  [dstMem], [srcMem], size; // 5. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .type      = { .bf16 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void cp_reduce_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_add_t,
-  __nv_bfloat16* dstMem,
-  const __nv_bfloat16* srcMem,
-  uint32_t size);
-```
-
-#### `cp.async.bulk`
-
--  PTX ISA: [`cp.async.bulk`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk)
-
-**NOTE.** Both `srcMem` and `dstMem` must be 16-byte aligned, and `size` must be a multiple of 16.
-
-**cp_async_bulk**:
-```cuda
-// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // 1a. unicast PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* srcMem,
-  const uint32_t& size,
-  uint64_t* smem_bar);
-
-// cp.async.bulk{.dst}{.src}.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [srcMem], size, [smem_bar], ctaMask; // 1.  PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* srcMem,
-  const uint32_t& size,
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // 2.  PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_shared_t,
-  void* dstMem,
-  const void* srcMem,
-  const uint32_t& size,
-  uint64_t* rdsmem_bar);
-
-// cp.async.bulk.dst.src.bulk_group [dstMem], [srcMem], size; // 3.  PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  void* dstMem,
-  const void* srcMem,
-  const uint32_t& size);
-```
-
-#### `cp.async.bulk.tensor`
-
-- PTX ISA: [`cp.async.bulk.tensor`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-tensor)
-
-**cp_async_bulk_tensor**:
-```cuda
-// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1a. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  uint64_t* smem_bar);
-
-// cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.tensor.1d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3a. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  const void* srcMem);
-
-// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1b. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[2],
-  uint64_t* smem_bar);
-
-// cp.async.bulk.tensor.2d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[2],
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.tensor.2d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3b. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[2],
-  const void* srcMem);
-
-// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1c. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  uint64_t* smem_bar);
-
-// cp.async.bulk.tensor.3d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.tensor.3d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3c. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  const void* srcMem);
-
-// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1d. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  uint64_t* smem_bar);
-
-// cp.async.bulk.tensor.4d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.tensor.4d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3d. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  const void* srcMem);
-
-// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];// 1e. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
-  uint64_t* smem_bar);
-
-// cp.async.bulk.tensor.5d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap, tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90
-// .dst       = { .shared::cluster }
-// .src       = { .global }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_cluster_t,
-  cuda::ptx::space_global_t,
-  void* dstMem,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
-  uint64_t* smem_bar,
-  const uint16_t& ctaMask);
-
-// cp.async.bulk.tensor.5d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3e. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-template <typename=void>
-__device__ static inline void cp_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
-  const void* srcMem);
-```
-
-#### `cp.reduce.async.bulk.tensor`
-
-- PTX ISA: [`cp.reduce.async.bulk.tensor`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor)
-
-**cp_reduce_async_bulk_tensor**:
-```cuda
-// cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
-template <cuda::ptx::dot_op Op>
-__device__ static inline void cp_reduce_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_t<Op> op,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[1],
-  const void* srcMem);
-
-// cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
-template <cuda::ptx::dot_op Op>
-__device__ static inline void cp_reduce_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_t<Op> op,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[2],
-  const void* srcMem);
-
-// cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
-template <cuda::ptx::dot_op Op>
-__device__ static inline void cp_reduce_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_t<Op> op,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[3],
-  const void* srcMem);
-
-// cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
-template <cuda::ptx::dot_op Op>
-__device__ static inline void cp_reduce_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_t<Op> op,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[4],
-  const void* srcMem);
-
-// cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
-// .dst       = { .global }
-// .src       = { .shared::cta }
-// .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
-template <cuda::ptx::dot_op Op>
-__device__ static inline void cp_reduce_async_bulk_tensor(
-  cuda::ptx::space_global_t,
-  cuda::ptx::space_shared_t,
-  cuda::ptx::op_t<Op> op,
-  const void* tensorMap,
-  const int32_t (&tensorCoords)[5],
-  const void* srcMem);
-```
-
-#### `cp.async.bulk.commit_group`
-
-- PTX ISA: [`cp.async.bulk.commit_group`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group)
-
-**cp_async_bulk_commit_group**:
-```cuda
-// cp.async.bulk.commit_group; // PTX ISA 80, SM_90
-template <typename=void>
-__device__ static inline void cp_async_bulk_commit_group();
-```
-
-#### `cp.async.bulk.wait_group`
-
-- PTX ISA: [`cp.async.bulk.wait_group`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-wait-group)
-
-**cp_async_bulk_wait_group**:
-```cuda
-// cp.async.bulk.wait_group N; // PTX ISA 80, SM_90
-template <int N32>
-__device__ static inline void cp_async_bulk_wait_group(
-  cuda::ptx::n32_t<N32> N);
-```
-**cp_async_bulk_wait_group_read**:
-```cuda
-// cp.async.bulk.wait_group.read N; // PTX ISA 80, SM_90
-template <int N32>
-__device__ static inline void cp_async_bulk_wait_group_read(
-  cuda::ptx::n32_t<N32> N);
-```
-
-#### `tensormap.replace`
-
-- PTX ISA: [`tensormap.replace`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace)
-
-**tensormap_replace**:
-```cuda
-// tensormap.replace.tile.global_address.space.b1024.b64    [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <typename B64>
-__device__ static inline void tensormap_replace_global_address(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  B64 new_val);
-
-// tensormap.replace.tile.global_address.space.b1024.b64    [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <typename B64>
-__device__ static inline void tensormap_replace_global_address(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  B64 new_val);
-
-// tensormap.replace.tile.rank.space.b1024.b32              [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <typename B32>
-__device__ static inline void tensormap_replace_rank(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  B32 new_val);
-
-// tensormap.replace.tile.rank.space.b1024.b32              [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <typename B32>
-__device__ static inline void tensormap_replace_rank(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  B32 new_val);
-
-// tensormap.replace.tile.box_dim.space.b1024.b32           [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_box_dim(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.box_dim.space.b1024.b32           [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_box_dim(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.global_dim.space.b1024.b32        [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_global_dim(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.global_dim.space.b1024.b32        [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_global_dim(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.global_stride.space.b1024.b64     [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32, typename B64>
-__device__ static inline void tensormap_replace_global_stride(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B64 new_val);
-
-// tensormap.replace.tile.global_stride.space.b1024.b64     [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32, typename B64>
-__device__ static inline void tensormap_replace_global_stride(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B64 new_val);
-
-// tensormap.replace.tile.element_stride.space.b1024.b32    [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_element_size(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.element_stride.space.b1024.b32    [tm_addr], ord, new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32, typename B32>
-__device__ static inline void tensormap_replace_element_size(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> ord,
-  B32 new_val);
-
-// tensormap.replace.tile.elemtype.space.b1024.b32          [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32>
-__device__ static inline void tensormap_replace_elemtype(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.elemtype.space.b1024.b32          [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32>
-__device__ static inline void tensormap_replace_elemtype(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.interleave_layout.space.b1024.b32 [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32>
-__device__ static inline void tensormap_replace_interleave_layout(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.interleave_layout.space.b1024.b32 [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32>
-__device__ static inline void tensormap_replace_interleave_layout(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.swizzle_mode.space.b1024.b32      [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32>
-__device__ static inline void tensormap_replace_swizzle_mode(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.swizzle_mode.space.b1024.b32      [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32>
-__device__ static inline void tensormap_replace_swizzle_mode(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.fill_mode.space.b1024.b32         [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .global }
-template <int N32>
-__device__ static inline void tensormap_replace_fill_mode(
-  cuda::ptx::space_global_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-
-// tensormap.replace.tile.fill_mode.space.b1024.b32         [tm_addr], new_val; // PTX ISA 83, SM_90a
-// .space     = { .shared::cta }
-template <int N32>
-__device__ static inline void tensormap_replace_fill_mode(
-  cuda::ptx::space_shared_t,
-  void* tm_addr,
-  cuda::ptx::n32_t<N32> new_val);
-```
-
-### [9.7.9. Texture Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions)
+[`cp.async.bulk.commit_group`]: ptx/instructions/cp.async.bulk.commit_group.md
+[`cp.async.bulk.wait_group`]: ptx/instructions/cp.async.bulk.wait_group.md
+[`tensormap.replace`]: ptx/instructions/tensormap.replace.md
+
+### [Texture Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -1620,7 +348,7 @@ __device__ static inline void tensormap_replace_fill_mode(
 [`txq`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-txq
 [`istypep`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#texture-instructions-istypep
 
-### [9.7.10. Surface Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions)
+### [Surface Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -1634,7 +362,7 @@ __device__ static inline void tensormap_replace_fill_mode(
 [`sured`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-sured
 [`suq`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#surface-instructions-suq
 
-### [9.7.11. Control Flow Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions)
+### [Control Flow Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -1654,7 +382,7 @@ __device__ static inline void tensormap_replace_fill_mode(
 [`ret`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-ret
 [`exit`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#control-flow-instructions-exit
 
-### [9.7.12. Parallel Synchronization and Communication Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions)
+### [Parallel Synchronization and Communication Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions)
 
 | Instruction           | Available in libcu++    |
 |-----------------------|-------------------------|
@@ -1665,601 +393,60 @@ __device__ static inline void tensormap_replace_fill_mode(
 | [`fence`]             | CTK-FUTURE, CCCL v2.4.0 |
 | [`atom`]              | No                      |
 | [`red`]               | No                      |
-| [`red.async`]         | CTK-FUTURE, CCCL v2.3.0 |
+| [`red.async`]         | [CTK 12.4, CCCL v2.3.0] |
 | [`vote (deprecated)`] | No                      |
 | [`vote.sync`]         | No                      |
 | [`match.sync`]        | No                      |
 | [`activemask`]        | No                      |
 | [`redux.sync`]        | No                      |
 | [`griddepcontrol`]    | No                      |
-| [`elect.sync`]        | No                      |
+| [`elect.sync`]        | CTK-FUTURE, CCCL v2.5.0 |
 
 [`bar, barrier`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-barrier
 [`bar.warp.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-bar-warp-sync
-[`barrier.cluster`]: #barriercluster
+[`barrier.cluster`]: ptx/instructions/barrier.cluster.md
 [`membar`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
-[`fence`]: #fence
+[`fence`]: ptx/instructions/fence.md
 [`atom`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-atom
 [`red`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red
-[`red.async`]: #redasync
+[`red.async`]: ptx/instructions/red.async.md
 [`vote (deprecated)`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-deprecated
 [`vote.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-vote-sync
 [`match.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-match-sync
 [`activemask`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-activemask
 [`redux.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-redux-sync
 [`griddepcontrol`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-griddepcontrol
-[`elect.sync`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-elect-sync
+[`elect.sync`]: ptx/instructions/elect.sync.md
 
+### [Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
 
-#### `barrier.cluster`
+| Instruction                  | Available in libcu++    |
+|------------------------------|-------------------------|
+| [`mbarrier.init`]            | CTK-FUTURE, CCCL v2.5.0 |
+| [`mbarrier.inval`]           | No                      |
+| [`mbarrier.expect_tx`]       | No                      |
+| [`mbarrier.complete_tx`]     | No                      |
+| [`mbarrier.arrive`]          | [CTK 12.4, CCCL v2.3.0] |
+| [`mbarrier.arrive_drop`]     | No                      |
+| [`cp.async.mbarrier.arrive`] | No                      |
+| [`mbarrier.test_wait`]       | [CTK 12.4, CCCL v2.3.0] |
+| [`mbarrier.try_wait`]        | [CTK 12.4, CCCL v2.3.0] |
+| [`mbarrier.pending_count`]   | No                      |
+| [`tensormap.cp_fenceproxy`]  | CTK-FUTURE, CCCL v2.4.0 |
 
-- PTX ISA: [`barrier.cluster`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-barrier-cluster)
-
-Similar functionality is provided through the builtins
-`__cluster_barrier_arrive(), __cluster_barrier_arrive_relaxed(),
-__cluster_barrier_wait()`, as well as the `cooperative_groups::cluster_group`
-[API](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#cluster-group).
-
-The `.aligned` variants of the instructions are not exposed.
-
-**barrier_cluster**:
-```cuda
-// barrier.cluster.arrive; // PTX ISA 78, SM_90
-// Marked volatile and as clobbering memory
-template <typename=void>
-__device__ static inline void barrier_cluster_arrive();
-
-// barrier.cluster.wait; // PTX ISA 78, SM_90
-// Marked volatile and as clobbering memory
-template <typename=void>
-__device__ static inline void barrier_cluster_wait();
-
-// barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
-// .sem       = { .release }
-// Marked volatile and as clobbering memory
-template <typename=void>
-__device__ static inline void barrier_cluster_arrive(
-  cuda::ptx::sem_release_t);
-
-// barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
-// .sem       = { .relaxed }
-// Marked volatile
-template <typename=void>
-__device__ static inline void barrier_cluster_arrive(
-  cuda::ptx::sem_relaxed_t);
-
-// barrier.cluster.wait.sem; // PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// Marked volatile and as clobbering memory
-template <typename=void>
-__device__ static inline void barrier_cluster_wait(
-  cuda::ptx::sem_acquire_t);
-```
-
-#### `fence`
-
-- PTX ISA: [`fence`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence)
-
-**fence**:
-```cuda
-// fence{.sem}.scope; // 1. PTX ISA 60, SM_70
-// .sem       = { .sc, .acq_rel }
-// .scope     = { .cta, .gpu, .sys }
-template <cuda::ptx::dot_sem Sem, cuda::ptx::dot_scope Scope>
-__device__ static inline void fence(
-  cuda::ptx::sem_t<Sem> sem,
-  cuda::ptx::scope_t<Scope> scope);
-
-// fence{.sem}.scope; // 2. PTX ISA 78, SM_90
-// .sem       = { .sc, .acq_rel }
-// .scope     = { .cluster }
-template <cuda::ptx::dot_sem Sem>
-__device__ static inline void fence(
-  cuda::ptx::sem_t<Sem> sem,
-  cuda::ptx::scope_cluster_t);
-```
-**fence_mbarrier_init**:
-```cuda
-// fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cluster }
-template <typename=void>
-__device__ static inline void fence_mbarrier_init(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_cluster_t);
-```
-**fence_proxy_alias**:
-```cuda
-// fence.proxy.alias; // 4. PTX ISA 75, SM_70
-template <typename=void>
-__device__ static inline void fence_proxy_alias();
-```
-**fence_proxy_async**:
-```cuda
-// fence.proxy.async; // 5. PTX ISA 80, SM_90
-template <typename=void>
-__device__ static inline void fence_proxy_async();
-
-// fence.proxy.async{.space}; // 6. PTX ISA 80, SM_90
-// .space     = { .global, .shared::cluster, .shared::cta }
-template <cuda::ptx::dot_space Space>
-__device__ static inline void fence_proxy_async(
-  cuda::ptx::space_t<Space> space);
-```
-**fence_proxy_tensormap_generic**:
-```cuda
-// fence.proxy.tensormap::generic.release.scope; // 7. PTX ISA 83, SM_90
-// .sem       = { .release }
-// .scope     = { .cta, .cluster, .gpu, .sys }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline void fence_proxy_tensormap_generic(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope);
-
-// fence.proxy.tensormap::generic.sem.scope [addr], size; // 8. PTX ISA 83, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster, .gpu, .sys }
-template <int N32, cuda::ptx::dot_scope Scope>
-__device__ static inline void fence_proxy_tensormap_generic(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  const void* addr,
-  cuda::ptx::n32_t<N32> size);
-```
-
-#### `red.async`
-
--  PTX ISA: [`red.async`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-red-async)
-
-PTX does not currently (CTK 12.3) expose `red.async.add.s64`. This exposure is emulated in `cuda::ptx` using
-
-```cuda
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_add_t,
-  int64_t* dest,
-  const int64_t& value,
-  int64_t* remote_bar);
-```
-
-**red_async**:
-```cuda
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u32 }
-// .op        = { .inc }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_inc_t,
-  uint32_t* dest,
-  const uint32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u32 }
-// .op        = { .dec }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_dec_t,
-  uint32_t* dest,
-  const uint32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_min_t,
-  uint32_t* dest,
-  const uint32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_max_t,
-  uint32_t* dest,
-  const uint32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_add_t,
-  uint32_t* dest,
-  const uint32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .s32 }
-// .op        = { .min }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_min_t,
-  int32_t* dest,
-  const int32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .s32 }
-// .op        = { .max }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_max_t,
-  int32_t* dest,
-  const int32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .s32 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_add_t,
-  int32_t* dest,
-  const int32_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .b32 }
-// .op        = { .and }
-template <typename B32>
-__device__ static inline void red_async(
-  cuda::ptx::op_and_op_t,
-  B32* dest,
-  const B32& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .b32 }
-// .op        = { .or }
-template <typename B32>
-__device__ static inline void red_async(
-  cuda::ptx::op_or_op_t,
-  B32* dest,
-  const B32& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .b32 }
-// .op        = { .xor }
-template <typename B32>
-__device__ static inline void red_async(
-  cuda::ptx::op_xor_op_t,
-  B32* dest,
-  const B32& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
-// .type      = { .u64 }
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_add_t,
-  uint64_t* dest,
-  const uint64_t& value,
-  uint64_t* remote_bar);
-
-// red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
-// .op        = { .add }
-template <typename=void>
-__device__ static inline void red_async(
-  cuda::ptx::op_add_t,
-  int64_t* dest,
-  const int64_t& value,
-  int64_t* remote_bar);
-```
-
-### [9.7.12.15. Parallel Synchronization and Communication Instructions: mbarrier](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier)
-
-| Instruction                              | Available in libcu++    |
-|------------------------------------------|-------------------------|
-| [`mbarrier.init`]                        | No                      |
-| [`mbarrier.inval`]                       | No                      |
-| [`mbarrier.expect_tx`]                   | No                      |
-| [`mbarrier.complete_tx`]                 | No                      |
-| [`mbarrier.arrive`]                      | CTK-FUTURE, CCCL v2.3.0 |
-| [`mbarrier.arrive_drop`]                 | No                      |
-| [`cp.async.mbarrier.arrive`]             | No                      |
-| [`mbarrier.test_wait/mbarrier.try_wait`] | CTK-FUTURE, CCCL v2.3.0 |
-| [`mbarrier.pending_count`]               | No                      |
-| [`tensormap.cp_fenceproxy`]              | CTK-FUTURE, CCCL v2.4.0 |
-
-[`mbarrier.init`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
+[`mbarrier.init`]: ptx/instructions/mbarrier.init.md
 [`mbarrier.inval`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-inval
 [`mbarrier.expect_tx`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-expect-tx
 [`mbarrier.complete_tx`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-complete-tx
-[`mbarrier.arrive`]: #mbarrierarrive
+[`mbarrier.arrive`]: ptx/instructions/mbarrier.arrive.md
 [`mbarrier.arrive_drop`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive-drop
 [`cp.async.mbarrier.arrive`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-cp-async-mbarrier-arrive
-[`mbarrier.test_wait/mbarrier.try_wait`]: #mbarriertest_waitmbarriertry_wait
+[`mbarrier.test_wait`]: ptx/instructions/mbarrier.test_wait.md 
+[`mbarrier.try_wait`]: ptx/instructions/mbarrier.try_wait.md
 [`mbarrier.pending_count`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-pending-count
-[`tensormap.cp_fenceproxy`]: #tensormapcpfenceproxy
+[`tensormap.cp_fenceproxy`]: ptx/instructions/tensormap.cp_fenceproxy.md
 
-
-
-#### `mbarrier.arrive`
-
--  PTX ISA: [`mbarrier.arrive`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-arrive)
-
-**mbarrier_arrive**:
-```cuda
-// mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
-template <typename=void>
-__device__ static inline uint64_t mbarrier_arrive(
-  uint64_t* addr);
-
-// mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2.  PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint64_t mbarrier_arrive(
-  uint64_t* addr,
-  const uint32_t& count);
-
-// mbarrier.arrive{.sem}{.scope}{.space}.b64                   state,  [addr];           // 3a.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cta, .cluster }
-// .space     = { .shared::cta }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline uint64_t mbarrier_arrive(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_t,
-  uint64_t* addr);
-
-// mbarrier.arrive{.sem}{.scope}{.space}.b64                   state,  [addr], count;    // 3b.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cta, .cluster }
-// .space     = { .shared::cta }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline uint64_t mbarrier_arrive(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_t,
-  uint64_t* addr,
-  const uint32_t& count);
-
-// mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr];                // 4a.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cluster }
-// .space     = { .shared::cluster }
-template <typename=void>
-__device__ static inline void mbarrier_arrive(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_cluster_t,
-  cuda::ptx::space_cluster_t,
-  uint64_t* addr);
-
-// mbarrier.arrive{.sem}{.scope}{.space}.b64                   _, [addr], count;         // 4b.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cluster }
-// .space     = { .shared::cluster }
-template <typename=void>
-__device__ static inline void mbarrier_arrive(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_cluster_t,
-  cuda::ptx::space_cluster_t,
-  uint64_t* addr,
-  const uint32_t& count);
-```
-
-**mbarrier_arrive_no_complete**:
-```cuda
-// mbarrier.arrive.noComplete.shared.b64                       state,  [addr], count;    // 5.  PTX ISA 70, SM_80
-template <typename=void>
-__device__ static inline uint64_t mbarrier_arrive_no_complete(
-  uint64_t* addr,
-  const uint32_t& count);
-```
-
-**mbarrier_arrive_expect_tx**:
-```cuda
-// mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64 state, [addr], tx_count; // 8.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cta, .cluster }
-// .space     = { .shared::cta }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline uint64_t mbarrier_arrive_expect_tx(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
-  cuda::ptx::space_shared_t,
-  uint64_t* addr,
-  const uint32_t& tx_count);
-
-// mbarrier.arrive.expect_tx{.sem}{.scope}{.space}.b64   _, [addr], tx_count; // 9.  PTX ISA 80, SM_90
-// .sem       = { .release }
-// .scope     = { .cluster }
-// .space     = { .shared::cluster }
-template <typename=void>
-__device__ static inline void mbarrier_arrive_expect_tx(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_cluster_t,
-  cuda::ptx::space_cluster_t,
-  uint64_t* addr,
-  const uint32_t& tx_count);
-```
-
-Usage:
-```cuda
-#include <cuda/ptx>
-#include <cuda/barrier>
-#include <cooperative_groups.h>
-
-__global__ void kernel() {
-    using cuda::ptx::sem_release;
-    using cuda::ptx::space_cluster;
-    using cuda::ptx::space_shared;
-    using cuda::ptx::scope_cluster;
-    using cuda::ptx::scope_cta;
-
-    using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-    __shared__ barrier_t bar;
-    init(&bar, blockDim.x);
-    __syncthreads();
-
-    NV_IF_TARGET(NV_PROVIDES_SM_90, (
-        // Arrive on local shared memory barrier:
-        uint64_t token;
-        token = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_shared, &bar, 1);
-        token = cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_shared, &bar, 1);
-
-        // Get address of remote cluster barrier:
-        namespace cg = cooperative_groups;
-        cg::cluster_group cluster = cg::this_cluster();
-        unsigned int other_block_rank = cluster.block_rank() ^ 1;
-        uint64_t * remote_bar = cluster.map_shared_rank(&bar, other_block_rank);
-
-        // Sync cluster to ensure remote barrier is initialized.
-        cluster.sync();
-
-        // Arrive on remote cluster barrier:
-        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cta, space_cluster, remote_bar, 1);
-        cuda::ptx::mbarrier_arrive_expect_tx(sem_release, scope_cluster, space_cluster, remote_bar, 1);
-    )
-}
-```
-
-#### `mbarrier.test_wait/mbarrier.try_wait`
-
-- PTX ISA: [`mbarrier.test_wait/mbarrier.try_wait`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-test-wait-mbarrier-try-wait)
-
-**mbarrier_test_wait**:
-```cuda
-// mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1.  PTX ISA 70, SM_80
-template <typename=void>
-__device__ static inline bool mbarrier_test_wait(
-  uint64_t* addr,
-  const uint64_t& state);
-
-// mbarrier.test_wait{.sem}{.scope}.shared::cta.b64        waitComplete, [addr], state;                        // 2.   PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_test_wait(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint64_t& state);
-```
-
-**mbarrier_test_wait_parity**:
-```cuda
-// mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
-template <typename=void>
-__device__ static inline bool mbarrier_test_wait_parity(
-  uint64_t* addr,
-  const uint32_t& phaseParity);
-
-// mbarrier.test_wait.parity{.sem}{.scope}.shared::cta.b64 waitComplete, [addr], phaseParity;                  // 4.  PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_test_wait_parity(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint32_t& phaseParity);
-```
-
-**mbarrier_try_wait**:
-```cuda
-// mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state;                                      // 5a.  PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline bool mbarrier_try_wait(
-  uint64_t* addr,
-  const uint64_t& state);
-
-// mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    // 5b.  PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline bool mbarrier_try_wait(
-  uint64_t* addr,
-  const uint64_t& state,
-  const uint32_t& suspendTimeHint);
-
-// mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state;                        // 6a.  PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_try_wait(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint64_t& state);
-
-// mbarrier.try_wait{.sem}{.scope}.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      // 6b.  PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_try_wait(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint64_t& state,
-  const uint32_t& suspendTimeHint);
-```
-
-**mbarrier_try_wait_parity**:
-```cuda
-// mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity;                                // 7a.  PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline bool mbarrier_try_wait_parity(
-  uint64_t* addr,
-  const uint32_t& phaseParity);
-
-// mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint;               // 7b.  PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline bool mbarrier_try_wait_parity(
-  uint64_t* addr,
-  const uint32_t& phaseParity,
-  const uint32_t& suspendTimeHint);
-
-// mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity;                  // 8a.  PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_try_wait_parity(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint32_t& phaseParity);
-
-// mbarrier.try_wait.parity{.sem}{.scope}.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint; // 8b.  PTX ISA 80, SM_90
-// .sem       = { .acquire }
-// .scope     = { .cta, .cluster }
-template <cuda::ptx::dot_scope Scope>
-__device__ static inline bool mbarrier_try_wait_parity(
-  cuda::ptx::sem_acquire_t,
-  cuda::ptx::scope_t<Scope> scope,
-  uint64_t* addr,
-  const uint32_t& phaseParity,
-  const uint32_t& suspendTimeHint);
-```
-
-#### `tensormap.cp_fenceproxy`
-
-- PTX ISA: [`tensormap.cp_fenceproxy`](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-tensormap-cp-fenceproxy)
-
-**tensormap_cp_fenceproxy**:
-```cuda
-// tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA 83, SM_90
-// .sem       = { .release }
-// .scope     = { .cta, .cluster, .gpu, .sys }
-template <int N32, cuda::ptx::dot_scope Scope>
-__device__ static inline void tensormap_cp_fenceproxy(
-  cuda::ptx::sem_release_t,
-  cuda::ptx::scope_t<Scope> scope,
-  void* dst,
-  const void* src,
-  cuda::ptx::n32_t<N32> size);
-```
-
-
-### [9.7.13. Warp Level Matrix Multiply-Accumulate Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions)
+### [Warp Level Matrix Multiply-Accumulate Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-multiply-accumulate-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2281,7 +468,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`movmatrix`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#warp-level-matrix-transpose-instruction-movmatrix
 [`mma.sp`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#multiply-and-accumulate-instruction-mma-sp
 
-### [9.7.14. Asynchronous Warpgroup Level Matrix Multiply-Accumulate Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions)
+### [Asynchronous Warpgroup Level Matrix Multiply-Accumulate Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-warpgroup-level-matrix-multiply-accumulate-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2297,7 +484,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`wgmma.commit_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-commit-group
 [`wgmma.wait_group`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-wait-group
 
-### [9.7.15. Stack Manipulation Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions)
+### [Stack Manipulation Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2309,7 +496,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`stackrestore`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-stackrestore
 [`alloca`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#stack-manipulation-instructions-alloca
 
-### [9.7.16. Video Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#video-instructions)
+### [Video Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#video-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2323,7 +510,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`vmad`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vmad
 [`vset`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#scalar-video-instructions-vset
 
-### [9.7.16.2. SIMD Video Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions)
+### [SIMD Video Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2337,7 +524,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`vadd4, vsub4, vavrg4, vabsdiff4, vmin4, vmax4`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vadd4-vsub4-vavrg4-vabsdiff4-vmin4-vmax4
 [`vset4`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#simd-video-instructions-vset4
 
-### [9.7.17. Miscellaneous Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions)
+### [Miscellaneous Instructions](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions)
 
 | Instruction                              | Available in libcu++ |
 |------------------------------------------|----------------------|
@@ -2353,7 +540,7 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`trap`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-trap
 [`setmaxnreg`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#miscellaneous-instructions-setmaxnreg
 
-## [10. Special registers](https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers)
+### [Special registers](ptx/instructions/special_registers.md)
 
 | Register                       | PTX ISA | SM Version | Available in libcu++    |
 |--------------------------------|---------|------------|-------------------------|
@@ -2438,197 +625,6 @@ __device__ static inline void tensormap_cp_fenceproxy(
 [`current_graph_exec`]: https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers-current-graph-exec
 
 
-**get_sreg**:
-```cuda
-// mov.u32 sreg_value, %%tid.x; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_tid_x();
 
-// mov.u32 sreg_value, %%tid.y; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_tid_y();
 
-// mov.u32 sreg_value, %%tid.z; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_tid_z();
-
-// mov.u32 sreg_value, %%ntid.x; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ntid_x();
-
-// mov.u32 sreg_value, %%ntid.y; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ntid_y();
-
-// mov.u32 sreg_value, %%ntid.z; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ntid_z();
-
-// mov.u32 sreg_value, %%laneid; // PTX ISA 13
-template <typename=void>
-__device__ static inline uint32_t get_sreg_laneid();
-
-// mov.u32 sreg_value, %%warpid; // PTX ISA 13
-template <typename=void>
-__device__ static inline uint32_t get_sreg_warpid();
-
-// mov.u32 sreg_value, %%nwarpid; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nwarpid();
-
-// mov.u32 sreg_value, %%ctaid.x; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ctaid_x();
-
-// mov.u32 sreg_value, %%ctaid.y; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ctaid_y();
-
-// mov.u32 sreg_value, %%ctaid.z; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_ctaid_z();
-
-// mov.u32 sreg_value, %%nctaid.x; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nctaid_x();
-
-// mov.u32 sreg_value, %%nctaid.y; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nctaid_y();
-
-// mov.u32 sreg_value, %%nctaid.z; // PTX ISA 20
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nctaid_z();
-
-// mov.u32 sreg_value, %%smid; // PTX ISA 13
-template <typename=void>
-__device__ static inline uint32_t get_sreg_smid();
-
-// mov.u32 sreg_value, %%nsmid; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nsmid();
-
-// mov.u64 sreg_value, %%gridid; // PTX ISA 30
-template <typename=void>
-__device__ static inline uint64_t get_sreg_gridid();
-
-// mov.pred sreg_value, %%is_explicit_cluster; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline bool get_sreg_is_explicit_cluster();
-
-// mov.u32 sreg_value, %%clusterid.x; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_clusterid_x();
-
-// mov.u32 sreg_value, %%clusterid.y; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_clusterid_y();
-
-// mov.u32 sreg_value, %%clusterid.z; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_clusterid_z();
-
-// mov.u32 sreg_value, %%nclusterid.x; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nclusterid_x();
-
-// mov.u32 sreg_value, %%nclusterid.y; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nclusterid_y();
-
-// mov.u32 sreg_value, %%nclusterid.z; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_nclusterid_z();
-
-// mov.u32 sreg_value, %%cluster_ctaid.x; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_ctaid_x();
-
-// mov.u32 sreg_value, %%cluster_ctaid.y; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_ctaid_y();
-
-// mov.u32 sreg_value, %%cluster_ctaid.z; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_ctaid_z();
-
-// mov.u32 sreg_value, %%cluster_nctaid.x; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_nctaid_x();
-
-// mov.u32 sreg_value, %%cluster_nctaid.y; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_nctaid_y();
-
-// mov.u32 sreg_value, %%cluster_nctaid.z; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_nctaid_z();
-
-// mov.u32 sreg_value, %%cluster_ctarank; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_ctarank();
-
-// mov.u32 sreg_value, %%cluster_nctarank; // PTX ISA 78, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_cluster_nctarank();
-
-// mov.u32 sreg_value, %%lanemask_eq; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_lanemask_eq();
-
-// mov.u32 sreg_value, %%lanemask_le; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_lanemask_le();
-
-// mov.u32 sreg_value, %%lanemask_lt; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_lanemask_lt();
-
-// mov.u32 sreg_value, %%lanemask_ge; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_lanemask_ge();
-
-// mov.u32 sreg_value, %%lanemask_gt; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_lanemask_gt();
-
-// mov.u32 sreg_value, %%clock; // PTX ISA 10
-template <typename=void>
-__device__ static inline uint32_t get_sreg_clock();
-
-// mov.u32 sreg_value, %%clock_hi; // PTX ISA 50, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_clock_hi();
-
-// mov.u64 sreg_value, %%clock64; // PTX ISA 20, SM_35
-template <typename=void>
-__device__ static inline uint64_t get_sreg_clock64();
-
-// mov.u64 sreg_value, %%globaltimer; // PTX ISA 31, SM_35
-template <typename=void>
-__device__ static inline uint64_t get_sreg_globaltimer();
-
-// mov.u32 sreg_value, %%globaltimer_lo; // PTX ISA 31, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_globaltimer_lo();
-
-// mov.u32 sreg_value, %%globaltimer_hi; // PTX ISA 31, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_globaltimer_hi();
-
-// mov.u32 sreg_value, %%total_smem_size; // PTX ISA 41, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_total_smem_size();
-
-// mov.u32 sreg_value, %%aggr_smem_size; // PTX ISA 81, SM_90
-template <typename=void>
-__device__ static inline uint32_t get_sreg_aggr_smem_size();
-
-// mov.u32 sreg_value, %%dynamic_smem_size; // PTX ISA 41, SM_35
-template <typename=void>
-__device__ static inline uint32_t get_sreg_dynamic_smem_size();
-
-// mov.u64 sreg_value, %%current_graph_exec; // PTX ISA 80, SM_50
-template <typename=void>
-__device__ static inline uint64_t get_sreg_current_graph_exec();
-```
+[CTK 12.4, CCCL v2.3.0]: https://github.com/NVIDIA/cccl/releases/tag/v2.3.0

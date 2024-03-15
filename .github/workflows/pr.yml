@@ -187,6 +187,20 @@ jobs:
       contents: read
     uses: ./.github/workflows/verify-devcontainers.yml
 
+  verify-codegen:
+    name: Verify Codegen in libcudacxx
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Run libcudacxx codegen verification
+        id: verify-codegen
+        run: |
+          sudo apt-get update
+          sudo apt-get install ninja-build
+          export CXX="g++"
+          ./ci/verify_codegen.sh
+
   # This job is the final job that runs after all other jobs and is used for branch protection status checks.
   # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks
   # https://github.com/orgs/community/discussions/26822#discussioncomment-5122101
@@ -203,6 +217,7 @@ jobs:
       - cuda-next
       - cccl-infra
       - verify-devcontainers
+      - verify-codegen
     steps:
       - name: Check status of all precursor jobs
         if: >-

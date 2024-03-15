@@ -90,8 +90,8 @@ namespace detail
   template <class T>
   std::vector<T> to_vec(c2h::device_vector<T> const& vec)
   {
-    c2h::host_vector<T> tmp = vec;
-    return std::vector<T>{tmp.begin(), tmp.end()};
+    c2h::host_vector<T> temp = vec;
+    return std::vector<T>{temp.begin(), temp.end()};
   }
 
   template <class T>
