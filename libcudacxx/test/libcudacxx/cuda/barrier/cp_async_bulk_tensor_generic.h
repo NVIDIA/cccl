@@ -216,16 +216,17 @@ CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>
 
     // The stride is the number of bytes to traverse from the first element of one row to the next.
     // It must be a multiple of 16.
-    uint64_t stride[num_dims - 1];
+    constexpr int num_strides = num_dims - 1;
+    cuda::std::array<uint64_t, num_strides> stride;
     uint64_t base_stride = sizeof(T);
-    for (size_t i = 0; i < num_dims - 1; ++i) {
+    for (size_t i = 0; i < num_strides; ++i) {
         base_stride *= gmem_dims[i];
         stride[i] = base_stride;
     }
 
     // The distance between elements in units of sizeof(element). A stride of 2
     // can be used to load only the real component of a complex-valued tensor, for instance.
-    uint32_t elem_stride[num_dims]; // = {1, .., 1};
+    cuda::std::array<uint32_t, num_dims> elem_stride; // = {1, .., 1};
     for (size_t i = 0; i < num_dims; ++i) {
         elem_stride[i] = 1;
     }
@@ -240,9 +241,9 @@ CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>
         num_dims,                   // cuuint32_t tensorRank,
         tensor_ptr,                 // void *globalAddress,
         gmem_dims.data(),           // const cuuint64_t *globalDim,
-        stride,                     // const cuuint64_t *globalStrides,
+        stride.data(),              // const cuuint64_t *globalStrides,
         smem_dims.data(),           // const cuuint32_t *boxDim,
-        elem_stride,                // const cuuint32_t *elementStrides,
+        elem_stride.data(),         // const cuuint32_t *elementStrides,
         CUtensorMapInterleave::CU_TENSOR_MAP_INTERLEAVE_NONE,
         CUtensorMapSwizzle::CU_TENSOR_MAP_SWIZZLE_NONE,
         CUtensorMapL2promotion::CU_TENSOR_MAP_L2_PROMOTION_NONE,
