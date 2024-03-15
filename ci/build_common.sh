@@ -143,6 +143,22 @@ fail_if_no_gpu() {
     fi
 }
 
+function print_test_time_summary()
+{
+    ctest_log=${1}
+
+    if [ -f ${ctest_log} ]; then
+        begin_group "⏱️ Longest Test Steps"
+        # Only print the full output in CI:
+        if [ -n "${GITHUB_ACTIONS:-}" ]; then
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
+        else
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15
+        fi
+        end_group "⏱️ Longest Test Steps"
+    fi
+}
+
 function configure_preset()
 {
     local BUILD_NAME=$1
@@ -204,10 +220,18 @@ function test_preset()
 
     fail_if_no_gpu
 
+
+    ctest_log_dir="${BUILD_DIR}/log/ctest"
+    ctest_log="${ctest_log_dir}/${PRESET}"
+    mkdir -p "${ctest_log_dir}"
+
     pushd .. > /dev/null
-    run_command "$GROUP_NAME" ctest --preset=$PRESET
+    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET
     status=$?
     popd > /dev/null
+
+    print_test_time_summary ${ctest_log}
+
     return $status
 }
 
