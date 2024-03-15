@@ -86,9 +86,6 @@ if [ -z ${CCCL_BUILD_INFIX+x} ]; then
     CCCL_BUILD_INFIX=""
 fi
 
-# Where CCCL utility CMake scripts are stored:
-CCCL_CMAKE_SCRIPT_DIR="../cmake"
-
 # Presets will be configured in this directory:
 BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
 
@@ -116,7 +113,6 @@ print_environment_details() {
   echo "pwd=$(pwd)"
 
   print_var_values \
-      CCCL_CMAKE_SCRIPT_DIR \
       BUILD_DIR \
       CXX_STANDARD \
       CXX \
@@ -155,9 +151,9 @@ function print_test_time_summary()
         begin_group "⏱️ Longest Test Steps"
         # Only print the full output in CI:
         if [ -n "${GITHUB_ACTIONS:-}" ]; then
-            cmake -DLOGFILE=${ctest_log} -P ${CCCL_CMAKE_SCRIPT_DIR}/PrintCTestRunTimes.cmake
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
         else
-            cmake -DLOGFILE=${ctest_log} -P ${CCCL_CMAKE_SCRIPT_DIR}/PrintCTestRunTimes.cmake | head -n 15
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15
         fi
         end_group "⏱️ Longest Test Steps"
     fi
