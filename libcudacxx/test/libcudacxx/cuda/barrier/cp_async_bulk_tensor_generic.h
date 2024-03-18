@@ -219,7 +219,7 @@ CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>
     constexpr int num_strides = num_dims - 1;
     cuda::std::array<uint64_t, num_strides> stride;
     uint64_t base_stride = sizeof(T);
-    for (size_t i = 0; i < num_strides; ++i) {
+    for (size_t i = 0; i < stride.size(); ++i) {
         base_stride *= gmem_dims[i];
         stride[i] = base_stride;
     }
@@ -227,7 +227,7 @@ CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>
     // The distance between elements in units of sizeof(element). A stride of 2
     // can be used to load only the real component of a complex-valued tensor, for instance.
     cuda::std::array<uint32_t, num_dims> elem_stride; // = {1, .., 1};
-    for (size_t i = 0; i < num_dims; ++i) {
+    for (size_t i = 0; i < elem_stride.size(); ++i) {
         elem_stride[i] = 1;
     }
 
