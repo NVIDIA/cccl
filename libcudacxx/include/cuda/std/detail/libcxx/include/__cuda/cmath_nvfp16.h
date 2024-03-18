@@ -36,29 +36,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // trigonometric functions
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return hsin(__v);), ({
-                      float __vf            = __v;
-                      __vf                  = ::sin(__vf);
-                      __half_raw __ret_repr = ::__float2half_rn(__vf);
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
+    return ::hsin(__v);
+  ), (
+    {
+      float __vf            = __v;
+      __vf                  = ::sin(__vf);
+      __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      uint16_t __repr = __half_raw(__v).x;
-                      switch (__repr)
-                      {
-                        case 12979:
-                        case 45747:
-                          __ret_repr.x += 1;
-                          break;
+      uint16_t __repr = __half_raw(__v).x;
+      switch (__repr)
+      {
+        case 12979:
+        case 45747:
+          __ret_repr.x += 1;
+          break;
 
-                        case 23728:
-                        case 56496:
-                          __ret_repr.x -= 1;
-                          break;
+        case 23728:
+        case 56496:
+          __ret_repr.x -= 1;
+          break;
 
-                        default:;
-                      }
+        default:;
+      }
 
-                      return __ret_repr;
-                    }))
+      return __ret_repr;
+  }
+))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sinh(__half __v)
@@ -69,10 +73,9 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half sinh(__half __v)
 // clang-format off
 inline _LIBCUDACXX_INLINE_VISIBILITY __half cos(__half __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-  (
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hcos(__v);
-  ),(
+  ), (
     {
       float __vf            = __v;
       __vf                  = ::cos(__vf);
@@ -103,10 +106,9 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half cosh(__half __v)
 // clang-format off
 inline _LIBCUDACXX_INLINE_VISIBILITY __half exp(__half __v)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-  (
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hexp(__v);
-  ),(
+  ), (
     {
       float __vf            = __v;
       __vf                  = ::exp(__vf);
@@ -142,10 +144,9 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half atan2(__half __x, __half __y)
 // clang-format off
 inline _LIBCUDACXX_INLINE_VISIBILITY __half log(__half __x)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-  (
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
     return ::hlog(__x);
-  ),(
+  ), (
     {
       float __vf            = __x;
       __vf                  = ::log(__vf);
