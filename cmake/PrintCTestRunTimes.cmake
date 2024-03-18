@@ -3,6 +3,7 @@
 ##
 ## ctest > ctest_log
 ## cmake -DLOGFILE=ctest_log \
+##       -DMINSEC=10 \
 ##       -P PrintCTestRunTimes.cmake
 ##
 ################################################################################
@@ -26,24 +27,32 @@ if (NOT LOGFILE)
   message(FATAL_ERROR "Missing -DLOGFILE=<ctest output> argument.")
 endif()
 
+if (NOT DEFINED MINSEC)
+  set(MINSEC 10)
+endif()
+
+set(num_below_thresh 0)
+
 # Check if logfile exists
 if (NOT EXISTS "${LOGFILE}")
   message(FATAL_ERROR "LOGFILE does not exist ('${LOGFILE}').")
 endif()
 
 string(JOIN "" regex
-  "^[ ]*[0-9]+/[0-9]+[ ]+Test[ ]+#"
-  "([0-9]+)"                          # Test ID
+  "[0-9]+/[0-9]+[ ]+Test[ ]+#"
+  "([0-9]+)"                        # Test ID
   ":[ ]+"
-  "(.+)"                              # Test Name
-  "[ ]+\\.+[ ]+"
-  "(.+[^ ])"                              # Result
+  "([^ ]+)"                         # Test Name
+  "[ ]*\\.+[ ]*\\**[ ]*"
+  "([^ ]+)"                         # Result
   "[ ]+"
-  "([0-9]+)"                          # Seconds
-  "\\.[0-9]+[ ]+sec[ ]*$"
+  "([0-9]+)"                        # Seconds
+  "\\.[0-9]+[ ]+sec"
 )
 
-message(DEBUG "Regex: ${regex}")
+message(DEBUG "LOGFILE: ${LOGFILE}")
+message(DEBUG "MINSEC: ${MINSEC}")
+message(DEBUG "regex: ${regex}")
 
 # Read the logfile and generate a map / keylist
 set(keys)
@@ -58,6 +67,11 @@ foreach(line ${lines})
     set(test_name    "${CMAKE_MATCH_2}")
     set(test_result  "${CMAKE_MATCH_3}")
     set(tmp          "${CMAKE_MATCH_4}") # floor(runtime_seconds)
+
+    if (tmp LESS MINSEC)
+      math(EXPR num_below_thresh "${num_below_thresh} + 1")
+      continue()
+    endif()
 
     # Compute human readable time
     math(EXPR days         "${tmp} / (60 * 60 * 24)")
@@ -97,7 +111,7 @@ foreach(key ${keys})
 endforeach()
 
 if (NOT entries)
-  message(FATAL_ERROR "LOGFILE contained no test times ('${LOGFILE}').")
+  message(STATUS "LOGFILE contained no test times ('${LOGFILE}').")
 endif()
 
 # Sort in descending order:
@@ -107,3 +121,7 @@ list(SORT entries ORDER DESCENDING)
 foreach(entry ${entries})
   message(STATUS ${entry})
 endforeach()
+
+if (num_below_thresh GREATER 0)
+  message(STATUS "${num_below_thresh} additional tests took < ${MINSEC}s each.")
+endif()
