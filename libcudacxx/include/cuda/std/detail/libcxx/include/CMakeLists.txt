@@ -238,6 +238,7 @@ set(files
   __mdspan/type_list.hpp
   __memory/addressof.h
   __memory/align.h
+  __memory/allocate_at_least.h
   __memory/allocation_guard.h
   __memory/allocator_arg_t.h
   __memory/allocator_destructor.h
