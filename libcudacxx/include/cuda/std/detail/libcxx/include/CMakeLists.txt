@@ -237,6 +237,7 @@ set(files
   __mdspan/submdspan.hpp
   __mdspan/type_list.hpp
   __memory/addressof.h
+  __memory/align.h
   __memory/construct_at.h
   __memory/pointer_traits.h
   __memory/voidify.h
