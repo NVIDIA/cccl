@@ -240,6 +240,7 @@ set(files
   __memory/align.h
   __memory/construct_at.h
   __memory/pointer_traits.h
+  __memory/uses_allocator.h
   __memory/voidify.h
   __mutex_base
   __new/allocate.h
