@@ -1626,7 +1626,8 @@ typedef unsigned int   char32_t;
 
 #if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && \
     (defined(_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION) || \
-    (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606))
+    (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)) \
+  || defined(__cuda_std__) // FIXME: Properly handle aligned allocations
 #  define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
 #endif
 

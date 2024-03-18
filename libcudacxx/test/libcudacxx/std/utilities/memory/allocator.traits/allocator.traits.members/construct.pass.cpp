@@ -17,11 +17,8 @@
 //     ...
 // };
 
-// Currently no suppport for std::allocator
-// XFAIL: true
-
 #include <cuda/std/__memory>
-#include <cuda/std/new>
+#include <cuda/std/__new>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
@@ -174,9 +171,7 @@ int main(int, char**)
 {
     test();
 
-#if TEST_STD_VER >= 2020  \
- && !defined(TEST_COMPILER_NVCC) \
- && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER >= 2020
     static_assert(test());
 #endif // TEST_STD_VER >= 2020
 

@@ -243,6 +243,7 @@ set(files
   __memory/allocator_arg_t.h
   __memory/allocator_destructor.h
   __memory/allocator_traits.h
+  __memory/allocator.h
   __memory/construct_at.h
   __memory/pointer_traits.h
   __memory/uses_allocator.h

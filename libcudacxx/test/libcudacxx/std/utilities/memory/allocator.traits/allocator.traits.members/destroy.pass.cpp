@@ -18,7 +18,6 @@
 // };
 
 // Currently no suppport for std::allocator
-// XFAIL: true
 
 #include <cuda/std/__memory>
 #include <cuda/std/cassert>
@@ -131,9 +130,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 int main(int, char**)
 {
     test();
-#if TEST_STD_VER >= 2020  \
- && !defined(TEST_COMPILER_NVCC) \
- && !defined(TEST_COMPILER_NVRTC)
+#if TEST_STD_VER >= 2020
     static_assert(test());
 #endif // TEST_STD_VER >= 2020
     return 0;
