@@ -8,8 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "atomic_cuda_local.h"
+
 template<class _Type, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type) <= 2, int>::type = 0>
 bool _LIBCUDACXX_DEVICE __atomic_compare_exchange_cuda(_Type volatile *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, _Scope __s) {
+    bool __ret;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__ret)) return __ret;
 
     auto const __aligned = (uint32_t*)((intptr_t)__ptr & ~(sizeof(uint32_t) - 1));
     auto const __offset = uint32_t((intptr_t)__ptr & (sizeof(uint32_t) - 1)) * 8;
@@ -31,7 +35,7 @@ bool _LIBCUDACXX_DEVICE __atomic_compare_exchange_cuda(_Type volatile *__ptr, _T
 
 template<class _Type, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 void _LIBCUDACXX_DEVICE __atomic_exchange_cuda(_Type volatile *__ptr, _Type *__val, _Type *__ret, int __memorder, _Scope __s) {
-
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     while(!__atomic_compare_exchange_cuda(__ptr, &__expected, __val, true, __memorder, __memorder, __s))
         ;
@@ -40,6 +44,8 @@ void _LIBCUDACXX_DEVICE __atomic_exchange_cuda(_Type volatile *__ptr, _Type *__v
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 _Type _LIBCUDACXX_DEVICE __atomic_fetch_add_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected + __val;
@@ -50,6 +56,9 @@ _Type _LIBCUDACXX_DEVICE __atomic_fetch_add_cuda(_Type volatile *__ptr, _Delta _
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2 || _CUDA_VSTD::is_floating_point<_Type>::value, int>::type = 0>
 _Type _LIBCUDACXX_HOST_DEVICE __atomic_fetch_max_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
+
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected > __val ? __expected : __val;
 
@@ -63,6 +72,9 @@ _Type _LIBCUDACXX_HOST_DEVICE __atomic_fetch_max_cuda(_Type volatile *__ptr, _De
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2 || _CUDA_VSTD::is_floating_point<_Type>::value, int>::type = 0>
 _Type _LIBCUDACXX_HOST_DEVICE __atomic_fetch_min_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
+
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected < __val ? __expected : __val;
 
@@ -76,6 +88,8 @@ _Type _LIBCUDACXX_HOST_DEVICE __atomic_fetch_min_cuda(_Type volatile *__ptr, _De
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 _Type _LIBCUDACXX_DEVICE __atomic_fetch_sub_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected - __val;
@@ -86,6 +100,8 @@ _Type _LIBCUDACXX_DEVICE __atomic_fetch_sub_cuda(_Type volatile *__ptr, _Delta _
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 _Type _LIBCUDACXX_DEVICE __atomic_fetch_and_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected & __val;
@@ -96,6 +112,8 @@ _Type _LIBCUDACXX_DEVICE __atomic_fetch_and_cuda(_Type volatile *__ptr, _Delta _
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 _Type _LIBCUDACXX_DEVICE __atomic_fetch_xor_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected ^ __val;
@@ -106,6 +124,8 @@ _Type _LIBCUDACXX_DEVICE __atomic_fetch_xor_cuda(_Type volatile *__ptr, _Delta _
 
 template<class _Type, class _Delta, class _Scope, typename _CUDA_VSTD::enable_if<sizeof(_Type)<=2, int>::type = 0>
 _Type _LIBCUDACXX_DEVICE __atomic_fetch_or_cuda(_Type volatile *__ptr, _Delta __val, int __memorder, _Scope __s) {
+    _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
 
     _Type __expected = __atomic_load_n_cuda(__ptr, __ATOMIC_RELAXED, __s);
     _Type __desired = __expected | __val;

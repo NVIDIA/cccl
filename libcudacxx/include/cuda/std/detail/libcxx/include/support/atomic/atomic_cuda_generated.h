@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "atomic_cuda_local.h"
+
 
 static inline _LIBCUDACXX_DEVICE void __cuda_membar_block() { asm volatile("membar.cta;":::"memory"); }
 static inline _LIBCUDACXX_DEVICE void __cuda_fence_acq_rel_block() { asm volatile("fence.acq_rel.cta;":::"memory"); }
@@ -43,6 +45,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_32_block(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b32 %0,[%1];" : "=r"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint32_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -71,6 +74,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_64_block(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b64 %0,[%1];" : "=l"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint64_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -99,6 +103,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_32_block(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -125,6 +130,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_64_block(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b64 [%0], %1;" :: "l"(__ptr),"l"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -153,6 +159,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint32_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 4);
     memcpy(&__old, __expected, 4);
@@ -192,6 +200,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_32_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -228,6 +237,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -265,6 +275,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -302,6 +313,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -339,6 +351,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -376,6 +389,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -413,6 +427,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -450,6 +465,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -487,6 +503,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -524,6 +541,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -566,6 +584,7 @@ asm volatile("atom.add.cta.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -608,6 +627,7 @@ asm volatile("atom.add.cta.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -644,6 +664,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.cta.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint64_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 8);
     memcpy(&__old, __expected, 8);
@@ -683,6 +705,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_64_block(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.cta.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -719,6 +742,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -756,6 +780,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -793,6 +818,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -830,6 +856,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -867,6 +894,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -904,6 +932,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -941,6 +970,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -978,6 +1008,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1015,6 +1046,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1057,6 +1089,7 @@ asm volatile("atom.add.cta.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1099,6 +1132,7 @@ asm volatile("atom.add.cta.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1134,6 +1168,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
@@ -1167,6 +1202,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     memcpy(&__tmp, &__val, 8);
     __tmp = -__tmp;
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
@@ -1227,6 +1263,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_32_device(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b32 %0,[%1];" : "=r"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint32_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1255,6 +1292,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_64_device(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b64 %0,[%1];" : "=l"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint64_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -1283,6 +1321,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_32_device(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -1309,6 +1348,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_64_device(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b64 [%0], %1;" :: "l"(__ptr),"l"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -1337,6 +1377,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint32_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 4);
     memcpy(&__old, __expected, 4);
@@ -1376,6 +1418,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_32_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -1412,6 +1455,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1449,6 +1493,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1486,6 +1531,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1523,6 +1569,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1560,6 +1607,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1597,6 +1645,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1634,6 +1683,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1671,6 +1721,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1708,6 +1759,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1750,6 +1802,7 @@ asm volatile("atom.add.gpu.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1792,6 +1845,7 @@ asm volatile("atom.add.gpu.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -1828,6 +1882,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.gpu.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint64_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 8);
     memcpy(&__old, __expected, 8);
@@ -1867,6 +1923,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_64_device(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.gpu.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -1903,6 +1960,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1940,6 +1998,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -1977,6 +2036,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2014,6 +2074,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2051,6 +2112,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2088,6 +2150,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2125,6 +2188,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2162,6 +2226,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2199,6 +2264,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2241,6 +2307,7 @@ asm volatile("atom.add.gpu.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2283,6 +2350,7 @@ asm volatile("atom.add.gpu.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -2318,6 +2386,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
@@ -2351,6 +2420,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     memcpy(&__tmp, &__val, 8);
     __tmp = -__tmp;
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
@@ -2411,6 +2481,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_32_system(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b32 %0,[%1];" : "=r"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint32_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2439,6 +2510,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_load_volatile_64_system(_CUDA_A __ptr, _CUDA_B& __dst) {asm volatile("ld.volatile.b64 %0,[%1];" : "=l"(__dst) : "l"(__ptr) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_load_weak_if_local(__ptr, __ret)) return;
     uint64_t __tmp = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
@@ -2467,6 +2539,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_32_system(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b32 [%0], %1;" :: "l"(__ptr),"r"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -2493,6 +2566,7 @@ template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __c
 template<class _CUDA_A, class _CUDA_B> static inline _LIBCUDACXX_DEVICE void __cuda_store_volatile_64_system(_CUDA_A __ptr, _CUDA_B __src) { asm volatile("st.volatile.b64 [%0], %1;" :: "l"(__ptr),"l"(__src) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_store_weak_if_local(__ptr, *__val)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -2521,6 +2595,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b32 %0,[%1],%2,%3;" : "=r"(__dst) : "l"(__ptr),"r"(__cmp),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint32_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 4);
     memcpy(&__old, __expected, 4);
@@ -2560,6 +2636,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_32_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint32_t __tmp = 0;
     memcpy(&__tmp, __val, 4);
     NV_DISPATCH_TARGET(
@@ -2596,6 +2673,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2633,6 +2711,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2670,6 +2749,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2707,6 +2787,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2744,6 +2825,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2781,6 +2863,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2818,6 +2901,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2855,6 +2939,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2892,6 +2977,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2934,6 +3020,7 @@ asm volatile("atom.add.sys.f32 %0,[%1],%2;" : "=f"(__dst) : "l"(__ptr),"f"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     float __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -2976,6 +3063,7 @@ asm volatile("atom.add.sys.u32 %0,[%1],%2;" : "=r"(__dst) : "l"(__ptr),"r"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint32_t __tmp = 0;
     memcpy(&__tmp, &__val, 4);
     NV_DISPATCH_TARGET(
@@ -3012,6 +3100,8 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inli
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C, class _CUDA_D> static inline _LIBCUDACXX_DEVICE void __cuda_compare_exchange_volatile_64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __cmp, _CUDA_D __op) { asm volatile("atom.cas.sys.b64 %0,[%1],%2,%3;" : "=l"(__dst) : "l"(__ptr),"l"(__cmp),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+    bool __tmp_out;
+    if (__cuda_compare_exchange_weak_if_local(__ptr, __expected, __desired, &__tmp_out)) return __tmp_out;
     uint64_t __tmp = 0, __old = 0, __old_tmp;
     memcpy(&__tmp, __desired, 8);
     memcpy(&__old, __expected, 8);
@@ -3051,6 +3141,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_DEVICE void __cuda_exchange_volatile_64_system(_CUDA_A __ptr, _CUDA_B& __dst, _CUDA_C __op) { asm volatile("atom.exch.sys.b64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op) : "memory"); }
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    if (__cuda_exchange_weak_if_local(__ptr, __val, __ret)) return;
     uint64_t __tmp = 0;
     memcpy(&__tmp, __val, 8);
     NV_DISPATCH_TARGET(
@@ -3087,6 +3178,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_and_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3124,6 +3216,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_or_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3161,6 +3254,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_xor_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3198,6 +3292,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3235,6 +3330,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_add_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3272,6 +3368,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3309,6 +3406,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_max_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3346,6 +3444,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3383,6 +3482,7 @@ template<class _CUDA_A, class _CUDA_B, class _CUDA_C> static inline _LIBCUDACXX_
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_min_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3425,6 +3525,7 @@ asm volatile("atom.add.sys.f64 %0,[%1],%2;" : "=d"(__dst) : "l"(__ptr),"d"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     double __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3467,6 +3568,7 @@ asm volatile("atom.add.sys.u64 %0,[%1],%2;" : "=l"(__dst) : "l"(__ptr),"l"(__op)
 template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
 _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
     _Type __ret;
+    if (__cuda_fetch_sub_weak_if_local(__ptr, __val, &__ret)) return __ret;
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     NV_DISPATCH_TARGET(
@@ -3502,6 +3604,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     uint64_t __tmp = 0;
     memcpy(&__tmp, &__val, 8);
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
@@ -3535,6 +3638,7 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     memcpy(&__tmp, &__val, 8);
     __tmp = -__tmp;
     __tmp *= sizeof(_Type);
+    if (__cuda_fetch_add_weak_if_local((uint64_t*)__ptr, __tmp, (uint64_t*)&__ret)) return __ret;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
