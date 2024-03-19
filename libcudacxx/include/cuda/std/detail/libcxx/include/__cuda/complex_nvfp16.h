@@ -192,16 +192,6 @@ public:
   }
 };
 
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__half>& __c)
-    : __re_(__c.real())
-    , __im_(__c.imag())
-{}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__half>& __c)
-    : __re_(__c.real())
-    , __im_(__c.imag())
-{}
-
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {
   return _CUDA_VSTD::atan2f(__half(0), __re);
@@ -211,22 +201,22 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> asinh(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__half>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> acosh(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__half>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> atanh(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__half>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half> acos(const complex<__half>& __x)
 {
-  return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
+  return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 
 #  if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) && !defined(_CCCL_COMPILER_NVRTC)
@@ -243,7 +233,7 @@ template <class _CharT, class _Traits>
 ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& __x)
 {
-  return __os << complex<float>{__x.real(), __x.imag()};
+  return __os << complex<float>{__x};
 }
 #  endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER_NVRTC
 

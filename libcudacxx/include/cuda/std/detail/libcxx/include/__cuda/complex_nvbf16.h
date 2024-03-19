@@ -195,16 +195,6 @@ public:
   }
 };
 
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<float>::complex(const complex<__nv_bfloat16>& __c)
-    : __re_(__c.real())
-    , __im_(__c.imag())
-{}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<double>::complex(const complex<__nv_bfloat16>& __c)
-    : __re_(__c.real())
-    , __im_(__c.imag())
-{}
-
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
   return _CUDA_VSTD::atan2f(__nv_bfloat16(0), __re);
@@ -214,22 +204,22 @@ inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> asinh(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__nv_bfloat16>{_CUDA_VSTD::asinh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acosh(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__nv_bfloat16>{_CUDA_VSTD::acosh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> atanh(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x.real(), __x.imag()})};
+  return complex<__nv_bfloat16>{_CUDA_VSTD::atanh(complex<float>{__x})};
 }
 template <>
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16> acos(const complex<__nv_bfloat16>& __x)
 {
-  return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x.real(), __x.imag()})};
+  return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
@@ -247,7 +237,7 @@ template <class _CharT, class _Traits>
 ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloat16>& __x)
 {
-  return __os << complex<float>{__x.real(), __x.imag()};
+  return __os << complex<float>{__x};
 }
 #  endif // !_CCCL_COMPILER_NVRTC
 

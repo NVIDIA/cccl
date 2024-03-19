@@ -459,12 +459,12 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(float __re = 0.0f, float __im = 0.0f)
         : __re_(__re), __im_(__im) {}
-#ifdef _LIBCUDACXX_HAS_NVFP16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c);
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c);
-#endif // _LIBCUDACXX_HAS_NVBF16
+
+    template <class _Tp, __enable_if_t<__is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value, int> = 0>
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<_Tp>& __c) noexcept
+        : __re_(__c.real())
+        , __im_(__c.imag())
+    {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit constexpr complex(const complex<double>& __c);
@@ -563,12 +563,12 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(double __re = 0.0, double __im = 0.0)
         : __re_(__re), __im_(__im) {}
-#ifdef _LIBCUDACXX_HAS_NVFP16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__half> & __c);
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
-    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<__nv_bfloat16> & __c);
-#endif // _LIBCUDACXX_HAS_NVBF16
+
+    template <class _Tp, __enable_if_t<__is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value, int> = 0>
+    _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<_Tp>& __c) noexcept
+        : __re_(__c.real())
+        , __im_(__c.imag())
+    {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr complex(const complex<float>& __c);
