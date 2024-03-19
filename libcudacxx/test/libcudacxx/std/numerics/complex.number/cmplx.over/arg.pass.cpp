@@ -50,6 +50,12 @@ int main(int, char**)
     test<double>();
 // CUDA treats long double as double
 //  test<long double>();
+#ifdef _LIBCUDACXX_HAS_NVFP16
+    test<__half>();
+#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+    test<__nv_bfloat16>();
+#endif
     test<int>();
     test<unsigned>();
     test<long long>();

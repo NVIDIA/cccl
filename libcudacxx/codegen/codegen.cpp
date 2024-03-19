@@ -72,7 +72,7 @@ int main() {
 
     std::vector<std::string> cv_qualifier{ "volatile "/*, ""*/ };
 
-    std::ofstream out("__atomic_generated");
+    std::ofstream out("atomic_cuda_generated.h");
 
     out << R"XXX(//===----------------------------------------------------------------------===//
 //
