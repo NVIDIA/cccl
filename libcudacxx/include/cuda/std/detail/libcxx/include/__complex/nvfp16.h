@@ -27,12 +27,13 @@
 
 #  include <cuda_fp16.h>
 
+#  include <cuda/std/detail/libcxx/include/__complex/traits.h>
 #  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvfp16.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
 #  include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
-#  include <cuda/std/detail/libcxx/include/cmath>
+#  include <cuda/std/cmath>
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 #    include <sstream> // for std::basic_ostringstream

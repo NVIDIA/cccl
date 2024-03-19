@@ -102,6 +102,7 @@ set(files
   __cccl/visibility.h
   __complex/nvbf16.h
   __complex/nvfp16.h
+  __complex/traits.h
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h
