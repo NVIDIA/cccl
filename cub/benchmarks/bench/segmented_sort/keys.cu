@@ -156,6 +156,7 @@ void seg_sort(nvbench::state &state,
               bit_entropy entropy)
 {
   constexpr bool is_descending   = false;
+  constexpr bool is_stable       = true;
   constexpr bool is_overwrite_ok = false;
 
   using offset_t          = OffsetT;
@@ -168,6 +169,7 @@ void seg_sort(nvbench::state &state,
   using policy_t = device_seg_sort_policy_hub<key_t>;
   using dispatch_t = //
     cub::DispatchSegmentedSort<is_descending,
+                               is_stable,
                                key_t,
                                value_t,
                                offset_t,
@@ -177,6 +179,7 @@ void seg_sort(nvbench::state &state,
 #else
   using dispatch_t = //
     cub::DispatchSegmentedSort<is_descending,
+                               is_stable,
                                key_t,
                                value_t,
                                offset_t,

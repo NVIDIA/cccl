@@ -97,6 +97,9 @@ struct AgentSmallAndMediumSegmentedSortPolicy
  * @tparam IS_DESCENDING
  *   Whether or not the sorted-order is high-to-low
  *
+ * @tparam IS_STABLE
+ *   Whether to use a stable sorting method
+ *
  * @tparam PolicyT
  *   Chained tuning policy
  *
@@ -110,6 +113,7 @@ struct AgentSmallAndMediumSegmentedSortPolicy
  *   Signed integer type for global offsets
  */
 template <bool IS_DESCENDING,
+          bool IS_STABLE,
           typename PolicyT,
           typename KeyT,
           typename ValueT,
@@ -277,7 +281,13 @@ public:
         WARP_SYNC(warp_merge_sort.get_member_mask());
       }
 
-      warp_merge_sort.StableSort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      CUB_IF_CONSTEXPR(IS_STABLE) {
+        warp_merge_sort.StableSort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      }
+      else
+      {
+        warp_merge_sort.Sort(keys, values, BinaryOpT{}, segment_size, oob_default);
+      }
       WARP_SYNC(warp_merge_sort.get_member_mask());
 
       WarpStoreKeysT(storage.store_keys).Store(keys_output, keys, segment_size);

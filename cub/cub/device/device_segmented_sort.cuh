@@ -254,8 +254,10 @@ struct DeviceSegmentedSort
            cudaStream_t stream = 0)
   {
     constexpr bool is_descending = false;
+    constexpr bool is_stable = false;
     constexpr bool is_overwrite_okay = false;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             cub::NullType,
                                             int,
@@ -429,8 +431,10 @@ struct DeviceSegmentedSort
                      cudaStream_t stream = 0)
   {
     constexpr bool is_descending = true;
+    constexpr bool is_stable = false;
     constexpr bool is_overwrite_okay = false;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             cub::NullType,
                                             int,
@@ -615,9 +619,11 @@ struct DeviceSegmentedSort
            cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = true;
 
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             cub::NullType,
                                             int,
@@ -799,10 +805,12 @@ struct DeviceSegmentedSort
                      EndOffsetIteratorT d_end_offsets,
                      cudaStream_t stream = 0)
   {
-    constexpr bool is_descending = true;
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = true;
 
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             cub::NullType,
                                             int,
@@ -976,16 +984,30 @@ struct DeviceSegmentedSort
                  EndOffsetIteratorT d_end_offsets,
                  cudaStream_t stream = 0)
   {
-    return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    constexpr bool is_descending = false;
+    constexpr bool is_stable = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            cub::NullType,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -1143,17 +1165,30 @@ struct DeviceSegmentedSort
                            EndOffsetIteratorT d_end_offsets,
                            cudaStream_t stream = 0)
   {
-    return SortKeysDescending<KeyT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT>(d_temp_storage,
-                                                  temp_storage_bytes,
-                                                  d_keys_in,
-                                                  d_keys_out,
-                                                  num_items,
-                                                  num_segments,
-                                                  d_begin_offsets,
-                                                  d_end_offsets,
-                                                  stream);
+    constexpr bool is_descending = true;
+    constexpr bool is_stable = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            cub::NullType,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -1322,15 +1357,30 @@ struct DeviceSegmentedSort
                  EndOffsetIteratorT d_end_offsets,
                  cudaStream_t stream = 0)
   {
-    return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+    constexpr bool is_descending     = false;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = true;
+
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            cub::NullType,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -1495,16 +1545,30 @@ struct DeviceSegmentedSort
                            EndOffsetIteratorT d_end_offsets,
                            cudaStream_t stream = 0)
   {
-    return SortKeysDescending<KeyT,
-                              BeginOffsetIteratorT,
-                              EndOffsetIteratorT>(d_temp_storage,
-                                                  temp_storage_bytes,
-                                                  d_keys,
-                                                  num_items,
-                                                  num_segments,
-                                                  d_begin_offsets,
-                                                  d_end_offsets,
-                                                  stream);
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = true;
+
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            cub::NullType,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<NullType> d_values;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -1686,9 +1750,11 @@ struct DeviceSegmentedSort
            EndOffsetIteratorT d_end_offsets,
            cudaStream_t stream = 0)
   {
-    constexpr bool is_descending = false;
+    constexpr bool is_descending     = false;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = false;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             ValueT,
                                             int,
@@ -1891,9 +1957,11 @@ struct DeviceSegmentedSort
                       EndOffsetIteratorT d_end_offsets,
                       cudaStream_t stream = 0)
   {
-    constexpr bool is_descending = true;
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = false;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             ValueT,
                                             int,
@@ -2105,9 +2173,11 @@ struct DeviceSegmentedSort
             EndOffsetIteratorT d_end_offsets,
             cudaStream_t stream = 0)
   {
-    constexpr bool is_descending = false;
+    constexpr bool is_descending     = false;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = true;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             ValueT,
                                             int,
@@ -2309,9 +2379,11 @@ struct DeviceSegmentedSort
                       EndOffsetIteratorT d_end_offsets,
                       cudaStream_t stream = 0)
   {
-    constexpr bool is_descending = true;
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = false;
     constexpr bool is_overwrite_okay = true;
     using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
                                             KeyT,
                                             ValueT,
                                             int,
@@ -2509,20 +2581,30 @@ struct DeviceSegmentedSort
                   EndOffsetIteratorT d_end_offsets,
                   cudaStream_t stream = 0)
   {
-    return SortPairs<KeyT,
-                     ValueT,
-                     BeginOffsetIteratorT,
-                     EndOffsetIteratorT>(d_temp_storage,
-                                         temp_storage_bytes,
-                                         d_keys_in,
-                                         d_keys_out,
-                                         d_values_in,
-                                         d_values_out,
-                                         num_items,
-                                         num_segments,
-                                         d_begin_offsets,
-                                         d_end_offsets,
-                                         stream);
+    constexpr bool is_descending     = false;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            ValueT,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -2706,20 +2788,30 @@ struct DeviceSegmentedSort
                             EndOffsetIteratorT d_end_offsets,
                             cudaStream_t stream = 0)
   {
-    return SortPairsDescending<KeyT,
-                               ValueT,
-                               BeginOffsetIteratorT,
-                               EndOffsetIteratorT>(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_keys_in,
-                                                   d_keys_out,
-                                                   d_values_in,
-                                                   d_values_out,
-                                                   num_items,
-                                                   num_segments,
-                                                   d_begin_offsets,
-                                                   d_end_offsets,
-                                                   stream);
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = false;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            ValueT,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -2913,18 +3005,27 @@ struct DeviceSegmentedSort
                   EndOffsetIteratorT d_end_offsets,
                   cudaStream_t stream = 0)
   {
-    return SortPairs<KeyT,
-                     ValueT,
-                     BeginOffsetIteratorT,
-                     EndOffsetIteratorT>(d_temp_storage,
-                                         temp_storage_bytes,
-                                         d_keys,
-                                         d_values,
-                                         num_items,
-                                         num_segments,
-                                         d_begin_offsets,
-                                         d_end_offsets,
-                                         stream);
+    constexpr bool is_descending     = false;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = true;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            ValueT,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,
@@ -3111,18 +3212,27 @@ struct DeviceSegmentedSort
                             EndOffsetIteratorT d_end_offsets,
                             cudaStream_t stream = 0)
   {
-    return SortPairsDescending<KeyT,
-                               ValueT,
-                               BeginOffsetIteratorT,
-                               EndOffsetIteratorT>(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_keys,
-                                                   d_values,
-                                                   num_items,
-                                                   num_segments,
-                                                   d_begin_offsets,
-                                                   d_end_offsets,
-                                                   stream);
+    constexpr bool is_descending     = true;
+    constexpr bool is_stable         = true;
+    constexpr bool is_overwrite_okay = true;
+    using DispatchT = DispatchSegmentedSort<is_descending,
+                                            is_stable,
+                                            KeyT,
+                                            ValueT,
+                                            int,
+                                            BeginOffsetIteratorT,
+                                            EndOffsetIteratorT>;
+
+    return DispatchT::Dispatch(d_temp_storage,
+                               temp_storage_bytes,
+                               d_keys,
+                               d_values,
+                               num_items,
+                               num_segments,
+                               d_begin_offsets,
+                               d_end_offsets,
+                               is_overwrite_okay,
+                               stream);
   }
 
   template <typename KeyT,

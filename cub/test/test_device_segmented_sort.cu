@@ -33,6 +33,7 @@
 #include <nv/target>
 
 #include <test_util.h>
+#include <test_util_sort.h>
 
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
@@ -1373,10 +1374,8 @@ void InputTestRandom(Input<KeyT, ValueT> &input)
           {
             RandomizeInput(h_keys, h_values);
 
-#if STORE_ON_FAILURE
             auto h_keys_backup = h_keys;
             auto h_values_backup = h_values;
-#endif
 
             input.get_d_keys_vec()   = h_keys;
             input.get_d_values_vec() = h_values;
@@ -1397,13 +1396,6 @@ void InputTestRandom(Input<KeyT, ValueT> &input)
                                input.get_d_offsets(),
                                &keys_buffer.selector,
                                &values_buffer.selector);
-
-            HostReferenceSort(sort_pairs,
-                              sort_descending,
-                              input.get_num_segments(),
-                              h_offsets,
-                              h_keys,
-                              h_values);
 
             if (sort_buffers)
             {
@@ -1431,28 +1423,92 @@ void InputTestRandom(Input<KeyT, ValueT> &input)
               h_values_output = values_output;
             }
 
-            const bool keys_ok =
-              compare_two_outputs(h_offsets, h_keys, h_keys_output);
+            if(stable_sort) {
+              // Two stable sorts should produce exactly the same output, so we
+              // can compare against a reference implementation.
+              HostReferenceSort(sort_pairs,
+                                sort_descending,
+                                input.get_num_segments(),
+                                h_offsets,
+                                h_keys,
+                                h_values);
 
-            const bool values_ok =
-              sort_pairs
-                ? compare_two_outputs(h_offsets, h_values, h_values_output)
-                : true;
+              const bool keys_ok =
+                compare_two_outputs(h_offsets, h_keys, h_keys_output);
+
+              const bool values_ok =
+                sort_pairs
+                  ? compare_two_outputs(h_offsets, h_values, h_values_output)
+                  : true;
+
+  #if STORE_ON_FAILURE
+              if (!keys_ok || !values_ok)
+              {
+                DumpInput<KeyT, ValueT>(sort_pairs,
+                                        sort_descending,
+                                        sort_buffers,
+                                        input,
+                                        h_keys_backup,
+                                        h_values_backup);
+              }
+  #endif
+
+              AssertTrue(keys_ok);
+              AssertTrue(values_ok);
+            }
+            else
+            {
+              // When the sort is unstable, we verify that the output key-value pairs
+              // are a permutation of the input and that they are sorted.
+              for (int segment_i = 0; segment_i < input.get_num_segments(); segment_i++) {
+                bool permutation_ok;
+                if(sort_pairs) {
+                  permutation_ok = IsPermutationOf(h_keys_output.data() + h_offsets[segment_i],
+                                                   h_keys_backup.data() + h_offsets[segment_i],
+                                                   h_values_output.data() + h_offsets[segment_i],
+                                                   h_values_backup.data() + h_offsets[segment_i],
+                                                   h_offsets[segment_i + 1] - h_offsets[segment_i]);
+                } else {
+                  permutation_ok = IsPermutationOf(h_keys_output.data() + h_offsets[segment_i],
+                                                   h_keys_backup.data() + h_offsets[segment_i],
+                                                   h_offsets[segment_i + 1] - h_offsets[segment_i]);
+                }
+                if(!permutation_ok) {
+                  std::cerr << "Error in segment " << segment_i << ": not a permutation of the input"
+                    << std::endl;
+                }
+
+                bool sort_ok;
+                if(sort_descending) {
+                  sort_ok = IsSorted(h_keys_output.begin() + h_offsets[segment_i],
+                                     h_keys_output.begin() + h_offsets[segment_i + 1],
+                                     cub::Greater{});
+                } else {
+                  sort_ok = IsSorted(h_keys_output.begin() + h_offsets[segment_i],
+                                     h_keys_output.begin() + h_offsets[segment_i + 1],
+                                     cub::Less{});
+                }
+                if(!sort_ok) {
+                  std::cerr << "Error in segment " << segment_i << ": not in sorted order"
+                    << std::endl;
+                }
 
 #if STORE_ON_FAILURE
-            if (!keys_ok || !values_ok)
-            {
-              DumpInput<KeyT, ValueT>(sort_pairs,
-                                      sort_descending,
-                                      sort_buffers,
-                                      input,
-                                      h_keys_backup,
-                                      h_values_backup);
-            }
-#endif
+              if (!permutation_ok || !sort_ok)
+              {
+                DumpInput<KeyT, ValueT>(sort_pairs,
+                                        sort_descending,
+                                        sort_buffers,
+                                        input,
+                                        h_keys_backup,
+                                        h_values_backup);
+              }
+  #endif
 
-            AssertTrue(keys_ok);
-            AssertTrue(values_ok);
+                AssertTrue(permutation_ok);
+                AssertTrue(sort_ok);
+              }
+            }
 
             input.shuffle();
           }
@@ -1646,14 +1702,14 @@ __global__ void LauncherKernel(
     int num_segments,
     const int *offsets)
 {
-  CubDebug(cub::DeviceSegmentedSort::SortKeys(tmp_storage,
-                                              temp_storage_bytes,
-                                              in_keys,
-                                              out_keys,
-                                              num_items,
-                                              num_segments,
-                                              offsets,
-                                              offsets + 1));
+  CubDebug(cub::DeviceSegmentedSort::StableSortKeys(tmp_storage,
+                                                    temp_storage_bytes,
+                                                    in_keys,
+                                                    out_keys,
+                                                    num_items,
+                                                    num_segments,
+                                                    offsets,
+                                                    offsets + 1));
 }
 
 template <typename KeyT,
@@ -1683,14 +1739,14 @@ void TestDeviceSideLaunch(Input<KeyT, ValueT> &input)
     const KeyT *d_input = input.get_d_keys();
 
     std::size_t temp_storage_bytes{};
-    cub::DeviceSegmentedSort::SortKeys(nullptr,
-                                       temp_storage_bytes,
-                                       d_input,
-                                       d_keys_output,
-                                       input.get_num_items(),
-                                       input.get_num_segments(),
-                                       input.get_d_offsets(),
-                                       input.get_d_offsets() + 1);
+    cub::DeviceSegmentedSort::StableSortKeys(nullptr,
+                                             temp_storage_bytes,
+                                             d_input,
+                                             d_keys_output,
+                                             input.get_num_items(),
+                                             input.get_num_segments(),
+                                             input.get_d_offsets(),
+                                             input.get_d_offsets() + 1);
 
     thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     std::uint8_t *d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
@@ -1808,9 +1864,9 @@ void TestUnspecifiedRanges()
       const int segment_begin = h_offsets_begin[sid];
       const int segment_end = h_offsets_end[sid];
 
-      thrust::sort_by_key(expected_keys.begin() + segment_begin,
-                          expected_keys.begin() + segment_end,
-                          expected_values.begin() + segment_begin);
+      thrust::stable_sort_by_key(expected_keys.begin() + segment_begin,
+                                 expected_keys.begin() + segment_end,
+                                 expected_values.begin() + segment_begin);
     }
 
     thrust::device_vector<int> result_keys = keys;
@@ -1828,7 +1884,7 @@ void TestUnspecifiedRanges()
       std::size_t temp_storage_bytes{};
       std::uint8_t *d_temp_storage{};
 
-      CubDebugExit(cub::DeviceSegmentedSort::SortPairs(
+      CubDebugExit(cub::DeviceSegmentedSort::StableSortPairs(
           d_temp_storage, temp_storage_bytes, 
           keys_buffer, values_buffer, 
           num_items, num_segments, 
@@ -1838,7 +1894,7 @@ void TestUnspecifiedRanges()
       thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
       d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-      CubDebugExit(cub::DeviceSegmentedSort::SortPairs(
+      CubDebugExit(cub::DeviceSegmentedSort::StableSortPairs(
           d_temp_storage, temp_storage_bytes, 
           keys_buffer, values_buffer, 
           num_items, num_segments, 
@@ -1881,7 +1937,7 @@ void TestUnspecifiedRanges()
       std::size_t temp_storage_bytes{};
       std::uint8_t *d_temp_storage{};
 
-      CubDebugExit(cub::DeviceSegmentedSort::SortPairs(
+      CubDebugExit(cub::DeviceSegmentedSort::StableSortPairs(
           d_temp_storage, temp_storage_bytes, 
           thrust::raw_pointer_cast(keys.data()), 
           thrust::raw_pointer_cast(result_keys.data()), 
@@ -1894,7 +1950,7 @@ void TestUnspecifiedRanges()
       thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
       d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-      CubDebugExit(cub::DeviceSegmentedSort::SortPairs(
+      CubDebugExit(cub::DeviceSegmentedSort::StableSortPairs(
           d_temp_storage, temp_storage_bytes, 
           thrust::raw_pointer_cast(keys.data()), 
           thrust::raw_pointer_cast(result_keys.data()), 

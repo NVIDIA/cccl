@@ -107,6 +107,7 @@ CUB_NAMESPACE_BEGIN
  *   considered empty.
  */
 template <bool IS_DESCENDING,
+          bool IS_STABLE,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -149,7 +150,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   using WarpReduceT = cub::WarpReduce<KeyT>;
 
   using AgentWarpMergeSortT =
-    AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    AgentSubWarpSort<IS_DESCENDING, IS_STABLE, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   __shared__ union
   {
@@ -302,6 +303,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
  *   considered empty.
  */
 template <bool IS_DESCENDING,
+          bool IS_STABLE,
           typename ChainedPolicyT,
           typename KeyT,
           typename ValueT,
@@ -335,10 +337,10 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::SmallAndMediumSegmentedSortPolic
   constexpr int threads_per_small_segment = SmallPolicyT::WARP_THREADS;
 
   using MediumAgentWarpMergeSortT =
-    AgentSubWarpSort<IS_DESCENDING, MediumPolicyT, KeyT, ValueT, OffsetT>;
+    AgentSubWarpSort<IS_DESCENDING, IS_STABLE, MediumPolicyT, KeyT, ValueT, OffsetT>;
 
   using SmallAgentWarpMergeSortT =
-    AgentSubWarpSort<IS_DESCENDING, SmallPolicyT, KeyT, ValueT, OffsetT>;
+    AgentSubWarpSort<IS_DESCENDING, IS_STABLE, SmallPolicyT, KeyT, ValueT, OffsetT>;
 
   constexpr auto segments_per_medium_block =
     static_cast<unsigned int>(SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
@@ -1088,6 +1090,7 @@ struct DeviceSegmentedSortPolicy
 };
 
 template <bool IS_DESCENDING,
+          bool IS_STABLE,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
@@ -1450,6 +1453,7 @@ struct DispatchSegmentedSort : SelectedPolicy
                                            EndOffsetIteratorT,
                                            OffsetT>,
             DeviceSegmentedSortKernelSmall<IS_DESCENDING,
+                                           IS_STABLE,
                                            MaxPolicyT,
                                            KeyT,
                                            ValueT,
@@ -1473,6 +1477,7 @@ struct DispatchSegmentedSort : SelectedPolicy
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
           DeviceSegmentedSortFallbackKernel<IS_DESCENDING,
+                                            IS_STABLE,
                                             MaxPolicyT,
                                             KeyT,
                                             ValueT,
