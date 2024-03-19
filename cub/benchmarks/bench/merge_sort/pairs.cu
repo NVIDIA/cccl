@@ -75,14 +75,15 @@ struct policy_hub_t
 template <typename KeyT, typename ValueT, typename OffsetT>
 void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
-  using key_t            = KeyT;
-  using value_t          = ValueT;
-  using key_input_it_t   = key_t *;
-  using value_input_it_t = value_t *;
-  using key_it_t         = key_t *;
-  using value_it_t       = value_t *;
-  using offset_t         = OffsetT;
-  using compare_op_t     = less_t;
+  using key_t              = KeyT;
+  using value_t            = ValueT;
+  using key_input_it_t     = key_t *;
+  using value_input_it_t   = value_t *;
+  using key_it_t           = key_t *;
+  using value_it_t         = value_t *;
+  using offset_t           = OffsetT;
+  using compare_op_t       = less_t;
+  constexpr bool is_stable = true;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<key_t>;
@@ -92,10 +93,11 @@ void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
                                             value_it_t,
                                             offset_t,
                                             compare_op_t,
+                                            is_stable,
                                             policy_t>;
 #else // TUNE_BASE
   using dispatch_t = cub::
-    DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
+    DispatchMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, is_stable>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
