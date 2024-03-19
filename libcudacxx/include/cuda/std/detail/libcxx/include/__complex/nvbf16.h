@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_COMPLEX_NVBF16_H
-#define _LIBCUDACXX___CUDA_COMPLEX_NVBF16_H
+#ifndef _LIBCUDACXX___COMPLEX_NVBF16_H
+#define _LIBCUDACXX___COMPLEX_NVBF16_H
 
 #ifndef __cuda_std__
 #  include <config>
@@ -245,4 +245,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif /// _LIBCUDACXX_HAS_NVBF16
 
-#endif // _LIBCUDACXX___CUDA_COMPLEX_NVBF16_H
+#endif // _LIBCUDACXX___COMPLEX_NVBF16_H
