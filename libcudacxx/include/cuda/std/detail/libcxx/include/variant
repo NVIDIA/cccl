@@ -617,6 +617,7 @@ struct __variant
       _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
+_CCCL_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
   // This overload is needed to tell the compiler that the recursion is indeed limited
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices, size_t... _UnprocessedIndices>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
@@ -640,6 +641,7 @@ struct __variant
     }
     _LIBCUDACXX_UNREACHABLE();
   }
+_CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
   template <class _Visitor, class... _Vs>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)
