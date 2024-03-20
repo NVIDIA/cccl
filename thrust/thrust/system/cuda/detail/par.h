@@ -40,9 +40,7 @@
 
 #include <thrust/detail/allocator_aware_execution_policy.h>
 
-#if _CCCL_STD_VER >= 2011
-#  include <thrust/detail/dependencies_aware_execution_policy.h>
-#endif
+#include <thrust/detail/dependencies_aware_execution_policy.h>
 
 
 THRUST_NAMESPACE_BEGIN
@@ -140,10 +138,8 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
 struct par_t : execution_policy<par_t>,
   thrust::detail::allocator_aware_execution_policy<
     execute_on_stream_base>
-#if _CCCL_STD_VER >= 2011
 , thrust::detail::dependencies_aware_execution_policy<
     execute_on_stream_base>
-#endif
 {
   typedef execution_policy<par_t> base_t;
 
@@ -162,11 +158,8 @@ struct par_t : execution_policy<par_t>,
 
 struct par_nosync_t : execution_policy<par_nosync_t>,
   thrust::detail::allocator_aware_execution_policy<
+    execute_on_stream_nosync_base>, thrust::detail::dependencies_aware_execution_policy<
     execute_on_stream_nosync_base>
-#if _CCCL_STD_VER >= 2011
-, thrust::detail::dependencies_aware_execution_policy<
-    execute_on_stream_nosync_base>
-#endif
 {
   typedef execution_policy<par_nosync_t> base_t;
 

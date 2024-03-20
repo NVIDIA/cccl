@@ -35,8 +35,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
@@ -291,5 +289,4 @@ struct negation_value : std::integral_constant<bool, !B> {};
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011
 

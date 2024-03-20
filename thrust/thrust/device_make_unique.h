@@ -32,7 +32,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <thrust/allocate_unique.h>
 #include <thrust/device_new.h>
@@ -65,4 +64,3 @@ auto device_make_unique(Args&&... args)
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011

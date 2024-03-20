@@ -48,7 +48,6 @@ struct depend_on_instantiation
   THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT bool value = x;
 };
 
-#if _CCCL_STD_VER >= 2011
 
 #  if _CCCL_STD_VER >= 2017
 #    define THRUST_STATIC_ASSERT(B)        static_assert(B)
@@ -57,39 +56,7 @@ struct depend_on_instantiation
 #  endif
 #  define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
 
-#else // Older than C++11.
 
-// HP aCC cannot deal with missing names for template value parameters.
-template <bool x> struct STATIC_ASSERTION_FAILURE;
-
-template <> struct STATIC_ASSERTION_FAILURE<true> {};
-
-// HP aCC cannot deal with missing names for template value parameters.
-template <int x> struct static_assert_test {};
-
-#  if (defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION >= 40800))          \
-      || defined(_CCCL_COMPILER_CLANG)
-  // Clang and GCC 4.8+ will complain about this typedef being unused unless we
-  // annotate it as such.
-#  define THRUST_STATIC_ASSERT(B)                                             \
-    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
-      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
-    >                                                                         \
-      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
-      __attribute__((unused))                                                 \
-    /**/
-#else
-#  define THRUST_STATIC_ASSERT(B)                                             \
-    typedef THRUST_NS_QUALIFIER::detail::static_assert_test<                  \
-      sizeof(THRUST_NS_QUALIFIER::detail::STATIC_ASSERTION_FAILURE<(bool)(B)>)\
-    >                                                                         \
-      THRUST_PP_CAT2(thrust_static_assert_typedef_, __LINE__)                 \
-    /**/
-#endif
-
-#define THRUST_STATIC_ASSERT_MSG(B, msg) THRUST_STATIC_ASSERT(B)
-
-#endif // _CCCL_STD_VER >= 2011
 
 } // namespace detail
 

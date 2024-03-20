@@ -1,7 +1,5 @@
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <unittest/unittest.h>
 
 #include <thrust/detail/tuple_algorithms.h>
@@ -58,5 +56,4 @@ void test_tuple_for_each()
 }
 DECLARE_UNITTEST(test_tuple_for_each);
 
-#endif // _CCCL_STD_VER >= 2011
 

@@ -253,89 +253,11 @@ template<typename T1, typename T2>
 {
 }; // end lazy_is_different
 
-#if _CCCL_STD_VER >= 2011
 
 template<class From, class To>
 using is_convertible = ::cuda::std::is_convertible<From, To>;
 
-#else
 
-namespace tt_detail
-{
-
-template<typename T>
-  struct is_int_or_cref
-{
-  typedef typename remove_reference<T>::type type_sans_ref;
-  static const bool value = (is_integral<T>::value
-                             || (is_integral<type_sans_ref>::value
-                                 && is_const<type_sans_ref>::value
-                                 && !is_volatile<type_sans_ref>::value));
-}; // end is_int_or_cref
-
-
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
-THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_BEGIN
-
-template<typename From, typename To>
-  struct is_convertible_sfinae
-{
-  private:
-    typedef char                          yes;
-    typedef struct { char two_chars[2]; } no;
-
-    static inline yes   test(To) { return yes(); }
-    static inline no    test(...) { return no(); }
-    static inline typename remove_reference<From>::type& from() { typename remove_reference<From>::type* ptr = 0; return *ptr; }
-
-  public:
-    static const bool value = sizeof(test(from())) == sizeof(yes);
-}; // end is_convertible_sfinae
-
-
-THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_END
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
-
-
-template<typename From, typename To>
-  struct is_convertible_needs_simple_test
-{
-  static const bool from_is_void      = is_void<From>::value;
-  static const bool to_is_void        = is_void<To>::value;
-  static const bool from_is_float     = is_floating_point<typename remove_reference<From>::type>::value;
-  static const bool to_is_int_or_cref = is_int_or_cref<To>::value;
-
-  static const bool value = (from_is_void || to_is_void || (from_is_float && to_is_int_or_cref));
-}; // end is_convertible_needs_simple_test
-
-
-template<typename From, typename To,
-         bool = is_convertible_needs_simple_test<From,To>::value>
-  struct is_convertible
-{
-  static const bool value = (is_void<To>::value
-                             || (is_int_or_cref<To>::value
-                                 && !is_void<From>::value));
-}; // end is_convertible
-
-
-template<typename From, typename To>
-  struct is_convertible<From, To, false>
-{
-  static const bool value = (is_convertible_sfinae<typename
-                             add_reference<From>::type, To>::value);
-}; // end is_convertible
-
-
-} // end tt_detail
-
-template<typename From, typename To>
-  struct is_convertible
-    : public integral_constant<bool, tt_detail::is_convertible<From, To>::value>
-{
-}; // end is_convertible
-
-#endif
 
 template<typename T1, typename T2>
   struct is_one_convertible_to_the_other
@@ -539,47 +461,11 @@ template<typename T1, typename T2>
       >
 {};
 
-#if _CCCL_STD_VER >= 2011
 
 template<class Base, class Derived>
 using is_base_of = ::cuda::std::is_base_of<Base, Derived>;
 
-#else
 
-namespace is_base_of_ns
-{
-
-typedef char                          yes;
-typedef struct { char two_chars[2]; } no;
-
-template<typename Base, typename Derived>
-  struct host
-{
-  operator Base*() const;
-  operator Derived*();
-}; // end host
-
-template<typename Base, typename Derived>
-  struct impl
-{
-  template<typename T> static yes check(Derived *, T);
-  static no check(Base*, int);
-
-  static const bool value = sizeof(check(host<Base,Derived>(), int())) == sizeof(yes);
-}; // end impl
-
-} // end is_base_of_ns
-
-
-template<typename Base, typename Derived>
-  struct is_base_of
-    : integral_constant<
-        bool,
-        is_base_of_ns::impl<Base,Derived>::value
-      >
-{};
-
-#endif
 
 template<typename Base, typename Derived, typename Result = void>
   struct enable_if_base_of
