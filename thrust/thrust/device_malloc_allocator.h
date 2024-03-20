@@ -113,9 +113,7 @@ template<typename T>
     _CCCL_HOST_DEVICE
     inline device_malloc_allocator(device_malloc_allocator<U> const&) {}
 
-#if _CCCL_STD_VER >= 2011
     device_malloc_allocator & operator=(const device_malloc_allocator &) = default;
-#endif
 
     /*! Returns the address of an allocated object.
      *  \return <tt>&r</tt>.

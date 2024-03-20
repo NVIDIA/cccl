@@ -29,9 +29,7 @@
 #include <thrust/detail/type_traits/is_call_possible.h>
 #include <thrust/detail/integer_traits.h>
 
-#if _CCCL_STD_VER >= 2011
-  #include <thrust/detail/type_deduction.h>
-#endif
+#include <thrust/detail/type_deduction.h>
 
 #include <thrust/detail/memory_wrapper.h>
 #include <new>
@@ -39,8 +37,6 @@
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
-
-#if _CCCL_STD_VER >= 2011
 
 // std::allocator's member functions are deprecated in C++17 and removed in
 // C++20, so we can't just use the generic implementation for allocator_traits
@@ -135,7 +131,6 @@ public:
   }
 };
 
-#endif //  C++11
 
 namespace allocator_traits_detail
 {
@@ -236,8 +231,6 @@ template<typename Alloc, typename T, typename Arg1>
   ::new(static_cast<void*>(p)) T(arg1);
 }
 
-#if _CCCL_STD_VER >= 2011
-
 __THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_constructN_impl, construct)
 
 template<typename Alloc, typename T, typename... Args>
@@ -267,7 +260,6 @@ template<typename Alloc, typename T, typename... Args>
   ::new(static_cast<void*>(p)) T(THRUST_FWD(args)...);
 }
 
-#endif
 
 __THRUST_DEFINE_IS_CALL_POSSIBLE(has_member_destroy_impl, destroy)
 
@@ -427,8 +419,6 @@ template<typename Alloc>
   return allocator_traits_detail::construct(a,p,arg1);
 }
 
-#if _CCCL_STD_VER >= 2011
-
 template<typename Alloc>
   template<typename T, typename... Args>
   _CCCL_HOST_DEVICE
@@ -438,7 +428,6 @@ template<typename Alloc>
   return allocator_traits_detail::construct(a, p, THRUST_FWD(args)...);
 }
 
-#endif
 
 template<typename Alloc>
   template<typename T>

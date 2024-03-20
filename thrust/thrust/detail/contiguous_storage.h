@@ -170,7 +170,6 @@ template<typename T, typename Alloc>
     _CCCL_HOST_DEVICE
     void propagate_allocator(const contiguous_storage &other);
 
-#if _CCCL_STD_VER >= 2011
     _CCCL_HOST_DEVICE
     void propagate_allocator(contiguous_storage &other);
 
@@ -178,7 +177,6 @@ template<typename T, typename Alloc>
     // on move assignment
     _CCCL_HOST_DEVICE
     contiguous_storage &operator=(contiguous_storage &&other);
-#endif // _CCCL_STD_VER >= 2011
 
   private:
     // XXX we could inherit from this to take advantage of empty base class optimization
@@ -223,13 +221,11 @@ template<typename T, typename Alloc>
     _CCCL_HOST_DEVICE
     void propagate_allocator_dispatch(false_type, const contiguous_storage &other);
 
-#if _CCCL_STD_VER >= 2011
     _CCCL_HOST_DEVICE
     void propagate_allocator_dispatch(true_type, contiguous_storage &other);
 
     _CCCL_HOST_DEVICE
     void propagate_allocator_dispatch(false_type, contiguous_storage &other);
-#endif // _CCCL_STD_VER >= 2011
 }; // end contiguous_storage
 
 } // end detail

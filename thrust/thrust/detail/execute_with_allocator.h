@@ -92,8 +92,6 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#if _CCCL_STD_VER >= 2011
-
 template <
     typename T,
     template <typename> class BaseSystem,
@@ -150,7 +148,6 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#endif
 
 } // namespace detail
 

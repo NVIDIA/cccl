@@ -32,8 +32,6 @@
 
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -59,4 +57,3 @@ THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/shuffle.inl>
 
-#endif

@@ -25,8 +25,6 @@
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/type_traits.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <thrust/addressof.h>
 #include <thrust/swap.h>
 
@@ -2880,5 +2878,4 @@ template <class T> struct hash<THRUST_NS_QUALIFIER::optional<T>> {
 };
 } // namespace std
 
-#endif // _CCCL_STD_VER >= 2011
 

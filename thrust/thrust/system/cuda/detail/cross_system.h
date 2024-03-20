@@ -61,7 +61,6 @@ namespace cuda_cub {
     }
   };
 
-#if _CCCL_STD_VER >= 2011
   // Device to host.
   template <class Sys1, class Sys2>
   constexpr _CCCL_HOST_DEVICE
@@ -315,7 +314,6 @@ namespace cuda_cub {
   select_host_system(thrust::execution_policy<Sys1> const &sys1,
                      thrust::execution_policy<Sys2> const &)
   THRUST_DECLTYPE_RETURNS(sys1)
-#endif
 
   // Device to host.
   template <class Sys1, class Sys2>

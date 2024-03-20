@@ -396,7 +396,6 @@ _CCCL_HOST_DEVICE
   propagate_allocator_dispatch(c, other);
 } // end contiguous_storage::propagate_allocator()
 
-#if _CCCL_STD_VER >= 2011
 template<typename T, typename Alloc>
 _CCCL_HOST_DEVICE
   void contiguous_storage<T,Alloc>
@@ -428,7 +427,6 @@ _CCCL_HOST_DEVICE
 
   return *this;
 } // end contiguous_storage::propagate_allocator()
-#endif
 
 template<typename T, typename Alloc>
 _CCCL_HOST_DEVICE
@@ -528,7 +526,6 @@ _CCCL_HOST_DEVICE
 {
 } // end contiguous_storage::propagate_allocator()
 
-#if _CCCL_STD_VER >= 2011
 _CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename Alloc>
 _CCCL_HOST_DEVICE
@@ -544,7 +541,6 @@ _CCCL_HOST_DEVICE
     ::propagate_allocator_dispatch(false_type, contiguous_storage &)
 {
 } // end contiguous_storage::propagate_allocator()
-#endif // _CCCL_STD_VER >= 2011
 
 } // end detail
 

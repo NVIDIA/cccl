@@ -2,11 +2,9 @@
 #include <thrust/detail/static_assert.h>
 #include <iterator>
 #include <vector>
-#if _CCCL_STD_VER >= 2011
-  #include <array>
-  #include <unordered_map>
-  #include <unordered_set>
-#endif
+#include <array>
+#include <unordered_map>
+#include <unordered_set>
 #include <string>
 #if _CCCL_STD_VER >= 2017
   #include <string_view>
@@ -66,11 +64,9 @@ void test_is_contiguous_iterator()
     typename std::vector<T>::reverse_iterator
   >::value));
 
-  #if _CCCL_STD_VER >= 2011
   THRUST_STATIC_ASSERT((thrust::is_contiguous_iterator<
     typename std::array<T, 1>::iterator
   >::value));
-  #endif
 
   THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<
     typename std::list<T>::iterator
@@ -96,7 +92,6 @@ void test_is_contiguous_iterator()
     typename std::multimap<T, T>::iterator
   >::value));
 
-  #if _CCCL_STD_VER >= 2011
   THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<
     typename std::unordered_set<T>::iterator
   >::value));
@@ -112,7 +107,6 @@ void test_is_contiguous_iterator()
   THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<
     typename std::unordered_multimap<T, T>::iterator
   >::value));
-  #endif
 
   THRUST_STATIC_ASSERT((!thrust::is_contiguous_iterator<
     std::istream_iterator<T>

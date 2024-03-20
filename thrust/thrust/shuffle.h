@@ -32,7 +32,6 @@
 
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <thrust/detail/execution_policy.h>
 
@@ -184,4 +183,3 @@ _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/shuffle.inl>
-#endif

@@ -58,13 +58,11 @@ template<typename T, typename Allocator>
       : super_t(x)
 {}
 
-#if _CCCL_STD_VER >= 2011
   template<typename T, typename Allocator>
     vector<T,Allocator>
       ::vector(vector &&x)
         : super_t(std::move(x))
   {}
-#endif
 
 template<typename T, typename Allocator>
   template<typename OtherT, typename OtherAllocator>
@@ -96,7 +94,6 @@ template<typename T, typename Allocator>
   return *this;
 }
 
-#if _CCCL_STD_VER >= 2011
   template<typename T, typename Allocator>
     vector<T,Allocator> &
       vector<T,Allocator>
@@ -105,7 +102,6 @@ template<typename T, typename Allocator>
     super_t::operator=(std::move(x));
     return *this;
   }
-#endif
 
   template<typename T, typename Allocator>
     vector<T,Allocator>
@@ -151,4 +147,3 @@ template<typename T, typename Allocator>
 } // end cpp
 } // end system
 THRUST_NAMESPACE_END
-

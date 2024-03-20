@@ -13,14 +13,14 @@ void TestComplexAlignment()
     sizeof(thrust::complex<T>) == sizeof(VectorT)
   );
   THRUST_STATIC_ASSERT(
-    THRUST_ALIGNOF(thrust::complex<T>) == THRUST_ALIGNOF(VectorT)
+    alignof(thrust::complex<T>) == alignof(VectorT)
   );
 
   THRUST_STATIC_ASSERT(
     sizeof(thrust::complex<T const>) == sizeof(VectorT)
   );
   THRUST_STATIC_ASSERT(
-    THRUST_ALIGNOF(thrust::complex<T const>) == THRUST_ALIGNOF(VectorT)
+    alignof(thrust::complex<T const>) == alignof(VectorT)
   );
 }
 DECLARE_UNITTEST_WITH_NAME(
