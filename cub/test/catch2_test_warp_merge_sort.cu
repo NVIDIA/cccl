@@ -531,12 +531,11 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
                                 h_in.begin() + segment_offset + segment_size);
       std::vector<type> h_out_ib(h_out.begin() + segment_offset,
                                  h_out.begin() + segment_offset + segment_size);
-      std::vector<type> h_ref_oob(params::logical_warp_items - segment_size, oob_default);
-      std::vector<type> h_out_oob(h_out.begin() + segment_offset + segment_size,
-                                  h_out.begin() + segment_offset + params::logical_warp_items);
 
       REQUIRE_THAT(h_out_ib, Catch::Matchers::UnorderedEquals(h_in_ib));
-      REQUIRE(h_out_oob == h_ref_oob);
+      REQUIRE(std::all_of(h_out.begin() + segment_offset + segment_size,
+                          h_out.begin() + segment_offset + params::logical_warp_items,
+                          [oob_default](type v) { return v == oob_default; }));
       REQUIRE_SORTED(h_out_ib, CompareOp{});
     }
   }
@@ -695,8 +694,6 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
         h_pairs_out_ib[item_id] = std::make_pair(h_keys_out[item_id + segment_offset],
                                                  h_values_out[item_id + segment_offset]);
       }
-      std::vector<std::pair<key_type, value_type>> h_pairs_ref_oob(
-        params::logical_warp_items - segment_size, std::make_pair(oob_default, value_type{}));
       std::vector<std::pair<key_type, value_type>> h_pairs_out_oob(
         params::logical_warp_items - segment_size);
       for(unsigned int item_id = 0; item_id < params::logical_warp_items - segment_size; item_id++) {
@@ -705,7 +702,9 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
       }
 
       REQUIRE_THAT(h_pairs_out_ib, Catch::Matchers::UnorderedEquals(h_pairs_in_ib));
-      REQUIRE(h_pairs_out_oob == h_pairs_ref_oob);
+      REQUIRE(std::all_of(h_pairs_out_oob.begin(), h_pairs_out_oob.end(),
+                          [oob_default](std::pair<key_type, value_type> p) {
+                            return p.first == oob_default && p.second == value_type{}; }));
       REQUIRE_SORTED(
         h_pairs_out_ib,
         [](const std::pair<key_type, value_type>& lhs, const std::pair<key_type, value_type>& rhs) -> bool {

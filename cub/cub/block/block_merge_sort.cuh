@@ -220,7 +220,7 @@ private:
                                        int valid_items,
                                        KeyT oob_default)
   {
-    CUB_IF_CONSTEXPR(IS_LAST_TILE)
+    if (IS_LAST_TILE)
     {
       // if last tile, find valid max_key
       // and fill the remaining keys with it
