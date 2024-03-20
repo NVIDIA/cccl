@@ -697,6 +697,78 @@ struct DeviceSelect
                                                          stream);
   }
 
+//! @rst
+  //! Uses the ``select_op`` functor applied to ``d_flag`` to selectively copy the 
+  //! corresponding items from ``d_in`` into ``d_out``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //! 
+  //! - The type of ``d_flags`` must conform to the requirements of the input 
+  //!   argument of the unary predicate ``select_op``.
+  //! - The return value of ``select_op(d_flags)`` must be castable to ``bool``. 
+  //! - Copies of the selected items are compacted into ``d_out`` and maintain
+  //!   their original relative ordering.
+  //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
+  //!   | ``[d_in, d_in + num_items)`` nor ``d_num_selected_out`` in any way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-select-flaggedif
+  //!     :end-before: example-end segmented-select-flaggedif
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam FlagIterator
+  //!   **[inferred]** Random-access input iterator type for reading selection flags @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Random-access output iterator type for writing selected items @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[in] d_flags
+  //!   Pointer to the input sequence of selection flags
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output sequence of selected data items
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!   (i.e., length of `d_out`)
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
