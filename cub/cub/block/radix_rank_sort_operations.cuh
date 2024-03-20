@@ -44,6 +44,7 @@
 #endif // no system header
 
 #include <cub/detail/cpp_compatibility.cuh>
+#include <cub/detail/meta.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -149,21 +150,6 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 namespace detail
 {
 
-template <bool... Bs>
-struct logic_helper_t;
-
-template <bool>
-struct true_t
-{
-  static constexpr bool value = true;
-};
-
-template <bool... Bs>
-using all_t =            //
-  ::cuda::std::is_same<  //
-    logic_helper_t<Bs...>, //
-    logic_helper_t<true_t<Bs>::value...>>;
-
 struct identity_decomposer_t
 {
   template <class T>
@@ -204,9 +190,6 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 namespace radix
 {
 
-template <class... >
-using void_t = void;
-
 template <class T, class = void>
 struct is_fundamental_type
 {
@@ -214,7 +197,7 @@ struct is_fundamental_type
 };
 
 template <class T>
-struct is_fundamental_type<T, void_t<typename Traits<T>::UnsignedBits>>
+struct is_fundamental_type<T, cub::detail::void_t<typename Traits<T>::UnsignedBits>>
 {
   static constexpr bool value = true;
 };
