@@ -1,7 +1,7 @@
 
 cuda_prev_min: &cuda_prev_min '11.1'
 cuda_prev_max:  &cuda_prev_max  '11.8'
-cuda_curr: &cuda_curr '12.3'
+cuda_curr: &cuda_curr '12.4'
 
 # The GPUs to test on
 gpus:
