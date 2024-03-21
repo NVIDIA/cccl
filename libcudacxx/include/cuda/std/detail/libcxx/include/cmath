@@ -628,7 +628,8 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return __isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isnan)
-    return __builtin_isnan(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isnan(static_cast<double>(__lcpp_x));
 #else
     return ::isnan(__lcpp_x);
 #endif
@@ -650,7 +651,8 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return __isinf(__lcpp_x);
 #elif __has_builtin(__builtin_isinf)
-    return __builtin_isinf(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isinf(static_cast<double>(__lcpp_x));
 #else
     return ::isinf(__lcpp_x);
 #endif
@@ -672,7 +674,8 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isfinite)
-    return __builtin_isfinite(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isfinite(static_cast<double>(__lcpp_x));
 #else
     return ::isfinite(__lcpp_x);
 #endif
