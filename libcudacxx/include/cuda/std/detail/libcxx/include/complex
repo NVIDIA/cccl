@@ -259,14 +259,10 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-#if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) \
- && !defined(_CCCL_COMPILER_NVRTC)
-#include <sstream> // for std::basic_ostringstream
-#endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER_NVRTC
-
 // Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
 #if !defined(_CCCL_COMPILER_NVRTC)
 #include <complex>
+#include <sstream> // for std::basic_ostringstream
 
 #define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up (&)[2]>(__c)[0]
 #define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up (&)[2]>(__c)[1]
@@ -1415,11 +1411,9 @@ tan(const complex<_Tp>& __x)
     return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-#ifdef __cuda_std__
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_istream<_CharT, _Traits>&
-operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
+::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
   ::std::complex<_Tp> __temp;
   __is >> __temp;
@@ -1428,89 +1422,11 @@ operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 }
 
 template <class _Tp, class _CharT, class _Traits>
-::std::basic_ostream<_CharT, _Traits>&
-operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
+::std::basic_ostream<_CharT, _Traits>& operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }
-#  endif // !_CCCL_COMPILER_NVRTC
-#else // ^^^ __cuda_std__ ^^^ / vvv !__cuda_std__ vvv
-#if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION)
-template<class _Tp, class _CharT, class _Traits>
-basic_istream<_CharT, _Traits>&
-operator>>(basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
-{
-    if (__is.good())
-    {
-        _CUDA_VSTD::ws(__is);
-        if (__is.peek() == _CharT('('))
-        {
-            __is.get();
-            _Tp __r;
-            __is >> __r;
-            if (!__is.fail())
-            {
-                _CUDA_VSTD::ws(__is);
-                _CharT __c = __is.peek();
-                if (__c == _CharT(','))
-                {
-                    __is.get();
-                    _Tp __i;
-                    __is >> __i;
-                    if (!__is.fail())
-                    {
-                        _CUDA_VSTD::ws(__is);
-                        __c = __is.peek();
-                        if (__c == _CharT(')'))
-                        {
-                            __is.get();
-                            __x = complex<_Tp>(__r, __i);
-                        }
-                        else
-                            __is.setstate(__is.failbit);
-                    }
-                    else
-                        __is.setstate(__is.failbit);
-                }
-                else if (__c == _CharT(')'))
-                {
-                    __is.get();
-                    __x = complex<_Tp>(__r, _Tp(0));
-                }
-                else
-                    __is.setstate(__is.failbit);
-            }
-            else
-                __is.setstate(__is.failbit);
-        }
-        else
-        {
-            _Tp __r;
-            __is >> __r;
-            if (!__is.fail())
-                __x = complex<_Tp>(__r, _Tp(0));
-            else
-                __is.setstate(__is.failbit);
-        }
-    }
-    else
-        __is.setstate(__is.failbit);
-    return __is;
-}
-
-template<class _Tp, class _CharT, class _Traits>
-basic_ostream<_CharT, _Traits>&
-operator<<(basic_ostream<_CharT, _Traits>& __os, const complex<_Tp>& __x)
-{
-    basic_ostringstream<_CharT, _Traits> __s;
-    __s.flags(__os.flags());
-    __s.imbue(__os.getloc());
-    __s.precision(__os.precision());
-    __s << '(' << __x.real() << ',' << __x.imag() << ')';
-    return __os << __s.str();
-}
-#endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION
-#endif // __cuda_std__
+#endif // !_CCCL_COMPILER_NVRTC
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
 // Literal suffix for complex number literals [complex.literals]
