@@ -1128,11 +1128,11 @@ pow(const complex<_Tp>& __x, const complex<_Tp>& __y)
 
 template<class _Tp, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-complex<typename __promote<_Tp, _Up>::type>
+complex<__promote_t<_Tp, _Up>>
 pow(const complex<_Tp>& __x, const complex<_Up>& __y)
 {
-    typedef complex<typename __promote<_Tp, _Up>::type> result_type;
-    return _CUDA_VSTD::pow(result_type(__x), result_type(__y));
+    using __result_type = complex<__promote_t<_Tp, _Up>>;
+    return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
 template<class _Tp, class _Up>
@@ -1140,12 +1140,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __enable_if_t
 <
     __is_complex_arithmetic<_Up>::value,
-    complex<typename __promote<_Tp, _Up>::type>
+    complex<__promote_t<_Tp, _Up>>
 >
 pow(const complex<_Tp>& __x, const _Up& __y)
 {
-    typedef complex<typename __promote<_Tp, _Up>::type> result_type;
-    return _CUDA_VSTD::pow(result_type(__x), result_type(__y));
+    using __result_type = complex<__promote_t<_Tp, _Up>>;
+    return _CUDA_VSTD::pow(__result_type(__x), __result_type(__y));
 }
 
 template<class _Tp, class _Up>
@@ -1153,12 +1153,12 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 __enable_if_t
 <
     __is_complex_arithmetic<_Tp>::value,
-    complex<typename __promote<_Tp, _Up>::type>
+    complex<__promote_t<_Tp, _Up>>
 >
 pow(const _Tp& __x, const complex<_Up>& __y)
 {
-    typedef complex<typename __promote<_Tp, _Up>::type> result_type;
-    return _CUDA_VSTD::pow(result_type(__x, 0), result_type(__y));
+    using __result_type = complex<__promote_t<_Tp, _Up>>;
+    return _CUDA_VSTD::pow(__result_type(__x, 0), __result_type(__y));
 }
 
 // __sqr, computes pow(x, 2)
