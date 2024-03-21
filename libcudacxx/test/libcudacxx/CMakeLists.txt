@@ -36,13 +36,11 @@ else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h")
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "False")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS "-I${thrust_SOURCE_DIR}/thrust")
+  set(LIBCUDACXX_TEST_COMPILER_FLAGS "")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_WARNING_LEVEL
-    "--compiler-options=-Wall \
-    --compiler-options=-Wextra")
+  set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
 # sccache cannot handle the -Fd option generationg pdb files
