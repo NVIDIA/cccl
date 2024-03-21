@@ -58,9 +58,9 @@ struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 {};
 
 # if _LIBCUDACXX_CUDA_ABI_VERSION > 3
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS(_Tp) _ALIGNAS(__complex_alignment<_Tp>::value)
+#  define _LIBCUDACXX_COMPLEX_ALIGNAS _ALIGNAS(__complex_alignment<_Tp>::value)
 # else
-#  define _LIBCUDACXX_COMPLEX_ALIGNAS(_Tp)
+#  define _LIBCUDACXX_COMPLEX_ALIGNAS
 # endif
 
 template <class _Dest, class _Source, class = void>

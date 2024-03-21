@@ -284,7 +284,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(_Tp) complex
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS complex
 {
   _Tp __re_;
   _Tp __im_;
