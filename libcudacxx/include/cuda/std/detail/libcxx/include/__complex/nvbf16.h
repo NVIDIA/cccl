@@ -34,6 +34,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvbf16.h>
 #  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/cmath>
+#  include <cuda/std/complex>
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 #    include <sstream> // for std::basic_ostringstream
