@@ -46,6 +46,10 @@ struct __is_nvfp16<__half> : true_type
 {};
 
 template <>
+struct __complex_alignment<__half> : integral_constant<size_t, alignof(__half2)>
+{};
+
+template <>
 struct __type_to_vector<__half>
 {
   using __type = __half2;
@@ -59,7 +63,7 @@ struct __libcpp_complex_overload_traits<__half, false, false>
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__half2)) complex<__half>
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(__half) complex<__half>
 {
   __half2 __repr;
 

@@ -49,6 +49,10 @@ struct __is_nvbf16<__nv_bfloat16> : true_type
 {};
 
 template <>
+struct __complex_alignment<__nv_bfloat16> : integral_constant<size_t, alignof(__nv_bfloat162)>
+{};
+
+template <>
 struct __type_to_vector<__nv_bfloat16>
 {
   using __type = __nv_bfloat162;
@@ -62,7 +66,7 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
+class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(__nv_bfloat16) complex<__nv_bfloat16>
 {
   __nv_bfloat162 __repr;
 
