@@ -467,6 +467,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
@@ -474,6 +475,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference at(size_type)
@@ -500,12 +502,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference back() noexcept
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
@@ -513,6 +517,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 };
 
