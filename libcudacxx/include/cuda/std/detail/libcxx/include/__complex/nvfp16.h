@@ -62,140 +62,20 @@ struct __libcpp_complex_overload_traits<__half, false, false>
   typedef complex<__half> _ComplexType;
 };
 
-template <>
-class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_COMPLEX_ALIGNAS(__half) complex<__half>
+// We can utilize vectorized operations for those operators
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
+operator+=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
 {
-  __half2 __repr;
+  reinterpret_cast<__half2&>(__lhs) += reinterpret_cast<const __half2&>(__rhs);
+  return __lhs;
+}
 
-public:
-  typedef __half value_type;
-
-  _LIBCUDACXX_INLINE_VISIBILITY complex(__half __re = 0.0f, __half __im = 0.0f)
-      : __repr(__re, __im)
-  {}
-  template <class _Int, typename = __enable_if_t<is_arithmetic<_Int>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(_Int __re = _Int(), _Int __im = _Int())
-      : __repr(__re, __im)
-  {}
-
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244) // narrowing conversions
-
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<float>& __c)
-      : __repr(__c.real(), __c.imag())
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<double>& __c)
-      : __repr(__c.real(), __c.imag())
-  {}
-
-  _CCCL_DIAG_POP
-
-#  if !defined(_CCCL_COMPILER_NVRTC)
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex(const ::std::complex<_Up>& __other)
-      : __repr(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
-  {}
-
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const ::std::complex<_Up>& __other)
-  {
-    __repr.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
-    __repr.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
-    return *this;
-  }
-#  endif // !defined(_CCCL_COMPILER_NVRTC)
-
-  _LIBCUDACXX_INLINE_VISIBILITY __half real() const
-  {
-    return __repr.x;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY __half imag() const
-  {
-    return __repr.y;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY void real(value_type __re)
-  {
-    __repr.x = __re;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im)
-  {
-    __repr.y = __im;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(__half __re)
-  {
-    __repr.x = __re;
-    __repr.y = value_type();
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(__half __re)
-  {
-    __repr.x += __re;
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(__half __re)
-  {
-    __repr.x -= __re;
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(__half __re)
-  {
-    __repr.x *= __re;
-    __repr.y *= __re;
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(__half __re)
-  {
-    __repr.x /= __re;
-    __repr.y /= __re;
-    return *this;
-  }
-
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<_Xp>& __c)
-  {
-    __repr.x = __c.real();
-    __repr.y = __c.imag();
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex& __c)
-  {
-    __repr += __c.__repr;
-    return *this;
-  }
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const complex<_Xp>& __c)
-  {
-    __repr.x += __c.real();
-    __repr.y += __c.imag();
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex& __c)
-  {
-    __repr -= __c.__repr;
-    return *this;
-  }
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const complex<_Xp>& __c)
-  {
-    __repr.x -= __c.real();
-    __repr.y -= __c.imag();
-    return *this;
-  }
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const complex<_Xp>& __c)
-  {
-    *this = *this * complex(__c.real(), __c.imag());
-    return *this;
-  }
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const complex<_Xp>& __c)
-  {
-    *this = *this / complex(__c.real(), __c.imag());
-    return *this;
-  }
-};
+inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
+operator-=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
+{
+  reinterpret_cast<__half2&>(__lhs) -= reinterpret_cast<const __half2&>(__rhs);
+  return __lhs;
+}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
 {

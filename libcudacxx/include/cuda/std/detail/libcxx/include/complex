@@ -325,6 +325,21 @@ public:
       , __im_(__c.imag())
   {}
 
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
+  {
+    __re_ = __re;
+    __im_ = value_type();
+    return *this;
+  }
+
+  template <class _Xp>
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const complex<_Xp>& __c)
+  {
+    __re_ = __c.real();
+    __im_ = __c.imag();
+    return *this;
+  }
+
 #if !defined(_CCCL_COMPILER_NVRTC)
   template <class _Up>
   _LIBCUDACXX_INLINE_VISIBILITY complex(const ::std::complex<_Up>& __other)
@@ -383,12 +398,6 @@ public:
     __im_ = __im;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
-  {
-    __re_ = __re;
-    __im_ = value_type();
-    return *this;
-  }
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const value_type& __re)
   {
     __re_ += __re;
@@ -412,13 +421,6 @@ public:
     return *this;
   }
 
-  template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const complex<_Xp>& __c)
-  {
-    __re_ = __c.real();
-    __im_ = __c.imag();
-    return *this;
-  }
   template <class _Xp>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Xp>& __c)
   {
