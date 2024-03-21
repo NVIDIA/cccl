@@ -23,6 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
