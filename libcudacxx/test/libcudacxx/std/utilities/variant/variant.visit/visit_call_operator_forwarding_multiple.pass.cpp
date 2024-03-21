@@ -41,40 +41,6 @@ void test_call_operator_forwarding() {
   using Fn = ForwardingCallObject;
   Fn obj{};
   const Fn &cobj = obj;
-  { // test call operator forwarding - no variant
-    cuda::std::visit(obj);
-    assert(Fn::check_call<>(CT_NonConst | CT_LValue));
-    cuda::std::visit(cobj);
-    assert(Fn::check_call<>(CT_Const | CT_LValue));
-    cuda::std::visit(cuda::std::move(obj));
-    assert(Fn::check_call<>(CT_NonConst | CT_RValue));
-    cuda::std::visit(cuda::std::move(cobj));
-    assert(Fn::check_call<>(CT_Const | CT_RValue));
-  }
-  { // test call operator forwarding - single variant, single arg
-    using V = cuda::std::variant<int>;
-    V v(42);
-    cuda::std::visit(obj, v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_LValue));
-    cuda::std::visit(cobj, v);
-    assert(Fn::check_call<int &>(CT_Const | CT_LValue));
-    cuda::std::visit(cuda::std::move(obj), v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_RValue));
-    cuda::std::visit(cuda::std::move(cobj), v);
-    assert(Fn::check_call<int &>(CT_Const | CT_RValue));
-  }
-  { // test call operator forwarding - single variant, multi arg
-    using V = cuda::std::variant<int, long, double>;
-    V v(42l);
-    cuda::std::visit(obj, v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_LValue));
-    cuda::std::visit(cobj, v);
-    assert(Fn::check_call<long &>(CT_Const | CT_LValue));
-    cuda::std::visit(cuda::std::move(obj), v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_RValue));
-    cuda::std::visit(cuda::std::move(cobj), v);
-    assert(Fn::check_call<long &>(CT_Const | CT_RValue));
-  }
   { // test call operator forwarding - multi variant, multi arg
     using V = cuda::std::variant<int, long, double>;
     using V2 = cuda::std::variant<int *, almost_string>;
@@ -100,18 +66,6 @@ void test_call_operator_forwarding() {
     assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_NonConst | CT_RValue)));
     cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4);
     assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_Const | CT_RValue)));
-  }
-  {
-    using V = cuda::std::variant<int, long, double, int*, almost_string>;
-    V v1(42l), v2("hello"), v3(nullptr), v4(1.1);
-    cuda::std::visit(obj, v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int *&, double &>(CT_NonConst | CT_LValue)));
-    cuda::std::visit(cobj, v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int *&, double &>(CT_Const | CT_LValue)));
-    cuda::std::visit(cuda::std::move(obj), v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int *&, double &>(CT_NonConst | CT_RValue)));
-    cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int *&, double &>(CT_Const | CT_RValue)));
   }
 }
 
