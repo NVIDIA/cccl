@@ -303,16 +303,16 @@ public:
 
   template <class _Up, __enable_if_t<__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr complex(const complex<_Up>& __c)
-      : __re_(__c.__re_)
-      , __im_(__c.__im_)
+      : __re_(static_cast<_Tp>(__c.__re_))
+      , __im_(static_cast<_Tp>(__c.__im_))
   {}
 
   template <class _Up,
             __enable_if_t<!__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0,
             __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, _Tp, _Up), int>        = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr complex(const complex<_Up>& __c)
-      : __re_(__c.__re_)
-      , __im_(__c.__im_)
+      : __re_(static_cast<_Tp>(__c.__re_))
+      , __im_(static_cast<_Tp>(__c.__im_))
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator=(const value_type& __re)
