@@ -377,7 +377,7 @@ namespace __radix_sort {
       Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
       cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
     }
-    THRUST_IF_CONSTEXPR(SORT_ITEMS::value)
+    _CCCL_IF_CONSTEXPR(SORT_ITEMS::value)
     {
       if (items_buffer.selector != 0)
       {

@@ -59,7 +59,7 @@ _CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm volatile (
         "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned  [%0], [%1], %2;"
         :
@@ -68,7 +68,7 @@ _CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm volatile (
         "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [%0], [%1], %2;"
         :
@@ -77,7 +77,7 @@ _CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
       asm volatile (
         "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [%0], [%1], %2;"
         :
@@ -86,7 +86,7 @@ _CCCL_DEVICE static inline void tensormap_cp_fenceproxy(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
       asm volatile (
         "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [%0], [%1], %2;"
         :

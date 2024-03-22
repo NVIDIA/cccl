@@ -43,7 +43,7 @@ template<typename T, T a, T c, T m, bool = (m == 0)>
   _CCCL_HOST_DEVICE
   T operator()(T x) const
   {
-    THRUST_IF_CONSTEXPR(a == 1)
+    _CCCL_IF_CONSTEXPR(a == 1)
     {
       x %= m;
     }
@@ -61,7 +61,7 @@ template<typename T, T a, T c, T m, bool = (m == 0)>
       }
     }
 
-    THRUST_IF_CONSTEXPR(c != 0)
+    _CCCL_IF_CONSTEXPR(c != 0)
     {
       const T d = m - x;
       if(d > c)

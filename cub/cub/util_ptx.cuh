@@ -44,7 +44,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_type.cuh>
 
@@ -461,7 +460,7 @@ unsigned int WarpMask(unsigned int warp_id)
   unsigned int member_mask = 0xFFFFFFFFu >>
                              (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
 
-  CUB_IF_CONSTEXPR(is_pow_of_two && !is_arch_warp)
+  _CCCL_IF_CONSTEXPR(is_pow_of_two && !is_arch_warp)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }
