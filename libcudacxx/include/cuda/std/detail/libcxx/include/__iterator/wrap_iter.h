@@ -31,6 +31,14 @@
 #include "../__type_traits/is_convertible.h"
 #include "../__type_traits/is_trivially_copy_assignable.h"
 
+#ifndef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+#  if defined(_LIBCUDACXX_DEBUG)
+#    define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
+#  else
+#    define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG constexpr
+#  endif
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Iter>
@@ -327,5 +335,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It> >
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#undef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 
 #endif // _LIBCUDACXX___ITERATOR_WRAP_ITER_H

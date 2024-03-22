@@ -1730,14 +1730,6 @@ typedef unsigned int   char32_t;
 #  define _LIBCUDACXX_EXPLICIT_MOVE(x) (x)
 #endif
 
-#ifndef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-#if defined(_LIBCUDACXX_DEBUG)
-#define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-#else
-#define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG constexpr
-#endif
-#endif
-
 #if __has_attribute(no_destroy)
 #  define _LIBCUDACXX_NO_DESTROY __attribute__((__no_destroy__))
 #else
