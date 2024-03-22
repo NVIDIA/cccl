@@ -200,6 +200,41 @@ The code above leads to the following combinations being compiled:
 - ``type = std::int32_t``, ``threads_per_block = 128``
 - ``type = std::int32_t``, ``threads_per_block = 256``
 
+Taking the above into consideration for a test case that includes both multidimensional
+configuration spaces and multiple random secuence generations like the following
+example will end up running all the possible combinations in total.
+
+.. code-block:: c++
+
+    using block_sizes = c2h::enum_type_list<int, 128, 256>;
+    using types = c2h::type_list<std::uint8_t, std::int32_t>;
+
+    CUB_TEST("SCOPE FACILITY works with CONDITION",
+            "[FACILITY][SCOPE]",
+            types,
+            block_sizes)
+    {
+      using type = typename c2h::get<0, TestType>;
+      constexpr int threads_per_block = c2h::get<1, TestType>::value;
+      // ...
+      c2h::device_vector<type> d_input(5);
+      c2h::gen(CUB_SEED(2), d_input);
+    }
+
+The code above leads to the following combinations being compiled:
+
+- ``type = std::uint8_t``, ``threads_per_block = 128``, 1st random generated input sequence
+- ``type = std::uint8_t``, ``threads_per_block = 256``, 1st random generated input sequence
+- ``type = std::int32_t``, ``threads_per_block = 128``, 1st random generated input sequence
+- ``type = std::int32_t``, ``threads_per_block = 256``, 1st random generated input sequence
+- ``type = std::uint8_t``, ``threads_per_block = 128``, 2nd random generated input sequence
+- ``type = std::uint8_t``, ``threads_per_block = 256``, 2nd random generated input sequence
+- ``type = std::int32_t``, ``threads_per_block = 128``, 2nd random generated input sequence
+- ``type = std::int32_t``, ``threads_per_block = 256``, 2nd random generated input sequence
+
+Each new generator multiplies the number of execution times by its number of seeds. That means
+that if there were further more sequence generators (``c2h::gen(CUB_SEED(X), ...)``) on the
+example above the test would execute X more times and so on.
 
 Speedup Compilation Time
 =====================================
