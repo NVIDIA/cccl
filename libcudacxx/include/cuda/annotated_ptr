@@ -229,7 +229,7 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
     constexpr annotated_ptr() noexcept = default;
     constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
     // No constexpr for c11 as the method can't be const
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+    _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
     _LIBCUDACXX_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)

@@ -240,7 +240,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits
 private:
     struct __nat {};
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
         {return pointer::pointer_to(__r);}
 };
@@ -257,7 +257,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<_Tp*>
 private:
     struct __nat {};
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
         {return _CUDA_VSTD::addressof(__r);}
 };

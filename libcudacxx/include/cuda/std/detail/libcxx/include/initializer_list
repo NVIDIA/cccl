@@ -67,7 +67,7 @@ class _LIBCUDACXX_TEMPLATE_VIS initializer_list
     size_t    __size_;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _CCCL_CONSTEXPR_CXX14
     initializer_list(const _Ep* __b, size_t __s) noexcept
         : __begin_(__b),
           __size_(__s)
@@ -82,25 +82,25 @@ public:
     typedef const _Ep* const_iterator;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _CCCL_CONSTEXPR_CXX14
     initializer_list() noexcept : __begin_(nullptr), __size_(0) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _CCCL_CONSTEXPR_CXX14
     size_t    size()  const noexcept {return __size_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _CCCL_CONSTEXPR_CXX14
     const _Ep* begin() const noexcept {return __begin_;}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _CCCL_CONSTEXPR_CXX14
     const _Ep* end()   const noexcept {return __begin_ + __size_;}
 };
 
 template<class _Ep>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_CCCL_CONSTEXPR_CXX14
 const _Ep*
 begin(initializer_list<_Ep> __il) noexcept
 {
@@ -109,7 +109,7 @@ begin(initializer_list<_Ep> __il) noexcept
 
 template<class _Ep>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_CCCL_CONSTEXPR_CXX14
 const _Ep*
 end(initializer_list<_Ep> __il) noexcept
 {

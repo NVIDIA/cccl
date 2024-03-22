@@ -70,11 +70,11 @@ template <class _Rollback>
 struct __exception_guard_exceptions {
   __exception_guard_exceptions() = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   explicit __exception_guard_exceptions(_Rollback __rollback)
       : __rollback_(_CUDA_VSTD::move(__rollback)), __completed_(false) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __exception_guard_exceptions(__exception_guard_exceptions&& __other)
       noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __rollback_(_CUDA_VSTD::move(__other.__rollback_)), __completed_(__other.__completed_) {
@@ -85,10 +85,10 @@ struct __exception_guard_exceptions {
   __exception_guard_exceptions& operator=(__exception_guard_exceptions const&) = delete;
   __exception_guard_exceptions& operator=(__exception_guard_exceptions&&)      = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __complete() noexcept { __completed_ = true; }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__exception_guard_exceptions() {
     if (!__completed_)
       __rollback_();
@@ -104,10 +104,10 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_exceptions);
 template <class _Rollback>
 struct __exception_guard_noexceptions {
   __exception_guard_noexceptions() = delete;
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _LIBCUDACXX_NODEBUG_TYPE
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE
   explicit __exception_guard_noexceptions(_Rollback) {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _LIBCUDACXX_NODEBUG_TYPE
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE
   __exception_guard_noexceptions(__exception_guard_noexceptions&& __other)
       noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __completed_(__other.__completed_) {
@@ -118,12 +118,12 @@ struct __exception_guard_noexceptions {
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _LIBCUDACXX_NODEBUG_TYPE
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE
   void __complete() noexcept {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _LIBCUDACXX_NODEBUG_TYPE
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE
   ~__exception_guard_noexceptions() {
     _LIBCUDACXX_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }

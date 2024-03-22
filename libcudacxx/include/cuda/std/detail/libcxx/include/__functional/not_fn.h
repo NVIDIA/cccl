@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __not_fn_op {
     template <class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 auto operator()(_Args&&... __args) const
+    _CCCL_CONSTEXPR_CXX20 auto operator()(_Args&&... __args) const
         noexcept(noexcept(!_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...)))
         -> decltype(      !_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...))
         { return          !_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Args>(__args)...); }
@@ -66,7 +66,7 @@ template <class _Fn, class = enable_if_t<
     is_move_constructible_v<decay_t<_Fn>>
 >>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX17 auto not_fn(_Fn&& __f) {
+_CCCL_CONSTEXPR_CXX20 auto not_fn(_Fn&& __f) {
     return __not_fn_t<decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__f));
 }
 

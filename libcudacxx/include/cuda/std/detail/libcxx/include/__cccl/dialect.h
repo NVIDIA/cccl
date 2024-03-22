@@ -52,6 +52,30 @@
 #  endif
 #endif // !_CCCL_COMPILER_MSVC
 
+#if _CCCL_STD_VER >= 2014
+#  define _CCCL_CONSTEXPR_CXX14 constexpr
+#else // ^^^ C++14 ^^^ / vvv C++11 vvv
+#  define _CCCL_CONSTEXPR_CXX14
+#endif // _CCCL_STD_VER <= 2011
+
+#if _CCCL_STD_VER >= 2017
+#  define _CCCL_CONSTEXPR_CXX17 constexpr
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_CONSTEXPR_CXX17
+#endif // _CCCL_STD_VER <= 2014
+
+#if _CCCL_STD_VER >= 2020
+#  define _CCCL_CONSTEXPR_CXX20 constexpr
+#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#  define _CCCL_CONSTEXPR_CXX20
+#endif // _CCCL_STD_VER <= 2017
+
+#if _CCCL_STD_VER >= 2023
+#  define _CCCL_CONSTEXPR_CXX23 constexpr
+#else // ^^^ C++23 ^^^ / vvv C++20 vvv
+#  define _CCCL_CONSTEXPR_CXX23
+#endif // _CCCL_STD_VER <= 2020
+
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_if_constexpr)
 #  define _CCCL_IF_CONSTEXPR if constexpr
 #  define _CCCL_ELSE_IF_CONSTEXPR else if constexpr
