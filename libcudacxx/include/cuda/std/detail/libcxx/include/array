@@ -461,6 +461,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
     return true;
   }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
   // element access:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 reference
   operator[](size_type) noexcept
@@ -495,6 +497,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _LIBCUDACXX_UNREACHABLE();
+    return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const_reference
@@ -519,6 +522,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
     _LIBCUDACXX_UNREACHABLE();
     return *data();
   }
+_CCCL_DIAG_POP
 };
 
 #if _CCCL_STD_VER >= 2017
