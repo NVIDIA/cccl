@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#if !defined(_CCCL_COMPILER_MSVC_2017)
+
 #if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
@@ -170,5 +172,7 @@ static_assert(resource_with<cuda_memory_resource, device_accessible>, "");
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #endif // _CCCL_STD_VER >= 2014
+
+#endif // !_CCCL_COMPILER_MSVC_2017
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_MEMORY_RESOURCE_H
