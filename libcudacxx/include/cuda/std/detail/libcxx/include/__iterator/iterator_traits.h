@@ -23,23 +23,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/arithmetic.h"
-#include "../__concepts/constructible.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/copyable.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/same_as.h"
-#include "../__concepts/totally_ordered.h"
-#include "../__fwd/pair.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/add_const.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_primary_template.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/void_t.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__concepts/arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__concepts/copyable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__concepts/totally_ordered.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_primary_template.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/cstddef>
 
 #if !defined(_CCCL_COMPILER_NVRTC) && defined(__cuda_std__)
 #if defined(_CCCL_COMPILER_MSVC)

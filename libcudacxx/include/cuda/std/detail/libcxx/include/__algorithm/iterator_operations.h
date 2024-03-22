@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_ITERATOR_OPERATIONS_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,24 +22,24 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/iter_swap.h"
-#include "../__algorithm/ranges_iterator_concept.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iter_swap.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/next.h"
-#include "../__iterator/prev.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/ranges_iterator_concept.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/distance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/next.h>
+#include <cuda/std/detail/libcxx/include/__iterator/prev.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

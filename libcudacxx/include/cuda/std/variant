@@ -10,12 +10,12 @@
 #ifndef _CUDA_STD_VARIANT
 #define _CUDA_STD_VARIANT
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/variant"
+#include <cuda/std/detail/libcxx/include/variant>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif //_CUDA_STD_VARIANT

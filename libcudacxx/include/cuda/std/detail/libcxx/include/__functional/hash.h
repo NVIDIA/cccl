@@ -22,21 +22,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
-#include "../__functional/unary_function.h"
-#include "../__fwd/hash.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__type_traits/underlying_type.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__utility/pair.h"
-#include "../__utility/swap.h"
-#include "../cstdint"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__fwd/hash.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_enum.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/underlying_type.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/cstdint>
 
 #ifndef __cuda_std__
 #include <cstring>

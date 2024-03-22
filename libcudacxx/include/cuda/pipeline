@@ -53,7 +53,7 @@
 #ifndef _CUDA_PIPELINE
 #define _CUDA_PIPELINE
 
-#include "__cccl_config"
+#include <cuda/__cccl_config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -63,9 +63,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "barrier"
-#include "atomic"
-#include "std/chrono"
+#include <cuda/barrier>
+#include <cuda/atomic>
+#include <cuda/std/chrono>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

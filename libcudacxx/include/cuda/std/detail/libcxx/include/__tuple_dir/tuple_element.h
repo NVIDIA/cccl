@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TUPLE_TUPLE_ELEMENT_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_types.h"
-#include "../__type_traits/add_const.h"
-#include "../__type_traits/add_cv.h"
-#include "../__type_traits/add_volatile.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_volatile.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_trivially_copyable.h"
-#include "../__type_traits/is_trivially_default_constructible.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copyable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_default_constructible.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

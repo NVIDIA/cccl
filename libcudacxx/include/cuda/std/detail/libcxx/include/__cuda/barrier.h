@@ -27,11 +27,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
-#include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include <cuda/std/detail/libcxx/include/cstdlib>                // _LIBCUDACXX_UNREACHABLE
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 
 #if defined(_CCCL_CUDA_COMPILER)
-#include "../__cuda/ptx.h"           // cuda::ptx::*
+#include <cuda/std/detail/libcxx/include/__cuda/ptx.h>           // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
 
 #if defined(_CCCL_COMPILER_NVRTC)

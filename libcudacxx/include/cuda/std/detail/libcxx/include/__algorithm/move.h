@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_MOVE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,14 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/iterator_operations.h"
-#include "../__algorithm/unwrap_iter.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__type_traits/is_trivially_move_assignable.h"
-#include "../__type_traits/remove_const.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/unwrap_iter.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

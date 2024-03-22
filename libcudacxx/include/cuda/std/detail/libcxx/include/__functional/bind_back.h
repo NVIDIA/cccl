@@ -23,18 +23,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
-#include "../__functional/perfect_forward.h"
-#include "../__fwd/get.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__utility/forward.h"
-#include "../__utility/integer_sequence.h"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/perfect_forward.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 
-#include "../tuple"
+#include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

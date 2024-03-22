@@ -12,9 +12,9 @@
 #ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
-#include "../../cstdint"        // uint32_t
-#include "../../cstddef"        // size_t
-#include "../../__type_traits/integral_constant.h"
+#include <cuda/std/cstdint>        // uint32_t
+#include <cuda/std/cstddef>        // size_t
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

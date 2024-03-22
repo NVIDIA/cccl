@@ -206,7 +206,7 @@ C++20
 */
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -217,55 +217,55 @@ C++20
 #  pragma system_header
 #endif // no system header
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__availability"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__availability>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "__compare/common_comparison_category.h"
-#  include "__compare/compare_three_way_result.h"
-#  include "__compare/three_way_comparable.h"
+#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
+#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
+#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "__functional/hash.h"
-#include "__functional/invoke.h"
-#include "__functional/operations.h"
-#include "__functional/unary_function.h"
-#include "__memory/construct_at.h"
-#include "__memory/addressof.h"
-#include "__tuple_dir/tuple_indices.h"
-#include "__type_traits/add_const.h"
-#include "__type_traits/add_cv.h"
-#include "__type_traits/add_pointer.h"
-#include "__type_traits/add_volatile.h"
-#include "__type_traits/dependent_type.h"
-#include "__type_traits/integral_constant.h"
-#include "__type_traits/is_array.h"
-#include "__type_traits/is_destructible.h"
-#include "__type_traits/is_nothrow_move_constructible.h"
-#include "__type_traits/is_trivially_copy_assignable.h"
-#include "__type_traits/is_trivially_copy_constructible.h"
-#include "__type_traits/is_trivially_destructible.h"
-#include "__type_traits/is_trivially_move_assignable.h"
-#include "__type_traits/is_trivially_move_constructible.h"
-#include "__type_traits/is_void.h"
-#include "__type_traits/remove_const.h"
-#include "__type_traits/remove_cvref.h"
-#include "__type_traits/type_identity.h"
-#include "__type_traits/void_t.h"
-#include "__utility/declval.h"
-#include "__utility/forward.h"
-#include "__utility/in_place.h"
-#include "__utility/integer_sequence.h"
-#include "__utility/move.h"
-#include "__utility/swap.h"
-#include "__variant/monostate.h"
-#include "cstddef"
-#include "cstdlib"
-#include "initializer_list"
-#include "tuple"
-#include "version"
+#include <cuda/std/detail/libcxx/include/__functional/hash.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/operations.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_volatile.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/dependent_type.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/type_identity.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/__variant/monostate.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
+#include <cuda/std/version>
 
 // [variant.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "compare"
+#  include <cuda/std/detail/libcxx/include/compare>
 #endif
 
 #ifndef __cuda_std__

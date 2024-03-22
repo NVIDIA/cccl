@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__utility/integer_sequence.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

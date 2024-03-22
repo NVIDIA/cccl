@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/predicate.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/predicate.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -29,7 +29,7 @@
 
 #  include <nv/target>
 
-#  include "../cmath"
+#  include <cuda/std/detail/libcxx/include/cmath>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

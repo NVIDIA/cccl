@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/decay.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
 
 #if _CCCL_STD_VER < 2020 && defined(_CCCL_COMPILER_MSVC)
 #define _LIBCUDACXX_AUTO_CAST(expr) (_CUDA_VSTD::decay_t<decltype((expr))>)(expr)

@@ -56,15 +56,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/span.h" // dynamic_extent
-#include "../__mdspan/dynamic_extent.h"
-#include "../__mdspan/macros.h"
-#include "../__mdspan/maybe_static_value.h"
-#include "../__mdspan/standard_layout_static_array.h"
-#include "../__mdspan/type_list.h"
-#include "../__utility/integer_sequence.h"
-#include "../array"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__fwd/span.h> // dynamic_extent
+#include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/maybe_static_value.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/standard_layout_static_array.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/type_list.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
 
 #if !__MDSPAN_PRESERVE_STANDARD_LAYOUT
 

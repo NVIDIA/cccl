@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___RANGES_VIEW_INTERFACE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,20 +22,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/derived_from.h"
-#include "../__concepts/same_as.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/prev.h"
-#include "../__memory/pointer_traits.h"
-#include "../__ranges/access.h"
-#include "../__ranges/concepts.h"
-#include "../__ranges/empty.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_cv.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/prev.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/concepts.h>
+#include <cuda/std/detail/libcxx/include/__ranges/empty.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_class.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

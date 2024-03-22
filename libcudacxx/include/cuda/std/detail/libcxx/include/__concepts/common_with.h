@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/common_reference_with.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/common_type.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/common_reference_with.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_type.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

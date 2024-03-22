@@ -23,11 +23,11 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "../__compare/ordering.h"
+#include <cuda/std/detail/libcxx/include/__compare/ordering.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "../__functional/hash.h"
+#include <cuda/std/detail/libcxx/include/__functional/hash.h>
 
-#include "../cstddef"
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

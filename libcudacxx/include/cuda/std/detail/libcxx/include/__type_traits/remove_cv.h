@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/remove_const.h"
-#include "../__type_traits/remove_volatile.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_volatile.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

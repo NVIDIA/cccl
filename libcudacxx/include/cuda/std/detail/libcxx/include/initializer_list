@@ -43,7 +43,7 @@ template<class E> const E* end(initializer_list<E> il) noexcept; // constexpr in
 */
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -55,7 +55,7 @@ template<class E> const E* end(initializer_list<E> il) noexcept; // constexpr in
 #endif // no system header
 
 #ifndef __cuda_std__
-#include "cstddef"
+#include <cuda/std/cstddef>
 
 namespace std  // purposefully not versioned
 {

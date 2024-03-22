@@ -11,7 +11,7 @@
 #ifndef _NV__TARGET_MACROS
 #define _NV__TARGET_MACROS
 
-#include "__preprocessor"
+#include <nv/detail/__preprocessor>
 
 #if defined(__GNUC__)
 #pragma GCC system_header

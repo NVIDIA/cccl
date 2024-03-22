@@ -23,12 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__iterator/iterator_traits.h"
-#include "../__memory/pointer_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

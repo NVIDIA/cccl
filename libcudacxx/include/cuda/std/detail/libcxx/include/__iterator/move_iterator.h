@@ -13,7 +13,7 @@
 #define _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,25 +25,25 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/compare_three_way_result.h"
-#  include "../__compare/three_way_comparable.h"
+#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
+#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "../__concepts/assignable.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/derived_from.h"
-#include "../__concepts/same_as.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iter_swap.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/move_sentinel.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/move.h"
-#include "../cstdlib"
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/move_sentinel.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

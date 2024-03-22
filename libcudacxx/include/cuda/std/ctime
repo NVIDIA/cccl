@@ -11,12 +11,12 @@
 #ifndef _CUDA_STD_CTIME
 #define _CUDA_STD_CTIME
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/ctime"
+#include <cuda/std/detail/libcxx/include/ctime>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif // _CUDA_STD_CTIME
