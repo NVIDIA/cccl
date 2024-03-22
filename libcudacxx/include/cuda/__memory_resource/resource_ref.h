@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#if !defined(_CCCL_COMPILER_MSVC_2017)
+
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/std/concepts>
@@ -384,5 +386,7 @@ using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #endif // _CCCL_STD_VER >= 2014
+
+#endif // !_CCCL_COMPILER_MSVC_2017
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_REF_H
