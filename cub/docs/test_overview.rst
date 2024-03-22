@@ -200,9 +200,8 @@ The code above leads to the following combinations being compiled:
 - ``type = std::int32_t``, ``threads_per_block = 128``
 - ``type = std::int32_t``, ``threads_per_block = 256``
 
-Taking the above into consideration for a test case that includes both multidimensional
-configuration spaces and multiple random secuence generations like the following
-example will end up running all the possible combinations in total.
+As an example, the following test case includes both multidimensional configuration spaces 
+and multiple random sequence generations.
 
 .. code-block:: c++
 
