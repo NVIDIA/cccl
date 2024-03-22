@@ -42,6 +42,11 @@ struct device_accessible
 struct host_accessible
 {};
 
+/// \struct managed_memory
+/// \brief The \c managed_memory property signals that the allocated memory is managed
+struct managed_memory
+{};
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #endif // _CCCL_STD_VER >= 2014
