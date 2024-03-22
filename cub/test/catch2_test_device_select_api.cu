@@ -34,6 +34,7 @@
 
 #include "catch2_test_helper.h"
 
+// example-begin segmented-select-iseven
 struct is_even_t
 {
   __host__ __device__ bool operator()(int const& elem) const
@@ -41,13 +42,13 @@ struct is_even_t
     return !(elem % 2);
   }
 };
+// example-end segmented-select-iseven
 
 CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
 {
   // example-begin segmented-select-flaggedif
-  int num_items                   = 8;
-  thrust::device_vector<int> d_in = {0, 1, 2, 3, 4, 5, 6, 7};
-  //   auto d_offsets_it               = thrust::raw_pointer_cast(d_offsets.data());
+  constexpr int num_items            = 8;
+  thrust::device_vector<int> d_in    = {0, 1, 2, 3, 4, 5, 6, 7};
   thrust::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   thrust::device_vector<int> d_out(num_items);
   thrust::device_vector<int> d_num_selected_out(num_items);
@@ -83,7 +84,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   thrust::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
 
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
   d_out.resize(d_num_selected_out[0]);
   REQUIRE(d_out == expected);
-  REQUIRE(d_num_selected_out[0] == (int) expected.size());
 }

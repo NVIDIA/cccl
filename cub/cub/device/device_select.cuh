@@ -697,14 +697,14 @@ struct DeviceSelect
                                                          stream);
   }
 
-//! @rst
-  //! Uses the ``select_op`` functor applied to ``d_flag`` to selectively copy the 
+  //! @rst
+  //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively copy the
   //! corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
-  //! 
-  //! - The type of ``d_flags`` must conform to the requirements of the input 
-  //!   argument of the unary predicate ``select_op``.
-  //! - The return value of ``select_op(d_flags)`` must be castable to ``bool``. 
+  //!
+  //! - The expression ``select_op(d_flags)`` must be convertible to ``bool`` for
+  //!   every argument ``flag``, where the type of ``flag`` corresponds to the
+  //!   value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering.
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
@@ -715,6 +715,12 @@ struct DeviceSelect
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-select-iseven
+  //!     :end-before: example-end segmented-select-iseven
   //!
   //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
   //!     :language: c++
@@ -808,6 +814,102 @@ struct DeviceSelect
                        stream);
   }
 
+  //! @rst
+  //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively compact the
+  //! corresponding items in ``d_data``.
+  //! The total number of items selected is written to ``d_num_selected_out``.
+  //!
+  //! - The expression ``select_op(d_flags)`` must be convertible to ``bool`` for
+  //!   every argument ``flag``, where the type of ``flag`` corresponds to the
+  //!   value type of ``FlagIterator``.
+  //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
+  //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
+  //!   | ``[d_flags, d_flags + num_items)`` in any other way.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>  // or equivalently <cub/device/device_select.cuh>
+  //!
+  //!    struct is_even_t
+  //!    {
+  //!      __host__ __device__ bool operator()(int const& elem) const
+  //!      {
+  //!        return !(elem % 2);
+  //!      }
+  //!    };
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers for input,
+  //!    // flags, and output
+  //!    int  num_items;              // e.g., 8
+  //!    int  *d_data;                // e.g., [0, 1, 2, 3, 4, 5, 6, 7]
+  //!    char *d_flags;               // e.g., [8, 6, 7, 5, 3, 0, 9, 3]
+  //!    int  *d_num_selected_out;    // e.g., [ ]
+  //!    ...
+  //!
+  //!    // Determine temporary device storage requirements
+  //!    void     *d_temp_storage = NULL;
+  //!    size_t   temp_storage_bytes = 0;
+  //!    cub::DeviceSelect::FlaggedIf(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_flags, d_num_selected_out, num_items, is_even);
+  //!
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //!
+  //!    // Run selection
+  //!    cub::DeviceSelect::Flagged(
+  //!      d_temp_storage, temp_storage_bytes,
+  //!      d_in, d_flags, d_num_selected_out, num_items, is_even);
+  //!
+  //!    // d_data                <-- [0, 1, 5]
+  //!    // d_num_selected_out    <-- [3]
+  //!
+  //! @endrst
+  //!
+  //! @tparam IteratorT
+  //!   **[inferred]** Random-access iterator type for reading and writing selected items @iterator
+  //!
+  //! @tparam FlagIterator
+  //!   **[inferred]** Random-access input iterator type for reading selection flags @iterator
+  //!
+  //! @tparam NumSelectedIteratorT
+  //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
+  //!
+  //! @tparam SelectOp
+  //!   **[inferred]** Selection operator type having member `bool operator()(const T &a)`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in,out] d_data
+  //!   Pointer to the sequence of data items
+  //!
+  //! @param[in] d_flags
+  //!   Pointer to the input sequence of selection flags
+  //!
+  //! @param[out] d_num_selected_out
+  //!   Pointer to the output total number of items selected
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_data`)
+  //!
+  //! @param[in] select_op
+  //!   Unary selection operator
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT, typename SelectOp>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t FlaggedIf(
     void* d_temp_storage,

@@ -222,7 +222,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   REQUIRE(reference_out == out);
 }
 
-CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -250,7 +250,7 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]", types, flag_types)
+CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
