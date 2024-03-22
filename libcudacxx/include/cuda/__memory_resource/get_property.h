@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#if !defined(_CCCL_COMPILER_MSVC_2017)
+
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -120,5 +122,7 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto get_property = __get_property::__fn{};
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_STD_VER >= 2014
+
+#endif // !_CCCL_COMPILER_MSVC_2017
 
 #endif //_CUDA__MEMORY_RESOURCE_GET_PROPERTY_H
