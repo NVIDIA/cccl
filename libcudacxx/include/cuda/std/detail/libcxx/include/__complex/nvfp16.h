@@ -27,11 +27,11 @@
 
 #  include <cuda_fp16.h>
 
-#  include <cuda/std/detail/libcxx/include/__complex/traits.h>
-#  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvfp16.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
+#  include <cuda/std/detail/libcxx/include/__complex/vector_support.h>
+#  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvfp16.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 #    include <sstream> // for std::basic_ostringstream

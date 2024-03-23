@@ -30,11 +30,11 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
-#  include <cuda/std/detail/libcxx/include/__complex/traits.h>
-#  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvbf16.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
+#  include <cuda/std/detail/libcxx/include/__complex/vector_support.h>
+#  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 #    include <sstream> // for std::basic_ostringstream
