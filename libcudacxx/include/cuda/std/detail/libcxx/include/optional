@@ -275,7 +275,7 @@ struct __optional_destruct_base<_Tp, false>
     bool __engaged_;
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 ~__optional_destruct_base()
+    _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
     {
         if (__engaged_)
             __val_.~value_type();
@@ -298,7 +298,7 @@ struct __optional_destruct_base<_Tp, false>
         : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)), __engaged_(true) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void reset() noexcept
+    _CCCL_CONSTEXPR_CXX20 void reset() noexcept
     {
         if (__engaged_)
         {
@@ -383,7 +383,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
     template <class... _Args>
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void __construct(_Args&&... __args)
+    _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
     {
         _LIBCUDACXX_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
 #if _CCCL_STD_VER > 2017

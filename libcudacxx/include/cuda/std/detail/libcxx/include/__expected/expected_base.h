@@ -106,7 +106,7 @@ union __expected_union_t {
     : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...)) {}
 
   // the __expected_destruct's destructor handles this
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__expected_union_t() {}
 
   _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -204,7 +204,7 @@ struct __expected_destruct<_Tp, _Err, false, false> {
     , __has_val_(false)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__expected_destruct() {
     if (__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
@@ -256,7 +256,7 @@ struct __expected_destruct<_Tp, _Err, true, false> {
     , __has_val_(false)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__expected_destruct() {
     if (!__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
@@ -306,7 +306,7 @@ struct __expected_destruct<_Tp, _Err, false, true> {
     , __has_val_(false)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__expected_destruct() {
     if (__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__val_));
@@ -367,7 +367,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2, class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...))
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) noexcept {
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
     _LIBCUDACXX_CONSTRUCT_AT(__newval, _CUDA_VSTD::forward<_Args>(__args)...);
@@ -377,7 +377,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
                 _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T1)
     )
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) {
     _T1 __tmp(_CUDA_VSTD::forward<_Args>(__args)...);
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__oldval));
@@ -388,7 +388,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _Args...)) _LIBCUDACXX_AND
               (!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T1))
     )
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __reinit_expected(_T1& __newval, _T2& __oldval, _Args&&... __args) {
     static_assert(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _T2),
         "To provide strong exception guarantee, T2 has to satisfy `is_nothrow_move_constructible_v` so that it can "
@@ -403,7 +403,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2))
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err) {
     _Err __tmp(_CUDA_VSTD::move(__with_err.__union_.__unex_));
     _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__with_err.__union_.__unex_));
@@ -420,7 +420,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
     _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2)))
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __swap_val_unex_impl(__expected_storage<_Tp, _Err2>& __with_val, __expected_storage& __with_err) {
     static_assert(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp),
                   "To provide strong exception guarantee, Tp has to satisfy `is_nothrow_move_constructible_v` so "
@@ -452,7 +452,7 @@ struct __expected_copy<_Tp, _Err, false> : __expected_storage<_Tp, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, _Tp, _Err);
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_copy(const __expected_copy& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Tp)
           && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err))
@@ -485,7 +485,7 @@ struct __expected_move<_Tp, _Err, false> : __expected_copy<_Tp, _Err>
 
   __expected_move(const __expected_move&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_move(__expected_move&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
           && _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
@@ -522,7 +522,7 @@ struct __expected_copy_assign<_Tp, _Err, false> : __expected_move<_Tp, _Err>
   __expected_copy_assign(const __expected_copy_assign&) = default;
   __expected_copy_assign(__expected_copy_assign&&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_copy_assign& operator=(const __expected_copy_assign& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _Tp) &&
              _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Tp) &&
@@ -567,7 +567,7 @@ struct __expected_move_assign<_Tp, _Err, false> : __expected_copy_assign<_Tp, _E
   __expected_move_assign(__expected_move_assign&&) = default;
   __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_move_assign& operator=(__expected_move_assign&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp) &&
              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) &&
@@ -631,7 +631,7 @@ struct __expected_destruct<void, _Err, false, false> {
       : __unex_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...)) {}
 
     // the __expected_destruct's destructor handles this
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     ~__expected_union_t() {}
 
     _LIBCUDACXX_NO_UNIQUE_ADDRESS __empty_t __empty_;
@@ -660,7 +660,7 @@ struct __expected_destruct<void, _Err, false, false> {
     , __has_val_(false)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   ~__expected_destruct() {
     if (!__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(__union_.__unex_));
@@ -731,7 +731,7 @@ struct __expected_storage<void, _Err> : __expected_destruct<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_storage, __expected_destruct, void, _Err);
 
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void __swap_val_unex_impl(__expected_storage& __with_val, __expected_storage& __with_err)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err)) {
     _LIBCUDACXX_CONSTRUCT_AT(__with_val.__union_.__unex_, _CUDA_VSTD::move(__with_err.__union_.__unex_));
@@ -746,7 +746,7 @@ struct __expected_copy<void, _Err, false> : __expected_storage<void, _Err>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__expected_copy, __expected_storage, void, _Err);
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_copy(const __expected_copy& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err))
     : __base(__other.__has_val_)
@@ -768,7 +768,7 @@ struct __expected_move<void, _Err, false> : __expected_copy<void, _Err>
 
   __expected_move(const __expected_move&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_move(__expected_move&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
     : __base(__other.__has_val_)
@@ -790,7 +790,7 @@ struct __expected_copy_assign<void, _Err, false> : __expected_move<void, _Err>
   __expected_copy_assign(const __expected_copy_assign&) = default;
   __expected_copy_assign(__expected_copy_assign&&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_copy_assign& operator=(const __expected_copy_assign& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _Err) &&
              _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
@@ -821,7 +821,7 @@ struct __expected_move_assign<void, _Err, false> : __expected_copy_assign<void, 
   __expected_move_assign(__expected_move_assign&&) = default;
   __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   __expected_move_assign& operator=(__expected_move_assign&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Err) &&
              _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened

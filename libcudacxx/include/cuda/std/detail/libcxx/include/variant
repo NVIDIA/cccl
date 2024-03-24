@@ -350,7 +350,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, variant<_Types...>>
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
 
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 int __choose_index_type(unsigned int __num_elem)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned int __num_elem)
 {
   constexpr unsigned char __small   = static_cast<unsigned char>(-1);
   constexpr unsigned short __medium = static_cast<unsigned short>(-1);

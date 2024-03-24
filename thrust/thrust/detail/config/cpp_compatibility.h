@@ -48,12 +48,6 @@
 #  define THRUST_NODISCARD
 #endif
 
-#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
-#  define THRUST_IF_CONSTEXPR if constexpr
-#else
-#  define THRUST_IF_CONSTEXPR if
-#endif
-
 // FIXME: Combine THRUST_INLINE_CONSTANT and
 // THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT into one macro when NVCC properly
 // supports `constexpr` globals in host and device code.

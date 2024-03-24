@@ -310,13 +310,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind(_Gp&& __f, _BA&& ...__bound_args)
         : __f_(_CUDA_VSTD::forward<_Gp>(__f)),
           __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args)
         {
@@ -325,7 +325,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args) const
         {
@@ -355,13 +355,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind_r>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind_r(_Gp&& __f, _BA&& ...__bound_args)
         : base(_CUDA_VSTD::forward<_Gp>(__f),
                _CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>,
@@ -375,7 +375,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>,
@@ -393,7 +393,7 @@ template<class _Rp, class _Fp, class ..._BoundArgs>
 struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...> > : public true_type {};
 
 template<class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind<_Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
@@ -402,7 +402,7 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 }
 
 template<class _Rp, class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {

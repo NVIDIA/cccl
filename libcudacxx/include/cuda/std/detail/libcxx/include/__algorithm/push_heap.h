@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __sift_up(_RandomAccessIterator __first,
           _RandomAccessIterator __last,
           _Compare&& __comp,
@@ -61,14 +61,14 @@ __sift_up(_RandomAccessIterator __first,
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare& __comp) {
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
   _CUDA_VSTD::__sift_up<_AlgPolicy, __comp_ref_type<_Compare> >(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __len);
 }
 
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
   static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value, "Iterators must be copy constructible.");
   static_assert(_CUDA_VSTD::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
@@ -77,7 +77,7 @@ push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare 
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 push_heap(_RandomAccessIterator __first, _RandomAccessIterator __last) {
   _CUDA_VSTD::push_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }

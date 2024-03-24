@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
 {
   __comp_ref_type<_Compare> __comp_ref = __comp;
@@ -47,7 +47,7 @@ __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compar
 }
 
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _RandomAccessIterator),
@@ -58,7 +58,7 @@ sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare 
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::sort_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});

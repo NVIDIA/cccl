@@ -34,7 +34,7 @@ template <class _InputIterator,
           class _OutputIterator,
           __enable_if_t<__is_cpp17_input_iterator<_InputIterator>::value, int>          = 0,
           __enable_if_t<!__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));
@@ -57,7 +57,7 @@ template <class _InputIterator,
           class _Size,
           class _OutputIterator,
           __enable_if_t<__is_cpp17_random_access_iterator<_InputIterator>::value, int> = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 _OutputIterator
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _OutputIterator
 copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 {
   using _IntegralSize = decltype(__convert_to_integral(__orig_n));

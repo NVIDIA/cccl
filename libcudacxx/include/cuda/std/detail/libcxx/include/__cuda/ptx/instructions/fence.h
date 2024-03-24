@@ -53,42 +53,42 @@ _CCCL_DEVICE static inline void fence(
   static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
   static_assert(__scope == scope_cta || __scope == scope_gpu || __scope == scope_sys, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_cta) {
       asm volatile (
         "fence.sc.cta; // 1."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_gpu) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_gpu) {
       asm volatile (
         "fence.sc.gpu; // 1."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc && __scope == scope_sys) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_sys) {
       asm volatile (
         "fence.sc.sys; // 1."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_cta) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_cta) {
       asm volatile (
         "fence.acq_rel.cta; // 1."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_gpu) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_gpu) {
       asm volatile (
         "fence.acq_rel.gpu; // 1."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel && __scope == scope_sys) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_sys) {
       asm volatile (
         "fence.acq_rel.sys; // 1."
         :
@@ -122,14 +122,14 @@ _CCCL_DEVICE static inline void fence(
   static_assert(__sem == sem_sc || __sem == sem_acq_rel, "");
   // __scope == scope_cluster (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_sc) {
+    _CCCL_IF_CONSTEXPR (__sem == sem_sc) {
       asm volatile (
         "fence.sc.cluster; // 2."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__sem == sem_acq_rel) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel) {
       asm volatile (
         "fence.acq_rel.cluster; // 2."
         :
@@ -236,21 +236,21 @@ _CCCL_DEVICE static inline void fence_proxy_async(
 {
   static_assert(__space == space_global || __space == space_cluster || __space == space_shared, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_global) {
+    _CCCL_IF_CONSTEXPR (__space == space_global) {
       asm volatile (
         "fence.proxy.async.global; // 6."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__space == space_cluster) {
       asm volatile (
         "fence.proxy.async.shared::cluster; // 6."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__space == space_shared) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__space == space_shared) {
       asm volatile (
         "fence.proxy.async.shared::cta; // 6."
         :
@@ -283,28 +283,28 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   // __sem == sem_release (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm volatile (
         "fence.proxy.tensormap::generic.release.cta; // 7."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm volatile (
         "fence.proxy.tensormap::generic.release.cluster; // 7."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
       asm volatile (
         "fence.proxy.tensormap::generic.release.gpu; // 7."
         :
         :
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
       asm volatile (
         "fence.proxy.tensormap::generic.release.sys; // 7."
         :
@@ -342,7 +342,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
   // __sem == sem_acquire (due to parameter type constraint)
   static_assert(__scope == scope_cta || __scope == scope_cluster || __scope == scope_gpu || __scope == scope_sys, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm volatile (
         "fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
         :
@@ -350,7 +350,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm volatile (
         "fence.proxy.tensormap::generic.acquire.cluster [%0], %1; // 8."
         :
@@ -358,7 +358,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_gpu) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
       asm volatile (
         "fence.proxy.tensormap::generic.acquire.gpu [%0], %1; // 8."
         :
@@ -366,7 +366,7 @@ _CCCL_DEVICE static inline void fence_proxy_tensormap_generic(
           "n"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_sys) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
       asm volatile (
         "fence.proxy.tensormap::generic.acquire.sys [%0], %1; // 8."
         :

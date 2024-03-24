@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_scan.cuh>
 
 #include <cstdint>
@@ -146,7 +145,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -178,7 +177,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -211,7 +210,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -247,7 +246,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
@@ -293,7 +292,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it),
                             unwrap_it(d_in_it),

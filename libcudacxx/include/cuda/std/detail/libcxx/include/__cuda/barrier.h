@@ -1103,7 +1103,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
         _LIBCUDACXX_UNUSED_VAR(__can_use_complete_tx);
         _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
-        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 16) {
+        _CCCL_IF_CONSTEXPR (_Align >= 16) {
             if (__can_use_complete_tx && __isShared(__bar_handle)) {
                 __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
                 return __completion_mechanism::__mbarrier_complete_tx;
@@ -1114,7 +1114,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 #endif // __cccl_ptx_isa >= 800
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
-        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
+        _CCCL_IF_CONSTEXPR (_Align >= 4) {
             const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
                 __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);

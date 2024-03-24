@@ -46,7 +46,7 @@ struct __read_from_tmp_value_tag
 } // namespace __unique_copy_tags
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _OutputIterator>
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _OutputIterator> __unique_copy(
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _OutputIterator> __unique_copy(
   _InputIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -72,7 +72,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputItera
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _ForwardIterator, class _Sent, class _OutputIterator>
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY pair<_ForwardIterator, _OutputIterator> __unique_copy(
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_ForwardIterator, _OutputIterator> __unique_copy(
   _ForwardIterator __first,
   _Sent __last,
   _OutputIterator __result,
@@ -98,7 +98,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY pair<_ForwardIte
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _InputAndOutputIterator>
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator>
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator>
 __unique_copy(_InputIterator __first,
               _Sent __last,
               _InputAndOutputIterator __result,
@@ -121,7 +121,7 @@ __unique_copy(_InputIterator __first,
 }
 
 template <class _InputIterator, class _OutputIterator, class _BinaryPredicate>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _OutputIterator
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _BinaryPredicate __pred)
 {
   using __algo_tag = __conditional_t<
@@ -138,7 +138,7 @@ unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __res
 }
 
 template <class _InputIterator, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _OutputIterator
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator
 unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 {
   return _CUDA_VSTD::unique_copy(

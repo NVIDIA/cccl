@@ -44,14 +44,14 @@ public:
   {}
 
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool operator()(_Iter& __it1, _Iter& __it2)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool operator()(_Iter& __it1, _Iter& __it2)
   {
     return _CUDA_VSTD::__invoke(__comp_, _CUDA_VSTD::__invoke(__proj_, *__it1), _CUDA_VSTD::__invoke(__proj_, *__it2));
   }
 };
 
 template <class _Iter, class _Sent, class _Proj, class _Comp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_Iter, _Iter>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Iter, _Iter>
 __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 {
   auto __less = _MinmaxElementLessFunc<_Comp, _Proj>(__comp, __proj);
@@ -115,7 +115,7 @@ __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 }
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   pair<_ForwardIterator, _ForwardIterator>
   minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
@@ -128,7 +128,7 @@ _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AF
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   pair<_ForwardIterator, _ForwardIterator>
   minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 {
