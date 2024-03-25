@@ -58,11 +58,11 @@ template <class _Tp>
 struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 {};
 
-# if _LIBCUDACXX_CUDA_ABI_VERSION > 3
+#if _LIBCUDACXX_CUDA_ABI_VERSION > 3
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS _ALIGNAS(__complex_alignment<_Tp>::value)
-# else
+#else
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS
-# endif
+#endif
 
 template <class _Dest, class _Source, class = void>
 struct __complex_can_implicitly_construct : false_type
@@ -104,23 +104,22 @@ struct __ab_results
 };
 
 template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX __abcd_results<_Tp>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
 template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX __ab_results<_Tp>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   return {__x1 * __x2, __y1 * __y2};
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
-  __enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
-  __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
+__complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   __abcd_results<_Tp> __ret;
 
@@ -142,9 +141,8 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
-  __enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
-  __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
+__complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   __ab_results<_Tp> __ret;
 
