@@ -295,6 +295,7 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
     return device;
 }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 /**
  * \brief RAII helper which saves the current device and switches to the
  *        specified device on construction and switches to the saved device on
@@ -319,6 +320,7 @@ public:
             CubDebug(cudaSetDevice(old_device));
     }
 };
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -377,6 +379,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
     return result;
 }
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -485,6 +488,7 @@ public:
         return entry.payload;
     }
 };
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
