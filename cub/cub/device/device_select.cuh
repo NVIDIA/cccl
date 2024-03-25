@@ -830,43 +830,17 @@ struct DeviceSelect
   //!
   //! The code snippet below illustrates the compaction of items selected from an ``int`` device vector.
   //!
-  //! .. code-block:: c++
+  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-select-iseven
+  //!     :end-before: example-end segmented-select-iseven
   //!
-  //!    #include <cub/cub.cuh>  // or equivalently <cub/device/device_select.cuh>
-  //!
-  //!    struct is_even_t
-  //!    {
-  //!      __host__ __device__ bool operator()(int const& elem) const
-  //!      {
-  //!        return !(elem % 2);
-  //!      }
-  //!    };
-  //!
-  //!    // Declare, allocate, and initialize device-accessible pointers for input,
-  //!    // flags, and output
-  //!    int  num_items;              // e.g., 8
-  //!    int  *d_data;                // e.g., [0, 1, 2, 3, 4, 5, 6, 7]
-  //!    char *d_flags;               // e.g., [8, 6, 7, 5, 3, 0, 9, 3]
-  //!    int  *d_num_selected_out;    // e.g., [ ]
-  //!    ...
-  //!
-  //!    // Determine temporary device storage requirements
-  //!    void     *d_temp_storage = NULL;
-  //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceSelect::FlaggedIf(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_flags, d_num_selected_out, num_items, is_even);
-  //!
-  //!    // Allocate temporary storage
-  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!
-  //!    // Run selection
-  //!    cub::DeviceSelect::Flagged(
-  //!      d_temp_storage, temp_storage_bytes,
-  //!      d_in, d_flags, d_num_selected_out, num_items, is_even);
-  //!
-  //!    // d_data                <-- [0, 1, 5]
-  //!    // d_num_selected_out    <-- [3]
+  //! .. literalinclude:: ../../test/catch2_test_device_select_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-select-flaggedif-inplace
+  //!     :end-before: example-end segmented-select-flaggedif-inplace
   //!
   //! @endrst
   //!

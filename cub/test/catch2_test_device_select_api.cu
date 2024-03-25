@@ -88,3 +88,33 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
   d_out.resize(d_num_selected_out[0]);
   REQUIRE(d_out == expected);
 }
+
+CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]")
+{
+  // example-begin segmented-select-flaggedif-inplace
+  constexpr int num_items            = 8;
+  thrust::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
+  thrust::device_vector<int> d_flags   = {8, 6, 7, 5, 3, 0, 9, 3};
+  thrust::device_vector<int> d_num_selected_out(num_items);
+  is_even_t is_even{};
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSelect::FlaggedIf(
+    d_temp_storage, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+
+  // Allocate temporary storage
+  cudaMalloc(&d_temp_storage, temp_storage_bytes);
+
+  // Run selection
+  cub::DeviceSelect::FlaggedIf(
+    d_temp_storage, temp_storage_bytes, d_data.begin(), d_flags.begin(), d_num_selected_out.data(), num_items, is_even);
+
+  thrust::device_vector<int> expected{0, 1, 5};
+  // example-end segmented-select-flaggedif-inplace
+
+  REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
+  d_data.resize(d_num_selected_out[0]);
+  REQUIRE(d_data == expected);
+}
