@@ -84,6 +84,8 @@ int main(int argc, char** argv)
 
     int * cuda_ret = 0;
     CUDA_CALL(err, cudaMalloc(&cuda_ret, sizeof(int)));
+// cudaLaunchKernelEx is supported from 11.8 onwards
+#if __CUDACC_VER_MAJOR__ >= 11 && __CUDACC_VER_MINOR__ >= 8
     {
         cudaLaunchAttribute attribute[1];
         attribute[0].id = cudaLaunchAttributeClusterDimension;
@@ -101,8 +103,10 @@ int main(int argc, char** argv)
         };
         CUDA_CALL(err, cudaLaunchKernelEx(&config, fake_main_kernel, cuda_ret));
     }
-
+#else // ^^^ CTK >= 11.8 ^^^ / vvv CTK <= 11.7 vvv
+    (void) cuda_cluster_size;
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
+#endif // CTK <= 11.7
     CUDA_CALL(err, cudaGetLastError());
     CUDA_CALL(err, cudaDeviceSynchronize());
     CUDA_CALL(err, cudaMemcpy(&ret, cuda_ret, sizeof(int), cudaMemcpyDeviceToHost));
