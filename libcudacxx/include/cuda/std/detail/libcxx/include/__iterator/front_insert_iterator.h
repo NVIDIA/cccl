@@ -53,19 +53,19 @@ public:
     typedef void reference;
     typedef _Container container_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 explicit front_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 front_insert_iterator& operator=(const typename _Container::value_type& __value)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit front_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 front_insert_iterator& operator=(const typename _Container::value_type& __value)
         {container->push_front(__value); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 front_insert_iterator& operator=(typename _Container::value_type&& __value)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 front_insert_iterator& operator=(typename _Container::value_type&& __value)
         {container->push_front(_CUDA_VSTD::move(__value)); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 front_insert_iterator& operator*()     {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 front_insert_iterator& operator++()    {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 front_insert_iterator  operator++(int) {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 front_insert_iterator& operator*()     {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 front_insert_iterator& operator++()    {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 front_insert_iterator  operator++(int) {return *this;}
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(front_insert_iterator);
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 front_insert_iterator<_Container>
 front_inserter(_Container& __x)
 {

@@ -30,7 +30,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __reverse_impl(_BidirectionalIterator __first, _BidirectionalIterator __last, bidirectional_iterator_tag)
 {
   while (__first != __last)
@@ -45,7 +45,7 @@ __reverse_impl(_BidirectionalIterator __first, _BidirectionalIterator __last, bi
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __reverse_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, random_access_iterator_tag)
 {
   if (__first != __last)
@@ -58,7 +58,7 @@ __reverse_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, rand
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
   using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
@@ -66,7 +66,7 @@ __reverse(_BidirectionalIterator __first, _Sentinel __last)
 }
 
 template <class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 reverse(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   _CUDA_VSTD::__reverse<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));

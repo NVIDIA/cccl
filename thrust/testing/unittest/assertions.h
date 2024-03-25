@@ -417,7 +417,7 @@ void assert_equal(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterat
 
         if(mismatches <= MAX_OUTPUT_LINES)
         {
-          THRUST_IF_CONSTEXPR(sizeof(InputType) == 1)
+          _CCCL_IF_CONSTEXPR(sizeof(InputType) == 1)
           {
             f << "  [" << i << "] " << *first1 + InputType() << "  " << *first2 + InputType() << "\n"; // unprintable chars are a problem
           }

@@ -48,7 +48,6 @@
 #include <cub/agent/agent_segment_fixup.cuh>
 #include <cub/agent/agent_spmv_orig.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
@@ -275,7 +274,7 @@ DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
     {
         ValueT result = 0.0;
 
-        CUB_IF_CONSTEXPR(HAS_BETA)
+        _CCCL_IF_CONSTEXPR(HAS_BETA)
         {
             result += spmv_params.beta * spmv_params.d_vector_y[row];
         }

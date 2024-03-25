@@ -543,7 +543,7 @@ The dispatch entry point is typically represented by a static member function th
     };
 
 For many algorithms, the dispatch layer is part of the API. 
-The first reason for this to be the case is ``size_t`` support. 
+The main reason for this integration is to support ``size_t``.
 Our API uses ``int`` as a type for ``num_items``. 
 Users rely on the dispatch layer directly to workaround this. 
 Exposing the dispatch layer also allows users to tune algorithms for their use cases. 

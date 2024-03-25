@@ -342,10 +342,10 @@ struct __libcpp_complex_overload_traits<_Tp, false, true>
     typedef complex<_Tp> _ComplexType;
 };
 
-template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 complex<_Tp> operator*(const complex<_Tp>& __z, const complex<_Tp>& __w);
 
-template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+template<class _Tp> _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 complex<_Tp> operator/(const complex<_Tp>& __x, const complex<_Tp>& __y);
 
 template<class _Tp>
@@ -357,10 +357,10 @@ private:
     value_type __re_;
     value_type __im_;
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex(const value_type& __re = value_type(), const value_type& __im = value_type())
         : __re_(__re), __im_(__im) {}
-    template<class _Xp> _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    template<class _Xp> _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex(const complex<_Xp>& __c)
         : __re_(__c.real()), __im_(__c.imag()) {}
 
@@ -379,15 +379,15 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14
     operator ::std::complex<_Tp>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type real() const {return __re_;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 value_type imag() const {return __im_;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type real() const {return __re_;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type imag() const {return __im_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void real(value_type __re) {__re_ = __re;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void imag(value_type __im) {__im_ = __im;}
 
 #if defined(__cuda_std__)
     // Those additional volatile overloads are meant to help with reductions in thrust
@@ -398,46 +398,46 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) volatile {__im_ = __im;}
 #endif // defined(__cuda_std__)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator= (const value_type& __re) {__re_ = __re; __im_ = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator+=(const value_type& __re) {__re_ += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator-=(const value_type& __re) {__re_ -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator*=(const value_type& __re) {__re_ *= __re; __im_ *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator/=(const value_type& __re) {__re_ /= __re; __im_ /= __re; return *this;}
 
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator= (const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator= (const complex<_Xp>& __c)
         {
             __re_ = __c.real();
             __im_ = __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator+=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Xp>& __c)
         {
             __re_ += __c.real();
             __im_ += __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator-=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Xp>& __c)
         {
             __re_ -= __c.real();
             __im_ -= __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator*=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator*=(const complex<_Xp>& __c)
         {
             *this = *this * complex(__c.real(), __c.imag());
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator/=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator/=(const complex<_Xp>& __c)
         {
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
@@ -488,15 +488,15 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14
     operator ::std::complex<float>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr float real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr float imag() const {return __im_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void real(value_type __re) {__re_ = __re;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void imag(value_type __im) {__im_ = __im;}
 
 #if defined(__cuda_std__)
     // Those additional volatile overloads are meant to help with reductions in thrust
@@ -507,46 +507,46 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) volatile {__im_ = __im;}
 #endif // defined(__cuda_std__)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator= (float __re) { __re_ = __re; __im_ = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator+=(float __re) {__re_ += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator-=(float __re) {__re_ -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator*=(float __re) {__re_ *= __re; __im_ *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator/=(float __re) {__re_ /= __re; __im_ /= __re; return *this;}
 
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator= (const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator= (const complex<_Xp>& __c)
         {
             __re_ = __c.real();
             __im_ = __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator+=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Xp>& __c)
         {
             __re_ += __c.real();
             __im_ += __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator-=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Xp>& __c)
         {
             __re_ -= __c.real();
             __im_ -= __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator*=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator*=(const complex<_Xp>& __c)
         {
             *this = *this * complex(__c.real(), __c.imag());
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator/=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator/=(const complex<_Xp>& __c)
         {
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
@@ -593,15 +593,15 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14
     operator ::std::complex<double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr double real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr double imag() const {return __im_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void real(value_type __re) {__re_ = __re;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void imag(value_type __im) {__im_ = __im;}
 
 #if defined(__cuda_std__)
     // Those additional volatile overloads are meant to help with reductions in thrust
@@ -612,46 +612,46 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) volatile {__im_ = __im;}
 #endif // defined(__cuda_std__)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator= (double __re) {__re_ = __re; __im_ = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator+=(double __re) {__re_ += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator-=(double __re) {__re_ -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator*=(double __re) {__re_ *= __re; __im_ *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator/=(double __re) {__re_ /= __re; __im_ /= __re; return *this;}
 
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator= (const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator= (const complex<_Xp>& __c)
         {
             __re_ = __c.real();
             __im_ = __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator+=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Xp>& __c)
         {
             __re_ += __c.real();
             __im_ += __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator-=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Xp>& __c)
         {
             __re_ -= __c.real();
             __im_ -= __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator*=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator*=(const complex<_Xp>& __c)
         {
             *this = *this * complex(__c.real(), __c.imag());
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator/=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator/=(const complex<_Xp>& __c)
         {
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
@@ -689,15 +689,15 @@ public:
         return *this;
     }
 
-    _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14
     operator ::std::complex<long double>() const { return { __re_, __im_ }; }
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr long double real() const {return __re_;}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr long double imag() const {return __im_;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void real(value_type __re) {__re_ = __re;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void imag(value_type __im) {__im_ = __im;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void real(value_type __re) {__re_ = __re;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void imag(value_type __im) {__im_ = __im;}
 
 #if defined(__cuda_std__)
     // Those additional volatile overloads are meant to help with reductions in thrust
@@ -708,46 +708,46 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im) volatile {__im_ = __im;}
 #endif // defined(__cuda_std__)
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator= (long double __re) {__re_ = __re; __im_ = value_type(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator+=(long double __re) {__re_ += __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator-=(long double __re) {__re_ -= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator*=(long double __re) {__re_ *= __re; __im_ *= __re; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     complex& operator/=(long double __re) {__re_ /= __re; __im_ /= __re; return *this;}
 
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator= (const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator= (const complex<_Xp>& __c)
         {
             __re_ = __c.real();
             __im_ = __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator+=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator+=(const complex<_Xp>& __c)
         {
             __re_ += __c.real();
             __im_ += __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator-=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator-=(const complex<_Xp>& __c)
         {
             __re_ -= __c.real();
             __im_ -= __c.imag();
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator*=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator*=(const complex<_Xp>& __c)
         {
             *this = *this * complex(__c.real(), __c.imag());
             return *this;
         }
     template<class _Xp>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 complex& operator/=(const complex<_Xp>& __c)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex& operator/=(const complex<_Xp>& __c)
         {
             *this = *this / complex(__c.real(), __c.imag());
             return *this;
@@ -789,7 +789,7 @@ _CCCL_DIAG_POP
 // 26.3.6 operators:
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -799,7 +799,7 @@ operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator+(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -809,7 +809,7 @@ operator+(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator+(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -819,7 +819,7 @@ operator+(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -829,7 +829,7 @@ operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator-(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -839,7 +839,7 @@ operator-(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator-(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -871,7 +871,7 @@ struct __ab_results
 };
 
 template<class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
 {
@@ -884,7 +884,7 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d)
 }
 
 template<class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 {
@@ -939,7 +939,7 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2)
 }
 
 template<class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 complex<_Tp>
 operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
@@ -1036,7 +1036,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator*(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -1046,7 +1046,7 @@ operator*(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator*(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -1056,7 +1056,7 @@ operator*(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11_COMPLEX
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX
 complex<_Tp>
 operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 {
@@ -1148,7 +1148,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator/(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -1156,7 +1156,7 @@ operator/(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -1166,7 +1166,7 @@ operator/(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator+(const complex<_Tp>& __x)
 {
@@ -1174,7 +1174,7 @@ operator+(const complex<_Tp>& __x)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 operator-(const complex<_Tp>& __x)
 {
@@ -1182,7 +1182,7 @@ operator-(const complex<_Tp>& __x)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -1190,7 +1190,7 @@ operator==(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -1198,7 +1198,7 @@ operator==(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -1207,7 +1207,7 @@ operator==(const _Tp& __x, const complex<_Tp>& __y)
 
 #if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y) {
     return __x.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__y)
@@ -1215,7 +1215,7 @@ operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y) {
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
     return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
@@ -1224,7 +1224,7 @@ operator==(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
@@ -1232,7 +1232,7 @@ operator!=(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const complex<_Tp>& __x, const _Tp& __y)
 {
@@ -1240,7 +1240,7 @@ operator!=(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const _Tp& __x, const complex<_Tp>& __y)
 {
@@ -1249,14 +1249,14 @@ operator!=(const _Tp& __x, const complex<_Tp>& __y)
 
 #if defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const complex<_Tp>& __x, const ::std::complex<_Up>& __y) {
     return !(__x == __y);
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
     return !(__x == __y);
@@ -1266,7 +1266,7 @@ operator!=(const ::std::complex<_Up>& __x, const complex<_Tp>& __y) {
 // real
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 _Tp
 real(const complex<_Tp>& __c)
 {
@@ -1274,7 +1274,7 @@ real(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 typename __libcpp_complex_overload_traits<_Tp>::_ValueType
 real(_Tp __re)
 {
@@ -1284,7 +1284,7 @@ real(_Tp __re)
 // imag
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 _Tp
 imag(const complex<_Tp>& __c)
 {
@@ -1292,7 +1292,7 @@ imag(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 typename __libcpp_complex_overload_traits<_Tp>::_ValueType
 imag(_Tp)
 {
@@ -1359,7 +1359,7 @@ arg(_Tp __re)
 // norm
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 _Tp
 norm(const complex<_Tp>& __c)
 {
@@ -1371,7 +1371,7 @@ norm(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 typename __libcpp_complex_overload_traits<_Tp>::_ValueType
 norm(_Tp __re)
 {
@@ -1382,7 +1382,7 @@ norm(_Tp __re)
 // conj
 
 template<class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 complex<_Tp>
 conj(const complex<_Tp>& __c)
 {
@@ -1390,7 +1390,7 @@ conj(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 typename __libcpp_complex_overload_traits<_Tp>::_ComplexType
 conj(_Tp __re)
 {

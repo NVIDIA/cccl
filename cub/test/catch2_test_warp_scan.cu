@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
@@ -117,7 +116,7 @@ struct sum_op_t
   template <class WarpScanT, class T>
   __device__ void operator()(WarpScanT &scan, T &thread_data) const
   {
-    CUB_IF_CONSTEXPR(Mode == scan_mode::exclusive)
+    _CCCL_IF_CONSTEXPR(Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data);
     }
@@ -139,7 +138,7 @@ struct sum_aggregate_op_t
   {
     T warp_aggregate{};
 
-    CUB_IF_CONSTEXPR(Mode == scan_mode::exclusive)
+    _CCCL_IF_CONSTEXPR(Mode == scan_mode::exclusive)
     {
       scan.ExclusiveSum(thread_data, thread_data, warp_aggregate);
     }
@@ -163,7 +162,7 @@ struct min_op_t
   template <class T, class WarpScanT>
   __device__ void operator()(WarpScanT &scan, T &thread_data) const
   {
-    CUB_IF_CONSTEXPR(Mode == scan_mode::exclusive)
+    _CCCL_IF_CONSTEXPR(Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, cub::Min{});
     }
@@ -185,7 +184,7 @@ struct min_aggregate_op_t
   {
     T warp_aggregate{};
 
-    CUB_IF_CONSTEXPR(Mode == scan_mode::exclusive)
+    _CCCL_IF_CONSTEXPR(Mode == scan_mode::exclusive)
     {
       scan.ExclusiveScan(thread_data, thread_data, cub::Min{}, warp_aggregate);
     }
@@ -464,7 +463,7 @@ CUB_TEST("Warp scan works with custom scan op", "[scan][warp]", types, logical_w
   // When comparing device output, the corresponding undefined data points need
   // to be fixed
 
-  CUB_IF_CONSTEXPR(params::mode == scan_mode::exclusive)
+  _CCCL_IF_CONSTEXPR(params::mode == scan_mode::exclusive)
   {
     for (size_t i = 0; i < h_out.size(); i += params::logical_warp_threads)
     {
@@ -513,7 +512,7 @@ CUB_TEST("Warp custom op scan returns valid warp aggregate",
   // When comparing device output, the corresponding undefined data points need
   // to be fixed
 
-  CUB_IF_CONSTEXPR(params::mode == scan_mode::exclusive)
+  _CCCL_IF_CONSTEXPR(params::mode == scan_mode::exclusive)
   {
     for (size_t i = 0; i < h_out.size(); i += params::logical_warp_threads)
     {

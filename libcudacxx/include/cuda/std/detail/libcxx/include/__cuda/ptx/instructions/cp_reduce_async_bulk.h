@@ -713,7 +713,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   // __op == op_and_op (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+    _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b32  [%0], [%1], %2; // 3."
         :
@@ -722,7 +722,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
           "r"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+    } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b64  [%0], [%1], %2; // 3."
         :
@@ -770,7 +770,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   // __op == op_or_op (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+    _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b32  [%0], [%1], %2; // 3."
         :
@@ -779,7 +779,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
           "r"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+    } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b64  [%0], [%1], %2; // 3."
         :
@@ -827,7 +827,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   // __op == op_xor_op (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+    _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b32  [%0], [%1], %2; // 3."
         :
@@ -836,7 +836,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
           "r"(__size)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+    } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
       asm (
         "cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b64  [%0], [%1], %2; // 3."
         :

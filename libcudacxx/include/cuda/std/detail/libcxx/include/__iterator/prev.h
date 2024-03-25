@@ -33,7 +33,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   __enable_if_t< __is_cpp17_input_iterator<_InputIter>::value, _InputIter >
   prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1)
 {

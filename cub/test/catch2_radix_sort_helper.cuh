@@ -31,7 +31,6 @@
 #include <thrust/scan.h>
 #include <thrust/sequence.h>
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_macro.cuh>
@@ -196,7 +195,7 @@ get_striped_keys(const c2h::host_vector<KeyT> &h_keys,
   {
     bit_ordered_t key = c2h::bit_cast<bit_ordered_t>(h_keys[i]);
 
-    CUB_IF_CONSTEXPR(traits_t::CATEGORY == cub::FLOATING_POINT)
+    _CCCL_IF_CONSTEXPR(traits_t::CATEGORY == cub::FLOATING_POINT)
     {
       const bit_ordered_t negative_zero = bit_ordered_t(1) << bit_ordered_t(sizeof(bit_ordered_t) * 8 - 1);
 
