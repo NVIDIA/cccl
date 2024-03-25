@@ -63,35 +63,44 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
   typedef complex<__nv_bfloat16> _ComplexType;
 };
 
+struct __complex_bfloat_vector_op_complex
+{
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __complex_bfloat_vector_op_complex(
+    complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
+      : __lhs(__lhs)
+      , __rhs(__rhs)
+  {}
+
+  complex<__nv_bfloat16>& __lhs;
+  const complex<__nv_bfloat16>& __rhs;
+};
+
+struct __complex_bfloat_vector_op_bfloat
+{
+  __nv_bfloat162& __lhs;
+  const __nv_bfloat162& __rhs;
+};
+
 union __complex_bfloat_vector_op
 {
-  struct
-  {
-    complex<__nv_bfloat16>& __as_complex_lhs;
-    const complex<__nv_bfloat16>& __as_complex_rhs;
-  };
-  struct
-  {
-    __nv_bfloat162& __as_vector_lhs;
-    const __nv_bfloat162& __as_vector_rhs;
-  };
+  __complex_bfloat_vector_op_complex __as_complex;
+  __complex_bfloat_vector_op_bfloat __as_vector;
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  __complex_bfloat_vector_op(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
-      : __as_complex_lhs(__lhs)
-      , __as_complex_rhs(__rhs)
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr __complex_bfloat_vector_op(
+    complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
+      : __as_complex(__lhs, __rhs)
   {}
 
   _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __plus_op() && noexcept
   {
-    __as_vector_lhs += __as_vector_rhs;
-    return __as_complex_lhs;
+    __as_vector.__lhs += __as_vector.__rhs;
+    return __as_complex.__lhs;
   }
 
   _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __minus_op() && noexcept
   {
-    __as_vector_lhs -= __as_vector_rhs;
-    return __as_complex_lhs;
+    __as_vector.__lhs -= __as_vector.__rhs;
+    return __as_complex.__lhs;
   }
 };
 
