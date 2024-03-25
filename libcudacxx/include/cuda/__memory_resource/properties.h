@@ -25,12 +25,19 @@
 
 #if _CCCL_STD_VER >= 2014
 
+#include <cuda/std/cstddef>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 /**
  * @brief The default alignment by a cudaMalloc{...} call
  */
 _LIBCUDACXX_INLINE_VAR constexpr size_t __default_cuda_malloc_alignment = 256;
+
+/**
+ * @brief The default alignment on a host allocation {...} call
+ */
+_LIBCUDACXX_INLINE_VAR constexpr size_t __default_cuda_malloc_host_alignment = alignof(_CUDA_VSTD::max_align_t);
 
 /// \struct device_accessible
 /// \brief The \c device_accessible property signals that the allocated memory is device accessible
@@ -41,14 +48,13 @@ struct device_accessible
 /// \brief The \c host_accessible property signals that the allocated memory is host accessible
 struct host_accessible
 {};
-
 /// \struct managed_memory
 /// \brief The \c managed_memory property signals that the allocated memory is managed
 struct managed_memory
 {};
 
 /// \struct pinned_memory
-/// \brief The \c pinned_memory property signals that the allocated memory is managed
+/// \brief The \c pinned_memory property signals that the allocated memory is not pageable.
 struct pinned_memory
 {};
 

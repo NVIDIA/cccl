@@ -62,8 +62,6 @@ static_assert(
                                   cuda::mr::pinned_memory>,
     "");
 
-// Ensure that we can only
-
 void test() {
   cuda::mr::cuda_pinned_memory_resource first{};
   { // comparison against a plain cuda_pinned_memory_resource
@@ -75,23 +73,25 @@ void test() {
   { // comparison against a plain cuda_pinned_memory_resource with a different flag set
     cuda::mr::cuda_pinned_memory_resource second{cudaHostAllocPortable};
     assert(!(first == second));
-    assert( (first != second));
+    assert((first != second));
   }
 
   { // comparison against a cuda_pinned_memory_resource wrapped inside a resource_ref<cuda::mr::pinned_memory>
     cuda::mr::cuda_pinned_memory_resource second{};
-    assert(first == cuda::mr::resource_ref<cuda::mr::pinned_memory>{second});
-    assert(!(first != cuda::mr::resource_ref<cuda::mr::pinned_memory>{second}));
-    assert(cuda::mr::resource_ref<cuda::mr::pinned_memory>{second} == first);
-    assert(!(cuda::mr::resource_ref<cuda::mr::pinned_memory>{second} != first));
+    cuda::mr::resource_ref<cuda::mr::pinned_memory> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
   }
 
   { // comparison against a cuda_pinned_memory_resource wrapped inside a resource_ref<>
     cuda::mr::cuda_pinned_memory_resource second{};
-    assert(first == cuda::mr::resource_ref<>{second});
-    assert(!(first != cuda::mr::resource_ref<>{second}));
-    assert(cuda::mr::resource_ref<>{second} == first);
-    assert(!(cuda::mr::resource_ref<>{second} != first));
+    cuda::mr::resource_ref<> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
   }
 
   { // comparison against a different resource through resource_ref
