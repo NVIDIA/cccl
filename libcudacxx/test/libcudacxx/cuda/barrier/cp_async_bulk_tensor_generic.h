@@ -217,7 +217,8 @@ CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>
     // The stride is the number of bytes to traverse from the first element of one row to the next.
     // It must be a multiple of 16.
     constexpr int num_strides = num_dims - 1;
-    cuda::std::array<uint64_t, num_strides> stride;
+    // Clamp the size of the array to 1, first index must be valid even if not used.
+    cuda::std::array<uint64_t, num_strides ? num_strides : 1> stride;
     uint64_t base_stride = sizeof(T);
     for (size_t i = 0; i < stride.size(); ++i) {
         base_stride *= gmem_dims[i];
