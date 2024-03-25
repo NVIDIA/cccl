@@ -27,9 +27,19 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/agent_histogram.cuh>
 #include <cub/block/block_load.cuh>
-#include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN

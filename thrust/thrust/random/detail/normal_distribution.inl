@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/random/normal_distribution.h>
 #include <thrust/random/uniform_real_distribution.h>
 #include <thrust/detail/cstdint.h>
@@ -37,7 +45,7 @@ namespace random
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   normal_distribution<RealType>
     ::normal_distribution(RealType a, RealType b)
       :super_t(),m_param(a,b)
@@ -46,7 +54,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   normal_distribution<RealType>
     ::normal_distribution(const param_type &parm)
       :super_t(),m_param(parm)
@@ -55,7 +63,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void normal_distribution<RealType>
     ::reset(void)
 {
@@ -65,7 +73,7 @@ template<typename RealType>
 
 template<typename RealType>
   template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename normal_distribution<RealType>::result_type
       normal_distribution<RealType>
         ::operator()(UniformRandomNumberGenerator &urng)
@@ -76,7 +84,7 @@ template<typename RealType>
 
 template<typename RealType>
   template<typename UniformRandomNumberGenerator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename normal_distribution<RealType>::result_type
       normal_distribution<RealType>
         ::operator()(UniformRandomNumberGenerator &urng,
@@ -87,7 +95,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename normal_distribution<RealType>::param_type
     normal_distribution<RealType>
       ::param(void) const
@@ -97,7 +105,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void normal_distribution<RealType>
     ::param(const param_type &parm)
 {
@@ -106,7 +114,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename normal_distribution<RealType>::result_type
     normal_distribution<RealType>
       ::min THRUST_PREVENT_MACRO_SUBSTITUTION (void) const
@@ -116,7 +124,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename normal_distribution<RealType>::result_type
     normal_distribution<RealType>
       ::max THRUST_PREVENT_MACRO_SUBSTITUTION (void) const
@@ -137,7 +145,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename normal_distribution<RealType>::result_type
     normal_distribution<RealType>
       ::mean(void) const
@@ -147,7 +155,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename normal_distribution<RealType>::result_type
     normal_distribution<RealType>
       ::stddev(void) const
@@ -157,7 +165,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   bool normal_distribution<RealType>
     ::equal(const normal_distribution &rhs) const
 {
@@ -214,7 +222,7 @@ template<typename RealType>
 
 
 template<typename RealType>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const normal_distribution<RealType> &lhs,
                 const normal_distribution<RealType> &rhs)
 {
@@ -223,7 +231,7 @@ bool operator==(const normal_distribution<RealType> &lhs,
 
 
 template<typename RealType>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const normal_distribution<RealType> &lhs,
                 const normal_distribution<RealType> &rhs)
 {

@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/copy.h>
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/copy.h>
@@ -24,9 +32,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
@@ -37,9 +45,9 @@ __host__ __device__
 } // end copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                         InputIterator first,
                         Size n,
@@ -54,12 +62,12 @@ namespace detail
 {
 
 
-__thrust_exec_check_disable__ // because we might call e.g. std::ostream_iterator's constructor
+_CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template<typename System1,
          typename System2,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy(const thrust::execution_policy<System1> &system1,
                                  const thrust::execution_policy<System2> &system2,
                                  InputIterator first,
@@ -72,13 +80,13 @@ __host__ __device__
 } // end two_system_copy()
 
 
-__thrust_exec_check_disable__ // because we might call e.g. std::ostream_iterator's constructor
+_CCCL_EXEC_CHECK_DISABLE // because we might call e.g. std::ostream_iterator's constructor
 template<typename System1,
          typename System2,
          typename InputIterator,
          typename Size,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator two_system_copy_n(const thrust::execution_policy<System1> &system1,
                                    const thrust::execution_policy<System2> &system2,
                                    InputIterator first,

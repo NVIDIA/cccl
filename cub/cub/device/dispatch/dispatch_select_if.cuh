@@ -28,14 +28,23 @@
 
 /**
  * @file
- *   cub::DeviceSelect provides device-wide, parallel operations for selecting items from sequences 
+ *   cub::DeviceSelect provides device-wide, parallel operations for selecting items from sequences
  *   of data items residing within device-accessible memory.
  */
 
 #pragma once
 
-#include <cub/agent/agent_select_if.cuh>
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/agent_select_if.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_select_if.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -53,6 +62,45 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+/**
+ * @brief Wrapper that partially specializes the `AgentSelectIf` on the non-type name parameter `KeepRejects`.
+ */
+template <bool KeepRejects>
+struct agent_select_if_wrapper_t
+{
+  // Using an explicit list of template parameters forwarded to AgentSelectIf, since MSVC complains about a template
+  // argument following a parameter pack expansion like `AgentSelectIf<Ts..., KeepRejects>`
+  template <typename AgentSelectIfPolicyT,
+            typename InputIteratorT,
+            typename FlagsInputIteratorT,
+            typename SelectedOutputIteratorT,
+            typename SelectOpT,
+            typename EqualityOpT,
+            typename OffsetT>
+  struct agent_t
+      : public AgentSelectIf< AgentSelectIfPolicyT,
+                              InputIteratorT,
+                              FlagsInputIteratorT,
+                              SelectedOutputIteratorT,
+                              SelectOpT,
+                              EqualityOpT,
+                              OffsetT,
+                              KeepRejects>
+  {
+    using AgentSelectIf< AgentSelectIfPolicyT,
+                         InputIteratorT,
+                         FlagsInputIteratorT,
+                         SelectedOutputIteratorT,
+                         SelectOpT,
+                         EqualityOpT,
+                         OffsetT,
+                         KeepRejects>::AgentSelectIf;
+  };
+};
+} // namespace detail
+
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
@@ -64,39 +112,39 @@ CUB_NAMESPACE_BEGIN
  * Otherwise performs flag-based selection if FlagsInputIterator's value type != NullType
  * Otherwise performs discontinuity selection (keep unique)
  *
- * @tparam InputIteratorT 
+ * @tparam InputIteratorT
  *   Random-access input iterator type for reading input items
  *
- * @tparam FlagsInputIteratorT 
- *   Random-access input iterator type for reading selection flags (NullType* if a selection functor 
+ * @tparam FlagsInputIteratorT
+ *   Random-access input iterator type for reading selection flags (NullType* if a selection functor
  *   or discontinuity flagging is to be used for selection)
  *
- * @tparam SelectedOutputIteratorT 
+ * @tparam SelectedOutputIteratorT
  *   Random-access output iterator type for writing selected items
  *
- * @tparam NumSelectedIteratorT 
+ * @tparam NumSelectedIteratorT
  *   Output iterator type for recording the number of items selected
  *
- * @tparam ScanTileStateT 
+ * @tparam ScanTileStateT
  *   Tile status interface type
  *
- * @tparam SelectOpT 
- *   Selection operator type (NullType if selection flags or discontinuity flagging is 
+ * @tparam SelectOpT
+ *   Selection operator type (NullType if selection flags or discontinuity flagging is
  *   to be used for selection)
  *
- * @tparam EqualityOpT 
- *   Equality operator type (NullType if selection functor or selection flags is 
+ * @tparam EqualityOpT
+ *   Equality operator type (NullType if selection functor or selection flags is
  *   to be used for selection)
  *
- * @tparam OffsetT 
+ * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam KEEP_REJECTS 
+ * @tparam KEEP_REJECTS
  *   Whether or not we push rejected items to the back of the output
  *
  * @param[in] d_in
  *   Pointer to the input sequence of data items
- * 
+ *
  * @param[in] d_flags
  *   Pointer to the input sequence of selection flags (if applicable)
  *
@@ -106,20 +154,23 @@ CUB_NAMESPACE_BEGIN
  * @param[out] d_num_selected_out
  *   Pointer to the total number of items selected (i.e., length of \p d_selected_out)
  *
- * @param[in] tile_status 
+ * @param[in] tile_status
  *   Tile status interface
  *
  * @param[in] select_op
  *   Selection operator
- * 
+ *
  * @param[in] equality_op
  *   Equality operator
- * 
+ *
  * @param[in] num_items
  *   Total number of input items (i.e., length of \p d_in)
- * 
+ *
  * @param[in] num_tiles
  *   Total number of tiles for the entire problem
+ *
+ * @param[in] vsmem
+ *   Memory to support virtual shared memory
  */
 template <typename ChainedPolicyT,
           typename InputIteratorT,
@@ -131,37 +182,55 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           bool KEEP_REJECTS>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SelectIfPolicyT::BLOCK_THREADS)) __global__
-  void DeviceSelectSweepKernel(InputIteratorT d_in,
-                               FlagsInputIteratorT d_flags,
-                               SelectedOutputIteratorT d_selected_out,
-                               NumSelectedIteratorT d_num_selected_out,
-                               ScanTileStateT tile_status,
-                               SelectOpT select_op,
-                               EqualityOpT equality_op,
-                               OffsetT num_items,
-                               int num_tiles)
+__launch_bounds__(int(
+  cub::detail::vsmem_helper_default_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    InputIteratorT,
+    FlagsInputIteratorT,
+    SelectedOutputIteratorT,
+    SelectOpT,
+    EqualityOpT,
+    OffsetT>::agent_policy_t::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSelectSweepKernel(
+    InputIteratorT d_in,
+    FlagsInputIteratorT d_flags,
+    SelectedOutputIteratorT d_selected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    ScanTileStateT tile_status,
+    SelectOpT select_op,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    int num_tiles,
+    cub::detail::vsmem_t vsmem)
 {
-    using AgentSelectIfPolicyT = typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT;
+  using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+    typename ChainedPolicyT::ActivePolicy::SelectIfPolicyT,
+    detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+    InputIteratorT,
+    FlagsInputIteratorT,
+    SelectedOutputIteratorT,
+    SelectOpT,
+    EqualityOpT,
+    OffsetT>;
 
-    // Thread block type for selecting data from input tiles
-    using AgentSelectIfT = AgentSelectIf<AgentSelectIfPolicyT,
-                                         InputIteratorT,
-                                         FlagsInputIteratorT,
-                                         SelectedOutputIteratorT,
-                                         SelectOpT,
-                                         EqualityOpT,
-                                         OffsetT,
-                                         KEEP_REJECTS>;
+  using AgentSelectIfPolicyT = typename VsmemHelperT::agent_policy_t;
 
-    // Shared memory for AgentSelectIf
-    __shared__ typename AgentSelectIfT::TempStorage temp_storage;
+  // Thread block type for selecting data from input tiles
+  using AgentSelectIfT = typename VsmemHelperT::agent_t;
 
-    // Process tiles
-    AgentSelectIfT(temp_storage, d_in, d_flags, d_selected_out, select_op, equality_op, num_items).ConsumeRange(
-        num_tiles,
-        tile_status,
-        d_num_selected_out);
+  // Static shared memory allocation
+  __shared__ typename VsmemHelperT::static_temp_storage_t static_temp_storage;
+
+  // Get temporary storage
+  typename AgentSelectIfT::TempStorage& temp_storage = VsmemHelperT::get_temp_storage(static_temp_storage, vsmem);
+
+  // Process tiles
+  AgentSelectIfT(temp_storage, d_in, d_flags, d_selected_out, select_op, equality_op, num_items)
+    .ConsumeRange(num_tiles, tile_status, d_num_selected_out);
+
+  // If applicable, hints to discard modified cache lines for vsmem
+  VsmemHelperT::discard_temp_storage(temp_storage);
 }
 
 
@@ -176,7 +245,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SelectIfPolicyT::BLOCK_THREA
  *   Random-access input iterator type for reading input items
  *
  * @tparam FlagsInputIteratorT
- *   Random-access input iterator type for reading selection flags 
+ *   Random-access input iterator type for reading selection flags
  *   (NullType* if a selection functor or discontinuity flagging is to be used for selection)
  *
  * @tparam SelectedOutputIteratorT
@@ -186,11 +255,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SelectIfPolicyT::BLOCK_THREA
  *   Output iterator type for recording the number of items selected
  *
  * @tparam SelectOpT
- *   Selection operator type (NullType if selection flags or discontinuity flagging is 
+ *   Selection operator type (NullType if selection flags or discontinuity flagging is
  *   to be used for selection)
  *
  * @tparam EqualityOpT
- *   Equality operator type (NullType if selection functor or selection flags is to 
+ *   Equality operator type (NullType if selection functor or selection flags is to
  *   be used for selection)
  *
  * @tparam OffsetT
@@ -225,13 +294,13 @@ struct DispatchSelectIf : SelectedPolicy
 
     static constexpr int INIT_KERNEL_THREADS = 128;
 
-    /// Device-accessible allocation of temporary storage. 
-    /// When `nullptr`, the required allocation size is written to `temp_storage_bytes` 
+    /// Device-accessible allocation of temporary storage.
+    /// When `nullptr`, the required allocation size is written to `temp_storage_bytes`
     /// and no work is done.
     void* d_temp_storage;
 
     /// Reference to size in bytes of `d_temp_storage` allocation
-    size_t& temp_storage_bytes; 
+    size_t& temp_storage_bytes;
 
     /// Pointer to the input sequence of data items
     InputIteratorT d_in;
@@ -261,11 +330,11 @@ struct DispatchSelectIf : SelectedPolicy
 
     /**
      * @param d_temp_storage
-     *   Device-accessible allocation of temporary storage. 
-     *   When `nullptr`, the required allocation size is written to `temp_storage_bytes` 
+     *   Device-accessible allocation of temporary storage.
+     *   When `nullptr`, the required allocation size is written to `temp_storage_bytes`
      *   and no work is done.
-     * 
-     * @param temp_storage_bytes 
+     *
+     * @param temp_storage_bytes
      *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param d_in
@@ -292,7 +361,7 @@ struct DispatchSelectIf : SelectedPolicy
      * @param stream
      *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ DispatchSelectIf(void *d_temp_storage,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSelectIf(void *d_temp_storage,
                                                           size_t &temp_storage_bytes,
                                                           InputIteratorT d_in,
                                                           FlagsInputIteratorT d_flags,
@@ -325,58 +394,74 @@ struct DispatchSelectIf : SelectedPolicy
      * specified kernel functions.
      */
     template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke(ScanInitKernelPtrT scan_init_kernel,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ScanInitKernelPtrT scan_init_kernel,
                                                             SelectIfKernelPtrT select_if_kernel)
     {
-        cudaError error = cudaSuccess;
+      using Policy = typename ActivePolicyT::SelectIfPolicyT;
 
-        const int block_threads = ActivePolicyT::SelectIfPolicyT::BLOCK_THREADS;
-        const int items_per_thread = ActivePolicyT::SelectIfPolicyT::ITEMS_PER_THREAD;
-        const int tile_size = block_threads * items_per_thread;
+      using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
+        Policy,
+        detail::agent_select_if_wrapper_t<KEEP_REJECTS>::template agent_t,
+        InputIteratorT,
+        FlagsInputIteratorT,
+        SelectedOutputIteratorT,
+        SelectOpT,
+        EqualityOpT,
+        OffsetT>;
 
-        do
+      cudaError error = cudaSuccess;
+
+      constexpr auto block_threads    = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
+      constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
+      constexpr int tile_size         = block_threads * items_per_thread;
+      int num_tiles                   = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+      const auto vsmem_size           = num_tiles * VsmemHelperT::vsmem_per_block;
+
+      do
+      {
+        // Get device ordinal
+        int device_ordinal;
+        error = CubDebug(cudaGetDevice(&device_ordinal));
+        if (cudaSuccess != error)
         {
-            // Get device ordinal
-            int device_ordinal;
-            if (CubDebug(error = cudaGetDevice(&device_ordinal))) 
-            {
-                break;
-            }
+          break;
+        }
 
-            // Number of input tiles
-            int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+        // Specify temporary storage allocation requirements
+        size_t allocation_sizes[2] = {0ULL, vsmem_size};
 
-            // Specify temporary storage allocation requirements
-            size_t  allocation_sizes[1];
+        // bytes needed for tile status descriptors
+        error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
 
-            // bytes needed for tile status descriptors
-            if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]))) 
-            {
-                break;
-            }
+        // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
+        void* allocations[2] = {};
 
-            // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
-            void* allocations[1] = {};
-            if (CubDebug(error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes))) 
-            {
-                break;
-            }
+        error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
 
-            if (d_temp_storage == nullptr)
-            {
-                // Return if the caller is simply requesting the size of the storage allocation
-                break;
-            }
+        if (d_temp_storage == nullptr)
+        {
+          // Return if the caller is simply requesting the size of the storage allocation
+          break;
+        }
 
-            // Construct the tile status interface
-            ScanTileStateT tile_status;
-            if (CubDebug(error = tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]))) 
-            {
-                break;
-            }
+        // Construct the tile status interface
+        ScanTileStateT tile_status;
+        error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
 
-            // Log scan_init_kernel configuration
-            int init_grid_size = CUB_MAX(1, cub::DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS));
+        // Log scan_init_kernel configuration
+        int init_grid_size = CUB_MAX(1, cub::DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS));
 
             #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
             _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -391,14 +476,15 @@ struct DispatchSelectIf : SelectedPolicy
                 d_num_selected_out);
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -411,7 +497,8 @@ struct DispatchSelectIf : SelectedPolicy
 
             // Get max x-dimension of grid
             int max_dim_x;
-            if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal))) 
+            error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+            if (cudaSuccess != error)
             {
                 break;
             }
@@ -427,9 +514,10 @@ struct DispatchSelectIf : SelectedPolicy
             {
               // Get SM occupancy for select_if_kernel
               int range_select_sm_occupancy;
-              if (CubDebug(error = MaxSmOccupancy(range_select_sm_occupancy, // out
-                                                  select_if_kernel,
-                                                  block_threads)))
+              error = CubDebug(MaxSmOccupancy(range_select_sm_occupancy, // out
+                                              select_if_kernel,
+                                              block_threads));
+              if (cudaSuccess != error)
               {
                 break;
               }
@@ -447,28 +535,29 @@ struct DispatchSelectIf : SelectedPolicy
             #endif
 
             // Invoke select_if_kernel
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-                scan_grid_size, block_threads, 0, stream
-            ).doit(select_if_kernel,
-                d_in,
-                d_flags,
-                d_selected_out,
-                d_num_selected_out,
-                tile_status,
-                select_op,
-                equality_op,
-                num_items,
-                num_tiles);
+            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
+              .doit(select_if_kernel,
+                    d_in,
+                    d_flags,
+                    d_selected_out,
+                    d_num_selected_out,
+                    tile_status,
+                    select_op,
+                    equality_op,
+                    num_items,
+                    num_tiles,
+                    cub::detail::vsmem_t{allocations[1]});
 
             // Check for failure to launch
-            if (CubDebug(error = cudaPeekAtLastError()))
+            error = CubDebug(cudaPeekAtLastError());
+            if (cudaSuccess != error)
             {
                 break;
             }
 
             // Sync the stream if specified to flush runtime errors
-            error = detail::DebugSyncStream(stream);
-            if (CubDebug(error))
+            error = CubDebug(detail::DebugSyncStream(stream));
+            if (cudaSuccess != error)
             {
               break;
             }
@@ -479,7 +568,7 @@ struct DispatchSelectIf : SelectedPolicy
     }
 
     template <typename ActivePolicyT>
-    CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
     {
         using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
@@ -500,11 +589,11 @@ struct DispatchSelectIf : SelectedPolicy
      * Internal dispatch routine
      *
      * @param d_temp_storage
-     *   Device-accessible allocation of temporary storage. 
-     *   When `nullptr`, the required allocation size is written to `temp_storage_bytes` 
+     *   Device-accessible allocation of temporary storage.
+     *   When `nullptr`, the required allocation size is written to `temp_storage_bytes`
      *   and no work is done.
-     * 
-     * @param temp_storage_bytes 
+     *
+     * @param temp_storage_bytes
      *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param d_in
@@ -531,7 +620,7 @@ struct DispatchSelectIf : SelectedPolicy
      * @param stream
      *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              InputIteratorT d_in,
@@ -546,7 +635,7 @@ struct DispatchSelectIf : SelectedPolicy
         using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
         int ptx_version = 0;
-        if (cudaError_t error = CubDebug(PtxVersion(ptx_version))) 
+        if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
         {
             return error;
         }
@@ -562,23 +651,23 @@ struct DispatchSelectIf : SelectedPolicy
                                     num_items,
                                     stream,
                                     ptx_version);
-        
+
         return CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static cudaError_t Dispatch(
-        void*                       d_temp_storage,          
-        size_t&                     temp_storage_bytes,       
-        InputIteratorT              d_in,                      
-        FlagsInputIteratorT         d_flags,                    
-        SelectedOutputIteratorT     d_selected_out,              
-        NumSelectedIteratorT        d_num_selected_out,           
-        SelectOpT                   select_op,                     
-        EqualityOpT                 equality_op,                    
-        OffsetT                     num_items,            
-        cudaStream_t                stream,                
+        void*                       d_temp_storage,
+        size_t&                     temp_storage_bytes,
+        InputIteratorT              d_in,
+        FlagsInputIteratorT         d_flags,
+        SelectedOutputIteratorT     d_selected_out,
+        NumSelectedIteratorT        d_num_selected_out,
+        SelectOpT                   select_op,
+        EqualityOpT                 equality_op,
+        OffsetT                     num_items,
+        cudaStream_t                stream,
         bool                        debug_synchronous)
     {
       CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG

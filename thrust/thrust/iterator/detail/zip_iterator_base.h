@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/advance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -46,12 +54,12 @@ template<typename DiffType>
 class advance_iterator
 {
 public:
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   advance_iterator(DiffType step) : m_step(step) {}
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it) const
   { thrust::advance(it, m_step); }
 
@@ -62,9 +70,9 @@ private:
 
 struct increment_iterator
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it)
   { ++it; }
 }; // end increment_iterator
@@ -72,9 +80,9 @@ struct increment_iterator
 
 struct decrement_iterator
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(Iterator& it)
   { --it; }
 }; // end decrement_iterator
@@ -84,16 +92,16 @@ struct dereference_iterator
 {
   template<typename Iterator>
   struct apply
-  { 
+  {
     typedef typename
       iterator_traits<Iterator>::reference
     type;
   }; // end apply
 
   // XXX silence warnings of the form "calling a __host__ function from a __host__ __device__ function is not allowed
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template<typename Iterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     typename apply<Iterator>::type operator()(Iterator const& it)
   {
     return *it;
@@ -122,8 +130,8 @@ template<typename UnaryMetaFunctionClass, class Arg1, class Arg2>
 }; // end apply2
 
 
-// Meta-accumulate algorithm for tuples. Note: The template 
-// parameter StartType corresponds to the initial value in 
+// Meta-accumulate algorithm for tuples. Note: The template
+// parameter StartType corresponds to the initial value in
 // ordinary accumulation.
 //
 template<class Tuple, class BinaryMetaFun, class StartType>
@@ -153,21 +161,21 @@ template<
      , typename tuple_meta_accumulate<
            thrust::tuple<Ts...>
          , BinaryMetaFun
-         , StartType 
+         , StartType
        >::type
    >::type type;
 };
 
 
 template<typename Fun>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each_helper(Fun f)
 {
   return f;
 }
 
 template<typename Fun, typename T, typename... Ts>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each_helper(Fun f, T& t, Ts&... ts)
 {
   f(t);
@@ -177,7 +185,7 @@ Fun tuple_for_each_helper(Fun f, T& t, Ts&... ts)
 // for_each algorithm for tuples.
 
 template<typename Fun, typename... Ts, size_t... Is>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f, thrust::index_sequence<Is...>)
 {
   return tuple_for_each_helper(f, thrust::get<Is>(t)...);
@@ -185,9 +193,9 @@ Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f, thrust::index_sequence<Is...>
 
 // for_each algorithm for tuples.
 template<typename Fun, typename... Ts>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f)
-{ 
+{
   return tuple_for_each(t, f, thrust::make_index_sequence<thrust::tuple_size<thrust::tuple<Ts...>>::value>{});
 }
 
@@ -227,7 +235,7 @@ struct minimum_traversal_category_in_iterator_tuple
       IteratorTuple
     , thrust::iterator_traversal
   >::type tuple_of_traversal_tags;
-      
+
   typedef typename tuple_impl_specific::tuple_meta_accumulate<
       tuple_of_traversal_tags
     , minimum_category_lambda
@@ -302,7 +310,7 @@ template<typename IteratorTuple>
 //
 // Class zip_iterator_base
 //
-// Builds and exposes the iterator facade type from which the zip 
+// Builds and exposes the iterator facade type from which the zip
 // iterator will be derived.
 //
 template<typename IteratorTuple>
@@ -331,14 +339,14 @@ template<typename IteratorTuple>
     // iterator tuple
     typedef typename
     minimum_traversal_category_in_iterator_tuple<IteratorTuple>::type traversal_category;
-  
+
  public:
-  
+
     // The iterator facade type from which the zip iterator will
     // be derived.
     typedef thrust::iterator_facade<
         zip_iterator<IteratorTuple>,
-        value_type,  
+        value_type,
         system,
         traversal_category,
         reference,

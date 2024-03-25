@@ -22,6 +22,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
@@ -34,7 +42,6 @@ template<typename T, typename System>
 } // end detail
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/config.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/detail/tagged_iterator.h>
 #include <thrust/detail/contiguous_storage.h>
@@ -70,43 +77,43 @@ template<typename T, typename System>
   public:
     typedef typename super_t::size_type size_type;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system, size_type n);
 
     // provide a kill-switch to explicitly avoid initialization
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(int uninit, thrust::execution_policy<System> &system, size_type n);
 
     template<typename InputIterator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system,
                     InputIterator first,
                     size_type n);
 
     template<typename InputIterator, typename InputSystem>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system,
                     thrust::execution_policy<InputSystem> &input_system,
                     InputIterator first,
                     size_type n);
 
     template<typename InputIterator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system,
                     InputIterator first,
                     InputIterator last);
 
     template<typename InputSystem, typename InputIterator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     temporary_array(thrust::execution_policy<System> &system,
                     thrust::execution_policy<InputSystem> &input_system,
                     InputIterator first,
                     InputIterator last);
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     ~temporary_array();
 }; // end temporary_array
 

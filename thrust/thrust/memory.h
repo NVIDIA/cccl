@@ -21,6 +21,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
@@ -84,7 +92,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
 
     /*! \p pointer's default constructor initializes its encapsulated pointer to \c 0
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer();
 
     /*! This constructor allows construction of a <tt>pointer<const T, ...></tt> from a <tt>T*</tt>.
@@ -93,7 +101,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
      *  \tparam OtherElement \p OtherElement shall be convertible to \p Element.
      */
     template<typename OtherElement>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit pointer(OtherElement *ptr);
 
     /*! This contructor allows initialization from another pointer-like object.
@@ -104,7 +112,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
      *                       and its element type shall be convertible to \p Element.
      */
     template<typename OtherPointer>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer(const OtherPointer &other,
             typename thrust::detail::enable_if_pointer_is_convertible<
               OtherPointer,
@@ -121,7 +129,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
      *                       and its element type shall be convertible to \p Element.
      */
     template<typename OtherPointer>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename thrust::detail::enable_if_pointer_is_convertible<
       OtherPointer,
       pointer,
@@ -132,7 +140,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
     /*! \p get returns this \p pointer's encapsulated raw pointer.
      *  \return This \p pointer's raw pointer.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Element *get() const;
 };
 #endif
@@ -170,7 +178,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
  *  \see device_malloc
  */
 template<typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &system, std::size_t n);
 
 
@@ -208,7 +216,7 @@ pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<D
  *  \see device_malloc
  */
 template<typename T, typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &system, std::size_t n);
 
 
@@ -261,7 +269,7 @@ pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<Deri
  *  \see return_temporary_buffer
  */
 template<typename T, typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<thrust::pointer<T,DerivedPolicy>, typename thrust::pointer<T,DerivedPolicy>::difference_type>
 get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &system, typename thrust::pointer<T,DerivedPolicy>::difference_type n);
 
@@ -294,7 +302,7 @@ get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> 
  *  \endcode
  */
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void free(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Pointer ptr);
 
 
@@ -340,7 +348,7 @@ void free(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Po
  *  \see get_temporary_buffer
  */
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &system, Pointer p, std::ptrdiff_t n);
 
 
@@ -352,7 +360,7 @@ void return_temporary_buffer(const thrust::detail::execution_policy_base<Derived
  *  \see raw_reference_cast
  */
 template<typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::pointer_traits<Pointer>::raw_pointer
   raw_pointer_cast(Pointer ptr);
 
@@ -369,7 +377,7 @@ typename thrust::detail::pointer_traits<Pointer>::raw_pointer
  *  \see raw_pointer_cast
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<T>::type
   raw_reference_cast(T &ref);
 
@@ -386,7 +394,7 @@ typename detail::raw_reference<T>::type
  *  \see raw_pointer_cast
  */
 template<typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::raw_reference<const T>::type
   raw_reference_cast(const T &ref);
 

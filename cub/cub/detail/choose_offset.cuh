@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -29,8 +29,19 @@
 
 #include <cub/config.cuh>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+
+#include <cuda/std/iterator>
+#include <cuda/std/type_traits>
+
 #include <cstdint>
-#include <type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -38,25 +49,64 @@ namespace detail
 {
 
 /**
- * ChooseOffsetT checks NumItemsT, the type of the num_items parameter, and
+ * choose_offset checks NumItemsT, the type of the num_items parameter, and
  * selects the offset type based on it.
  */
 template <typename NumItemsT>
-struct ChooseOffsetT
+struct choose_offset
 {
   // NumItemsT must be an integral type (but not bool).
-  static_assert(
-    std::is_integral<NumItemsT>::value &&
-      !std::is_same<typename std::remove_cv<NumItemsT>::type, bool>::value,
-    "NumItemsT must be an integral type, but not bool");
+  static_assert(::cuda::std::is_integral<NumItemsT>::value
+                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+                "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using Type = typename std::conditional<sizeof(NumItemsT) <= 4,
-                                         std::uint32_t,
-                                         unsigned long long>::type;
+  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
 };
+
+/**
+ * choose_offset_t is an alias template that checks NumItemsT, the type of the num_items parameter, and
+ * selects the offset type based on it.
+ */
+template <typename NumItemsT>
+using choose_offset_t = typename choose_offset<NumItemsT>::type;
+
+/** 
+ * promote_small_offset checks NumItemsT, the type of the num_items parameter, and
+ * promotes any integral type smaller than 32 bits to a signed 32-bit integer type.
+ */
+template <typename NumItemsT>
+struct promote_small_offset
+{
+  // NumItemsT must be an integral type (but not bool).
+  static_assert(::cuda::std::is_integral<NumItemsT>::value
+                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+                "NumItemsT must be an integral type, but not bool");
+
+  // Unsigned integer type for global offsets.
+  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) < 4, std::int32_t, NumItemsT>::type;
+};
+
+/**
+ * promote_small_offset_t is an alias template that checks NumItemsT, the type of the num_items parameter, and
+ * promotes any integral type smaller than 32 bits to a signed 32-bit integer type.
+ */
+template <typename NumItemsT>
+using promote_small_offset_t = typename promote_small_offset<NumItemsT>::type;
+
+/**
+ * common_iterator_value sets member type to the common_type of
+ * value_type for all argument types. used to get OffsetT in
+ * DeviceSegmentedReduce.
+ */
+template <typename... Iter>
+struct common_iterator_value
+{
+  using type = ::cuda::std::__common_type_t<::cuda::std::__iter_value_type<Iter>...>;
+};
+template <typename... Iter>
+using common_iterator_value_t = typename common_iterator_value<Iter...>::type;
 
 } // namespace detail
 
 CUB_NAMESPACE_END
-

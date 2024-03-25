@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -95,7 +103,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -224,7 +232,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -369,7 +377,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    InputIterator first,
@@ -524,7 +532,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    InputIterator1 first,
@@ -670,7 +678,7 @@ template<typename InputIterator1,
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator stable_partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                    ForwardIterator first,
                                    ForwardIterator last,
@@ -804,7 +812,7 @@ template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator stable_partition(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                    ForwardIterator first,
                                    ForwardIterator last,
@@ -953,7 +961,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     stable_partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           InputIterator first,
@@ -1111,7 +1119,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     stable_partition_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           InputIterator1 first,
@@ -1246,7 +1254,7 @@ template<typename InputIterator1,
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1259,7 +1267,7 @@ template<typename InputIterator1,
  *  \see \p find_if_not
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator partition_point(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last,
@@ -1298,7 +1306,7 @@ __host__ __device__
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1325,7 +1333,7 @@ template<typename ForwardIterator, typename Predicate>
  */
 
 
-/*! \p is_partitioned returns \c true if the given range 
+/*! \p is_partitioned returns \c true if the given range
  *  is partitioned with respect to a predicate, and \c false otherwise.
  *
  *  Specifically, \p is_partitioned returns \c true if <tt>[first, last)</tt>
@@ -1346,7 +1354,7 @@ template<typename ForwardIterator, typename Predicate>
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input Iterator</a>,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
- *  
+ *
  *  \code
  *  #include <thrust/partition.h>
  *  #include <thrust/execution_policy.h>
@@ -1359,7 +1367,7 @@ template<typename ForwardIterator, typename Predicate>
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};
@@ -1372,14 +1380,14 @@ template<typename ForwardIterator, typename Predicate>
  *  \see \p partition
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_partitioned(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
                       Predicate pred);
 
 
-/*! \p is_partitioned returns \c true if the given range 
+/*! \p is_partitioned returns \c true if the given range
  *  is partitioned with respect to a predicate, and \c false otherwise.
  *
  *  Specifically, \p is_partitioned returns \c true if <tt>[first, last)</tt>
@@ -1396,7 +1404,7 @@ __host__ __device__
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Input Iterator</a>,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
  *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
- *  
+ *
  *  \code
  *  #include <thrust/partition.h>
  *
@@ -1408,7 +1416,7 @@ __host__ __device__
  *      return (x % 2) == 0;
  *    }
  *  };
- *  
+ *
  *  ...
  *
  *  int A[] = {2, 4, 6, 8, 10, 1, 3, 5, 7, 9};

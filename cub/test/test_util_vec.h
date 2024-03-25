@@ -27,8 +27,10 @@
 
 #pragma once
 
-#include <iostream>
+#include <cub/config.cuh>
+#include <cub/util_type.cuh>
 
+#include <iostream>
 
 /******************************************************************************
  * Console printing utilities
@@ -97,7 +99,7 @@ inline int CoutCast(signed char val) { return val; }
     {                                                       \
         T retval = make_##T(a.x + b.x);                     \
         return retval;                                      \
-    }                                                       
+    }
 
 
 
@@ -221,7 +223,7 @@ inline int CoutCast(signed char val) { return val; }
             a.y + b.y,                                      \
             a.z + b.z);                                     \
         return retval;                                      \
-    }                                                       
+    }
 
 
 /**
@@ -291,7 +293,7 @@ inline int CoutCast(signed char val) { return val; }
             a.z + b.z,                                      \
             a.w + b.w);                                     \
         return retval;                                      \
-    }                                                       
+    }
 
 /**
  * All vector overloads
@@ -331,7 +333,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -358,7 +360,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -385,7 +387,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \
@@ -416,7 +418,7 @@ CUB_VEC_OVERLOAD(double, double)
   template <>                                                                                      \
   struct NumericTraits<T>                                                                          \
   {                                                                                                \
-    static const Category CATEGORY = NOT_A_NUMBER;                                                 \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
     enum                                                                                           \
     {                                                                                              \
       PRIMITIVE = false,                                                                           \

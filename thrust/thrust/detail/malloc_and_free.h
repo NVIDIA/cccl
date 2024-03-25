@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -25,9 +33,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -38,9 +46,9 @@ pointer<void,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<D
   return pointer<void,DerivedPolicy>(raw_ptr);
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename T, typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, std::size_t n)
 {
   using thrust::system::detail::generic::malloc;
@@ -58,7 +66,7 @@ pointer<T,DerivedPolicy> malloc(const thrust::detail::execution_policy_base<Deri
 // cudafe generates unqualified calls to free(int *volatile)
 // which get confused with thrust::free
 // spoof a thrust::free which simply maps to ::free
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 void free(int *volatile ptr)
 {
   ::free(ptr);
@@ -67,9 +75,9 @@ void free(int *volatile ptr)
 #endif // CUDART_VERSION
 #endif // THRUST_DEVICE_COMPILER
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void free(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Pointer ptr)
 {
   using thrust::system::detail::generic::free;

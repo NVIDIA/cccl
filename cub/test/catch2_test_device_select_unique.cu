@@ -27,17 +27,12 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
 #include <algorithm>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
 template<class T>
@@ -68,9 +63,9 @@ inline c2h::custom_type_t<c2h::equal_comparable_t> to_bound(const unsigned long 
   return val;
 }
 
-DECLARE_CDP_WRAPPER(cub::DeviceSelect::Unique, select_unique);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Unique, select_unique);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 struct equal_to_default_t
 {
@@ -95,12 +90,12 @@ CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  constexpr int num_items = 0;
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(),
@@ -118,7 +113,7 @@ CUB_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(thrust::counting_iterator<type>(0),
@@ -134,11 +129,11 @@ CUB_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items, static_cast<type>(1));
-  thrust::device_vector<type> out(1);
+  c2h::device_vector<type> in(num_items, static_cast<type>(1));
+  c2h::device_vector<type> out(1);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(),
@@ -156,16 +151,16 @@ CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  thrust::device_vector<type> reference = in;
+  c2h::device_vector<type> reference = in;
 
   select_unique(in.begin(),
                 out.begin(),
@@ -180,12 +175,12 @@ CUB_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(),
@@ -194,7 +189,7 @@ CUB_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
                 num_items);
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   const auto boundary = std::unique(reference.begin(), reference.end());
   REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
 
@@ -208,12 +203,12 @@ CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(thrust::raw_pointer_cast(in.data()),
@@ -222,7 +217,7 @@ CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", 
                 num_items);
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   const auto boundary = std::unique(reference.begin(), reference.end());
   REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
 
@@ -249,12 +244,12 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<convertible_from_T<type>> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<convertible_from_T<type>> out(num_items);
   c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(),
@@ -263,7 +258,7 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
                 num_items);
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   const auto boundary = std::unique(reference.begin(), reference.end());
   REQUIRE((boundary - reference.begin()) == num_selected_out[0]);
 

@@ -1,0 +1,94 @@
+name: Verify devcontainers
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+permissions:
+  contents: read
+
+jobs:
+  verify-make-devcontainers:
+    name: Verify devcontainer files are up-to-date
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Setup jq and yq
+      run: |
+        sudo apt-get update
+        sudo apt-get install jq -y
+        sudo wget -O /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.34.2/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+    - name: Run the script to generate devcontainer files
+      run: |
+        ./.devcontainer/make_devcontainers.sh --verbose
+    - name: Check for changes
+      run: |
+        if [[ $(git diff --stat) != '' || $(git status --porcelain | grep '^??') != '' ]]; then
+          git diff --minimal
+          git status --porcelain
+          echo "::error:: Dev Container files are out of date or there are untracked files. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
+          exit 1
+        else
+          echo "::note::Dev Container files are up-to-date."
+        fi
+
+  get-devcontainer-list:
+    needs: verify-make-devcontainers
+    name: Get list of devcontainer.json files
+    runs-on: ubuntu-latest
+    outputs:
+      devcontainers: ${{ steps.get-list.outputs.devcontainers }}
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
+    - name: Get list of devcontainer.json paths and names
+      id: get-list
+      run: |
+        devcontainers=$(find .devcontainer/ -name 'devcontainer.json' | while read -r devcontainer; do
+          jq --arg path "$devcontainer" '{path: $path, name: .name}' "$devcontainer"
+          done | jq -s -c .)
+        echo "devcontainers=${devcontainers}" | tee --append "${GITHUB_OUTPUT}"
+
+  verify-devcontainers:
+    needs: get-devcontainer-list
+    name: ${{matrix.devcontainer.name}}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        devcontainer: ${{fromJson(needs.get-devcontainer-list.outputs.devcontainers)}}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - name: Check out the code
+      uses: actions/checkout@v3
+      # devcontainer/ci doesn't supported nested devcontainer.json files, so we need to copy the devcontainer.json
+      # file to the top level .devcontainer/ directory
+    - name: Copy devcontainer.json to .devcontainer/
+      run: |
+        src="${{ matrix.devcontainer.path }}"
+        dst=".devcontainer/devcontainer.json"
+        if [[ "$src" != "$dst" ]]; then
+          cp "$src" "$dst"
+        fi
+      # We don't really need sccache configured, but we need the AWS credentials envvars to be set
+      # in order to avoid the devcontainer hanging waiting for GitHub authentication
+    - name: Configure credentials and environment variables for sccache
+      uses: ./.github/actions/configure_cccl_sccache
+    - name: Run in devcontainer
+      uses: devcontainers/ci@v0.3
+      with:
+        push: never
+        env: |
+          SCCACHE_REGION=${{ env.SCCACHE_REGION }}
+          AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SESSION_TOKEN=${{ env.AWS_SESSION_TOKEN }}
+          AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }}
+        runCmd: |
+          .devcontainer/verify_devcontainer.sh

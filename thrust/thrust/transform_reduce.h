@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -43,10 +51,10 @@ THRUST_NAMESPACE_BEGIN
  *  \p transform_reduce performs a reduction on the transformation of the
  *  sequence <tt>[first, last)</tt> according to \p unary_op. Specifically,
  *  \p unary_op is applied to each element of the sequence and then the result
- *  is reduced to a single value with \p binary_op using the initial value 
- *  \p init.  Note that the transformation \p unary_op is not applied to 
- *  the initial value \p init.  The order of reduction is not specified, 
- *  so \p binary_op must be both commutative and associative. 
+ *  is reduced to a single value with \p binary_op using the initial value
+ *  \p init.  Note that the transformation \p unary_op is not applied to
+ *  the initial value \p init.  The order of reduction is not specified,
+ *  so \p binary_op must be both commutative and associative.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
  *
@@ -101,11 +109,11 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c reduce
  */
 template<typename DerivedPolicy,
-         typename InputIterator, 
-         typename UnaryFunction, 
+         typename InputIterator,
+         typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputType transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                               InputIterator first,
                               InputIterator last,
@@ -123,10 +131,10 @@ __host__ __device__
  *  \p transform_reduce performs a reduction on the transformation of the
  *  sequence <tt>[first, last)</tt> according to \p unary_op. Specifically,
  *  \p unary_op is applied to each element of the sequence and then the result
- *  is reduced to a single value with \p binary_op using the initial value 
- *  \p init.  Note that the transformation \p unary_op is not applied to 
- *  the initial value \p init.  The order of reduction is not specified, 
- *  so \p binary_op must be both commutative and associative. 
+ *  is reduced to a single value with \p binary_op using the initial value
+ *  \p init.  Note that the transformation \p unary_op is not applied to
+ *  the initial value \p init.  The order of reduction is not specified,
+ *  so \p binary_op must be both commutative and associative.
  *
  *  \param first The beginning of the sequence.
  *  \param last The end of the sequence.
@@ -174,8 +182,8 @@ __host__ __device__
  *  \see \c transform
  *  \see \c reduce
  */
-template<typename InputIterator, 
-         typename UnaryFunction, 
+template<typename InputIterator,
+         typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
   OutputType transform_reduce(InputIterator first,

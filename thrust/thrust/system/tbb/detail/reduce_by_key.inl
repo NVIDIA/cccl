@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/tbb/detail/reduce_by_key.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/detail/seq.h>
@@ -125,7 +133,7 @@ template<typename InputIterator1,
     typename thrust::iterator_value<InputIterator1>::type,
     typename partial_sum_type<InputIterator2,BinaryFunction>::type
   >
-    reduce_by_key_with_carry(InputIterator1 keys_first, 
+    reduce_by_key_with_carry(InputIterator1 keys_first,
                              InputIterator1 keys_last,
                              InputIterator2 values_first,
                              OutputIterator1 keys_output,
@@ -145,7 +153,7 @@ template<typename InputIterator1,
   // finish with sequential reduce_by_key
   thrust::tie(keys_output, values_output) =
     thrust::reduce_by_key(thrust::seq, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
-  
+
   return thrust::make_tuple(keys_output, values_output, carry.first, carry.second);
 }
 
@@ -153,7 +161,7 @@ template<typename InputIterator1,
 template<typename Iterator>
   bool interval_has_carry(size_t interval_idx, size_t interval_size, size_t num_intervals, Iterator tail_flags)
 {
-  // to discover whether the interval has a carry, look at the tail_flag corresponding to its last element 
+  // to discover whether the interval has a carry, look at the tail_flag corresponding to its last element
   // the final interval never has a carry by definition
   return (interval_idx + 1 < num_intervals) ? !tail_flags[(interval_idx + 1) * interval_size - 1] : false;
 }
@@ -226,7 +234,7 @@ template<typename Iterator1, typename Iterator2, typename Iterator3, typename It
 
     // store to carry only when we actually have a carry
     // store to my_keys_result & my_values_result otherwise
-    
+
     // create tail_flags so we can check for a carry
     thrust::detail::tail_flags<Iterator1,BinaryPredicate> flags = thrust::detail::make_tail_flags(keys_first, keys_first + n, binary_pred);
 
@@ -259,7 +267,7 @@ template<typename Iterator1, typename Iterator2, typename Iterator3, typename It
 template<typename DerivedPolicy, typename Iterator1, typename Iterator2, typename Iterator3, typename Iterator4, typename BinaryPredicate, typename BinaryFunction>
   thrust::pair<Iterator3,Iterator4>
     reduce_by_key(thrust::tbb::execution_policy<DerivedPolicy> &exec,
-                  Iterator1 keys_first, Iterator1 keys_last, 
+                  Iterator1 keys_first, Iterator1 keys_last,
                   Iterator2 values_first,
                   Iterator3 keys_result,
                   Iterator4 values_result,
@@ -300,7 +308,7 @@ template<typename DerivedPolicy, typename Iterator1, typename Iterator2, typenam
 
   // scan the counts to get each body's output offset
   thrust::inclusive_scan(thrust::seq,
-                         interval_output_offsets.begin() + 1, interval_output_offsets.end(), 
+                         interval_output_offsets.begin() + 1, interval_output_offsets.end(),
                          interval_output_offsets.begin() + 1);
 
   // do a reduce_by_key serially in each thread

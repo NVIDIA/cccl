@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/system/omp/detail/execution_policy.h>
 
@@ -33,7 +41,7 @@ struct par_t : thrust::system::omp::detail::execution_policy<par_t>,
   thrust::detail::allocator_aware_execution_policy<
     thrust::system::omp::detail::execution_policy>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr par_t() : thrust::system::omp::detail::execution_policy<par_t>() {}
 };
 

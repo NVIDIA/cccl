@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator/temporary_allocator.h>
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/system/detail/bad_alloc.h>
@@ -36,7 +44,7 @@ namespace detail
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename temporary_allocator<T,System>::pointer
     temporary_allocator<T,System>
       ::allocate(typename temporary_allocator<T,System>::size_type cnt)
@@ -66,7 +74,7 @@ __host__ __device__
 
 
 template<typename T, typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void temporary_allocator<T,System>
     ::deallocate(typename temporary_allocator<T,System>::pointer p, typename temporary_allocator<T,System>::size_type n)
 {

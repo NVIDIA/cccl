@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/mod.h>
 
@@ -33,7 +41,7 @@ namespace detail
 template<typename UIntType, UIntType a, unsigned long long c, UIntType m>
   struct linear_congruential_engine_discard_implementation
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static void discard(UIntType &state, unsigned long long z)
   {
     for(; z > 0; --z)
@@ -49,7 +57,7 @@ template<typename UIntType, UIntType a, unsigned long long c, UIntType m>
 template<thrust::detail::uint32_t a, thrust::detail::uint32_t m>
   struct linear_congruential_engine_discard_implementation<thrust::detail::uint32_t,a,0,m>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static void discard(thrust::detail::uint32_t &state, unsigned long long z)
   {
     const thrust::detail::uint32_t modulus = m;
@@ -59,7 +67,7 @@ template<thrust::detail::uint32_t a, thrust::detail::uint32_t m>
     //     figure out a robust implementation of this later
     unsigned long long multiplier = a;
     unsigned long long multiplier_to_z = 1;
-    
+
     // see http://en.wikipedia.org/wiki/Modular_exponentiation
     while(z > 0)
     {
@@ -82,14 +90,14 @@ template<thrust::detail::uint32_t a, thrust::detail::uint32_t m>
 struct linear_congruential_engine_discard
 {
   template<typename LinearCongruentialEngine>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static void discard(LinearCongruentialEngine &lcg, unsigned long long z)
   {
     typedef typename LinearCongruentialEngine::result_type result_type;
     const result_type c = LinearCongruentialEngine::increment;
     const result_type a = LinearCongruentialEngine::multiplier;
     const result_type m = LinearCongruentialEngine::modulus;
-    
+
     // XXX WAR unused variable warnings
     (void) c;
     (void) a;

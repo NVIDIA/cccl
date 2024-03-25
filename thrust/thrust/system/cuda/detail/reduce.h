@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/detail/alignment.h>
@@ -58,7 +66,7 @@ template <typename DerivedPolicy,
           typename InputIterator,
           typename T,
           typename BinaryFunction>
-T __host__ __device__
+T _CCCL_HOST_DEVICE
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
        InputIterator                                               first,
        InputIterator                                               last,
@@ -997,13 +1005,13 @@ T reduce_n_impl(execution_policy<Derived>& policy,
 // Thrust API entry points
 //-------------------------
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename InputIt,
           typename Size,
           typename T,
           typename BinaryOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 T reduce_n(execution_policy<Derived>& policy,
            InputIt                    first,
            Size                       num_items,
@@ -1025,7 +1033,7 @@ T reduce_n(execution_policy<Derived>& policy,
 }
 
 template <class Derived, class InputIt, class T, class BinaryOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 T reduce(execution_policy<Derived> &policy,
          InputIt                    first,
          InputIt                    last,
@@ -1041,7 +1049,7 @@ T reduce(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 T reduce(execution_policy<Derived> &policy,
          InputIt                    first,
          InputIt                    last,
@@ -1052,7 +1060,7 @@ T reduce(execution_policy<Derived> &policy,
 
 template <class Derived,
           class InputIt>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename iterator_traits<InputIt>::value_type
 reduce(execution_policy<Derived> &policy,
        InputIt                    first,

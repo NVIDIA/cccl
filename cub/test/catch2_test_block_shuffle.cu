@@ -32,22 +32,19 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
-#include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
 #include <algorithm>
 
 #include <cub/block/block_shuffle.cuh>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <int BlockDimX,
           int BlockDimY,
           int BlockDimZ,
-          int ItemsPerThread,   
-          class T,  
+          int ItemsPerThread,
+          class T,
           class ActionT>
 __global__ void block_shuffle_kernel(T *data, ActionT action)
 {
@@ -74,7 +71,7 @@ __global__ void block_shuffle_kernel(T *data, ActionT action)
   }
 }
 
-struct up_op_t 
+struct up_op_t
 {
   template <class BlockShuffleT, class T, int ItemsPerThread>
   __device__ void
@@ -85,7 +82,7 @@ struct up_op_t
   }
 };
 
-struct offset_op_t 
+struct offset_op_t
 {
   int m_distance;
 
@@ -102,7 +99,7 @@ struct offset_op_t
   }
 };
 
-struct rotate_op_t 
+struct rotate_op_t
 {
   unsigned int m_distance;
 
@@ -120,7 +117,7 @@ struct rotate_op_t
 };
 
 template <class T>
-struct up_with_suffix_op_t 
+struct up_with_suffix_op_t
 {
   int m_target_thread_id;
   T * m_d_suffix_ptr;
@@ -148,7 +145,7 @@ struct up_with_suffix_op_t
   }
 };
 
-struct down_op_t 
+struct down_op_t
 {
   template <class BlockShuffleT, class T, int ItemsPerThread>
   __device__ void
@@ -160,7 +157,7 @@ struct down_op_t
 };
 
 template <class T>
-struct down_with_prefix_op_t 
+struct down_with_prefix_op_t
 {
   int m_target_thread_id;
   T * m_d_prefix_ptr;
@@ -195,7 +192,7 @@ template <int ItemsPerThread,
           class T,
           class ActionT>
 void block_shuffle(
-    thrust::device_vector<T> &data, 
+    c2h::device_vector<T> &data,
     ActionT action)
 {
   dim3 block(BlockDimX, BlockDimY, BlockDimZ);
@@ -249,20 +246,20 @@ CUB_TEST("Block shuffle offset works",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  const int distance = 
-    GENERATE_COPY(take(4, random(1 - params::tile_size, 
+  const int distance =
+    GENERATE_COPY(take(4, random(1 - params::tile_size,
                                  params::tile_size - 1)));
 
-  thrust::host_vector<type> h_data = d_data;
-  thrust::host_vector<type> h_ref(params::tile_size);
+  c2h::host_vector<type> h_data = d_data;
+  c2h::host_vector<type> h_ref(params::tile_size);
 
   for (int i = 0; i < static_cast<int>(h_data.size()); i++)
   {
     const int source = i + distance;
-    h_ref[i] = (source >= 0) && (source < params::tile_size) 
+    h_ref[i] = (source >= 0) && (source < params::tile_size)
              ? h_data[source]
              : h_data[i];
   }
@@ -285,15 +282,15 @@ CUB_TEST("Block shuffle rotate works",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  thrust::device_vector<type> d_ref = d_data;
+  c2h::device_vector<type> d_ref = d_data;
 
-  const unsigned int distance = 
+  const unsigned int distance =
     GENERATE_COPY(take(4, random(0, params::tile_size - 1)));
 
-  thrust::host_vector<type> h_ref = d_data;
+  c2h::host_vector<type> h_ref = d_data;
   std::rotate(h_ref.begin(), h_ref.begin() + distance, h_ref.end());
 
   block_shuffle<params::items_per_thread,
@@ -314,10 +311,10 @@ CUB_TEST("Block shuffle up works",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  thrust::device_vector<type> d_ref(params::tile_size);
+  c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin(), d_data.end() - 1, d_ref.begin() + 1);
   thrust::copy(d_data.begin(), d_data.begin() + 1, d_ref.begin());
 
@@ -339,18 +336,18 @@ CUB_TEST("Block shuffle up works when suffix is required",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  const int target_thread_id = 
+  const int target_thread_id =
     GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 
-  thrust::device_vector<type> d_ref(params::tile_size);
+  c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin(), d_data.end() - 1, d_ref.begin() + 1);
   thrust::copy(d_data.begin(), d_data.begin() + 1, d_ref.begin());
 
-  thrust::device_vector<type> d_suffix(1);
-  thrust::device_vector<type> d_suffix_ref(1);
+  c2h::device_vector<type> d_suffix(1);
+  c2h::device_vector<type> d_suffix_ref(1);
   thrust::copy(d_data.end() - 1, d_data.end(), d_suffix_ref.begin());
 
   block_shuffle<params::items_per_thread,
@@ -375,10 +372,10 @@ CUB_TEST("Block shuffle down works",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  thrust::device_vector<type> d_ref(params::tile_size);
+  c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin() + 1, d_data.end(), d_ref.begin());
   thrust::copy(d_data.end() - 1, d_data.end(), d_ref.end() - 1);
 
@@ -400,18 +397,18 @@ CUB_TEST("Block shuffle down works when prefix is required",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_data(params::tile_size);
+  c2h::device_vector<type> d_data(params::tile_size);
   c2h::gen(CUB_SEED(10), d_data);
 
-  const int target_thread_id = 
+  const int target_thread_id =
     GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 
-  thrust::device_vector<type> d_ref(params::tile_size);
+  c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin() + 1, d_data.end(), d_ref.begin());
   thrust::copy(d_data.end() - 1, d_data.end(), d_ref.end() - 1);
 
-  thrust::device_vector<type> d_prefix(1);
-  thrust::device_vector<type> d_prefix_ref(1);
+  c2h::device_vector<type> d_prefix(1);
+  c2h::device_vector<type> d_prefix_ref(1);
   thrust::copy(d_data.begin(), d_data.begin() + 1, d_prefix_ref.begin());
 
   block_shuffle<params::items_per_thread,

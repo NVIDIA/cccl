@@ -36,15 +36,17 @@
 
 #pragma once
 
-#include <cub/util_namespace.cuh>
-#include <cub/util_arch.cuh>
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <nv/target>
-
-#include <cstdio>
-
-CUB_NAMESPACE_BEGIN
-
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
@@ -58,8 +60,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_SYNC
  *
- * Causes synchronization of the stream after every kernel launch to check 
- * for errors. Also causes kernel launch configurations to be printed to the 
+ * Causes synchronization of the stream after every kernel launch to check
+ * for errors. Also causes kernel launch configurations to be printed to the
  * console.
  */
 #define CUB_DEBUG_SYNC
@@ -67,7 +69,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_HOST_ASSERTIONS
  *
- * Extends `CUB_DEBUG_SYNC` effects by checking host-side precondition 
+ * Extends `CUB_DEBUG_SYNC` effects by checking host-side precondition
  * assertions.
  */
 #define CUB_DEBUG_HOST_ASSERTIONS
@@ -75,7 +77,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_DEVICE_ASSERTIONS
  *
- * Extends `CUB_DEBUG_HOST_ASSERTIONS` effects by checking device-side 
+ * Extends `CUB_DEBUG_HOST_ASSERTIONS` effects by checking device-side
  * precondition assertions.
  */
 #define CUB_DEBUG_DEVICE_ASSERTIONS
@@ -83,20 +85,14 @@ CUB_NAMESPACE_BEGIN
 /**
  * @def CUB_DEBUG_ALL
  *
- * Causes host and device-side precondition assertions to be checked. Apart 
- * from that, causes synchronization of the stream after every kernel launch to 
- * check for errors. Also causes kernel launch configurations to be printed to 
+ * Causes host and device-side precondition assertions to be checked. Apart
+ * from that, causes synchronization of the stream after every kernel launch to
+ * check for errors. Also causes kernel launch configurations to be printed to
  * the console.
  */
 #define CUB_DEBUG_ALL
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS 
-
-/**
- * \addtogroup UtilMgmt
- * @{
- */
-
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 // `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
 
@@ -132,7 +128,7 @@ CUB_NAMESPACE_BEGIN
 
 // All
 #ifdef CUB_DEBUG_ALL
-#define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_ALL 
+#define CUB_DETAIL_DEBUG_LEVEL CUB_DETAIL_DEBUG_LEVEL_ALL
 #endif
 
 // Default case, no extra debugging:
@@ -172,6 +168,12 @@ CUB_NAMESPACE_BEGIN
     #define CUB_STDERR
 #endif
 
+#if defined(CUB_STDERR) || defined(CUB_DETAIL_DEBUG_ENABLE_LOG)
+#include <cstdio>
+#endif
+
+CUB_NAMESPACE_BEGIN
+
 /**
  * \brief %If \p CUB_STDERR is defined and \p error is not \p cudaSuccess, the
  * corresponding error message is printed to \p stderr (or \p stdout in device
@@ -179,8 +181,7 @@ CUB_NAMESPACE_BEGIN
  *
  * \return The CUDA error.
  */
-__host__ __device__
-__forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 cudaError_t Debug(cudaError_t error, const char *filename, int line)
 {
   // Clear the global CUDA error state which may have been set by the last
@@ -190,17 +191,24 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
   #ifndef CUB_RDC_ENABLED
   #define CUB_TEMP_DEVICE_CODE
   #else
-  #define CUB_TEMP_DEVICE_CODE cudaGetLastError()
+  #define CUB_TEMP_DEVICE_CODE last_error = cudaGetLastError()
   #endif
 
+  cudaError_t last_error = cudaSuccess;
+
   NV_IF_TARGET(
-    NV_IS_HOST, 
-    (cudaGetLastError();),
+    NV_IS_HOST,
+    (last_error = cudaGetLastError();),
     (CUB_TEMP_DEVICE_CODE;)
   );
-  
+
   #undef CUB_TEMP_DEVICE_CODE
   // clang-format on
+
+  if (error == cudaSuccess && last_error != cudaSuccess)
+  {
+    error = last_error;
+  }
 
 #ifdef CUB_STDERR
   if (error)
@@ -282,8 +290,9 @@ cudaError_t Debug(cudaError_t error, const char *filename, int line)
 //     so we silence them :)
 #pragma clang diagnostic ignored "-Wc++11-extensions"
 #pragma clang diagnostic ignored "-Wunnamed-type-template-args"
+#ifdef CUB_STDERR
 template <class... Args>
-inline __host__ __device__ void va_printf(char const *format,
+inline _CCCL_HOST_DEVICE void va_printf(char const *format,
                                           Args const &...args)
 {
 #ifdef __CUDA_ARCH__
@@ -299,6 +308,12 @@ inline __host__ __device__ void va_printf(char const *format,
   printf(format, args...);
 #endif
 }
+#else // !defined(CUB_STDERR)
+template <class... Args>
+inline _CCCL_HOST_DEVICE void va_printf(char const*, Args const&...)
+{}
+#endif // !defined(CUB_STDERR)
+
 #ifndef __CUDA_ARCH__
 #define _CubLog(format, ...) CUB_NS_QUALIFIER::va_printf(format, __VA_ARGS__);
 #else
@@ -309,7 +324,5 @@ inline __host__ __device__ void va_printf(char const *format,
 #endif
 #endif
 #endif
-
-/** @} */       // end group UtilMgmt
 
 CUB_NAMESPACE_END

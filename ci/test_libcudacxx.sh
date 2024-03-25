@@ -2,17 +2,23 @@
 
 source "$(dirname "$0")/build_common.sh"
 
-CMAKE_OPTIONS="
-    -DCCCL_ENABLE_THRUST=OFF \
-    -DCCCL_ENABLE_LIBCUDACXX=ON \
-    -DCCCL_ENABLE_CUB=OFF \
-    -DCCCL_ENABLE_TESTING=OFF \
-    -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
-"
-configure "$CMAKE_OPTIONS"
+print_environment_details
 
-readonly TEST_PARALLEL_LEVEL=8
+PRESET="libcudacxx-cpp${CXX_STANDARD}"
+CMAKE_OPTIONS=""
+
+configure_preset libcudacxx "$PRESET" "$CMAKE_OPTIONS"
+
+# The libcudacxx tests are split into two presets, one for
+# regular ctest tests and another that invokes the lit tests
+# harness with extra options for verbosity, etc:
+CTEST_PRESET="libcudacxx-ctest-cpp${CXX_STANDARD}"
+LIT_PRESET="libcudacxx-lit-cpp${CXX_STANDARD}"
+
+test_preset "libcudacxx (CTest)" ${CTEST_PRESET}
 
 source "./sccache_stats.sh" "start"
-LIBCUDACXX_SITE_CONFIG="${BUILD_DIR}/libcudacxx/test/lit.site.cfg" lit -v -j ${TEST_PARALLEL_LEVEL} --no-progress-bar -Dcompute_archs=${GPU_ARCHS} -Dstd="c++${CXX_STANDARD}" ../libcudacxx/.upstream-tests/test
+test_preset "libcudacxx (lit)" ${LIT_PRESET}
 source "./sccache_stats.sh" "end"
+
+print_time_summary

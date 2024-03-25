@@ -14,20 +14,24 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
-_LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _Tp&& __declval(int);
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _Tp __declval(long);
-_LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;

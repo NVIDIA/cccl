@@ -27,7 +27,6 @@ public:
         return *this;
     }
 
-#if THRUST_CPP_DIALECT >= 2011
     stateful_allocator(stateful_allocator && other)
         : BaseAlloc(std::move(other)), state(other.state)
     {
@@ -40,7 +39,6 @@ public:
         other.state = 0;
         return *this;
     }
-#endif
 
     static int last_allocated;
     static int last_deallocated;
@@ -148,7 +146,6 @@ void TestVectorAllocatorConstructors()
     ASSERT_EQUAL(Alloc::last_allocated, 2);
     Alloc::last_allocated = 0;
 
-#if THRUST_CPP_DIALECT >= 2011
     // FIXME: uncomment this after the vector_base(vector_base&&, const Alloc&)
     // is fixed and implemented
     // Vector v5(std::move(v3), alloc2);
@@ -156,7 +153,6 @@ void TestVectorAllocatorConstructors()
     // ASSERT_EQUAL(v5.get_allocator(), alloc2);
     // ASSERT_EQUAL(Alloc::last_allocated, 1);
     // Alloc::last_allocated = 0;
-#endif
 
     Vector v6(v4.begin(), v4.end(), alloc2);
     ASSERT_EQUAL((v4 == v6), true);
@@ -207,7 +203,6 @@ void TestVectorAllocatorPropagateOnCopyAssignmentDevice()
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnCopyAssignmentDevice);
 
-#if THRUST_CPP_DIALECT >= 2011
 template<typename Vector>
 void TestVectorAllocatorPropagateOnMoveAssignment()
 {
@@ -242,7 +237,6 @@ void TestVectorAllocatorPropagateOnMoveAssignmentDevice()
     TestVectorAllocatorPropagateOnMoveAssignment<device_vector>();
 }
 DECLARE_UNITTEST(TestVectorAllocatorPropagateOnMoveAssignmentDevice);
-#endif
 
 template<typename Vector>
 void TestVectorAllocatorPropagateOnSwap()

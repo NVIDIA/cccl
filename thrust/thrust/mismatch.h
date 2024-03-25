@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -37,7 +45,7 @@ THRUST_NAMESPACE_BEGIN
 
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
- *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of 
+ *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
  *  \p mismatch use different tests for whether elements differ.
  *
  *  This version of \p mismatch finds the first iterator \c i in <tt>[first1, last1)</tt>
@@ -67,7 +75,7 @@ THRUST_NAMESPACE_BEGIN
  *  thrust::device_vector<int> vec1(4);
  *  thrust::device_vector<int> vec2(4);
  *
- *  vec1[0] = 0;  vec2[0] = 0; 
+ *  vec1[0] = 0;  vec2[0] = 0;
  *  vec1[1] = 5;  vec2[1] = 5;
  *  vec1[2] = 3;  vec2[2] = 8;
  *  vec1[3] = 7;  vec2[3] = 7;
@@ -85,7 +93,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see find_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                                       InputIterator1 first1,
                                                       InputIterator1 last1,
@@ -93,7 +101,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
 
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
- * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of 
+ * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
  * \p mismatch use different tests for whether elements differ.
  *
  * This version of \p mismatch finds the first iterator \c i in <tt>[first1, last1)</tt>
@@ -118,7 +126,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  thrust::device_vector<int> vec1(4);
  *  thrust::device_vector<int> vec2(4);
  *
- *  vec1[0] = 0;  vec2[0] = 0; 
+ *  vec1[0] = 0;  vec2[0] = 0;
  *  vec1[1] = 5;  vec2[1] = 5;
  *  vec1[2] = 3;  vec2[2] = 8;
  *  vec1[3] = 7;  vec2[3] = 7;
@@ -142,7 +150,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
 
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
- *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of 
+ *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
  *  \p mismatch use different tests for whether elements differ.
  *
  *  This version of \p mismatch finds the first iterator \c i in <tt>[first1, last1)</tt>
@@ -173,7 +181,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
  *  thrust::device_vector<int> vec1(4);
  *  thrust::device_vector<int> vec2(4);
  *
- *  vec1[0] = 0;  vec2[0] = 0; 
+ *  vec1[0] = 0;  vec2[0] = 0;
  *  vec1[1] = 5;  vec2[1] = 5;
  *  vec1[2] = 3;  vec2[2] = 8;
  *  vec1[3] = 7;  vec2[3] = 7;
@@ -191,7 +199,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
  *  \see find_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                                       InputIterator1 first1,
                                                       InputIterator1 last1,
@@ -200,7 +208,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
 
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
- * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of 
+ * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
  * \p mismatch use different tests for whether elements differ.
  *
  * This version of \p mismatch finds the first iterator \c i in <tt>[first1, last1)</tt>
@@ -226,7 +234,7 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  thrust::device_vector<int> vec1(4);
  *  thrust::device_vector<int> vec2(4);
  *
- *  vec1[0] = 0;  vec2[0] = 0; 
+ *  vec1[0] = 0;  vec2[0] = 0;
  *  vec1[1] = 5;  vec2[1] = 5;
  *  vec1[2] = 3;  vec2[2] = 8;
  *  vec1[3] = 7;  vec2[3] = 7;

@@ -198,11 +198,10 @@ void copy(nvbench::state &state,
                                                       policy_t,
                                                       is_memcpy>;
 
-  thrust::device_vector<T> input_buffer(elements);
+  thrust::device_vector<T> input_buffer = generate(elements);
   thrust::device_vector<T> output_buffer(elements);
   thrust::device_vector<offset_t> offsets =
-    gen_uniform_offsets<offset_t>(seed_t{}, elements, min_buffer_size, max_buffer_size);
-  gen(seed_t{}, input_buffer);
+    generate.uniform.segment_offsets(elements, min_buffer_size, max_buffer_size);
 
   T *d_input_buffer   = thrust::raw_pointer_cast(input_buffer.data());
   T *d_output_buffer  = thrust::raw_pointer_cast(output_buffer.data());
@@ -250,7 +249,7 @@ void copy(nvbench::state &state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_temp_storage,
                          temp_storage_bytes,
                          d_input_buffers,
@@ -276,8 +275,8 @@ void uniform(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
        elements,
        min_buffer_size,
        max_buffer_size,
-       state.get_int64("RandomizeInput"),
-       state.get_int64("RandomizeOutput"));
+       state.get_int64("Randomize"),
+       state.get_int64("Randomize"));
 }
 
 template <class T, class OffsetT>
@@ -285,13 +284,13 @@ void large(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const auto max_buffer_size = elements;
-  const auto min_buffer_size_ratio = 99;
+  constexpr auto min_buffer_size_ratio = 99;
   const auto min_buffer_size =
     static_cast<std::size_t>(static_cast<double>(max_buffer_size) / 100.0) * min_buffer_size_ratio;
   
   // No need to randomize large buffers
-  const bool randomize_input = false; 
-  const bool randomize_output = false;
+  constexpr bool randomize_input = false;
+  constexpr bool randomize_output = false;
 
   copy(state, tl, elements, min_buffer_size, max_buffer_size, randomize_input, randomize_output);
 }
@@ -310,8 +309,7 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, u_offset_types))
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
   .add_int64_axis("MinBufferSizeRatio", {1, 99})
   .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
-  .add_int64_axis("RandomizeInput", {0, 1})
-  .add_int64_axis("RandomizeOutput", {0, 1});
+  .add_int64_axis("Randomize", {0, 1});
 
 NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, u_offset_types))
   .set_name("large")

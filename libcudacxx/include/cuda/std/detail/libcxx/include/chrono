@@ -824,11 +824,21 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 */
 
 #ifndef __cuda_std__
-#include <__config>
-#else
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#ifdef __cuda_std__
+#ifndef _CCCL_COMPILER_NVRTC
 #include <chrono>
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -850,10 +860,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 // Silence NVCC warnings `long double` arising from chrono floating pointer
 // user-defined literals which are defined in terms of `long double`.
 
@@ -861,7 +867,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 // fashion; if you include this header, the diagnostic will be suppressed
 // throughout the translation unit. The alternative is loosing (conforming)
 // chrono user-defined literals; this seems like the lesser of two evils, so...
-_LIBCUDACXX_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
+_CCCL_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM
 struct _FilesystemClock;
@@ -978,11 +984,11 @@ duration_cast(const duration<_Rep, _Period>& __fd)
 template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS treat_as_floating_point : is_floating_point<_Rep> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Rep>
 _LIBCUDACXX_INLINE_VAR constexpr bool treat_as_floating_point_v
     = treat_as_floating_point<_Rep>::value;
-#endif // _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#endif // _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 
 template <class _Rep>
 struct _LIBCUDACXX_TEMPLATE_VIS duration_values
@@ -993,9 +999,9 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY static constexpr _Rep min()  noexcept {return numeric_limits<_Rep>::lowest();}
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1010,7 +1016,7 @@ floor(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1025,7 +1031,7 @@ ceil(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 __enable_if_t
 <
     __is_duration<_ToDuration>::value,
@@ -1043,7 +1049,7 @@ round(const duration<_Rep, _Period>& __d)
         return __upper;
     return __lower.count() & 1 ? __upper : __lower;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 // duration
 
@@ -1125,18 +1131,18 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator+() const {return typename common_type<duration>::type(*this);}
     _LIBCUDACXX_INLINE_VISIBILITY constexpr typename common_type<duration>::type operator-() const {return typename common_type<duration>::type(-__rep_);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator++()      {++__rep_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator++(int)   {return duration(__rep_++);}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator--()      {--__rep_; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration  operator--(int)   {return duration(__rep_--);}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator++()      {++__rep_; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration  operator++(int)   {return duration(__rep_++);}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator--()      {--__rep_; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration  operator--(int)   {return duration(__rep_--);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator+=(const duration& __d) {__rep_ += __d.count(); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator-=(const duration& __d) {__rep_ -= __d.count(); return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator+=(const duration& __d) {__rep_ += __d.count(); return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator-=(const duration& __d) {__rep_ -= __d.count(); return *this;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator*=(const rep& rhs) {__rep_ *= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator/=(const rep& rhs) {__rep_ /= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const rep& rhs) {__rep_ %= rhs; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 duration& operator%=(const duration& rhs) {__rep_ %= rhs.count(); return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator*=(const rep& rhs) {__rep_ *= rhs; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator/=(const rep& rhs) {__rep_ /= rhs; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator%=(const rep& rhs) {__rep_ %= rhs; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 duration& operator%=(const duration& rhs) {__rep_ %= rhs.count(); return *this;}
 
     // special values
 
@@ -1151,12 +1157,12 @@ typedef duration<long long,        milli> milliseconds;
 typedef duration<long long              > seconds;
 typedef duration<     long, ratio<  60> > minutes;
 typedef duration<     long, ratio<3600> > hours;
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 typedef duration<     int, ratio_multiply<ratio<24>, hours::period>>         days;
 typedef duration<     int, ratio_multiply<ratio<7>,   days::period>>         weeks;
 typedef duration<     int, ratio_multiply<ratio<146097, 400>, days::period>> years;
 typedef duration<     int, ratio_divide<years::period, ratio<12>>>           months;
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 // Duration ==
 
 template <class _LhsDuration, class _RhsDuration>
@@ -1384,12 +1390,12 @@ private:
     duration __d_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 time_point() : __d_(duration::zero()) {}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit time_point(const duration& __d) : __d_(__d) {}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 time_point() : __d_(duration::zero()) {}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit time_point(const duration& __d) : __d_(__d) {}
 
     // conversions
     template <class _Duration2>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     time_point(const time_point<clock, _Duration2>& t,
         __enable_if_t
         <
@@ -1399,12 +1405,12 @@ public:
 
     // observer
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 duration time_since_epoch() const {return __d_;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 duration time_since_epoch() const {return __d_;}
 
     // arithmetic
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator+=(const duration& __d) {__d_ += __d; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 time_point& operator-=(const duration& __d) {__d_ -= __d; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 time_point& operator+=(const duration& __d) {__d_ += __d; return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17 time_point& operator-=(const duration& __d) {__d_ -= __d; return *this;}
 
     // special values
 
@@ -1424,14 +1430,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS common_type<chrono::time_point<_Clock, _Duration
 namespace chrono {
 
 template <class _ToDuration, class _Clock, class _Duration>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 time_point<_Clock, _ToDuration>
 time_point_cast(const time_point<_Clock, _Duration>& __t)
 {
     return time_point<_Clock, _ToDuration>(_CUDA_VSTD::chrono::duration_cast<_ToDuration>(__t.time_since_epoch()));
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Clock, class _Duration>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 __enable_if_t
@@ -1479,12 +1485,12 @@ abs(duration<_Rep, _Period> __d)
 {
     return __d >= __d.zero() ? +__d : -__d;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 // time_point ==
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1494,7 +1500,7 @@ operator==(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point !=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1504,7 +1510,7 @@ operator!=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point <
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1514,7 +1520,7 @@ operator<(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point >
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1524,7 +1530,7 @@ operator>(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, 
 // time_point <=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1534,7 +1540,7 @@ operator<=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point >=
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 bool
 operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1544,7 +1550,7 @@ operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point operator+(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2> >::type>
 operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1555,7 +1561,7 @@ operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // time_point operator+(duration x, time_point y);
 
 template <class _Rep1, class _Period1, class _Clock, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
 operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1565,7 +1571,7 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Dura
 // time_point operator-(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2> >::type>
 operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
@@ -1576,7 +1582,7 @@ operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // duration operator-(time_point x, time_point y);
 
 template <class _Clock, class _Duration1, class _Duration2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 typename common_type<_Duration1, _Duration2>::type
 operator-(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
@@ -1593,7 +1599,7 @@ public:
     typedef duration::rep                    rep;
     typedef duration::period                 period;
     typedef chrono::time_point<system_clock> time_point;
-    static _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const bool is_steady = false;
+    static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
     _LIBCUDACXX_HOST_DEVICE
     static time_point now() noexcept;
@@ -1611,7 +1617,7 @@ public:
     typedef duration::rep                                 rep;
     typedef duration::period                              period;
     typedef chrono::time_point<steady_clock, duration>    time_point;
-    static _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const bool is_steady = true;
+    static _CCCL_CONSTEXPR_CXX14 const bool is_steady = true;
 
     static time_point now() noexcept;
 };
@@ -1621,7 +1627,7 @@ typedef steady_clock high_resolution_clock;
 typedef system_clock high_resolution_clock;
 #endif
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
@@ -3101,6 +3107,14 @@ inline constexpr year_month_weekday_last& year_month_weekday_last::operator+=(co
 _LIBCUDACXX_INLINE_VISIBILITY
 inline constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
+_LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
+constexpr unsigned __hh_mm_ss_width(uint64_t __n, uint64_t __d = 10, unsigned __w = 0)
+{
+    if (__n >= 2 && __d != 0 && __w < 19)
+        return 1 + __hh_mm_ss_width(__n, __d % __n * 10, __w+1);
+    return 0;
+}
+
 template <class _Duration>
 class hh_mm_ss
 {
@@ -3116,18 +3130,9 @@ private:
             __ret *= 10U;
         return __ret;
     }
-
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static constexpr unsigned __width(uint64_t __n, uint64_t __d = 10, unsigned __w = 0)
-    {
-        if (__n >= 2 && __d != 0 && __w < 19)
-            return 1 + __width(__n, __d % __n * 10, __w+1);
-        return 0;
-    }
-
 public:
-    static unsigned constexpr fractional_width = __width(__CommonType::period::den) < 19 ?
-                                                 __width(__CommonType::period::den) : 6u;
+    static unsigned constexpr fractional_width = __hh_mm_ss_width(__CommonType::period::den) < 19 ?
+                                                 __hh_mm_ss_width(__CommonType::period::den) : 6u;
     using precision = duration<typename __CommonType::rep, ratio<1, __pow10(fractional_width)>>;
 
     _LIBCUDACXX_INLINE_VISIBILITY
@@ -3192,18 +3197,22 @@ constexpr hours make24(const hours& __h, bool __is_pm) noexcept
     else
         return __h == hours(12) ? hours(0) : __h;
 }
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 } // chrono
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // GCC 5 and 6 warn (and then error) on us using the standard reserved UDL names,
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#if defined(_LIBCUDACXX_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
+#if defined(_CCCL_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
 #pragma GCC system_header
 #endif
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
+_CCCL_DIAG_SUPPRESS_MSVC(4455)
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
 {
@@ -3282,7 +3291,7 @@ inline namespace literals
         return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano> (__ns);
     }
 
-#if _LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr chrono::day operator""d(unsigned long long __d) noexcept
     {
@@ -3294,14 +3303,16 @@ inline namespace literals
     {
         return chrono::year(static_cast<int>(__y));
     }
-#endif //_LIBCUDACXX_STD_VER > 17 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
 }}
+
+_CCCL_DIAG_POP
 
 namespace chrono { // hoist the literals into namespace std::chrono
    using namespace literals::chrono_literals;
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
@@ -3321,7 +3332,7 @@ struct _FilesystemClock {
   typedef chrono::time_point<_FilesystemClock> time_point;
 
   _LIBCUDACXX_EXPORTED_FROM_ABI
-  static _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const bool is_steady = false;
+  static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
   _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_FUNC_VIS static time_point now() noexcept;
 
@@ -3341,7 +3352,7 @@ struct _FilesystemClock {
 _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 #endif // __cuda_std__
 
-_LIBCUDACXX_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)
+_CCCL_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)
 
 #ifndef __cuda_std__
 #include <__pragma_pop>

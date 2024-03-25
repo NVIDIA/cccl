@@ -27,8 +27,17 @@
 
 #pragma once
 
-#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_load.cuh>
 #include <cub/warp/warp_merge_sort.cuh>
@@ -68,10 +77,10 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   using SmallPolicyT                 = SmallPolicy;
   using MediumPolicyT                = MediumPolicy;
 
-  constexpr static int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_MEDIUM_BLOCK = BLOCK_THREADS /
                                                    MediumPolicyT::WARP_THREADS;
 
-  constexpr static int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
+  static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS /
                                                   SmallPolicyT::WARP_THREADS;
 };
 
@@ -113,13 +122,13 @@ class AgentSubWarpSort
   struct BinaryOpT
   {
     template <typename T>
-    __device__ bool operator()(T lhs, T rhs)
+    _CCCL_DEVICE bool operator()(T lhs, T rhs)
     {
       return this->impl(lhs, rhs);
     }
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
-    __device__ bool operator()(__half lhs, __half rhs)
+    _CCCL_DEVICE bool operator()(__half lhs, __half rhs)
     {
       // Need to explicitly cast to float for SM <= 52.
       NV_IF_TARGET(NV_PROVIDES_SM_53,
@@ -130,7 +139,7 @@ class AgentSubWarpSort
 
   private:
     template <typename T>
-    __device__ bool impl(T lhs, T rhs)
+    _CCCL_DEVICE bool impl(T lhs, T rhs)
     {
       if (IS_DESCENDING)
       {
@@ -144,7 +153,7 @@ class AgentSubWarpSort
   };
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
-  __device__ static bool equal(__half lhs, __half rhs)
+  _CCCL_DEVICE static bool equal(__half lhs, __half rhs)
   {
     // Need to explicitly cast to float for SM <= 52.
     NV_IF_TARGET(NV_PROVIDES_SM_53,
@@ -154,26 +163,26 @@ class AgentSubWarpSort
 #endif
 
   template <typename T>
-  __device__ static bool equal(T lhs, T rhs)
+  _CCCL_DEVICE static bool equal(T lhs, T rhs)
   {
     return lhs == rhs;
   }
 
-  __device__ static bool get_oob_default(Int2Type<true> /* is bool */) 
+  _CCCL_DEVICE static bool get_oob_default(Int2Type<true> /* is bool */)
   {
     // Traits<KeyT>::MAX_KEY for `bool` is 0xFF which is different from `true` and makes
     // comparison with oob unreliable.
     return !IS_DESCENDING;
   }
 
-  __device__ static KeyT get_oob_default(Int2Type<false> /* is bool */) 
+  _CCCL_DEVICE static KeyT get_oob_default(Int2Type<false> /* is bool */)
   {
     // For FP64 the difference is:
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
     // Segmented sort doesn't support custom types at the moment.
-    bit_ordered_type default_key_bits = IS_DESCENDING 
+    bit_ordered_type default_key_bits = IS_DESCENDING
                                       ? traits::min_raw_binary_key(detail::identity_decomposer_t{})
                                       : traits::max_raw_binary_key(detail::identity_decomposer_t{});
     return reinterpret_cast<KeyT &>(default_key_bits);
@@ -222,14 +231,14 @@ public:
 
   _TempStorage &storage;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   explicit AgentSubWarpSort(TempStorage &temp_storage)
     : storage(temp_storage.Alias())
   {
   }
 
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   void ProcessSegment(int segment_size,
                       KeysLoadItT keys_input,
                       KeyT *keys_output,
@@ -253,7 +262,7 @@ public:
       KeyT keys[PolicyT::ITEMS_PER_THREAD];
       ValueT values[PolicyT::ITEMS_PER_THREAD];
 
-      KeyT oob_default = 
+      KeyT oob_default =
         AgentSubWarpSort::get_oob_default(Int2Type<std::is_same<bool, KeyT>::value>{});
 
       WarpLoadKeysT(storage.load_keys)
@@ -288,7 +297,7 @@ private:
    * Only the first thread of a virtual warp is used for soring.
    */
   template <typename CompareOpT>
-  __device__ __forceinline__ void ShortCircuit(unsigned int linear_tid,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ShortCircuit(unsigned int linear_tid,
                                                OffsetT segment_size,
                                                KeysLoadItT keys_input,
                                                KeyT *keys_output,

@@ -18,6 +18,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -32,19 +40,19 @@ namespace generic
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
                                 OutputIterator result);
 
 
-// XXX it is an error to call this function; it has no implementation 
+// XXX it is an error to call this function; it has no implementation
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -55,7 +63,7 @@ __host__ __device__
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -66,7 +74,7 @@ template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,
@@ -74,13 +82,13 @@ __host__ __device__
                                 T init);
 
 
-// XXX it is an error to call this function; it has no implementation 
+// XXX it is an error to call this function; it has no implementation
 template<typename ExecutionPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename T,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
                                 InputIterator first,
                                 InputIterator last,

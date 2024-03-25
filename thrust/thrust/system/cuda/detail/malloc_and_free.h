@@ -16,9 +16,17 @@
 
 #pragma once
 
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
-
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/seq.h>
@@ -51,7 +59,7 @@ inline cub::CachingDeviceAllocator &get_allocator()
 // note that malloc returns a raw pointer to avoid
 // depending on the heavyweight thrust/system/cuda/memory.h header
 template<typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void *malloc(execution_policy<DerivedPolicy> &, std::size_t n)
 {
   void *result = 0;
@@ -91,7 +99,7 @@ void *malloc(execution_policy<DerivedPolicy> &, std::size_t n)
 
 
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void free(execution_policy<DerivedPolicy> &, Pointer ptr)
 {
   // need to repeat a lot of code here because we can't use #if inside of the

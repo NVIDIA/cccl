@@ -4,6 +4,22 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 
+template <typename ValueT>
+struct index_to_value_t
+{
+  template <typename IndexT>
+  __host__ __device__ __forceinline__ ValueT operator()(IndexT index)
+  {
+    if (static_cast<std::uint64_t>(index) == 4300000000ULL)
+    {
+      return static_cast<ValueT>(1);
+    }
+    else
+    {
+      return static_cast<ValueT>(0);
+    }
+  }
+};
 
 template <typename ForwardIterator1,
           typename ForwardIterator2>
@@ -337,6 +353,8 @@ struct TestUniqueCopyByKey
 };
 VariableUnitTest<TestUniqueCopyByKey, IntegralTypes> TestUniqueCopyByKeyInstance;
 
+
+
 template<typename K>
 struct TestUniqueCopyByKeyToDiscardIterator
 {
@@ -436,3 +454,62 @@ struct TestUniqueCopyByKeyToDiscardIterator
 };
 VariableUnitTest<TestUniqueCopyByKeyToDiscardIterator, IntegralTypes> TestUniqueCopyByKeyToDiscardIteratorInstance;
 
+template <typename K>
+struct TestUniqueCopyByKeyLargeInput
+{
+    void operator()()
+    {
+        using type       = K;
+        using index_type = std::int64_t;
+
+        const std::size_t num_items = 4400000000ULL;
+        thrust::host_vector<type> reference_keys{static_cast<type>(0), static_cast<type>(1), static_cast<type>(0)};
+        thrust::host_vector<index_type> reference_values{0, 4300000000ULL, 4300000001ULL};
+
+        auto keys_in = thrust::make_transform_iterator(thrust::make_counting_iterator(0ULL), index_to_value_t<type>{});
+        auto values_in = thrust::make_counting_iterator(0ULL);
+        thrust::device_vector<type> keys_out(reference_keys.size());
+        thrust::device_vector<index_type> values_out(reference_values.size());
+
+        // Run test
+        const auto selected_aut_end = thrust::unique_by_key_copy(
+          keys_in, keys_in + num_items, values_in, keys_out.begin(), values_out.begin());
+
+        // Ensure that we created the correct output
+        auto const num_selected_out = thrust::distance(keys_out.begin(), selected_aut_end.first);
+        ASSERT_EQUAL(reference_keys.size(), static_cast<std::size_t>(num_selected_out));
+        ASSERT_EQUAL(num_selected_out, thrust::distance(values_out.begin(), selected_aut_end.second));
+        keys_out.resize(num_selected_out);
+        values_out.resize(num_selected_out);
+        ASSERT_EQUAL(reference_keys, keys_out);
+        ASSERT_EQUAL(reference_values, values_out);
+    }
+};
+SimpleUnitTest<TestUniqueCopyByKeyLargeInput, IntegralTypes> TestUniqueCopyByKeyLargeInputInstance;
+
+template <typename K>
+struct TestUniqueCopyByKeyLargeOutCount
+{
+    void operator()()
+    {
+        using type       = std::int32_t;
+        using index_type = std::int64_t;
+
+        constexpr std::size_t num_items = 4400000000ULL;
+
+        auto keys_in   = thrust::make_counting_iterator(0ULL);
+        auto values_in = thrust::make_counting_iterator(0ULL);
+
+        // Run test
+        auto keys_out = thrust::make_discard_iterator();
+        auto values_out = thrust::make_discard_iterator();
+        const auto selected_aut_end = thrust::unique_by_key_copy(thrust::device, 
+          keys_in, keys_in + num_items, values_in, keys_out, values_out);
+
+        // Ensure that we created the correct output
+        auto const num_selected_out = thrust::distance(keys_out, selected_aut_end.first);
+        ASSERT_EQUAL(num_items, static_cast<std::size_t>(num_selected_out));
+        ASSERT_EQUAL(num_selected_out, thrust::distance(values_out, selected_aut_end.second));
+    }
+};
+SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;

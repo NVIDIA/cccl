@@ -12,8 +12,15 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include <cstring>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "../__functional/invoke.h"
 #include "../__functional/unary_function.h"
@@ -31,9 +38,9 @@
 #include "../__utility/swap.h"
 #include "../cstdint"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#ifndef __cuda_std__
+#include <cstring>
+#endif // __cuda_std__
 
 #ifndef __cuda_std__
 
@@ -643,7 +650,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS hash : public __enum_hash<_Tp>
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS hash<nullptr_t>
@@ -669,7 +676,7 @@ using __has_enabled_hash _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool,
     is_default_constructible<_Hash>::value
 >;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Type, class>
 using __enable_hash_helper_imp _LIBCUDACXX_NODEBUG_TYPE = _Type;
 

@@ -18,8 +18,16 @@
 
 #include <thrust/detail/config/cpp_dialect.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #ifndef THRUST_CPP11_REQUIRED_NO_ERROR
-#  if THRUST_CPP_DIALECT < 2011 
+#  if _CCCL_STD_VER < 2011
 #    error C++11 is required for this Thrust feature; please upgrade your compiler or pass the appropriate -std=c++XX flag to it.
 #  endif
 #endif

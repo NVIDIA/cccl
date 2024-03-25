@@ -27,15 +27,23 @@
 
 #pragma once
 
-#include "../config.cuh"
-#include "../util_type.cuh"
-#include "../util_namespace.cuh"
-#include "../block/block_load.cuh"
-#include "../block/block_store.cuh"
-#include "../block/block_adjacent_difference.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_adjacent_difference.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/util_namespace.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/util.h>
-
 
 CUB_NAMESPACE_BEGIN
 
@@ -99,7 +107,7 @@ struct AgentDifference
   DifferenceOpT difference_op;
   OffsetT num_items;
 
-  __device__ __forceinline__ AgentDifference(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentDifference(TempStorage &temp_storage,
                                              InputIteratorT input_it,
                                              InputT *first_tile_previous,
                                              OutputIteratorT result,
@@ -118,7 +126,7 @@ struct AgentDifference
 
   template <bool IS_LAST_TILE,
             bool IS_FIRST_TILE>
-  __device__ __forceinline__ void consume_tile_impl(int num_remaining,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile_impl(int num_remaining,
                                                     int tile_idx,
                                                     OffsetT tile_base)
   {
@@ -159,7 +167,7 @@ struct AgentDifference
       }
       else
       {
-        InputT tile_prev_input = MayAlias 
+        InputT tile_prev_input = MayAlias
                                ? first_tile_previous[tile_idx]
                                : *(input_it + tile_base - 1);
 
@@ -211,7 +219,7 @@ struct AgentDifference
   }
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void consume_tile(int num_remaining,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int num_remaining,
                                                int tile_idx,
                                                OffsetT tile_base)
   {
@@ -229,7 +237,7 @@ struct AgentDifference
     }
   }
 
-  __device__ __forceinline__ void Process(int tile_idx,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
                                           OffsetT tile_base)
   {
     OffsetT num_remaining = num_items - tile_base;
@@ -253,7 +261,7 @@ struct AgentDifferenceInit
 {
   static constexpr int BLOCK_THREADS = 128;
 
-  static __device__ __forceinline__ void Process(int tile_idx,
+  static _CCCL_DEVICE _CCCL_FORCEINLINE void Process(int tile_idx,
                                                  InputIteratorT first,
                                                  InputT *result,
                                                  OffsetT num_tiles,

@@ -30,8 +30,6 @@
 #include <cub/iterator/discard_output_iterator.cuh>
 #include <cub/util_allocator.cuh>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <int ItemsPerThread,
@@ -172,7 +170,7 @@ using store_algorithm  = c2h::enum_type_list<
   cub::BlockStoreAlgorithm::BLOCK_STORE_STRIPED,
   cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE,
   cub::BlockStoreAlgorithm::BLOCK_STORE_TRANSPOSE,
-  cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,             
+  cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
   cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>;
 
 using odd_store_algorithm = c2h::enum_type_list<
@@ -190,7 +188,7 @@ struct params_t
   static constexpr int items_per_thread = c2h::get<1, TestType>::value;
   static constexpr int threads_in_block = c2h::get<2, TestType>::value;
   static constexpr int tile_size = items_per_thread * threads_in_block;
-  static constexpr cub::BlockStoreAlgorithm store_algorithm = 
+  static constexpr cub::BlockStoreAlgorithm store_algorithm =
     c2h::get<3, TestType>::value;
 };
 
@@ -204,11 +202,11 @@ CUB_TEST("Block store works with even block sizes",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_store<params::items_per_thread,
               params::threads_in_block,
@@ -229,11 +227,11 @@ CUB_TEST("Block store works with even odd sizes",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_store<params::items_per_thread,
               params::threads_in_block,
@@ -255,11 +253,11 @@ CUB_TEST("Block store works with even vector types",
   using params = params_t<TestType>;
   using type = typename params::type;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_store<params::items_per_thread,
               params::threads_in_block,
@@ -283,11 +281,11 @@ CUB_TEST("Block store works with custom types",
   static constexpr cub::BlockStoreAlgorithm store_algorithm =
     c2h::get<1, TestType>::value;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
 
   block_store<items_per_thread, threads_in_block, store_algorithm>(
     thrust::raw_pointer_cast(d_input.data()),
@@ -309,11 +307,11 @@ CUB_TEST("Block store works with caching iterators",
   static constexpr cub::BlockStoreAlgorithm store_algorithm =
     c2h::get<1, TestType>::value;
 
-  thrust::device_vector<type> d_input(
+  c2h::device_vector<type> d_input(
     GENERATE_COPY(take(10, random(0, tile_size))));
   c2h::gen(CUB_SEED(10), d_input);
 
-  thrust::device_vector<type> d_output(d_input.size());
+  c2h::device_vector<type> d_output(d_input.size());
   cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(
     thrust::raw_pointer_cast(d_output.data()));
 
@@ -324,4 +322,3 @@ CUB_TEST("Block store works with caching iterators",
 
   REQUIRE(d_input == d_output);
 }
-

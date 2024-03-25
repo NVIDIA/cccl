@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
@@ -35,14 +43,14 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename BinaryPredicate,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan_by_key(sequential::execution_policy<DerivedPolicy> &,
                                        InputIterator1 first1,
                                        InputIterator1 last1,
@@ -86,7 +94,7 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
@@ -94,7 +102,7 @@ template<typename DerivedPolicy,
          typename T,
          typename BinaryPredicate,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan_by_key(sequential::execution_policy<DerivedPolicy> &,
                                        InputIterator1 first1,
                                        InputIterator1 last1,
@@ -131,7 +139,7 @@ __host__ __device__
       if (!binary_pred(temp_key, key))
         next = init;  // reset sum
 
-      *result = next;  
+      *result = next;
       next = binary_op(next, temp_value);
 
       temp_key = key;

@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/get_iterator_value.h>
 #include <thrust/extrema.h>
 #include <thrust/functional.h>
@@ -49,19 +57,19 @@ namespace detail
 //////////////
 //
 
-// return the smaller/larger element making sure to prefer the 
+// return the smaller/larger element making sure to prefer the
 // first occurance of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct min_element_reduction
 {
   BinaryPredicate comp;
 
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   min_element_reduction(BinaryPredicate comp) : comp(comp){}
 
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   thrust::tuple<InputType, IndexType>
-  operator()(const thrust::tuple<InputType, IndexType>& lhs, 
+  operator()(const thrust::tuple<InputType, IndexType>& lhs,
              const thrust::tuple<InputType, IndexType>& rhs )
   {
     if(comp(thrust::get<0>(lhs), thrust::get<0>(rhs)))
@@ -83,12 +91,12 @@ struct max_element_reduction
 {
   BinaryPredicate comp;
 
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   max_element_reduction(BinaryPredicate comp) : comp(comp){}
 
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   thrust::tuple<InputType, IndexType>
-  operator()(const thrust::tuple<InputType, IndexType>& lhs, 
+  operator()(const thrust::tuple<InputType, IndexType>& lhs,
              const thrust::tuple<InputType, IndexType>& rhs )
   {
     if(comp(thrust::get<0>(lhs), thrust::get<0>(rhs)))
@@ -105,19 +113,19 @@ struct max_element_reduction
 }; // end max_element_reduction
 
 
-// return the smaller & larger element making sure to prefer the 
+// return the smaller & larger element making sure to prefer the
 // first occurance of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct minmax_element_reduction
 {
   BinaryPredicate comp;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   minmax_element_reduction(BinaryPredicate comp) : comp(comp){}
 
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> >
-  operator()(const thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> >& lhs, 
+  operator()(const thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> >& lhs,
              const thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> >& rhs )
   {
 
@@ -130,7 +138,7 @@ struct minmax_element_reduction
 template <typename InputType, typename IndexType>
 struct duplicate_tuple
 {
-  __host__ __device__ 
+  _CCCL_HOST_DEVICE
   thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> >
   operator()(const thrust::tuple<InputType,IndexType>& t)
   {
@@ -143,7 +151,7 @@ struct duplicate_tuple
 
 
 template <typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last)
@@ -155,7 +163,7 @@ ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -180,7 +188,7 @@ ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template <typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last)
@@ -192,7 +200,7 @@ ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -217,9 +225,9 @@ ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template <typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_policy<DerivedPolicy> &exec,
-                                                             ForwardIterator first, 
+                                                             ForwardIterator first,
                                                              ForwardIterator last)
 {
   typedef typename thrust::iterator_value<ForwardIterator>::type value_type;
@@ -229,9 +237,9 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_p
 
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_policy<DerivedPolicy> &exec,
-                                                             ForwardIterator first, 
+                                                             ForwardIterator first,
                                                              ForwardIterator last,
                                                              BinaryPredicate comp)
 {
@@ -241,7 +249,7 @@ thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_p
   typedef typename thrust::iterator_traits<ForwardIterator>::value_type      InputType;
   typedef typename thrust::iterator_traits<ForwardIterator>::difference_type IndexType;
 
-  thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> > result = 
+  thrust::tuple< thrust::tuple<InputType,IndexType>, thrust::tuple<InputType,IndexType> > result =
     thrust::transform_reduce
       (exec,
        thrust::make_zip_iterator(thrust::make_tuple(first, thrust::counting_iterator<IndexType>(0))),

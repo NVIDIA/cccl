@@ -35,9 +35,19 @@
 
 #pragma once
 
-#include <cub/agent/agent_histogram.cuh>
 #include <cub/config.cuh>
-#include <cub/detail/cpp_compatibility.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/agent_histogram.cuh>
+#include <cub/util_device.cuh>
+#include <cub/util_temporary_storage.cuh>
 #include <cub/device/dispatch/tuning/tuning_histogram.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
@@ -87,7 +97,7 @@ CUB_NAMESPACE_BEGIN
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
-__global__ void
+CUB_DETAIL_KERNEL_ATTRIBUTES void
 DeviceHistogramInitKernel(ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
                           ArrayWrapper<CounterT *, NUM_ACTIVE_CHANNELS> d_output_histograms_wrapper,
                           GridQueue<int> tile_queue)
@@ -128,7 +138,7 @@ DeviceHistogramInitKernel(ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   The input iterator type. \iterator.
+ *   The input iterator type. @iterator.
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin
@@ -191,8 +201,8 @@ template <typename ChainedPolicyT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS)) __global__
-  void DeviceHistogramSweepKernel(
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentHistogramPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramSweepKernel(
     SampleIteratorT d_samples,
     ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_output_bins_wrapper,
     ArrayWrapper<int, NUM_ACTIVE_CHANNELS> num_privatized_bins_wrapper,
@@ -300,38 +310,40 @@ struct dispatch_histogram
   template <typename ActivePolicyT,
             typename DeviceHistogramInitKernelT,
             typename DeviceHistogramSweepKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceHistogramInitKernelT histogram_init_kernel,
          DeviceHistogramSweepKernelT histogram_sweep_kernel)
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
-    const int pixels_per_thread = ActivePolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
+    constexpr int pixels_per_thread = ActivePolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
 
     do
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get SM count
       int sm_count;
-      if (CubDebug(error = cudaDeviceGetAttribute(&sm_count,
-                                                  cudaDevAttrMultiProcessorCount,
-                                                  device_ordinal)))
+      error =
+        CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get SM occupancy for histogram_sweep_kernel
       int histogram_sweep_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(histogram_sweep_sm_occupancy,
-                                          histogram_sweep_kernel,
-                                          block_threads)))
+      error = CubDebug(
+        MaxSmOccupancy(histogram_sweep_sm_occupancy, histogram_sweep_kernel, block_threads));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -362,7 +374,7 @@ struct dispatch_histogram
       sweep_grid_dims.z = 1;
 
       // Temporary storage allocation requirements
-      const int NUM_ALLOCATIONS          = NUM_ACTIVE_CHANNELS + 1;
+      constexpr int NUM_ALLOCATIONS      = NUM_ACTIVE_CHANNELS + 1;
       void *allocations[NUM_ALLOCATIONS] = {};
       size_t allocation_sizes[NUM_ALLOCATIONS];
 
@@ -376,9 +388,9 @@ struct dispatch_histogram
 
       // Alias the temporary allocations from the single storage blob (or compute the
       // necessary size of the blob)
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -502,14 +514,15 @@ struct dispatch_histogram
               tile_queue);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -519,7 +532,7 @@ struct dispatch_histogram
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
                                  DeviceHistogramSweepKernel<MaxPolicyT,
@@ -551,7 +564,7 @@ struct dispatch_histogram
  *   Number of channels actively being histogrammed
  *
  * @tparam SampleIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam CounterT
  *   Integer type for counting sample occurrences per histogram bin
@@ -562,8 +575,8 @@ struct dispatch_histogram
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam SelectedPolicy
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int NUM_CHANNELS,
@@ -611,7 +624,7 @@ public:
      * @param d_levels_ Pointer to levels array
      * @param num_output_levels_ Number of levels in array
      */
-    __host__ __device__ __forceinline__ void Init(LevelIteratorT d_levels_, int num_output_levels_)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
     {
       this->d_levels          = d_levels_;
       this->num_output_levels = num_output_levels_;
@@ -619,7 +632,7 @@ public:
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    __host__ __device__ __forceinline__ void BinSelect(_SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int &bin, bool valid)
     {
       /// Level iterator wrapper type
       // Wrap the native input pointer with CacheModifiedInputIterator
@@ -704,7 +717,7 @@ public:
     ScaleT m_scale; // Bin scaling
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
     {
       ScaleT result;
@@ -714,7 +727,7 @@ public:
     }
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
     ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
     {
       ScaleT result;
@@ -724,7 +737,7 @@ public:
     }
 
     template <typename T>
-    __host__ __device__ __forceinline__ ScaleT ComputeScale(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels,
                                                             T max_level,
                                                             T min_level)
     {
@@ -735,7 +748,7 @@ public:
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ ScaleT ComputeScale(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels,
                                                             __half max_level,
                                                             __half min_level)
     {
@@ -751,13 +764,13 @@ public:
 
     // All types but __half:
     template <typename T>
-    __host__ __device__ __forceinline__ int SampleIsValid(T sample, T max_level, T min_level)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level)
     {
       return sample >= min_level && sample < max_level;
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ int SampleIsValid(__half sample,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample,
                                                           __half max_level,
                                                           __half min_level)
     {
@@ -773,7 +786,7 @@ public:
      * @brief Bin computation for floating point (and extended floating point) types
      */
     template <typename T>
-    __host__ __device__ __forceinline__ int
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */)
     {
       return static_cast<int>((sample - min_level) * scale.reciprocal);
@@ -783,7 +796,7 @@ public:
      * @brief Bin computation for custom types and __[u]int128
      */
     template <typename T>
-    __host__ __device__ __forceinline__ int
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
     ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */)
     {
       return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
@@ -794,7 +807,7 @@ public:
      */
     template <typename T,
               typename ::cuda::std::enable_if<is_integral_excl_int128<T>::value, int>::type = 0>
-    __host__ __device__ __forceinline__ int ComputeBin(T sample, T min_level, ScaleT scale)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return static_cast<int>((static_cast<IntArithmeticT>(sample - min_level) *
                                static_cast<IntArithmeticT>(scale.fraction.bins)) /
@@ -803,13 +816,13 @@ public:
 
     template <typename T,
               typename ::cuda::std::enable_if<!is_integral_excl_int128<T>::value, int>::type = 0>
-    __host__ __device__ __forceinline__ int ComputeBin(T sample, T min_level, ScaleT scale)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
     {
       return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
     }
 
 #ifdef __CUDA_FP16_TYPES_EXIST__
-    __host__ __device__ __forceinline__ int ComputeBin(__half sample,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample,
                                                        __half min_level,
                                                        ScaleT scale)
     {
@@ -820,7 +833,7 @@ public:
     }
 #endif
 
-    __host__ __device__ __forceinline__ bool MayOverflow(CommonT /* num_bins */,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT /* num_bins */,
                                                          ::cuda::std::false_type /* is_integral */)
     {
       return false;
@@ -830,7 +843,7 @@ public:
      * @brief Returns true if the bin computation for a given combination of range `(max_level -
      * min_level)` and number of bins may overflow.
      */
-    __host__ __device__ __forceinline__ bool MayOverflow(CommonT num_bins,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins,
                                                          ::cuda::std::true_type /* is_integral */)
     {
       return static_cast<IntArithmeticT>(m_max - m_min) >
@@ -844,7 +857,7 @@ public:
      * @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
      * cudaSuccess otherwise
      */
-    __host__ __device__ __forceinline__ cudaError_t Init(int num_levels,
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_levels,
                                                          LevelT max_level,
                                                          LevelT min_level)
     {
@@ -863,7 +876,7 @@ public:
 
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER>
-    __host__ __device__ __forceinline__ void BinSelect(SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int &bin, bool valid)
     {
       const CommonT common_sample = static_cast<CommonT>(sample);
 
@@ -879,7 +892,7 @@ public:
   {
     // Method for converting samples to bin-ids
     template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    __host__ __device__ __forceinline__ void BinSelect(_SampleT sample, int &bin, bool valid)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int &bin, bool valid)
     {
       if (valid)
         bin = (int)sample;
@@ -956,7 +969,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -985,7 +999,7 @@ public:
       if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
       {
         // Too many bins to keep in shared memory.
-        const int PRIVATIZED_SMEM_BINS = 0;
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1010,7 +1024,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1018,7 +1033,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1043,7 +1058,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1150,7 +1166,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1178,7 +1195,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      const int PRIVATIZED_SMEM_BINS = 256;
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
 
       detail::dispatch_histogram<NUM_CHANNELS,
                                  NUM_ACTIVE_CHANNELS,
@@ -1203,7 +1220,8 @@ public:
                  row_stride_samples,
                  stream);
 
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1290,7 +1308,7 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1311,7 +1329,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1328,10 +1347,10 @@ public:
 
       for (int channel = 0; channel < NUM_ACTIVE_CHANNELS; ++channel)
       {
-        error = privatized_decode_op[channel].Init(num_output_levels[channel],
-                                                   upper_level[channel],
-                                                   lower_level[channel]);
-        if (CubDebug(error != cudaSuccess))
+        error = CubDebug(privatized_decode_op[channel].Init(num_output_levels[channel],
+                                                            upper_level[channel],
+                                                            lower_level[channel]));
+        if (error != cudaSuccess)
         {
           // Make sure to also return a reasonable value for `temp_storage_bytes` in case of
           // an overflow of the bin computation, in which case a subsequent algorithm
@@ -1353,7 +1372,7 @@ public:
       if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = 0;
+        constexpr int PRIVATIZED_SMEM_BINS = 0;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1378,7 +1397,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1386,7 +1406,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        const int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
         detail::dispatch_histogram<NUM_CHANNELS,
                                    NUM_ACTIVE_CHANNELS,
@@ -1411,7 +1431,8 @@ public:
                    row_stride_samples,
                    stream);
 
-        if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -1422,7 +1443,7 @@ public:
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1502,7 +1523,7 @@ public:
    * @param is_byte_sample
    *   type indicating whether or not SampleT is a 8b type
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,
@@ -1523,7 +1544,8 @@ public:
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1554,7 +1576,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      const int PRIVATIZED_SMEM_BINS = 256;
+      constexpr int PRIVATIZED_SMEM_BINS = 256;
 
       detail::dispatch_histogram<NUM_CHANNELS,
                                  NUM_ACTIVE_CHANNELS,
@@ -1579,7 +1601,8 @@ public:
                  row_stride_samples,
                  stream);
 
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -1588,7 +1611,7 @@ public:
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   DispatchEven(void *d_temp_storage,
                size_t &temp_storage_bytes,
                SampleIteratorT d_samples,

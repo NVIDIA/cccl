@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,18 +27,27 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Random-access iterator types
  */
 
 #pragma once
 
-#include <iterator>
-#include <iostream>
+#include <cub/config.cuh>
 
-#include "../thread/thread_load.cuh"
-#include "../thread/thread_store.cuh"
-#include "../config.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_store.cuh>
+
+#include <iostream>
+#include <iterator>
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -49,29 +58,22 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 /**
- * \addtogroup UtilIterator
- * @{
- */
-
-
-/**
- * \brief A random-access input generator for dereferencing a sequence of homogeneous values
+ * @brief A random-access input generator for dereferencing a sequence of homogeneous values
  *
- * \par Overview
+ * @par Overview
  * - Read references to a ConstantInputIteratorTiterator always return the supplied constant
- *   of type \p ValueType.
+ *   of type @p ValueType.
  * - Can be used with any data type.
  * - Can be constructed, manipulated, dereferenced, and exchanged within and between host and device
  *   functions.
  * - Compatible with Thrust API v1.7 or newer.
  *
- * \par Snippet
- * The code snippet below illustrates the use of \p ConstantInputIteratorTto
+ * @par Snippet
+ * The code snippet below illustrates the use of @p ConstantInputIteratorTto
  * dereference a sequence of homogeneous doubles.
- * \par
- * \code
+ * @par
+ * @code
  * #include <cub/cub.cuh>   // or equivalently <cub/iterator/constant_input_iterator.cuh>
  *
  * cub::ConstantInputIterator<double> itr(5.0);
@@ -81,10 +83,13 @@ CUB_NAMESPACE_BEGIN
  * printf("%f\n", itr[2]);      // 5.0
  * printf("%f\n", itr[50]);     // 5.0
  *
- * \endcode
+ * @endcode
  *
- * \tparam ValueType            The value type of this iterator
- * \tparam OffsetT              The difference type of this iterator (Default: \p ptrdiff_t)
+ * @tparam ValueType
+ *   The value type of this iterator
+ *
+ * @tparam OffsetT
+ *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
 template <
     typename ValueType,
@@ -94,22 +99,35 @@ class ConstantInputIterator
 public:
 
     // Required iterator traits
-    typedef ConstantInputIterator               self_type;              ///< My own type
-    typedef OffsetT                             difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef ValueType                           value_type;             ///< The type of the element the iterator can point to
-    typedef ValueType*                          pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef ValueType                           reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef ConstantInputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef ValueType value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef ValueType *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef ValueType reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::any_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -117,44 +135,47 @@ private:
     ValueType   val;
     OffsetT     offset;
 #ifdef _WIN32
-    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];        // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
+    // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
+    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
 #endif
 
 public:
-
-    /// Constructor
-    __host__ __device__ __forceinline__ ConstantInputIterator(
-        ValueType   val,            ///< Starting value for the iterator instance to report
-        OffsetT     offset = 0)     ///< Base offset
-    :
-        val(val),
-        offset(offset)
+    /**
+     * @param val
+     *   Starting value for the iterator instance to report
+     *
+     * @param offset
+     *   Base offset
+     */
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ConstantInputIterator(ValueType val, OffsetT offset = 0)
+        : val(val)
+        , offset(offset)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
-        self_type retval = *this;
-        offset++;
-        return retval;
+      self_type retval = *this;
+      offset++;
+      return retval;
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         offset++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return val;
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(val, offset + n);
         return retval;
@@ -162,7 +183,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         offset += n;
         return *this;
@@ -170,7 +191,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(val, offset - n);
         return retval;
@@ -178,39 +199,39 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         offset -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return offset - other.offset;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance /*n*/) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance /*n*/) const
     {
         return val;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return &val;
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
     {
         return (offset == rhs.offset) && ((val == rhs.val));
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
     {
         return (offset != rhs.offset) || (val!= rhs.val);
     }
@@ -223,8 +244,5 @@ public:
     }
 
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

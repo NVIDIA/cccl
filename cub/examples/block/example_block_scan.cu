@@ -167,7 +167,7 @@ template <
     BlockScanAlgorithm  ALGORITHM>
 void Test()
 {
-    const int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
+    constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;
 
     // Allocate host arrays
     int *h_in           = new int[TILE_SIZE];

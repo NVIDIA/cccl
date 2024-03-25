@@ -14,11 +14,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/conditional.h"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "../__type_traits/conditional.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

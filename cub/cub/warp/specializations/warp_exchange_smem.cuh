@@ -34,6 +34,15 @@
 #pragma once
 
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
@@ -50,19 +59,19 @@ class WarpExchangeSmem
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");
 
-  constexpr static int ITEMS_PER_TILE =
+  static constexpr int ITEMS_PER_TILE =
     ITEMS_PER_THREAD * LOGICAL_WARP_THREADS + 1;
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
-  constexpr static int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
+  static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
 
   // Insert padding if the number of items per thread is a power of two
   // and > 4 (otherwise we can typically use 128b loads)
-  constexpr static bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) &&
+  static constexpr bool INSERT_PADDING = (ITEMS_PER_THREAD > 4) &&
                                          (PowerOfTwo<ITEMS_PER_THREAD>::VALUE);
 
-  constexpr static int PADDING_ITEMS = INSERT_PADDING
+  static constexpr int PADDING_ITEMS = INSERT_PADDING
                                      ? (ITEMS_PER_TILE >> LOG_SMEM_BANKS)
                                      : 0;
 
@@ -84,7 +93,7 @@ public:
 
   WarpExchangeSmem() = delete;
 
-  explicit __device__ __forceinline__
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
   WarpExchangeSmem(TempStorage &temp_storage)
       : temp_storage(temp_storage.Alias())
       , lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
@@ -93,7 +102,7 @@ public:
   {}
 
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -112,7 +121,7 @@ public:
   }
 
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -131,7 +140,7 @@ public:
   }
 
   template <typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
@@ -140,7 +149,7 @@ public:
 
   template <typename OutputT,
             typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])

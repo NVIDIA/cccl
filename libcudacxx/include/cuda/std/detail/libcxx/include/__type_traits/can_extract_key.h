@@ -14,16 +14,20 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__fwd/pair.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_const.h"
 #include "../__type_traits/remove_const_ref.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

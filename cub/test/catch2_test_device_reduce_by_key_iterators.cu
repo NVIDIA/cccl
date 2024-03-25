@@ -27,24 +27,19 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 // List of types to test
 using custom_t = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
@@ -79,7 +74,7 @@ CUB_TEST("Device reduce-by-key works with iterators",
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
@@ -87,7 +82,7 @@ CUB_TEST("Device reduce-by-key works with iterators",
 
   // Get array of keys from segment offsets
   const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
-  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = segment_keys.cbegin();
 
@@ -100,18 +95,18 @@ CUB_TEST("Device reduce-by-key works with iterators",
 
   // Prepare verification data
   using accum_t = cub::detail::accumulator_t<op_t, output_t, value_t>;
-  thrust::host_vector<output_t> expected_result(num_segments);
+  c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(value_it,
                                       segment_offsets,
                                       op_t{},
                                       accum_t{},
                                       expected_result.begin());
-  thrust::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
+  c2h::host_vector<key_t> expected_keys = compute_unique_keys_reference(segment_keys);
 
   // Run test
-  thrust::device_vector<offset_t> num_unique_keys(1);
-  thrust::device_vector<key_t> out_unique_keys(num_segments);
-  thrust::device_vector<output_t> out_result(num_segments);
+  c2h::device_vector<offset_t> num_unique_keys(1);
+  c2h::device_vector<key_t> out_unique_keys(num_segments);
+  c2h::device_vector<output_t> out_result(num_segments);
   auto d_result_out_it = thrust::raw_pointer_cast(out_result.data());
   auto d_keys_out_it   = out_unique_keys.begin();
   device_reduce_by_key(d_keys_it,

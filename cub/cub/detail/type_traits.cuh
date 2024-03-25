@@ -32,18 +32,30 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#include <cuda/std/functional>
+_CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
-
 
 CUB_NAMESPACE_BEGIN
 namespace detail {
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if CUB_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;
@@ -51,7 +63,7 @@ using invoke_result_t =
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invokable, typename InitT, typename InputT>
-using accumulator_t = 
+using accumulator_t =
   typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
 
 } // namespace detail

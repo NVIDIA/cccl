@@ -71,7 +71,7 @@ foreach(component IN LISTS components)
         "${cccl_cmake_dir}/.."                            # Install layout
     )
 
-    if (TARGET Thrust::Thrust AND NOT CCCL::Thrust)
+    if (TARGET Thrust::Thrust AND NOT TARGET CCCL::Thrust)
       # By default, configure a CCCL::Thrust target with host=cpp device=cuda
       option(CCCL_ENABLE_DEFAULT_THRUST_TARGET
         "Create a CCCL::Thrust target using CCCL_THRUST_[HOST|DEVICE]_SYSTEM."
@@ -87,6 +87,7 @@ foreach(component IN LISTS components)
           DEVICE_OPTION_DOC
             "Device system for CCCL::Thrust target."
           ADVANCED
+          GLOBAL
         )
         target_link_libraries(CCCL::CCCL INTERFACE CCCL::Thrust)
       endif()

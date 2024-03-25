@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 
@@ -31,9 +39,9 @@ namespace detail
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag)
 {
@@ -49,9 +57,9 @@ inline __host__ __device__
 } // end advance()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last, thrust::random_access_traversal_tag)
 {
@@ -61,9 +69,9 @@ inline __host__ __device__
 
 } // end detail
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename InputIterator>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     distance(InputIterator first, InputIterator last)
 {

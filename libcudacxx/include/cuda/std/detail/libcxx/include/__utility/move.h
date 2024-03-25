@@ -15,14 +15,18 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_copy_constructible.h"
 #include "../__type_traits/is_nothrow_move_constructible.h"
 #include "../__type_traits/remove_reference.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,7 +42,7 @@ using __move_if_noexcept_result_t =
     __conditional_t<!is_nothrow_move_constructible<_Tp>::value && is_copy_constructible<_Tp>::value, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __move_if_noexcept_result_t<_Tp>
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __move_if_noexcept_result_t<_Tp>
 move_if_noexcept(_Tp& __x) noexcept {
   return _CUDA_VSTD::move(__x);
 }

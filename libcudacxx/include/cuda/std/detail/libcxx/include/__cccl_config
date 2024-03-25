@@ -1,0 +1,23 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef __CCCL_CONFIG
+#define __CCCL_CONFIG
+
+#include "__cccl/compiler.h"
+#include "__cccl/diagnostic.h"
+#include "__cccl/dialect.h"
+#include "__cccl/execution_space.h"
+#include "__cccl/ptx_isa.h"
+#include "__cccl/system_header.h"
+#include "__cccl/version.h"
+#include "__cccl/visibility.h"
+
+#endif // __CCCL_CONFIG

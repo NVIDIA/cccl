@@ -14,19 +14,23 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../cstddef"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class>                 struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_bounded_array           : false_type {};
 template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_bounded_array<_Tp[_Np]> : true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class>                 struct _LIBCUDACXX_TEMPLATE_VIS is_bounded_array           : false_type {};
 template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS is_bounded_array<_Tp[_Np]> : true_type {};

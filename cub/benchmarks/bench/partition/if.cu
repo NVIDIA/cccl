@@ -137,15 +137,11 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  T min_val = std::numeric_limits<T>::lowest();
-  T max_val = std::numeric_limits<T>::max();
   T val = value_from_entropy<T>(entropy_to_probability(entropy));
   select_op_t select_op{val};
 
-  thrust::device_vector<T> in(elements);
+  thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<offset_t> num_selected(1);
-
-  gen(seed_t{}, in);
 
   thrust::device_vector<T> out(elements);
 
@@ -174,7 +170,7 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(temp_storage,
                          temp_size,
                          d_in,

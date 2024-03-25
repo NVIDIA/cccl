@@ -15,18 +15,22 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/is_const.h"
 #include "../__type_traits/is_reference.h"
 #include "../__type_traits/remove_reference.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 
 template <class _Ap, class _Bp>
 using _CopyConst = _If<is_const_v<_Ap>, const _Bp, _Bp>;
@@ -43,7 +47,7 @@ constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up> {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

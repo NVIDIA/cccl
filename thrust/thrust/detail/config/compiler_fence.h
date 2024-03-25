@@ -17,17 +17,26 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/preprocessor.h>
 
 // TODO: Enable this or remove this file once nvGRAPH/CUSP migrates off of it.
-//#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+//#if defined(_CCCL_COMPILER_MSVC)
 //  #pragma message("warning: The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 or C11 atomics instead.")
 //#else
 //  #warning The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 or C11 atomics instead.
 //#endif
 
 // msvc case
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 
 #ifndef _DEBUG
 
@@ -41,7 +50,7 @@
 #endif // _DEBUG
 
 // gcc case
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 
 #if THRUST_GCC_VERSION >= 40200 // atomic built-ins were introduced ~4.2
 #define __thrust_compiler_fence() __sync_synchronize()
@@ -51,7 +60,7 @@
 #endif // THRUST_GCC_VERSION
 
 // unknown case
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG
+#elif defined(_CCCL_COMPILER_CLANG)
 #define __thrust_compiler_fence() __sync_synchronize()
 #elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_UNKNOWN
 

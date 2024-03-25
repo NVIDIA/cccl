@@ -501,6 +501,15 @@ basic_string<char32_t> operator "" s( const char32_t *str, size_t len ); // C++1
 */
 
 #include <__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <string_view>
 #include <iosfwd>
 #include <cstring>
@@ -522,10 +531,6 @@ basic_string<char32_t> operator "" s( const char32_t *str, size_t len ); // C++1
 #include <__debug>
 
 #include "__fwd/string.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -792,7 +797,7 @@ public:
         noexcept(is_nothrow_default_constructible<allocator_type>::value);
 
     _LIBCUDACXX_INLINE_VISIBILITY explicit basic_string(const allocator_type& __a)
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
         noexcept(is_nothrow_copy_constructible<allocator_type>::value);
 #else
         noexcept;
@@ -803,7 +808,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     basic_string(basic_string&& __str)
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
         noexcept(is_nothrow_move_constructible<allocator_type>::value);
 #else
         noexcept;
@@ -1214,7 +1219,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(basic_string& __str)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept;
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -1225,7 +1230,7 @@ public:
     const value_type* c_str() const noexcept {return data();}
     _LIBCUDACXX_INLINE_VISIBILITY
     const value_type* data() const noexcept  {return _CUDA_VSTD::__to_raw_pointer(__get_pointer());}
-#if _LIBCUDACXX_STD_VER > 14 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if _CCCL_STD_VER > 2014 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
     _LIBCUDACXX_INLINE_VISIBILITY
     value_type* data()             noexcept  {return _CUDA_VSTD::__to_raw_pointer(__get_pointer());}
 #endif
@@ -1370,28 +1375,28 @@ public:
     int compare(size_type __pos1, size_type __n1, const value_type* __s) const;
     int compare(size_type __pos1, size_type __n1, const value_type* __s, size_type __n2) const;
 
-#if _LIBCUDACXX_STD_VER > 17
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+#if _CCCL_STD_VER > 2017
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool starts_with(__self_view __sv) const noexcept
     { return __self_view(data(), size()).starts_with(__sv); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool starts_with(value_type __c) const noexcept
     { return !empty() && _Traits::eq(front(), __c); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool starts_with(const value_type* __s) const noexcept
     { return starts_with(__self_view(__s)); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool ends_with(__self_view __sv) const noexcept
     { return __self_view(data(), size()).ends_with( __sv); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool ends_with(value_type __c) const noexcept
     { return !empty() && _Traits::eq(back(), __c); }
 
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool ends_with(const value_type* __s) const noexcept
     { return ends_with(__self_view(__s)); }
 #endif
@@ -1594,7 +1599,7 @@ private:
         noexcept(__alloc_traits::is_always_equal::value);
     _LIBCUDACXX_INLINE_VISIBILITY
     void __move_assign(basic_string& __str, true_type)
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         noexcept;
 #else
         noexcept(is_nothrow_move_assignable<allocator_type>::value);
@@ -1714,7 +1719,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string()
 template <class _CharT, class _Traits, class _Allocator>
 inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string(const allocator_type& __a)
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
         noexcept(is_nothrow_copy_constructible<allocator_type>::value)
 #else
         noexcept
@@ -1841,7 +1846,7 @@ basic_string<_CharT, _Traits, _Allocator>::basic_string(
 template <class _CharT, class _Traits, class _Allocator>
 inline
 basic_string<_CharT, _Traits, _Allocator>::basic_string(basic_string&& __str)
-#if _LIBCUDACXX_STD_VER <= 14
+#if _CCCL_STD_VER <= 2014
         noexcept(is_nothrow_move_constructible<allocator_type>::value)
 #else
         noexcept
@@ -2257,7 +2262,7 @@ template <class _CharT, class _Traits, class _Allocator>
 inline
 void
 basic_string<_CharT, _Traits, _Allocator>::__move_assign(basic_string& __str, true_type)
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     noexcept
 #else
     noexcept(is_nothrow_move_assignable<allocator_type>::value)
@@ -3256,7 +3261,7 @@ template <class _CharT, class _Traits, class _Allocator>
 inline
 void
 basic_string<_CharT, _Traits, _Allocator>::swap(basic_string& __str)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept
 #else
         noexcept(!__alloc_traits::propagate_on_container_swap::value ||
@@ -4127,7 +4132,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(basic_string<_CharT, _Traits, _Allocator>& __lhs,
      basic_string<_CharT, _Traits, _Allocator>& __rhs)
-     noexcept(_NOEXCEPT_(__lhs.swap(__rhs)))
+     noexcept(noexcept(__lhs.swap(__rhs)))
 {
     __lhs.swap(__rhs);
 }
@@ -4230,7 +4235,7 @@ basic_istream<_CharT, _Traits>&
 getline(basic_istream<_CharT, _Traits>&& __is,
         basic_string<_CharT, _Traits, _Allocator>& __str);
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<class _CharT, class _Traits, class _Allocator, class _Up>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase(basic_string<_CharT, _Traits, _Allocator>& __str, const _Up& __v)
@@ -4281,7 +4286,7 @@ basic_string<_CharT, _Traits, _Allocator>::__subscriptable(const const_iterator*
 _LIBCUDACXX_EXTERN_TEMPLATE(class _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS basic_string<char>)
 _LIBCUDACXX_EXTERN_TEMPLATE(class _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS basic_string<wchar_t>)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 // Literal suffixes for basic_string [basic.string.literals]
 inline namespace literals
 {

@@ -15,14 +15,18 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__functional/binary_function.h"
 #include "../__functional/invoke.h"
 #include "../__functional/weak_result_type.h"
 #include "../__utility/forward.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -36,12 +40,12 @@ private:
     type __f_;
 
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     __mem_fn(type __f) noexcept : __f_(__f) {}
 
     // invoke
     template <class... _ArgTypes>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     typename __invoke_return<type, _ArgTypes...>::type
     operator() (_ArgTypes&&... __args) const {
         return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__args)...);
@@ -49,7 +53,7 @@ public:
 };
 
 template<class _Rp, class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __mem_fn<_Rp _Tp::*>
 mem_fn(_Rp _Tp::* __pm) noexcept
 {

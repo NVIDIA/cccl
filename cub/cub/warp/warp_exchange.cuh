@@ -34,6 +34,15 @@
 #pragma once
 
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
@@ -64,7 +73,6 @@ using InternalWarpExchangeImpl =
 /**
  * @brief The WarpExchange class provides [<em>collective</em>](index.html#sec0)
  *        methods for rearranging data partitioned across a CUDA warp.
- * @ingroup WarpModule
  *
  * @tparam T
  *   The data type to be exchanged.
@@ -164,7 +172,7 @@ public:
    * @brief Collective constructor using the specified memory allocation as
    *        temporary storage.
    */
-  explicit __device__ __forceinline__
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
   WarpExchange(TempStorage &temp_storage)
       : InternalWarpExchange(temp_storage)
   {
@@ -228,7 +236,7 @@ public:
    *   <em>blocked</em> arrangements. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -284,7 +292,7 @@ public:
    *   Items from exchange. May be aliased to @p input_items.
    */
   template <typename OutputT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD])
   {
@@ -342,7 +350,7 @@ public:
    * @param[in] ranks Corresponding scatter ranks
    */
   template <typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
@@ -408,7 +416,7 @@ public:
    */
   template <typename OutputT,
             typename OffsetT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
                    OutputT (&output_items)[ITEMS_PER_THREAD],
                    OffsetT (&ranks)[ITEMS_PER_THREAD])

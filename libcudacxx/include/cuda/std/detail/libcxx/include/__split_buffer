@@ -6,9 +6,13 @@
 #include <type_traits>
 #include <algorithm>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -616,7 +620,7 @@ template <class _Tp, class _Allocator>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__split_buffer<_Tp, _Allocator>& __x, __split_buffer<_Tp, _Allocator>& __y)
-        noexcept(_NOEXCEPT_(__x.swap(__y)))
+        noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

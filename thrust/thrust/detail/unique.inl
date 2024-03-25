@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/unique.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -28,10 +36,10 @@
 THRUST_NAMESPACE_BEGIN
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        ForwardIterator first,
                        ForwardIterator last)
@@ -41,11 +49,11 @@ ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy
 } // end unique()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                        ForwardIterator first,
                        ForwardIterator last,
@@ -56,11 +64,11 @@ ForwardIterator unique(const thrust::detail::execution_policy_base<DerivedPolicy
 } // end unique()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                            InputIterator first,
                            InputIterator last,
@@ -71,12 +79,12 @@ OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPo
 } // end unique_copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                            InputIterator first,
                            InputIterator last,
@@ -88,11 +96,11 @@ OutputIterator unique_copy(const thrust::detail::execution_policy_base<DerivedPo
 } // end unique_copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<ForwardIterator1,ForwardIterator2>
   unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator1 keys_first,
@@ -104,12 +112,12 @@ __host__ __device__
 } // end unique_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<ForwardIterator1,ForwardIterator2>
   unique_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator1 keys_first,
@@ -122,13 +130,13 @@ __host__ __device__
 } // end unique_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
   unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                      InputIterator1 keys_first,
@@ -142,14 +150,14 @@ __host__ __device__
 } // end unique_by_key_copy()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
   unique_by_key_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                      InputIterator1 keys_first,
@@ -327,11 +335,11 @@ template<typename InputIterator1,
   return thrust::unique_by_key_copy(select_system(system1,system2,system3,system4), keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
 } // end unique_by_key_copy()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename ForwardIterator,
           typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
     typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
@@ -342,10 +350,10 @@ __host__ __device__
   return unique_count(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, binary_pred);
 } // end unique_count()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
     typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
@@ -355,10 +363,10 @@ __host__ __device__
   return unique_count(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end unique_count()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename ForwardIterator,
           typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
     typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(ForwardIterator first,
                  ForwardIterator last,
@@ -373,9 +381,9 @@ __host__ __device__
   return thrust::unique_count(select_system(system), first, last, binary_pred);
 } // end unique_count()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
     typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(ForwardIterator first,
                  ForwardIterator last)

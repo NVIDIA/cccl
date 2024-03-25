@@ -12,14 +12,19 @@
 
 #ifndef __cuda_std__
 #include <__config>
-#include "../__type_traits/remove_all_extents.h"
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_scalar.h"
+#include "../__type_traits/remove_all_extents.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -29,7 +34,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_standard_layout
     : public integral_constant<bool, _LIBCUDACXX_IS_STANDARD_LAYOUT(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_standard_layout_v = _LIBCUDACXX_IS_STANDARD_LAYOUT(_Tp);
 #endif
@@ -40,7 +45,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_standard_layout
     : integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_standard_layout_v
     = is_standard_layout<_Tp>::value;

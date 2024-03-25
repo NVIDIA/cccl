@@ -27,11 +27,21 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/agent_three_way_partition.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
-#include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
@@ -272,7 +282,7 @@ struct device_three_way_partition_policy_hub
 {
   struct DefaultTuning
   {
-    constexpr static int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
+    static constexpr int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
 
     using ThreeWayPartitionPolicy = cub::AgentThreeWayPartitionPolicy<256,
                                                                       ITEMS_PER_THREAD,

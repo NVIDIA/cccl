@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -44,7 +52,7 @@ struct execution_policy_base : execution_policy_marker {};
 
 
 template<typename DerivedPolicy>
-constexpr __host__ __device__
+constexpr _CCCL_HOST_DEVICE
 execution_policy_base<DerivedPolicy> &strip_const(const execution_policy_base<DerivedPolicy> &x)
 {
   return const_cast<execution_policy_base<DerivedPolicy>&>(x);
@@ -52,7 +60,7 @@ execution_policy_base<DerivedPolicy> &strip_const(const execution_policy_base<De
 
 
 template<typename DerivedPolicy>
-constexpr __host__ __device__
+constexpr _CCCL_HOST_DEVICE
 DerivedPolicy &derived_cast(execution_policy_base<DerivedPolicy> &x)
 {
   return static_cast<DerivedPolicy&>(x);
@@ -60,7 +68,7 @@ DerivedPolicy &derived_cast(execution_policy_base<DerivedPolicy> &x)
 
 
 template<typename DerivedPolicy>
-constexpr __host__ __device__
+constexpr _CCCL_HOST_DEVICE
 const DerivedPolicy &derived_cast(const execution_policy_base<DerivedPolicy> &x)
 {
   return static_cast<const DerivedPolicy&>(x);

@@ -21,6 +21,15 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/type_traits/has_nested_type.h>
 #include <thrust/detail/type_traits/has_member_function.h>
@@ -72,9 +81,11 @@ template<typename Alloc, typename U>
   typedef thrust::detail::integral_constant<bool, value> type;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 // The following fields of std::allocator have been deprecated (since C++17).
 // There's no way to detect it other than explicit specialization.
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 #define THRUST_SPECIALIZE_DEPRECATED(trait_name)                               \
 template <typename T>                                                          \
 struct trait_name<std::allocator<T>> : false_type {};
@@ -178,13 +189,14 @@ template<typename Alloc>
   static const bool value = type::value;
 };
 
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 template<class Alloc, class U, bool = has_rebind<Alloc, U>::value>
   struct rebind_alloc
 {
     typedef typename Alloc::template rebind<U>::other type;
 };
 
-#if THRUST_CPP_DIALECT >= 2011
 template<template<typename, typename...> class Alloc,
          typename T, typename... Args, typename U>
   struct rebind_alloc<Alloc<T, Args...>, U, true>
@@ -198,61 +210,7 @@ template<template<typename, typename...> class Alloc,
 {
     typedef Alloc<U, Args...> type;
 };
-#else // C++03
-template <template <typename> class Alloc, typename T, typename U>
-  struct rebind_alloc<Alloc<T>, U, true>
-{
-    typedef typename Alloc<T>::template rebind<U>::other type;
-};
 
-template <template <typename> class Alloc, typename T, typename U>
-  struct rebind_alloc<Alloc<T>, U, false>
-{
-    typedef Alloc<U> type;
-};
-
-template<template<typename, typename> class Alloc,
-         typename T, typename A0, typename U>
-  struct rebind_alloc<Alloc<T, A0>, U, true>
-{
-    typedef typename Alloc<T, A0>::template rebind<U>::other type;
-};
-
-template<template<typename, typename> class Alloc,
-         typename T, typename A0, typename U>
-  struct rebind_alloc<Alloc<T, A0>, U, false>
-{
-    typedef Alloc<U, A0> type;
-};
-
-template<template<typename, typename, typename> class Alloc,
-         typename T, typename A0, typename A1, typename U>
-  struct rebind_alloc<Alloc<T, A0, A1>, U, true>
-{
-    typedef typename Alloc<T, A0, A1>::template rebind<U>::other type;
-};
-
-template<template<typename, typename, typename> class Alloc,
-         typename T, typename A0, typename A1, typename U>
-  struct rebind_alloc<Alloc<T, A0, A1>, U, false>
-{
-    typedef Alloc<U, A0, A1> type;
-};
-
-template<template<typename, typename, typename, typename> class Alloc,
-         typename T, typename A0, typename A1, typename A2, typename U>
-  struct rebind_alloc<Alloc<T, A0, A1, A2>, U, true>
-{
-    typedef typename Alloc<T, A0, A1, A2>::template rebind<U>::other type;
-};
-
-template<template<typename, typename, typename, typename> class Alloc,
-         typename T, typename A0, typename A1, typename A2, typename U>
-  struct rebind_alloc<Alloc<T, A0, A1, A2>, U, false>
-{
-    typedef Alloc<U, A0, A1, A2> type;
-};
-#endif
 
 } // end allocator_traits_detail
 
@@ -342,7 +300,6 @@ template<typename Alloc>
   // XXX rebind and rebind_traits are alias templates
   //     and so are omitted while c++11 is unavailable
 
-#if THRUST_CPP_DIALECT >= 2011
   template <typename U>
   using rebind_alloc =
     typename allocator_traits_detail::rebind_alloc<allocator_type, U>::type;
@@ -353,50 +310,36 @@ template<typename Alloc>
   // We define this nested type alias for compatibility with the C++03-style
   // rebind_* mechanisms.
   using other = allocator_traits;
-#else
-  template <typename U>
-  struct rebind_alloc
-  {
-    typedef typename
-      allocator_traits_detail::rebind_alloc<allocator_type, U>::type other;
-  };
-  template <typename U>
-  struct rebind_traits
-  {
-    typedef allocator_traits<typename rebind_alloc<U>::other> other;
-  };
-#endif
+
 
   // Deprecated std::allocator typedefs that we need:
   typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
   typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static pointer allocate(allocator_type &a, size_type n, const_void_pointer hint);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static void deallocate(allocator_type &a, pointer p, size_type n);
 
   // XXX should probably change T* to pointer below and then relax later
 
   template<typename T>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p);
-  
-  template<typename T, typename Arg1>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p, const Arg1 &arg1);
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p);
 
-#if THRUST_CPP_DIALECT >= 2011
+  template<typename T, typename Arg1>
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, const Arg1 &arg1);
+
   template<typename T, typename... Args>
-  inline __host__ __device__ static void construct(allocator_type &a, T *p, Args&&... args);
-#endif
+  inline _CCCL_HOST_DEVICE static void construct(allocator_type &a, T *p, Args&&... args);
 
   template<typename T>
-  inline __host__ __device__ static void destroy(allocator_type &a, T *p);
+  inline _CCCL_HOST_DEVICE static void destroy(allocator_type &a, T *p);
 
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   static size_type max_size(const allocator_type &a);
 }; // end allocator_traits
 
@@ -430,7 +373,7 @@ template<typename Alloc>
     identity_<type>                                           // else get() needs to return a value
   >::type get_result_type;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   inline static get_result_type get(Alloc &a);
 };
 

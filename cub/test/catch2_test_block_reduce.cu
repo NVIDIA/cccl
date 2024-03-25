@@ -27,12 +27,9 @@
 
 #include <cub/block/block_reduce.cuh>
 
-#include <thrust/host_vector.h>
-
+#include <limits>
 #include <numeric>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <cub::BlockReduceAlgorithm Algorithm,
@@ -78,7 +75,7 @@ template <cub::BlockReduceAlgorithm Algorithm,
           int BlockDimZ,
           class T,
           class ActionT>
-void block_reduce(thrust::device_vector<T> &in, thrust::device_vector<T> &out, ActionT action)
+void block_reduce(c2h::device_vector<T> &in, c2h::device_vector<T> &out, ActionT action)
 {
   dim3 block_dims(BlockDimX, BlockDimY, BlockDimZ);
 
@@ -175,12 +172,12 @@ CUB_TEST("Block reduce works with sum",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
-  thrust::host_vector<type> h_in = d_in;
-  thrust::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
+  c2h::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return static_cast<type>(lhs + rhs);
     }));
 
@@ -205,11 +202,11 @@ CUB_TEST("Block reduce works with sum in partial tiles",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
-  thrust::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_in = d_in;
   std::vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return static_cast<type>(lhs + rhs);
     }));
@@ -235,12 +232,12 @@ CUB_TEST("Block reduce works with custom op",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
-  thrust::host_vector<type> h_in = d_in;
-  thrust::host_vector<type> h_reference(
+  c2h::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_reference(
     1,
     std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return std::max(lhs, rhs);
@@ -267,12 +264,12 @@ CUB_TEST("Block reduce works with custom op in partial tiles",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, params::tile_size))));
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
-  thrust::host_vector<type> h_in = d_in;
-  thrust::host_vector<type> h_reference(
+  c2h::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_reference(
     1,
     std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return std::max(lhs, rhs);
@@ -305,12 +302,12 @@ CUB_TEST("Block reduce works with custom types",
 
   constexpr int tile_size = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
+  c2h::gen(CUB_SEED(10), d_in, std::numeric_limits<type>::min());
 
-  thrust::host_vector<type> h_in = d_in;
-  thrust::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
+  c2h::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return static_cast<type>(lhs + rhs);
     }));
 
@@ -341,12 +338,12 @@ CUB_TEST("Block reduce works with vec types",
 
   constexpr int tile_size = block_dim_x * block_dim_y * block_dim_z * items_per_thread;
 
-  thrust::device_vector<type> d_out(1);
-  thrust::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
+  c2h::device_vector<type> d_out(1);
+  c2h::device_vector<type> d_in(GENERATE_COPY(take(2, random(1, tile_size))));
   c2h::gen(CUB_SEED(10), d_in);
 
-  thrust::host_vector<type> h_in = d_in;
-  thrust::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
+  c2h::host_vector<type> h_in = d_in;
+  c2h::host_vector<type> h_reference(1, std::accumulate(h_in.begin() + 1, h_in.end(), h_in[0], [](const type &lhs, const type &rhs) {
       return static_cast<type>(lhs + rhs);
     }));
 
@@ -359,4 +356,3 @@ CUB_TEST("Block reduce works with vec types",
 
   REQUIRE(h_reference == d_out);
 }
-

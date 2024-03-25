@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/logical.h>
@@ -24,9 +32,9 @@
 
 THRUST_NAMESPACE_BEGIN
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::all_of;
@@ -34,9 +42,9 @@ bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
 } // end all_of()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::any_of;
@@ -44,9 +52,9 @@ bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
 } // end any_of()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::none_of;

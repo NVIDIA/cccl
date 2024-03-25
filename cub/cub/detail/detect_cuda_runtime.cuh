@@ -27,19 +27,24 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Utilities for CUDA dynamic parallelism.
  */
 
 #pragma once
 
-#include <cub/util_namespace.cuh>
+// We cannot use `cub/config.cuh` here due to circular dependencies
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda_runtime_api.h>
-
-CUB_NAMESPACE_BEGIN
-namespace detail
-{
 
 #ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
 
@@ -86,11 +91,11 @@ namespace detail
 #if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
 
 #define CUB_RDC_ENABLED
-#define CUB_RUNTIME_FUNCTION __host__ __device__
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
 
 #else // RDC disabled:
 
-#define CUB_RUNTIME_FUNCTION __host__
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST
 
 #endif // RDC enabled
 
@@ -111,6 +116,3 @@ namespace detail
 #endif
 
 #endif // Do not document
-
-} // namespace detail
-CUB_NAMESPACE_END

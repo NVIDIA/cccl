@@ -6,6 +6,7 @@
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
+#include <thrust/scatter.h>
 #include <unittest/unittest.h>
 
 // Functions for performing statistical tests of randomness
@@ -360,7 +361,7 @@ DECLARE_VECTOR_UNITTEST(TestShuffleCopySimple);
 template <typename T>
 void TestHostDeviceIdentical(size_t m) {
   thrust::host_vector<T> host_result(m);
-  thrust::host_vector<T> device_result(m);
+  thrust::device_vector<T> device_result(m);
   thrust::sequence(host_result.begin(), host_result.end(), T{});
   thrust::sequence(device_result.begin(), device_result.end(), T{});
 
@@ -376,35 +377,29 @@ DECLARE_VARIABLE_UNITTEST(TestHostDeviceIdentical);
 
 template <typename T>
 void TestFunctionIsBijection(size_t m) {
-  thrust::default_random_engine host_g(0xD5);
   thrust::default_random_engine device_g(0xD5);
-
-  thrust::system::detail::generic::feistel_bijection host_f(m, host_g);
   thrust::system::detail::generic::feistel_bijection device_f(m, device_g);
 
-  if (static_cast<double>(host_f.nearest_power_of_two()) >= static_cast<double>(std::numeric_limits<T>::max()) || m == 0) {
+  const size_t total_length = device_f.nearest_power_of_two();
+  if (static_cast<double>(total_length) >= static_cast<double>(std::numeric_limits<T>::max()) || m == 0) {
     return;
   }
+  ASSERT_LEQUAL(total_length, std::max(m * 2, size_t(16))); // Check the rounded up size is at most double the input
 
-  thrust::host_vector<T> host_result(host_f.nearest_power_of_two());
-  thrust::host_vector<T> device_result(device_f.nearest_power_of_two());
-  thrust::sequence(host_result.begin(), host_result.end(), T{});
-  thrust::sequence(device_result.begin(), device_result.end(), T{});
+  auto device_result_it = thrust::make_transform_iterator(thrust::make_counting_iterator(T(0)),
+                    device_f);
 
-  thrust::transform(host_result.begin(), host_result.end(), host_result.begin(),
-                    host_f);
-  thrust::transform(device_result.begin(), device_result.end(),
-                    device_result.begin(), device_f);
+  thrust::device_vector<T> unpermuted(total_length, T(0));
 
-  ASSERT_EQUAL(host_result, device_result);
+  // Run a scatter, this should copy each value to the index matching is value, the result should be in ascending order
+  thrust::scatter(device_result_it,
+                  device_result_it + static_cast<T>(total_length), // total_length is guaranteed to fit T
+                  device_result_it, unpermuted.begin());
 
-  thrust::sort(host_result.begin(), host_result.end());
-  // Assert all values were generated exactly once
-  for (uint64_t i = 0; i < m; i++) {
-    ASSERT_EQUAL((uint64_t)host_result[i], i);
-  }
+  // Check every index is in the result, if any are missing then the function was not a bijection over [0,m)
+  ASSERT_EQUAL(true, thrust::equal(unpermuted.begin(), unpermuted.end(), thrust::make_counting_iterator(T(0))));
 }
-DECLARE_VARIABLE_UNITTEST(TestFunctionIsBijection);
+DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
 
 void TestBijectionLength() {
   thrust::default_random_engine g(0xD5);

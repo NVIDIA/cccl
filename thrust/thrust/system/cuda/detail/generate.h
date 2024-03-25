@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <iterator>
 #include <thrust/system/cuda/config.h>
@@ -60,7 +68,7 @@ template <class Derived,
           class OutputIt,
           class Size,
           class Generator>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 generate_n(execution_policy<Derived> &policy,
            OutputIt                   result,
            Size                       count,
@@ -76,7 +84,7 @@ generate_n(execution_policy<Derived> &policy,
 template <class Derived,
           class OutputIt,
           class Generator>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 generate(execution_policy<Derived> &policy,
          OutputIt                   first,
          OutputIt                   last,

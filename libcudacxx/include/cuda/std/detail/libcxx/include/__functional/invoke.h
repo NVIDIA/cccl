@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/apply_cv.h"
 #include "../__type_traits/conditional.h"
@@ -32,10 +40,6 @@
 #include "../__type_traits/remove_cv.h"
 #include "../__utility/declval.h"
 #include "../__utility/forward.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 
@@ -338,7 +342,7 @@ _LIBCUDACXX_INLINE_VISIBILITY __nat __invoke(__any, _Args&& ...__args);
 
 // bullets 1, 2 and 3
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet1<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -347,7 +351,7 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
     noexcept(noexcept((static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...)))
     { return           (static_cast<_A0&&>(__a0).*__f)(static_cast<_Args&&>(__args)...); }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet2<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -356,7 +360,7 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
     noexcept(noexcept((__a0.get().*__f)(static_cast<_Args&&>(__args)...)))
     { return          (__a0.get().*__f)(static_cast<_Args&&>(__args)...); }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0, class ..._Args,
           class = __enable_if_bullet3<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -367,7 +371,7 @@ __invoke(_Fp&& __f, _A0&& __a0, _Args&& ...__args)
 
 // bullets 4, 5 and 6
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0,
           class = __enable_if_bullet4<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -376,7 +380,7 @@ __invoke(_Fp&& __f, _A0&& __a0)
     noexcept(noexcept(static_cast<_A0&&>(__a0).*__f))
     { return          static_cast<_A0&&>(__a0).*__f; }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0,
           class = __enable_if_bullet5<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -385,7 +389,7 @@ __invoke(_Fp&& __f, _A0&& __a0)
     noexcept(noexcept(__a0.get().*__f))
     { return          __a0.get().*__f; }
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class _A0,
           class = __enable_if_bullet6<_Fp, _A0> >
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -396,7 +400,7 @@ __invoke(_Fp&& __f, _A0&& __a0)
 
 // bullet 7
 
-_LIBCUDACXX_DISABLE_EXEC_CHECK
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fp, class ..._Args>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 constexpr decltype(_CUDA_VSTD::declval<_Fp>()(_CUDA_VSTD::declval<_Args>()...))
@@ -503,7 +507,7 @@ struct __invoke_void_return_wrapper<_Ret, true>
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // is_invocable
 
@@ -554,7 +558,7 @@ invoke(_Fn&& __f, _Args&&... __args)
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

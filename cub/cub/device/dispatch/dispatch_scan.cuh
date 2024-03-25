@@ -14,9 +14,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -35,8 +35,17 @@
 
 #pragma once
 
-#include <cub/agent/agent_scan.cuh>
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/agent_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_scan.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
@@ -68,7 +77,7 @@ CUB_NAMESPACE_BEGIN
  *   Number of tiles
  */
 template <typename ScanTileStateT>
-__global__ void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -94,9 +103,9 @@ __global__ void DeviceScanInitKernel(ScanTileStateT tile_state, int num_tiles)
  *   (i.e., length of `d_selected_out`)
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
-__global__ void DeviceCompactInitKernel(ScanTileStateT tile_state,
-                                        int num_tiles,
-                                        NumSelectedIteratorT d_num_selected_out)
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceCompactInitKernel(ScanTileStateT tile_state,
+                                                          int num_tiles,
+                                                          NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -116,10 +125,10 @@ __global__ void DeviceCompactInitKernel(ScanTileStateT tile_state,
  *   Chained tuning policy
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -165,13 +174,13 @@ template <typename ChainedPolicyT,
           typename OffsetT,
           typename AccumT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
-  __global__ void DeviceScanKernel(InputIteratorT d_in,
-                                   OutputIteratorT d_out,
-                                   ScanTileStateT tile_state,
-                                   int start_tile,
-                                   ScanOpT scan_op,
-                                   InitValueT init_value,
-                                   OffsetT num_items)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanKernel(InputIteratorT d_in,
+                                                     OutputIteratorT d_out,
+                                                     ScanTileStateT tile_state,
+                                                     int start_tile,
+                                                     ScanOpT scan_op,
+                                                     InitValueT init_value,
+                                                     OffsetT num_items)
 {
   using RealInitValueT = typename InitValueT::value_type;
   typedef typename ChainedPolicyT::ActivePolicy::ScanPolicyT ScanPolicyT;
@@ -205,13 +214,13 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *        DeviceScan
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading scan inputs \iterator
+ *   Random-access input iterator type for reading scan inputs @iterator
  *
  * @tparam OutputIteratorT
- *   Random-access output iterator type for writing scan outputs \iterator
+ *   Random-access output iterator type for writing scan outputs @iterator
  *
  * @tparam ScanOpT
- *   Binary scan functor type having member 
+ *   Binary scan functor type having member
  *   `auto operator()(const T &a, const U &b)`
  *
  * @tparam InitValueT
@@ -226,9 +235,9 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT = 
+          typename AccumT =
             detail::accumulator_t<
-              ScanOpT, 
+              ScanOpT,
               cub::detail::conditional_t<
                 std::is_same<InitValueT, NullType>::value,
                 cub::detail::value_t<InputIteratorT>,
@@ -303,7 +312,7 @@ struct DispatchScan : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -324,7 +333,7 @@ struct DispatchScan : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ DispatchScan(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(void *d_temp_storage,
                                                     size_t &temp_storage_bytes,
                                                     InputIteratorT d_in,
                                                     OutputIteratorT d_out,
@@ -348,7 +357,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
   Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
     typedef typename ActivePolicyT::ScanPolicyT Policy;
@@ -365,7 +374,8 @@ struct DispatchScan : SelectedPolicy
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -377,8 +387,8 @@ struct DispatchScan : SelectedPolicy
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
-      if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles,
-                                                          allocation_sizes[0])))
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
@@ -386,10 +396,10 @@ struct DispatchScan : SelectedPolicy
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
       void *allocations[1] = {};
-      if (CubDebug(error = AliasTemporaries(d_temp_storage,
-                                            temp_storage_bytes,
-                                            allocations,
-                                            allocation_sizes)))
+
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -409,9 +419,8 @@ struct DispatchScan : SelectedPolicy
 
       // Construct the tile status interface
       ScanTileStateT tile_state;
-      if (CubDebug(error = tile_state.Init(num_tiles,
-                                           allocations[0],
-                                           allocation_sizes[0])))
+      error = CubDebug(tile_state.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -436,32 +445,33 @@ struct DispatchScan : SelectedPolicy
         .doit(init_kernel, tile_state, num_tiles);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get SM occupancy for scan_kernel
       int scan_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(scan_sm_occupancy, // out
-                                          scan_kernel,
-                                          Policy::BLOCK_THREADS)))
+      error = CubDebug(MaxSmOccupancy(scan_sm_occupancy, // out
+                                      scan_kernel,
+                                      Policy::BLOCK_THREADS));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get max x-dimension of grid
       int max_dim_x;
-      if (CubDebug(error = cudaDeviceGetAttribute(&max_dim_x,
-                                                  cudaDevAttrMaxGridDimX,
-                                                  device_ordinal)))
+      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -499,14 +509,15 @@ struct DispatchScan : SelectedPolicy
                 num_items);
 
         // Check for failure to launch
-        if (CubDebug(error = cudaPeekAtLastError()))
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
         {
           break;
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = detail::DebugSyncStream(stream);
-        if (CubDebug(error))
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
         {
           break;
         }
@@ -517,7 +528,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __host__ __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     typedef typename DispatchScan::MaxPolicy MaxPolicyT;
     typedef typename cub::ScanTileState<AccumT> ScanTileStateT;
@@ -564,7 +575,7 @@ struct DispatchScan : SelectedPolicy
    *   Default is stream<sub>0</sub>.
    *
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -581,7 +592,8 @@ struct DispatchScan : SelectedPolicy
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -598,7 +610,8 @@ struct DispatchScan : SelectedPolicy
                             ptx_version);
 
       // Dispatch to chained policy
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -608,7 +621,7 @@ struct DispatchScan : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

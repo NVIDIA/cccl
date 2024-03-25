@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/mr/memory_resource.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,7 +50,7 @@ public:
         return upstream_resource->deallocate(p, bytes, alignment);
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     virtual bool do_is_equal(const memory_resource<Pointer> & other) const noexcept override
     {
         return upstream_resource->is_equal(other);

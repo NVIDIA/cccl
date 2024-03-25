@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/system/detail/generic/binary_search.h>
 
@@ -33,7 +41,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T, typename
 ForwardIterator lower_bound(execution_policy<DerivedPolicy> &exec,
                             ForwardIterator begin,
                             ForwardIterator end,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp)
 {
     // omp prefers generic::lower_bound to cpp::lower_bound
@@ -45,7 +53,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T, typename
 ForwardIterator upper_bound(execution_policy<DerivedPolicy> &exec,
                             ForwardIterator begin,
                             ForwardIterator end,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp)
 {
     // omp prefers generic::upper_bound to cpp::upper_bound
@@ -57,7 +65,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T, typename
 bool binary_search(execution_policy<DerivedPolicy> &exec,
                    ForwardIterator begin,
                    ForwardIterator end,
-                   const T& value, 
+                   const T& value,
                    StrictWeakOrdering comp)
 {
     // omp prefers generic::binary_search to cpp::binary_search

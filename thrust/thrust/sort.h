@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -73,7 +81,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p sort_by_key
  */
 template<typename DerivedPolicy, typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last);
@@ -165,7 +173,7 @@ template<typename RandomAccessIterator>
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last,
@@ -212,7 +220,7 @@ __host__ __device__
  */
 template<typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(RandomAccessIterator first,
             RandomAccessIterator last,
             StrictWeakOrdering comp);
@@ -263,7 +271,7 @@ __host__ __device__
  *  \see \p stable_sort_by_key
  */
 template<typename DerivedPolicy, typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator last);
@@ -363,7 +371,7 @@ template<typename RandomAccessIterator>
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator last,
@@ -481,7 +489,7 @@ template<typename RandomAccessIterator,
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -603,7 +611,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -730,7 +738,7 @@ template<typename RandomAccessIterator1,
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           RandomAccessIterator1 keys_first,
                           RandomAccessIterator1 keys_last,
@@ -857,7 +865,7 @@ template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           RandomAccessIterator1 keys_first,
                           RandomAccessIterator1 keys_last,
@@ -995,7 +1003,7 @@ template<typename RandomAccessIterator1,
  *  \see \c less<T>
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last);
@@ -1055,7 +1063,7 @@ template<typename ForwardIterator>
                  ForwardIterator last);
 
 
-/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending 
+/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
  *  order accoring to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
@@ -1110,14 +1118,14 @@ template<typename ForwardIterator>
  *  \see \c less<T>
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last,
                  Compare comp);
 
 
-/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending 
+/*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
  *  order accoring to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
@@ -1189,17 +1197,17 @@ template<typename ForwardIterator, typename Compare>
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
  *  in an array where the data becomes unsorted using the \p thrust::host execution policy for
  *  parallelization:
- *  
+ *
  *  \code
  *  #include <thrust/sort.h>
  *  #include <thrust/execution_policy.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {0, 1, 2, 3, 0, 1, 2, 3};
- *  
+ *
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted
  *  \endcode
@@ -1211,7 +1219,7 @@ template<typename ForwardIterator, typename Compare>
  *  \see \p stable_sort_by_key
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last);
@@ -1230,16 +1238,16 @@ __host__ __device__
  *
  *  The following code snippet demonstrates how to use \p is_sorted_until to find the first position
  *  in an array where the data becomes unsorted:
- *  
+ *
  *  \code
  *  #include <thrust/sort.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {0, 1, 2, 3, 0, 1, 2, 3};
- *  
+ *
  *  int * B = thrust::is_sorted_until(A, A + 8);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted
  *  \endcode
@@ -1282,12 +1290,12 @@ template<typename ForwardIterator>
  *  #include <thrust/execution_policy.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
- *  
+ *
  *  thrust::greater<int> comp;
  *  int * B = thrust::is_sorted_until(thrust::host, A, A + 8, comp);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted in descending order
  *  \endcode
@@ -1299,7 +1307,7 @@ template<typename ForwardIterator>
  *  \see \p stable_sort_by_key
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last,
@@ -1327,12 +1335,12 @@ __host__ __device__
  *  #include <thrust/functional.h>
  *
  *  ...
- *   
+ *
  *  int A[8] = {3, 2, 1, 0, 3, 2, 1, 0};
- *  
+ *
  *  thrust::greater<int> comp;
  *  int * B = thrust::is_sorted_until(A, A + 8, comp);
- *  
+ *
  *  // B - A is 4
  *  // [A, B) is sorted in descending order
  *  \endcode

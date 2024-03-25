@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -36,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p all_of determines whether all elements in a range satify a predicate.
  *  Specifically, \p all_of returns \c true if <tt>pred(*i)</tt> is \c true
- *  for every iterator \c i in the range <tt>[first, last)</tt> and 
+ *  for every iterator \c i in the range <tt>[first, last)</tt> and
  *  \c false otherwise.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -63,7 +71,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  // empty range
  *  thrust::all_of(thrust::host, A, A, thrust::identity<bool>()); // returns false
- *  
+ *
  *  \endcode
  *
  *  \see any_of
@@ -71,13 +79,13 @@ THRUST_NAMESPACE_BEGIN
  *  \see transform_reduce
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
 
 
 /*! \p all_of determines whether all elements in a range satify a predicate.
  * Specifically, \p all_of returns \c true if <tt>pred(*i)</tt> is \c true
- * for every iterator \c i in the range <tt>[first, last)</tt> and 
+ * for every iterator \c i in the range <tt>[first, last)</tt> and
  * \c false otherwise.
  *
  *  \param first The beginning of the sequence.
@@ -99,7 +107,7 @@ bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, In
  *
  *  // empty range
  *  thrust::all_of(A, A, thrust::identity<bool>()); // returns false
- *  
+ *
  *  \endcode
  *
  *  \see any_of
@@ -112,7 +120,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
 
 /*! \p any_of determines whether any element in a range satifies a predicate.
  *  Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
- *  for any iterator \c i in the range <tt>[first, last)</tt> and 
+ *  for any iterator \c i in the range <tt>[first, last)</tt> and
  *  \c false otherwise.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -148,13 +156,13 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see transform_reduce
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
-   
+
 
 /*! \p any_of determines whether any element in a range satifies a predicate.
  * Specifically, \p any_of returns \c true if <tt>pred(*i)</tt> is \c true
- * for any iterator \c i in the range <tt>[first, last)</tt> and 
+ * for any iterator \c i in the range <tt>[first, last)</tt> and
  * \c false otherwise.
  *
  *  \param first The beginning of the sequence.
@@ -189,7 +197,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
 
 
 /*! \p none_of determines whether no element in a range satifies a predicate.
- *  Specifically, \p none_of returns \c true if there is no iterator \c i in 
+ *  Specifically, \p none_of returns \c true if there is no iterator \c i in
  *  the range <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true,
  *  and \c false otherwise.
  *
@@ -226,12 +234,12 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred);
  *  \see transform_reduce
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
 
 
 /*! \p none_of determines whether no element in a range satifies a predicate.
- *  Specifically, \p none_of returns \c true if there is no iterator \c i in 
+ *  Specifically, \p none_of returns \c true if there is no iterator \c i in
  *  the range <tt>[first, last)</tt> such that <tt>pred(*i)</tt> is \c true,
  *  and \c false otherwise.
  *

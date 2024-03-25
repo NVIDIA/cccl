@@ -18,12 +18,20 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/type_traits/minimum_type.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
-{ 
+{
 
 template<typename T1,
          typename T2  = minimum_type_detail::any_conversion,

@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -59,13 +67,13 @@ THRUST_NAMESPACE_BEGIN
  *  thrust::reverse(thrust::device, v.begin(), v.end());
  *  // v is now {5, 4, 3, 2, 1, 0}
  *  \endcode
- *  
+ *
  *  \see https://en.cppreference.com/w/cpp/algorithm/reverse
  *  \see \p reverse_copy
  *  \see \p reverse_iterator
  */
 template<typename DerivedPolicy, typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void reverse(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                BidirectionalIterator first,
                BidirectionalIterator last);
@@ -93,7 +101,7 @@ __host__ __device__
  *  thrust::reverse(v.begin(), v.end());
  *  // v is now {5, 4, 3, 2, 1, 0}
  *  \endcode
- *  
+ *
  *  \see https://en.cppreference.com/w/cpp/algorithm/reverse
  *  \see \p reverse_copy
  *  \see \p reverse_iterator
@@ -107,7 +115,7 @@ template<typename BidirectionalIterator>
  *  is written to a different output range, rather than inplace.
  *
  *  \p reverse_copy copies elements from the range <tt>[first, last)</tt> to the
- *  range <tt>[result, result + (last - first))</tt> such that the copy is a 
+ *  range <tt>[result, result + (last - first))</tt> such that the copy is a
  *  reverse of the original range. Specifically: for every <tt>i</tt> such that
  *  <tt>0 <= i < (last - first)</tt>, \p reverse_copy performs the assignment
  *  <tt>*(result + (last - first) - i) = *(first + i)</tt>.
@@ -144,13 +152,13 @@ template<typename BidirectionalIterator>
  *  // input is still {0, 1, 2, 3, 4, 5}
  *  // output is now  {5, 4, 3, 2, 1, 0}
  *  \endcode
- *  
+ *
  *  \see https://en.cppreference.com/w/cpp/algorithm/reverse_copy
  *  \see \p reverse
  *  \see \p reverse_iterator
  */
 template<typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator reverse_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                               BidirectionalIterator first,
                               BidirectionalIterator last,
@@ -161,7 +169,7 @@ __host__ __device__
  *  is written to a different output range, rather than inplace.
  *
  *  \p reverse_copy copies elements from the range <tt>[first, last)</tt> to the
- *  range <tt>[result, result + (last - first))</tt> such that the copy is a 
+ *  range <tt>[result, result + (last - first))</tt> such that the copy is a
  *  reverse of the original range. Specifically: for every <tt>i</tt> such that
  *  <tt>0 <= i < (last - first)</tt>, \p reverse_copy performs the assignment
  *  <tt>*(result + (last - first) - i) = *(first + i)</tt>.
@@ -192,7 +200,7 @@ __host__ __device__
  *  // input is still {0, 1, 2, 3, 4, 5}
  *  // output is now  {5, 4, 3, 2, 1, 0}
  *  \endcode
- *  
+ *
  *  \see https://en.cppreference.com/w/cpp/algorithm/reverse_copy
  *  \see \p reverse
  *  \see \p reverse_iterator

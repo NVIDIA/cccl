@@ -1,11 +1,105 @@
 set(files
   __assert
+  __algorithm/adjacent_find.h
+  __algorithm/all_of.h
+  __algorithm/any_of.h
+  __algorithm/binary_search.h
+  __algorithm/clamp.h
+  __algorithm/comp_ref_type.h
+  __algorithm/comp.h
+  __algorithm/copy_backward.h
+  __algorithm/copy_if.h
+  __algorithm/copy_n.h
+  __algorithm/copy.h
+  __algorithm/count.h
+  __algorithm/count_if.h
+  __algorithm/equal_range.h
+  __algorithm/equal.h
+  __algorithm/fill_n.h
+  __algorithm/fill.h
+  __algorithm/find_end.h
+  __algorithm/find_first_of.h
+  __algorithm/find_if_not.h
+  __algorithm/find_if.h
+  __algorithm/find.h
+  __algorithm/for_each_n.h
+  __algorithm/for_each.h
+  __algorithm/generate_n.h
+  __algorithm/generate.h
+  __algorithm/half_positive.h
+  __algorithm/includes.h
+  __algorithm/is_heap_until.h
+  __algorithm/is_heap.h
+  __algorithm/is_partitioned.h
+  __algorithm/is_permutation.h
+  __algorithm/is_sorted_until.h
+  __algorithm/is_sorted.h
+  __algorithm/iter_swap.h
+  __algorithm/iterator_operations.h
+  __algorithm/lexicographical_compare.h
+  __algorithm/lower_bound.h
+  __algorithm/make_heap.h
+  __algorithm/max_element.h
+  __algorithm/max.h
+  __algorithm/merge.h
+  __algorithm/min_element.h
+  __algorithm/min.h
+  __algorithm/minmax_element.h
+  __algorithm/minmax.h
+  __algorithm/mismatch.h
+  __algorithm/move_backward.h
+  __algorithm/move.h
+  __algorithm/next_permutation.h
+  __algorithm/none_of.h
+  __algorithm/partial_sort_copy.h
+  __algorithm/partial_sort.h
+  __algorithm/partition_copy.h
+  __algorithm/partition_point.h
+  __algorithm/partition.h
+  __algorithm/pop_heap.h
+  __algorithm/prev_permutation.h
+  __algorithm/push_heap.h
+  __algorithm/ranges_iterator_concept.h
+  __algorithm/remove_copy_if.h
+  __algorithm/remove_copy.h
+  __algorithm/remove_if.h
+  __algorithm/remove.h
+  __algorithm/replace_copy_if.h
+  __algorithm/replace_copy.h
+  __algorithm/replace_if.h
+  __algorithm/replace.h
+  __algorithm/reverse_copy.h
+  __algorithm/reverse.h
+  __algorithm/rotate_copy.h
+  __algorithm/rotate.h
+  __algorithm/search_n.h
+  __algorithm/search.h
+  __algorithm/set_difference.h
+  __algorithm/set_intersection.h
+  __algorithm/set_symmetric_difference.h
+  __algorithm/set_union.h
+  __algorithm/shift_left.h
+  __algorithm/shift_right.h
+  __algorithm/sift_down.h
+  __algorithm/sort_heap.h
   __algorithm/swap_ranges.h
+  __algorithm/transform.h
+  __algorithm/unique_copy.h
+  __algorithm/unique.h
+  __algorithm/upper_bound.h
   __availability
   __bit_reference
   __bsd_locale_defaults.h
   __bsd_locale_fallbacks.h
   __errc
+  __cccl_config
+  __cccl/compiler.h
+  __cccl/diagnostic.h
+  __cccl/dialect.h
+  __cccl/execution_space.h
+  __cccl/system_header.h
+  __cccl/version.h
+  __cccl/visibility.h
   __concepts/__concept_macros.h
   __concepts/_One_of.h
   __concepts/arithmetic.h
@@ -35,6 +129,10 @@ set(files
   __cuda/barrier.h
   __cuda/chrono.h
   __cuda/climits_prelude.h
+  __cuda/cmath_nvbf16.h
+  __cuda/cmath_nvfp16.h
+  __cuda/complex_nvbf16.h
+  __cuda/complex_nvfp16.h
   __cuda/cstddef_prelude.h
   __cuda/cstdint_prelude.h
   __cuda/latch.h
@@ -66,6 +164,7 @@ set(files
   __functional/perfect_forward.h
   __functional/pointer_to_binary_function.h
   __functional/pointer_to_unary_function.h
+  __functional/ranges_operations.h
   __functional/reference_wrapper.h
   __functional/unary_function.h
   __functional/unary_negate.h
@@ -76,11 +175,13 @@ set(files
   __fwd/get.h
   __fwd/hash.h
   __fwd/pair.h
+  __fwd/subrange.h
   __fwd/tuple.h
   __hash_table
   __iterator/access.h
   __iterator/advance.h
   __iterator/back_insert_iterator.h
+  __iterator/bounded_iterator.h
   __iterator/concepts.h
   __iterator/data.h
   __iterator/default_sentinel.h
@@ -90,21 +191,28 @@ set(files
   __iterator/front_insert_iterator.h
   __iterator/insert_iterator.h
   __iterator/incrementable_traits.h
+  __iterator/indirectly_comparable.h
   __iterator/istream_iterator.h
   __iterator/istreambuf_iterator.h
   __iterator/iter_move.h
   __iterator/iter_swap.h
   __iterator/iterator.h
   __iterator/iterator_traits.h
+  __iterator/mergeable.h
   __iterator/move_iterator.h
+  __iterator/move_sentinel.h
   __iterator/next.h
   __iterator/ostream_iterator.h
   __iterator/ostreambuf_iterator.h
+  __iterator/permutable.h
   __iterator/prev.h
+  __iterator/projected.h
   __iterator/readable_traits.h
   __iterator/reverse_access.h
   __iterator/reverse_iterator.h
   __iterator/size.h
+  __iterator/sortable.h
+  __iterator/unreachable_sentinel.h
   __iterator/wrap_iter.h
   __libcpp_version
   __locale
@@ -132,6 +240,19 @@ set(files
   __mutex_base
   __node_handle
   __nullptr
+  __ranges/access.h
+  __ranges/concepts.h
+  __ranges/dangling.h
+  __ranges/data.h
+  __ranges/empty.h
+  __ranges/enable_borrowed_range.h
+  __ranges/enable_view.h
+  __ranges/rbegin.h
+  __ranges/rend.h
+  __ranges/size.h
+  __ranges/subrange.h
+  __ranges/view_interface.h
+  __ranges/views.h
   __split_buffer
   __sso_allocator
   __std_stream
@@ -144,6 +265,7 @@ set(files
   __tuple_dir/structured_bindings.h
   __tuple_dir/tuple_element.h
   __tuple_dir/tuple_indices.h
+  __tuple_dir/tuple_like_ext.h
   __tuple_dir/tuple_like.h
   __tuple_dir/tuple_size.h
   __tuple_dir/tuple_types.h
@@ -293,6 +415,7 @@ set(files
   __utility/swap.h
   __utility/to_underlying.h
   __utility/unreachable.h
+  __variant/monostate.h
   __verbose_abort
   algorithm
   any
@@ -397,6 +520,7 @@ set(files
   ostream
   queue
   random
+  ranges
   ratio
   regex
   scoped_allocator

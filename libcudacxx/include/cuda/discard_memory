@@ -1,0 +1,59 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA_DISCARD_MEMORY
+#define _CUDA_DISCARD_MEMORY
+
+#include "__cccl_config"
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "std/cstdint"
+#include "ptx"
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+inline _LIBCUDACXX_HOST_DEVICE void discard_memory(volatile void* __ptr, size_t __nbytes) noexcept
+{
+  // The discard PTX instruction is only available with PTX ISA 7.4 and later
+#if __cccl_ptx_isa < 740ULL
+  (void) (__ptr);
+  (void) (__nbytes);
+#else
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (if (!__isGlobal((void*) __ptr)) return;
+
+     char* __p                               = reinterpret_cast<char*>(const_cast<void*>(__ptr));
+     char* const __end_p                     = __p + __nbytes;
+     static constexpr size_t _LINE_SIZE = 128;
+
+     // Trim the first block and last block if they're not 128 bytes aligned
+     size_t __misalignment = reinterpret_cast<uintptr_t>(__p) % _LINE_SIZE;
+     char* __start_aligned      = __misalignment == 0 ? __p : __p + (_LINE_SIZE - __misalignment);
+     char* const __end_aligned  = __end_p - (reinterpret_cast<uintptr_t>(__end_p) % _LINE_SIZE);
+
+     while (__start_aligned < __end_aligned) {
+       asm volatile("discard.global.L2 [%0], 128;" ::"l"(__start_aligned) :);
+       __start_aligned += _LINE_SIZE;
+     }),
+    ((void) (__ptr); (void) (__nbytes);))
+#endif
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif

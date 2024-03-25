@@ -12,9 +12,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -26,18 +26,27 @@
  ******************************************************************************/
 
 /**
- * @file AgentScanByKey implements a stateful abstraction of CUDA thread blocks 
+ * @file AgentScanByKey implements a stateful abstraction of CUDA thread blocks
  *       for participating in device-wide prefix scan by key.
  */
 
 #pragma once
+
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
@@ -52,8 +61,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentScanByKey
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int _BLOCK_THREADS,
@@ -73,7 +82,7 @@ struct AgentScanByKeyPolicy
   static constexpr BlockScanAlgorithm SCAN_ALGORITHM   = _SCAN_ALGORITHM;
   static constexpr BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 
-  struct detail 
+  struct detail
   {
     using delay_constructor_t = DelayConstructorT;
   };
@@ -218,7 +227,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
            SizeValuePairT &tile_aggregate,
            Int2Type<false> /* is_inclusive */)
@@ -228,7 +237,7 @@ struct AgentScanByKey
   }
 
   // Inclusive scan specialization
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
            SizeValuePairT &tile_aggregate,
            Int2Type<true> /* is_inclusive */)
@@ -242,7 +251,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization (with prefix from predecessors)
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
            SizeValuePairT &tile_aggregate,
            TilePrefixCallbackT &prefix_op,
@@ -254,7 +263,7 @@ struct AgentScanByKey
   }
 
   // Inclusive scan specialization (with prefix from predecessors)
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
            SizeValuePairT &tile_aggregate,
            TilePrefixCallbackT &prefix_op,
@@ -270,7 +279,7 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ZipValuesAndFlags(OffsetT num_remaining,
                     AccumT  (&values)[ITEMS_PER_THREAD],
                     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
@@ -292,7 +301,7 @@ struct AgentScanByKey
     }
   }
 
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   UnzipValues(AccumT         (&values)[ITEMS_PER_THREAD],
               SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
@@ -306,7 +315,7 @@ struct AgentScanByKey
 
   template <bool IsNull = std::is_same<InitValueT, NullType>::value,
             typename std::enable_if<!IsNull, int>::type = 0>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT  (&items)[ITEMS_PER_THREAD],
                 OffsetT (&flags)[ITEMS_PER_THREAD])
   {
@@ -319,7 +328,7 @@ struct AgentScanByKey
 
   template <bool IsNull = std::is_same<InitValueT, NullType>::value,
             typename std::enable_if<IsNull, int>::type = 0>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT  (&/*items*/)[ITEMS_PER_THREAD],
                 OffsetT (&/*flags*/)[ITEMS_PER_THREAD])
   {}
@@ -331,7 +340,7 @@ struct AgentScanByKey
   // Process a tile of input (dynamic chained scan)
   //
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void ConsumeTile(OffsetT /*num_items*/,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT /*num_items*/,
                                               OffsetT num_remaining,
                                               int tile_idx,
                                               OffsetT tile_base,
@@ -451,7 +460,7 @@ struct AgentScanByKey
 
   // Dequeue and scan tiles of items as part of a dynamic chained scan
   // with Init functor
-  __device__ __forceinline__ AgentScanByKey(TempStorage &storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScanByKey(TempStorage &storage,
                                             KeysInputIteratorT d_keys_in,
                                             KeyT *d_keys_prev_in,
                                             ValuesInputIteratorT d_values_in,
@@ -482,7 +491,7 @@ struct AgentScanByKey
    * start_tile
    *   The starting tile for the current grid
    */
-  __device__ __forceinline__ void ConsumeRange(OffsetT num_items,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
                                                ScanTileStateT &tile_state,
                                                int start_tile)
   {

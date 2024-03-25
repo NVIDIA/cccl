@@ -90,9 +90,13 @@ template <class T, class Container>
 #include <__config>
 #include <deque>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -198,7 +202,7 @@ public:
 
     template <class... _Args>
         _LIBCUDACXX_INLINE_VISIBILITY
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
         decltype(auto) emplace(_Args&&... __args)
         { return c.emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);}
 #else
@@ -299,7 +303,7 @@ typename enable_if<
     void
 >::type
 swap(stack<_Tp, _Container>& __x, stack<_Tp, _Container>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -75,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 
@@ -150,7 +158,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *  #include <thrust/equal.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  struct compare_modulo_two
  *  {
  *    __host__ __device__
@@ -171,7 +179,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1,
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred);
 
 
@@ -200,7 +208,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  \code
  *  #include <thrust/equal.h>
- *  
+ *
  *  struct compare_modulo_two
  *  {
  *    __host__ __device__
@@ -220,7 +228,7 @@ bool equal(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Inp
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal
  */
-template <typename InputIterator1, typename InputIterator2, 
+template <typename InputIterator1, typename InputIterator2,
           typename BinaryPredicate>
 bool equal(InputIterator1 first1, InputIterator1 last1,
            InputIterator2 first2, BinaryPredicate binary_pred);

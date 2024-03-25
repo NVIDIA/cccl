@@ -14,11 +14,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../cstdlib"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "../cstdlib"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -28,12 +32,12 @@ inline void __libcpp_unreachable()
   _LIBCUDACXX_UNREACHABLE();
 }
 
-#if _LIBCUDACXX_STD_VER > 20
+#if _CCCL_STD_VER > 2020
 
 [[noreturn]] _LIBCUDACXX_INLINE_VISIBILITY
 inline void unreachable() { _LIBCUDACXX_UNREACHABLE(); }
 
-#endif // _LIBCUDACXX_STD_VER > 20
+#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

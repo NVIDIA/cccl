@@ -23,7 +23,7 @@
  * (C) Copyright David Abrahams 2002.
  * (C) Copyright Jeremy Siek    2002.
  * (C) Copyright Thomas Witt    2002.
- * 
+ *
  * Distributed under the Boost Software License, Version 1.0.
  * (See accompanying NOTICE file for the complete license)
  *
@@ -33,6 +33,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/reverse_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
@@ -158,55 +166,51 @@ template<typename BidirectionalIterator>
   public:
     /*! Default constructor does nothing.
      */
-    __host__ __device__
-    reverse_iterator() {}
+#if defined(_CCCL_COMPILER_MSVC_2017)
+    _CCCL_HOST_DEVICE reverse_iterator() {}
+#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+    reverse_iterator() = default;
+#endif // !_CCCL_COMPILER_MSVC_2017
 
     /*! \p Constructor accepts a \c BidirectionalIterator pointing to a range
      *  for this \p reverse_iterator to reverse.
      *
      *  \param x A \c BidirectionalIterator pointing to a range to reverse.
      */
-    __host__ __device__
-    explicit reverse_iterator(BidirectionalIterator x);
+    _CCCL_HOST_DEVICE
+    explicit reverse_iterator(BidirectionalIterator x)
+      : super_t(x)
+    {}
 
     /*! \p Copy constructor allows construction from a related compatible
      *  \p reverse_iterator.
      *
      *  \param r A \p reverse_iterator to copy from.
      */
-    template<typename OtherBidirectionalIterator>
-    __host__ __device__
-    reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const &r
-// XXX msvc screws this up
-// XXX remove these guards when we have static_assert
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
-                     , typename thrust::detail::enable_if<
-                         thrust::detail::is_convertible<
-                           OtherBidirectionalIterator,
-                           BidirectionalIterator
-                         >::value
-                       >::type * = 0
-#endif // MSVC
-                     );
+    template <typename OtherBidirectionalIterator,
+              detail::enable_if_convertible_t<OtherBidirectionalIterator, BidirectionalIterator, int> = 0>
+    _CCCL_HOST_DEVICE reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const& rhs)
+        : super_t(rhs.base())
+    {}
 
   /*! \cond
    */
   private:
-    __thrust_exec_check_disable__
-    __host__ __device__
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
     typename super_t::reference dereference() const;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void increment();
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void decrement();
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void advance(typename super_t::difference_type n);
 
     template<typename OtherBidirectionalIterator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename super_t::difference_type
     distance_to(reverse_iterator<OtherBidirectionalIterator> const &y) const;
   /*! \endcond
@@ -216,12 +220,12 @@ template<typename BidirectionalIterator>
 
 /*! \p make_reverse_iterator creates a \p reverse_iterator
  *  from a \c BidirectionalIterator pointing to a range of elements to reverse.
- *  
+ *
  *  \param x A \c BidirectionalIterator pointing to a range to reverse.
  *  \return A new \p reverse_iterator which reverses the range \p x.
  */
 template<typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 reverse_iterator<BidirectionalIterator> make_reverse_iterator(BidirectionalIterator x);
 
 

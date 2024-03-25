@@ -21,9 +21,17 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/select_system.h>
@@ -48,7 +56,7 @@ template <
 , typename ForwardIt, typename Sentinel, typename OutputIt
 , typename UnaryOperation
 >
-__host__
+_CCCL_HOST
 event<DerivedPolicy>
 async_transform(
   thrust::execution_policy<DerivedPolicy>& exec
@@ -76,7 +84,7 @@ struct transform_fn final
   , typename ForwardIt, typename Sentinel, typename OutputIt
   , typename UnaryOperation
   >
-  __host__
+  _CCCL_HOST
   static auto
   call(
     thrust::detail::execution_policy_base<DerivedPolicy> const& exec
@@ -98,7 +106,7 @@ struct transform_fn final
     typename ForwardIt, typename Sentinel, typename OutputIt
   , typename UnaryOperation
   >
-  __host__
+  _CCCL_HOST
   static auto call(
     ForwardIt&& first, Sentinel&& last
   , OutputIt&& output
@@ -117,7 +125,7 @@ struct transform_fn final
   )
 
   template <typename... Args>
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   auto operator()(Args&&... args) const
   THRUST_RETURNS(
     call(THRUST_FWD(args)...)

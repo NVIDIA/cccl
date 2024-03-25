@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/random/detail/random_core_access.h>
 
 #include <thrust/detail/cstdint.h>
@@ -74,7 +82,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
   public:
     // types
-    
+
     /*! \typedef result_type
      *  \brief The type of the unsigned integer produced by this \p subtract_with_carry_engine.
      */
@@ -110,10 +118,10 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
     /*! This constructor, which optionally accepts a seed, initializes a new
      *  \p subtract_with_carry_engine.
-     *  
+     *
      *  \param value The seed used to intialize this \p subtract_with_carry_engine's state.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit subtract_with_carry_engine(result_type value = default_seed);
 
     /*! This method initializes this \p subtract_with_carry_engine's state, and optionally accepts
@@ -121,15 +129,15 @@ template<typename UIntType, size_t w, size_t s, size_t r>
      *
      *  \param value The seed used to initializes this \p subtract_with_carry_engine's state.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void seed(result_type value = default_seed);
 
     // generating functions
-    
+
     /*! This member function produces a new random value and updates this \p subtract_with_carry_engine's state.
      *  \return A new random number.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     result_type operator()(void);
 
     /*! This member function advances this \p subtract_with_carry_engine's state a given number of times
@@ -138,7 +146,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
      *  \param z The number of random values to discard.
      *  \note This function is provided because an implementation may be able to accelerate it.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     void discard(unsigned long long z);
 
     /*! \cond
@@ -150,7 +158,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
 
     friend struct thrust::random::detail::random_core_access;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool equal(const subtract_with_carry_engine &rhs) const;
 
     template<typename CharT, typename Traits>
@@ -170,7 +178,7 @@ template<typename UIntType, size_t w, size_t s, size_t r>
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
 template<typename UIntType_, size_t w_, size_t s_, size_t r_>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator==(const subtract_with_carry_engine<UIntType_,w_,s_,r_> &lhs,
                 const subtract_with_carry_engine<UIntType_,w_,s_,r_> &rhs);
 
@@ -181,7 +189,7 @@ bool operator==(const subtract_with_carry_engine<UIntType_,w_,s_,r_> &lhs,
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
 template<typename UIntType_, size_t w_, size_t s_, size_t r_>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool operator!=(const subtract_with_carry_engine<UIntType_,w_,s_,r_>&lhs,
                 const subtract_with_carry_engine<UIntType_,w_,s_,r_>&rhs);
 

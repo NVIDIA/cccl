@@ -98,10 +98,8 @@ static void basic(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
 
-  thrust::device_vector<T> input(elements);
+  thrust::device_vector<T> input = generate(elements);
   thrust::device_vector<T> output(elements);
-
-  gen(seed_t{}, input);
 
   T *d_input  = thrust::raw_pointer_cast(input.data());
   T *d_output = thrust::raw_pointer_cast(output.data());
@@ -123,7 +121,7 @@ static void basic(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t *d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(thrust::raw_pointer_cast(tmp.data()),
                          tmp_size,
                          d_input,

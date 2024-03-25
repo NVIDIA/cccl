@@ -369,9 +369,13 @@ template <class R, class Alloc> struct uses_allocator<packaged_task<R>, Alloc>;
 #include <mutex>
 #include <thread>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 #error <future> is not supported on this single threaded system
@@ -496,9 +500,9 @@ class _LIBCUDACXX_EXCEPTION_ABI _LIBCUDACXX_AVAILABILITY_FUTURE_ERROR future_err
     error_code __ec_;
 public:
     future_error(error_code __ec);
-#if _LIBCUDACXX_STD_VERS > 14
+#if _CCCL_STD_VER > 2014
     explicit future_error(future_errc _Ev) : logic_error(), __ec_(make_error_code(_Ev)) {}
-#endif
+#endif // _CCCL_STD_VER > 2014
     _LIBCUDACXX_INLINE_VISIBILITY
     const error_code& code() const noexcept {return __ec_;}
 

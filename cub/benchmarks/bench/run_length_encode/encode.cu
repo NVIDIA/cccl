@@ -105,14 +105,14 @@ static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  const std::size_t min_segment_size = 1;
+  constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
   thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_vals(elements);
   thrust::device_vector<T> out_keys(elements);
   thrust::device_vector<T> in_keys =
-    gen_uniform_key_segments<T>(seed_t{}, elements, min_segment_size, max_segment_size);
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
   T *d_in_keys             = thrust::raw_pointer_cast(in_keys.data());
   T *d_out_keys            = thrust::raw_pointer_cast(out_keys.data());
@@ -158,7 +158,7 @@ static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_temp_storage,
                          temp_storage_bytes,
                          d_in_keys,

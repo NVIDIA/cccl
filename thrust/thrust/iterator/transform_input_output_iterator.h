@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/transform_input_output_iterator.inl>
 
 THRUST_NAMESPACE_BEGIN
@@ -62,7 +70,7 @@ THRUST_NAMESPACE_BEGIN
  *    // Iterator that returns negated values and writes squared values
  *    auto iter = thrust::make_transform_input_output_iterator(v.begin(),
  *        thrust::negate<float>{}, thrust::square<float>{});
- * 
+ *
  *    // Iterator negates values when reading
  *    std::cout << iter[0] << " ";  // -1.0f;
  *    std::cout << iter[1] << " ";  // -2.0f;
@@ -112,7 +120,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
    * \param input_function An \c InputFunction to be executed on values read from the iterator
    * \param output_function An \c OutputFunction to be executed on values written to the iterator
    */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     transform_input_output_iterator(Iterator const& io, InputFunction input_function, OutputFunction output_function)
       : super_t(io), input_function(input_function), output_function(output_function)
     {
@@ -122,7 +130,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
      */
   private:
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename super_t::reference dereference() const
     {
       return detail::transform_input_output_iterator_proxy<
@@ -148,7 +156,7 @@ template <typename InputFunction, typename OutputFunction, typename Iterator>
  */
 template <typename InputFunction, typename OutputFunction, typename Iterator>
 transform_input_output_iterator<InputFunction, OutputFunction, Iterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 make_transform_input_output_iterator(Iterator io, InputFunction input_function, OutputFunction output_function)
 {
     return transform_input_output_iterator<InputFunction, OutputFunction, Iterator>(io, input_function, output_function);

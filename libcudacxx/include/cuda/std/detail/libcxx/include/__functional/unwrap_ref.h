@@ -14,9 +14,13 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,7 +36,7 @@ struct __unwrap_reference<reference_wrapper<_Tp> > { typedef _LIBCUDACXX_NODEBUG
 template <class _Tp>
 struct decay;
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp>
 struct unwrap_reference : __unwrap_reference<_Tp> { };
 
@@ -44,11 +48,11 @@ struct unwrap_ref_decay : unwrap_reference<typename decay<_Tp>::type> { };
 
 template <class _Tp>
 using unwrap_ref_decay_t = typename unwrap_ref_decay<_Tp>::type;
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 template <class _Tp>
 struct __unwrap_ref_decay
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     : unwrap_ref_decay<_Tp>
 #else
     : __unwrap_reference<typename decay<_Tp>::type>

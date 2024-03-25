@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -80,7 +88,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
@@ -133,14 +141,14 @@ __host__ __device__
  *  \see thrust::copy
  */
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                         InputIterator first,
                         Size n,
                         OutputIterator result);
 
 
-	
+
 /*! \p copy copies elements from the range [\p first, \p last) to the range
  *  [\p result, \p result + (\p last - \p first)). That is, it performs
  *  the assignments *\p result = *\p first, *(\p result + \c 1) = *(\p first + \c 1),
@@ -296,7 +304,7 @@ template<typename InputIterator, typename Size, typename OutputIterator>
  *  \see \c remove_copy_if
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                          InputIterator first,
                          InputIterator last,
@@ -427,7 +435,7 @@ template<typename InputIterator,
  *  \see \c remove_copy_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                          InputIterator1 first,
                          InputIterator1 last,

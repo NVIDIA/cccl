@@ -16,9 +16,13 @@
 #include <stdexcept>
 #include <algorithm>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -26,12 +30,12 @@ _LIBCUDACXX_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_COMPILER_GCC) // gcc.gnu.org/PR37804
+#if defined(_CCCL_COMPILER_GCC) // gcc.gnu.org/PR37804
 template <class, class, class, class> class _LIBCUDACXX_TEMPLATE_VIS map;
 template <class, class, class, class> class _LIBCUDACXX_TEMPLATE_VIS multimap;
 template <class, class, class> class _LIBCUDACXX_TEMPLATE_VIS set;
 template <class, class, class> class _LIBCUDACXX_TEMPLATE_VIS multiset;
-#endif // _LIBCUDACXX_COMPILER_GCC
+#endif // _CCCL_COMPILER_GCC
 
 template <class _Tp, class _Compare, class _Allocator> class __tree;
 template <class _Tp, class _NodePtr, class _DiffType>
@@ -793,7 +797,7 @@ public:
     template <class> friend class __map_node_destructor;
 };
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _NodeType, class _Alloc>
 struct __generic_container_node_destructor;
 template <class _Tp, class _VoidPtr, class _Alloc>
@@ -824,7 +828,7 @@ public:
     typedef typename _NodeTypes::__node_value_type_pointer pointer;
 
     _LIBCUDACXX_INLINE_VISIBILITY __tree_iterator() noexcept
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     : __ptr_(nullptr)
 #endif
     {}
@@ -897,7 +901,7 @@ public:
     typedef typename _NodeTypes::__const_node_value_type_pointer pointer;
 
     _LIBCUDACXX_INLINE_VISIBILITY __tree_const_iterator() noexcept
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     : __ptr_(nullptr)
 #endif
     {}
@@ -1124,7 +1128,7 @@ public:
     void clear() noexcept;
 
     void swap(__tree& __t)
-#if _LIBCUDACXX_STD_VER <= 11
+#if _CCCL_STD_VER <= 2011
         noexcept(
             __is_nothrow_swappable<value_compare>::value
             && (!__node_traits::propagate_on_container_swap::value ||
@@ -1316,7 +1320,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY iterator
     __remove_node_pointer(__node_pointer) noexcept;
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     template <class _NodeHandle, class _InsertReturnType>
     _LIBCUDACXX_INLINE_VISIBILITY
     _InsertReturnType __node_handle_insert_unique(_NodeHandle&&);
@@ -1803,7 +1807,7 @@ __tree<_Tp, _Compare, _Allocator>::destroy(__node_pointer __nd) noexcept
 template <class _Tp, class _Compare, class _Allocator>
 void
 __tree<_Tp, _Compare, _Allocator>::swap(__tree& __t)
-#if _LIBCUDACXX_STD_VER <= 11
+#if _CCCL_STD_VER <= 2011
         noexcept(
             __is_nothrow_swappable<value_compare>::value
             && (!__node_traits::propagate_on_container_swap::value ||
@@ -2250,7 +2254,7 @@ __tree<_Tp, _Compare, _Allocator>::__remove_node_pointer(__node_pointer __ptr) n
     return __r;
 }
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp, class _Compare, class _Allocator>
 template <class _NodeHandle, class _InsertReturnType>
 _LIBCUDACXX_INLINE_VISIBILITY
@@ -2407,7 +2411,7 @@ __tree<_Tp, _Compare, _Allocator>::__node_handle_merge_multi(_Tree& __source)
     }
 }
 
-#endif  // _LIBCUDACXX_STD_VER > 14
+#endif  // _CCCL_STD_VER > 2014
 
 template <class _Tp, class _Compare, class _Allocator>
 typename __tree<_Tp, _Compare, _Allocator>::iterator
@@ -2731,7 +2735,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(__tree<_Tp, _Compare, _Allocator>& __x,
      __tree<_Tp, _Compare, _Allocator>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }

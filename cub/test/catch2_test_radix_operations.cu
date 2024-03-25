@@ -28,7 +28,6 @@
 #include <cub/block/radix_rank_sort_operations.cuh>
 
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/host_vector.h>
 
 #include <bitset>
 #include <climits>
@@ -56,9 +55,9 @@ struct fundamental_extractor_t
 };
 
 template <class T>
-thrust::host_vector<std::uint8_t> get_random_buffer()
+c2h::host_vector<std::uint8_t> get_random_buffer()
 {
-  thrust::device_vector<std::uint8_t> buffer(sizeof(T));
+  c2h::device_vector<std::uint8_t> buffer(sizeof(T));
   c2h::gen(CUB_SEED(3), buffer);
   return buffer;
 }
@@ -111,8 +110,8 @@ CUB_TEST("Radix operations extract digits from fundamental types",
   REQUIRE(traits::default_end_bit(decomposer) == max_key_bits);
 
   key_t val{};
-  thrust::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
-  const thrust::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
+  c2h::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
+  const c2h::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
 
   char *output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
   const char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
@@ -159,10 +158,10 @@ struct tuple_decomposer_t<::cuda::std::tuple<Ts...>>
 
 // clang-format off
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type 
+typename ::cuda::std::enable_if<I == 0>::type
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
 }
@@ -171,7 +170,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if <I != 0>::type
 buffer_to_tpl_helper(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(&::cuda::std::get<I>(tpl), buffer, element_size);
   buffer_to_tpl_helper<I - 1>(buffer + element_size, tpl);
@@ -184,10 +183,10 @@ void buffer_to_tpl(const char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I, class... Ts>
-typename ::cuda::std::enable_if<I == 0>::type 
+typename ::cuda::std::enable_if<I == 0>::type
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
 }
@@ -196,7 +195,7 @@ template <std::size_t I, class... Ts>
 typename ::cuda::std::enable_if <I != 0>::type
 tpl_to_buffer_helper(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   std::memcpy(buffer, &::cuda::std::get<I>(tpl), element_size);
   tpl_to_buffer_helper<I - 1>(buffer + element_size, tpl);
@@ -209,7 +208,7 @@ void tpl_to_buffer(char *buffer, ::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts), int>::type 
+typename ::cuda::std::enable_if<I >= sizeof...(Ts), int>::type
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &)
 {
   return 0;
@@ -219,13 +218,13 @@ template <std::size_t I = 0, class... Ts>
 typename ::cuda::std::enable_if <I < sizeof...(Ts), int>::type
 tpl_to_max_bits(::cuda::std::tuple<Ts...> &tpl)
 {
-  const std::size_t element_size =
+  constexpr std::size_t element_size =
     sizeof(typename ::cuda::std::tuple_element<I, ::cuda::std::tuple<Ts...>>::type);
   return element_size * CHAR_BIT + tpl_to_max_bits<I + 1>(tpl);
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type 
+typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
 tpl_to_min(::cuda::std::tuple<Ts...> &)
 {}
 
@@ -239,7 +238,7 @@ tpl_to_min(::cuda::std::tuple<Ts...> &tpl)
 }
 
 template <std::size_t I = 0, class... Ts>
-typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type 
+typename ::cuda::std::enable_if<I >= sizeof...(Ts)>::type
 tpl_to_max(::cuda::std::tuple<Ts...> &)
 {}
 
@@ -256,7 +255,7 @@ tpl_to_max(::cuda::std::tuple<Ts...> &tpl)
 /**
  * This test checks that radix operations can extract certain bits out of aggregate types.
  * Test runs for all possible combinations of `current_bit` and `num_bits` excluding padding bits.
- * For example, `struct custom_t { short s = 65535; float f = -42.2f; };` has the following binary 
+ * For example, `struct custom_t { short s = 65535; float f = -42.2f; };` has the following binary
  * representation:
  *
  *    <------------ `.f` ------------><-- padding ---><---- `.s` ---->
@@ -279,8 +278,8 @@ void test_tuple()
   using extractor_t  = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
 
   tpl_t tpl{};
-  thrust::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
-  const thrust::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
+  c2h::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
+  const c2h::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
 
   char *output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
   const char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
@@ -364,8 +363,8 @@ CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
   auto decomposer            = decomposer_t{};
 
   key_t val{};
-  thrust::host_vector<char> output_buffer_mem(sizeof(key_t));
-  thrust::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
+  c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
+  c2h::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
 
   char *output_buffer = thrust::raw_pointer_cast(output_buffer_mem.data());
   char *input_buffer  = thrust::raw_pointer_cast(input_buffer_mem.data());
@@ -409,7 +408,7 @@ CUB_TEST("Radix operations inverse pairs",
   auto decomposer = decomposer_t{};
 
   tpl_t tpl{};
-  thrust::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
+  c2h::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
 
   char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
   buffer_to_tpl(input_buffer, tpl);
@@ -419,7 +418,7 @@ CUB_TEST("Radix operations inverse pairs",
     input_buffer[i] = ~input_buffer[i];
   }
 
-  thrust::host_vector<char> output_buffer_mem = input_buffer_mem;
+  c2h::host_vector<char> output_buffer_mem = input_buffer_mem;
   char *output_buffer                         = thrust::raw_pointer_cast(output_buffer_mem.data());
 
   tpl_t inv = traits::bit_ordered_inversion_policy::inverse(decomposer, tpl);
@@ -440,8 +439,8 @@ CUB_TEST("Radix operations infere minimal value for fundamental types",
   using traits       = cub::detail::radix::traits_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  thrust::host_vector<char> output_buffer_mem(sizeof(key_t));
-  thrust::host_vector<char> input_buffer_mem(sizeof(key_t));
+  c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
+  c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
 
   key_t ref = std::numeric_limits<key_t>::lowest();
   key_t val = traits::min_raw_binary_key(decomposer_t{});
@@ -509,11 +508,11 @@ using fundamental_signed_types =
   c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
 
 /**
- * This tests checks that radix operations can convert a value to a binary-comparable 
+ * This tests checks that radix operations can convert a value to a binary-comparable
  * represetation. For example, `42.0f` is larger than `-42.0f`, but if we look at the
  * binary representation, it's not the case because of the sign bit:
  *
- *         s< exp. ><----- mantissa ------> 
+ *         s< exp. ><----- mantissa ------>
  *  42.0f: 01000010001010000000000000000000
  * -42.0f: 11000010001010000000000000000000
  *
@@ -624,7 +623,7 @@ TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
   fp_aggregate_t ordered_negative = conversion_policy::to_bit_ordered(decomposer_t{}, negative);
   fp_aggregate_t ordered_positibe = conversion_policy::to_bit_ordered(decomposer_t{}, positive);
 
-  const int num_bits       = CHAR_BIT;
+  constexpr int num_bits = CHAR_BIT;
 
   for (int bit = 0; bit < 8; bit += num_bits)
   {
@@ -638,7 +637,7 @@ TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
 }
 
 /**
- * This tests checks that radix operations respect the order of fields in the 
+ * This tests checks that radix operations respect the order of fields in the
  * tuple instead of looking at the binary key representation.
  */
 TEST_CASE("Radix operations allow fields permutation", "[radix][operations]")
@@ -656,8 +655,8 @@ TEST_CASE("Radix operations allow fields permutation", "[radix][operations]")
   fp_aggregate_t ordered_lhs = conversion_policy::to_bit_ordered(decomposer_t{}, lhs);
   fp_aggregate_t ordered_rhs = conversion_policy::to_bit_ordered(decomposer_t{}, lhs);
 
-  const int num_bits       = CHAR_BIT;
-  const int aggregate_bits = static_cast<int>(sizeof(float) + sizeof(double)) * CHAR_BIT;
+  constexpr int num_bits       = CHAR_BIT;
+  constexpr int aggregate_bits = (sizeof(float) + sizeof(double)) * CHAR_BIT;
 
   for (int current_bit = aggregate_bits - num_bits; current_bit >= 0; current_bit -= num_bits)
   {

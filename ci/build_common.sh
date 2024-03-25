@@ -6,107 +6,241 @@ set -eo pipefail
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
 # Script defaults
-CUDA_COMPILER=nvcc
+HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
+CXX_STANDARD=17
+CUDA_COMPILER=${CUDACXX:-nvcc} # $CUDACXX if set, otherwise `nvcc`
+CUDA_ARCHS= # Empty, use presets by default.
+GLOBAL_CMAKE_OPTIONS=()
+DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 
 # Check if the correct number of arguments has been provided
 function usage {
-    echo "Usage: $0 [OPTIONS] <HOST_COMPILER> <CXX_STANDARD> <GPU_ARCHS>"
+    echo "Usage: $0 [OPTIONS]"
+    echo
     echo "The PARALLEL_LEVEL environment variable controls the amount of build parallelism. Default is the number of cores."
-    echo "Example: PARALLEL_LEVEL=8 $0 g++-8 14 \"70\" "
-    echo "Example: $0 clang++-8 17 \"70;75;80-virtual\" "
-    echo "Possible options: "
-    echo "  -nvcc: path/to/nvcc"
+    echo
+    echo "Options:"
     echo "  -v/--verbose: enable shell echo for debugging"
+    echo "  -cuda: CUDA compiler (Defaults to \$CUDACXX if set, otherwise nvcc)"
+    echo "  -cxx: Host compiler (Defaults to \$CXX if set, otherwise g++)"
+    echo "  -std: CUDA/C++ standard (Defaults to 17)"
+    echo "  -arch: Target CUDA arches, e.g. \"60-real;70;80-virtual\" (Defaults to value in presets file)"
+    echo "  -cmake-options: Additional options to pass to CMake"
+    echo
+    echo "Examples:"
+    echo "  $ PARALLEL_LEVEL=8 $0"
+    echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
+    echo "  $ $0 -cxx clang++-8"
+    echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
+    echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
 }
 
-# Check for extra options
-# While there are more than 3 arguments, parse switches/options
-while [ "$#" -gt 3 ]
-do
-  case "${1}" in
-  -h)     usage ;;
-  -help)  usage ;;
-  --help) usage ;;
-  --verbose)           VERBOSE=1; shift ;;
-  -v)                  VERBOSE=1; shift ;;
-  -nvcc)               CUDA_COMPILER="${2}"; shift 2;;
-  -disable-benchmarks) ENABLE_CUB_BENCHMARKS="false"; shift ;;
-  *) usage ;;
-  esac
+# Parse options
+
+# Copy the args into a temporary array, since we will modify them and
+# the parent script may still need them.
+args=("$@")
+while [ "${#args[@]}" -ne 0 ]; do
+    case "${args[0]}" in
+    -v | --verbose) VERBOSE=1; args=("${args[@]:1}");;
+    -cxx)  HOST_COMPILER="${args[1]}"; args=("${args[@]:2}");;
+    -std)  CXX_STANDARD="${args[1]}";  args=("${args[@]:2}");;
+    -cuda) CUDA_COMPILER="${args[1]}"; args=("${args[@]:2}");;
+    -arch) CUDA_ARCHS="${args[1]}";    args=("${args[@]:2}");;
+    -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
+    -cmake-options)
+        if [ -n "${args[1]}" ]; then
+            IFS=' ' read -ra split_args <<< "${args[1]}"
+            GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
+            args=("${args[@]:2}")
+        else
+            echo "Error: No arguments provided for -cmake-options"
+            usage
+            exit 1
+        fi
+        ;;
+    -h | -help | --help) usage ;;
+    *) echo "Unrecognized option: ${args[0]}"; usage ;;
+    esac
 done
+
+# Convert to full paths:
+HOST_COMPILER=$(which ${HOST_COMPILER})
+CUDA_COMPILER=$(which ${CUDA_COMPILER})
+
+if [[ -n "${CUDA_ARCHS}" ]]; then
+    GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCHS}")
+fi
 
 if [ $VERBOSE ]; then
     set -x
 fi
 
-if [ "$#" -ne 3 ]; then
-    echo "Invalid number of arguments"
-    usage
-fi
-
 # Begin processing unsets after option parsing
 set -u
 
-# Assign command line arguments to variables
-readonly HOST_COMPILER=$(which $1)
-readonly CXX_STANDARD=$2
-
-# Replace spaces, commas and semicolons with semicolons for CMake list
-readonly GPU_ARCHS=$(echo $3 | tr ' ,' ';')
-
 readonly PARALLEL_LEVEL=${PARALLEL_LEVEL:=$(nproc)}
-readonly NVCC_VERSION=$($CUDA_COMPILER --version | grep release | awk '{print $6}' | cut -c2-)
 
-if [ -z ${DEVCONTAINER_NAME+x} ]; then
-    BUILD_DIR=../build/local
-else
-    BUILD_DIR=../build/${DEVCONTAINER_NAME}
+if [ -z ${CCCL_BUILD_INFIX+x} ]; then
+    CCCL_BUILD_INFIX=""
 fi
+
+# Presets will be configured in this directory:
+BUILD_DIR="../build/${CCCL_BUILD_INFIX}"
 
 # The most recent build will always be symlinked to cccl/build/latest
 mkdir -p $BUILD_DIR
 rm -f ../build/latest
 ln -sf $BUILD_DIR ../build/latest
 
-COMMON_CMAKE_OPTIONS="
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_CXX_STANDARD=${CXX_STANDARD} \
-    -DCMAKE_CUDA_STANDARD=${CXX_STANDARD} \
-    -DCMAKE_CXX_COMPILER=${HOST_COMPILER} \
-    -DCMAKE_CUDA_COMPILER=${CUDA_COMPILER} \
-    -DCMAKE_CUDA_HOST_COMPILER=${HOST_COMPILER} \
-    -DCMAKE_CUDA_ARCHITECTURES=${GPU_ARCHS} \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-"
+# Now that BUILD_DIR exists, use readlink to canonicalize the path:
+BUILD_DIR=$(readlink -f "${BUILD_DIR}")
 
-echo "========================================"
-echo "Begin build"
-echo "pwd=$(pwd)"
-echo "NVCC_VERSION=$NVCC_VERSION"
-echo "HOST_COMPILER=$HOST_COMPILER"
-echo "CXX_STANDARD=$CXX_STANDARD"
-echo "GPU_ARCHS=$GPU_ARCHS"
-echo "PARALLEL_LEVEL=$PARALLEL_LEVEL"
-echo "BUILD_DIR=$BUILD_DIR"
-echo "========================================"
+# Prepare environment for CMake:
+export CMAKE_BUILD_PARALLEL_LEVEL="${PARALLEL_LEVEL}"
+export CTEST_PARALLEL_LEVEL="1"
+export CXX="${HOST_COMPILER}"
+export CUDACXX="${CUDA_COMPILER}"
+export CUDAHOSTCXX="${HOST_COMPILER}"
+export CXX_STANDARD
 
-function configure(){
-    local CMAKE_OPTIONS=$1
-    cmake -S .. -B $BUILD_DIR $COMMON_CMAKE_OPTIONS $CMAKE_OPTIONS -G Ninja
+source ./pretty_printing.sh
+
+print_environment_details() {
+  begin_group "⚙️ Environment Details"
+
+  echo "pwd=$(pwd)"
+
+  print_var_values \
+      BUILD_DIR \
+      CXX_STANDARD \
+      CXX \
+      CUDACXX \
+      CUDAHOSTCXX \
+      NVCC_VERSION \
+      CMAKE_BUILD_PARALLEL_LEVEL \
+      CTEST_PARALLEL_LEVEL \
+      CCCL_BUILD_INFIX \
+      GLOBAL_CMAKE_OPTIONS
+
+  echo "Current commit is:"
+  git log -1 || echo "Not a repository"
+
+  if command -v nvidia-smi &> /dev/null; then
+    nvidia-smi
+  else
+    echo "nvidia-smi not found"
+  fi
+
+  end_group "⚙️ Environment Details"
 }
 
-function build(){
-    local BUILD_NAME=$1
-    source "./sccache_stats.sh" start
-    cmake --build $BUILD_DIR --parallel $PARALLEL_LEVEL
-    echo "${BUILD_NAME} build complete"
-    source "./sccache_stats.sh" end
+fail_if_no_gpu() {
+    if ! nvidia-smi &> /dev/null; then
+        echo "Error: No NVIDIA GPU detected. Please ensure you have an NVIDIA GPU installed and the drivers are properly configured." >&2
+        exit 1
+    fi
 }
 
-function configure_and_build() {
+function print_test_time_summary()
+{
+    ctest_log=${1}
+
+    if [ -f ${ctest_log} ]; then
+        begin_group "⏱️ Longest Test Steps"
+        # Only print the full output in CI:
+        if [ -n "${GITHUB_ACTIONS:-}" ]; then
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake
+        else
+            cmake -DLOGFILE=${ctest_log} -P ../cmake/PrintCTestRunTimes.cmake | head -n 15
+        fi
+        end_group "⏱️ Longest Test Steps"
+    fi
+}
+
+function configure_preset()
+{
     local BUILD_NAME=$1
-    local CMAKE_OPTIONS=$2
-    configure "$CMAKE_OPTIONS"
-    build "$BUILD_NAME"
+    local PRESET=$2
+    local CMAKE_OPTIONS=$3
+    local GROUP_NAME="🛠️  CMake Configure ${BUILD_NAME}"
+
+    pushd .. > /dev/null
+    run_command "$GROUP_NAME" cmake --preset=$PRESET --log-level=VERBOSE "${GLOBAL_CMAKE_OPTIONS[@]}" $CMAKE_OPTIONS
+    status=$?
+    popd > /dev/null
+    return $status
+}
+
+function build_preset() {
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local green="1;32"
+    local red="1;31"
+    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+
+    source "./sccache_stats.sh" "start"
+
+    pushd .. > /dev/null
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
+    status=$?
+    popd > /dev/null
+
+    minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
+
+    # Only print detailed stats in actions workflow
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        begin_group "💲 sccache stats"
+        echo "${minimal_sccache_stats}"
+        sccache -s
+        end_group
+
+        begin_group "🥷 ninja build times"
+        echo "The "weighted" time is the elapsed time of each build step divided by the number
+              of tasks that were running in parallel. This makes it an excellent approximation
+              of how "important" a slow step was. A link that is entirely or mostly serialized
+              will have a weighted time that is the same or similar to its elapsed time. A
+              compile that runs in parallel with 999 other compiles will have a weighted time
+              that is tiny."
+        ./ninja_summary.py -C ${BUILD_DIR}/${PRESET}
+        end_group
+    else
+      echo $minimal_sccache_stats
+    fi
+
+    return $status
+}
+
+function test_preset()
+{
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local GROUP_NAME="🚀  Test ${BUILD_NAME}"
+
+    fail_if_no_gpu
+
+
+    ctest_log_dir="${BUILD_DIR}/log/ctest"
+    ctest_log="${ctest_log_dir}/${PRESET}"
+    mkdir -p "${ctest_log_dir}"
+
+    pushd .. > /dev/null
+    run_command "$GROUP_NAME" ctest --output-log "${ctest_log}" --preset=$PRESET
+    status=$?
+    popd > /dev/null
+
+    print_test_time_summary ${ctest_log}
+
+    return $status
+}
+
+function configure_and_build_preset()
+{
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local CMAKE_OPTIONS=$3
+
+    configure_preset "$BUILD_NAME" "$PRESET" "$CMAKE_OPTIONS"
+    build_preset "$BUILD_NAME" "$PRESET"
 }

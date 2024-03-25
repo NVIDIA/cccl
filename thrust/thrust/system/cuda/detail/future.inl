@@ -9,9 +9,17 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/optional.h>
 #include <thrust/detail/type_deduction.h>
@@ -49,7 +57,7 @@ THRUST_INLINE_CONSTANT nonowning_t nonowning{};
 
 struct marker_deleter final
 {
-  __host__
+  _CCCL_HOST
   void operator()(CUevent_st* e) const
   {
     if (nullptr != e)
@@ -69,7 +77,7 @@ private:
 public:
   /// \brief Create a new stream and construct a handle to it. When the handle
   ///        is destroyed, the stream is destroyed.
-  __host__
+  _CCCL_HOST
   unique_marker()
     : handle_(nullptr, marker_deleter())
   {
@@ -80,29 +88,29 @@ public:
     handle_.reset(e);
   }
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_marker(unique_marker const&) = delete;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_marker(unique_marker&&) = default;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_marker& operator=(unique_marker const&) = delete;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_marker& operator=(unique_marker&&) = default;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   ~unique_marker() = default;
 
-  __host__
+  _CCCL_HOST
   auto get() const
   THRUST_DECLTYPE_RETURNS(native_handle_type(handle_.get()));
-  __host__
+  _CCCL_HOST
   auto native_handle() const
   THRUST_DECLTYPE_RETURNS(native_handle_type(handle_.get()));
 
-  __host__
+  _CCCL_HOST
   bool valid() const noexcept { return bool(handle_); }
 
-  __host__
+  _CCCL_HOST
   bool ready() const
   {
     cudaError_t const err = cudaEventQuery(handle_.get());
@@ -116,19 +124,19 @@ public:
     return true;
   }
 
-  __host__
+  _CCCL_HOST
   void wait() const
   {
     thrust::cuda_cub::throw_on_error(cudaEventSynchronize(handle_.get()));
   }
 
-  __host__
+  _CCCL_HOST
   bool operator==(unique_marker const& other) const
   {
     return other.handle_ == handle_;
   }
 
-  __host__
+  _CCCL_HOST
   bool operator!=(unique_marker const& other) const
   {
     return !(other == *this);
@@ -139,7 +147,7 @@ public:
 
 struct stream_deleter final
 {
-  __host__
+  _CCCL_HOST
   void operator()(CUstream_st* s) const
   {
     if (nullptr != s)
@@ -153,15 +161,15 @@ private:
   bool cond_;
 
 public:
-  __host__
+  _CCCL_HOST
   constexpr stream_conditional_deleter() noexcept
     : cond_(true) {}
 
-  __host__
+  _CCCL_HOST
   explicit constexpr stream_conditional_deleter(nonowning_t) noexcept
     : cond_(false) {}
 
-  __host__
+  _CCCL_HOST
   void operator()(CUstream_st* s) const
   {
     if (cond_ && nullptr != s)
@@ -183,7 +191,7 @@ private:
 public:
   /// \brief Create a new stream and construct a handle to it. When the handle
   ///        is destroyed, the stream is destroyed.
-  __host__
+  _CCCL_HOST
   unique_stream()
     : handle_(nullptr, stream_conditional_deleter())
   {
@@ -196,39 +204,39 @@ public:
 
   /// \brief Construct a non-owning handle to an existing stream. When the
   ///        handle is destroyed, the stream is not destroyed.
-  __host__
+  _CCCL_HOST
   explicit unique_stream(nonowning_t, native_handle_type handle)
     : handle_(handle, stream_conditional_deleter(nonowning))
   {}
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_stream(unique_stream const&) = delete;
 
   // GCC 10 complains if this is defaulted. See NVIDIA/thrust#1269.
-  __thrust_exec_check_disable__
-  __host__ unique_stream(unique_stream &&o) noexcept
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST unique_stream(unique_stream &&o) noexcept
     : handle_(std::move(o.handle_))
   {}
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_stream& operator=(unique_stream const&) = delete;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   unique_stream& operator=(unique_stream&&) = default;
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   ~unique_stream() = default;
 
-  __host__
+  _CCCL_HOST
   auto get() const
   THRUST_DECLTYPE_RETURNS(native_handle_type(handle_.get()));
-  __host__
+  _CCCL_HOST
   auto native_handle() const
   THRUST_DECLTYPE_RETURNS(native_handle_type(handle_.get()));
 
-  __host__
+  _CCCL_HOST
   bool valid() const noexcept { return bool(handle_); }
 
-  __host__
+  _CCCL_HOST
   bool ready() const
   {
     cudaError_t const err = cudaStreamQuery(handle_.get());
@@ -242,7 +250,7 @@ public:
     return true;
   }
 
-  __host__
+  _CCCL_HOST
   void wait() const
   {
     thrust::cuda_cub::throw_on_error(
@@ -250,7 +258,7 @@ public:
     );
   }
 
-  __host__
+  _CCCL_HOST
   void depend_on(unique_marker& e)
   {
     thrust::cuda_cub::throw_on_error(
@@ -258,7 +266,7 @@ public:
     );
   }
 
-  __host__
+  _CCCL_HOST
   void depend_on(unique_stream& s)
   {
     if (s != *this)
@@ -269,19 +277,19 @@ public:
     }
   }
 
-  __host__
+  _CCCL_HOST
   void record(unique_marker& e)
   {
     thrust::cuda_cub::throw_on_error(cudaEventRecord(e.get(), handle_.get()));
   }
 
-  __host__
+  _CCCL_HOST
   bool operator==(unique_stream const& other) const
   {
     return other.handle_ == handle_;
   }
 
-  __host__
+  _CCCL_HOST
   bool operator!=(unique_stream const& other) const
   {
     return !(other == *this);
@@ -327,43 +335,43 @@ struct acquired_stream final
 
 // Precondition: `device` is the current CUDA device.
 template <typename X, typename Y, typename Deleter>
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device, std::unique_ptr<Y, Deleter>&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int, unique_stream& stream) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device, ready_event&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
 template <typename X>
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device, ready_future<X>&) noexcept;
 
 // Precondition: `device` is the current CUDA device.
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device, unique_eager_event& parent) noexcept;
 
 // Precondition: `device` is the current CUDA device.
 template <typename X>
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device, unique_eager_future<X>& parent) noexcept;
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 acquired_stream acquire_stream(int device, Dependencies&... deps) noexcept;
-  
+
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 unique_eager_event
 make_dependent_event(
   std::tuple<Dependencies...>&& deps
@@ -373,7 +381,7 @@ template <
   typename X, typename XPointer
 , typename ComputeContent, typename... Dependencies
 >
-__host__
+_CCCL_HOST
 unique_eager_future_promise_pair<X, XPointer>
 make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps);
 
@@ -386,12 +394,12 @@ protected:
 
 public:
   // Constructs an `async_signal` which uses `stream`.
-  __host__
+  _CCCL_HOST
   explicit async_signal(unique_stream&& stream)
     : stream_(std::move(stream))
   {}
 
-  __host__
+  _CCCL_HOST
   virtual ~async_signal() {}
 
   unique_stream&       stream()       noexcept { return stream_; }
@@ -410,7 +418,7 @@ public:
   // Constructs an `async_keep_alives` which uses `stream`, and keeps the
   // objects in the tuple `keep_alives` alive until the asynchronous signal is
   // destroyed.
-  __host__
+  _CCCL_HOST
   explicit async_keep_alives(
     unique_stream&& stream, keep_alives_type&& keep_alives
   )
@@ -418,7 +426,7 @@ public:
     , keep_alives_(std::move(keep_alives))
   {}
 
-  __host__
+  _CCCL_HOST
   virtual ~async_keep_alives() {}
 };
 
@@ -429,24 +437,24 @@ struct async_value : virtual async_signal
   using raw_const_pointer = value_type const*;
 
   // Constructs an `async_value` which uses `stream` and has no content.
-  __host__
+  _CCCL_HOST
   explicit async_value(unique_stream stream)
     : async_signal(std::move(stream))
   {}
 
-  __host__
+  _CCCL_HOST
   virtual ~async_value() {}
 
-  __host__
+  _CCCL_HOST
   virtual bool valid_content() const noexcept { return false; }
 
-  __host__
+  _CCCL_HOST
   virtual value_type get()
   {
     throw thrust::event_error(event_errc::no_state);
   }
 
-  __host__
+  _CCCL_HOST
   virtual value_type extract()
   {
     throw thrust::event_error(event_errc::no_state);
@@ -454,7 +462,7 @@ struct async_value : virtual async_signal
 
   // For testing only.
   #if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
-  __host__
+  _CCCL_HOST
   virtual raw_const_pointer raw_data() const
   {
     return nullptr;
@@ -496,7 +504,7 @@ public:
   // in generated host code, which leads to -Wreorder warnings.
   THRUST_DISABLE_CLANG_AND_GCC_INITIALIZER_REORDERING_WARNING_BEGIN
   template <typename ComputeContent>
-  __host__
+  _CCCL_HOST
   explicit async_addressable_value_with_keep_alives(
     unique_stream&&    stream
   , keep_alives_type&& keep_alives
@@ -512,15 +520,15 @@ public:
   }
   THRUST_DISABLE_CLANG_AND_GCC_INITIALIZER_REORDERING_WARNING_END
 
-  __host__
+  _CCCL_HOST
   bool valid_content() const noexcept final override
   {
     return nullptr != content_;
   }
 
   // Precondition: `true == valid_content()`.
-  __host__
-  pointer data() 
+  _CCCL_HOST
+  pointer data()
   {
     if (!valid_content())
       throw thrust::event_error(event_errc::no_content);
@@ -529,8 +537,8 @@ public:
   }
 
   // Precondition: `true == valid_content()`.
-  __host__
-  const_pointer data() const 
+  _CCCL_HOST
+  const_pointer data() const
   {
     if (!valid_content())
       throw thrust::event_error(event_errc::no_content);
@@ -540,7 +548,7 @@ public:
 
   // Blocks.
   // Precondition: `true == valid_content()`.
-  __host__
+  _CCCL_HOST
   value_type get() final override
   {
     this->stream().wait();
@@ -549,7 +557,7 @@ public:
 
   // Blocks.
   // Precondition: `true == valid_content()`.
-  __host__
+  _CCCL_HOST
   value_type extract() final override
   {
     this->stream().wait();
@@ -558,7 +566,7 @@ public:
 
   // For testing only.
   #if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
-  __host__
+  _CCCL_HOST
   raw_const_pointer raw_data() const final override
   {
     return raw_pointer_cast(content_);
@@ -589,20 +597,20 @@ private:
   {}
 
 public:
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   weak_promise() : device_(0), content_{} {}
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   weak_promise(weak_promise const&) = default;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   weak_promise(weak_promise&&) = default;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   weak_promise& operator=(weak_promise const&) = default;
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   weak_promise& operator=(weak_promise&&) = default;
 
   template <typename U>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void set_value(U&& value) &&
   {
     *content_ = THRUST_FWD(value);
@@ -612,7 +620,7 @@ public:
     typename X, typename XPointer
   , typename ComputeContent, typename... Dependencies
   >
-  friend __host__
+  friend _CCCL_HOST
   unique_eager_future_promise_pair<X, XPointer>
   thrust::system::cuda::detail::make_dependent_future(
     ComputeContent&& cc, std::tuple<Dependencies...>&& deps
@@ -628,13 +636,13 @@ struct ready_event final
   ready_event() = default;
 
   template <typename U>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   explicit ready_event(ready_future<U>) {}
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr bool valid_content() noexcept { return true; }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr bool ready() noexcept { return true; }
 };
 
@@ -648,7 +656,7 @@ private:
   value_type value_;
 
 public:
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   ready_future() : value_{} {}
 
   ready_future(ready_future&&) = default;
@@ -657,30 +665,30 @@ public:
   ready_future& operator=(ready_future const&) = default;
 
   template <typename U>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   explicit ready_future(U&& u) : value_(THRUST_FWD(u)) {}
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr bool valid_content() noexcept { return true; }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   static constexpr bool ready() noexcept { return true; }
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   value_type get() const
   {
     return value_;
   }
 
-  THRUST_NODISCARD __host__ __device__
-  value_type extract() 
+  THRUST_NODISCARD _CCCL_HOST_DEVICE
+  value_type extract()
   {
     return std::move(value_);
   }
 
   #if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   // For testing only.
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   raw_const_pointer data() const
   {
     return addressof(value_);
@@ -694,7 +702,7 @@ protected:
   int device_ = 0;
   std::unique_ptr<detail::async_signal> async_signal_;
 
-  __host__
+  _CCCL_HOST
   explicit unique_eager_event(
     int device_id, std::unique_ptr<detail::async_signal> async_signal
   )
@@ -702,7 +710,7 @@ protected:
   {}
 
 public:
-  __host__
+  _CCCL_HOST
   unique_eager_event()
     : device_(0), async_signal_()
   {}
@@ -715,13 +723,13 @@ public:
   // Any `unique_eager_future<T>` can be explicitly converted to a
   // `unique_eager_event<void>`.
   template <typename U>
-  __host__
+  _CCCL_HOST
   explicit unique_eager_event(unique_eager_future<U>&& other)
     // NOTE: We upcast to `unique_ptr<async_signal>` here.
     : device_(other.where()), async_signal_(std::move(other.async_signal_))
   {}
 
-  __host__
+  _CCCL_HOST
   // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
   explicit unique_eager_event(new_stream_t const&)
     : device_(0)
@@ -730,7 +738,7 @@ public:
     thrust::cuda_cub::throw_on_error(cudaGetDevice(&device_));
   }
 
-  __host__
+  _CCCL_HOST
   virtual ~unique_eager_event()
   {
     // FIXME: If we could asynchronously handle destruction of keep alives, we
@@ -738,13 +746,13 @@ public:
     if (valid_stream()) wait();
   }
 
-  __host__
+  _CCCL_HOST
   bool valid_stream() const noexcept
   {
     return bool(async_signal_);
   }
 
-  __host__
+  _CCCL_HOST
   bool ready() const noexcept
   {
     if (valid_stream())
@@ -754,7 +762,7 @@ public:
   }
 
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   detail::unique_stream& stream()
   {
     if (!valid_stream())
@@ -770,24 +778,24 @@ public:
     return async_signal_->stream();
   }
 
-  __host__
+  _CCCL_HOST
   int where() const noexcept { return device_; }
 
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   void wait()
   {
     stream().wait();
   }
 
-  friend __host__
+  friend _CCCL_HOST
   optional<detail::unique_stream>
   thrust::system::cuda::detail::try_acquire_stream(
     int device_id, unique_eager_event& parent
     ) noexcept;
 
   template <typename... Dependencies>
-  friend __host__
+  friend _CCCL_HOST
   unique_eager_event
   thrust::system::cuda::detail::make_dependent_event(
     std::tuple<Dependencies...>&& deps
@@ -809,7 +817,7 @@ private:
   int device_ = 0;
   std::unique_ptr<detail::async_value<value_type>> async_signal_;
 
-  __host__
+  _CCCL_HOST
   explicit unique_eager_future(
     int device_id, std::unique_ptr<detail::async_value<value_type>> async_signal
   )
@@ -817,7 +825,7 @@ private:
   {}
 
 public:
-  __host__
+  _CCCL_HOST
   unique_eager_future()
     : device_(0), async_signal_()
   {}
@@ -827,7 +835,7 @@ public:
   unique_eager_future& operator=(unique_eager_future&&) = default;
   unique_eager_future& operator=(unique_eager_future const&) = delete;
 
-  __host__
+  _CCCL_HOST
   // NOTE: We take `new_stream_t` by `const&` because it is incomplete here.
   explicit unique_eager_future(new_stream_t const&)
     : device_(0)
@@ -836,7 +844,7 @@ public:
     thrust::cuda_cub::throw_on_error(cudaGetDevice(&device_));
   }
 
-  __host__
+  _CCCL_HOST
   ~unique_eager_future()
   {
     // FIXME: If we could asynchronously handle destruction of keep alives, we
@@ -844,13 +852,13 @@ public:
     if (valid_stream()) wait();
   }
 
-  __host__
+  _CCCL_HOST
   bool valid_stream() const noexcept
   {
     return bool(async_signal_);
   }
 
-  __host__
+  _CCCL_HOST
   bool valid_content() const noexcept
   {
     if (!valid_stream())
@@ -862,7 +870,7 @@ public:
   }
 
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   bool ready() const noexcept
   {
     if (valid_stream())
@@ -872,7 +880,7 @@ public:
   }
 
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   detail::unique_stream& stream()
   {
     if (!valid_stream())
@@ -880,7 +888,7 @@ public:
 
     return async_signal_->stream();
   }
-  __host__
+  _CCCL_HOST
   detail::unique_stream const& stream() const
   {
     if (!valid_stream())
@@ -889,12 +897,12 @@ public:
     return async_signal_->stream();
   }
 
-  __host__
+  _CCCL_HOST
   int where() const noexcept { return device_; }
 
   // Blocks.
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   void wait()
   {
     stream().wait();
@@ -902,7 +910,7 @@ public:
 
   // Blocks.
   // Precondition: `true == valid_content()`.
-  __host__
+  _CCCL_HOST
   value_type get()
   {
     if (!valid_content())
@@ -913,7 +921,7 @@ public:
 
   // Blocks.
   // Precondition: `true == valid_content()`.
-  THRUST_NODISCARD __host__
+  THRUST_NODISCARD _CCCL_HOST
   value_type extract()
   {
     if (!valid_content())
@@ -927,7 +935,7 @@ public:
   // For testing only.
   #if defined(THRUST_ENABLE_FUTURE_RAW_DATA_MEMBER)
   // Precondition: `true == valid_stream()`.
-  __host__
+  _CCCL_HOST
   raw_const_pointer raw_data() const
   {
     if (!valid_stream())
@@ -938,7 +946,7 @@ public:
   #endif
 
   template <typename X>
-  friend __host__
+  friend _CCCL_HOST
   optional<detail::unique_stream>
   thrust::system::cuda::detail::try_acquire_stream(
     int device_id, unique_eager_future<X>& parent
@@ -948,7 +956,7 @@ public:
     typename X, typename XPointer
   , typename ComputeContent, typename... Dependencies
   >
-  friend __host__
+  friend _CCCL_HOST
   detail::unique_eager_future_promise_pair<X, XPointer>
   thrust::system::cuda::detail::make_dependent_future(
     ComputeContent&& cc, std::tuple<Dependencies...>&& deps
@@ -962,7 +970,7 @@ public:
 namespace detail {
 
 template <typename X, typename Deleter>
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int, std::unique_ptr<X, Deleter>&) noexcept
 {
@@ -970,14 +978,14 @@ try_acquire_stream(int, std::unique_ptr<X, Deleter>&) noexcept
   return {};
 }
 
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int, unique_stream& stream) noexcept
 {
   return {std::move(stream)};
 }
 
-inline __host__
+inline _CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int, ready_event&) noexcept
 {
@@ -986,7 +994,7 @@ try_acquire_stream(int, ready_event&) noexcept
 }
 
 template <typename X>
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int, ready_future<X>&) noexcept
 {
@@ -994,7 +1002,7 @@ try_acquire_stream(int, ready_future<X>&) noexcept
   return {};
 }
 
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device_id, unique_eager_event& parent) noexcept
 {
@@ -1008,7 +1016,7 @@ try_acquire_stream(int device_id, unique_eager_event& parent) noexcept
 }
 
 template <typename X>
-__host__
+_CCCL_HOST
 optional<unique_stream>
 try_acquire_stream(int device_id, unique_eager_future<X>& parent) noexcept
 {
@@ -1024,7 +1032,7 @@ try_acquire_stream(int device_id, unique_eager_future<X>& parent) noexcept
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 acquired_stream acquire_stream_impl(
   int, std::tuple<Dependencies...>&, index_sequence<>
 ) noexcept
@@ -1035,7 +1043,7 @@ acquired_stream acquire_stream_impl(
 }
 
 template <typename... Dependencies, std::size_t I0, std::size_t... Is>
-__host__
+_CCCL_HOST
 acquired_stream acquire_stream_impl(
   int device_id
 , std::tuple<Dependencies...>& deps, index_sequence<I0, Is...>
@@ -1050,7 +1058,7 @@ acquired_stream acquire_stream_impl(
 }
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 acquired_stream acquire_stream(
   int device_id
 , std::tuple<Dependencies...>& deps
@@ -1064,26 +1072,26 @@ acquired_stream acquire_stream(
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename X, typename Deleter>
-__host__
+_CCCL_HOST
 void create_dependency(
   unique_stream&, std::unique_ptr<X, Deleter>&
 ) noexcept
 {}
 
-inline __host__
+inline _CCCL_HOST
 void create_dependency(
   unique_stream&, ready_event&
 ) noexcept
 {}
 
 template <typename T>
-__host__
+_CCCL_HOST
 void create_dependency(
   unique_stream&, ready_future<T>&
 ) noexcept
 {}
 
-inline __host__
+inline _CCCL_HOST
 void create_dependency(
   unique_stream& child, unique_stream& parent
 )
@@ -1091,7 +1099,7 @@ void create_dependency(
   child.depend_on(parent);
 }
 
-inline __host__
+inline _CCCL_HOST
 void create_dependency(
   unique_stream& child, unique_eager_event& parent
 )
@@ -1100,7 +1108,7 @@ void create_dependency(
 }
 
 template <typename X>
-__host__
+_CCCL_HOST
 void create_dependency(
   unique_stream& child, unique_eager_future<X>& parent
 )
@@ -1109,7 +1117,7 @@ void create_dependency(
 }
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 void create_dependencies_impl(
   acquired_stream&
 , std::tuple<Dependencies...>&, index_sequence<>
@@ -1117,7 +1125,7 @@ void create_dependencies_impl(
 {}
 
 template <typename... Dependencies, std::size_t I0, std::size_t... Is>
-__host__
+_CCCL_HOST
 void create_dependencies_impl(
   acquired_stream& as
 , std::tuple<Dependencies...>& deps, index_sequence<I0, Is...>
@@ -1134,7 +1142,7 @@ void create_dependencies_impl(
 }
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 void create_dependencies(acquired_stream& as, std::tuple<Dependencies...>& deps)
 {
   create_dependencies_impl(
@@ -1267,7 +1275,7 @@ struct find_keep_alives_impl<
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Dependencies>
-__host__
+_CCCL_HOST
 unique_eager_event make_dependent_event(std::tuple<Dependencies...>&& deps)
 {
   int device_id = 0;
@@ -1303,7 +1311,7 @@ template <
   typename X, typename XPointer
 , typename ComputeContent, typename... Dependencies
 >
-__host__
+_CCCL_HOST
 unique_eager_future_promise_pair<X, XPointer>
 make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps)
 {
@@ -1331,7 +1339,7 @@ make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps)
   std::unique_ptr<async_signal_type> sig(
     new async_signal_type(std::move(as.stream), std::move(ka), std::move(cc))
   );
- 
+
   // Finally, we create the promise and future objects.
   weak_promise<X, XPointer> child_prom(device_id, sig->data());
   unique_eager_future<X> child_fut(device_id, std::move(sig));
@@ -1345,22 +1353,22 @@ make_dependent_future(ComputeContent&& cc, std::tuple<Dependencies...>&& deps)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename... Events>
-__host__
+_CCCL_HOST
 unique_eager_event when_all(Events&&... evs)
 // TODO: Constrain to events, futures, and maybe streams (currently allows keep
 // alives).
 {
-  return detail::make_dependent_event(std::make_tuple(std::move(evs)...)); 
+  return detail::make_dependent_event(std::make_tuple(std::move(evs)...));
 }
 
 // ADL hook for transparent `.after` move support.
-inline __host__
+inline _CCCL_HOST
 auto capture_as_dependency(unique_eager_event& dependency)
 THRUST_DECLTYPE_RETURNS(std::move(dependency))
 
 // ADL hook for transparent `.after` move support.
 template <typename X>
-__host__
+_CCCL_HOST
 auto capture_as_dependency(unique_eager_future<X>& dependency)
 THRUST_DECLTYPE_RETURNS(std::move(dependency))
 

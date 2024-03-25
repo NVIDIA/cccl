@@ -23,6 +23,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup iterators
@@ -60,7 +68,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/iterator/advance
  */
 template <typename InputIterator, typename Distance>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void advance(InputIterator& i, Distance n);
 
 /*! \p next(i, n) returns the \p n th successor of the iterator \p i.
@@ -91,7 +99,7 @@ void advance(InputIterator& i, Distance n);
  */
 #if 0 // Doxygen only
 template <typename InputIterator, typename Distance>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator next(
   InputIterator i
 , typename iterator_traits<InputIterator>::difference_type n = 1
@@ -124,7 +132,7 @@ InputIterator next(
  */
 #if 0 // Doxygen only
 template <typename BidirectionalIterator, typename Distance>
-__host__ __device__
+_CCCL_HOST_DEVICE
 BidirectionalIterator prev(
   BidirectionalIterator i
 , typename iterator_traits<BidirectionalIterator>::difference_type n = 1

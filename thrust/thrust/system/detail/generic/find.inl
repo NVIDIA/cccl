@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/find.h>
 #include <thrust/reduce.h>
 
@@ -40,7 +48,7 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename InputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find(thrust::execution_policy<DerivedPolicy> &exec,
                    InputIterator first,
                    InputIterator last,
@@ -55,7 +63,7 @@ InputIterator find(thrust::execution_policy<DerivedPolicy> &exec,
 template<typename TupleType>
 struct find_if_functor
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
   {
     // select the smallest index among true results
@@ -76,7 +84,7 @@ struct find_if_functor
 
 
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find_if(thrust::execution_policy<DerivedPolicy> &exec,
                       InputIterator first,
                       InputIterator last,
@@ -134,7 +142,7 @@ InputIterator find_if(thrust::execution_policy<DerivedPolicy> &exec,
 
 
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find_if_not(thrust::execution_policy<DerivedPolicy> &exec,
                           InputIterator first,
                           InputIterator last,

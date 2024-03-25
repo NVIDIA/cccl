@@ -28,9 +28,15 @@
 #pragma once
 
 #include <thrust/detail/config.h>
-#include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+#include <thrust/detail/cpp11_required.h>
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
@@ -49,7 +55,7 @@ namespace cuda_cub
 {
 
 template<typename MR, typename DerivedPolicy>
-__host__
+_CCCL_HOST
 MR * get_per_device_resource(execution_policy<DerivedPolicy>&)
 {
     static std::mutex map_lock;
@@ -68,5 +74,4 @@ THRUST_NAMESPACE_END
 
 #endif
 
-#endif
 

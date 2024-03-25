@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   CommandLineArgs args(argc, argv);
   CubDebugExit(args.DeviceInit());
 
-  const std::size_t n = 2048;
+  constexpr std::size_t n = 2048;
 
   // Fill a vector with random data:
   ::wrap_thrust::thrust::host_vector<int> h_input(n);

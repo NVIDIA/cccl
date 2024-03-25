@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/tbb/detail/copy.h>
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/system/detail/sequential/copy.h>
@@ -101,7 +109,7 @@ OutputIterator copy(execution_policy<DerivedPolicy> &exec,
 {
   typedef typename thrust::iterator_traversal<InputIterator>::type  traversal1;
   typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
-  
+
   typedef typename thrust::detail::minimum_type<traversal1,traversal2>::type traversal;
 
   // dispatch on minimum traversal
@@ -121,7 +129,7 @@ OutputIterator copy_n(execution_policy<DerivedPolicy> &exec,
 {
   typedef typename thrust::iterator_traversal<InputIterator>::type  traversal1;
   typedef typename thrust::iterator_traversal<OutputIterator>::type traversal2;
-  
+
   typedef typename thrust::detail::minimum_type<traversal1,traversal2>::type traversal;
 
   // dispatch on minimum traversal

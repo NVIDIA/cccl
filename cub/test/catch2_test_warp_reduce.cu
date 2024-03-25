@@ -28,16 +28,12 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "catch2_test_helper.h"
 
@@ -212,7 +208,7 @@ struct warp_seg_reduce_head_t
  * @brief Dispatch helper function
  */
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
-void warp_reduce(thrust::device_vector<T> &in, thrust::device_vector<T> &out, ActionT action)
+void warp_reduce(c2h::device_vector<T> &in, c2h::device_vector<T> &out, ActionT action)
 {
   warp_reduce_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT>
     <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
@@ -228,8 +224,8 @@ void warp_reduce(thrust::device_vector<T> &in, thrust::device_vector<T> &out, Ac
  */
 template <typename T,
           typename ::cuda::std::enable_if<::cuda::std::is_floating_point<T>::value, int>::type = 0>
-void verify_results(const thrust::host_vector<T> &expected_data,
-                    const thrust::device_vector<T> &test_results)
+void verify_results(const c2h::host_vector<T> &expected_data,
+                    const c2h::device_vector<T> &test_results)
 {
   REQUIRE_APPROX_EQ(expected_data, test_results);
 }
@@ -239,8 +235,8 @@ void verify_results(const thrust::host_vector<T> &expected_data,
  */
 template <typename T,
           typename ::cuda::std::enable_if<!::cuda::std::is_floating_point<T>::value, int>::type = 0>
-void verify_results(const thrust::host_vector<T> &expected_data,
-                    const thrust::device_vector<T> &test_results)
+void verify_results(const c2h::host_vector<T> &expected_data,
+                    const c2h::device_vector<T> &test_results)
 {
   REQUIRE(expected_data == test_results);
 }
@@ -373,17 +369,17 @@ CUB_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_thread
   using type   = typename params::type;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  constexpr auto valid_items = params::logical_warp_threads;
   c2h::gen(CUB_SEED(10), d_in);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_sum_t<type>{});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in  = d_in;
-  thrust::host_vector<type> h_out = h_in;
+  c2h::host_vector<type> h_in  = d_in;
+  c2h::host_vector<type> h_out = h_in;
   auto h_flags                    = thrust::make_constant_iterator(false);
   compute_host_reference(reduce_mode::all,
                          h_in,
@@ -405,9 +401,9 @@ CUB_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_
   using red_op_t = cub::Min;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  constexpr auto valid_items = params::logical_warp_threads;
   c2h::gen(CUB_SEED(10), d_in);
 
   // Run test
@@ -417,8 +413,8 @@ CUB_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_
                                                                    red_op_t{}});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in  = d_in;
-  thrust::host_vector<type> h_out = h_in;
+  c2h::host_vector<type> h_in  = d_in;
+  c2h::host_vector<type> h_out = h_in;
   auto h_flags                    = thrust::make_constant_iterator(false);
   compute_host_reference(reduce_mode::all,
                          h_in,
@@ -439,8 +435,8 @@ CUB_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, log
   using type   = typename params::type;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
   const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
   c2h::gen(CUB_SEED(10), d_in);
 
@@ -451,8 +447,8 @@ CUB_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, log
                                                                    valid_items});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in  = d_in;
-  thrust::host_vector<type> h_out = h_in;
+  c2h::host_vector<type> h_in  = d_in;
+  c2h::host_vector<type> h_out = h_in;
   auto h_flags                    = thrust::make_constant_iterator(false);
   compute_host_reference(reduce_mode::all,
                          h_in,
@@ -477,8 +473,8 @@ CUB_TEST("Warp reduce on partial warp works",
   using red_op_t = cub::Min;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
   const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
   c2h::gen(CUB_SEED(10), d_in);
 
@@ -489,8 +485,8 @@ CUB_TEST("Warp reduce on partial warp works",
     warp_reduce_partial_t<type, red_op_t>{valid_items, red_op_t{}});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in  = d_in;
-  thrust::host_vector<type> h_out = h_in;
+  c2h::host_vector<type> h_in  = d_in;
+  c2h::host_vector<type> h_out = h_in;
   auto h_flags                    = thrust::make_constant_iterator(false);
   compute_host_reference(reduce_mode::all,
                          h_in,
@@ -523,10 +519,10 @@ CUB_TEST("Warp segmented sum works",
                                                     warp_seg_sum_head_t<type>>;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<uint8_t> d_flags(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<uint8_t> d_flags(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min  = 0;
   constexpr uint8_t max  = 2;
   c2h::gen(CUB_SEED(5), d_in);
@@ -539,9 +535,9 @@ CUB_TEST("Warp segmented sum works",
     warp_seg_sum_t{thrust::raw_pointer_cast(d_flags.data())});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in       = d_in;
-  thrust::host_vector<uint8_t> h_flags = d_flags;
-  thrust::host_vector<type> h_out      = h_in;
+  c2h::host_vector<type> h_in       = d_in;
+  c2h::host_vector<uint8_t> h_flags = d_flags;
+  c2h::host_vector<type> h_out      = h_in;
   compute_host_reference(segmented_mod,
                          h_in,
                          h_flags,
@@ -575,10 +571,10 @@ CUB_TEST("Warp segmented reduction works",
                                warp_seg_reduce_head_t<type, red_op_t>>;
 
   // Prepare test data
-  thrust::device_vector<type> d_in(params::tile_size);
-  thrust::device_vector<uint8_t> d_flags(params::tile_size);
-  thrust::device_vector<type> d_out(params::tile_size);
-  const auto valid_items = params::logical_warp_threads;
+  c2h::device_vector<type> d_in(params::tile_size);
+  c2h::device_vector<uint8_t> d_flags(params::tile_size);
+  c2h::device_vector<type> d_out(params::tile_size);
+  constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min  = 0;
   constexpr uint8_t max  = 2;
   c2h::gen(CUB_SEED(5), d_in);
@@ -591,9 +587,9 @@ CUB_TEST("Warp segmented reduction works",
     warp_seg_reduction_t{thrust::raw_pointer_cast(d_flags.data()), red_op_t{}});
 
   // Prepare verification data
-  thrust::host_vector<type> h_in       = d_in;
-  thrust::host_vector<uint8_t> h_flags = d_flags;
-  thrust::host_vector<type> h_out      = h_in;
+  c2h::host_vector<type> h_in       = d_in;
+  c2h::host_vector<uint8_t> h_flags = d_flags;
+  c2h::host_vector<type> h_out      = h_in;
   compute_host_reference(segmented_mod,
                          h_in,
                          h_flags,

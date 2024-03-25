@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -33,28 +33,49 @@
 
 #pragma once
 
-#include <cfloat>
-#include <iostream>
-#include <iterator>
-#include <limits>
+#include <cub/config.cuh>
 
-#include <cuda.h>
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/limits>
+#include <cuda/__cccl_config> // _LIBCUDACXX_CUDACC_VER
 
 #if !_NVHPC_CUDA
     #include <cuda_fp16.h>
 #endif
+
 #if !_NVHPC_CUDA && !defined(CUB_DISABLE_BF16_SUPPORT)
-    #include <cuda_bf16.h>
+#  include <cuda_bf16.h>
+// cuda_fp8.h transitively includes cuda_fp16.h, so we have to include the header under !CUB_DISABLE_BF16_SUPPORT
+#  if _LIBCUDACXX_CUDACC_VER >= 1108000
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+#    if defined(_CCCL_COMPILER_MSVC)
+#      pragma warning(push)
+#    endif
+#    include <cuda_fp8.h>
+#    if defined(_CCCL_COMPILER_MSVC)
+#      pragma warning(pop)
+#    endif
+#  endif
 #endif
 
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/util_compiler.cuh>
-#include <cub/util_deprecated.cuh>
-#include <cub/util_macro.cuh>
-#include <cub/util_namespace.cuh>
 
 #include <cuda/std/type_traits>
+#include <cuda/std/cstdint>
+#include <cuda/std/limits>
+
+#if !defined(_CCCL_COMPILER_NVRTC)
+#  include <iterator>
+#else
+#  include <cuda/std/iterator>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
@@ -64,22 +85,14 @@ CUB_NAMESPACE_BEGIN
 #define CUB_IS_INT128_ENABLED 1
 #endif // !defined(__CUDACC_RTC_INT128__)
 #else  // !defined(__CUDACC_RTC__)
-#if CUDA_VERSION >= 11050
-#if (CUB_HOST_COMPILER == CUB_HOST_COMPILER_GCC) || \
-    (CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG) || \
-    defined(__ICC) || defined(_NVHPC_CUDA)
+#if _LIBCUDACXX_CUDACC_VER >= 1105000
+#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) ||            \
+    defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_NVHPC)
 #define CUB_IS_INT128_ENABLED 1
 #endif // GCC || CLANG || ICC || NVHPC
 #endif // CTK >= 11.5
 #endif // !defined(__CUDACC_RTC__)
 #endif // !defined(CUB_IS_INT128_ENABLED)
-
-/**
- * \addtogroup UtilModule
- * @{
- */
-
-
 
 /******************************************************************************
  * Conditional types
@@ -92,11 +105,15 @@ namespace detail
 
 
 template <bool Test, class T1, class T2>
-using conditional_t = typename std::conditional<Test, T1, T2>::type;
-
+using conditional_t = typename ::cuda::std::conditional<Test, T1, T2>::type;
 
 template <typename Iterator>
-using value_t = typename std::iterator_traits<Iterator>::value_type;
+using value_t =
+#  if !defined(_CCCL_COMPILER_NVRTC)
+  typename std::iterator_traits<Iterator>::value_type;
+#  else // defined(_CCCL_COMPILER_NVRTC)
+  typename ::cuda::std::iterator_traits<Iterator>::value_type;
+#  endif // defined(_CCCL_COMPILER_NVRTC)
 
 template <typename It,
           typename FallbackT,
@@ -111,10 +128,8 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  using type = typename ::cuda::std::conditional<
-    ::cuda::std::is_same<typename std::iterator_traits<It>::value_type, void>::value,
-    FallbackT,
-    typename std::iterator_traits<It>::value_type>::type;
+  using type =
+    typename ::cuda::std::conditional<::cuda::std::is_same<value_t<It>, void>::value, FallbackT, value_t<It>>::type;
 };
 
 /**
@@ -154,7 +169,7 @@ struct CUB_DEPRECATED If
 template <typename A, typename B>
 struct CUB_DEPRECATED Equals
 {
-  static constexpr int VALUE = std::is_same<A, B>::value ? 1 : 0;
+  static constexpr int VALUE = ::cuda::std::is_same<A, B>::value ? 1 : 0;
   static constexpr int NEGATE = VALUE ? 0 : 1;
 };
 
@@ -213,7 +228,7 @@ struct PowerOfTwo
 template <typename Tp>
 struct CUB_DEPRECATED IsPointer
 {
-  static constexpr int VALUE = std::is_pointer<Tp>::value;
+  static constexpr int VALUE = ::cuda::std::is_pointer<Tp>::value;
 };
 
 
@@ -230,7 +245,7 @@ struct CUB_DEPRECATED IsPointer
 template <typename Tp>
 struct CUB_DEPRECATED IsVolatile
 {
-  static constexpr int VALUE = std::is_volatile<Tp>::value;
+  static constexpr int VALUE = ::cuda::std::is_volatile<Tp>::value;
 };
 
 /******************************************************************************
@@ -249,7 +264,7 @@ struct CUB_DEPRECATED IsVolatile
 template <typename Tp, typename Up = Tp>
 struct CUB_DEPRECATED RemoveQualifiers
 {
-  using Type = typename std::remove_cv<Tp>::type;
+  using Type = typename ::cuda::std::remove_cv<Tp>::type;
 };
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -268,11 +283,11 @@ struct NullType
     using value_type = NullType;
 
     template <typename T>
-    __host__ __device__ __forceinline__ NullType& operator =(const T&) { return *this; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE NullType& operator =(const T&) { return *this; }
 
-    __host__ __device__ __forceinline__ bool operator ==(const NullType&) { return true; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator ==(const NullType&) { return true; }
 
-    __host__ __device__ __forceinline__ bool operator !=(const NullType&) { return false; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator !=(const NullType&) { return false; }
 };
 
 
@@ -315,8 +330,8 @@ struct FutureValue
 {
     using value_type = T;
     using iterator_type = IterT;
-    explicit __host__ __device__ __forceinline__ FutureValue(IterT iter):m_iter(iter) {}
-    __host__ __device__ __forceinline__ operator T() {
+    explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE FutureValue(IterT iter):m_iter(iter) {}
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() {
         return *m_iter;
     }
 
@@ -334,15 +349,15 @@ struct InputValue
 {
     using value_type = T;
     using iterator_type = IterT;
-    __host__ __device__ __forceinline__ operator T() {
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T() {
         if (m_is_future) {
             return m_future_value;
         }
         return m_immediate_value;
     }
-    explicit __host__ __device__ __forceinline__ InputValue(T immediate_value): m_is_future(false), m_immediate_value(immediate_value) {}
-    explicit __host__ __device__ __forceinline__ InputValue(FutureValue<T, IterT> future_value): m_is_future(true), m_future_value(future_value) {}
-    __host__ __device__ __forceinline__ InputValue(const InputValue &other): m_is_future(other.m_is_future) {
+    explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(T immediate_value): m_is_future(false), m_immediate_value(immediate_value) {}
+    explicit _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(FutureValue<T, IterT> future_value): m_is_future(true), m_future_value(future_value) {}
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE InputValue(const InputValue &other): m_is_future(other.m_is_future) {
         if (m_is_future) {
             m_future_value = other.m_future_value;
         } else {
@@ -595,12 +610,12 @@ struct CubVector<T, 4>
     {                                                                                                   \
       typedef base_type       BaseType;                                                                 \
       typedef short_type##1   Type;                                                                     \
-      __host__ __device__ __forceinline__ CubVector operator+(const CubVector &other) const {           \
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector &other) const {           \
           CubVector retval;                                                                             \
           retval.x = x + other.x;                                                                       \
           return retval;                                                                                \
       }                                                                                                 \
-      __host__ __device__ __forceinline__ CubVector operator-(const CubVector &other) const {           \
+      _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector &other) const {           \
           CubVector retval;                                                                             \
           retval.x = x - other.x;                                                                       \
           return retval;                                                                                \
@@ -611,13 +626,13 @@ struct CubVector<T, 4>
     {                                                                                                   \
         typedef base_type       BaseType;                                                               \
         typedef short_type##2   Type;                                                                   \
-        __host__ __device__ __forceinline__ CubVector operator+(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x + other.x;                                                                     \
             retval.y = y + other.y;                                                                     \
             return retval;                                                                              \
         }                                                                                               \
-        __host__ __device__ __forceinline__ CubVector operator-(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x - other.x;                                                                     \
             retval.y = y - other.y;                                                                     \
@@ -629,14 +644,14 @@ struct CubVector<T, 4>
     {                                                                                                   \
         typedef base_type       BaseType;                                                               \
         typedef short_type##3   Type;                                                                   \
-        __host__ __device__ __forceinline__ CubVector operator+(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x + other.x;                                                                     \
             retval.y = y + other.y;                                                                     \
             retval.z = z + other.z;                                                                     \
             return retval;                                                                              \
         }                                                                                               \
-        __host__ __device__ __forceinline__ CubVector operator-(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x - other.x;                                                                     \
             retval.y = y - other.y;                                                                     \
@@ -649,7 +664,7 @@ struct CubVector<T, 4>
     {                                                                                                   \
         typedef base_type       BaseType;                                                               \
         typedef short_type##4   Type;                                                                   \
-        __host__ __device__ __forceinline__ CubVector operator+(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator+(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x + other.x;                                                                     \
             retval.y = y + other.y;                                                                     \
@@ -657,7 +672,7 @@ struct CubVector<T, 4>
             retval.w = w + other.w;                                                                     \
             return retval;                                                                              \
         }                                                                                               \
-        __host__ __device__ __forceinline__ CubVector operator-(const CubVector &other) const {         \
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CubVector operator-(const CubVector &other) const {         \
             CubVector retval;                                                                           \
             retval.x = x - other.x;                                                                     \
             retval.y = y - other.y;                                                                     \
@@ -704,15 +719,15 @@ struct Uninitialized
     /// Biggest memory-access word that T is a whole multiple of and is not larger than the alignment of T
     typedef typename UnitWord<T>::DeviceWord DeviceWord;
 
-    static constexpr std::size_t DATA_SIZE = sizeof(T);
-    static constexpr std::size_t WORD_SIZE = sizeof(DeviceWord);
-    static constexpr std::size_t WORDS = DATA_SIZE / WORD_SIZE;
+    static constexpr ::cuda::std::size_t DATA_SIZE = sizeof(T);
+    static constexpr ::cuda::std::size_t WORD_SIZE = sizeof(DeviceWord);
+    static constexpr ::cuda::std::size_t WORDS = DATA_SIZE / WORD_SIZE;
 
     /// Backing storage
     DeviceWord storage[WORDS];
 
     /// Alias
-    __host__ __device__ __forceinline__ T& Alias()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& Alias()
     {
         return reinterpret_cast<T&>(*this);
     }
@@ -739,15 +754,15 @@ struct KeyValuePair
     Value   value;                      ///< Item value
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair() {}
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair(Key const& key, Value const& value) : key(key), value(value) {}
 
     /// Inequality operator
-    __host__ __device__ __forceinline__ bool operator !=(const KeyValuePair &b)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator !=(const KeyValuePair &b)
     {
         return (value != b.value) || (key != b.key);
     }
@@ -781,15 +796,15 @@ struct KeyValuePair<K, V, true, false>
     Pad     pad;
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair() {}
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair(Key const& key, Value const& value) : key(key), value(value) {}
 
     /// Inequality operator
-    __host__ __device__ __forceinline__ bool operator !=(const KeyValuePair &b)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator !=(const KeyValuePair &b)
     {
         return (value != b.value) || (key != b.key);
     }
@@ -810,15 +825,15 @@ struct KeyValuePair<K, V, false, true>
     Pad     pad;
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair() {}
 
     /// Constructor
-    __host__ __device__ __forceinline__
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
     KeyValuePair(Key const& key, Value const& value) : key(key), value(value) {}
 
     /// Inequality operator
-    __host__ __device__ __forceinline__ bool operator !=(const KeyValuePair &b)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator !=(const KeyValuePair &b)
     {
         return (value != b.value) || (key != b.key);
     }
@@ -838,7 +853,7 @@ struct ArrayWrapper
     T array[COUNT];
 
     /// Constructor
-    __host__ __device__ __forceinline__ ArrayWrapper() {}
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ArrayWrapper() {}
 };
 
 
@@ -860,7 +875,7 @@ struct DoubleBuffer
     int selector;
 
     /// \brief Constructor
-    __host__ __device__ __forceinline__ DoubleBuffer()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer()
     {
         selector = 0;
         d_buffers[0] = NULL;
@@ -868,7 +883,7 @@ struct DoubleBuffer
     }
 
     /// \brief Constructor
-    __host__ __device__ __forceinline__ DoubleBuffer(
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DoubleBuffer(
         T *d_current,         ///< The currently valid buffer
         T *d_alternate)       ///< Alternate storage buffer of the same size as \p d_current
     {
@@ -878,10 +893,10 @@ struct DoubleBuffer
     }
 
     /// \brief Return pointer to the currently valid buffer
-    __host__ __device__ __forceinline__ T* Current() { return d_buffers[selector]; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T* Current() { return d_buffers[selector]; }
 
     /// \brief Return pointer to the currently invalid buffer
-    __host__ __device__ __forceinline__ T* Alternate() { return d_buffers[selector ^ 1]; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T* Alternate() { return d_buffers[selector ^ 1]; }
 
 };
 
@@ -924,7 +939,7 @@ struct DoubleBuffer
 template <bool Condition, class T = void>
 struct CUB_DEPRECATED EnableIf
 {
-  using Type = typename std::enable_if<Condition, T>::type;
+  using Type = typename ::cuda::std::enable_if<Condition, T>::type;
 };
 
 /******************************************************************************
@@ -954,17 +969,17 @@ private:
     template <typename BinaryOpT> static char Test(SFINAE3<BinaryOpT, &BinaryOpT::operator()> *);
     template <typename BinaryOpT> static char Test(SFINAE4<BinaryOpT, &BinaryOpT::operator()> *);
 */
-    template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE5<BinaryOpT, &BinaryOpT::operator()> *);
-    template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE6<BinaryOpT, &BinaryOpT::operator()> *);
-    template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE7<BinaryOpT, &BinaryOpT::operator()> *);
-    template <typename BinaryOpT> __host__ __device__ static char Test(SFINAE8<BinaryOpT, &BinaryOpT::operator()> *);
+    template <typename BinaryOpT> _CCCL_HOST_DEVICE static char Test(SFINAE5<BinaryOpT, &BinaryOpT::operator()> *);
+    template <typename BinaryOpT> _CCCL_HOST_DEVICE static char Test(SFINAE6<BinaryOpT, &BinaryOpT::operator()> *);
+    template <typename BinaryOpT> _CCCL_HOST_DEVICE static char Test(SFINAE7<BinaryOpT, &BinaryOpT::operator()> *);
+    template <typename BinaryOpT> _CCCL_HOST_DEVICE static char Test(SFINAE8<BinaryOpT, &BinaryOpT::operator()> *);
 
-    template <typename BinaryOpT> static int Test(...);
+    template <typename BinaryOpT> _CCCL_HOST_DEVICE static int Test(...);
 
 public:
 
     /// Whether the functor BinaryOp has a third <tt>unsigned int</tt> index param
-    static const bool HAS_PARAM = sizeof(Test<BinaryOp>(NULL)) == sizeof(char);
+    static constexpr bool HAS_PARAM = sizeof(Test<BinaryOp>(NULL)) == sizeof(char);
 };
 
 
@@ -1000,7 +1015,7 @@ template <Category _CATEGORY, bool _PRIMITIVE, bool _NULL_TYPE, typename _Unsign
 struct BaseTraits
 {
     /// Category
-    static const Category CATEGORY      = _CATEGORY;
+    static constexpr Category CATEGORY      = _CATEGORY;
     enum
     {
         PRIMITIVE       = _PRIMITIVE,
@@ -1017,9 +1032,9 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = UNSIGNED_INTEGER;
-    static const UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1);
+    static constexpr Category       CATEGORY    = UNSIGNED_INTEGER;
+    static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(0);
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1);
 
     enum
     {
@@ -1028,17 +1043,17 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
     };
 
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleIn(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
     {
         return key;
     }
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleOut(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
     {
         return key;
     }
 
-    static __host__ __device__ __forceinline__ T Max()
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
     {
         UnsignedBits retval_bits = MAX_KEY;
         T retval;
@@ -1046,7 +1061,7 @@ struct BaseTraits<UNSIGNED_INTEGER, true, false, _UnsignedBits, T>
         return retval;
     }
 
-    static __host__ __device__ __forceinline__ T Lowest()
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
     {
         UnsignedBits retval_bits = LOWEST_KEY;
         T retval;
@@ -1064,10 +1079,10 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = SIGNED_INTEGER;
-    static const UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
-    static const UnsignedBits   LOWEST_KEY  = HIGH_BIT;
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
+    static constexpr Category       CATEGORY    = SIGNED_INTEGER;
+    static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
+    static constexpr UnsignedBits   LOWEST_KEY  = HIGH_BIT;
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
 
     enum
     {
@@ -1075,23 +1090,23 @@ struct BaseTraits<SIGNED_INTEGER, true, false, _UnsignedBits, T>
         NULL_TYPE       = false,
     };
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleIn(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
     {
         return key ^ HIGH_BIT;
     };
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleOut(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
     {
         return key ^ HIGH_BIT;
     };
 
-    static __host__ __device__ __forceinline__ T Max()
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
     {
         UnsignedBits retval = MAX_KEY;
         return reinterpret_cast<T&>(retval);
     }
 
-    static __host__ __device__ __forceinline__ T Lowest()
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
     {
         UnsignedBits retval = LOWEST_KEY;
         return reinterpret_cast<T&>(retval);
@@ -1104,24 +1119,24 @@ struct FpLimits;
 template <>
 struct FpLimits<float>
 {
-    static __host__ __device__ __forceinline__ float Max() {
-        return FLT_MAX;
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Max() {
+        return ::cuda::std::numeric_limits<float>::max();
     }
 
-    static __host__ __device__ __forceinline__ float Lowest() {
-        return FLT_MAX * float(-1);
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE float Lowest() {
+        return ::cuda::std::numeric_limits<float>::lowest();
     }
 };
 
 template <>
 struct FpLimits<double>
 {
-    static __host__ __device__ __forceinline__ double Max() {
-        return DBL_MAX;
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Max() {
+        return ::cuda::std::numeric_limits<double>::max();
     }
 
-    static __host__ __device__ __forceinline__ double Lowest() {
-        return DBL_MAX  * double(-1);
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE double Lowest() {
+        return ::cuda::std::numeric_limits<double>::lowest();
     }
 };
 
@@ -1129,12 +1144,12 @@ struct FpLimits<double>
 template <>
 struct FpLimits<__half>
 {
-    static __host__ __device__ __forceinline__ __half Max() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Max() {
         unsigned short max_word = 0x7BFF;
         return reinterpret_cast<__half&>(max_word);
     }
 
-    static __host__ __device__ __forceinline__ __half Lowest() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __half Lowest() {
         unsigned short lowest_word = 0xFBFF;
         return reinterpret_cast<__half&>(lowest_word);
     }
@@ -1145,16 +1160,55 @@ struct FpLimits<__half>
 template <>
 struct FpLimits<__nv_bfloat16>
 {
-    static __host__ __device__ __forceinline__ __nv_bfloat16 Max() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Max() {
         unsigned short max_word = 0x7F7F;
         return reinterpret_cast<__nv_bfloat16&>(max_word);
     }
 
-    static __host__ __device__ __forceinline__ __nv_bfloat16 Lowest() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_bfloat16 Lowest() {
         unsigned short lowest_word = 0xFF7F;
         return reinterpret_cast<__nv_bfloat16&>(lowest_word);
     }
 };
+#endif
+
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+template <>
+struct FpLimits<__nv_fp8_e4m3>
+{
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Max() {
+        unsigned char max_word = 0x7EU;
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
+    }
+
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e4m3 Lowest() {
+        unsigned char lowest_word = 0xFEU;
+        __nv_fp8_e4m3 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e4m3));
+        return ret_val;
+    }
+};
+
+template <>
+struct FpLimits<__nv_fp8_e5m2>
+{
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Max() {
+        unsigned char max_word = 0x7BU;
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &max_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
+    }
+
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE __nv_fp8_e5m2 Lowest() {
+        unsigned char lowest_word = 0xFBU;
+        __nv_fp8_e5m2 ret_val;
+        memcpy(&ret_val, &lowest_word, sizeof(__nv_fp8_e5m2));
+        return ret_val;
+    }
+};
+
 #endif
 
 /**
@@ -1165,10 +1219,10 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
 {
     typedef _UnsignedBits       UnsignedBits;
 
-    static const Category       CATEGORY    = FLOATING_POINT;
-    static const UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
-    static const UnsignedBits   LOWEST_KEY  = UnsignedBits(-1);
-    static const UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
+    static constexpr Category       CATEGORY    = FLOATING_POINT;
+    static constexpr UnsignedBits   HIGH_BIT    = UnsignedBits(1) << ((sizeof(UnsignedBits) * 8) - 1);
+    static constexpr UnsignedBits   LOWEST_KEY  = UnsignedBits(-1);
+    static constexpr UnsignedBits   MAX_KEY     = UnsignedBits(-1) ^ HIGH_BIT;
 
     enum
     {
@@ -1176,23 +1230,23 @@ struct BaseTraits<FLOATING_POINT, true, false, _UnsignedBits, T>
         NULL_TYPE       = false,
     };
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleIn(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
     {
         UnsignedBits mask = (key & HIGH_BIT) ? UnsignedBits(-1) : HIGH_BIT;
         return key ^ mask;
     };
 
-    static __host__ __device__ __forceinline__ UnsignedBits TwiddleOut(UnsignedBits key)
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
     {
         UnsignedBits mask = (key & HIGH_BIT) ? HIGH_BIT : UnsignedBits(-1);
         return key ^ mask;
     };
 
-    static __host__ __device__ __forceinline__ T Max() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max() {
         return FpLimits<T>::Max();
     }
 
-    static __host__ __device__ __forceinline__ T Lowest() {
+    static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest() {
         return FpLimits<T>::Lowest();
     }
 };
@@ -1206,7 +1260,7 @@ template <typename T> struct NumericTraits :            BaseTraits<NOT_A_NUMBER,
 
 template <> struct NumericTraits<NullType> :            BaseTraits<NOT_A_NUMBER, false, true, NullType, NullType> {};
 
-template <> struct NumericTraits<char> :                BaseTraits<(std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
+template <> struct NumericTraits<char> :                BaseTraits<(::cuda::std::numeric_limits<char>::is_signed) ? SIGNED_INTEGER : UNSIGNED_INTEGER, true, false, unsigned char, char> {};
 template <> struct NumericTraits<signed char> :         BaseTraits<SIGNED_INTEGER, true, false, unsigned char, signed char> {};
 template <> struct NumericTraits<short> :               BaseTraits<SIGNED_INTEGER, true, false, unsigned short, short> {};
 template <> struct NumericTraits<int> :                 BaseTraits<SIGNED_INTEGER, true, false, unsigned int, int> {};
@@ -1220,7 +1274,7 @@ template <> struct NumericTraits<unsigned long> :       BaseTraits<UNSIGNED_INTE
 template <> struct NumericTraits<unsigned long long> :  BaseTraits<UNSIGNED_INTEGER, true, false, unsigned long long, unsigned long long> {};
 
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <>
 struct NumericTraits<__uint128_t>
 {
@@ -1234,22 +1288,22 @@ struct NumericTraits<__uint128_t>
   static constexpr bool PRIMITIVE = false;
   static constexpr bool NULL_TYPE = false;
 
-  static __host__ __device__ __forceinline__ UnsignedBits TwiddleIn(UnsignedBits key)
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key;
   }
 
-  static __host__ __device__ __forceinline__ UnsignedBits TwiddleOut(UnsignedBits key)
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key;
   }
 
-  static __host__ __device__ __forceinline__ T Max()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     return MAX_KEY;
   }
 
-  static __host__ __device__ __forceinline__ T Lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     return LOWEST_KEY;
   }
@@ -1269,23 +1323,23 @@ struct NumericTraits<__int128_t>
   static constexpr bool PRIMITIVE = false;
   static constexpr bool NULL_TYPE = false;
 
-  static __host__ __device__ __forceinline__ UnsignedBits TwiddleIn(UnsignedBits key)
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleIn(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
-  static __host__ __device__ __forceinline__ UnsignedBits TwiddleOut(UnsignedBits key)
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits TwiddleOut(UnsignedBits key)
   {
     return key ^ HIGH_BIT;
   };
 
-  static __host__ __device__ __forceinline__ T Max()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Max()
   {
     UnsignedBits retval = MAX_KEY;
     return reinterpret_cast<T&>(retval);
   }
 
-  static __host__ __device__ __forceinline__ T Lowest()
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T Lowest()
   {
     UnsignedBits retval = LOWEST_KEY;
     return reinterpret_cast<T&>(retval);
@@ -1302,6 +1356,12 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
     template <> struct NumericTraits<__nv_bfloat16> :   BaseTraits<FLOATING_POINT, true, false, unsigned short, __nv_bfloat16> {};
 #endif
 
+
+#if defined(__CUDA_FP8_TYPES_EXIST__)
+    template <> struct NumericTraits<__nv_fp8_e4m3> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e4m3> {};
+    template <> struct NumericTraits<__nv_fp8_e5m2> :   BaseTraits<FLOATING_POINT, true, false, __nv_fp8_storage_t, __nv_fp8_e5m2> {};
+#endif
+
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, false, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
@@ -1309,12 +1369,9 @@ template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTE
  * \brief Type traits
  */
 template <typename T>
-struct Traits : NumericTraits<typename std::remove_cv<T>::type> {};
+struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type> {};
 
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
-
-
-/** @} */       // end group UtilModule
 
 CUB_NAMESPACE_END

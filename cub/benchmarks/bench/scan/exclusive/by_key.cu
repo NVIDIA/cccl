@@ -108,7 +108,7 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT
 
   thrust::device_vector<ValueT> in_vals(elements);
   thrust::device_vector<ValueT> out_vals(elements);
-  thrust::device_vector<KeyT> keys = gen_uniform_key_segments<KeyT>(seed_t{}, elements, 0, 5200);
+  thrust::device_vector<KeyT> keys = generate.uniform.key_segments(elements, 0, 5200);
 
   KeyT *d_keys       = thrust::raw_pointer_cast(keys.data());
   ValueT *d_in_vals  = thrust::raw_pointer_cast(in_vals.data());
@@ -134,7 +134,7 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t *d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_tmp,
                          tmp_size,
                          d_keys,
@@ -159,7 +159,15 @@ using key_types = all_types;
 #ifdef TUNE_ValueT
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
-using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, int128_t>;
+using value_types = nvbench::type_list<int8_t,
+                                       int16_t,
+                                       int32_t,
+                                       int64_t
+#if NVBENCH_HELPER_HAS_I128
+                                       ,
+                                       int128_t
+#endif
+                                       >;
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(scan, NVBENCH_TYPE_AXES(key_types, value_types, some_offset_types))

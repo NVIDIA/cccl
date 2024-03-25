@@ -48,17 +48,25 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__fwd/span.h" // dynamic_extent
 #include "../__mdspan/macros.h"
 #include "../cstddef"
 #include "../limits" // numeric_limits
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
+#ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 namespace __detail {
 
@@ -74,7 +82,7 @@ _LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral() {
 
 } // end namespace __detail
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

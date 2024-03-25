@@ -15,11 +15,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "__verbose_abort"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "__verbose_abort"
 
 // This is for backwards compatibility with code that might have been enabling
 // assertions through the Debug mode previously.
@@ -47,18 +51,18 @@
 
 #if _LIBCUDACXX_ENABLE_ASSERTIONS
 # define _LIBCUDACXX_ASSERT(expression, message)                                \
-    (_LIBCUDACXX_DIAGNOSTIC_PUSH                                                \
-    _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wassume")                            \
+    (_CCCL_DIAG_PUSH                                                            \
+    _CCCL_DIAG_SUPPRESS_CLANG("-Wassume")                                       \
     __builtin_expect(static_cast<bool>(expression), 1) ?                        \
       (void)0 :                                                                 \
       ::_CUDA_VSTD::__libcpp_verbose_abort("%s:%d: assertion %s failed: %s", __FILE__, __LINE__, #expression, message)
-    _LIBCUDACXX_DIAGNOSTIC_POP)
+    _CCCL_DIAG_POP)
 #elif 0 // !defined(_LIBCUDACXX_ASSERTIONS_DISABLE_ASSUME) && __has_builtin(__builtin_assume)
 # define _LIBCUDACXX_ASSERT(expression, message)                                \
-    (_LIBCUDACXX_DIAGNOSTIC_PUSH                                                \
-    _LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wassume")                            \
+    (_CCCL_DIAG_PUSH                                                            \
+    _CCCL_DIAG_SUPPRESS_CLANG("-Wassume")                                       \
     __builtin_assume(static_cast<bool>(expression))                             \
-    _LIBCUDACXX_DIAGNOSTIC_POP)
+    _CCCL_DIAG_POP)
 #else
 # define _LIBCUDACXX_ASSERT(expression, message) ((void)0)
 #endif

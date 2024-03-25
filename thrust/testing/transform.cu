@@ -7,8 +7,16 @@
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/iterator/retag.h>
 
+// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
+// Adding this attribute suffices that this miscompilation does not appear anymore
+#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
+#else
+#define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
+#endif
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnarySimple(void)
 {
     typedef typename Vector::value_type T;
@@ -78,6 +86,7 @@ DECLARE_UNITTEST(TestTransformUnaryDispatchImplicit);
 
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfUnaryNoStencilSimple(void)
 {
     typedef typename Vector::value_type T;
@@ -166,6 +175,7 @@ DECLARE_UNITTEST(TestTransformIfUnaryNoStencilDispatchImplicit);
 
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfUnarySimple(void)
 {
     typedef typename Vector::value_type T;
@@ -259,6 +269,7 @@ DECLARE_UNITTEST(TestTransformIfUnaryDispatchImplicit);
 
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformBinarySimple(void)
 {
     typedef typename Vector::value_type T;
@@ -339,6 +350,7 @@ DECLARE_UNITTEST(TestTransformBinaryDispatchImplicit);
 
 
 template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfBinarySimple(void)
 {
     typedef typename Vector::value_type T;
@@ -447,6 +459,7 @@ DECLARE_UNITTEST(TestTransformIfBinaryDispatchImplicit);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnary(const size_t n)
 {
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
@@ -464,6 +477,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformUnary);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnaryToDiscardIterator(const size_t n)
 {
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
@@ -495,6 +509,7 @@ struct repeat2
 
 
 template<typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnaryToDiscardIteratorZipped(const size_t n)
 {
     thrust::host_vector<T>   h_input = unittest::random_integers<T>(n);
@@ -542,6 +557,7 @@ struct is_positive
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfUnaryNoStencil(const size_t n)
 {
     thrust::host_vector<T>   h_input   = unittest::random_integers<T>(n);
@@ -564,6 +580,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformIfUnaryNoStencil);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfUnary(const size_t n)
 {
     thrust::host_vector<T>   h_input   = unittest::random_integers<T>(n);
@@ -590,6 +607,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformIfUnary);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfUnaryToDiscardIterator(const size_t n)
 {
     thrust::host_vector<T>   h_input   = unittest::random_integers<T>(n);
@@ -619,6 +637,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformIfUnaryToDiscardIterator);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformBinary(const size_t n)
 {
     thrust::host_vector<T>   h_input1 = unittest::random_integers<T>(n);
@@ -643,6 +662,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformBinary);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformBinaryToDiscardIterator(const size_t n)
 {
     thrust::host_vector<T>   h_input1 = unittest::random_integers<T>(n);
@@ -664,6 +684,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformBinaryToDiscardIterator);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfBinary(const size_t n)
 {
     thrust::host_vector<T>   h_input1  = unittest::random_integers<T>(n);
@@ -711,6 +732,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformIfBinary);
 
 
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformIfBinaryToDiscardIterator(const size_t n)
 {
     thrust::host_vector<T>   h_input1  = unittest::random_integers<T>(n);
@@ -745,6 +767,7 @@ DECLARE_VARIABLE_UNITTEST(TestTransformIfBinaryToDiscardIterator);
 
 #if ((__GNUC__ * 10000 + __GNUC_MINOR__ * 100) == 40400) || defined(__INTEL_COMPILER)
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnaryCountingIterator()
 {
     // G++ 4.4.x has a known failure with auto-vectorization (due to -O3 or
@@ -758,6 +781,7 @@ void TestTransformUnaryCountingIterator()
 }
 #else
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformUnaryCountingIterator()
 {
     size_t const n = 15 * sizeof(T);
@@ -780,6 +804,7 @@ DECLARE_GENERIC_UNITTEST(TestTransformUnaryCountingIterator);
 
 #if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100) == 40400
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformBinaryCountingIterator()
 {
     // GCC 4.4.x has a known failure with auto-vectorization (due to -O3 or -ftree-vectorize) of this test
@@ -789,6 +814,7 @@ void TestTransformBinaryCountingIterator()
 }
 #else
 template <typename T>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformBinaryCountingIterator()
 {
     size_t const n = 15 * sizeof(T);
@@ -825,6 +851,7 @@ struct plus_mod3
 };
 
 template <typename Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER
 void TestTransformWithIndirection(void)
 {
     // add numbers modulo 3 with external lookup table

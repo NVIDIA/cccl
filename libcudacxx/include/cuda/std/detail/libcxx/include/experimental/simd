@@ -655,13 +655,17 @@ public:
 #include <cstddef>
 #include <functional>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_EXPERIMENTAL_SIMD
 
-#if _LIBCUDACXX_STD_VER >= 17
+#if _CCCL_STD_VER >= 2017
 
 enum class _StorageKind {
   _Scalar,
@@ -722,12 +726,12 @@ constexpr size_t __ceil_pow_of_2(size_t __val) {
 
 template <class _Tp, size_t __bytes>
 struct __vec_ext_traits {
-#if !defined(_LIBCUDACXX_COMPILER_CLANG)
+#if !defined(_CCCL_COMPILER_CLANG)
   typedef _Tp type __attribute__((vector_size(__ceil_pow_of_2(__bytes))));
 #endif
 };
 
-#if defined(_LIBCUDACXX_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_CLANG)
 #define _LIBCUDACXX_SPECIALIZE_VEC_EXT(_TYPE, _NUM_ELEMENT)                        \
   template <>                                                                  \
   struct __vec_ext_traits<_TYPE, sizeof(_TYPE) * _NUM_ELEMENT> {               \
@@ -1562,7 +1566,7 @@ public:
   friend simd_mask operator!=(const simd_mask&, const simd_mask&) noexcept;
 };
 
-#endif // _LIBCUDACXX_STD_VER >= 17
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_EXPERIMENTAL_SIMD
 

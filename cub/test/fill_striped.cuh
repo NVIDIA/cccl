@@ -142,8 +142,8 @@ void fill_striped(IteratorT it)
 {
   using T = cub::detail::value_t<IteratorT>;
 
-  const int warps_in_block = BlockThreads / LogicalWarpThreads;
-  const int items_per_warp = LogicalWarpThreads * ItemsPerThread;
+  constexpr int warps_in_block = BlockThreads / LogicalWarpThreads;
+  constexpr int items_per_warp = LogicalWarpThreads * ItemsPerThread;
   scalar_to_vec_t<T> convert;
 
   for (int warp_id = 0; warp_id < warps_in_block; warp_id++)

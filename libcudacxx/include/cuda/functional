@@ -55,9 +55,19 @@
 #ifndef _CUDA_FUNCTIONAL_
 #define _CUDA_FUNCTIONAL_
 
-#include <cuda/std/type_traits>
-#include <cuda/std/functional>
-#include <cuda/std/utility>
+#include "__cccl_config"
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "std/type_traits"
+#include "std/functional"
+#include "std/utility"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace __detail
@@ -73,12 +83,12 @@ class __return_type_wrapper {
 
   template <class _Fn,
             class = _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::__decay_t<_Fn>, _DecayFn>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   explicit __return_type_wrapper(_Fn &&__fn) noexcept
     : __fn_(_CUDA_VSTD::forward<_Fn>(__fn)) {}
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   _Ret operator()(_As&&... __as) & noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -93,7 +103,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   _Ret operator()(_As&&... __as) && noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -109,7 +119,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   _Ret operator()(_As&&... __as) const& noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(
@@ -124,7 +134,7 @@ class __return_type_wrapper {
   }
 
   template <class... _As>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   _Ret operator()(_As&&... __as) const&& noexcept {
 #if !defined(__NVCC__) || defined(__CUDA_ARCH__)
     static_assert(

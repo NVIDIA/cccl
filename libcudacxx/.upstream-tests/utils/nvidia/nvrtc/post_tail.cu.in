@@ -1,8 +1,0 @@
-        NULL,
-        NULL, 0));
-
-    CUDA_API_CALL(cudaGetLastError());
-    CUDA_API_CALL(cudaDeviceSynchronize());
-
-    return 0;
-}

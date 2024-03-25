@@ -2,8 +2,12 @@
 
 source "$(dirname "$0")/build_common.sh"
 
+print_environment_details
+
 ./build_cub.sh "$@"
 
-ctest --test-dir ${BUILD_DIR} --output-on-failure -E device_radix_sort
+PRESET="cub-cpp$CXX_STANDARD"
 
-echo "CUB test complete"
+test_preset CUB "${PRESET}"
+
+print_time_summary

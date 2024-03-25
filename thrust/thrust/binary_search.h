@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/pair.h>
 
@@ -43,18 +51,18 @@ THRUST_NAMESPACE_BEGIN
  */
 
 
-//////////////////////   
+//////////////////////
 // Scalar Functions //
 //////////////////////
 
 
 /*! \p lower_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the first position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p lower_bound uses <tt>operator<</tt> for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
- * for every iterator \c j in <tt>[first, i)</tt>, <tt>*j < value</tt>. 
+ * for every iterator \c j in <tt>[first, i)</tt>, <tt>*j < value</tt>.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
  *
@@ -63,10 +71,10 @@ THRUST_NAMESPACE_BEGIN
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return The furthermost iterator \c i, such that <tt>*i < value</tt>.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p lower_bound
  *  to search for values in a ordered range using the \p thrust::device execution policy for parallelization:
@@ -98,7 +106,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p binary_search
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -106,20 +114,20 @@ ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedP
 
 
 /*! \p lower_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the first position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p lower_bound uses <tt>operator<</tt> for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
- * for every iterator \c j in <tt>[first, i)</tt>, <tt>*j < value</tt>. 
+ * for every iterator \c j in <tt>[first, i)</tt>, <tt>*j < value</tt>.
  *
  *  \param first The beginning of the ordered sequence.
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return The furthermost iterator \c i, such that <tt>*i < value</tt>.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p lower_bound
  *  to search for values in a ordered range.
@@ -150,19 +158,19 @@ ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedP
  *  \see \p binary_search
  */
 template <class ForwardIterator, class LessThanComparable>
-ForwardIterator lower_bound(ForwardIterator first, 
+ForwardIterator lower_bound(ForwardIterator first,
                             ForwardIterator last,
                             const LessThanComparable& value);
 
 
 /*! \p lower_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the first position where value could be
- * inserted without violating the ordering. This version of 
- * \p lower_bound uses function object \c comp for comparison 
+ * inserted without violating the ordering. This version of
+ * \p lower_bound uses function object \c comp for comparison
  * and returns the furthermost iterator \c i in <tt>[first, last)</tt>
- * such that, for every iterator \c j in <tt>[first, i)</tt>, 
- * <tt>comp(*j, value)</tt> is \c true. 
+ * such that, for every iterator \c j in <tt>[first, i)</tt>,
+ * <tt>comp(*j, value)</tt> is \c true.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
  *
@@ -172,7 +180,7 @@ ForwardIterator lower_bound(ForwardIterator first,
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return The furthermost iterator \c i, such that <tt>comp(*i, value)</tt> is \c true.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
@@ -209,7 +217,7 @@ ForwardIterator lower_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -218,20 +226,20 @@ ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedP
 
 
 /*! \p lower_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the first position where value could be
- * inserted without violating the ordering. This version of 
- * \p lower_bound uses function object \c comp for comparison 
+ * inserted without violating the ordering. This version of
+ * \p lower_bound uses function object \c comp for comparison
  * and returns the furthermost iterator \c i in <tt>[first, last)</tt>
- * such that, for every iterator \c j in <tt>[first, i)</tt>, 
- * <tt>comp(*j, value)</tt> is \c true. 
+ * such that, for every iterator \c j in <tt>[first, i)</tt>,
+ * <tt>comp(*j, value)</tt> is \c true.
  *
  *  \param first The beginning of the ordered sequence.
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return The furthermost iterator \c i, such that <tt>comp(*i, value)</tt> is \c true.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
  *  \tparam StrictWeakOrdering is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -268,14 +276,14 @@ ForwardIterator lower_bound(const thrust::detail::execution_policy_base<DerivedP
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 ForwardIterator lower_bound(ForwardIterator first,
                             ForwardIterator last,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp);
 
 
 /*! \p upper_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the last position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p upper_bound uses <tt>operator<</tt> for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
  * for every iterator \c j in <tt>[first, i)</tt>, <tt>value < *j</tt>
@@ -288,10 +296,10 @@ ForwardIterator lower_bound(ForwardIterator first,
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return The furthermost iterator \c i, such that <tt>value < *i</tt> is \c false.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p upper_bound
  *  to search for values in a ordered range using the \p thrust::device execution policy for parallelism:
@@ -323,7 +331,7 @@ ForwardIterator lower_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -331,9 +339,9 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
 
 
 /*! \p upper_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the last position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p upper_bound uses <tt>operator<</tt> for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
  * for every iterator \c j in <tt>[first, i)</tt>, <tt>value < *j</tt>
@@ -343,9 +351,9 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return The furthermost iterator \c i, such that <tt>value < *i</tt> is \c false.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p upper_bound
  *  to search for values in a ordered range.
@@ -376,15 +384,15 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
  *  \see \p binary_search
  */
 template <class ForwardIterator, class LessThanComparable>
-ForwardIterator upper_bound(ForwardIterator first, 
+ForwardIterator upper_bound(ForwardIterator first,
                             ForwardIterator last,
                             const LessThanComparable& value);
 
 
 /*! \p upper_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the last position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p upper_bound uses function object \c comp for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
  * for every iterator \c j in <tt>[first, i)</tt>, <tt>comp(value, *j)</tt>
@@ -398,7 +406,7 @@ ForwardIterator upper_bound(ForwardIterator first,
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return The furthermost iterator \c i, such that <tt>comp(value, *i)</tt> is \c false.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
@@ -435,7 +443,7 @@ ForwardIterator upper_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -443,9 +451,9 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
                             StrictWeakOrdering comp);
 
 /*! \p upper_bound is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
+ * the element value in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the last position where value could be
- * inserted without violating the ordering. This version of 
+ * inserted without violating the ordering. This version of
  * \p upper_bound uses function object \c comp for comparison and returns
  * the furthermost iterator \c i in <tt>[first, last)</tt> such that,
  * for every iterator \c j in <tt>[first, i)</tt>, <tt>comp(value, *j)</tt>
@@ -456,7 +464,7 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return The furthermost iterator \c i, such that <tt>comp(value, *i)</tt> is \c false.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
  *  \tparam StrictWeakOrdering is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -493,16 +501,16 @@ ForwardIterator upper_bound(const thrust::detail::execution_policy_base<DerivedP
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 ForwardIterator upper_bound(ForwardIterator first,
                             ForwardIterator last,
-                            const T& value, 
+                            const T& value,
                             StrictWeakOrdering comp);
 
 
 /*! \p binary_search is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
- * It returns \c true if an element that is equivalent to \c value 
+ * the element value in an ordered range <tt>[first, last)</tt>.
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  Specifically, this version returns \c true if and only if 
- * there exists an iterator \c i in <tt>[first, last)</tt> such that 
+ * exists.  Specifically, this version returns \c true if and only if
+ * there exists an iterator \c i in <tt>[first, last)</tt> such that
  * <tt>*i < value</tt> and <tt>value < *i</tt> are both \c false.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -512,10 +520,10 @@ ForwardIterator upper_bound(ForwardIterator first,
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return \c true if an equivalent element exists in <tt>[first, last)</tt>, otherwise \c false.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p binary_search
  *  to search for values in a ordered range using the \p thrust::device execution policy for parallelization:
@@ -547,28 +555,28 @@ ForwardIterator upper_bound(ForwardIterator first,
  *  \see \p equal_range
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                   ForwardIterator first, 
+                   ForwardIterator first,
                    ForwardIterator last,
                    const LessThanComparable& value);
 
 
 /*! \p binary_search is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
- * It returns \c true if an element that is equivalent to \c value 
+ * the element value in an ordered range <tt>[first, last)</tt>.
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  Specifically, this version returns \c true if and only if 
- * there exists an iterator \c i in <tt>[first, last)</tt> such that 
+ * exists.  Specifically, this version returns \c true if and only if
+ * there exists an iterator \c i in <tt>[first, last)</tt> such that
  * <tt>*i < value</tt> and <tt>value < *i</tt> are both \c false.
  *
  *  \param first The beginning of the ordered sequence.
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return \c true if an equivalent element exists in <tt>[first, last)</tt>, otherwise \c false.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p binary_search
  *  to search for values in a ordered range.
@@ -599,17 +607,17 @@ bool binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &e
  *  \see \p equal_range
  */
 template <class ForwardIterator, class LessThanComparable>
-bool binary_search(ForwardIterator first, 
+bool binary_search(ForwardIterator first,
                    ForwardIterator last,
                    const LessThanComparable& value);
 
 
 /*! \p binary_search is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
- * It returns \c true if an element that is equivalent to \c value 
+ * the element value in an ordered range <tt>[first, last)</tt>.
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  Specifically, this version returns \c true if and only if 
- * there exists an iterator \c i in <tt>[first, last)</tt> such that 
+ * exists.  Specifically, this version returns \c true if and only if
+ * there exists an iterator \c i in <tt>[first, last)</tt> such that
  * <tt>comp(*i, value)</tt> and <tt>comp(value, *i)</tt> are both \c false.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -620,7 +628,7 @@ bool binary_search(ForwardIterator first,
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return \c true if an equivalent element exists in <tt>[first, last)</tt>, otherwise \c false.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
@@ -657,20 +665,20 @@ bool binary_search(ForwardIterator first,
  *  \see \p equal_range
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 bool binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    ForwardIterator first,
                    ForwardIterator last,
-                   const T& value, 
+                   const T& value,
                    StrictWeakOrdering comp);
 
 
 /*! \p binary_search is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. 
- * It returns \c true if an element that is equivalent to \c value 
+ * the element value in an ordered range <tt>[first, last)</tt>.
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  Specifically, this version returns \c true if and only if 
- * there exists an iterator \c i in <tt>[first, last)</tt> such that 
+ * exists.  Specifically, this version returns \c true if and only if
+ * there exists an iterator \c i in <tt>[first, last)</tt> such that
  * <tt>comp(*i, value)</tt> and <tt>comp(value, *i)</tt> are both \c false.
  *
  *  \param first The beginning of the ordered sequence.
@@ -678,7 +686,7 @@ bool binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &e
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return \c true if an equivalent element exists in <tt>[first, last)</tt>, otherwise \c false.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
  *  \tparam StrictWeakOrdering is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -715,29 +723,29 @@ bool binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &e
 template <class ForwardIterator, class T, class StrictWeakOrdering>
 bool binary_search(ForwardIterator first,
                    ForwardIterator last,
-                   const T& value, 
+                   const T& value,
                    StrictWeakOrdering comp);
 
 
 /*! \p equal_range is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. The 
+ * the element value in an ordered range <tt>[first, last)</tt>. The
  * value returned by \p equal_range is essentially a combination of
  * the values returned by \p lower_bound and \p upper_bound: it returns
  * a \p pair of iterators \c i and \c j such that \c i is the first
- * position where value could be inserted without violating the 
+ * position where value could be inserted without violating the
  * ordering and \c j is the last position where value could be inserted
  * without violating the ordering. It follows that every element in the
- * range <tt>[i, j)</tt> is equivalent to value, and that 
+ * range <tt>[i, j)</tt> is equivalent to value, and that
  * <tt>[i, j)</tt> is the largest subrange of <tt>[first, last)</tt> that
- * has this property. 
+ * has this property.
  *
- * This version of \p equal_range returns a \p pair of iterators 
- * <tt>[i, j)</tt>, where \c i is the furthermost iterator in 
- * <tt>[first, last)</tt> such that, for every iterator \c k in 
+ * This version of \p equal_range returns a \p pair of iterators
+ * <tt>[i, j)</tt>, where \c i is the furthermost iterator in
+ * <tt>[first, last)</tt> such that, for every iterator \c k in
  * <tt>[first, i)</tt>, <tt>*k < value</tt>.  \c j is the furthermost
- * iterator in <tt>[first, last)</tt> such that, for every iterator 
- * \c k in <tt>[first, j)</tt>, <tt>value < *k</tt> is \c false. 
- * For every iterator \c k in <tt>[i, j)</tt>, neither 
+ * iterator in <tt>[first, last)</tt> such that, for every iterator
+ * \c k in <tt>[first, j)</tt>, <tt>value < *k</tt> is \c false.
+ * For every iterator \c k in <tt>[i, j)</tt>, neither
  * <tt>value < *k</tt> nor <tt>*k < value</tt> is \c true.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -747,10 +755,10 @@ bool binary_search(ForwardIterator first,
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return A \p pair of iterators <tt>[i, j)</tt> that define the range of equivalent elements.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p equal_range
  *  to search for values in a ordered range using the \p thrust::device execution policy for parallelization:
@@ -782,7 +790,7 @@ bool binary_search(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator, ForwardIterator>
 equal_range(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             ForwardIterator first,
@@ -791,33 +799,33 @@ equal_range(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
 
 
 /*! \p equal_range is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. The 
+ * the element value in an ordered range <tt>[first, last)</tt>. The
  * value returned by \p equal_range is essentially a combination of
  * the values returned by \p lower_bound and \p upper_bound: it returns
  * a \p pair of iterators \c i and \c j such that \c i is the first
- * position where value could be inserted without violating the 
+ * position where value could be inserted without violating the
  * ordering and \c j is the last position where value could be inserted
  * without violating the ordering. It follows that every element in the
- * range <tt>[i, j)</tt> is equivalent to value, and that 
+ * range <tt>[i, j)</tt> is equivalent to value, and that
  * <tt>[i, j)</tt> is the largest subrange of <tt>[first, last)</tt> that
- * has this property. 
+ * has this property.
  *
- * This version of \p equal_range returns a \p pair of iterators 
- * <tt>[i, j)</tt>, where \c i is the furthermost iterator in 
- * <tt>[first, last)</tt> such that, for every iterator \c k in 
+ * This version of \p equal_range returns a \p pair of iterators
+ * <tt>[i, j)</tt>, where \c i is the furthermost iterator in
+ * <tt>[first, last)</tt> such that, for every iterator \c k in
  * <tt>[first, i)</tt>, <tt>*k < value</tt>.  \c j is the furthermost
- * iterator in <tt>[first, last)</tt> such that, for every iterator 
- * \c k in <tt>[first, j)</tt>, <tt>value < *k</tt> is \c false. 
- * For every iterator \c k in <tt>[i, j)</tt>, neither 
+ * iterator in <tt>[first, last)</tt> such that, for every iterator
+ * \c k in <tt>[first, j)</tt>, <tt>value < *k</tt> is \c false.
+ * For every iterator \c k in <tt>[i, j)</tt>, neither
  * <tt>value < *k</tt> nor <tt>*k < value</tt> is \c true.
  *
  *  \param first The beginning of the ordered sequence.
  *  \param last The end of the ordered sequence.
  *  \param value The value to be searched.
  *  \return A \p pair of iterators <tt>[i, j)</tt> that define the range of equivalent elements.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
- *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>. 
+ *  \tparam LessThanComparable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
  *
  *  The following code snippet demonstrates how to use \p equal_range
  *  to search for values in a ordered range.
@@ -855,25 +863,25 @@ equal_range(ForwardIterator first,
 
 
 /*! \p equal_range is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. The 
+ * the element value in an ordered range <tt>[first, last)</tt>. The
  * value returned by \p equal_range is essentially a combination of
  * the values returned by \p lower_bound and \p upper_bound: it returns
  * a \p pair of iterators \c i and \c j such that \c i is the first
- * position where value could be inserted without violating the 
+ * position where value could be inserted without violating the
  * ordering and \c j is the last position where value could be inserted
  * without violating the ordering. It follows that every element in the
- * range <tt>[i, j)</tt> is equivalent to value, and that 
+ * range <tt>[i, j)</tt> is equivalent to value, and that
  * <tt>[i, j)</tt> is the largest subrange of <tt>[first, last)</tt> that
- * has this property. 
+ * has this property.
  *
- * This version of \p equal_range returns a \p pair of iterators 
- * <tt>[i, j)</tt>. \c i is the furthermost iterator in 
- * <tt>[first, last)</tt> such that, for every iterator \c k in 
+ * This version of \p equal_range returns a \p pair of iterators
+ * <tt>[i, j)</tt>. \c i is the furthermost iterator in
+ * <tt>[first, last)</tt> such that, for every iterator \c k in
  * <tt>[first, i)</tt>, <tt>comp(*k, value)</tt> is \c true.
  * \c j is the furthermost iterator in <tt>[first, last)</tt> such
- * that, for every iterator \c k in <tt>[first, last)</tt>, 
- * <tt>comp(value, *k)</tt> is \c false. For every iterator \c k 
- * in <tt>[i, j)</tt>, neither <tt>comp(value, *k)</tt> nor 
+ * that, for every iterator \c k in <tt>[first, last)</tt>,
+ * <tt>comp(value, *k)</tt> is \c false. For every iterator \c k
+ * in <tt>[i, j)</tt>, neither <tt>comp(value, *k)</tt> nor
  * <tt>comp(*k, value)</tt> is \c true.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -884,7 +892,7 @@ equal_range(ForwardIterator first,
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return A \p pair of iterators <tt>[i, j)</tt> that define the range of equivalent elements.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
@@ -921,7 +929,7 @@ equal_range(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<ForwardIterator, ForwardIterator>
 equal_range(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             ForwardIterator first,
@@ -931,25 +939,25 @@ equal_range(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
 
 
 /*! \p equal_range is a version of binary search: it attempts to find
- * the element value in an ordered range <tt>[first, last)</tt>. The 
+ * the element value in an ordered range <tt>[first, last)</tt>. The
  * value returned by \p equal_range is essentially a combination of
  * the values returned by \p lower_bound and \p upper_bound: it returns
  * a \p pair of iterators \c i and \c j such that \c i is the first
- * position where value could be inserted without violating the 
+ * position where value could be inserted without violating the
  * ordering and \c j is the last position where value could be inserted
  * without violating the ordering. It follows that every element in the
- * range <tt>[i, j)</tt> is equivalent to value, and that 
+ * range <tt>[i, j)</tt> is equivalent to value, and that
  * <tt>[i, j)</tt> is the largest subrange of <tt>[first, last)</tt> that
- * has this property. 
+ * has this property.
  *
- * This version of \p equal_range returns a \p pair of iterators 
- * <tt>[i, j)</tt>. \c i is the furthermost iterator in 
- * <tt>[first, last)</tt> such that, for every iterator \c k in 
+ * This version of \p equal_range returns a \p pair of iterators
+ * <tt>[i, j)</tt>. \c i is the furthermost iterator in
+ * <tt>[first, last)</tt> such that, for every iterator \c k in
  * <tt>[first, i)</tt>, <tt>comp(*k, value)</tt> is \c true.
  * \c j is the furthermost iterator in <tt>[first, last)</tt> such
- * that, for every iterator \c k in <tt>[first, last)</tt>, 
- * <tt>comp(value, *k)</tt> is \c false. For every iterator \c k 
- * in <tt>[i, j)</tt>, neither <tt>comp(value, *k)</tt> nor 
+ * that, for every iterator \c k in <tt>[first, last)</tt>,
+ * <tt>comp(value, *k)</tt> is \c false. For every iterator \c k
+ * in <tt>[i, j)</tt>, neither <tt>comp(value, *k)</tt> nor
  * <tt>comp(*k, value)</tt> is \c true.
  *
  *  \param first The beginning of the ordered sequence.
@@ -957,7 +965,7 @@ equal_range(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
  *  \param value The value to be searched.
  *  \param comp The comparison operator.
  *  \return A \p pair of iterators <tt>[i, j)</tt> that define the range of equivalent elements.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam T is comparable to \p ForwardIterator's \c value_type.
  *  \tparam StrictWeakOrdering is a model of <a href="https://en.cppreference.com/w/cpp/concepts/strict_weak_order">Strict Weak Ordering</a>.
@@ -1010,7 +1018,7 @@ equal_range(ForwardIterator first,
 //////////////////////
 
 
-/*! \p lower_bound is a vectorized version of binary search: for each 
+/*! \p lower_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
@@ -1024,7 +1032,7 @@ equal_range(ForwardIterator first,
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1052,7 +1060,7 @@ equal_range(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1075,16 +1083,16 @@ equal_range(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                           ForwardIterator first, 
+                           ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result);
 
 
-/*! \p lower_bound is a vectorized version of binary search: for each 
+/*! \p lower_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
@@ -1095,7 +1103,7 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
@@ -1120,7 +1128,7 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1142,18 +1150,18 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \see \p binary_search
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator lower_bound(ForwardIterator first, 
+OutputIterator lower_bound(ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result);
 
 
-/*! \p lower_bound is a vectorized version of binary search: for each 
+/*! \p lower_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
- * be inserted without violating the ordering.  This version of 
+ * be inserted without violating the ordering.  This version of
  * \p lower_bound uses function object \c comp for comparison.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -1165,7 +1173,7 @@ OutputIterator lower_bound(ForwardIterator first,
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1194,7 +1202,7 @@ OutputIterator lower_bound(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1204,7 +1212,7 @@ OutputIterator lower_bound(ForwardIterator first,
  *  thrust::device_vector<unsigned int> output(6);
  *
  *  thrust::lower_bound(input.begin(), input.end(),
- *                      values.begin(), values.end(), 
+ *                      values.begin(), values.end(),
  *                      output.begin(),
  *                      thrust::less<int>());
  *
@@ -1217,21 +1225,21 @@ OutputIterator lower_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                           ForwardIterator first, 
+                           ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result,
                            StrictWeakOrdering comp);
 
 
-/*! \p lower_bound is a vectorized version of binary search: for each 
+/*! \p lower_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
- * be inserted without violating the ordering.  This version of 
+ * be inserted without violating the ordering.  This version of
  * \p lower_bound uses function object \c comp for comparison.
  *
  *  \param first The beginning of the ordered sequence.
@@ -1240,7 +1248,7 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is comparable to \p ForwardIterator's \c value_type.
@@ -1267,7 +1275,7 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1277,7 +1285,7 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  thrust::device_vector<unsigned int> output(6);
  *
  *  thrust::lower_bound(input.begin(), input.end(),
- *                      values.begin(), values.end(), 
+ *                      values.begin(), values.end(),
  *                      output.begin(),
  *                      thrust::less<int>());
  *
@@ -1290,15 +1298,15 @@ OutputIterator lower_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \see \p binary_search
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator lower_bound(ForwardIterator first, 
+OutputIterator lower_bound(ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result,
                            StrictWeakOrdering comp);
 
 
-/*! \p upper_bound is a vectorized version of binary search: for each 
+/*! \p upper_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of last position where value could
@@ -1312,7 +1320,7 @@ OutputIterator lower_bound(ForwardIterator first,
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1340,7 +1348,7 @@ OutputIterator lower_bound(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1363,16 +1371,16 @@ OutputIterator lower_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                           ForwardIterator first, 
+                           ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result);
 
 
-/*! \p upper_bound is a vectorized version of binary search: for each 
+/*! \p upper_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of last position where value could
@@ -1383,7 +1391,7 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
@@ -1408,7 +1416,7 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1430,18 +1438,18 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \see \p binary_search
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator upper_bound(ForwardIterator first, 
+OutputIterator upper_bound(ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result);
 
 
-/*! \p upper_bound is a vectorized version of binary search: for each 
+/*! \p upper_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
- * be inserted without violating the ordering.  This version of 
+ * be inserted without violating the ordering.  This version of
  * \p upper_bound uses function object \c comp for comparison.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -1453,7 +1461,7 @@ OutputIterator upper_bound(ForwardIterator first,
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1483,7 +1491,7 @@ OutputIterator upper_bound(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1494,7 +1502,7 @@ OutputIterator upper_bound(ForwardIterator first,
  *
  *  thrust::upper_bound(thrust::device,
  *                      input.begin(), input.end(),
- *                      values.begin(), values.end(), 
+ *                      values.begin(), values.end(),
  *                      output.begin(),
  *                      thrust::less<int>());
  *
@@ -1507,21 +1515,21 @@ OutputIterator upper_bound(ForwardIterator first,
  *  \see \p binary_search
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                           ForwardIterator first, 
+                           ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result,
                            StrictWeakOrdering comp);
 
 
-/*! \p upper_bound is a vectorized version of binary search: for each 
+/*! \p upper_bound is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
  * Specifically, it returns the index of first position where value could
- * be inserted without violating the ordering.  This version of 
+ * be inserted without violating the ordering.  This version of
  * \p upper_bound uses function object \c comp for comparison.
  *
  *  \param first The beginning of the ordered sequence.
@@ -1530,7 +1538,7 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is comparable to \p ForwardIterator's \c value_type.
@@ -1557,7 +1565,7 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1567,7 +1575,7 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  thrust::device_vector<unsigned int> output(6);
  *
  *  thrust::upper_bound(input.begin(), input.end(),
- *                      values.begin(), values.end(), 
+ *                      values.begin(), values.end(),
  *                      output.begin(),
  *                      thrust::less<int>());
  *
@@ -1580,18 +1588,18 @@ OutputIterator upper_bound(const thrust::detail::execution_policy_base<DerivedPo
  *  \see \p binary_search
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator upper_bound(ForwardIterator first, 
+OutputIterator upper_bound(ForwardIterator first,
                            ForwardIterator last,
-                           InputIterator values_first, 
+                           InputIterator values_first,
                            InputIterator values_last,
                            OutputIterator result,
                            StrictWeakOrdering comp);
 
 
-/*! \p binary_search is a vectorized version of binary search: for each 
+/*! \p binary_search is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
- * It returns \c true if an element that is equivalent to \c value 
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
  * exists.
  *
@@ -1603,7 +1611,7 @@ OutputIterator upper_bound(ForwardIterator first,
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1631,7 +1639,7 @@ OutputIterator upper_bound(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1654,19 +1662,19 @@ OutputIterator upper_bound(ForwardIterator first,
  *  \see \p equal_range
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                             ForwardIterator first, 
+                             ForwardIterator first,
                              ForwardIterator last,
-                             InputIterator values_first, 
+                             InputIterator values_first,
                              InputIterator values_last,
                              OutputIterator result);
 
 
-/*! \p binary_search is a vectorized version of binary search: for each 
+/*! \p binary_search is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
- * It returns \c true if an element that is equivalent to \c value 
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
  * exists.
  *
@@ -1675,7 +1683,7 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  \param values_first The beginning of the search values sequence.
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
@@ -1700,7 +1708,7 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1722,19 +1730,19 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  \see \p equal_range
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator>
-OutputIterator binary_search(ForwardIterator first, 
+OutputIterator binary_search(ForwardIterator first,
                              ForwardIterator last,
-                             InputIterator values_first, 
+                             InputIterator values_first,
                              InputIterator values_last,
                              OutputIterator result);
 
 
-/*! \p binary_search is a vectorized version of binary search: for each 
+/*! \p binary_search is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
- * It returns \c true if an element that is equivalent to \c value 
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  This version of \p binary_search uses function object 
+ * exists.  This version of \p binary_search uses function object
  * \c comp for comparison.
  *
  * The algorithm's execution is parallelized as determined by \p exec.
@@ -1746,7 +1754,7 @@ OutputIterator binary_search(ForwardIterator first,
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -1776,7 +1784,7 @@ OutputIterator binary_search(ForwardIterator first,
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1800,22 +1808,22 @@ OutputIterator binary_search(ForwardIterator first,
  *  \see \p equal_range
  */
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator binary_search(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                             ForwardIterator first, 
+                             ForwardIterator first,
                              ForwardIterator last,
-                             InputIterator values_first, 
+                             InputIterator values_first,
                              InputIterator values_last,
                              OutputIterator result,
                              StrictWeakOrdering comp);
 
 
-/*! \p binary_search is a vectorized version of binary search: for each 
+/*! \p binary_search is a vectorized version of binary search: for each
  * iterator \c v in <tt>[values_first, values_last)</tt> it attempts to
  * find the value <tt>*v</tt> in an ordered range <tt>[first, last)</tt>.
- * It returns \c true if an element that is equivalent to \c value 
+ * It returns \c true if an element that is equivalent to \c value
  * is present in <tt>[first, last)</tt> and \c false if no such element
- * exists.  This version of \p binary_search uses function object 
+ * exists.  This version of \p binary_search uses function object
  * \c comp for comparison.
  *
  *  \param first The beginning of the ordered sequence.
@@ -1824,7 +1832,7 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  \param values_last The end of the search values sequence.
  *  \param result The beginning of the output sequence.
  *  \param comp The comparison operator.
- * 
+ *
  *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
  *                        and \c InputIterator's \c value_type is <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThanComparable</a>.
@@ -1851,7 +1859,7 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  input[4] = 8;
  *
  *  thrust::device_vector<int> values(6);
- *  values[0] = 0; 
+ *  values[0] = 0;
  *  values[1] = 1;
  *  values[2] = 2;
  *  values[3] = 3;
@@ -1874,9 +1882,9 @@ OutputIterator binary_search(const thrust::detail::execution_policy_base<Derived
  *  \see \p equal_range
  */
 template <class ForwardIterator, class InputIterator, class OutputIterator, class StrictWeakOrdering>
-OutputIterator binary_search(ForwardIterator first, 
+OutputIterator binary_search(ForwardIterator first,
                              ForwardIterator last,
-                             InputIterator values_first, 
+                             InputIterator values_first,
                              InputIterator values_last,
                              OutputIterator result,
                              StrictWeakOrdering comp);

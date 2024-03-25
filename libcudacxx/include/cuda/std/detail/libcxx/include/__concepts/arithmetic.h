@@ -14,21 +14,26 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__type_traits/is_arithmetic.h"
 #include "../__type_traits/is_floating_point.h"
 #include "../__type_traits/is_integral.h"
+#include "../__type_traits/is_signed.h"
 #include "../__type_traits/is_signed_integer.h"
 #include "../__type_traits/is_signed.h"
 #include "../__type_traits/is_unsigned_integer.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // [concepts.arithmetic], arithmetic concepts
 
@@ -44,13 +49,10 @@ _LIBCUDACXX_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 template<class _Tp>
 _LIBCUDACXX_CONCEPT floating_point = _LIBCUDACXX_TRAIT(is_floating_point, _Tp);
 
-// Concept helpers for the internal type traits for the fundamental types.
-template <class _Tp>
-_LIBCUDACXX_CONCEPT __libcpp_unsigned_integer = __libcpp_is_unsigned_integer<_Tp>::value;
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __libcpp_signed_integer = __libcpp_is_signed_integer<_Tp>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

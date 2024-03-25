@@ -202,7 +202,7 @@ int main()
 
   std::cout << "All of these operations are used behind the scenes by CUB to sort custom types:\n\n";
 
-  const int num_items = 6;
+  constexpr int num_items = 6;
   thrust::device_vector<custom_t> in = {
     {4, +2.5f},
     {0, -2.5f},

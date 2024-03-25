@@ -87,11 +87,11 @@ static void range(nvbench::state &state, nvbench::type_list<SampleT, CounterT, O
   SampleT *d_levels_g = thrust::raw_pointer_cast(levels_g.data());
   SampleT *d_levels_b = thrust::raw_pointer_cast(levels_b.data());
 
-  thrust::device_vector<SampleT> input(elements * num_channels);
   thrust::device_vector<CounterT> hist_r(num_bins);
   thrust::device_vector<CounterT> hist_g(num_bins);
   thrust::device_vector<CounterT> hist_b(num_bins);
-  gen(seed_t{}, input, entropy, lower_level, upper_level);
+  thrust::device_vector<SampleT> input =
+    generate(elements * num_channels, entropy, lower_level, upper_level);
 
   SampleT *d_input        = thrust::raw_pointer_cast(input.data());
   CounterT *d_histogram_r = thrust::raw_pointer_cast(hist_r.data());
@@ -129,7 +129,7 @@ static void range(nvbench::state &state, nvbench::type_list<SampleT, CounterT, O
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::DispatchRange(d_temp_storage,
                               temp_storage_bytes,
                               d_input,
@@ -157,5 +157,5 @@ NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offse
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 64, 128, 2048, 2097152})
-  .add_string_axis("Entropy", {"0.201", "0.544", "1.000"});
+  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
+  .add_string_axis("Entropy", {"0.201", "1.000"});

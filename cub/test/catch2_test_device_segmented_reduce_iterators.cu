@@ -27,8 +27,6 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
@@ -37,30 +35,29 @@
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
+using offsets            = c2h::type_list<std::int32_t, std::uint32_t>;
 
 CUB_TEST("Device segmented reduce works with fancy input iterators",
          "[reduce][device]",
-         iterator_type_list)
+         iterator_type_list,
+         offsets)
 {
-  using params   = params_t<TestType>;
-  using item_t   = typename params::item_t;
-  using output_t = typename params::output_t;
-  using offset_t = uint32_t;
+  using type_pair_t = typename c2h::get<0, TestType>;
+  using item_t      = typename type_pair_t::input_t;
+  using output_t    = typename type_pair_t::output_t;
+  using offset_t    = typename c2h::get<1, TestType>;
 
   constexpr int min_items = 1;
   constexpr int max_items = 1000000;
@@ -80,7 +77,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
@@ -101,7 +98,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
 
   // Prepare verification data
   using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
-  thrust::host_vector<output_t> expected_result(num_segments);
+  c2h::host_vector<output_t> expected_result(num_segments);
   compute_segmented_problem_reference(in_it,
                                       segment_offsets,
                                       reduction_op,
@@ -109,7 +106,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators",
                                       expected_result.begin());
 
   // Run test
-  thrust::device_vector<output_t> out_result(num_segments);
+  c2h::device_vector<output_t> out_result(num_segments);
   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
   device_segmented_reduce(in_it,
                           d_out_it,

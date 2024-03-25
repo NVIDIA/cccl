@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_array.h"
@@ -31,13 +39,9 @@
 
 #include "../initializer_list"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Err>
 class unexpected;
@@ -73,7 +77,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
   _LIBCUDACXX_TEMPLATE(class _Error = _Err)
-    (requires (!_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, unexpected) &&
+    _LIBCUDACXX_REQUIRES( (!_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, unexpected) &&
                !_LIBCUDACXX_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t) &&
                _LIBCUDACXX_TRAIT(is_constructible, _Err, _Error)))
   _LIBCUDACXX_INLINE_VISIBILITY
@@ -81,13 +85,13 @@ public:
     : __unex_(_CUDA_VSTD::forward<_Error>(__error)) {}
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, _Args...))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, _Args...))
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _Args...))
     : __unex_(_CUDA_VSTD::forward<_Args>(__args)...) {}
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
-    (requires _LIBCUDACXX_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
   _LIBCUDACXX_INLINE_VISIBILITY
   constexpr explicit unexpected(in_place_t, initializer_list<_Up> __il, _Args&&... __args) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, initializer_list<_Up>&, _Args...))
@@ -97,23 +101,23 @@ public:
   constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr const _Err& error() const& noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr const _Err& error() const& noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr _Err& error() & noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr _Err& error() & noexcept {
     return __unex_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr const _Err&& error() const&& noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr const _Err&& error() const&& noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr _Err&& error() && noexcept {
+  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr _Err&& error() && noexcept {
     return _CUDA_VSTD::move(__unex_);
   }
 
@@ -126,7 +130,7 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-    (requires _LIBCUDACXX_TRAIT(is_swappable, _Err2))
+    _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_swappable, _Err2))
   friend _LIBCUDACXX_INLINE_VISIBILITY constexpr
   void swap(unexpected& __lhs, unexpected& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {
@@ -141,7 +145,7 @@ public:
     noexcept(static_cast<bool>(__lhs.error() == __rhs.error()))) {
     return __lhs.error() == __rhs.error();
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   template <class _UErr>
   _LIBCUDACXX_INLINE_VISIBILITY
   _LIBCUDACXX_NODISCARD_EXT friend constexpr bool operator!=(const unexpected& __lhs, const unexpected<_UErr>& __rhs) noexcept(
@@ -154,12 +158,12 @@ private:
   _Err __unex_;
 };
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#endif // _LIBCUDACXX_STD_VER > 14 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#endif // _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

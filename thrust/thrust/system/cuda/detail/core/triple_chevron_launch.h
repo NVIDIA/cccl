@@ -27,17 +27,24 @@
 #pragma once
 
 #include <thrust/detail/config.h>
-#include <thrust/system/cuda/detail/core/alignment.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
-#include <cassert>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+#include <thrust/system/cuda/detail/core/alignment.h>
+
+#include <cassert>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub {
 namespace launcher {
 
-  struct triple_chevron
+  struct _CCCL_ATTRIBUTE_HIDDEN triple_chevron
   {
     typedef size_t Size;
     dim3 const grid;
@@ -56,7 +63,7 @@ namespace launcher {
           stream(stream_) {}
 
     template<class K, class... Args>
-    cudaError_t __host__
+    cudaError_t _CCCL_HOST
     doit_host(K k, Args const&... args) const
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
@@ -64,16 +71,16 @@ namespace launcher {
     }
 
     template<class T>
-    size_t __device__
+    size_t _CCCL_DEVICE
     align_up(size_t offset) const
     {
       size_t alignment = alignment_of<T>::value;
       return alignment * ((offset + (alignment - 1))/ alignment);
     }
 
-    size_t __device__ argument_pack_size(size_t size) const { return size; }
+    size_t _CCCL_DEVICE argument_pack_size(size_t size) const { return size; }
     template <class Arg, class... Args>
-    size_t __device__
+    size_t _CCCL_DEVICE
     argument_pack_size(size_t size, Arg const& arg, Args const&... args) const
     {
       size = align_up<Arg>(size);
@@ -81,7 +88,7 @@ namespace launcher {
     }
 
     template <class Arg>
-    size_t __device__ copy_arg(char* buffer, size_t offset, Arg arg) const
+    size_t _CCCL_DEVICE copy_arg(char* buffer, size_t offset, Arg arg) const
     {
       offset = align_up<Arg>(offset);
       for (int i = 0; i != sizeof(Arg); ++i)
@@ -89,12 +96,12 @@ namespace launcher {
       return offset + sizeof(Arg);
     }
 
-    __device__
+    _CCCL_DEVICE
     void fill_arguments(char*, size_t) const
     {}
 
     template<class Arg, class... Args>
-    __device__
+    _CCCL_DEVICE
     void fill_arguments(char* buffer,
                      size_t offset,
                      Arg const& arg,
@@ -105,7 +112,7 @@ namespace launcher {
 
     #ifdef THRUST_RDC_ENABLED
     template<class K, class... Args>
-    cudaError_t __device__
+    cudaError_t _CCCL_DEVICE
     doit_device(K k, Args const&... args) const
     {
       const size_t size = argument_pack_size(0,args...);
@@ -115,7 +122,7 @@ namespace launcher {
     }
 
     template <class K>
-    cudaError_t __device__
+    cudaError_t _CCCL_DEVICE
     launch_device(K k, void* buffer) const
     {
       return cudaLaunchDevice((void*)k,
@@ -125,16 +132,16 @@ namespace launcher {
                               shared_mem,
                               stream);
     }
-    #else 
+    #else
     template<class K, class... Args>
-    cudaError_t __device__
+    cudaError_t _CCCL_DEVICE
     doit_device(K, Args const&... ) const
     {
       return cudaErrorNotSupported;
     }
     #endif
 
-    __thrust_exec_check_disable__
+    _CCCL_EXEC_CHECK_DISABLE
     template <class K, class... Args>
     THRUST_FUNCTION
     cudaError_t doit(K k, Args const&... args) const

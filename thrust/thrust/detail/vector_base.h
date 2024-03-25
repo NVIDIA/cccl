@@ -22,11 +22,20 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/iterator/detail/normal_iterator.h>
 #include <thrust/iterator/reverse_iterator.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/config.h>
 #include <thrust/detail/contiguous_storage.h>
 
 #include <initializer_list>
@@ -108,7 +117,6 @@ template<typename T, typename Alloc>
      */
     vector_base(const vector_base &v, const Alloc &alloc);
 
-  #if THRUST_CPP_DIALECT >= 2011
     /*! Move constructor moves from another vector_base.
      *  \param v The vector_base to move.
      */
@@ -118,7 +126,6 @@ template<typename T, typename Alloc>
     // iterators, which is necessary for the following constructor to be implemented
     // correctly
     // vector_base(vector_base &&v, const Alloc &alloc);
-  #endif
 
     /*! Copy assign operator copies from another vector_base.
      *  \param v The vector_base to copy.
@@ -134,13 +141,13 @@ template<typename T, typename Alloc>
      *  \param il The intializer_list.
      */
     vector_base(std::initializer_list<T> il);
-      
+
     /*! This constructor builds a \p vector_base from an intializer_list.
      *  \param il The intializer_list.
      *  \param alloc The allocator to use by this device_vector.
      */
     vector_base(std::initializer_list<T> il, const Alloc &alloc);
-    
+
     /*! Assign operator copies from an initializer_list
      *  \param il The initializer_list.
      */
@@ -222,13 +229,13 @@ template<typename T, typename Alloc>
 
     /*! Returns the number of elements in this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     size_type size(void) const;
 
     /*! Returns the size() of the largest possible vector_base.
      *  \return The largest possible return value of size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     size_type max_size(void) const;
 
     /*! \brief If n is less than or equal to capacity(), this call has no effect.
@@ -242,7 +249,7 @@ template<typename T, typename Alloc>
     /*! Returns the number of elements which have been reserved in this
      *  vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     size_type capacity(void) const;
 
     /*! This method shrinks the capacity of this vector_base to exactly
@@ -258,7 +265,7 @@ template<typename T, typename Alloc>
      *  Note that data access with this operator is unchecked and
      *  out_of_range lookups are not defined.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference operator[](size_type n);
 
     /*! \brief Subscript read access to the data contained in this vector_dev.
@@ -269,28 +276,28 @@ template<typename T, typename Alloc>
      *  Note that data access with this operator is unchecked and
      *  out_of_range lookups are not defined.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reference operator[](size_type n) const;
 
     /*! This method returns an iterator pointing to the beginning of
      *  this vector_base.
      *  \return mStart
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator begin(void);
 
     /*! This method returns a const_iterator pointing to the beginning
      *  of this vector_base.
      *  \return mStart
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_iterator begin(void) const;
 
     /*! This method returns a const_iterator pointing to the beginning
      *  of this vector_base.
      *  \return mStart
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_iterator cbegin(void) const;
 
     /*! This method returns a reverse_iterator pointing to the beginning of
@@ -298,7 +305,7 @@ template<typename T, typename Alloc>
      *  \return A reverse_iterator pointing to the beginning of this
      *          vector_base's reversed sequence.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reverse_iterator rbegin(void);
 
     /*! This method returns a const_reverse_iterator pointing to the beginning of
@@ -306,7 +313,7 @@ template<typename T, typename Alloc>
      *  \return A const_reverse_iterator pointing to the beginning of this
      *          vector_base's reversed sequence.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reverse_iterator rbegin(void) const;
 
     /*! This method returns a const_reverse_iterator pointing to the beginning of
@@ -314,89 +321,89 @@ template<typename T, typename Alloc>
      *  \return A const_reverse_iterator pointing to the beginning of this
      *          vector_base's reversed sequence.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reverse_iterator crbegin(void) const;
 
     /*! This method returns an iterator pointing to one element past the
      *  last of this vector_base.
      *  \return begin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator end(void);
 
     /*! This method returns a const_iterator pointing to one element past the
      *  last of this vector_base.
      *  \return begin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_iterator end(void) const;
 
     /*! This method returns a const_iterator pointing to one element past the
      *  last of this vector_base.
      *  \return begin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_iterator cend(void) const;
 
     /*! This method returns a reverse_iterator pointing to one element past the
      *  last of this vector_base's reversed sequence.
      *  \return rbegin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reverse_iterator rend(void);
 
     /*! This method returns a const_reverse_iterator pointing to one element past the
      *  last of this vector_base's reversed sequence.
      *  \return rbegin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reverse_iterator rend(void) const;
 
     /*! This method returns a const_reverse_iterator pointing to one element past the
      *  last of this vector_base's reversed sequence.
      *  \return rbegin() + size().
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reverse_iterator crend(void) const;
 
     /*! This method returns a const_reference referring to the first element of this
      *  vector_base.
      *  \return The first element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reference front(void) const;
 
     /*! This method returns a reference pointing to the first element of this
      *  vector_base.
      *  \return The first element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference front(void);
 
     /*! This method returns a const reference pointing to the last element of
      *  this vector_base.
      *  \return The last element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_reference back(void) const;
 
     /*! This method returns a reference referring to the last element of
      *  this vector_dev.
      *  \return The last element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference back(void);
 
     /*! This method returns a pointer to this vector_base's first element.
      *  \return A pointer to the first element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     pointer data(void);
 
     /*! This method returns a const_pointer to this vector_base's first element.
      *  \return a const_pointer to the first element of this vector_base.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     const_pointer data(void) const;
 
     /*! This method resizes this vector_base to 0.
@@ -406,7 +413,7 @@ template<typename T, typename Alloc>
     /*! This method returns true iff size() == 0.
      *  \return true if size() == 0; false, otherwise.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     bool empty(void) const;
 
     /*! This method appends the given element to the end of this vector_base.
@@ -445,7 +452,7 @@ template<typename T, typename Alloc>
      *  \param x The exemplar element to copy & insert.
      *  \return An iterator pointing to the newly inserted element.
      */
-    iterator insert(iterator position, const T &x); 
+    iterator insert(iterator position, const T &x);
 
     /*! This method inserts a copy of an exemplar value to a range at the
      *  specified position in this vector_base.
@@ -498,10 +505,10 @@ template<typename T, typename Alloc>
   private:
     // these methods resolve the ambiguity of the constructor template of form (Iterator, Iterator)
     template<typename IteratorOrIntegralType>
-      void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type); 
+      void init_dispatch(IteratorOrIntegralType begin, IteratorOrIntegralType end, false_type);
 
     template<typename IteratorOrIntegralType>
-      void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type); 
+      void init_dispatch(IteratorOrIntegralType n, IteratorOrIntegralType value, true_type);
 
     template<typename InputIterator>
       void range_init(InputIterator first, InputIterator last);
@@ -564,8 +571,6 @@ template<typename T, typename Alloc>
                            storage_type &new_storage);
 }; // end vector_base
 
-} // end detail
-
 /*! This function assigns the contents of vector a to vector b and the
  *  contents of vector b to vector a.
  *
@@ -575,8 +580,8 @@ template<typename T, typename Alloc>
  *           of a will be returned here.
  */
 template<typename T, typename Alloc>
-  void swap(detail::vector_base<T,Alloc> &a,
-            detail::vector_base<T,Alloc> &b);
+  void swap(vector_base<T,Alloc> &a,
+            vector_base<T,Alloc> &b);
 
 
 /*! This operator allows comparison between two vectors.
@@ -587,18 +592,18 @@ template<typename T, typename Alloc>
  */
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
-    
+bool operator==(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs);
+
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator==(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator==(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator==(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+                const vector_base<T2,Alloc2>& rhs);
 
 /*! This operator allows comparison between two vectors.
  *  \param lhs The first \p vector to compare.
@@ -608,20 +613,21 @@ bool operator==(const std::vector<T1,Alloc1>&         lhs,
  */
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
-    
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
+                const vector_base<T2,Alloc2>& rhs);
+
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
-bool operator!=(const detail::vector_base<T1,Alloc1>& lhs,
+bool operator!=(const vector_base<T1,Alloc1>& lhs,
                 const std::vector<T2,Alloc2>&         rhs);
 
 template<typename T1, typename Alloc1,
          typename T2, typename Alloc2>
 bool operator!=(const std::vector<T1,Alloc1>&         lhs,
-                const detail::vector_base<T2,Alloc2>& rhs);
+                const vector_base<T2,Alloc2>& rhs);
+
+} // end detail
 
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/vector_base.inl>
-

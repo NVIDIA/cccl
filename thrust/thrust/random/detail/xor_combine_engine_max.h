@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/mpl/math.h>
 #include <limits>
@@ -219,7 +227,7 @@ template<typename result_type, result_type a, result_type b, int d>
 {
   typedef xor_combine_engine_max_aux_constants<result_type,a,b,d> constants;
 
-  static const result_type value = 
+  static const result_type value =
     thrust::detail::eval_if<
       // if k is odd...
       math::is_odd<result_type, constants::k>::value,
@@ -287,7 +295,7 @@ template<typename Engine1, size_t s1, typename Engine2, size_t s2, typename resu
     math::min<
       result_type,
       result_type(Engine1::max - Engine1::min),
-      two_to_the_power<result_type, w-s1>::value - 1 
+      two_to_the_power<result_type, w-s1>::value - 1
     >::value;
 
   static const result_type m2 =

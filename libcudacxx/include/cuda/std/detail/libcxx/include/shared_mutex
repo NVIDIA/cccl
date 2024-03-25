@@ -129,13 +129,17 @@ _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
 
 
-#if _LIBCUDACXX_STD_VER > 11 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if _CCCL_STD_VER > 2011 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 #include <__mutex_base>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 #error <shared_mutex> is not supported on this single threaded system
@@ -175,7 +179,7 @@ __shared_mutex_base
 };
 
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_SHARED_MUTEX shared_mutex
 {
     __shared_mutex_base __base;
@@ -501,7 +505,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif  // !_LIBCUDACXX_HAS_NO_THREADS
 
-#endif  // _LIBCUDACXX_STD_VER > 11
+#endif  // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_POP_MACROS
 

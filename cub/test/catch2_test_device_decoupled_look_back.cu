@@ -28,13 +28,8 @@
 #undef NDEBUG
 #include <cub/device/device_scan.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cassert>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <class ScanTileStateT>
@@ -56,7 +51,7 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
   __shared__ temp_storage_t temp_storage;
 
   scan_op_t scan_op{};
-  const unsigned int threads_in_warp = 32;
+  constexpr unsigned int threads_in_warp = 32;
   const unsigned int tid             = threadIdx.x;
 
   // Construct prefix op
@@ -102,15 +97,15 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
 using message_types = c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>;
 
 template <class MessageT>
-thrust::host_vector<MessageT>
-compute_reference(const thrust::device_vector<MessageT> &tile_aggregates)
+c2h::host_vector<MessageT>
+compute_reference(const c2h::device_vector<MessageT> &tile_aggregates)
 {
   if (tile_aggregates.empty())
   {
     return {};
   }
 
-  thrust::host_vector<MessageT> reference = tile_aggregates;
+  c2h::host_vector<MessageT> reference = tile_aggregates;
   MessageT *h_reference = thrust::raw_pointer_cast(reference.data());
 
   MessageT aggregate = h_reference[0];
@@ -130,21 +125,21 @@ CUB_TEST("Decoupled look-back works with various message types",
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;
 
-  const int max_tiles = 1024 * 1024;
+  constexpr int max_tiles = 1024 * 1024;
   const int num_tiles = GENERATE_COPY(take(10, random(1, max_tiles)));
 
-  thrust::device_vector<message_t> tile_data(num_tiles);
+  c2h::device_vector<message_t> tile_data(num_tiles);
   message_t *d_tile_data = thrust::raw_pointer_cast(tile_data.data());
 
   c2h::gen(CUB_SEED(2), tile_data);
-  thrust::host_vector<message_t> reference = compute_reference(tile_data);
+  c2h::host_vector<message_t> reference = compute_reference(tile_data);
 
   // Query temporary storage requirements
   std::size_t temp_storage_bytes{};
   scan_tile_state_t::AllocationSize(num_tiles, temp_storage_bytes);
 
   // Allocate temporary storage
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   std::uint8_t *d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Initialize temporary storage
@@ -152,14 +147,14 @@ CUB_TEST("Decoupled look-back works with various message types",
   cudaError_t status = tile_status.Init(num_tiles, d_temp_storage, temp_storage_bytes);
   REQUIRE(status == cudaSuccess);
 
-  const unsigned int threads_in_init_block = 256;
+  constexpr unsigned int threads_in_init_block = 256;
   const unsigned int blocks_in_init_grid = cub::DivideAndRoundUp(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 
   // Launch decoupled look-back
-  const unsigned int threads_in_block = 256;
+  constexpr unsigned int threads_in_block = 256;
   decoupled_look_back_kernel<<<num_tiles, threads_in_block>>>(tile_status, d_tile_data);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

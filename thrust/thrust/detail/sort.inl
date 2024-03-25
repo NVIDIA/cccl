@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/sort.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -26,9 +34,9 @@
 THRUST_NAMESPACE_BEGIN
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last)
@@ -38,11 +46,11 @@ __host__ __device__
 } // end sort()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
             RandomAccessIterator first,
             RandomAccessIterator last,
@@ -53,9 +61,9 @@ __host__ __device__
 } // end sort()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator last)
@@ -65,11 +73,11 @@ __host__ __device__
 } // end stable_sort()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator first,
                    RandomAccessIterator last,
@@ -80,11 +88,11 @@ __host__ __device__
 } // end stable_sort()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -95,12 +103,12 @@ __host__ __device__
 } // end sort_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                    RandomAccessIterator1 keys_first,
                    RandomAccessIterator1 keys_last,
@@ -112,11 +120,11 @@ __host__ __device__
 } // end sort_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           RandomAccessIterator1 keys_first,
                           RandomAccessIterator1 keys_last,
@@ -127,12 +135,12 @@ __host__ __device__
 } // end stable_sort_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void stable_sort_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           RandomAccessIterator1 keys_first,
                           RandomAccessIterator1 keys_last,
@@ -144,9 +152,9 @@ __host__ __device__
 } // end stable_sort_by_key()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last)
@@ -156,9 +164,9 @@ __host__ __device__
 } // end is_sorted()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename ForwardIterator, typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   bool is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                  ForwardIterator first,
                  ForwardIterator last,
@@ -169,9 +177,9 @@ __host__ __device__
 } // end is_sorted()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last)
@@ -181,9 +189,9 @@ __host__ __device__
 } // end is_sorted_until()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy, typename ForwardIterator, typename Compare>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator is_sorted_until(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                   ForwardIterator first,
                                   ForwardIterator last,
@@ -214,7 +222,7 @@ template<typename RandomAccessIterator>
 
 template<typename RandomAccessIterator,
          typename StrictWeakOrdering>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void sort(RandomAccessIterator first,
             RandomAccessIterator last,
             StrictWeakOrdering comp)

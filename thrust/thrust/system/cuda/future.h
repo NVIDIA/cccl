@@ -6,9 +6,17 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
@@ -29,7 +37,7 @@ template <typename T>
 struct unique_eager_future;
 
 template <typename... Events>
-__host__
+_CCCL_HOST
 unique_eager_event when_all(Events&&... evs);
 
 }} // namespace system::cuda
@@ -52,14 +60,14 @@ using thrust::system::cuda::when_all;
 } // namespace cuda
 
 template <typename DerivedPolicy>
-__host__ 
+_CCCL_HOST
 thrust::cuda::unique_eager_event
 unique_eager_event_type(
   thrust::cuda::execution_policy<DerivedPolicy> const&
 ) noexcept;
 
 template <typename T, typename DerivedPolicy>
-__host__ 
+_CCCL_HOST
 thrust::cuda::unique_eager_future<T>
 unique_eager_future_type(
   thrust::cuda::execution_policy<DerivedPolicy> const&

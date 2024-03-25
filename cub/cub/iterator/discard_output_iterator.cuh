@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,16 +27,24 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * Random-access iterator types
  */
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <iterator>
 #include <iostream>
-
-#include "../config.cuh"
 
 #if (THRUST_VERSION >= 100700)
     // This iterator is compatible with Thrust API 1.7 and newer
@@ -49,13 +57,7 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \addtogroup UtilIterator
- * @{
- */
-
-
-/**
- * \brief A discard iterator
+ * @brief A discard iterator
  */
 template <typename OffsetT = ptrdiff_t>
 class DiscardOutputIterator
@@ -63,22 +65,35 @@ class DiscardOutputIterator
 public:
 
     // Required iterator traits
-    typedef DiscardOutputIterator   self_type;              ///< My own type
-    typedef OffsetT                 difference_type;        ///< Type to express the result of subtracting one iterator from another
-    typedef void                    value_type;             ///< The type of the element the iterator can point to
-    typedef void                    pointer;                ///< The type of a pointer to an element the iterator can point to
-    typedef void                    reference;              ///< The type of a reference to an element the iterator can point to
+
+    /// My own type
+    typedef DiscardOutputIterator self_type;
+
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
+
+    /// The type of the element the iterator can point to
+    typedef void value_type;
+
+    /// The type of a pointer to an element the iterator can point to
+    typedef void pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef void reference;
 
 #if (THRUST_VERSION >= 100700)
     // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+
+    /// The iterator category
     typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
         THRUST_NS_QUALIFIER::any_system_tag,
         THRUST_NS_QUALIFIER::random_access_traversal_tag,
         value_type,
         reference
-      >::type iterator_category;                                        ///< The iterator category
+      >::type iterator_category;
 #else
-    typedef std::random_access_iterator_tag     iterator_category;      ///< The iterator category
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;
 #endif  // THRUST_VERSION
 
 private:
@@ -91,31 +106,31 @@ private:
 #endif
 
 public:
-
-    /// Constructor
-    __host__ __device__ __forceinline__ DiscardOutputIterator(
-        OffsetT offset = 0)     ///< Base offset
-    :
-        offset(offset)
+    /**
+     * @param offset
+     *   Base offset
+     */
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE DiscardOutputIterator(OffsetT offset = 0)
+        : offset(offset)
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
-        self_type retval = *this;
-        offset++;
-        return retval;
+      self_type retval = *this;
+      offset++;
+      return retval;
     }
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         offset++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ self_type& operator*()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator*()
     {
         // return self reference, which can be assigned to anything
         return *this;
@@ -123,7 +138,7 @@ public:
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(offset + n);
         return retval;
@@ -131,7 +146,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         offset += n;
         return *this;
@@ -139,7 +154,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(offset - n);
         return retval;
@@ -147,48 +162,48 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         offset -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return offset - other.offset;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator[](Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator[](Distance n)
     {
         // return self reference, which can be assigned to anything
         return *this;
     }
 
     /// Structure dereference
-    __host__ __device__ __forceinline__ pointer operator->()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
     {
         return;
     }
 
     /// Assignment to anything else (no-op)
     template<typename T>
-    __host__ __device__ __forceinline__ void operator=(T const&)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void operator=(T const&)
     {}
 
     /// Cast to void* operator
-    __host__ __device__ __forceinline__ operator void*() const { return NULL; }
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator void*() const { return NULL; }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
     {
         return (offset == rhs.offset);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
     {
         return (offset != rhs.offset);
     }
@@ -201,8 +216,5 @@ public:
     }
 
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

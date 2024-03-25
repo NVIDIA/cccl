@@ -18,6 +18,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/tag.h>
 #include <thrust/iterator/iterator_traits.h>
 
@@ -31,13 +39,13 @@ namespace generic
 
 
 template<typename DerivedPolicy, typename InputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::value_type
     reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last);
 
 
 template<typename DerivedPolicy, typename InputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, T init);
 
 
@@ -45,7 +53,7 @@ template<typename DerivedPolicy,
          typename InputIterator,
          typename T,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   T reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
 
 

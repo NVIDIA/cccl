@@ -14,12 +14,16 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../cstddef"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -32,7 +36,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_array
     : public integral_constant<bool, _LIBCUDACXX_IS_ARRAY(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = _LIBCUDACXX_IS_ARRAY(_Tp);
 #endif
@@ -46,7 +50,7 @@ template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_array<_Tp[]>
 template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS is_array<_Tp[_Np]>
     : public true_type {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = is_array<_Tp>::value;
 #endif

@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/pair.h>
@@ -35,12 +43,12 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator unique_copy(sequential::execution_policy<DerivedPolicy> &,
                              InputIterator first,
                              InputIterator last,
@@ -78,7 +86,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator unique(sequential::execution_policy<DerivedPolicy> &exec,
                          ForwardIterator first,
                          ForwardIterator last,
@@ -92,7 +100,7 @@ __host__ __device__
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<ForwardIterator>::difference_type
     unique_count(sequential::execution_policy<DerivedPolicy> &,
                  ForwardIterator first,

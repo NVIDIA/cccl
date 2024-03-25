@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/transform_reduce.h>
 #include <thrust/reduce.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -35,7 +43,7 @@ template<typename DerivedPolicy,
          typename UnaryFunction,
          typename OutputType,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputType transform_reduce(thrust::execution_policy<DerivedPolicy> &exec,
                               InputIterator first,
                               InputIterator last,

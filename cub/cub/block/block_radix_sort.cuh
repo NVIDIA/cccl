@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,25 +27,36 @@
  ******************************************************************************/
 
 /**
- * \file
- * The cub::BlockRadixSort class provides [<em>collective</em>](index.html#sec0) methods for radix sorting of items partitioned across a CUDA thread block.
+ * @file
+ * The cub::BlockRadixSort class provides [<em>collective</em>](index.html#sec0) methods for radix
+ * sorting of items partitioned across a CUDA thread block.
  */
-
 
 #pragma once
 
-#include "block_exchange.cuh"
-#include "block_radix_rank.cuh"
-#include "radix_rank_sort_operations.cuh"
-#include "../config.cuh"
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_exchange.cuh>
+#include <cub/block/block_radix_rank.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
 //! @rst
-//! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting 
-//! items partitioned across a CUDA thread block using a radix sorting method.  
+//! BlockRadixSort class provides :ref:`collective <collective-primitives>` methods for sorting
+//! items partitioned across a CUDA thread block using a radix sorting method.
 //!
 //! .. image:: ../img/sorting_logo.png
 //!     :align: center
@@ -156,7 +167,7 @@ CUB_NAMESPACE_BEGIN
 //!         ...
 //!
 //! Suppose the set of input ``thread_keys`` across the block of threads is
-//! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.  
+//! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
 //! The corresponding output ``thread_keys`` in those threads will be
 //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
 //!
@@ -171,42 +182,40 @@ CUB_NAMESPACE_BEGIN
 //! This example can be easily adapted to the storage required by BlockRadixSort.
 //! @endrst
 //!
-//! @ingroup BlockModule
-//!
-//! @tparam KeyT                 
+//! @tparam KeyT
 //!   KeyT type
 //!
-//! @tparam BLOCK_DIM_X          
+//! @tparam BLOCK_DIM_X
 //!   The thread block length in threads along the X dimension
 //!
-//! @tparam ITEMS_PER_THREAD     
+//! @tparam ITEMS_PER_THREAD
 //!   The number of items per thread
 //!
-//! @tparam ValueT               
+//! @tparam ValueT
 //!   **[optional]** ValueT type (default: cub::NullType, which indicates a keys-only sort)
 //!
-//! @tparam RADIX_BITS           
+//! @tparam RADIX_BITS
 //!   **[optional]** The number of radix bits per digit place (default: 4 bits)
 //!
-//! @tparam MEMOIZE_OUTER_SCAN   
-//!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory 
-//!  reads at the expense of higher register pressure (default: true for architectures SM35 and 
+//! @tparam MEMOIZE_OUTER_SCAN
+//!  **[optional]** Whether or not to buffer outer raking scan partials to incur fewer shared memory
+//!  reads at the expense of higher register pressure (default: true for architectures SM35 and
 //!  newer, false otherwise).
 //!
-//! @tparam INNER_SCAN_ALGORITHM 
-//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use 
+//! @tparam INNER_SCAN_ALGORITHM
+//!   **[optional]** The cub::BlockScanAlgorithm algorithm to use
 //!   (default: cub::BLOCK_SCAN_WARP_SCANS)
 //!
-//! @tparam SMEM_CONFIG          
+//! @tparam SMEM_CONFIG
 //!   **[optional]*8 Shared memory bank mode (default: `cudaSharedMemBankSizeFourByte`)
 //!
-//! @tparam BLOCK_DIM_Y          
+//! @tparam BLOCK_DIM_Y
 //!   **[optional]** The thread block length in threads along the Y dimension (default: 1)
 //!
-//! @tparam BLOCK_DIM_Z          
+//! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH      
+//! @tparam LEGACY_PTX_ARCH
 //!   **[optional]** Unused
 template <
     typename                KeyT,
@@ -234,7 +243,7 @@ private:
         BLOCK_THREADS               = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
         // Whether or not there are values to be trucked along with keys
-        KEYS_ONLY                   = std::is_same<ValueT, NullType>::value,
+        KEYS_ONLY                   = ::cuda::std::is_same<ValueT, NullType>::value,
     };
 
     // KeyT traits and unsigned bits type
@@ -300,7 +309,7 @@ private:
      ******************************************************************************/
 
     /// Internal storage allocator
-    __device__ __forceinline__ _TempStorage& PrivateStorage()
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
     {
         __shared__ _TempStorage private_storage;
         return private_storage;
@@ -308,7 +317,7 @@ private:
 
     /// Rank keys (specialized for ascending sort)
     template <class DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         bit_ordered_type  (&unsigned_keys)[ITEMS_PER_THREAD],
         int               (&ranks)[ITEMS_PER_THREAD],
         DigitExtractorT   digit_extractor,
@@ -322,7 +331,7 @@ private:
 
     /// Rank keys (specialized for descending sort)
     template <class DigitExtractorT>
-    __device__ __forceinline__ void RankKeys(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void RankKeys(
         bit_ordered_type  (&unsigned_keys)[ITEMS_PER_THREAD],
         int               (&ranks)[ITEMS_PER_THREAD],
         DigitExtractorT   digit_extractor,
@@ -335,7 +344,7 @@ private:
     }
 
     /// ExchangeValues (specialized for key-value sort, to-blocked arrangement)
-    __device__ __forceinline__ void ExchangeValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
         ValueT          (&values)[ITEMS_PER_THREAD],
         int             (&ranks)[ITEMS_PER_THREAD],
         Int2Type<false> /*is_keys_only*/,
@@ -348,7 +357,7 @@ private:
     }
 
     /// ExchangeValues (specialized for key-value sort, to-striped arrangement)
-    __device__ __forceinline__ void ExchangeValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
         ValueT          (&values)[ITEMS_PER_THREAD],
         int             (&ranks)[ITEMS_PER_THREAD],
         Int2Type<false> /*is_keys_only*/,
@@ -362,23 +371,42 @@ private:
 
     /// ExchangeValues (specialized for keys-only sort)
     template <int IS_BLOCKED>
-    __device__ __forceinline__ void ExchangeValues(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExchangeValues(
         ValueT                  (&/*values*/)[ITEMS_PER_THREAD],
         int                     (&/*ranks*/)[ITEMS_PER_THREAD],
         Int2Type<true>          /*is_keys_only*/,
         Int2Type<IS_BLOCKED>    /*is_blocked*/)
     {}
 
-    /// Sort blocked arrangement
+    /**
+     * @brief Sort blocked arrangement
+     *
+     * @param keys
+     *   Keys to sort
+     *
+     * @param values
+     *   Values to sort
+     *
+     * @param begin_bit
+     *   The beginning (least-significant) bit index needed for key comparison
+     *
+     * @param end_bit
+     *   The past-the-end (most-significant) bit index needed for key comparison
+     *
+     * @param is_descending
+     *   Tag whether is a descending-order sort
+     *
+     * @param is_keys_only
+     *   Tag whether is keys-only sort
+     */
     template <int DESCENDING, int KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
-    __device__ __forceinline__ void SortBlocked(
-        KeyT                    (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
-        ValueT                  (&values)[ITEMS_PER_THREAD],        ///< Values to sort
-        int                     begin_bit,                          ///< The beginning (least-significant) bit index needed for key comparison
-        int                     end_bit,                            ///< The past-the-end (most-significant) bit index needed for key comparison
-        Int2Type<DESCENDING>    is_descending,                      ///< Tag whether is a descending-order sort
-        Int2Type<KEYS_ONLY>     is_keys_only,                       ///< Tag whether is keys-only sort
-        DecomposerT             decomposer = {})
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlocked(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                ValueT (&values)[ITEMS_PER_THREAD],
+                                                int begin_bit,
+                                                int end_bit,
+                                                Int2Type<DESCENDING> is_descending,
+                                                Int2Type<KEYS_ONLY> is_keys_only,
+                                                DecomposerT decomposer = {})
     {
         bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD] =
             reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
@@ -426,16 +454,35 @@ public:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
 
-    /// Sort blocked -> striped arrangement
+    /**
+     * @brief Sort blocked -> striped arrangement
+     *
+     * @param keys
+     *   Keys to sort
+     *
+     * @param values
+     *   Values to sort
+     *
+     * @param begin_bit
+     *   The beginning (least-significant) bit index needed for key comparison
+     *
+     * @param end_bit
+     *   The past-the-end (most-significant) bit index needed for key comparison
+     *
+     * @param is_descending
+     *   Tag whether is a descending-order sort
+     *
+     * @param is_keys_only
+     *   Tag whether is keys-only sort
+     */
     template <int DESCENDING, int KEYS_ONLY, class DecomposerT = detail::identity_decomposer_t>
-    __device__ __forceinline__ void SortBlockedToStriped(
-        KeyT                    (&keys)[ITEMS_PER_THREAD],          ///< Keys to sort
-        ValueT                  (&values)[ITEMS_PER_THREAD],        ///< Values to sort
-        int                     begin_bit,                          ///< The beginning (least-significant) bit index needed for key comparison
-        int                     end_bit,                            ///< The past-the-end (most-significant) bit index needed for key comparison
-        Int2Type<DESCENDING>    is_descending,                      ///< Tag whether is a descending-order sort
-        Int2Type<KEYS_ONLY>     is_keys_only,                       ///< Tag whether is keys-only sort
-        DecomposerT             decomposer = {})
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                         ValueT (&values)[ITEMS_PER_THREAD],
+                                                         int begin_bit,
+                                                         int end_bit,
+                                                         Int2Type<DESCENDING> is_descending,
+                                                         Int2Type<KEYS_ONLY> is_keys_only,
+                                                         DecomposerT decomposer = {})
     {
         bit_ordered_type (&unsigned_keys)[ITEMS_PER_THREAD] =
             reinterpret_cast<bit_ordered_type (&)[ITEMS_PER_THREAD]>(keys);
@@ -491,83 +538,86 @@ public:
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
-    /// \smemstorage{BlockRadixSort}
+    /// @smemstorage{BlockRadixSort}
     struct TempStorage : Uninitialized<_TempStorage> {};
 
 
-    /******************************************************************//**
-     * \name Collective constructors
-     *********************************************************************/
-    //@{
+    //! @name Collective constructors
+    //! @{
 
-    /**
-     * \brief Collective constructor using a private static allocation of shared memory as temporary storage.
-     */
-    __device__ __forceinline__ BlockRadixSort()
+    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort()
     :
         temp_storage(PrivateStorage()),
         linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
-
     /**
-     * \brief Collective constructor using the specified memory allocation as temporary storage.
+     * @brief Collective constructor using the specified memory allocation as temporary storage.
+     *
+     * @param[in] temp_storage
+     *   Reference to memory allocation having layout type TempStorage
      */
-    __device__ __forceinline__ BlockRadixSort(
-        TempStorage &temp_storage)             ///< [in] Reference to memory allocation having layout type TempStorage
-    :
-        temp_storage(temp_storage.Alias()),
-        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockRadixSort(TempStorage &temp_storage)
+        : temp_storage(temp_storage.Alias())
+        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
     {}
 
 
-    //@}  end member group
-    /******************************************************************//**
-     * \name Sorting (blocked arrangements)
-     *********************************************************************/
-    //@{
+    //! @} end member group
+    //! @name Sorting (blocked arrangements)
+    //! @{
 
-    /**
-     * \brief Performs an ascending block-wide radix sort over a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys.
-     *
-     * \par
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys that
-     * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive keys.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-     *     typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     ...
-     *
-     *     // Collectively sort the keys
-     *     BlockRadixSort(temp_storage).Sort(thread_keys);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.
-     * The corresponding output \p thread_keys in those threads will be
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     */
-    __device__ __forceinline__ void Sort(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys that
+    //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
+    //! where each thread owns 4 consecutive keys.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+    //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys
+    //!        BlockRadixSort(temp_storage).Sort(thread_keys);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                         int begin_bit = 0,
+                                         int end_bit   = sizeof(KeyT) * 8)
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -575,7 +625,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -608,30 +658,30 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer, int begin_bit, int end_bit)
@@ -648,7 +698,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -681,22 +731,22 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       Sort(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
@@ -704,61 +754,75 @@ public:
         Sort(keys, decomposer, 0, detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
     }
 
-    /**
-     * \brief Performs an ascending block-wide radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys and values.
-     *
-     * \par
-     * - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
-     *   more than one tile of values, simply perform a key-value sort of the keys paired
-     *   with a temporary value array that enumerates the key indices.  The reordered indices
-     *   can then be used as a gather-vector for exchanging other associated tile data through
-     *   shared memory.
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys and values that
-     * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive pairs.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-     *     typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     int thread_values[4];
-     *     ...
-     *
-     *     // Collectively sort the keys and values among block threads
-     *     BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void Sort(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs an ascending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
+    //! of keys and values.
+    //!
+    //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
+    //!   more than one tile of values, simply perform a key-value sort of the keys paired
+    //!   with a temporary value array that enumerates the key indices. The reordered indices
+    //!   can then be used as a gather-vector for exchanging other associated tile data through
+    //!   shared memory.
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys and values that
+    //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
+    //! where each thread owns 4 consecutive pairs.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+    //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        int thread_values[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys and values among block threads
+    //!        BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+    //!
+    //! @endcode
+    //! @par
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.  The
+    //! corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [0,1,2,3], [4,5,6,7], [8,9,10,11], ..., [508,509,510,511] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in,out] values
+    //!   Values to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Sort(KeyT (&keys)[ITEMS_PER_THREAD],
+                                         ValueT (&values)[ITEMS_PER_THREAD],
+                                         int begin_bit = 0,
+                                         int end_bit   = sizeof(KeyT) * 8)
     {
         SortBlocked(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -796,13 +860,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -810,19 +874,19 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       Sort(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -841,7 +905,7 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
+    //! Performs an ascending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -879,13 +943,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -893,11 +957,11 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       Sort(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -911,47 +975,57 @@ public:
              detail::radix::traits_t<KeyT>::default_end_bit(decomposer));
     }
 
-    /**
-     * \brief Performs a descending block-wide radix sort over a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys.
-     *
-     * \par
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys that
-     * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive keys.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-     *     typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     ...
-     *
-     *     // Collectively sort the keys
-     *     BlockRadixSort(temp_storage).Sort(thread_keys);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.
-     * The corresponding output \p thread_keys in those threads will be
-     * <tt>{ [511,510,509,508], [11,10,9,8], [7,6,5,4], ..., [3,2,1,0] }</tt>.
-     */
-    __device__ __forceinline__ void SortDescending(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs a descending block-wide radix sort over a :ref:`blocked arrangement <flexible-data-arrangement>`
+    //! of keys.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys that
+    //! are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
+    //! where each thread owns 4 consecutive keys.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+    //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys
+    //!        BlockRadixSort(temp_storage).Sort(thread_keys);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [511,510,509,508], [11,10,9,8], [7,6,5,4], ..., [3,2,1,0] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                   int begin_bit = 0,
+                                                   int end_bit   = sizeof(KeyT) * 8)
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -959,7 +1033,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -992,30 +1066,30 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1035,7 +1109,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
     //!
     //! * @granularity
@@ -1068,22 +1142,22 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescending(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
@@ -1099,61 +1173,73 @@ public:
                     decomposer);
     }
 
-    /**
-     * \brief Performs a descending block-wide radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys and values.
-     *
-     * \par
-     * - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
-     *   more than one tile of values, simply perform a key-value sort of the keys paired
-     *   with a temporary value array that enumerates the key indices.  The reordered indices
-     *   can then be used as a gather-vector for exchanging other associated tile data through
-     *   shared memory.
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys and values that
-     * are partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive pairs.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-     *     typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     int thread_values[4];
-     *     ...
-     *
-     *     // Collectively sort the keys and values among block threads
-     *     BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [511,510,509,508], [11,10,9,8], [7,6,5,4], ..., [3,2,1,0] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void SortDescending(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs a descending block-wide radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
+    //! of keys and values.
+    //!
+    //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
+    //!   more than one tile of values, simply perform a key-value sort of the keys paired
+    //!   with a temporary value array that enumerates the key indices.  The reordered indices
+    //!   can then be used as a gather-vector for exchanging other associated tile data through
+    //!   shared memory.
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys and values that
+    //! are partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads
+    //! where each thread owns 4 consecutive pairs.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and
+    //!    values each typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        int thread_values[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys and values among block threads
+    //!        BlockRadixSort(temp_storage).Sort(thread_keys, thread_values);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``. The
+    //! corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [511,510,509,508], [11,10,9,8], [7,6,5,4], ..., [3,2,1,0] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in,out] values
+    //!   Values to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                   ValueT (&values)[ITEMS_PER_THREAD],
+                                                   int begin_bit = 0,
+                                                   int end_bit   = sizeof(KeyT) * 8)
     {
         SortBlocked(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -1191,13 +1277,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1205,19 +1291,19 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1236,7 +1322,7 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
+    //! Performs a descending block-wide radix sort over a
     //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values.
     //!
     //! * BlockRadixSort can only accommodate one associated tile of values. To "truck along"
@@ -1274,13 +1360,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1288,11 +1374,11 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescending(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1308,55 +1394,61 @@ public:
                     decomposer);
     }
 
-    //@}  end member group
-    /******************************************************************//**
-     * \name Sorting (blocked arrangement -> striped arrangement)
-     *********************************************************************/
-    //@{
+    //! @}  end member group
+    //! @name Sorting (blocked arrangement -> striped arrangement)
+    //! @{
 
-
-    /**
-     * \brief Performs an ascending radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys, leaving them in a [<em>striped arrangement</em>](index.html#sec5sec3).
-     *
-     * \par
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys that
-     * are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive keys.  The final partitioning is striped.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-     *     typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     ...
-     *
-     *     // Collectively sort the keys
-     *     BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [0,128,256,384], [1,129,257,385], [2,130,258,386], ..., [127,255,383,511] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void SortBlockedToStriped(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys,
+    //! leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys that
+    //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
+    //! threads where each thread owns 4 consecutive keys. The final partitioning is striped.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+    //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys
+    //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [0,128,256,384], [1,129,257,385], [2,130,258,386], ..., [127,255,383,511] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                         int begin_bit = 0,
+                                                         int end_bit   = sizeof(KeyT) * 8)
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -1364,8 +1456,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1377,7 +1469,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1398,30 +1490,30 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1441,8 +1533,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1454,7 +1546,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1475,22 +1567,22 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
@@ -1506,62 +1598,74 @@ public:
                              decomposer);
     }
 
-    /**
-     * \brief Performs an ascending radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys and values, leaving them in a [<em>striped arrangement</em>](index.html#sec5sec3).
-     *
-     * \par
-     * - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
-     *   more than one tile of values, simply perform a key-value sort of the keys paired
-     *   with a temporary value array that enumerates the key indices.  The reordered indices
-     *   can then be used as a gather-vector for exchanging other associated tile data through
-     *   shared memory.
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys and values that
-     * are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive pairs.  The final partitioning is striped.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-     *     typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     int thread_values[4];
-     *     ...
-     *
-     *     // Collectively sort the keys and values among block threads
-     *     BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [0,128,256,384], [1,129,257,385], [2,130,258,386], ..., [127,255,383,511] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void SortBlockedToStriped(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs an ascending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>` of keys and
+    //! values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+    //!
+    //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
+    //!   more than one tile of values, simply perform a key-value sort of the keys paired
+    //!   with a temporary value array that enumerates the key indices.  The reordered indices
+    //!   can then be used as a gather-vector for exchanging other associated tile data through
+    //!   shared memory.
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys and values that
+    //! are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128
+    //! threads where each thread owns 4 consecutive pairs.  The final partitioning is striped.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+    //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        int thread_values[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys and values among block threads
+    //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [0,128,256,384], [1,129,257,385], [2,130,258,386], ..., [127,255,383,511] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in,out] values
+    //!   Values to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                         ValueT (&values)[ITEMS_PER_THREAD],
+                                                         int begin_bit = 0,
+                                                         int end_bit   = sizeof(KeyT) * 8)
     {
         SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<false>(), Int2Type<KEYS_ONLY>());
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1573,7 +1677,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1594,13 +1698,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1608,19 +1712,19 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1639,8 +1743,8 @@ public:
     }
 
     //! @rst
-    //! Performs an ascending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs an ascending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1652,7 +1756,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1673,13 +1777,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -1687,11 +1791,11 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1707,48 +1811,57 @@ public:
                              decomposer);
     }
 
-    /**
-     * \brief Performs a descending radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys, leaving them in a [<em>striped arrangement</em>](index.html#sec5sec3).
-     *
-     * \par
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys that
-     * are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive keys.  The final partitioning is striped.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
-     *     typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     ...
-     *
-     *     // Collectively sort the keys
-     *     BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [511,383,255,127], [386,258,130,2], [385,257,128,1], ..., [384,256,128,0] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void SortDescendingBlockedToStriped(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
+    //! of keys, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys that
+    //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
+    //! threads where each thread owns 4 consecutive keys. The final partitioning is striped.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys each
+    //!        typedef cub::BlockRadixSort<int, 128, 4> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys
+    //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [511,383,255,127], [386,258,130,2], [385,257,128,1], ..., [384,256,128,0] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                                                                   int begin_bit = 0,
+                                                                   int end_bit   = sizeof(KeyT) * 8)
     {
         NullType values[ITEMS_PER_THREAD];
 
@@ -1756,8 +1869,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1769,7 +1882,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1790,30 +1903,30 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -1833,8 +1946,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1846,7 +1959,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1867,22 +1980,22 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD], DecomposerT decomposer)
@@ -1898,62 +2011,75 @@ public:
                              decomposer);
     }
 
-    /**
-     * \brief Performs a descending radix sort across a [<em>blocked arrangement</em>](index.html#sec5sec3) of keys and values, leaving them in a [<em>striped arrangement</em>](index.html#sec5sec3).
-     *
-     * \par
-     * - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
-     *   more than one tile of values, simply perform a key-value sort of the keys paired
-     *   with a temporary value array that enumerates the key indices.  The reordered indices
-     *   can then be used as a gather-vector for exchanging other associated tile data through
-     *   shared memory.
-     * - \granularity
-     * - \smemreuse
-     *
-     * \par Snippet
-     * The code snippet below illustrates a sort of 512 integer keys and values that
-     * are initially partitioned in a [<em>blocked arrangement</em>](index.html#sec5sec3) across 128 threads
-     * where each thread owns 4 consecutive pairs.  The final partitioning is striped.
-     * \par
-     * \code
-     * #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
-     *
-     * __global__ void ExampleKernel(...)
-     * {
-     *     // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
-     *     typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
-     *
-     *     // Allocate shared memory for BlockRadixSort
-     *     __shared__ typename BlockRadixSort::TempStorage temp_storage;
-     *
-     *     // Obtain a segment of consecutive items that are blocked across threads
-     *     int thread_keys[4];
-     *     int thread_values[4];
-     *     ...
-     *
-     *     // Collectively sort the keys and values among block threads
-     *     BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
-     *
-     * \endcode
-     * \par
-     * Suppose the set of input \p thread_keys across the block of threads is
-     * <tt>{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }</tt>.  The
-     * corresponding output \p thread_keys in those threads will be
-     * <tt>{ [511,383,255,127], [386,258,130,2], [385,257,128,1], ..., [384,256,128,0] }</tt>.
-     *
-     */
-    __device__ __forceinline__ void SortDescendingBlockedToStriped(
-        KeyT    (&keys)[ITEMS_PER_THREAD],          ///< [in-out] Keys to sort
-        ValueT  (&values)[ITEMS_PER_THREAD],        ///< [in-out] Values to sort
-        int     begin_bit   = 0,                    ///< [in] <b>[optional]</b> The beginning (least-significant) bit index needed for key comparison
-        int     end_bit     = sizeof(KeyT) * 8)      ///< [in] <b>[optional]</b> The past-the-end (most-significant) bit index needed for key comparison
+    //! @rst
+    //! Performs a descending radix sort across a :ref:`blocked arrangement <flexible-data-arrangement>`
+    //! of keys and values, leaving them in a :ref:`striped arrangement <flexible-data-arrangement>`
+    //!
+    //! - BlockRadixSort can only accommodate one associated tile of values. To "truck along"
+    //!   more than one tile of values, simply perform a key-value sort of the keys paired
+    //!   with a temporary value array that enumerates the key indices.  The reordered indices
+    //!   can then be used as a gather-vector for exchanging other associated tile data through
+    //!   shared memory.
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a sort of 512 integer keys and values that
+    //! are initially partitioned in a :ref:`blocked arrangement <flexible-data-arrangement>` across 128
+    //! threads where each thread owns 4 consecutive pairs. The final partitioning is striped.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_radix_sort.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize BlockRadixSort for a 1D block of 128 threads owning 4 integer keys and values each
+    //!        typedef cub::BlockRadixSort<int, 128, 4, int> BlockRadixSort;
+    //!
+    //!        // Allocate shared memory for BlockRadixSort
+    //!        __shared__ typename BlockRadixSort::TempStorage temp_storage;
+    //!
+    //!        // Obtain a segment of consecutive items that are blocked across threads
+    //!        int thread_keys[4];
+    //!        int thread_values[4];
+    //!        ...
+    //!
+    //!        // Collectively sort the keys and values among block threads
+    //!        BlockRadixSort(temp_storage).SortBlockedToStriped(thread_keys, thread_values);
+    //!
+    //! Suppose the set of input ``thread_keys`` across the block of threads is
+    //! ``{ [0,511,1,510], [2,509,3,508], [4,507,5,506], ..., [254,257,255,256] }``.
+    //! The corresponding output ``thread_keys`` in those threads will be
+    //! ``{ [511,383,255,127], [386,258,130,2], [385,257,128,1], ..., [384,256,128,0] }``.
+    //!
+    //! @endrst
+    //!
+    //! @param[in,out] keys
+    //!   Keys to sort
+    //!
+    //! @param[in,out] values
+    //!   Values to sort
+    //!
+    //! @param[in] begin_bit
+    //!   **[optional]** The beginning (least-significant) bit index needed for key comparison
+    //!
+    //! @param[in] end_bit
+    //!   **[optional]** The past-the-end (most-significant) bit index needed for key comparison
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
+                                   ValueT (&values)[ITEMS_PER_THREAD],
+                                   int begin_bit = 0,
+                                   int end_bit   = sizeof(KeyT) * 8)
     {
         SortBlockedToStriped(keys, values, begin_bit, end_bit, Int2Type<true>(), Int2Type<KEYS_ONLY>());
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -1965,7 +2091,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -1986,13 +2112,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -2000,19 +2126,19 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     //!
-    //! @param[in] begin_bit 
-    //!   The least-significant bit index (inclusive) needed for 
+    //! @param[in] begin_bit
+    //!   The least-significant bit index (inclusive) needed for
     //!   key comparison
     //!
-    //! @param[in] end_bit 
-    //!   The most-significant bit index (exclusive) needed for key 
+    //! @param[in] end_bit
+    //!   The most-significant bit index (exclusive) needed for key
     //!   comparison (e.g., `(sizeof(float) + sizeof(long long int)) * 8`)
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -2031,8 +2157,8 @@ public:
     }
 
     //! @rst
-    //! Performs a descending block-wide radix sort over a 
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a 
+    //! Performs a descending block-wide radix sort over a
+    //! :ref:`blocked arrangement <flexible-data-arrangement>` of keys and values, leaving them in a
     //! :ref:`striped arrangement <flexible-data-arrangement>`.
     //!
     //! * @granularity
@@ -2044,7 +2170,7 @@ public:
     //! Let's consider a user-defined ``custom_t`` type below. To sort an array of
     //! ``custom_t`` objects, we have to tell CUB about relevant members of the
     //! ``custom_t`` type. We do this by providing a decomposer that returns a
-    //! tuple of references to relevant members of the key. 
+    //! tuple of references to relevant members of the key.
     //!
     //! .. literalinclude:: ../../test/catch2_test_block_radix_sort_custom.cu
     //!     :language: c++
@@ -2065,13 +2191,13 @@ public:
     //! @endrst
     //!
     //! @tparam DecomposerT
-    //!   **[inferred]** Type of a callable object responsible for decomposing a 
+    //!   **[inferred]** Type of a callable object responsible for decomposing a
     //!   ``KeyT`` into a tuple of references to its constituent arithmetic types:
-    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``. 
-    //!   The leftmost element of the tuple is considered the most significant. 
+    //!   ``::cuda::std::tuple<ArithmeticTs&...> operator()(KeyT &key)``.
+    //!   The leftmost element of the tuple is considered the most significant.
     //!   The call operator must not modify members of the key.
     //!
-    //! @param[in,out] keys 
+    //! @param[in,out] keys
     //!   Keys to sort
     //!
     //! @param[in,out] values
@@ -2079,11 +2205,11 @@ public:
     //!
     //! @param decomposer
     //!   Callable object responsible for decomposing a ``KeyT`` into a tuple of
-    //!   references to its constituent arithmetic types. The leftmost element of 
-    //!   the tuple is considered the most significant. The call operator must not 
+    //!   references to its constituent arithmetic types. The leftmost element of
+    //!   the tuple is considered the most significant. The call operator must not
     //!   modify members of the key.
     template <class DecomposerT>
-    __device__ __forceinline__         //
+    _CCCL_DEVICE _CCCL_FORCEINLINE         //
       typename ::cuda::std::enable_if< //
         !::cuda::std::is_convertible<DecomposerT, int>::value>::type
       SortDescendingBlockedToStriped(KeyT (&keys)[ITEMS_PER_THREAD],
@@ -2103,9 +2229,4 @@ public:
 
 };
 
-/**
- * \example example_block_radix_sort.cu
- */
-
 CUB_NAMESPACE_END
-

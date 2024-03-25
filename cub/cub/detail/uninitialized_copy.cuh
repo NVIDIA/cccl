@@ -12,9 +12,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -29,7 +29,16 @@
 
 #include <cub/config.cuh>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 CUB_NAMESPACE_BEGIN
 
@@ -39,7 +48,7 @@ namespace detail
 
 #if defined(_NVHPC_CUDA)
 template <typename T, typename U>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   // NVBug 3384810
   new (ptr) T(::cuda::std::forward<U>(val));
@@ -48,21 +57,21 @@ __host__ __device__ void uninitialized_copy(T *ptr, U &&val)
 template <typename T,
           typename U,
           typename ::cuda::std::enable_if<
-            ::cuda::std::is_trivially_copyable<T>::value, 
+            ::cuda::std::is_trivially_copyable<T>::value,
             int
           >::type = 0>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   *ptr = ::cuda::std::forward<U>(val);
 }
 
-template <typename T, 
+template <typename T,
          typename U,
          typename ::cuda::std::enable_if<
            !::cuda::std::is_trivially_copyable<T>::value,
            int
          >::type = 0>
-__host__ __device__ void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 {
   new (ptr) T(::cuda::std::forward<U>(val));
 }

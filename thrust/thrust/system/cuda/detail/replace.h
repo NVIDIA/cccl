@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/transform.h>
 #include <thrust/detail/internal_functional.h>
@@ -83,7 +91,7 @@ namespace cuda_cub {
 template <class Derived,
           class Iterator,
           class T>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 replace(execution_policy<Derived> &policy,
         Iterator                   first,
         Iterator                   last,
@@ -104,7 +112,7 @@ template <class Derived,
           class Iterator,
           class Predicate,
           class T>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 replace_if(execution_policy<Derived> &policy,
            Iterator                   first,
            Iterator                   last,
@@ -124,7 +132,7 @@ template <class Derived,
           class StencilIt,
           class Predicate,
           class T>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 replace_if(execution_policy<Derived> &policy,
            Iterator                   first,
            Iterator                   last,
@@ -146,7 +154,7 @@ template <class Derived,
           class OutputIt,
           class Predicate,
           class T>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 replace_copy_if(execution_policy<Derived> &policy,
                 InputIt                    first,
                 InputIt                    last,
@@ -169,7 +177,7 @@ template <class Derived,
           class OutputIt,
           class Predicate,
           class T>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 replace_copy_if(execution_policy<Derived> &policy,
                 InputIt                    first,
                 InputIt                    last,
@@ -192,7 +200,7 @@ template <class Derived,
           class InputIt,
           class OutputIt,
           class T>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 replace_copy(execution_policy<Derived> &policy,
              InputIt                    first,
              InputIt                    last,

@@ -58,6 +58,7 @@
 #include "c2h/extended_types.cuh"
 #include "mersenne.h"
 #include "test_util_vec.h"
+#include "test_warning_suppression.cuh"
 #include <nv/target>
 
 /******************************************************************************
@@ -69,6 +70,7 @@
  * Types `T` and `U` must be the same size.
  */
 template <typename T, typename U>
+__host__ __device__
 T SafeBitCast(const U& in)
 {
   static_assert(sizeof(T) == sizeof(U), "Types must be same size.");
@@ -477,9 +479,9 @@ void RandomBits(
     int begin_bit = 0,
     int end_bit = sizeof(K) * 8)
 {
-    const int NUM_BYTES = sizeof(K);
-    const int WORD_BYTES = sizeof(unsigned int);
-    const int NUM_WORDS = (NUM_BYTES + WORD_BYTES - 1) / WORD_BYTES;
+    constexpr int NUM_BYTES = sizeof(K);
+    constexpr int WORD_BYTES = sizeof(unsigned int);
+    constexpr int NUM_WORDS = (NUM_BYTES + WORD_BYTES - 1) / WORD_BYTES;
 
     unsigned int word_buff[NUM_WORDS];
 
@@ -734,7 +736,7 @@ static std::ostream& operator<<(std::ostream& os, __uint128_t val)
   constexpr int max_digits = 40;
   char buffer[max_digits] = {};
   char* digit = buffer + max_digits;
-  const char* ascii = "0123456789";
+  static constexpr char ascii[] = "0123456789";
 
   do 
   {
@@ -948,7 +950,7 @@ CUB_NAMESPACE_BEGIN
 template<>
 struct NumericTraits<TestFoo>
 {
-    static const Category CATEGORY = NOT_A_NUMBER;
+    static constexpr Category CATEGORY = NOT_A_NUMBER;
     enum {
         PRIMITIVE       = false,
         NULL_TYPE       = false,
@@ -1064,7 +1066,7 @@ CUB_NAMESPACE_BEGIN
 template<>
 struct NumericTraits<TestBar>
 {
-    static const Category CATEGORY = NOT_A_NUMBER;
+    static constexpr Category CATEGORY = NOT_A_NUMBER;
     enum {
         PRIMITIVE       = false,
         NULL_TYPE       = false,
@@ -1478,9 +1480,10 @@ struct GpuTimer
     }
 };
 
+template <int ELEMENTS_PER_OBJECT_ = 128>
 struct HugeDataType
 {
-  static constexpr int ELEMENTS_PER_OBJECT = 128;
+  static constexpr int ELEMENTS_PER_OBJECT = ELEMENTS_PER_OBJECT_;
 
   __device__ __host__ HugeDataType()
   {
@@ -1490,7 +1493,7 @@ struct HugeDataType
     }
   }
 
-  __device__ __host__ HugeDataType(const HugeDataType&rhs)
+  __device__ __host__ HugeDataType(const HugeDataType& rhs)
   {
     for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
     {
@@ -1506,13 +1509,26 @@ struct HugeDataType
     }
   }
 
+  __device__ __host__ HugeDataType& operator=(const HugeDataType& rhs)
+  {
+    if (this != &rhs)
+    {
+      for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+      {
+        data[i] = rhs.data[i];
+      }
+    }
+    return *this;
+  }
+
   int data[ELEMENTS_PER_OBJECT];
 };
 
-inline __device__ __host__ bool operator==(const HugeDataType &lhs,
-                                           const HugeDataType &rhs)
+template <int ELEMENTS_PER_OBJECT>
+inline __device__ __host__ bool
+operator==(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] != rhs.data[i])
     {
@@ -1523,10 +1539,11 @@ inline __device__ __host__ bool operator==(const HugeDataType &lhs,
   return true;
 }
 
-inline __device__ __host__ bool operator<(const HugeDataType &lhs,
-                                          const HugeDataType &rhs)
+template <int ELEMENTS_PER_OBJECT>
+inline __device__ __host__ bool
+operator<(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const HugeDataType<ELEMENTS_PER_OBJECT>& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] < rhs.data[i])
     {
@@ -1537,11 +1554,10 @@ inline __device__ __host__ bool operator<(const HugeDataType &lhs,
   return false;
 }
 
-template <typename DataType>
-__device__ __host__ bool operator!=(const HugeDataType &lhs,
-                                    const DataType &rhs)
+template <typename DataType, int ELEMENTS_PER_OBJECT>
+__device__ __host__ bool operator!=(const HugeDataType<ELEMENTS_PER_OBJECT>& lhs, const DataType& rhs)
 {
-  for (int i = 0; i < HugeDataType::ELEMENTS_PER_OBJECT; i++)
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
   {
     if (lhs.data[i] != rhs)
     {
@@ -1550,4 +1566,23 @@ __device__ __host__ bool operator!=(const HugeDataType &lhs,
   }
 
   return false;
+}
+
+
+template <int ELEMENTS_PER_OBJECT>
+std::ostream& 
+operator<<(std::ostream& os, 
+const HugeDataType<ELEMENTS_PER_OBJECT>& val)
+{
+  os << '(';
+  for (int i = 0; i < ELEMENTS_PER_OBJECT; i++)
+  {
+    os << CoutCast(val.data[i]);
+    if (i < ELEMENTS_PER_OBJECT - 1)
+    {
+      os << ',';
+    }
+  }
+  os << ')';
+  return os;
 }

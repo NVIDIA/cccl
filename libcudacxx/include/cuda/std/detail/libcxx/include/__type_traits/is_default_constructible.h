@@ -14,11 +14,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/is_constructible.h"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "../__type_traits/is_constructible.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -27,7 +31,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_default_constructible
     : public is_constructible<_Tp>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_default_constructible_v
     = is_constructible_v<_Tp>;

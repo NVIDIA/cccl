@@ -53,9 +53,13 @@ template <class P> struct hash<coroutine_handle<P>>;
 #include <cstddef>
 #include <__debug>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #ifdef _LIBCUDACXX_HAS_NO_COROUTINES
 # if defined(_LIBCUDACXX_WARNING)
@@ -272,9 +276,9 @@ public:
   constexpr explicit operator bool() const noexcept { return true; }
   constexpr bool done() const noexcept { return false; }
 
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void operator()() const noexcept {}
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void resume() const noexcept {}
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void destroy() const noexcept {}
+  _CCCL_CONSTEXPR_CXX20 void operator()() const noexcept {}
+  _CCCL_CONSTEXPR_CXX20 void resume() const noexcept {}
+  _CCCL_CONSTEXPR_CXX20 void destroy() const noexcept {}
 
 private:
   _LIBCUDACXX_INLINE_VISIBILITY

@@ -25,17 +25,12 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/warp/warp_load.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/sequence.h>
 
 #include "fill_striped.cuh"
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
@@ -170,16 +165,16 @@ template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int ITEMS_PER_THREAD,
           int TOTAL_WARPS,
           typename T>
-thrust::device_vector<T> generate_input()
+c2h::device_vector<T> generate_input()
 {
-  const int tile_size = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
-  const int num_items = TOTAL_WARPS * tile_size;
+  constexpr int tile_size = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
+  constexpr int num_items = TOTAL_WARPS * tile_size;
 
-  thrust::device_vector<T> d_input(num_items);
+  c2h::device_vector<T> d_input(num_items);
 
-  if (LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
+  _CCCL_IF_CONSTEXPR(LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
   {
-    thrust::host_vector<T> h_input(num_items);
+    c2h::host_vector<T> h_input(num_items);
 
     // In this case we need different stripe pattern, so the
     // items/threads parameters are swapped
@@ -268,7 +263,7 @@ CUB_TEST("Warp load guarded range works with pointer",
                              params::items_per_thread,
                              params::total_warps,
                              type>();
-  thrust::device_vector<int> d_error_counter(1, 0);
+  c2h::device_vector<int> d_error_counter(1, 0);
 
   warp_load<params::algorithm,
             params::logical_warp_threads,
@@ -279,7 +274,7 @@ CUB_TEST("Warp load guarded range works with pointer",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const int num_errors           = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -307,7 +302,7 @@ CUB_TEST("Warp load guarded range works with cache modified iterator",
                              type>();
   auto in_it =
     cub::CacheModifiedInputIterator<load_modifier, type>(thrust::raw_pointer_cast(d_in.data()));
-  thrust::device_vector<int> d_error_counter(1, 0);
+  c2h::device_vector<int> d_error_counter(1, 0);
 
   warp_load<params::algorithm,
             params::logical_warp_threads,
@@ -318,7 +313,7 @@ CUB_TEST("Warp load guarded range works with cache modified iterator",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -338,7 +333,7 @@ CUB_TEST("Warp load unguarded range works with pointer",
                              params::items_per_thread,
                              params::total_warps,
                              type>();
-  thrust::device_vector<int> d_error_counter(1, 0);
+  c2h::device_vector<int> d_error_counter(1, 0);
 
   warp_load<params::algorithm,
             params::logical_warp_threads,
@@ -349,7 +344,7 @@ CUB_TEST("Warp load unguarded range works with pointer",
                   thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
 
@@ -373,7 +368,7 @@ CUB_TEST("Warp load unguarded range works with cache modified iterator",
                              type>();
   auto in_it =
     cub::CacheModifiedInputIterator<load_modifier, type>(thrust::raw_pointer_cast(d_in.data()));
-  thrust::device_vector<int> d_error_counter(1, 0);
+  c2h::device_vector<int> d_error_counter(1, 0);
 
   warp_load<params::algorithm,
             params::logical_warp_threads,
@@ -382,6 +377,6 @@ CUB_TEST("Warp load unguarded range works with cache modified iterator",
             type>(in_it, delegate_t{}, thrust::raw_pointer_cast(d_error_counter.data()));
 
   const auto num_errors          = d_error_counter[0];
-  const int expected_error_count = 0;
+  constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }

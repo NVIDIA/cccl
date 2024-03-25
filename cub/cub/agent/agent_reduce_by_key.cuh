@@ -33,12 +33,21 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
@@ -68,8 +77,8 @@ CUB_NAMESPACE_BEGIN
  * @tparam _SCAN_ALGORITHM
  *   The BlockScan algorithm to use
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int _BLOCK_THREADS,
@@ -93,9 +102,9 @@ struct AgentReduceByKeyPolicy
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 
   ///< The BlockScan algorithm to use
-  static constexpr const BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
-  struct detail 
+  struct detail
   {
     using delay_constructor_t = DelayConstructorT;
   };
@@ -182,14 +191,14 @@ struct AgentReduceByKey
     int num_remaining;
 
     /// Constructor
-    __host__ __device__ __forceinline__ GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GuardedInequalityWrapper(_EqualityOpT op, int num_remaining)
         : op(op)
         , num_remaining(num_remaining)
     {}
 
     /// Boolean inequality operator, returns <tt>(a != b)</tt>
     template <typename T>
-    __host__ __device__ __forceinline__ bool operator()(const T &a, const T &b, int idx) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T &a, const T &b, int idx) const
     {
       if (idx < num_remaining)
       {
@@ -356,7 +365,7 @@ struct AgentReduceByKey
    * @param reduction_op
    *   ValueT reduction operator
    */
-  __device__ __forceinline__ AgentReduceByKey(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(TempStorage &temp_storage,
                                               KeysInputIteratorT d_keys_in,
                                               UniqueOutputIteratorT d_unique_out,
                                               ValuesInputIteratorT d_values_in,
@@ -382,7 +391,7 @@ struct AgentReduceByKey
   /**
    * Directly scatter flagged items to output offsets
    */
-  __device__ __forceinline__ void ScatterDirect(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
                                                 OffsetT (&segment_flags)[ITEMS_PER_THREAD],
                                                 OffsetT (&segment_indices)[ITEMS_PER_THREAD])
   {
@@ -405,7 +414,7 @@ struct AgentReduceByKey
    * value aggregate: the scatter offsets must be decremented for value
    * aggregates
    */
-  __device__ __forceinline__ void ScatterTwoPhase(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
                                                   OffsetT (&segment_flags)[ITEMS_PER_THREAD],
                                                   OffsetT (&segment_indices)[ITEMS_PER_THREAD],
                                                   OffsetT num_tile_segments,
@@ -437,7 +446,7 @@ struct AgentReduceByKey
   /**
    * Scatter flagged items
    */
-  __device__ __forceinline__ void Scatter(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
                                           OffsetT (&segment_flags)[ITEMS_PER_THREAD],
                                           OffsetT (&segment_indices)[ITEMS_PER_THREAD],
                                           OffsetT num_tile_segments,
@@ -482,7 +491,7 @@ struct AgentReduceByKey
    *   Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
   {
     // Tile keys
@@ -662,7 +671,7 @@ struct AgentReduceByKey
    * @param start_tile
    *   The starting tile for the current grid
    */
-  __device__ __forceinline__ void ConsumeRange(OffsetT num_items,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
                                                ScanTileStateT &tile_state,
                                                int start_tile)
   {

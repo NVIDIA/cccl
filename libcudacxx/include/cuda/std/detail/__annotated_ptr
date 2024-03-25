@@ -63,7 +63,9 @@ namespace __detail_ap {
       _LIBCUDACXX_ASSERT(__b, "");
 #if !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
+#else // ^^^ !_LIBCUDACXX_CUDACC_BELOW_11_2 ^^^ / vvv _LIBCUDACXX_CUDACC_BELOW_11_2 vvv
+      (void)__b;
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_2
     } else if (std::is_same<_Property, access_property::global>::value == true ||
                std::is_same<_Property, access_property::normal>::value == true ||
                std::is_same<_Property, access_property::persisting>::value == true ||
@@ -73,7 +75,9 @@ namespace __detail_ap {
       _LIBCUDACXX_ASSERT(__b, "");
 #if !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
       __builtin_assume(__b);
-#endif // !defined(_LIBCUDACXX_CUDACC_BELOW_11_2)
+#else // ^^^ !_LIBCUDACXX_CUDACC_BELOW_11_2 ^^^ / vvv _LIBCUDACXX_CUDACC_BELOW_11_2 vvv
+      (void)__b;
+#endif // _LIBCUDACXX_CUDACC_BELOW_11_2
     }
 
     return __ptr;
@@ -126,7 +130,7 @@ namespace __detail_ap {
 
       constexpr __annotated_ptr_base() noexcept = default;
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property::shared) noexcept {}
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, access_property::shared{});
@@ -143,7 +147,7 @@ namespace __detail_ap {
 
       constexpr __annotated_ptr_base() noexcept = default;
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property::global) noexcept {}
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, access_property::global{});
@@ -160,7 +164,7 @@ namespace __detail_ap {
 
       constexpr __annotated_ptr_base() noexcept = default;
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property::normal) noexcept {}
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, access_property::normal{});
@@ -177,7 +181,7 @@ namespace __detail_ap {
 
       constexpr __annotated_ptr_base() noexcept = default;
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, access_property::persisting{});
@@ -194,7 +198,7 @@ namespace __detail_ap {
 
       constexpr __annotated_ptr_base() noexcept = default;
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, access_property::streaming{});
@@ -214,7 +218,7 @@ namespace __detail_ap {
       _LIBCUDACXX_HOST_DEVICE constexpr __annotated_ptr_base(access_property __property) noexcept
         : __annotated_ptr_base(static_cast<std::uint64_t>(__property)) {}
       constexpr __annotated_ptr_base(__annotated_ptr_base const&) = default;
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+      _CCCL_CONSTEXPR_CXX14 __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
       inline _LIBCUDACXX_DEVICE void* __apply_prop(void* __p) const {
         return __associate(__p, __prop);
       }

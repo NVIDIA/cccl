@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -70,7 +78,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Generator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void generate(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,
@@ -156,7 +164,7 @@ template<typename DerivedPolicy,
          typename OutputIterator,
          typename Size,
          typename Generator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator generate_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                             OutputIterator first,
                             Size n,

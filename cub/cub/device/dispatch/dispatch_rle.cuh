@@ -34,8 +34,17 @@
 
 #pragma once
 
-#include <cub/agent/agent_rle.cuh>
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/agent_rle.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 #include <cub/grid/grid_queue.cuh>
@@ -67,16 +76,16 @@ CUB_NAMESPACE_BEGIN
  *   Parameterized AgentRlePolicyT tuning policy type
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam ScanTileStateT
  *   Tile status interface type
@@ -119,15 +128,15 @@ template <typename ChainedPolicyT,
           typename ScanTileStateT,
           typename EqualityOpT,
           typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS)) __global__
-  void DeviceRleSweepKernel(InputIteratorT d_in,
-                            OffsetsOutputIteratorT d_offsets_out,
-                            LengthsOutputIteratorT d_lengths_out,
-                            NumRunsOutputIteratorT d_num_runs_out,
-                            ScanTileStateT tile_status,
-                            EqualityOpT equality_op,
-                            OffsetT num_items,
-                            int num_tiles)
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS))
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(InputIteratorT d_in,
+                                                         OffsetsOutputIteratorT d_offsets_out,
+                                                         LengthsOutputIteratorT d_lengths_out,
+                                                         NumRunsOutputIteratorT d_num_runs_out,
+                                                         ScanTileStateT tile_status,
+                                                         EqualityOpT equality_op,
+                                                         OffsetT num_items,
+                                                         int num_tiles)
 {
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;
 
@@ -155,16 +164,16 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * Utility class for dispatching the appropriately-tuned kernels for DeviceRle
  *
  * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items \iterator
+ *   Random-access input iterator type for reading input items @iterator
  *
  * @tparam OffsetsOutputIteratorT
- *   Random-access output iterator type for writing run-offset values \iterator
+ *   Random-access output iterator type for writing run-offset values @iterator
  *
  * @tparam LengthsOutputIteratorT
- *   Random-access output iterator type for writing run-length values \iterator
+ *   Random-access output iterator type for writing run-length values @iterator
  *
  * @tparam NumRunsOutputIteratorT
- *   Output iterator type for recording the number of runs encountered \iterator
+ *   Output iterator type for recording the number of runs encountered @iterator
  *
  * @tparam EqualityOpT
  *   T equality operator type
@@ -172,8 +181,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam SelectedPolicy
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <typename InputIteratorT,
@@ -212,7 +221,7 @@ struct DeviceRleDispatch
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__ DeviceRleDispatch(void *d_temp_storage,
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeviceRleDispatch(void *d_temp_storage,
                                                          size_t &temp_storage_bytes,
                                                          InputIteratorT d_in,
                                                          OffsetsOutputIteratorT d_offsets_out,
@@ -285,21 +294,24 @@ struct DeviceRleDispatch
    *   Kernel function pointer to parameterization of cub::DeviceRleSweepKernel
    */
   template <typename ActivePolicyT, typename DeviceScanInitKernelPtr, typename DeviceRleSweepKernelPtr>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(DeviceScanInitKernelPtr device_scan_init_kernel,
          DeviceRleSweepKernelPtr device_rle_sweep_kernel)
   {
     cudaError error = cudaSuccess;
 
-    const int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
-    const int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
+    constexpr int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
 
     do
     {
       // Get device ordinal
       int device_ordinal;
-      if (CubDebug(error = cudaGetDevice(&device_ordinal)))
+      error = CubDebug(cudaGetDevice(&device_ordinal));
+      if (cudaSuccess != error)
+      {
         break;
+      }
 
       // Number of input tiles
       int tile_size = block_threads * items_per_thread;
@@ -307,7 +319,8 @@ struct DeviceRleDispatch
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
-      if (CubDebug(error = ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0])))
+      error = CubDebug(ScanTileStateT::AllocationSize(num_tiles, allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break; // bytes needed for tile status descriptors
       }
@@ -315,9 +328,10 @@ struct DeviceRleDispatch
       // Compute allocation pointers into the single storage blob (or compute the necessary size of
       // the blob)
       void *allocations[1] = {};
-      if (CubDebug(
-            error =
-              AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes)))
+
+      error = CubDebug(
+        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      if (error != cudaSuccess)
       {
         break;
       }
@@ -330,7 +344,8 @@ struct DeviceRleDispatch
 
       // Construct the tile status interface
       ScanTileStateT tile_status;
-      if (CubDebug(error = tile_status.Init(num_tiles, allocations[0], allocation_sizes[0])))
+      error = CubDebug(tile_status.Init(num_tiles, allocations[0], allocation_sizes[0]));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -353,14 +368,15 @@ struct DeviceRleDispatch
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -373,17 +389,18 @@ struct DeviceRleDispatch
 
       // Get SM occupancy for device_rle_sweep_kernel
       int device_rle_kernel_sm_occupancy;
-      if (CubDebug(error = MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
-                                          device_rle_sweep_kernel,
-                                          block_threads)))
+      error = CubDebug(MaxSmOccupancy(device_rle_kernel_sm_occupancy, // out
+                                      device_rle_sweep_kernel,
+                                      block_threads));
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Get max x-dimension of grid
       int max_dim_x;
-      if (CubDebug(
-            error = cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal)))
+      error = CubDebug(cudaDeviceGetAttribute(&max_dim_x, cudaDevAttrMaxGridDimX, device_ordinal));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -423,14 +440,15 @@ struct DeviceRleDispatch
               num_tiles);
 
       // Check for failure to launch
-      if (CubDebug(error = cudaPeekAtLastError()))
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
       {
         break;
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = detail::DebugSyncStream(stream);
-      if (CubDebug(error))
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -440,7 +458,7 @@ struct DeviceRleDispatch
   }
 
   template <class ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -484,10 +502,10 @@ struct DeviceRleDispatch
    *   Total number of input items (i.e., length of `d_in`)
    *
    * @param stream
-   *   <b>[optional]</b> CUDA stream to launch kernels within.
+   *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,
@@ -506,7 +524,8 @@ struct DeviceRleDispatch
     {
       // Get PTX version
       int ptx_version = 0;
-      if (CubDebug(error = PtxVersion(ptx_version)))
+      error = CubDebug(PtxVersion(ptx_version));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -522,7 +541,8 @@ struct DeviceRleDispatch
                                  stream);
 
       // Dispatch
-      if (CubDebug(error = MaxPolicyT::Invoke(ptx_version, dispatch)))
+      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      if (cudaSuccess != error)
       {
         break;
       }
@@ -531,7 +551,7 @@ struct DeviceRleDispatch
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            InputIteratorT d_in,

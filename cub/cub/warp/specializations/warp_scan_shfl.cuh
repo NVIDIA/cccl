@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,28 +27,43 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * @file
+ * cub::WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
+ * across a CUDA thread warp.
  */
 
 #pragma once
 
-#include "../../config.cuh"
-#include "../../thread/thread_operators.cuh"
-#include "../../util_type.cuh"
-#include "../../util_ptx.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/thread/thread_operators.cuh>
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
 /**
- * \brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned across a CUDA thread warp.
+ * @brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
+ *        across a CUDA thread warp.
  *
- * LOGICAL_WARP_THREADS must be a power-of-two
+ * @tparam T
+ *   Data type being scanned
+ *
+ * @tparam LOGICAL_WARP_THREADS
+ *   Number of threads per logical warp (must be a power-of-two)
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   The PTX compute capability for which to to specialize this collective
  */
-template <
-    typename    T,                      ///< Data type being scanned
-    int         LOGICAL_WARP_THREADS,   ///< Number of threads per logical warp
-    int         LEGACY_PTX_ARCH = 0>    ///< The PTX compute capability for which to to specialize this collective
+template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
 struct WarpScanShfl
 {
     //---------------------------------------------------------------------
@@ -98,7 +113,7 @@ struct WarpScanShfl
     //---------------------------------------------------------------------
 
     /// Constructor
-    explicit __device__ __forceinline__
+    explicit _CCCL_DEVICE _CCCL_FORCEINLINE
     WarpScanShfl(TempStorage & /*temp_storage*/)
         : lane_id(LaneId())
         , warp_id(IS_ARCH_WARP ? 0 : (lane_id / LOGICAL_WARP_THREADS))
@@ -115,12 +130,23 @@ struct WarpScanShfl
     // Inclusive scan steps
     //---------------------------------------------------------------------
 
-    /// Inclusive prefix scan step (specialized for summation across int32 types)
-    __device__ __forceinline__ int InclusiveScanStep(
-        int             input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across int32 types)
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE int
+    InclusiveScanStep(int input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         int output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -139,12 +165,23 @@ struct WarpScanShfl
         return output;
     }
 
-    /// Inclusive prefix scan step (specialized for summation across uint32 types)
-    __device__ __forceinline__ unsigned int InclusiveScanStep(
-        unsigned int    input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across uint32 types)
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
+    InclusiveScanStep(unsigned int input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         unsigned int output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -163,13 +200,23 @@ struct WarpScanShfl
         return output;
     }
 
-
-    /// Inclusive prefix scan step (specialized for summation across fp32 types)
-    __device__ __forceinline__ float InclusiveScanStep(
-        float           input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across fp32 types)
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE float
+    InclusiveScanStep(float input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         float output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -188,13 +235,23 @@ struct WarpScanShfl
         return output;
     }
 
-
-    /// Inclusive prefix scan step (specialized for summation across unsigned long long types)
-    __device__ __forceinline__ unsigned long long InclusiveScanStep(
-        unsigned long long  input,              ///< [in] Calling thread's input item.
-        cub::Sum            /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across unsigned long long types)
+     *
+     * @param[in]  input
+     *   Calling thread's input item
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
+    InclusiveScanStep(unsigned long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         unsigned long long output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -218,13 +275,23 @@ struct WarpScanShfl
         return output;
     }
 
-
-    /// Inclusive prefix scan step (specialized for summation across long long types)
-    __device__ __forceinline__ long long InclusiveScanStep(
-        long long       input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across long long types)
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE long long
+    InclusiveScanStep(long long input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         long long output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -248,13 +315,23 @@ struct WarpScanShfl
         return output;
     }
 
-
-    /// Inclusive prefix scan step (specialized for summation across fp64 types)
-    __device__ __forceinline__ double InclusiveScanStep(
-        double          input,              ///< [in] Calling thread's input item.
-        cub::Sum        /*scan_op*/,        ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    /**
+     * @brief Inclusive prefix scan step (specialized for summation across fp64 types)
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE double
+    InclusiveScanStep(double input, cub::Sum /*scan_op*/, int first_lane, int offset)
     {
         double output;
         int shfl_c = first_lane | SHFL_C;   // Shuffle control (mask and first-lane)
@@ -282,7 +359,7 @@ struct WarpScanShfl
 /*
     /// Inclusive prefix scan (specialized for ReduceBySegmentOp<cub::Sum> across KeyValuePair<OffsetT, Value> types)
     template <typename Value, typename OffsetT>
-    __device__ __forceinline__ KeyValuePair<OffsetT, Value>InclusiveScanStep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, Value>InclusiveScanStep(
         KeyValuePair<OffsetT, Value>    input,              ///< [in] Calling thread's input item.
         ReduceBySegmentOp<cub::Sum>     scan_op,            ///< [in] Binary scan operator
         int                             first_lane,         ///< [in] Index of first lane in segment
@@ -300,13 +377,24 @@ struct WarpScanShfl
     }
 */
 
-    /// Inclusive prefix scan step (generic)
+    /**
+     * @brief Inclusive prefix scan step (generic)
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T InclusiveScanStep(
-        _T              input,              ///< [in] Calling thread's input item.
-        ScanOpT         scan_op,            ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset)             ///< [in] Up-offset to pull from
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T
+    InclusiveScanStep(_T input, ScanOpT scan_op, int first_lane, int offset)
     {
         _T temp = ShuffleUp<LOGICAL_WARP_THREADS>(input, offset, first_lane, member_mask);
 
@@ -318,28 +406,59 @@ struct WarpScanShfl
         return output;
     }
 
-
-    /// Inclusive prefix scan step (specialized for small integers size 32b or less)
+    /**
+     * @brief Inclusive prefix scan step (specialized for small integers size 32b or less)
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     *
+     * @param[in] is_small_unsigned
+     *   Marker type indicating whether T is a small integer
+     */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T InclusiveScanStep(
-        _T              input,              ///< [in] Calling thread's input item.
-        ScanOpT         scan_op,            ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset,             ///< [in] Up-offset to pull from
-        Int2Type<true>  /*is_small_unsigned*/)  ///< [in] Marker type indicating whether T is a small integer
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input,
+                                                    ScanOpT scan_op,
+                                                    int first_lane,
+                                                    int offset,
+                                                    Int2Type<true> /*is_small_unsigned*/)
     {
         return InclusiveScanStep(input, scan_op, first_lane, offset);
     }
 
-
-    /// Inclusive prefix scan step (specialized for types other than small integers size 32b or less)
+    /**
+     * @brief Inclusive prefix scan step (specialized for types other than small integers size
+     *        32b or less)
+     *
+     * @param[in] input
+     *   Calling thread's input item.
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[in] first_lane
+     *   Index of first lane in segment
+     *
+     * @param[in] offset
+     *   Up-offset to pull from
+     *
+     * @param[in] is_small_unsigned
+     *   Marker type indicating whether T is a small integer
+     */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ _T InclusiveScanStep(
-        _T              input,              ///< [in] Calling thread's input item.
-        ScanOpT          scan_op,            ///< [in] Binary scan operator
-        int             first_lane,         ///< [in] Index of first lane in segment
-        int             offset,             ///< [in] Up-offset to pull from
-        Int2Type<false> /*is_small_unsigned*/)  ///< [in] Marker type indicating whether T is a small integer
+    _CCCL_DEVICE _CCCL_FORCEINLINE _T InclusiveScanStep(_T input,
+                                                    ScanOpT scan_op,
+                                                    int first_lane,
+                                                    int offset,
+                                                    Int2Type<false> /*is_small_unsigned*/)
     {
         return InclusiveScanStep(input, scan_op, first_lane, offset);
     }
@@ -353,10 +472,16 @@ struct WarpScanShfl
     // Broadcast
     //---------------------------------------------------------------------
 
-    /// Broadcast
-    __device__ __forceinline__ T Broadcast(
-        T               input,              ///< [in] The value to broadcast
-        int             src_lane)           ///< [in] Which warp lane is to do the broadcasting
+    /**
+     * @brief Broadcast
+     *
+     * @param[in] input
+     *   The value to broadcast
+     *
+     * @param[in] src_lane
+     *   Which warp lane is to do the broadcasting
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Broadcast(T input, int src_lane)
     {
         return ShuffleIndex<LOGICAL_WARP_THREADS>(input, src_lane, member_mask);
     }
@@ -366,12 +491,20 @@ struct WarpScanShfl
     // Inclusive operations
     //---------------------------------------------------------------------
 
-    /// Inclusive scan
+    /**
+     * @brief Inclusive scan
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] inclusive_output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     */
     template <typename _T, typename ScanOpT>
-    __device__ __forceinline__ void InclusiveScan(
-        _T              input,              ///< [in] Calling thread's input item.
-        _T              &inclusive_output,  ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ScanOpT         scan_op)            ///< [in] Binary scan operator
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(_T input, _T &inclusive_output, ScanOpT scan_op)
     {
         inclusive_output = input;
 
@@ -392,12 +525,22 @@ struct WarpScanShfl
 
     }
 
-    /// Inclusive scan, specialized for reduce-value-by-key
+    /**
+     * @brief Inclusive scan, specialized for reduce-value-by-key
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] inclusive_output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     */
     template <typename KeyT, typename ValueT, typename ReductionOpT>
-    __device__ __forceinline__ void InclusiveScan(
-        KeyValuePair<KeyT, ValueT>      input,              ///< [in] Calling thread's input item.
-        KeyValuePair<KeyT, ValueT>      &inclusive_output,  ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ReduceByKeyOp<ReductionOpT >    scan_op)            ///< [in] Binary scan operator
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(KeyValuePair<KeyT, ValueT> input,
+                                                  KeyValuePair<KeyT, ValueT> &inclusive_output,
+                                                  ReduceByKeyOp<ReductionOpT> scan_op)
     {
         inclusive_output = input;
 
@@ -424,14 +567,24 @@ struct WarpScanShfl
         }
     }
 
-
-    /// Inclusive scan with aggregate
+    /**
+     * @brief Inclusive scan with aggregate
+     *
+     * @param[in] input
+     *   Calling thread's input item
+     *
+     * @param[out] inclusive_output
+     *   Calling thread's output item. May be aliased with @p input
+     *
+     * @param[in] scan_op
+     *   Binary scan operator
+     *
+     * @param[out] warp_aggregate
+     *   Warp-wide aggregate reduction of input items
+     */
     template <typename ScanOpT>
-    __device__ __forceinline__ void InclusiveScan(
-        T               input,              ///< [in] Calling thread's input item.
-        T               &inclusive_output,  ///< [out] Calling thread's output item.  May be aliased with \p input.
-        ScanOpT         scan_op,            ///< [in] Binary scan operator
-        T               &warp_aggregate)    ///< [out] Warp-wide aggregate reduction of input items.
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    InclusiveScan(T input, T &inclusive_output, ScanOpT scan_op, T &warp_aggregate)
     {
         InclusiveScan(input, inclusive_output, scan_op);
 
@@ -444,21 +597,32 @@ struct WarpScanShfl
     // Get exclusive from inclusive
     //---------------------------------------------------------------------
 
-    /// Update inclusive and exclusive using input and inclusive
+    /**
+     * @brief Update inclusive and exclusive using input and inclusive
+     *
+     * @param[in] input
+     *
+     * @param[out] inclusive
+     *
+     * @param[out] exclusive
+     *
+     * @param[in] scan_op
+     *
+     * @param[in] is_integer
+     */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update(
-        T                       /*input*/,          ///< [in]
-        T                       &inclusive,         ///< [in, out]
-        T                       &exclusive,         ///< [out]
-        ScanOpT                 /*scan_op*/,        ///< [in]
-        IsIntegerT              /*is_integer*/)     ///< [in]
+    _CCCL_DEVICE _CCCL_FORCEINLINE void
+    Update(T /*input*/, T &inclusive, T &exclusive, ScanOpT /*scan_op*/, IsIntegerT /*is_integer*/)
     {
         // initial value unknown
         exclusive = ShuffleUp<LOGICAL_WARP_THREADS>(inclusive, 1, 0, member_mask);
     }
 
-    /// Update inclusive and exclusive using input and inclusive (specialized for summation of integer types)
-    __device__ __forceinline__ void Update(
+    /**
+     * @brief Update inclusive and exclusive using input and inclusive (specialized for summation of
+     *        integer types)
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -469,9 +633,12 @@ struct WarpScanShfl
         exclusive = inclusive - input;
     }
 
-    /// Update inclusive and exclusive using initial value using input, inclusive, and initial value
+    /**
+     * @brief Update inclusive and exclusive using initial value using input, inclusive, and initial
+     *        value
+     */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       /*input*/,
         T                       &inclusive,
         T                       &exclusive,
@@ -486,8 +653,11 @@ struct WarpScanShfl
             exclusive = initial_value;
     }
 
-    /// Update inclusive and exclusive using initial value using input and inclusive (specialized for summation of integer types)
-    __device__ __forceinline__ void Update (
+    /**
+     * @brief Update inclusive and exclusive using initial value using input and inclusive
+     *        (specialized for summation of integer types)
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -499,10 +669,11 @@ struct WarpScanShfl
         exclusive = inclusive - input;
     }
 
-
-    /// Update inclusive, exclusive, and warp aggregate using input and inclusive
+    /**
+     * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive
+     */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,
@@ -514,9 +685,12 @@ struct WarpScanShfl
         Update(input, inclusive, exclusive, scan_op, is_integer);
     }
 
-    /// Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial value
+    /**
+     * @brief Update inclusive, exclusive, and warp aggregate using input, inclusive, and initial
+     *        value
+     */
     template <typename ScanOpT, typename IsIntegerT>
-    __device__ __forceinline__ void Update (
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Update (
         T                       input,
         T                       &inclusive,
         T                       &exclusive,

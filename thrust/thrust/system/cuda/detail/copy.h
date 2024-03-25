@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/advance.h>
 
 #include <thrust/system/cuda/config.h>
@@ -38,14 +46,14 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename DerivedPolicy, typename InputIt, typename OutputIt>
-__host__ __device__ OutputIt
+_CCCL_HOST_DEVICE OutputIt
 copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
      InputIt                                                     first,
      InputIt                                                     last,
      OutputIt                                                    result);
 
 template <class DerivedPolicy, class InputIt, class Size, class OutputIt>
-__host__ __device__ OutputIt
+_CCCL_HOST_DEVICE OutputIt
 copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
        InputIt                                                     first,
        Size                                                        n,
@@ -57,7 +65,7 @@ namespace cuda_cub {
 template <class System,
           class InputIterator,
           class OutputIterator>
-OutputIterator __host__ __device__
+OutputIterator _CCCL_HOST_DEVICE
 copy(execution_policy<System> &system,
      InputIterator             first,
      InputIterator             last,
@@ -67,7 +75,7 @@ template <class System1,
           class System2,
           class InputIterator,
           class OutputIterator>
-OutputIterator __host__
+OutputIterator _CCCL_HOST
 copy(cross_system<System1, System2> systems,
      InputIterator  first,
      InputIterator  last,
@@ -77,7 +85,7 @@ template <class System,
           class InputIterator,
           class Size,
           class OutputIterator>
-OutputIterator __host__ __device__
+OutputIterator _CCCL_HOST_DEVICE
 copy_n(execution_policy<System> &system,
        InputIterator             first,
        Size                      n,
@@ -88,7 +96,7 @@ template <class System1,
           class InputIterator,
           class Size,
           class OutputIterator>
-OutputIterator __host__
+OutputIterator _CCCL_HOST
 copy_n(cross_system<System1, System2> systems,
        InputIterator  first,
        Size           n,
@@ -110,11 +118,11 @@ namespace cuda_cub {
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 // D->D copy requires NVCC compiler
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class System,
           class InputIterator,
           class OutputIterator>
-OutputIterator __host__ __device__
+OutputIterator _CCCL_HOST_DEVICE
 copy(execution_policy<System> &system,
      InputIterator             first,
      InputIterator             last,
@@ -127,12 +135,12 @@ copy(execution_policy<System> &system,
   return result;
 }    // end copy()
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class System,
           class InputIterator,
           class Size,
           class OutputIterator>
-OutputIterator __host__ __device__
+OutputIterator _CCCL_HOST_DEVICE
 copy_n(execution_policy<System> &system,
        InputIterator             first,
        Size                      n,
@@ -153,7 +161,7 @@ template <class System1,
           class System2,
           class InputIterator,
           class OutputIterator>
-OutputIterator __host__
+OutputIterator _CCCL_HOST
 copy(cross_system<System1, System2> systems,
      InputIterator  first,
      InputIterator  last,
@@ -167,7 +175,7 @@ template <class System1,
           class InputIterator,
           class Size,
           class OutputIterator>
-OutputIterator __host__
+OutputIterator _CCCL_HOST
 copy_n(cross_system<System1, System2> systems,
        InputIterator  first,
        Size           n,

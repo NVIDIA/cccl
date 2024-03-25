@@ -25,16 +25,10 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include "fill_striped.cuh"
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
@@ -122,15 +116,15 @@ template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int ITEMS_PER_THREAD,
           int TOTAL_WARPS,
           typename T>
-thrust::device_vector<T> compute_reference(int valid_items)
+c2h::device_vector<T> compute_reference(int valid_items)
 {
-  const int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
-  const int total_item_count = TOTAL_WARPS * tile_size;
-  thrust::device_vector<T> d_input(total_item_count);
+  constexpr int tile_size        = LOGICAL_WARP_THREADS * ITEMS_PER_THREAD;
+  constexpr int total_item_count = TOTAL_WARPS * tile_size;
+  c2h::device_vector<T> d_input(total_item_count);
 
-  CUB_IF_CONSTEXPR(StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
+  _CCCL_IF_CONSTEXPR(StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
-    thrust::host_vector<T> input(total_item_count);
+    c2h::host_vector<T> input(total_item_count);
     fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(
       input.begin());
     d_input = input;
@@ -143,7 +137,8 @@ thrust::device_vector<T> compute_reference(int valid_items)
   {
     for (int warp_id = 0; warp_id < TOTAL_WARPS; warp_id++)
     {
-      thrust::fill(d_input.begin() + warp_id * tile_size + valid_items,
+      thrust::fill(c2h::device_policy,
+                   d_input.begin() + warp_id * tile_size + valid_items,
                    d_input.begin() + (warp_id + 1) * tile_size,
                    T{});
     }
@@ -211,7 +206,7 @@ CUB_TEST("Warp store guarded range works with pointer",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::total_item_count, type{});
+  c2h::device_vector<type> d_out(params::total_item_count, type{});
   const int valid_items =
     GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
   auto out = thrust::raw_pointer_cast(d_out.data());
@@ -240,7 +235,7 @@ CUB_TEST("Warp store guarded range works with cache modified iterator",
   using type                                       = typename params::type;
   constexpr cub::CacheStoreModifier store_modifier = c2h::get<4, TestType>::value;
 
-  thrust::device_vector<type> d_out(params::total_item_count, type{});
+  c2h::device_vector<type> d_out(params::total_item_count, type{});
   const int valid_items =
     GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
   auto out =
@@ -268,8 +263,8 @@ CUB_TEST("Warp store unguarded range works with pointer",
   using params = params_t<TestType>;
   using type   = typename params::type;
 
-  thrust::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = params::tile_size;
+  c2h::device_vector<type> d_out(params::total_item_count, type{});
+  constexpr int valid_items = params::tile_size;
   auto out              = thrust::raw_pointer_cast(d_out.data());
   warp_store<params::algorithm,
              params::logical_warp_threads,
@@ -296,8 +291,8 @@ CUB_TEST("Warp store unguarded range works with cache modified iterator",
   using type                                       = typename params::type;
   constexpr cub::CacheStoreModifier store_modifier = c2h::get<4, TestType>::value;
 
-  thrust::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = params::tile_size;
+  c2h::device_vector<type> d_out(params::total_item_count, type{});
+  constexpr int valid_items = params::tile_size;
   auto out =
     cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
   warp_store<params::algorithm,

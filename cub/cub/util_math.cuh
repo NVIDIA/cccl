@@ -32,10 +32,17 @@
 
 #pragma once
 
-#include <type_traits>
+#include <cub/config.cuh>
 
-#include "util_namespace.cuh"
-#include "util_macro.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -44,18 +51,26 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  std::integral_constant<bool,
-                         std::is_integral<T>::value || std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool,
+                         ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
-__host__ __device__ __forceinline__ constexpr  std::size_t
-VshmemSize(std::size_t max_shmem,
-           std::size_t shmem_per_block,
-           std::size_t num_blocks)
+/**
+ * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition would
+ * overflow. Note, lhs must be non-negative.
+ *
+ * Effectively performs `min((lhs + rhs), ::cuda::std::numeric_limits<OffsetT>::max())`, but is robust against the case
+ * where `(lhs + rhs)` would overflow.
+ */
+template <typename OffsetT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, OffsetT rhs)
 {
-  return shmem_per_block > max_shmem ? shmem_per_block * num_blocks : 0;
+  static_assert(::cuda::std::is_integral<OffsetT>::value, "OffsetT must be an integral type");
+  static_assert(sizeof(OffsetT) >= 4, "OffsetT must be at least 32 bits in size");
+  auto const capped_operand_rhs = (cub::min)(rhs, ::cuda::std::numeric_limits<OffsetT>::max() - lhs);
+  return lhs + capped_operand_rhs;
 }
 
-}
+} // namespace detail
 
 /**
  * Divide n by d, round up if any remainder, and return the result.
@@ -64,7 +79,7 @@ VshmemSize(std::size_t max_shmem,
  * `(n + d - 1)` would overflow.
  */
 template <typename NumeratorT, typename DenominatorT>
-__host__ __device__ __forceinline__ constexpr NumeratorT
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT
 DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
   static_assert(cub::detail::is_integral_or_enum<NumeratorT>::value &&
@@ -75,7 +90,7 @@ DivideAndRoundUp(NumeratorT n, DenominatorT d)
   return static_cast<NumeratorT>(n / d + (n % d != 0 ? 1 : 0));
 }
 
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
 {
   return (cub::min)(nominal_4b_items_per_thread,
@@ -85,7 +100,7 @@ Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_byte
 }
 
 template <typename T>
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 {
   return (cub::min)(nominal_4b_items_per_thread,
@@ -95,7 +110,7 @@ Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 }
 
 template <typename ItemT>
-constexpr __device__ __host__ int
+constexpr _CCCL_HOST_DEVICE int
 Nominal8BItemsToItems(int nominal_8b_items_per_thread)
 {
   return sizeof(ItemT) <= 8u
@@ -115,7 +130,7 @@ Nominal8BItemsToItems(int nominal_8b_items_per_thread)
  * \return Half the sum of \p begin and \p end
  */
 template <typename T>
-constexpr __device__ __host__ T MidPoint(T begin, T end)
+constexpr _CCCL_HOST_DEVICE T MidPoint(T begin, T end)
 {
   return begin + (end - begin) / 2;
 }

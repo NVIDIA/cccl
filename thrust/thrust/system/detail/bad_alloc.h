@@ -17,10 +17,18 @@
 
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <new>
 #include <string>
-
-#include <thrust/detail/config.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -51,7 +59,7 @@ class bad_alloc
   private:
     std::string m_what;
 }; // end bad_alloc
-  
+
 } // end detail
 } // end system
 THRUST_NAMESPACE_END

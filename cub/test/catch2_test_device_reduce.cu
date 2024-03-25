@@ -27,30 +27,25 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Min, device_min);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Max, device_max);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Min, device_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
@@ -114,7 +109,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
                                                  gen_data_t::GEN_TYPE_CONST);
 
   // Generate input data
-  thrust::device_vector<item_t> in_items(num_items);
+  c2h::device_vector<item_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
     c2h::gen(CUB_SEED(2), in_items);
@@ -123,7 +118,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   {
     item_t default_constant{};
     init_default_constant(default_constant);
-    thrust::fill(in_items.begin(), in_items.end(), default_constant);
+    thrust::fill(c2h::device_policy, in_items.begin(), in_items.end(), default_constant);
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
@@ -140,7 +135,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
       static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     device_reduce(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items, reduction_op, init_t{});
@@ -162,7 +157,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
       static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = unwrap_it(thrust::raw_pointer_cast(out_result.data()));
     device_sum(d_in_it, d_out_it, num_items);
 
@@ -174,11 +169,11 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   SECTION("min")
   {
     // Prepare verification data
-    thrust::host_vector<item_t> host_items(in_items);
+    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = *std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_min(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items);
 
@@ -189,11 +184,11 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   SECTION("max")
   {
     // Prepare verification data
-    thrust::host_vector<item_t> host_items(in_items);
+    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = *std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    thrust::device_vector<output_t> out_result(num_segments);
+    c2h::device_vector<output_t> out_result(num_segments);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     device_max(unwrap_it(d_in_it), unwrap_it(d_out_it), num_items);
 
@@ -204,12 +199,12 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   SECTION("argmax")
   {
     // Prepare verification data
-    thrust::host_vector<item_t> host_items(in_items);
+    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
     using result_t = cub::KeyValuePair<int, output_t>;
-    thrust::device_vector<result_t> out_result(num_segments);
+    c2h::device_vector<result_t> out_result(num_segments);
     device_arg_max(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result
@@ -221,12 +216,12 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   SECTION("argmin")
   {
     // Prepare verification data
-    thrust::host_vector<item_t> host_items(in_items);
+    c2h::host_vector<item_t> host_items(in_items);
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
     using result_t = cub::KeyValuePair<int, output_t>;
-    thrust::device_vector<result_t> out_result(num_segments);
+    c2h::device_vector<result_t> out_result(num_segments);
     device_arg_min(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result

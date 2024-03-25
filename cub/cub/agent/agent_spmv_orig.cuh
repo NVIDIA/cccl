@@ -33,17 +33,26 @@
 
 #pragma once
 
-#include <iterator>
+#include <cub/config.cuh>
 
-#include "../util_type.cuh"
-#include "../block/block_reduce.cuh"
-#include "../block/block_scan.cuh"
-#include "../block/block_exchange.cuh"
-#include "../config.cuh"
-#include "../thread/thread_search.cuh"
-#include "../thread/thread_operators.cuh"
-#include "../iterator/cache_modified_input_iterator.cuh"
-#include "../iterator/counting_input_iterator.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_exchange.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/iterator/counting_input_iterator.cuh>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_search.cuh>
+#include <cub/util_type.cuh>
+
+#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -53,69 +62,155 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentSpmv
+ * @param Parameterizable tuning policy type for AgentSpmv
+ *
+ * @tparam _BLOCK_THREADS
+ *   Threads per thread block
+ *
+ * @tparam _ITEMS_PER_THREAD
+ *   Items per thread (per tile of input)
+ *
+ * @tparam _ROW_OFFSETS_SEARCH_LOAD_MODIFIER
+ *   Cache load modifier for reading CSR row-offsets during search
+ *
+ * @tparam _ROW_OFFSETS_LOAD_MODIFIER
+ *   Cache load modifier for reading CSR row-offsets
+ *
+ * @tparam _COLUMN_INDICES_LOAD_MODIFIER
+ *   Cache load modifier for reading CSR column-indices
+ *
+ * @tparam _VALUES_LOAD_MODIFIER
+ *   Cache load modifier for reading CSR values
+ *
+ * @tparam _VECTOR_VALUES_LOAD_MODIFIER
+ *   Cache load modifier for reading vector values
+ *
+ * @tparam _DIRECT_LOAD_NONZEROS
+ *   Whether to load nonzeros directly from global during sequential merging (vs. pre-staged through
+ * shared memory)
+ *
+ * @tparam _SCAN_ALGORITHM
+ *   The BlockScan algorithm to use
  */
-template <
-    int                             _BLOCK_THREADS,                         ///< Threads per thread block
-    int                             _ITEMS_PER_THREAD,                      ///< Items per thread (per tile of input)
-    CacheLoadModifier               _ROW_OFFSETS_SEARCH_LOAD_MODIFIER,      ///< Cache load modifier for reading CSR row-offsets during search
-    CacheLoadModifier               _ROW_OFFSETS_LOAD_MODIFIER,             ///< Cache load modifier for reading CSR row-offsets
-    CacheLoadModifier               _COLUMN_INDICES_LOAD_MODIFIER,          ///< Cache load modifier for reading CSR column-indices
-    CacheLoadModifier               _VALUES_LOAD_MODIFIER,                  ///< Cache load modifier for reading CSR values
-    CacheLoadModifier               _VECTOR_VALUES_LOAD_MODIFIER,           ///< Cache load modifier for reading vector values
-    bool                            _DIRECT_LOAD_NONZEROS,                  ///< Whether to load nonzeros directly from global during sequential merging (vs. pre-staged through shared memory)
-    BlockScanAlgorithm              _SCAN_ALGORITHM>                        ///< The BlockScan algorithm to use
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD,
+          CacheLoadModifier _ROW_OFFSETS_SEARCH_LOAD_MODIFIER,
+          CacheLoadModifier _ROW_OFFSETS_LOAD_MODIFIER,
+          CacheLoadModifier _COLUMN_INDICES_LOAD_MODIFIER,
+          CacheLoadModifier _VALUES_LOAD_MODIFIER,
+          CacheLoadModifier _VECTOR_VALUES_LOAD_MODIFIER,
+          bool _DIRECT_LOAD_NONZEROS,
+          BlockScanAlgorithm _SCAN_ALGORITHM>
 struct AgentSpmvPolicy
 {
-    enum
-    {
-        BLOCK_THREADS                                                   = _BLOCK_THREADS,                       ///< Threads per thread block
-        ITEMS_PER_THREAD                                                = _ITEMS_PER_THREAD,                    ///< Items per thread (per tile of input)
-        DIRECT_LOAD_NONZEROS                                            = _DIRECT_LOAD_NONZEROS,                ///< Whether to load nonzeros directly from global during sequential merging (pre-staged through shared memory)
-    };
+  enum
+  {
+    /// Threads per thread block
+    BLOCK_THREADS = _BLOCK_THREADS,
 
-    static const CacheLoadModifier  ROW_OFFSETS_SEARCH_LOAD_MODIFIER    = _ROW_OFFSETS_SEARCH_LOAD_MODIFIER;    ///< Cache load modifier for reading CSR row-offsets
-    static const CacheLoadModifier  ROW_OFFSETS_LOAD_MODIFIER           = _ROW_OFFSETS_LOAD_MODIFIER;           ///< Cache load modifier for reading CSR row-offsets
-    static const CacheLoadModifier  COLUMN_INDICES_LOAD_MODIFIER        = _COLUMN_INDICES_LOAD_MODIFIER;        ///< Cache load modifier for reading CSR column-indices
-    static const CacheLoadModifier  VALUES_LOAD_MODIFIER                = _VALUES_LOAD_MODIFIER;                ///< Cache load modifier for reading CSR values
-    static const CacheLoadModifier  VECTOR_VALUES_LOAD_MODIFIER         = _VECTOR_VALUES_LOAD_MODIFIER;         ///< Cache load modifier for reading vector values
-    static const BlockScanAlgorithm SCAN_ALGORITHM                      = _SCAN_ALGORITHM;                      ///< The BlockScan algorithm to use
+    /// Items per thread (per tile of input)
+    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
 
+    /// Whether to load nonzeros directly from global during sequential merging (pre-staged through
+    /// shared memory)
+    DIRECT_LOAD_NONZEROS = _DIRECT_LOAD_NONZEROS,
+  };
+
+  /// Cache load modifier for reading CSR row-offsets
+  static constexpr CacheLoadModifier ROW_OFFSETS_SEARCH_LOAD_MODIFIER =
+    _ROW_OFFSETS_SEARCH_LOAD_MODIFIER;
+
+  /// Cache load modifier for reading CSR row-offsets
+  static constexpr CacheLoadModifier ROW_OFFSETS_LOAD_MODIFIER = _ROW_OFFSETS_LOAD_MODIFIER;
+
+  /// Cache load modifier for reading CSR column-indices
+  static constexpr CacheLoadModifier COLUMN_INDICES_LOAD_MODIFIER = _COLUMN_INDICES_LOAD_MODIFIER;
+
+  /// Cache load modifier for reading CSR values
+  static constexpr CacheLoadModifier VALUES_LOAD_MODIFIER = _VALUES_LOAD_MODIFIER;
+
+  /// Cache load modifier for reading vector values
+  static constexpr CacheLoadModifier VECTOR_VALUES_LOAD_MODIFIER = _VECTOR_VALUES_LOAD_MODIFIER;
+
+  /// The BlockScan algorithm to use
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 };
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
-template <
-    typename        ValueT,              ///< Matrix and vector value type
-    typename        OffsetT>             ///< Signed integer type for sequence offsets
+/**
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ */
+template <typename ValueT, typename OffsetT>
 struct SpmvParams
 {
-    const ValueT*   d_values;            ///< Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
-    const OffsetT*  d_row_end_offsets;   ///< Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
-    const OffsetT*  d_column_indices;    ///< Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
-    const ValueT*   d_vector_x;          ///< Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
-    ValueT*         d_vector_y;          ///< Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
-    int             num_rows;            ///< Number of rows of matrix <b>A</b>.
-    int             num_cols;            ///< Number of columns of matrix <b>A</b>.
-    int             num_nonzeros;        ///< Number of nonzero elements of matrix <b>A</b>.
-    ValueT          alpha;               ///< Alpha multiplicand
-    ValueT          beta;                ///< Beta addend-multiplicand
+  /// Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix
+  /// <b>A</b>.
+  const ValueT *d_values;
+
+  /// Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices
+  /// and \p d_values
+  const OffsetT *d_row_end_offsets;
+
+  /// Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements
+  /// of matrix <b>A</b>.  (Indices are zero-valued.)
+  const OffsetT *d_column_indices;
+
+  /// Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
+  const ValueT *d_vector_x;
+
+  /// Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
+  ValueT *d_vector_y;
+
+  /// Number of rows of matrix <b>A</b>.
+  int num_rows;
+
+  /// Number of columns of matrix <b>A</b>.
+  int num_cols;
+
+  /// Number of nonzero elements of matrix <b>A</b>.
+  int num_nonzeros;
+
+  /// Alpha multiplicand
+  ValueT alpha;
+
+  /// Beta addend-multiplicand
+  ValueT beta;
 };
 
-
 /**
- * \brief AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ * @brief AgentSpmv implements a stateful abstraction of CUDA thread blocks for participating in device-wide SpMV.
+ *
+ * @tparam AgentSpmvPolicyT
+ *   Parameterized AgentSpmvPolicy tuning policy type
+ *
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ *
+ * @tparam HAS_ALPHA
+ *   Whether the input parameter \p alpha is 1
+ *
+ * @tparam HAS_BETA
+ *   Whether the input parameter \p beta is 0
+ *
+ * @tparam LEGACY_PTX_ARCH
+ *   PTX compute capability (unused)
  */
-template <
-    typename    AgentSpmvPolicyT,           ///< Parameterized AgentSpmvPolicy tuning policy type
-    typename    ValueT,                     ///< Matrix and vector value type
-    typename    OffsetT,                    ///< Signed integer type for sequence offsets
-    bool        HAS_ALPHA,                  ///< Whether the input parameter \p alpha is 1
-    bool        HAS_BETA,                   ///< Whether the input parameter \p beta is 0
-    int         LEGACY_PTX_ARCH = 0>        ///< PTX compute capability (unused)
+template <typename AgentSpmvPolicyT,
+          typename ValueT,
+          typename OffsetT,
+          bool HAS_ALPHA,
+          bool HAS_BETA,
+          int LEGACY_PTX_ARCH = 0>
 struct AgentSpmv
 {
     //---------------------------------------------------------------------
@@ -245,49 +340,66 @@ struct AgentSpmv
     // Per-thread fields
     //---------------------------------------------------------------------
 
+    /// Reference to temp_storage
+    _TempStorage &temp_storage;
 
-    _TempStorage&                   temp_storage;         /// Reference to temp_storage
+    SpmvParams<ValueT, OffsetT> &spmv_params;
 
-    SpmvParams<ValueT, OffsetT>&    spmv_params;
+    /// Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements
+    /// of matrix <b>A</b>.
+    ValueIteratorT wd_values;
 
-    ValueIteratorT                  wd_values;            ///< Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix <b>A</b>.
-    RowOffsetsIteratorT             wd_row_end_offsets;   ///< Wrapped Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices and \p d_values
-    ColumnIndicesIteratorT          wd_column_indices;    ///< Wrapped Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements of matrix <b>A</b>.  (Indices are zero-valued.)
-    VectorValueIteratorT            wd_vector_x;          ///< Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
-    VectorValueIteratorT            wd_vector_y;          ///< Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
+    /// Wrapped Pointer to the array of \p m offsets demarcating the end of every row in \p
+    /// d_column_indices and \p d_values
+    RowOffsetsIteratorT wd_row_end_offsets;
 
+    /// Wrapped Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero
+    /// elements of matrix <b>A</b>.  (Indices are zero-valued.)
+    ColumnIndicesIteratorT wd_column_indices;
+
+    /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
+    /// <em>x</em>
+    VectorValueIteratorT wd_vector_x;
+
+    /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
+    /// <em>x</em>
+    VectorValueIteratorT wd_vector_y;
 
     //---------------------------------------------------------------------
     // Interface
     //---------------------------------------------------------------------
 
     /**
-     * Constructor
+     * @param temp_storage
+     *   Reference to temp_storage
+     *
+     * @param spmv_params
+     *   SpMV input parameter bundle
      */
-    __device__ __forceinline__ AgentSpmv(
-        TempStorage&                    temp_storage,           ///< Reference to temp_storage
-        SpmvParams<ValueT, OffsetT>&    spmv_params)            ///< SpMV input parameter bundle
-    :
-        temp_storage(temp_storage.Alias()),
-        spmv_params(spmv_params),
-        wd_values(spmv_params.d_values),
-        wd_row_end_offsets(spmv_params.d_row_end_offsets),
-        wd_column_indices(spmv_params.d_column_indices),
-        wd_vector_x(spmv_params.d_vector_x),
-        wd_vector_y(spmv_params.d_vector_y)
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage &temp_storage,
+                                         SpmvParams<ValueT, OffsetT> &spmv_params)
+        : temp_storage(temp_storage.Alias())
+        , spmv_params(spmv_params)
+        , wd_values(spmv_params.d_values)
+        , wd_row_end_offsets(spmv_params.d_row_end_offsets)
+        , wd_column_indices(spmv_params.d_column_indices)
+        , wd_vector_x(spmv_params.d_vector_x)
+        , wd_vector_y(spmv_params.d_vector_y)
     {}
 
 
 
 
     /**
-     * Consume a merge tile, specialized for direct-load of nonzeros
+     * @brief Consume a merge tile, specialized for direct-load of nonzeros
+     *
+     * @param is_direct_load
+     *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
      */
-    __device__ __forceinline__ KeyValuePairT ConsumeTile(
-        int             tile_idx,
-        CoordinateT     tile_start_coord,
-        CoordinateT     tile_end_coord,
-        Int2Type<true>  is_direct_load)     ///< Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
+                                                         CoordinateT tile_start_coord,
+                                                         CoordinateT tile_end_coord,
+                                                         Int2Type<true> is_direct_load)
     {
         int         tile_num_rows           = tile_end_coord.x - tile_start_coord.x;
         int         tile_num_nonzeros       = tile_end_coord.y - tile_start_coord.y;
@@ -406,13 +518,15 @@ struct AgentSpmv
 
 
     /**
-     * Consume a merge tile, specialized for indirect load of nonzeros
+     * @brief Consume a merge tile, specialized for indirect load of nonzeros
+     *
+     * @param is_direct_load
+     *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
      */
-    __device__ __forceinline__ KeyValuePairT ConsumeTile(
-        int             tile_idx,
-        CoordinateT     tile_start_coord,
-        CoordinateT     tile_end_coord,
-        Int2Type<false> is_direct_load)     ///< Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
+                                                         CoordinateT tile_start_coord,
+                                                         CoordinateT tile_end_coord,
+                                                         Int2Type<false> is_direct_load)
     {
         int         tile_num_rows           = tile_end_coord.x - tile_start_coord.x;
         int         tile_num_nonzeros       = tile_end_coord.y - tile_start_coord.y;
@@ -594,12 +708,20 @@ struct AgentSpmv
 
 
     /**
-     * Consume input tile
+     * @brief Consume input tile
+     *
+     * @param[in] d_tile_coordinates
+     *   Pointer to the temporary array of tile starting coordinates
+     *
+     * @param[out] d_tile_carry_pairs
+     *   Pointer to the temporary array carry-out dot product row-ids, one per block
+     *
+     * @param[in] num_merge_tiles
+     *   Number of merge tiles
      */
-    __device__ __forceinline__ void ConsumeTile(
-        CoordinateT*    d_tile_coordinates,     ///< [in] Pointer to the temporary array of tile starting coordinates
-        KeyValuePairT*  d_tile_carry_pairs,     ///< [out] Pointer to the temporary array carry-out dot product row-ids, one per block
-        int             num_merge_tiles)        ///< [in] Number of merge tiles
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(CoordinateT *d_tile_coordinates,
+                                                KeyValuePairT *d_tile_carry_pairs,
+                                                int num_merge_tiles)
     {
         int tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
 

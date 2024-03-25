@@ -48,17 +48,21 @@ Macros:
 #include <__pragma_push>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 #include "support/win32/limits_msvc_win32.h"
 #endif // _LIBCUDACXX_MSVCRT
 
-#if defined(_LIBCUDACXX_COMPILER_IBM)
+#if defined(_CCCL_COMPILER_IBM)
 #include "support/ibm/limits.h"
-#endif // _LIBCUDACXX_COMPILER_IBM
+#endif // _CCCL_COMPILER_IBM
 
 // ICC defines __CHAR_BIT__ by default
 // accept that, but assert it is what we expect

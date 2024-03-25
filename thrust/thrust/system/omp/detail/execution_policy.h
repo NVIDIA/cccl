@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/cpp/detail/execution_policy.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/iterator/detail/any_system_tag.h>
@@ -58,7 +66,7 @@ template<typename Derived>
   struct execution_policy
     : thrust::system::cpp::detail::execution_policy<Derived>
 {
-  typedef tag tag_type; 
+  typedef tag tag_type;
   operator tag() const { return tag(); }
 };
 
@@ -70,7 +78,7 @@ template<typename Derived>
 //     arbitrarily define in the omp backend
 
 template<typename System1, typename System2>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   System1 select_system(execution_policy<System1> s, thrust::system::tbb::detail::execution_policy<System2>)
 {
   return thrust::detail::derived_cast(s);
@@ -78,7 +86,7 @@ inline __host__ __device__
 
 
 template<typename System1, typename System2>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   System2 select_system(thrust::system::tbb::detail::execution_policy<System1>, execution_policy<System2> s)
 {
   return thrust::detail::derived_cast(s);

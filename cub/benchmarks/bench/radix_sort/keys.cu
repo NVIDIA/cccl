@@ -44,7 +44,7 @@ constexpr bool is_overwrite_ok = false;
 template <typename KeyT, typename ValueT, typename OffsetT>
 struct policy_hub_t
 {
-  constexpr static bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
+  static constexpr bool KEYS_ONLY = std::is_same<ValueT, cub::NullType>::value;
 
   using DominantT = cub::detail::conditional_t<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
 
@@ -135,7 +135,7 @@ void radix_sort_keys(std::integral_constant<bool, true>,
                      nvbench::state &state,
                      nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   using key_t = T;
 #if !TUNE_BASE
@@ -145,17 +145,15 @@ void radix_sort_keys(std::integral_constant<bool, true>,
   using dispatch_t = cub::DispatchRadixSort<is_descending, key_t, value_t, offset_t>;
 #endif // TUNE_BASE
 
-  const int begin_bit = 0;
-  const int end_bit   = sizeof(key_t) * 8;
+  constexpr int begin_bit = 0;
+  constexpr int end_bit   = sizeof(key_t) * 8;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
-  thrust::device_vector<T> buffer_1(elements);
+  thrust::device_vector<T> buffer_1 = generate(elements, entropy);
   thrust::device_vector<T> buffer_2(elements);
-
-  gen(seed_t{}, buffer_1, entropy);
 
   key_t *d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
   key_t *d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
@@ -184,9 +182,7 @@ void radix_sort_keys(std::integral_constant<bool, true>,
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  report_entropy(buffer_1, entropy);
-
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     cub::DoubleBuffer<key_t> keys     = d_keys;
     cub::DoubleBuffer<value_t> values = d_values;
 
@@ -214,7 +210,7 @@ void radix_sort_keys(std::integral_constant<bool, false>,
 template <typename T, typename OffsetT>
 void radix_sort_keys(nvbench::state &state, nvbench::type_list<T, OffsetT> tl)
 {
-  using offset_t = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   radix_sort_keys(
     std::integral_constant<bool, fits_in_default_shared_memory<T, value_t, offset_t>()>{},
@@ -226,4 +222,4 @@ NVBENCH_BENCH_TYPES(radix_sort_keys, NVBENCH_TYPE_AXES(fundamental_types, offset
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_string_axis("Entropy", {"1.000", "0.811", "0.544", "0.337", "0.201"});
+  .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});

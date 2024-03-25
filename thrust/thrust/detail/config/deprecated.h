@@ -20,6 +20,16 @@
 
 #pragma once
 
+// Internal config header that is only included through thrust/detail/config/config.h
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/config/compiler.h>
 #include <thrust/detail/config/cpp_dialect.h>
 
@@ -29,13 +39,13 @@
 
 #ifdef THRUST_IGNORE_DEPRECATED_API
 #  define THRUST_DEPRECATED
-#elif THRUST_CPP_DIALECT >= 2014
+#elif _CCCL_STD_VER >= 2014
 #  define THRUST_DEPRECATED [[deprecated]]
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC
+#elif defined(_CCCL_COMPILER_MSVC)
 #  define THRUST_DEPRECATED __declspec(deprecated)
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG
+#elif defined(_CCCL_COMPILER_CLANG)
 #  define THRUST_DEPRECATED __attribute__((deprecated))
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 #  define THRUST_DEPRECATED __attribute__((deprecated))
 #else
 #  define THRUST_DEPRECATED

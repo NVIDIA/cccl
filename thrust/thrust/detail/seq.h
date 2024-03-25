@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/allocator_aware_execution_policy.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
@@ -29,12 +37,12 @@ struct seq_t : thrust::system::detail::sequential::execution_policy<seq_t>,
   thrust::detail::allocator_aware_execution_policy<
     thrust::system::detail::sequential::execution_policy>
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr seq_t() : thrust::system::detail::sequential::execution_policy<seq_t>() {}
 
   // allow any execution_policy to convert to seq_t
   template<typename DerivedPolicy>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   seq_t(const thrust::execution_policy<DerivedPolicy> &)
     : thrust::system::detail::sequential::execution_policy<seq_t>()
   {}

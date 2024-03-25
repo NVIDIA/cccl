@@ -71,9 +71,8 @@ static void even(nvbench::state &state, nvbench::type_list<SampleT, CounterT, Of
   const SampleT lower_level = 0;
   const SampleT upper_level = get_upper_level<SampleT>(num_bins, elements);
 
-  thrust::device_vector<SampleT> input(elements);
+  thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
   thrust::device_vector<CounterT> hist(num_bins);
-  gen(seed_t{}, input, entropy, lower_level, upper_level);
 
   SampleT *d_input      = thrust::raw_pointer_cast(input.data());
   CounterT *d_histogram = thrust::raw_pointer_cast(hist.data());
@@ -111,7 +110,7 @@ static void even(nvbench::state &state, nvbench::type_list<SampleT, CounterT, Of
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::DispatchEven(d_temp_storage,
                              temp_storage_bytes,
                              d_input,
@@ -140,5 +139,5 @@ NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset
   .set_name("base")
   .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
-  .add_int64_axis("Bins", {32, 64, 128, 2048, 2097152})
-  .add_string_axis("Entropy", {"0.201", "0.544", "1.000"});
+  .add_int64_axis("Bins", {32, 128, 2048, 2097152})
+  .add_string_axis("Entropy", {"0.201", "1.000"});

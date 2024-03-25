@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/class_or_enum.h"
 #include "../__concepts/swappable.h"
 #include "../__iterator/concepts.h"
@@ -24,11 +32,7 @@
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 // [iter.cust.swap]
 
@@ -37,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
   template<class _I1, class _I2>
   void iter_swap(_I1, _I2) = delete;
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
   template<class _T1, class _T2>
   concept __unqualified_iter_swap =
     (__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>) &&
@@ -93,11 +97,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
 
   template<class _T1, class _T2>
   _LIBCUDACXX_CONCEPT __moveable_storable = _LIBCUDACXX_FRAGMENT(__moveable_storable_, _T1, _T2);
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
   struct __fn {
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __unqualified_iter_swap<_T1, _T2>)
+    _LIBCUDACXX_REQUIRES( __unqualified_iter_swap<_T1, _T2>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
@@ -106,7 +110,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
     }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __readable_swappable<_T1, _T2>)
+    _LIBCUDACXX_REQUIRES( __readable_swappable<_T1, _T2>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
@@ -115,7 +119,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
     }
 
   _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-    (requires __moveable_storable<_T2, _T1>)
+    _LIBCUDACXX_REQUIRES( __moveable_storable<_T2, _T1>)
     _LIBCUDACXX_INLINE_VISIBILITY
     constexpr void operator()(_T1&& __x, _T2&& __y) const
       noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y))) &&
@@ -135,7 +139,7 @@ inline namespace __cpo {
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<class _I1, class _I2 = _I1>
 concept indirectly_swappable =
   indirectly_readable<_I1> && indirectly_readable<_I2> &&
@@ -160,7 +164,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 
 template<class _I1, class _I2 = _I1>
 _LIBCUDACXX_CONCEPT indirectly_swappable = _LIBCUDACXX_FRAGMENT(__indirectly_swappable_, _I1, _I2);
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 template<class _I1, class _I2 = _I1, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable = false;
@@ -171,6 +175,6 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable<_I1, _I2, __enable_if
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_ITER_SWAP_H

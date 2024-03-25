@@ -23,6 +23,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 
 #include <cuda/std/type_traits>
@@ -32,11 +40,11 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template<typename T> 
+template<typename T>
 struct has_trivial_assign
   : public integral_constant<
-      bool, 
-      (is_pod<T>::value && !is_const<T>::value) 
+      bool,
+      (is_pod<T>::value && !is_const<T>::value)
       || ::cuda::std::is_trivially_copy_assignable<T>::value
     >
 {};

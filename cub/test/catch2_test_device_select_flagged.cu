@@ -27,21 +27,17 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/device_vector.h>
 #include <thrust/count.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
 #include <algorithm>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
 template<class T, class FlagT>
-static thrust::host_vector<T> get_reference(const thrust::device_vector<T>& in, const thrust::device_vector<FlagT>& flags) {
+static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags) {
   struct selector {
     const T* ref_begin      = nullptr;
     const FlagT* flag_begin = nullptr;
@@ -54,8 +50,8 @@ static thrust::host_vector<T> get_reference(const thrust::device_vector<T>& in, 
     }
   };
 
-  thrust::host_vector<T> reference   = in;
-  thrust::host_vector<FlagT> h_flags = flags;
+  c2h::host_vector<T> reference   = in;
+  c2h::host_vector<FlagT> h_flags = flags;
 
   const selector pred{thrust::raw_pointer_cast(reference.data()),
                       thrust::raw_pointer_cast(h_flags.data())};
@@ -64,9 +60,9 @@ static thrust::host_vector<T> get_reference(const thrust::device_vector<T>& in, 
   return reference;
 }
 
-DECLARE_CDP_WRAPPER(cub::DeviceSelect::Flagged, select_flagged);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, select_flagged);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint16_t,
@@ -87,13 +83,13 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
-  thrust::device_vector<int> flags(num_items);
+  constexpr int num_items = 0;
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
+  c2h::device_vector<int> flags(num_items);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -110,14 +106,14 @@ CUB_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]"
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items, 1);
+  c2h::device_vector<int> flags(num_items, 1);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -135,14 +131,14 @@ CUB_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(0);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(0);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items, 0);
+  c2h::device_vector<int> flags(num_items, 0);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -159,20 +155,20 @@ CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  thrust::device_vector<type> reference = in;
+  c2h::device_vector<type> reference = in;
 
   select_flagged(in.begin(),
                  flags.begin(),
@@ -190,17 +186,17 @@ CUB_TEST("DeviceSelect::Flagged is stable", "[device][select_flagged]",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -219,17 +215,17 @@ CUB_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.data(),
@@ -248,18 +244,18 @@ CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]"
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(thrust::raw_pointer_cast(in.data()),
@@ -289,19 +285,19 @@ CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", 
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> iflags(num_items);
+  c2h::device_vector<int> iflags(num_items);
   c2h::gen(CUB_SEED(1), iflags, 0, 1);
 
-  thrust::device_vector<convertible_to_bool> flags = iflags;
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  c2h::device_vector<convertible_to_bool> flags = iflags;
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -320,15 +316,15 @@ CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
   using type = int;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> out(num_items);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(flags, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(flags, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(flags.begin(),
@@ -347,16 +343,16 @@ CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_if]", types)
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
+  c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(),
@@ -373,15 +369,15 @@ CUB_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[d
   using type = int;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
 
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(flags, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(flags, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(flags.begin(),
@@ -412,18 +408,18 @@ CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<convertible_from_T<type>> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<convertible_from_T<type>> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  thrust::device_vector<int> flags(num_items);
+  c2h::device_vector<int> flags(num_items);
   c2h::gen(CUB_SEED(1), flags, 0, 1);
 
-  const int num_selected = static_cast<int>(thrust::count(flags.begin(), flags.end(), 1));
-  const thrust::host_vector<type> reference = get_reference(in, flags);
+  const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
+  const c2h::host_vector<type> reference = get_reference(in, flags);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.data(),

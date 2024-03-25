@@ -2,9 +2,12 @@
 
 source "$(dirname "$0")/build_common.sh"
 
+print_environment_details
+
 ./build_thrust.sh "$@"
 
-ctest --test-dir ${BUILD_DIR} --output-on-failure 
+PRESET="thrust-cpp$CXX_STANDARD"
 
-echo "Thrust test complete"
+test_preset "Thrust" ${PRESET}
 
+print_time_summary

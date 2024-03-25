@@ -10,8 +10,6 @@
 #  include <thrust/system/cuda/detail/par.h>
 #endif
 
-#if THRUST_CPP_DIALECT >= 2011
-
 template<typename T>
 struct test_allocator_t
 {
@@ -179,11 +177,4 @@ SimpleUnitTest<
     >
 > TestDependencyAttachmentInstance;
 
-#else // C++11
 
-void TestDummy()
-{
-}
-DECLARE_UNITTEST(TestDummy);
-
-#endif // C++11

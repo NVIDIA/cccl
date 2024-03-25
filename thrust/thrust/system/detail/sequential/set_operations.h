@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/sequential/execution_policy.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/function.h>
@@ -35,13 +43,13 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator set_difference(sequential::execution_policy<DerivedPolicy> &exec,
                                 InputIterator1 first1,
                                 InputIterator1 last1,
@@ -79,13 +87,13 @@ __host__ __device__
 } // end set_difference()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator set_intersection(sequential::execution_policy<DerivedPolicy> &,
                                   InputIterator1 first1,
                                   InputIterator1 last1,
@@ -123,13 +131,13 @@ __host__ __device__
 } // end set_intersection()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator set_symmetric_difference(sequential::execution_policy<DerivedPolicy> &exec,
                                           InputIterator1 first1,
                                           InputIterator1 last1,
@@ -169,13 +177,13 @@ __host__ __device__
 } // end set_symmetric_difference()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator set_union(sequential::execution_policy<DerivedPolicy> &exec,
                            InputIterator1 first1,
                            InputIterator1 last1,

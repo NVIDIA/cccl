@@ -25,6 +25,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/execution_policy.h>
@@ -46,15 +54,15 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::true_type>
     typedef Iterator iterator_type;
     Iterator first, last;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     _trivial_sequence(thrust::execution_policy<DerivedPolicy> &, Iterator _first, Iterator _last) : first(_first), last(_last)
     {
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator_type begin() { return first; }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator_type end()   { return last; }
 };
 
@@ -64,19 +72,19 @@ struct _trivial_sequence<Iterator, DerivedPolicy, thrust::detail::false_type>
 {
     typedef typename thrust::iterator_value<Iterator>::type iterator_value;
     typedef typename thrust::detail::temporary_array<iterator_value, DerivedPolicy>::iterator iterator_type;
-    
+
     thrust::detail::temporary_array<iterator_value, DerivedPolicy> buffer;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     _trivial_sequence(thrust::execution_policy<DerivedPolicy> &exec, Iterator first, Iterator last)
       : buffer(exec, first, last)
     {
     }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator_type begin() { return buffer.begin(); }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     iterator_type end()   { return buffer.end(); }
 };
 
@@ -86,7 +94,7 @@ struct trivial_sequence
 {
     typedef _trivial_sequence<Iterator, DerivedPolicy, typename thrust::is_contiguous_iterator<Iterator>::type> super_t;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     trivial_sequence(thrust::execution_policy<DerivedPolicy> &exec, Iterator first, Iterator last) : super_t(exec, first, last) { }
 };
 

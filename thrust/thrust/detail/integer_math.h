@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_deduction.h>
 
 #include <nv/target>
@@ -28,7 +36,7 @@ namespace detail
 {
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer clz(Integer x)
 {
   Integer result;
@@ -53,21 +61,21 @@ Integer clz(Integer x)
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 bool is_odd(Integer x)
 {
   return 1 & x;
 }
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2(Integer x)
 {
   Integer num_bits = 8 * sizeof(Integer);
@@ -78,7 +86,7 @@ Integer log2(Integer x)
 
 
 template <typename Integer>
-__host__ __device__ __thrust_forceinline__
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 Integer log2_ri(Integer x)
 {
   Integer result = log2(x);
@@ -93,59 +101,33 @@ Integer log2_ri(Integer x)
 // x/y rounding towards +infinity for integers
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 // FIXME: Should use common_type.
 auto divide_ri(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
-#else
-// FIXME: Should use common_type.
-Integer0 divide_ri(Integer0 const x, Integer1 const y)
-{
-  return (x + (y - 1)) / y;
-}
-#endif
+
 
 // x/y rounding towards zero for integers.
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto divide_rz(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(x / y)
-#else
-// FIXME: Should use common_type.
-Integer0 divide_rz(Integer0 const x, Integer1 const y)
-{
-  return x / y;
-}
-#endif
+
 
 // Round x towards infinity to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto round_i(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_ri(x, y))
-#else
-Integer0 round_i(Integer0 const x, Integer1 const y)
-{
-  return y * divide_ri(x, y);
-}
-#endif
+
 
 // Round x towards 0 to the next multiple of y.
 template <typename Integer0, typename Integer1>
-__host__ __device__ __thrust_forceinline__
-#if THRUST_CPP_DIALECT >= 2011
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
 auto round_z(Integer0 const x, Integer1 const y)
 THRUST_DECLTYPE_RETURNS(y * divide_rz(x, y))
-#else
-Integer0 round_z(Integer0 const x, Integer1 const y)
-{
-  return y * divide_rz(x, y);
-}
-#endif
+
 
 } // end detail
 

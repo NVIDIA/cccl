@@ -1,7 +1,7 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
  * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *     * Redistributions of source code must retain the above copyright
@@ -12,7 +12,7 @@
  *     * Neither the name of the NVIDIA CORPORATION nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,37 +27,50 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking across thread block data.
+ * @file
+ * cub::BlockRakingLayout provides a conflict-free shared memory layout abstraction for warp-raking
+ * across thread block data.
  */
-
 
 #pragma once
 
-#include "../config.cuh"
-#include "../util_type.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 
-/**
- * \brief BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.    ![](raking.png)
- * \ingroup BlockModule
- *
- * \par Overview
- * This type facilitates a shared memory usage pattern where a block of CUDA
- * threads places elements into shared memory and then reduces the active
- * parallelism to one "raking" warp of threads for serially aggregating consecutive
- * sequences of shared items.  Padding is inserted to eliminate bank conflicts
- * (for most data types).
- *
- * \tparam T                        The data type to be exchanged.
- * \tparam BLOCK_THREADS            The thread block size in threads.
- * \tparam LEGACY_PTX_ARCH          <b>[optional]</b> Unused.
- */
-template <
-    typename    T,
-    int         BLOCK_THREADS,
-    int         LEGACY_PTX_ARCH = 0>
+//! @rst
+//! BlockRakingLayout provides a conflict-free shared memory layout abstraction for 1D raking across thread block data.
+//!
+//! Overview
+//! ++++++++++++++++++++++++++
+//!
+//! This type facilitates a shared memory usage pattern where a block of CUDA
+//! threads places elements into shared memory and then reduces the active
+//! parallelism to one "raking" warp of threads for serially aggregating consecutive
+//! sequences of shared items.  Padding is inserted to eliminate bank conflicts
+//! (for most data types).
+//!
+//! @endrst
+//!
+//! @tparam T
+//!   The data type to be exchanged.
+//!
+//! @tparam BLOCK_THREADS
+//!   The thread block size in threads.
+//!
+//! @tparam LEGACY_PTX_ARCH
+//!   **[optional]** Unused.
+template <typename T, int BLOCK_THREADS, int LEGACY_PTX_ARCH = 0>
 struct BlockRakingLayout
 {
     //---------------------------------------------------------------------
@@ -98,7 +111,7 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Shared memory storage type
+     * @brief Shared memory storage type
      */
     struct __align__(16) _TempStorage
     {
@@ -110,9 +123,9 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to place data into the grid
+     * @brief Returns the location for the calling thread to place data into the grid
      */
-    static __device__ __forceinline__ T* PlacementPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {
@@ -131,9 +144,9 @@ struct BlockRakingLayout
 
 
     /**
-     * \brief Returns the location for the calling thread to begin sequential raking
+     * @brief Returns the location for the calling thread to begin sequential raking
      */
-    static __device__ __forceinline__ T* RakingPtr(
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(
         TempStorage &temp_storage,
         unsigned int linear_tid)
     {

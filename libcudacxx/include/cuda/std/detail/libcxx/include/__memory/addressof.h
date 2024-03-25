@@ -15,9 +15,13 @@
 #include <__config>
 #endif //__cuda_std__
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -26,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_ADDRESSOF)
 
 template <class _Tp>
-inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _CCCL_CONSTEXPR_CXX14
 _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY
 _Tp*
 addressof(_Tp& __x) noexcept

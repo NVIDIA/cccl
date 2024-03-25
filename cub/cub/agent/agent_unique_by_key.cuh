@@ -26,20 +26,30 @@
  ******************************************************************************/
 
 /**
- * \file
+ * @file
  * cub::AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide unique-by-key.
  */
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/block/block_discontinuity.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/thread/thread_operators.cuh>
+
 #include <iterator>
 #include <type_traits>
-
-#include "../thread/thread_operators.cuh"
-#include "../block/block_load.cuh"
-#include "../block/block_scan.cuh"
-#include "../agent/single_pass_scan_operators.cuh"
-#include "../block/block_discontinuity.cuh"
 
 CUB_NAMESPACE_BEGIN
 
@@ -51,8 +61,8 @@ CUB_NAMESPACE_BEGIN
 /**
  * Parameterizable tuning policy type for AgentUniqueByKey
  *
- * @tparam DelayConstructorT 
- *   Implementation detail, do not specify directly, requirements on the 
+ * @tparam DelayConstructorT
+ *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
 template <int                     _BLOCK_THREADS,
@@ -68,11 +78,11 @@ struct AgentUniqueByKeyPolicy
         BLOCK_THREADS    = _BLOCK_THREADS,
         ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
     };
-    static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-    static const cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
-    static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+    static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+    static constexpr cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
+    static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 
-    struct detail 
+    struct detail
     {
         using delay_constructor_t = DelayConstructorT;
     };
@@ -85,18 +95,38 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-
 /**
- * \brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating in device-wide unique-by-key
+ * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
+ * in device-wide unique-by-key
+ *
+ * @tparam AgentUniqueByKeyPolicyT
+ *   Parameterized AgentUniqueByKeyPolicy tuning policy type
+ *
+ * @tparam KeyInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam ValueInputIteratorT
+ *   Random-access input iterator type for values
+ *
+ * @tparam KeyOutputIteratorT
+ *   Random-access output iterator type for keys
+ *
+ * @tparam ValueOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam EqualityOpT
+ *   Equality operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentUniqueByKeyPolicyT,           ///< Parameterized AgentUniqueByKeyPolicy tuning policy type
-    typename KeyInputIteratorT,                 ///< Random-access input iterator type for keys
-    typename ValueInputIteratorT,               ///< Random-access input iterator type for values
-    typename KeyOutputIteratorT,                ///< Random-access output iterator type for keys
-    typename ValueOutputIteratorT,              ///< Random-access output iterator type for values
-    typename EqualityOpT,                       ///< Equality operator type
-    typename OffsetT>                           ///< Signed integer type for global offsets
+template <typename AgentUniqueByKeyPolicyT,
+          typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT>
 struct AgentUniqueByKey
 {
     //---------------------------------------------------------------------
@@ -202,7 +232,7 @@ struct AgentUniqueByKey
     //---------------------------------------------------------------------
 
     // Constructor
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     AgentUniqueByKey(
         TempStorage                  &temp_storage_,
         WrappedKeyInputIteratorT     d_keys_in_,
@@ -211,7 +241,7 @@ struct AgentUniqueByKey
         ValueOutputIteratorT         d_values_out_,
         EqualityOpT                  equality_op_,
         OffsetT                      num_items_)
-    : 
+    :
         temp_storage(temp_storage_.Alias()),
         d_keys_in(d_keys_in_),
         d_values_in(d_values_in_),
@@ -230,12 +260,12 @@ struct AgentUniqueByKey
     struct KeyTagT {};
     struct ValueTagT {};
 
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     KeyExchangeT &GetShared(KeyTagT)
     {
         return temp_storage.shared_keys.Alias();
     }
-    __device__ __forceinline__
+    _CCCL_DEVICE _CCCL_FORCEINLINE
     ValueExchangeT &GetShared(ValueTagT)
     {
         return temp_storage.shared_values.Alias();
@@ -248,7 +278,7 @@ struct AgentUniqueByKey
     template <typename Tag,
               typename OutputIt,
               typename T>
-    __device__ __forceinline__ void Scatter(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
         Tag      tag,
         OutputIt items_out,
         T (&items)[ITEMS_PER_THREAD],
@@ -272,6 +302,9 @@ struct AgentUniqueByKey
 
         CTA_SYNC();
 
+        // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+        // types
+        #pragma unroll 1
         for (int item = threadIdx.x;
              item < num_tile_selections;
              item += BLOCK_THREADS)
@@ -287,15 +320,24 @@ struct AgentUniqueByKey
     // Cooperatively scan a device-wide sequence of tiles with other CTAs
     //---------------------------------------------------------------------
 
-
     /**
-     * Process first tile of input (dynamic chained scan).  Returns the running count of selections (including this tile)
+     * @brief Process first tile of input (dynamic chained scan).
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @return The running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeFirstTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeFirstTile(int num_tile_items,
+                                                        OffsetT tile_offset,
+                                                        ScanTileStateT &tile_state)
     {
         KeyT        keys[ITEMS_PER_THREAD];
         OffsetT     selection_flags[ITEMS_PER_THREAD];
@@ -403,14 +445,27 @@ struct AgentUniqueByKey
     }
 
     /**
-     * Process subsequent tile of input (dynamic chained scan).  Returns the running count of selections (including this tile)
+     * @brief Process subsequent tile of input (dynamic chained scan).
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @return Returns the running count of selections (including this tile)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeSubsequentTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(int num_tile_items,
+                                                             int tile_idx,
+                                                             OffsetT tile_offset,
+                                                             ScanTileStateT &tile_state)
     {
         KeyT        keys[ITEMS_PER_THREAD];
         OffsetT     selection_flags[ITEMS_PER_THREAD];
@@ -519,16 +574,24 @@ struct AgentUniqueByKey
         return num_selections;
     }
 
-
     /**
-     * Process a tile of input
+     * @brief Process a tile of input
+     *
+     * @param num_tile_items
+     *   Number of input items comprising this tile
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ OffsetT ConsumeTile(
-        int                 num_tile_items,     ///< Number of input items comprising this tile
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+    ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
     {
         OffsetT num_selections;
         if (tile_idx == 0)
@@ -544,17 +607,31 @@ struct AgentUniqueByKey
     }
 
     /**
-     * Scan tiles of items as part of a dynamic chained scan
+     * @brief Scan tiles of items as part of a dynamic chained scan
+     *
+     * @param num_tiles
+     *   Total number of input tiles
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @param d_num_selected_out
+     *   Output total number selection_flags
+     *
+     * @tparam NumSelectedIteratorT
+     *   Output iterator type for recording number of items selection_flags
+     *
      */
-    template <typename NumSelectedIteratorT>        ///< Output iterator type for recording number of items selection_flags
-    __device__ __forceinline__ void ConsumeRange(
-        int                     num_tiles,          ///< Total number of input tiles
-        ScanTileStateT&         tile_state,         ///< Global tile state descriptor
-        NumSelectedIteratorT    d_num_selected_out) ///< Output total number selection_flags
+    template <typename NumSelectedIteratorT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(int num_tiles,
+                                                 ScanTileStateT &tile_state,
+                                                 NumSelectedIteratorT d_num_selected_out)
     {
         // Blocks are launched in increasing order, so just assign one tile per block
         int     tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
-        OffsetT tile_offset     = tile_idx * ITEMS_PER_TILE;                // Global offset for the current tile
+
+        // Global offset for the current tile
+        OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(ITEMS_PER_TILE);
 
         if (tile_idx < num_tiles - 1)
         {
@@ -567,10 +644,10 @@ struct AgentUniqueByKey
         {
             int  num_remaining  = static_cast<int>(num_items - tile_offset);
             OffsetT num_selections = ConsumeTile<true>(num_remaining,
-                                                       tile_idx,                                    
+                                                       tile_idx,
                                                        tile_offset,
                                                        tile_state);
-            if (threadIdx.x == 0)                                                               
+            if (threadIdx.x == 0)
             {
                 *d_num_selected_out = num_selections;
             }

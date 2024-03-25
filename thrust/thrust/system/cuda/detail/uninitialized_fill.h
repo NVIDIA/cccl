@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <iterator>
 #include <thrust/distance.h>
@@ -73,7 +81,7 @@ template <class Derived,
           class Iterator,
           class Size,
           class T>
-Iterator __host__ __device__
+Iterator _CCCL_HOST_DEVICE
 uninitialized_fill_n(execution_policy<Derived>& policy,
                      Iterator                   first,
                      Size                       count,
@@ -91,7 +99,7 @@ uninitialized_fill_n(execution_policy<Derived>& policy,
 template <class Derived,
           class Iterator,
           class T>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 uninitialized_fill(execution_policy<Derived>& policy,
                    Iterator                   first,
                    Iterator                   last,

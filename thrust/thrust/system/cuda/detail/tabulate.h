@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/distance.h>
 #include <thrust/system/cuda/config.h>
@@ -46,11 +54,11 @@ namespace __tabulate {
     Iterator items;
     TabulateOp op;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     functor(Iterator items_, TabulateOp op_)
         : items(items_), op(op_) {}
 
-    void __device__ operator()(Size idx)
+    void _CCCL_DEVICE operator()(Size idx)
     {
       items[idx] = op(idx);
     }
@@ -61,7 +69,7 @@ namespace __tabulate {
 template <class Derived,
           class Iterator,
           class TabulateOp>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 tabulate(execution_policy<Derived>& policy,
          Iterator                   first,
          Iterator                   last,

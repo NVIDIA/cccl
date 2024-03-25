@@ -54,9 +54,19 @@
 #ifndef _CUDA_ANNOTATED_PTR
 #define _CUDA_ANNOTATED_PTR
 
-#include <cuda/std/cstdint>
-#include <cuda/barrier>
+#include "__cccl_config"
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "barrier"
+#include "discard_memory"
+#include "std/cstdint"
 #include "std/detail/__access_property"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -171,25 +181,6 @@ void apply_access_property(const volatile void* __ptr, const _Shape __shape, acc
   ))
 }
 
-inline
-_LIBCUDACXX_HOST_DEVICE
-void discard_memory(volatile void* __ptr, std::size_t __nbytes) noexcept {
-  NV_IF_TARGET(NV_PROVIDES_SM_80,(
-    if (!__isGlobal((void*)__ptr)) return;
-
-    char* __p = reinterpret_cast<char*>(const_cast<void*>(__ptr));
-    static constexpr std::size_t _LINE_SIZE = 128;
-    std::size_t __start = (reinterpret_cast<std::uintptr_t>(__p) % _LINE_SIZE) ? 1 : 0;
-    std::size_t __end = (reinterpret_cast<std::uintptr_t>(__p + __nbytes) % _LINE_SIZE) ? __nbytes - _LINE_SIZE : __nbytes;
-    __end /= _LINE_SIZE;
-
-    //Trim the first block and last block if they're not 128 bytes aligned
-    for (std::size_t __i = __start; __i < __end; __i += _LINE_SIZE) {
-      asm volatile ("discard.global.L2 [%0], 128;" ::"l"(__p + (__i * _LINE_SIZE)) :);
-    }
-  ))
-}
-
 template<class _Tp, class _Property>
 class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
   public:
@@ -238,7 +229,7 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
     constexpr annotated_ptr() noexcept = default;
     constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
     // No constexpr for c11 as the method can't be const
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+    _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
     _LIBCUDACXX_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)

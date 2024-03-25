@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/transform_output_iterator.inl>
 
 THRUST_NAMESPACE_BEGIN
@@ -38,7 +46,7 @@ THRUST_NAMESPACE_BEGIN
 /*! \p transform_output_iterator is a special kind of output iterator which
  * transforms a value written upon dereference. This iterator is useful
  * for transforming an output from algorithms without explicitly storing the
- * intermediate result in the memory and applying subsequent transformation, 
+ * intermediate result in the memory and applying subsequent transformation,
  * thereby avoiding wasting memory capacity and bandwidth.
  * Using \p transform_iterator facilitates kernel fusion by deferring execution
  * of transformation until the value is written while saving both memory
@@ -61,7 +69,7 @@ THRUST_NAMESPACE_BEGIN
  *      return sqrtf(x);
  *    }
  *  };
- *  
+ *
  *  int main()
  *  {
  *    thrust::device_vector<float> v(4);
@@ -69,17 +77,17 @@ THRUST_NAMESPACE_BEGIN
  *    typedef thrust::device_vector<float>::iterator FloatIterator;
  *    thrust::transform_output_iterator<square_root, FloatIterator> iter(v.begin(), square_root());
  *
- *    iter[0] =  1.0f;    // stores sqrtf( 1.0f) 
+ *    iter[0] =  1.0f;    // stores sqrtf( 1.0f)
  *    iter[1] =  4.0f;    // stores sqrtf( 4.0f)
  *    iter[2] =  9.0f;    // stores sqrtf( 9.0f)
  *    iter[3] = 16.0f;    // stores sqrtf(16.0f)
  *    // iter[4] is an out-of-bounds error
- *                                                                                           
+ *
  *    v[0]; // returns 1.0f;
  *    v[1]; // returns 2.0f;
  *    v[2]; // returns 3.0f;
  *    v[3]; // returns 4.0f;
- *                                                                                           
+ *
  *  }
  *  \endcode
  *
@@ -109,12 +117,12 @@ template <typename UnaryFunction, typename OutputIterator>
   /*! This constructor takes as argument an \c OutputIterator and an \c
    * UnaryFunction and copies them to a new \p transform_output_iterator
    *
-   * \param out An \c OutputIterator pointing to the output range whereto the result of 
+   * \param out An \c OutputIterator pointing to the output range whereto the result of
    *            \p transform_output_iterator's \c UnaryFunction will be written.
    * \param fun An \c UnaryFunction used to transform the objects assigned to
    *            this \p transform_output_iterator.
    */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     transform_output_iterator(OutputIterator const& out, UnaryFunction fun) : super_t(out), fun(fun)
     {
     }
@@ -123,7 +131,7 @@ template <typename UnaryFunction, typename OutputIterator>
      */
   private:
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename super_t::reference dereference() const
     {
       return detail::transform_output_iterator_proxy<
@@ -148,7 +156,7 @@ template <typename UnaryFunction, typename OutputIterator>
  */
 template <typename UnaryFunction, typename OutputIterator>
 transform_output_iterator<UnaryFunction, OutputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 make_transform_output_iterator(OutputIterator out, UnaryFunction fun)
 {
     return transform_output_iterator<UnaryFunction, OutputIterator>(out, fun);

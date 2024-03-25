@@ -28,17 +28,26 @@
  ******************************************************************************/
 
 /**
- * \file
- * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector multiplication (SpMV).
+ * @file
+ * cub::DeviceSpmv provides device-wide parallel operations for performing sparse-matrix * vector
+ * multiplication (SpMV).
  */
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/agent_segment_fixup.cuh>
 #include <cub/agent/agent_spmv_orig.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/config.cuh>
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
@@ -62,52 +71,73 @@ CUB_NAMESPACE_BEGIN
  *****************************************************************************/
 
 /**
- * Spmv search kernel. Identifies merge path starting coordinates for each tile.
+ * @brief Spmv search kernel. Identifies merge path starting coordinates for each tile.
+ *
+ * @tparam AgentSpmvPolicyT
+ *   Parameterized SpmvPolicy tuning policy type
+ *
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ *
+ * @param[in] spmv_params
+ *   SpMV input parameter bundle
  */
-template <
-    typename    AgentSpmvPolicyT,           ///< Parameterized SpmvPolicy tuning policy type
-    typename    ValueT,                     ///< Matrix and vector value type
-    typename    OffsetT>                    ///< Signed integer type for sequence offsets
-__global__ void DeviceSpmv1ColKernel(
-    SpmvParams<ValueT, OffsetT> spmv_params)                ///< [in] SpMV input parameter bundle
+template <typename AgentSpmvPolicyT, typename ValueT, typename OffsetT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmv1ColKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
-    typedef CacheModifiedInputIterator<
-            AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER,
-            ValueT,
-            OffsetT>
-        VectorValueIteratorT;
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
+    VectorValueIteratorT;
 
-    VectorValueIteratorT wrapped_vector_x(spmv_params.d_vector_x);
+  VectorValueIteratorT wrapped_vector_x(spmv_params.d_vector_x);
 
-    int row_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
-    if (row_idx < spmv_params.num_rows)
+  int row_idx = (blockIdx.x * blockDim.x) + threadIdx.x;
+  if (row_idx < spmv_params.num_rows)
+  {
+    OffsetT end_nonzero_idx = spmv_params.d_row_end_offsets[row_idx];
+    OffsetT nonzero_idx     = spmv_params.d_row_end_offsets[row_idx - 1];
+
+    ValueT value = 0.0;
+    if (end_nonzero_idx != nonzero_idx)
     {
-        OffsetT     end_nonzero_idx = spmv_params.d_row_end_offsets[row_idx];
-        OffsetT     nonzero_idx = spmv_params.d_row_end_offsets[row_idx - 1];
-
-        ValueT value = 0.0;
-        if (end_nonzero_idx != nonzero_idx)
-        {
-            value = spmv_params.d_values[nonzero_idx] * wrapped_vector_x[spmv_params.d_column_indices[nonzero_idx]];
-        }
-
-        spmv_params.d_vector_y[row_idx] = value;
+      value = spmv_params.d_values[nonzero_idx] *
+              wrapped_vector_x[spmv_params.d_column_indices[nonzero_idx]];
     }
+
+    spmv_params.d_vector_y[row_idx] = value;
+  }
 }
 
-
 /**
- * Spmv search kernel. Identifies merge path starting coordinates for each tile.
+ * @brief Spmv search kernel. Identifies merge path starting coordinates for each tile.
+ *
+ * @tparam SpmvPolicyT
+ *   Parameterized SpmvPolicy tuning policy type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ *
+ * @tparam CoordinateT
+ *   Merge path coordinate type
+ *
+ * @tparam SpmvParamsT
+ *   SpmvParams type
+ *
+ * @param[in] num_merge_tiles
+ *   Number of SpMV merge tiles (spmv grid size)
+ *
+ * @param[out] d_tile_coordinates
+ *   Pointer to the temporary array of tile starting coordinates
+ *
+ * @param[in] spmv_params
+ *   SpMV input parameter bundle
  */
-template <
-    typename    SpmvPolicyT,                    ///< Parameterized SpmvPolicy tuning policy type
-    typename    OffsetT,                        ///< Signed integer type for sequence offsets
-    typename    CoordinateT,                    ///< Merge path coordinate type
-    typename    SpmvParamsT>                    ///< SpmvParams type
-__global__ void DeviceSpmvSearchKernel(
-    int             num_merge_tiles,            ///< [in] Number of SpMV merge tiles (spmv grid size)
-    CoordinateT*    d_tile_coordinates,         ///< [out] Pointer to the temporary array of tile starting coordinates
-    SpmvParamsT     spmv_params)                ///< [in] SpMV input parameter bundle
+template <typename SpmvPolicyT, typename OffsetT, typename CoordinateT, typename SpmvParamsT>
+CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSpmvSearchKernel(int num_merge_tiles,
+                                                         CoordinateT *d_tile_coordinates,
+                                                         SpmvParamsT spmv_params)
 {
     /// Constants
     enum
@@ -145,26 +175,62 @@ __global__ void DeviceSpmvSearchKernel(
     }
 }
 
-
 /**
- * Spmv agent entry point
+ * @brief Spmv agent entry point
+ *
+ * @tparam SpmvPolicyT
+ *   Parameterized SpmvPolicy tuning policy type
+ *
+ * @tparam ScanTileStateT
+ *   Tile status interface type
+ *
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ *
+ * @tparam CoordinateT
+ *   Merge path coordinate type
+ *
+ * @tparam HAS_ALPHA
+ *   Whether the input parameter Alpha is 1
+ *
+ * @tparam HAS_BETA
+ *   Whether the input parameter Beta is 0
+ *
+ * @param[in] spmv_params
+ *   SpMV input parameter bundle
+ *
+ * @param[in] d_tile_coordinates
+ *   Pointer to the temporary array of tile starting coordinates
+ *
+ * @param[out] d_tile_carry_pairs
+ *   Pointer to the temporary array carry-out dot product row-ids, one per block
+ *
+ * @param[in] num_tiles
+ *   Number of merge tiles
+ *
+ * @param[in] tile_state
+ *   Tile status interface for fixup reduce-by-key kernel
+ *
+ * @param[in] num_segment_fixup_tiles
+ *   Number of reduce-by-key tiles (fixup grid size)
  */
-template <
-    typename        SpmvPolicyT,                ///< Parameterized SpmvPolicy tuning policy type
-    typename        ScanTileStateT,             ///< Tile status interface type
-    typename        ValueT,                     ///< Matrix and vector value type
-    typename        OffsetT,                    ///< Signed integer type for sequence offsets
-    typename        CoordinateT,                ///< Merge path coordinate type
-    bool            HAS_ALPHA,                  ///< Whether the input parameter Alpha is 1
-    bool            HAS_BETA>                   ///< Whether the input parameter Beta is 0
-__launch_bounds__ (int(SpmvPolicyT::BLOCK_THREADS))
-__global__ void DeviceSpmvKernel(
-    SpmvParams<ValueT, OffsetT>     spmv_params,                ///< [in] SpMV input parameter bundle
-    CoordinateT*                    d_tile_coordinates,         ///< [in] Pointer to the temporary array of tile starting coordinates
-    KeyValuePair<OffsetT,ValueT>*   d_tile_carry_pairs,         ///< [out] Pointer to the temporary array carry-out dot product row-ids, one per block
-    int                             num_tiles,                  ///< [in] Number of merge tiles
-    ScanTileStateT                  tile_state,                 ///< [in] Tile status interface for fixup reduce-by-key kernel
-    int                             num_segment_fixup_tiles)    ///< [in] Number of reduce-by-key tiles (fixup grid size)
+template <typename SpmvPolicyT,
+          typename ScanTileStateT,
+          typename ValueT,
+          typename OffsetT,
+          typename CoordinateT,
+          bool HAS_ALPHA,
+          bool HAS_BETA>
+__launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceSpmvKernel(SpmvParams<ValueT, OffsetT> spmv_params,
+                        CoordinateT *d_tile_coordinates,
+                        KeyValuePair<OffsetT, ValueT> *d_tile_carry_pairs,
+                        int num_tiles,
+                        ScanTileStateT tile_state,
+                        int num_segment_fixup_tiles)
 {
     // Spmv agent type specialization
     typedef AgentSpmv<
@@ -188,10 +254,19 @@ __global__ void DeviceSpmvKernel(
 
 }
 
-template <typename ValueT,  ///< Matrix and vector value type
-          typename OffsetT, ///< Signed integer type for sequence offsets
-          bool HAS_BETA>    ///< Whether the input parameter Beta is 0
-__global__ void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
+/**
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for sequence offsets
+ *
+ * @tparam HAS_BETA
+ *   Whether the input parameter Beta is 0
+ */
+template <typename ValueT, typename OffsetT, bool HAS_BETA>
+CUB_DETAIL_KERNEL_ATTRIBUTES void
+DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
 {
     const int row = static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);
 
@@ -199,9 +274,9 @@ __global__ void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_par
     {
         ValueT result = 0.0;
 
-        CUB_IF_CONSTEXPR(HAS_BETA) 
+        _CCCL_IF_CONSTEXPR(HAS_BETA)
         {
-            result += spmv_params.beta * spmv_params.d_vector_y[row]; 
+            result += spmv_params.beta * spmv_params.d_vector_y[row];
         }
 
         spmv_params.d_vector_y[row] = result;
@@ -209,21 +284,49 @@ __global__ void DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_par
 }
 
 /**
- * Multi-block reduce-by-key sweep kernel entry point
+ * @brief Multi-block reduce-by-key sweep kernel entry point
+ *
+ * @tparam AgentSegmentFixupPolicyT
+ *   Parameterized AgentSegmentFixupPolicy tuning policy type
+ *
+ * @tparam PairsInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam AggregatesOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
+ *
+ * @tparam ScanTileStateT
+ *   Tile status interface type
+ *
+ * @param[in] d_pairs_in
+ *   Pointer to the array carry-out dot product row-ids, one per spmv block
+ *
+ * @param[in,out] d_aggregates_out
+ *   Output value aggregates
+ *
+ * @param[in] num_items
+ *   Total number of items to select from
+ *
+ * @param[in] num_tiles
+ *   Total number of tiles for the entire problem
+ *
+ * @param[in] tile_state
+ *   Tile status interface
  */
-template <
-    typename    AgentSegmentFixupPolicyT,       ///< Parameterized AgentSegmentFixupPolicy tuning policy type
-    typename    PairsInputIteratorT,            ///< Random-access input iterator type for keys
-    typename    AggregatesOutputIteratorT,      ///< Random-access output iterator type for values
-    typename    OffsetT,                        ///< Signed integer type for global offsets
-    typename    ScanTileStateT>                 ///< Tile status interface type
-__launch_bounds__ (int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
-__global__ void DeviceSegmentFixupKernel(
-    PairsInputIteratorT         d_pairs_in,         ///< [in] Pointer to the array carry-out dot product row-ids, one per spmv block
-    AggregatesOutputIteratorT   d_aggregates_out,   ///< [in,out] Output value aggregates
-    OffsetT                     num_items,          ///< [in] Total number of items to select from
-    int                         num_tiles,          ///< [in] Total number of tiles for the entire problem
-    ScanTileStateT              tile_state)         ///< [in] Tile status interface
+template <typename AgentSegmentFixupPolicyT,
+          typename PairsInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename OffsetT,
+          typename ScanTileStateT>
+__launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES
+  void DeviceSegmentFixupKernel(PairsInputIteratorT d_pairs_in,
+                                AggregatesOutputIteratorT d_aggregates_out,
+                                OffsetT num_items,
+                                int num_tiles,
+                                ScanTileStateT tile_state)
 {
     // Thread block type for reducing tiles of value segments
     typedef AgentSegmentFixup<
@@ -251,11 +354,15 @@ __global__ void DeviceSegmentFixupKernel(
  ******************************************************************************/
 
 /**
- * Utility class for dispatching the appropriately-tuned kernels for DeviceSpmv
+ * @brief Utility class for dispatching the appropriately-tuned kernels for DeviceSpmv
+ *
+ * @tparam ValueT
+ *   Matrix and vector value type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename    ValueT,                     ///< Matrix and vector value type
-    typename    OffsetT>                    ///< Signed integer type for global offsets
+template <typename ValueT, typename OffsetT>
 struct DispatchSpmv
 {
     //---------------------------------------------------------------------
@@ -419,7 +526,7 @@ struct DispatchSpmv
      * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
      */
     template <typename KernelConfig>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static void InitConfigs(
         int             ptx_version,
         KernelConfig    &spmv_config,
@@ -465,7 +572,7 @@ struct DispatchSpmv
         int tile_items;
 
         template <typename PolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
+        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
         void Init()
         {
             block_threads       = PolicyT::BLOCK_THREADS;
@@ -485,26 +592,74 @@ struct DispatchSpmv
      *
      * If the input is larger than a single tile, this method uses two-passes of
      * kernel invocations.
+     *
+     * @tparam Spmv1ColKernelT
+     *   Function type of cub::DeviceSpmv1ColKernel
+     *
+     * @tparam SpmvSearchKernelT
+     *   Function type of cub::AgentSpmvSearchKernel
+     *
+     * @tparam SpmvKernelT
+     *   Function type of cub::AgentSpmvKernel
+     *
+     * @tparam SegmentFixupKernelT
+     *   Function type of cub::DeviceSegmentFixupKernelT
+     *
+     * @tparam SpmvEmptyMatrixKernelT
+     *   Function type of cub::DeviceSpmvEmptyMatrixKernel
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to
+     *   `temp_storage_bytes` and no work is done.
+     *
+     * @param[in,out] temp_storage_bytes
+     *   Reference to size in bytes of \p d_temp_storage allocation
+     *
+     * @paramSpMV spmv_params
+     *   input parameter bundle
+     *
+     * @param[in] stream
+     *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
+     *
+     * @param[in] spmv_1col_kernel
+     *   Kernel function pointer to parameterization of DeviceSpmv1ColKernel
+     *
+     * @param[in] spmv_search_kernel
+     *   Kernel function pointer to parameterization of AgentSpmvSearchKernel
+     *
+     * @param[in] spmv_kernel
+     *   Kernel function pointer to parameterization of AgentSpmvKernel
+     *
+     * @param[in] segment_fixup_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceSegmentFixupKernel
+     *
+     * @param[in] spmv_empty_matrix_kernel
+     *   Kernel function pointer to parameterization of cub::DeviceSpmvEmptyMatrixKernel
+     *
+     * @param[in] spmv_config
+     *   Dispatch parameters that match the policy that @p spmv_kernel was compiled for
+     *
+     * @param[in] segment_fixup_config
+     *   Dispatch parameters that match the policy that @p segment_fixup_kernel was compiled for
      */
-    template <
-        typename                Spmv1ColKernelT,                    ///< Function type of cub::DeviceSpmv1ColKernel
-        typename                SpmvSearchKernelT,                  ///< Function type of cub::AgentSpmvSearchKernel
-        typename                SpmvKernelT,                        ///< Function type of cub::AgentSpmvKernel
-        typename                SegmentFixupKernelT,                ///< Function type of cub::DeviceSegmentFixupKernelT
-        typename                SpmvEmptyMatrixKernelT>             ///< Function type of cub::DeviceSpmvEmptyMatrixKernel
-    CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
-        void*                   d_temp_storage,                     ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t&                 temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        SpmvParamsT&            spmv_params,                        ///< SpMV input parameter bundle
-        cudaStream_t            stream,                             ///< [in] CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
-        Spmv1ColKernelT         spmv_1col_kernel,                   ///< [in] Kernel function pointer to parameterization of DeviceSpmv1ColKernel
-        SpmvSearchKernelT       spmv_search_kernel,                 ///< [in] Kernel function pointer to parameterization of AgentSpmvSearchKernel
-        SpmvKernelT             spmv_kernel,                        ///< [in] Kernel function pointer to parameterization of AgentSpmvKernel
-        SegmentFixupKernelT     segment_fixup_kernel,               ///< [in] Kernel function pointer to parameterization of cub::DeviceSegmentFixupKernel
-        SpmvEmptyMatrixKernelT  spmv_empty_matrix_kernel,           ///< [in] Kernel function pointer to parameterization of cub::DeviceSpmvEmptyMatrixKernel
-        KernelConfig            spmv_config,                        ///< [in] Dispatch parameters that match the policy that \p spmv_kernel was compiled for
-        KernelConfig            segment_fixup_config)               ///< [in] Dispatch parameters that match the policy that \p segment_fixup_kernel was compiled for
+    template <typename Spmv1ColKernelT,
+              typename SpmvSearchKernelT,
+              typename SpmvKernelT,
+              typename SegmentFixupKernelT,
+              typename SpmvEmptyMatrixKernelT>
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
+    Dispatch(void *d_temp_storage,
+             size_t &temp_storage_bytes,
+             SpmvParamsT &spmv_params,
+             cudaStream_t stream,
+             Spmv1ColKernelT spmv_1col_kernel,
+             SpmvSearchKernelT spmv_search_kernel,
+             SpmvKernelT spmv_kernel,
+             SegmentFixupKernelT segment_fixup_kernel,
+             SpmvEmptyMatrixKernelT spmv_empty_matrix_kernel,
+             KernelConfig spmv_config,
+             KernelConfig segment_fixup_config)
     {
         cudaError error = cudaSuccess;
         do
@@ -533,7 +688,7 @@ struct DispatchSpmv
                     break;
                 }
 
-                const int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
+                constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
                 const int blocks_in_grid = cub::DivideAndRoundUp(spmv_params.num_rows,
                                                                  threads_in_block);
 
@@ -783,7 +938,7 @@ struct DispatchSpmv
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -817,14 +972,26 @@ struct DispatchSpmv
     }
 
     /**
-     * Internal dispatch routine for computing a device-wide reduction
+     * @brief Internal dispatch routine for computing a device-wide reduction
+     *
+     * @param[in] d_temp_storage
+     *   Device-accessible allocation of temporary storage.
+     *   When NULL, the required allocation size is written to
+     *   `temp_storage_bytes` and no work is done.
+     *
+     * @param[in,out] temp_storage_bytes
+     *   Reference to size in bytes of `d_temp_storage` allocation
+     *
+     * @param SpMV spmv_params
+     *   input parameter bundle
+     *
+     * @param[in] stream
+     *   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__
-    static cudaError_t Dispatch(
-        void*                   d_temp_storage,                     ///< [in] Device-accessible allocation of temporary storage.  When NULL, the required allocation size is written to \p temp_storage_bytes and no work is done.
-        size_t&                 temp_storage_bytes,                 ///< [in,out] Reference to size in bytes of \p d_temp_storage allocation
-        SpmvParamsT&            spmv_params,                        ///< SpMV input parameter bundle
-        cudaStream_t            stream = 0)                         ///< [in] <b>[optional]</b> CUDA stream to launch kernels within.  Default is stream<sub>0</sub>.
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
+                                                                     size_t &temp_storage_bytes,
+                                                                     SpmvParamsT &spmv_params,
+                                                                     cudaStream_t stream = 0)
     {
         cudaError error = cudaSuccess;
         do
@@ -841,7 +1008,7 @@ struct DispatchSpmv
             constexpr bool has_beta = false;
 
             if (CubDebug(error = Dispatch(
-                d_temp_storage, temp_storage_bytes, spmv_params, stream, 
+                d_temp_storage, temp_storage_bytes, spmv_params, stream,
                 DeviceSpmv1ColKernel<PtxSpmvPolicyT, ValueT, OffsetT>,
                 DeviceSpmvSearchKernel<PtxSpmvPolicyT, OffsetT, CoordinateT, SpmvParamsT>,
                 DeviceSpmvKernel<PtxSpmvPolicyT, ScanTileStateT, ValueT, OffsetT, CoordinateT, has_alpha, has_beta>,
@@ -856,7 +1023,7 @@ struct DispatchSpmv
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -871,5 +1038,3 @@ struct DispatchSpmv
 
 
 CUB_NAMESPACE_END
-
-

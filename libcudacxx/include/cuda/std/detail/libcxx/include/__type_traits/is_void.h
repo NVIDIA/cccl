@@ -14,13 +14,17 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/integral_constant.h"
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_cvref.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -31,7 +35,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_void
     : integral_constant<bool, _LIBCUDACXX_IS_VOID(_Tp)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_void_v = __is_void(_Tp);
 #endif
@@ -41,7 +45,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_void_v = __is_void(_Tp);
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_void
     : public is_same<__remove_cv_t<_Tp>, void> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_void_v = is_void<_Tp>::value;
 #endif

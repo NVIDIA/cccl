@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/argument.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/tuple.h>
@@ -43,7 +51,7 @@ struct transparent_unary_operator
   using argument =
   typename thrust::detail::eval_if<
     thrust::tuple_size<Env>::value != 1,
-    thrust::detail::identity_<thrust::null_type>,
+    thrust::detail::identity_<thrust::tuple<>>,
     thrust::detail::functional::argument_helper<0, Env>
   >::type;
 
@@ -57,8 +65,8 @@ struct transparent_unary_operator
   template <typename Env>
   using result_type =
   typename thrust::detail::eval_if<
-    std::is_same<thrust::null_type, argument<Env>>::value,
-    thrust::detail::identity_<thrust::null_type>,
+    std::is_same<thrust::tuple<>, argument<Env>>::value,
+    thrust::detail::identity_<thrust::tuple<>>,
     result_type_impl<Env>
   >::type;
 
@@ -70,7 +78,7 @@ struct transparent_unary_operator
   };
 
   template <typename Env>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   result_type<Env> eval(Env&& e) const
   THRUST_RETURNS(UnaryFunctor{}(thrust::get<0>(THRUST_FWD(e))))
 };
@@ -88,16 +96,16 @@ struct transparent_binary_operator
   using first_argument =
     typename thrust::detail::eval_if<
       thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::null_type>,
-      thrust::detail::functional::argument_helper<0, Env>
+      thrust::detail::identity_<thrust::tuple<>>,
+    thrust::detail::functional::argument_helper<0, Env>
     >::type;
 
   template <typename Env>
   using second_argument =
     typename thrust::detail::eval_if<
       thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::null_type>,
-      thrust::detail::functional::argument_helper<1, Env>
+      thrust::detail::identity_<thrust::tuple<>>,
+    thrust::detail::functional::argument_helper<1, Env>
     >::type;
 
   template <typename Env>
@@ -111,9 +119,9 @@ struct transparent_binary_operator
   template <typename Env>
   using result_type =
     typename thrust::detail::eval_if<
-      (std::is_same<thrust::null_type, first_argument<Env>>::value ||
-       std::is_same<thrust::null_type, second_argument<Env>>::value),
-      thrust::detail::identity_<thrust::null_type>,
+      (std::is_same<thrust::tuple<>, first_argument<Env>>::value ||
+       std::is_same<thrust::tuple<>, second_argument<Env>>::value),
+      thrust::detail::identity_<thrust::tuple<>>,
       result_type_impl<Env>
     >::type;
 
@@ -125,7 +133,7 @@ struct transparent_binary_operator
   };
 
   template <typename Env>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   result_type<Env> eval(Env&& e) const
   THRUST_RETURNS(BinaryFunctor{}(thrust::get<0>(e), thrust::get<1>(e)))
 };

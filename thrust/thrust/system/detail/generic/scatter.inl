@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/scatter.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/functional.h>
@@ -36,7 +44,7 @@ template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void scatter(thrust::execution_policy<DerivedPolicy> &exec,
                InputIterator1 first,
                InputIterator1 last,
@@ -56,7 +64,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename InputIterator3,
          typename RandomAccessIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
                   InputIterator1 first,
                   InputIterator1 last,
@@ -76,7 +84,7 @@ template<typename DerivedPolicy,
          typename InputIterator3,
          typename RandomAccessIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
                   InputIterator1 first,
                   InputIterator1 last,

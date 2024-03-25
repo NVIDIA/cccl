@@ -65,7 +65,7 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   using accum_t     = T;
   using input_it_t  = const T *;
   using output_it_t = T *;
-  using offset_t    = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t    = cub::detail::choose_offset_t<OffsetT>;
   using output_t    = T;
   using init_t      = T;
 #if !TUNE_BASE
@@ -78,10 +78,8 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 
   // Retrieve axis parameters
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  thrust::device_vector<T> in(elements);
+  thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(1);
-
-  gen(seed_t{}, in);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
   output_it_t d_out = thrust::raw_pointer_cast(out.data());
@@ -105,7 +103,7 @@ void reduce(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto *temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(temp_storage,
                          temp_size,
                          d_in,

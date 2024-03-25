@@ -1,3 +1,13 @@
+if(CMAKE_GENERATOR MATCHES "^Visual Studio")
+  if(CUB_ENABLE_RDC_TESTS)
+    if("${CMAKE_VERSION}" VERSION_LESS 3.27.5)
+      # https://gitlab.kitware.com/cmake/cmake/-/merge_requests/8794
+      message(WARNING "CMake 3.27.5 or newer is required to enable RDC tests in Visual Studio.")
+      cmake_minimum_required(VERSION 3.27.5)
+    endif()
+  endif()
+endif()
+
 if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
   # NVBugs 200770766
   set(CUB_SEPARATE_CATCH2 ON)
@@ -106,16 +116,40 @@ file(GLOB test_srcs
   catch2_test_*.cu
 )
 
-## cub_is_catch2_test
+## _cub_is_catch2_test
 #
 # If the test_src contains the substring "catch2_test_", `result_var` will
 # be set to TRUE.
-function(cub_is_catch2_test result_var test_src)
+function(_cub_is_catch2_test result_var test_src)
   string(FIND "${test_src}" "catch2_test_" idx)
   if (idx EQUAL -1)
     set(${result_var} FALSE PARENT_SCOPE)
   else()
     set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_is_fail_test
+#
+# If the test_src contains the substring "_fail", `result_var` will
+# be set to TRUE.
+function(_cub_is_fail_test result_var test_src)
+  string(FIND "${test_src}" "_fail" idx)
+  if (idx EQUAL -1)
+    set(${result_var} FALSE PARENT_SCOPE)
+  else()
+    set(${result_var} TRUE PARENT_SCOPE)
+  endif()
+endfunction()
+
+## _cub_launcher_requires_rdc
+#
+# If given launcher id corresponds to a CDP launcher, set `out_var` to 1.
+function(_cub_launcher_requires_rdc out_var launcher_id)
+  if ("${launcher_id}" STREQUAL "1")
+    set(${out_var} 1 PARENT_SCOPE)
+  else()
+    set(${out_var} 0 PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -131,10 +165,11 @@ endfunction()
 # test_src: The source file that implements the test.
 # cub_target: The reference cub target with configuration information.
 #
-function(cub_add_test target_name_var test_name test_src cub_target)
+function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
-  cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_is_catch2_test(is_catch2_test "${test_src}")
+  _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
 
   # The actual name of the test's target:
   set(test_target ${config_prefix}.test.${test_name})
@@ -143,32 +178,15 @@ function(cub_add_test target_name_var test_name test_src cub_target)
   set(config_meta_target ${config_prefix}.tests)
 
   if (is_catch2_test)
-    set(use_rdc_for_catch2_utils OFF)
-    if (CUB_ENABLE_RDC_TESTS OR CUB_FORCE_RDC)
-      set(use_rdc_for_catch2_utils ON)
-    endif()
-
     # Per config helper library:
-    set(config_c2h_target ${config_prefix}.test.catch2_helper)
+    set(config_c2h_target ${config_prefix}.test.catch2_helper.lid_${launcher_id})
     if (NOT TARGET ${config_c2h_target})
       add_library(${config_c2h_target} STATIC c2h/generators.cu)
-      set_property(TARGET ${config_c2h_target}
-        PROPERTY POSITION_INDEPENDENT_CODE ON
-      )
-
-      if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-        target_link_options(${config_c2h_target} PRIVATE "-cuda")
-        target_compile_options(${config_c2h_target} PRIVATE "-fPIC")
-      endif()
-
-      target_include_directories(${config_c2h_target}
-        PUBLIC "${CUB_SOURCE_DIR}/test"
-      )
-
+      target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
-      cub_configure_cuda_target(${config_c2h_target} RDC ${use_rdc_for_catch2_utils})
-
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
+      cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
+      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target}
+                                                 PUBLIC CUDA::nvrtc CUDA::cuda_driver)
       if (CUB_C2H_ENABLE_CURAND)
         target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
         target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
@@ -182,25 +200,29 @@ function(cub_add_test target_name_var test_name test_src cub_target)
     endif() # config_c2h_target
 
     if (CUB_SEPARATE_CATCH2)
+      set(catch2_main_objects ${config_prefix}.catch2_main_objects)
+      if (NOT TARGET ${catch2_main_objects})
+        add_library(${catch2_main_objects} OBJECT catch2_runner.cpp catch2_runner_helper.cu)
+        target_link_libraries(${catch2_main_objects} PUBLIC Catch2::Catch2)
+      endif()
+
       add_executable(${test_target} "${test_src}")
-      target_compile_definitions(${test_target} PRIVATE "CUB_CONFIG_MAIN")
+      target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
       add_dependencies(${config_meta_target} ${test_target})
 
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     else() # Not CUB_SEPARATE_CATCH2
       # Per config catch2 runner
-      set(config_c2run_target ${config_prefix}.catch2_test)
+      set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
       if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target} catch2_runner.cpp)
+        add_executable(${config_c2run_target} catch2_runner.cpp catch2_runner_helper.cu)
         target_link_libraries(${config_c2run_target} PRIVATE
           ${cub_target}
           ${config_c2h_target}
           Metal
-          Catch2::Catch2
-          CUDA::cudart
-        )
+          Catch2::Catch2)
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
-        cub_configure_cuda_target(${config_c2run_target} RDC ${use_rdc_for_catch2_utils})
+        cub_configure_cuda_target(${config_c2run_target} RDC ${cdp_val})
         add_dependencies(${config_meta_target} ${config_c2run_target})
         target_include_directories(${config_c2run_target} PRIVATE
           "${CUB_SOURCE_DIR}/test"
@@ -219,8 +241,20 @@ function(cub_add_test target_name_var test_name test_src cub_target)
       endif() # per config catch2 runner
 
       add_library(${test_target} OBJECT "${test_src}")
-      target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
+
+      if(CMAKE_GENERATOR MATCHES "^Visual Studio")
+        target_link_libraries(${config_c2run_target} PRIVATE $<TARGET_OBJECTS:${test_target}>)
+      else()
+        target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
+      endif()
     endif() # CUB_SEPARATE_CATCH2
+
+    if ("${test_target}" MATCHES "nvrtc")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_CUB_PATH="-I${CMAKE_SOURCE_DIR}/cub")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_THRUST_PATH="-I${CMAKE_SOURCE_DIR}/thrust")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_LIBCUDACXX_PATH="-I${CMAKE_SOURCE_DIR}/libcudacxx/include")
+      target_compile_definitions(${test_target} PRIVATE NVRTC_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}")
+    endif()
 
     if (CUB_IN_THRUST)
       thrust_fix_clang_nvcc_build_for(${test_target})
@@ -250,23 +284,51 @@ function(cub_add_test target_name_var test_name test_src cub_target)
       thrust_fix_clang_nvcc_build_for(${test_target})
     endif()
 
-    # Add to the active configuration's meta target
-    add_dependencies(${config_meta_target} ${test_target})
+    _cub_is_fail_test(is_fail_test "${test_src}")
+    if (is_fail_test)
+      set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
+                                           EXCLUDE_FROM_DEFAULT_BUILD true)
+      add_test(NAME ${test_target}
+               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
+                                        --target ${test_target}
+                                        --config $<CONFIGURATION>)
+      string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
+      file(READ ${test_src} test_content)
+      if(MATCH_RESULT)
+        string(REGEX MATCH "// expected-error-${CMAKE_MATCH_1}+ {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
 
-    # Meta target that builds tests with this name for all configurations:
-    if (NOT TARGET ${test_meta_target})
-      add_custom_target(${test_meta_target})
+        if (expected_errors_matches)
+          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
+        else()
+          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+        endif()
+      else()
+        string(REGEX MATCH "// expected-error {{\"([^\"]+)\"}}" expected_errors_matches ${test_content})
+
+        if (expected_errors_matches)
+          set_tests_properties(${test_target} PROPERTIES PASS_REGULAR_EXPRESSION "${CMAKE_MATCH_1}")
+        else()
+          set_tests_properties(${test_target} PROPERTIES WILL_FAIL true)
+        endif()
+      endif()
+    else()
+      # Add to the active configuration's meta target
+      add_dependencies(${config_meta_target} ${test_target})
+
+      # Meta target that builds tests with this name for all configurations:
+      if (NOT TARGET ${test_meta_target})
+        add_custom_target(${test_meta_target})
+      endif()
+      add_dependencies(${test_meta_target} ${test_target})
+
+      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     endif()
-    add_dependencies(${test_meta_target} ${test_target})
-
-    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
   endif() # Not catch2 test
 endfunction()
 
-# Sets out_var to 1 if the label contains cdp variants, regardless of whether
-# or not CDP is enabled in this particular variant.
-function(_cub_has_cdp_variant out_var label)
-  string(FIND "${label}" "cdp_" idx)
+# Sets out_var to launch id if the label contains launch variants
+function(_cub_has_lid_variant out_var label)
+  string(FIND "${label}" "lid_" idx)
   if (idx EQUAL -1)
     set(${out_var} 0 PARENT_SCOPE)
   else()
@@ -274,14 +336,14 @@ function(_cub_has_cdp_variant out_var label)
   endif()
 endfunction()
 
-# Sets out_var to 1 if the label contains "cdp_1", e.g. cdp is explicitly
-# requested for this variant.
-function(_cub_is_cdp_enabled_variant out_var label)
-  string(FIND "${label}" "cdp_1" idx)
-  if (idx EQUAL -1)
-    set(${out_var} 0 PARENT_SCOPE)
+# Sets out_var to 1 if the label contains "lid_1", e.g. launch id corresponds
+# to device-side (CDP) launch.
+function(_cub_launcher_id out_var label)
+  string(REGEX MATCH "lid_([0-9]+)" MATCH_RESULT "${label}")
+  if(MATCH_RESULT)
+    set(${out_var} ${CMAKE_MATCH_1} PARENT_SCOPE)
   else()
-    set(${out_var} 1 PARENT_SCOPE)
+    set(${out_var} 0 PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -311,8 +373,14 @@ foreach (test_src IN LISTS test_srcs)
     cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
     if (num_variants EQUAL 0)
+      if (${CUB_FORCE_RDC})
+        set(launcher 1)
+      else()
+        set(launcher 0)
+      endif()
+
       # Only one version of this test.
-      cub_add_test(test_target ${test_name} "${test_src}" ${cub_target})
+      cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${launcher})
       cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
     else() # has variants:
       # Meta target to build all parametrizations of the current test for the
@@ -338,35 +406,39 @@ foreach (test_src IN LISTS test_srcs)
         # A unique index per variant:
         list(APPEND defs VAR_IDX=${var_idx})
 
-        # Check if the test has explicit CDP variants:
-        _cub_has_cdp_variant(explicit_cdp "${label}")
-        _cub_is_cdp_enabled_variant(enable_cdp "${label}")
+        # Check if the test explicitly specifies launcher id:
+        _cub_has_lid_variant(explicit_launcher "${label}")
+        _cub_launcher_id(explicit_launcher_id "${label}")
 
-        if (enable_cdp AND NOT CUB_ENABLE_RDC_TESTS)
+        if (${explicit_launcher})
+          set(launcher_id "${explicit_launcher_id}")
+        else()
+          if (${CUB_FORCE_RDC})
+            set(launcher_id 1)
+          else()
+            set(launcher_id 0)
+          endif()
+        endif()
+
+        _cub_launcher_requires_rdc(cdp_val "${launcher_id}")
+
+        if (cdp_val AND NOT CUB_ENABLE_RDC_TESTS)
           continue()
         endif()
 
-        cub_add_test(test_target
-          ${test_name}.${label}
-          "${test_src}"
-          ${cub_target}
-        )
+        cub_add_test(test_target ${test_name}.${label} "${test_src}" ${cub_target} ${launcher_id})
+
+        # Enable RDC if the test either:
+        # 1. Explicitly requests it (lid_1 label)
+        # 2. Does not have an explicit CDP variant (no lid_0, lid_1, or lid_2) but
+        #    RDC testing is forced
+        #
+        # Tests that explicitly request no cdp (lid_0 label) should never enable
+        # RDC.
+        cub_configure_cuda_target(${test_target} RDC ${cdp_val})
         add_dependencies(${variant_meta_target} ${test_target})
         add_dependencies(${cub_variant_meta_target} ${test_target})
         target_compile_definitions(${test_target} PRIVATE ${defs})
-
-        # Enable RDC if the test either:
-        # 1. Explicitly requests it (cdp_1 label)
-        # 2. Does not have an explicit CDP variant (no cdp_0 or cdp_1) but
-        #    RDC testing is forced
-        #
-        # Tests that explicitly request no cdp (cdp_0 label) should never enable
-        # RDC.
-        if (explicit_cdp)
-          cub_configure_cuda_target(${test_target} RDC ${enable_cdp})
-        else()
-          cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
-        endif()
       endforeach() # Variant
     endif() # Has variants
   endforeach() # CUB targets

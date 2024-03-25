@@ -14,13 +14,17 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/is_same.h"
 #include "../__type_traits/remove_cv.h"
 #include "../__type_traits/remove_reference.h"
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -39,14 +43,14 @@ using __remove_cvref_t _LIBCUDACXX_NODEBUG_TYPE = __remove_cv_t<__libcpp_remove_
 template <class _Tp, class _Up>
 struct __is_same_uncvref : _IsSame<__remove_cvref_t<_Tp>, __remove_cvref_t<_Up> > {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 struct remove_cvref {
     using type _LIBCUDACXX_NODEBUG_TYPE = __remove_cvref_t<_Tp>;
 };
 
 template <class _Tp> using remove_cvref_t = __remove_cvref_t<_Tp>;
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

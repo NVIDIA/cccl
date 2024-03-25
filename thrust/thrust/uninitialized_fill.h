@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,7 +50,7 @@ THRUST_NAMESPACE_BEGIN
  *  calling \p ForwardIterator's \c value_type's copy constructor.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *  
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The first element of the range of interest.
  *  \param last The last element of the range of interest.
@@ -60,13 +68,13 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/uninitialized_fill.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -86,7 +94,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void uninitialized_fill(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                           ForwardIterator first,
                           ForwardIterator last,
@@ -101,7 +109,7 @@ __host__ __device__
  *  in that range. That is, for each iterator \c i in the range <tt>[first, last)</tt>,
  *  \p uninitialized_fill creates a copy of \c x in the location pointed to \c i by
  *  calling \p ForwardIterator's \c value_type's copy constructor.
- *  
+ *
  *  \param first The first element of the range of interest.
  *  \param last The last element of the range of interest.
  *  \param x The value to use as the exemplar of the copy constructor.
@@ -116,13 +124,13 @@ __host__ __device__
  *  \code
  *  #include <thrust/uninitialized_fill.h>
  *  #include <thrust/device_malloc.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -157,7 +165,7 @@ template<typename ForwardIterator, typename T>
  *  calling \p ForwardIterator's \c value_type's copy constructor.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
- *  
+ *
  *  \param exec The execution policy to use for parallelization.
  *  \param first The first element of the range of interest.
  *  \param n The size of the range of interest.
@@ -176,13 +184,13 @@ template<typename ForwardIterator, typename T>
  *  #include <thrust/uninitialized_fill.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -202,7 +210,7 @@ template<typename ForwardIterator, typename T>
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_fill_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                        ForwardIterator first,
                                        Size n,
@@ -217,7 +225,7 @@ __host__ __device__
  *  in that range. That is, for each iterator \c i in the range <tt>[first, first+n)</tt>,
  *  \p uninitialized_fill creates a copy of \c x in the location pointed to \c i by
  *  calling \p ForwardIterator's \c value_type's copy constructor.
- *  
+ *
  *  \param first The first element of the range of interest.
  *  \param n The size of the range of interest.
  *  \param x The value to use as the exemplar of the copy constructor.
@@ -233,13 +241,13 @@ __host__ __device__
  *  \code
  *  #include <thrust/uninitialized_fill.h>
  *  #include <thrust/device_malloc.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *

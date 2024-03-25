@@ -27,10 +27,19 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/agent_radix_sort_downsweep.cuh>
 #include <cub/agent/agent_radix_sort_upsweep.cuh>
 #include <cub/block/block_radix_sort.cuh>
-#include <cub/config.cuh>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
@@ -129,7 +138,7 @@ struct AgentSegmentedRadixSort
 
   DecomposerT decomposer;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   AgentSegmentedRadixSort(OffsetT num_items,
                           TempStorage &temp_storage,
                           DecomposerT decomposer = {})
@@ -138,7 +147,7 @@ struct AgentSegmentedRadixSort
       , decomposer(decomposer)
   {}
 
-  __device__ __forceinline__ void ProcessSinglePass(int begin_bit,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSinglePass(int begin_bit,
                                                     int end_bit,
                                                     const KeyT *d_keys_in,
                                                     const ValueT *d_values_in,
@@ -152,7 +161,7 @@ struct AgentSegmentedRadixSort
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
-    bit_ordered_type default_key_bits = IS_DESCENDING 
+    bit_ordered_type default_key_bits = IS_DESCENDING
                                       ? traits::min_raw_binary_key(decomposer)
                                       : traits::max_raw_binary_key(decomposer);
     KeyT oob_default = reinterpret_cast<KeyT &>(default_key_bits);
@@ -191,7 +200,7 @@ struct AgentSegmentedRadixSort
     }
   }
 
-  __device__ __forceinline__ void ProcessIterative(int current_bit,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessIterative(int current_bit,
                                                    int pass_bits,
                                                    const KeyT *d_keys_in,
                                                    const ValueT *d_values_in,

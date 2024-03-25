@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/iterator/iterator_traits.h>
 
@@ -57,7 +65,7 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam InputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator's \c value_type must be a model of must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>.
  *  \tparam EqualityComparable must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a> and can be compared for equality with \c InputIterator's \c value_type
  *
- *  The following code snippet demonstrates how to use \p count to 
+ *  The following code snippet demonstrates how to use \p count to
  *  count the number of instances in a range of a value of interest using the \p thrust::device execution policy:
  *
  *  \code
@@ -70,7 +78,7 @@ THRUST_NAMESPACE_BEGIN
  *  vec[1] = 1;
  *  vec[3] = 1;
  *  vec[4] = 1;
- *  
+ *
  *  // count the 1s
  *  int result = thrust::count(thrust::device, vec.begin(), vec.end(), 1);
  *  // result == 3
@@ -79,7 +87,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template<typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     count(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, const EqualityComparable& value);
 
@@ -97,7 +105,7 @@ __host__ __device__
  *  \tparam InputIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator's \c value_type must be a model of must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>.
  *  \tparam EqualityComparable must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a> and can be compared for equality with \c InputIterator's \c value_type
  *
- *  The following code snippet demonstrates how to use \p count to 
+ *  The following code snippet demonstrates how to use \p count to
  *  count the number of instances in a range of a value of interest.
  *  \code
  *  #include <thrust/count.h>
@@ -108,7 +116,7 @@ __host__ __device__
  *  vec[1] = 1;
  *  vec[3] = 1;
  *  vec[4] = 1;
- *  
+ *
  *  // count the 1s
  *  int result = thrust::count(vec.begin(), vec.end(), 1);
  *  // result == 3
@@ -121,7 +129,7 @@ template <typename InputIterator, typename EqualityComparable>
     count(InputIterator first, InputIterator last, const EqualityComparable& value);
 
 
-/*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which 
+/*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which
  *  a predicate is \c true. More precisely, \p count_if returns the number of iterators
  *  \c i in <tt>[first, last)</tt> such that <tt>pred(*i) == true</tt>.
  *
@@ -170,12 +178,12 @@ template <typename InputIterator, typename EqualityComparable>
  *  \see https://en.cppreference.com/w/cpp/algorithm/count
  */
 template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::iterator_traits<InputIterator>::difference_type
     count_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
 
 
-/*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which 
+/*! \p count_if finds the number of elements in <tt>[first,last)</tt> for which
  *  a predicate is \c true. More precisely, \p count_if returns the number of iterators
  *  \c i in <tt>[first, last)</tt> such that <tt>pred(*i) == true</tt>.
  *

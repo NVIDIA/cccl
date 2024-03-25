@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -33,7 +41,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  (i - first)</tt>.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -67,7 +75,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
  */
 template<typename DerivedPolicy, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last);
@@ -75,7 +83,7 @@ __host__ __device__
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  (i - first)</tt>.
  *
  *  \param first The beginning of the sequence.
@@ -110,7 +118,7 @@ template<typename ForwardIterator>
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  init + (i - first)</tt>.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -148,7 +156,7 @@ template<typename ForwardIterator>
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,
@@ -157,7 +165,7 @@ __host__ __device__
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  init + (i - first)</tt>.
  *
  *  \param first The beginning of the sequence.
@@ -196,7 +204,7 @@ template<typename ForwardIterator, typename T>
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  init + step * (i - first)</tt>.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -235,7 +243,7 @@ template<typename ForwardIterator, typename T>
  *  \see https://en.cppreference.com/w/cpp/algorithm/iota
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void sequence(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                 ForwardIterator first,
                 ForwardIterator last,
@@ -245,7 +253,7 @@ __host__ __device__
 
 /*! \p sequence fills the range <tt>[first, last)</tt> with a sequence of numbers.
  *
- *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of 
+ *  For each iterator \c i in the range <tt>[first, last)</tt>, this version of
  *  \p sequence performs the assignment <tt>*i =  init + step * (i - first)</tt>.
  *
  *  \param first The beginning of the sequence.

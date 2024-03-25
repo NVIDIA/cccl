@@ -14,6 +14,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__concepts/common_reference_with.h"
 #include "../__concepts/same_as.h"
@@ -21,13 +29,9 @@
 #include "../__type_traits/make_const_lvalue_ref.h"
 #include "../__utility/forward.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.assignable]
 
@@ -39,7 +43,7 @@ concept assignable_from =
     { __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs) } -> same_as<_Lhs>;
   };
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Lhs, class _Rhs>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -53,7 +57,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Lhs, class _Rhs>
 _LIBCUDACXX_CONCEPT assignable_from = _LIBCUDACXX_FRAGMENT(__assignable_from_, _Lhs, _Rhs);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

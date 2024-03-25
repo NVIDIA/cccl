@@ -1,0 +1,177 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Set PR or Issue Roadmap Value on Close
+
+on:
+  pull_request_target:
+    # Run this action when a PR is closed
+    types: [closed]
+  issues:
+    # Run this action when an issue is closed
+    types: [closed]
+      
+env:
+ ORG: ${{ github.event.repository.owner.login }}
+ PR_NUMBER: ${{ github.event.pull_request.number }} # evaluates to null for issues
+ ISSUE_NUMBER: ${{ github.event.issue.number }} # evaluates to null for PRs
+ REPO: ${{ github.event.repository.name }}
+
+ # The environment vars below are hard-coded from external queries to save time + complexity here
+ # Note: PVT means Project V2, not "Private"
+ # PVT = Project V2, PVTSSF = Project V2 Single Select Field, PVTIF = Project V2 Iteration Field
+ PROJECT_ID: "PVT_kwDOABpemM4AEhOI"
+ ROADMAP_FIELD_ID: "PVTSSF_lADOABpemM4AEhOIzgC_MXI"
+
+jobs:
+  set_roadmap_value:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Generate token
+        id: generate_token
+        uses: tibdex/github-app-token@v1.8.0
+        with:
+          app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
+          private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
+        
+      - name: Get PR Project ID
+        if: github.event_name == 'pull_request_target'
+        id: get_pr_id
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Query up to 10 projects for the PR
+            gh api graphql -f query='
+              query {
+                organization(login: "${{ env.ORG }}") {
+                  repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.PR_NUMBER }}) {
+                      ... on PullRequest {
+                        id
+                        projectItems(first: 10) {
+                          edges {
+                            node {
+                              id
+                              project {
+                                id
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+            
+            # Filter the json result to only the project-specific ID for the PR
+            # A PR can be in multiple projects so we need to filter by the project ID we want
+            pr_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
+                           select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                           .node.id' project_data.json)
+            echo "ITEM_ID=$pr_id" >> $GITHUB_ENV
+        continue-on-error: true
+    
+      - name: Get Issue Project ID
+        if: github.event_name == 'issues'
+        id: get_issue_id
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Query up to 10 projects for the Issue
+            gh api graphql -f query='
+              query {
+                organization(login: "${{ env.ORG }}") {
+                  repository(name: "${{ env.REPO }}") {
+                    issueOrPullRequest(number: ${{ env.ISSUE_NUMBER }}) {
+                      ... on Issue {
+                        id
+                        projectItems(first: 10) {
+                          edges {
+                            node {
+                              id
+                              project {
+                                id
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }' > project_data.json
+            
+            # Filter the json result to only the project-specific ID for the PR
+            # A PR can be in multiple projects so we need to filter by the project ID we want
+            issue_id=$(jq -r '.data.organization.repository.issueOrPullRequest.projectItems.edges[] |
+                           select(.node.project.id == "${{ env.PROJECT_ID }}") |
+                           .node.id' project_data.json)
+            echo "ITEM_ID=$issue_id" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Get Current Release
+        id: get_current_release
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |            
+            # Get current roadmap id
+            # We maintain the roadmap as a single select field in the project, with the first value being the upcoming release
+
+            gh api graphql -f query='
+            query MyQuery {
+                node(id: "${{ env.PROJECT_ID }}") {
+                    ... on ProjectV2 {
+                    id
+                    field(name: "Roadmap") {
+                        ... on ProjectV2SingleSelectField {
+                        id
+                        options {
+                            id
+                        }
+                        }
+                    }
+                    }
+                }
+                }' > roadmap_option_data.json
+            current_roadmap_option_id=$(jq -r '.data.node.field.options[0].id' roadmap_option_data.json)
+            echo "CURRENT_ROADMAP_OPTION_ID=$current_roadmap_option_id" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Set Item Roadmap
+        id: set_item_roadmap
+        env: 
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+            # Update the PR status to In Review
+            gh api graphql -f query='
+              mutation {
+              updateProjectV2ItemFieldValue(
+                  input: {
+                      projectId: "${{ env.PROJECT_ID }}"
+                      itemId: "${{ env.ITEM_ID }}"
+                      fieldId: "${{ env.ROADMAP_FIELD_ID }}"
+                      value: {
+                          singleSelectOptionId: "${{ env.CURRENT_ROADMAP_OPTION_ID }}"
+                      }
+                      }
+                  ) {
+                      projectV2Item {
+                      id
+                      }
+                  }
+                }'
+        continue-on-error: true

@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/execution_policy.h>
 
@@ -35,14 +43,14 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub {
 
 template <class Derived, class ItemsIt, class ResultIt>
-ResultIt __host__ __device__
+ResultIt _CCCL_HOST_DEVICE
 reverse_copy(execution_policy<Derived> &policy,
              ItemsIt                    first,
              ItemsIt                    last,
              ResultIt                   result);
 
 template <class Derived, class ItemsIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 reverse(execution_policy<Derived> &policy,
         ItemsIt                    first,
         ItemsIt                    last);
@@ -62,7 +70,7 @@ namespace cuda_cub {
 template <class Derived,
           class ItemsIt,
           class ResultIt>
-ResultIt __host__ __device__
+ResultIt _CCCL_HOST_DEVICE
 reverse_copy(execution_policy<Derived> &policy,
              ItemsIt                    first,
              ItemsIt                    last,
@@ -76,7 +84,7 @@ reverse_copy(execution_policy<Derived> &policy,
 
 template <class Derived,
           class ItemsIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 reverse(execution_policy<Derived> &policy,
         ItemsIt                    first,
         ItemsIt                    last)

@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/generic/swap_ranges.h>
 #include <thrust/tuple.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -39,7 +47,7 @@ namespace detail
 struct swap_pair_elements
 {
   template <typename Tuple>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(Tuple t)
   {
     // use unqualified swap to allow ADL to catch any user-defined swap
@@ -55,7 +63,7 @@ struct swap_pair_elements
 template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator2 swap_ranges(thrust::execution_policy<DerivedPolicy> &exec,
                                ForwardIterator1 first1,
                                ForwardIterator1 last1,

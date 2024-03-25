@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/system/detail/sequential/merge.h>
 #include <thrust/detail/copy.h>
 #include <thrust/iterator/iterator_traits.h>
@@ -31,13 +39,13 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIterator merge(sequential::execution_policy<DerivedPolicy> &exec,
                      InputIterator1 first1,
                      InputIterator1 last1,
@@ -72,7 +80,7 @@ OutputIterator merge(sequential::execution_policy<DerivedPolicy> &exec,
 } // end merge()
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
@@ -81,7 +89,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pair<OutputIterator1,OutputIterator2>
   merge_by_key(sequential::execution_policy<DerivedPolicy> &,
                InputIterator1 keys_first1,

@@ -11,10 +11,21 @@
 #define _LIBCUDACXX_THREADING_SUPPORT
 
 #ifndef __cuda_std__
-#include <__config>
-#include <errno.h>
+#  include <__config>
+#endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#ifndef __cuda_std__
+#  include <errno.h>
 #else
-#include "__cuda/atomic_prelude.h"
+#  include "__cuda/atomic_prelude.h"
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -26,10 +37,6 @@
 #ifndef __cuda_std__
 #include <__pragma_push>
 #endif // __cuda_std__
-
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 # ifndef __cuda_std__
@@ -65,7 +72,7 @@
 #define _LIBCUDACXX_THREAD_ABI_VISIBILITY inline _LIBCUDACXX_INLINE_VISIBILITY
 #endif
 
-#if defined(__FreeBSD__) && defined(_LIBCUDACXX_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
+#if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
 #define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
 #else
 #define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS

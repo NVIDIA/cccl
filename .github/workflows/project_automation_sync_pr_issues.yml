@@ -45,10 +45,6 @@ jobs:
           app_id: ${{ secrets.CCCL_AUTH_APP_ID }}
           private_key: ${{ secrets.CCCL_AUTH_APP_PEM }}
 
-      - name: Wait 1 Second
-        id: sleep
-        run: sleep 1
-
       - name: Get PR Project ID
         id: get_pr_id
         env:
@@ -99,13 +95,13 @@ jobs:
                     id
                     fieldValueByName(name: "Status") {
                       ... on ProjectV2ItemFieldSingleSelectValue {
-                        id
+                        optionId
                       }
                     }
                   }
                 }
               }' > status_field_data.json
-            status_option_id=$(jq -r '.data.node.fieldValueByName.id' project_data.json)
+            status_option_id=$(jq -r '.data.node.fieldValueByName.optionId' status_field_data.json)
             echo "STATUS_OPTION_ID=$status_option_id" >> $GITHUB_ENV
 
             # Query the PR's start sprint from the project
@@ -116,14 +112,14 @@ jobs:
                     id
                     fieldValueByName(name: "Start Sprint") {
                       ... on ProjectV2ItemFieldIterationValue {
-                        id
+                        iterationId
                       }
                     }
                   }
                 }
               }' > start_sprint_data.json
-            start_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' start_sprint_data.json)
-            echo "START_SPRINT_OPTION_ID=$start_sprint_option_id" >> $GITHUB_ENV
+            start_sprint_iteration_id=$(jq -r '.data.node.fieldValueByName.iterationId' start_sprint_data.json)
+            echo "START_SPRINT_ITERATION_ID=$start_sprint_iteration_id" >> $GITHUB_ENV
 
             # Query the PR's working sprint from the project
             gh api graphql -f query='
@@ -133,14 +129,14 @@ jobs:
                     id
                     fieldValueByName(name: "Working Sprint") {
                       ... on ProjectV2ItemFieldIterationValue {
-                        id
+                        iterationId
                       }
                     }
                   }
                 }
               }' > working_sprint_data.json
-            working_sprint_option_id=$(jq -r '.data.node.fieldValueByName.id' working_sprint_data.json)
-            echo "WORKING_SPRINT_OPTION_ID=$working_sprint_option_id" >> $GITHUB_ENV
+            working_sprint_iteration_id=$(jq -r '.data.node.fieldValueByName.iterationId' working_sprint_data.json)
+            echo "WORKING_SPRINT_ITERATION_ID=$working_sprint_iteration_id" >> $GITHUB_ENV
 
         continue-on-error: true
 
@@ -214,7 +210,7 @@ jobs:
                     itemId: \"$issue_id\"
                     fieldId: \"$START_SPRINT_FIELD_ID\"
                   value: {
-                      iterationId: \"$START_SPRINT_OPTION_ID\"
+                      iterationId: \"$START_SPRINT_ITERATION_ID\"
                       }
                     }
                   ) {
@@ -233,7 +229,7 @@ jobs:
                     itemId: \"$issue_id\"
                     fieldId: \"$WORKING_SPRINT_FIELD_ID\"
                   value: {
-                      iterationId: \"$WORKING_SPRINT_OPTION_ID\"
+                      iterationId: \"$WORKING_SPRINT_ITERATION_ID\"
                       }
                     }
                   ) {

@@ -7,9 +7,15 @@
 
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-#  include <thrust/detail/memory_wrapper.h>
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <thrust/detail/memory_wrapper.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -18,8 +24,8 @@ THRUST_NAMESPACE_BEGIN
 /*! Obtains the actual address of the object or function arg, even in presence of overloaded operator&.
  */
 template <typename T>
-__host__ __device__
-T* addressof(T& arg) 
+_CCCL_HOST_DEVICE
+T* addressof(T& arg)
 {
   return reinterpret_cast<T*>(
     &const_cast<char&>(reinterpret_cast<const volatile char&>(arg))

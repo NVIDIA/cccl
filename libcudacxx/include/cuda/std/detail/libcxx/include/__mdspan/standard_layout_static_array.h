@@ -48,6 +48,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__mdspan/compressed_pair.h"
 #include "../__mdspan/dynamic_extent.h"
 #include "../__mdspan/macros.h"
@@ -60,13 +68,9 @@
 #include "../cstddef"
 #include "../span"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 namespace __detail {
 
@@ -613,16 +617,16 @@ struct __partially_static_sizes_tagged
   using __tag_t = _Tag;
   using __psa_impl_t = __standard_layout_psa<
       _Tag, T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __psa_impl_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr
   __partially_static_sizes_tagged(_Args&&... __args) noexcept(noexcept(__psa_impl_t(_CUDA_VSTD::declval<_Args>()...)))
       : __psa_impl_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __psa_impl_t::__psa_impl_t;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 #ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   __MDSPAN_INLINE_FUNCTION
 #endif
@@ -665,16 +669,16 @@ private:
     __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>&& __vals
   ) noexcept : __base_t(_CUDA_VSTD::move(__vals)) { }
 public:
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
   template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr
   __partially_static_sizes(_Args&&... __args) noexcept(noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
 #ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   __MDSPAN_INLINE_FUNCTION
@@ -692,7 +696,7 @@ public:
 
 } // end namespace __detail
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

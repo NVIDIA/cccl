@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -66,13 +74,13 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -92,7 +100,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename InputIterator, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                      InputIterator first,
                                      InputIterator last,
@@ -128,13 +136,13 @@ __host__ __device__
  *  #include <thrust/uninitialized_copy.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -195,13 +203,13 @@ template<typename InputIterator, typename ForwardIterator>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
  *  #include <thrust/execution_policy.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *
@@ -222,7 +230,7 @@ template<typename InputIterator, typename ForwardIterator>
  *  \see \c device_malloc
  */
 template<typename DerivedPolicy, typename InputIterator, typename Size, typename ForwardIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator uninitialized_copy_n(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                        InputIterator first,
                                        Size n,
@@ -259,13 +267,13 @@ __host__ __device__
  *  #include <thrust/uninitialized_copy.h>
  *  #include <thrust/device_malloc.h>
  *  #include <thrust/device_vector.h>
- *  
+ *
  *  struct Int
  *  {
  *    __host__ __device__
  *    Int(int x) : val(x) {}
  *    int val;
- *  };  
+ *  };
  *  ...
  *  const int N = 137;
  *

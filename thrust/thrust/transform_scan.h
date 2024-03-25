@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -33,7 +41,7 @@ THRUST_NAMESPACE_BEGIN
  *  \ingroup algorithms
  *  \{
  */
-	
+
 /*! \addtogroup transformed_prefixsums Transformed Prefix Sums
  *  \ingroup prefixsums
  *  \{
@@ -81,7 +89,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/transform_scan.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
  *  thrust::negate<int> unary_op;
@@ -101,7 +109,7 @@ template<typename DerivedPolicy,
          typename OutputIterator,
          typename UnaryFunction,
          typename AssociativeOperator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator transform_inclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                           InputIterator first,
                                           InputIterator last,
@@ -144,7 +152,7 @@ __host__ __device__
  *
  *  \code
  *  #include <thrust/transform_scan.h>
- *  
+ *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
  *  thrust::negate<int> unary_op;
@@ -175,10 +183,10 @@ template<typename InputIterator,
  *  tranformation defined by \p unary_op into a temporary sequence and then
  *  performing an \p exclusive_scan on the tranformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
- *  fewer memory reads and writes are required. In 
- *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt> 
+ *  fewer memory reads and writes are required. In
+ *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt>
  *  and the result of <tt>binary_op(init, unary_op(\*first))</tt> is assigned
- *  to <tt>\*(result + 1)</tt>, and so on.  The transform scan operation is 
+ *  to <tt>\*(result + 1)</tt>, and so on.  The transform scan operation is
  *  permitted to be in-place.
  *
  *  The algorithm's execution is parallelized as determined by \p exec.
@@ -213,7 +221,7 @@ template<typename InputIterator,
  *  #include <thrust/transform_scan.h>
  *  #include <thrust/execution_policy.h>
  *  ...
- *  
+ *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
  *  thrust::negate<int> unary_op;
@@ -234,7 +242,7 @@ template<typename DerivedPolicy,
          typename UnaryFunction,
          typename T,
          typename AssociativeOperator>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator transform_exclusive_scan(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                           InputIterator first,
                                           InputIterator last,
@@ -249,10 +257,10 @@ __host__ __device__
  *  tranformation defined by \p unary_op into a temporary sequence and then
  *  performing an \p exclusive_scan on the tranformed sequence.  In most
  *  cases, fusing these two operations together is more efficient, since
- *  fewer memory reads and writes are required. In 
- *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt> 
+ *  fewer memory reads and writes are required. In
+ *  \p transform_exclusive_scan, \p init is assigned to <tt>\*result</tt>
  *  and the result of <tt>binary_op(init, unary_op(\*first))</tt> is assigned
- *  to <tt>\*(result + 1)</tt>, and so on.  The transform scan operation is 
+ *  to <tt>\*(result + 1)</tt>, and so on.  The transform scan operation is
  *  permitted to be in-place.
  *
  *  \param first The beginning of the input sequence.
@@ -280,7 +288,7 @@ __host__ __device__
  *
  *  \code
  *  #include <thrust/transform_scan.h>
- *  
+ *
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *
  *  thrust::negate<int> unary_op;

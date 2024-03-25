@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/config.h>
 
@@ -42,7 +50,7 @@ namespace cuda_cub {
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find_if(execution_policy<Derived>& policy,
         InputIt                    first,
         InputIt                    last,
@@ -51,7 +59,7 @@ find_if(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find_if_not(execution_policy<Derived>& policy,
             InputIt                    first,
             InputIt                    last,
@@ -60,7 +68,7 @@ find_if_not(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt,
           class T>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find(execution_policy<Derived> &policy,
      InputIt                    first,
      InputIt                    last,
@@ -104,17 +112,17 @@ template <class Derived,
           class InputIt,
           class Size,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find_if_n(execution_policy<Derived>& policy,
           InputIt                    first,
           Size                       num_items,
           Predicate                  predicate)
 {
   typedef typename thrust::tuple<bool,Size> result_type;
-  
+
   // empty sequence
   if(num_items == 0) return first;
-  
+
   // this implementation breaks up the sequence into separate intervals
   // in an attempt to early-out as soon as a value is found
   //
@@ -125,7 +133,7 @@ find_if_n(execution_policy<Derived>& policy,
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const Size interval_threshold = 1 << 20;
   const Size interval_size = (thrust::min)(interval_threshold, num_items);
-  
+
   // force transform_iterator output to bool
   typedef transform_input_iterator_t<bool,
                                      InputIt,
@@ -165,7 +173,7 @@ find_if_n(execution_policy<Derived>& policy,
       return first + thrust::get<1>(result);
     }
   }
-  
+
   //nothing was found if we reach here...
   return first + num_items;
 }
@@ -173,7 +181,7 @@ find_if_n(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find_if(execution_policy<Derived>& policy,
         InputIt                    first,
         InputIt                    last,
@@ -185,7 +193,7 @@ find_if(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find_if_not(execution_policy<Derived>& policy,
             InputIt                    first,
             InputIt                    last,
@@ -198,7 +206,7 @@ find_if_not(execution_policy<Derived>& policy,
 template <class Derived,
           class InputIt,
           class T>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 find(execution_policy<Derived> &policy,
      InputIt                    first,
      InputIt                    last,

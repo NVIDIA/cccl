@@ -27,13 +27,23 @@
 
 #pragma once
 
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cub/agent/agent_reduce_by_key.cuh>
 #include <cub/agent/agent_rle.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_scan.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -156,7 +166,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor = detail::no_delay_constructor_t<515>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -258,7 +268,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor = detail::no_delay_constructor_t<1075>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -286,7 +296,7 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 
 } // namespace encode
 
-namespace non_trivial_runs 
+namespace non_trivial_runs
 {
 
 template <class LengthT,
@@ -303,7 +313,7 @@ struct sm90_tuning
 
   static constexpr int items = CUB_MIN(nominal_4b_items_per_thread,
                                  CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
-  
+
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   static constexpr bool store_with_time_slicing = true;
@@ -367,7 +377,7 @@ struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor = detail::no_delay_constructor_t<840>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
@@ -411,7 +421,7 @@ struct sm80_tuning
 
   static constexpr int items = CUB_MIN(nominal_4b_items_per_thread,
                                  CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
-  
+
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
   static constexpr bool store_with_time_slicing = true;
@@ -475,7 +485,7 @@ struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, len
   using delay_constructor = detail::no_delay_constructor_t<1065>;
 };
 
-#if CUB_IS_INT128_ENABLED 
+#if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {

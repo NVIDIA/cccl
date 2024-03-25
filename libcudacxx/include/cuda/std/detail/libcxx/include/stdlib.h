@@ -9,9 +9,13 @@
 
 #if defined(__need_malloc_and_calloc) || defined(_LIBCUDACXX_STDLIB_INCLUDE_NEXT)
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #if defined(_LIBCUDACXX_STDLIB_INCLUDE_NEXT)
 #undef _LIBCUDACXX_STDLIB_INCLUDE_NEXT
@@ -90,9 +94,13 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 
 #include <__config>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include_next <stdlib.h>
 

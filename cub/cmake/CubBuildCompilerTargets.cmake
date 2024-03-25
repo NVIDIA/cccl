@@ -11,8 +11,15 @@ function(cub_build_compiler_targets)
   set(cxx_compile_options)
   set(cuda_compile_options)
 
+  # Ensure that we build our tests without treating ourself as system header
+  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cxx_compile_definitions _ENABLE_EXTENDED_ALIGNED_STORAGE)
+    list(APPEND cuda_compile_options "--use-local-env")
+
+    # sccache cannot handle the -Fd option generationg pdb files
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -21,12 +28,6 @@ function(cub_build_compiler_targets)
     # Suppress overly-pedantic/unavoidable warnings brought in with /W4:
     # C4324: structure was padded due to alignment specifier
     append_option_if_available("/wd4324" cxx_compile_options)
-    # C4127: conditional expression is constant
-    # This can be fixed with `if constexpr` when available, but there's no way
-    # to silence these pre-C++17.
-    # TODO We should have per-dialect interface targets so we can leave these
-    # warnings enabled on C++17:
-    append_option_if_available("/wd4127" cxx_compile_options)
     # C4505: unreferenced local function has been removed
     # The CUDA `host_runtime.h` header emits this for
     # `__cudaUnregisterBinaryUtil`.
@@ -79,6 +80,8 @@ function(cub_build_compiler_targets)
     # Disable warning that inlining is inhibited by compiler thresholds.
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
+    # Disable warning about deprecated classic compiler
+    append_option_if_available("-diag-disable=10441" cxx_compile_options)
   endif()
 
   if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
@@ -131,4 +134,12 @@ function(cub_build_compiler_targets)
     # Don't complain about deprecated GPU targets.
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Wno-deprecated-gpu-targets>
   )
+
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # Use the local env instead of rebuilding it all the time
+    target_compile_options(cub.compiler_interface INTERFACE
+      # If using CUDA w/ NVCC...
+      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--use-local-env>
+    )
+  endif()
 endfunction()

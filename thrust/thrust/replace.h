@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -64,7 +72,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/execution_policy.h>
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] = 1;
  *  A[1] = 2;
@@ -82,7 +90,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                ForwardIterator first, ForwardIterator last,
                const T &old_value,
@@ -114,7 +122,7 @@ __host__ __device__
  *  #include <thrust/device_vector.h>
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] = 1;
  *  A[1] = 2;
@@ -176,7 +184,7 @@ template<typename ForwardIterator, typename T>
  *  };
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  1;
  *  A[1] = -3;
@@ -196,7 +204,7 @@ template<typename ForwardIterator, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   Predicate pred,
@@ -237,7 +245,7 @@ __host__ __device__
  *  };
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  1;
  *  A[1] = -3;
@@ -303,9 +311,9 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *      return x < 0;
  *    }
  *  };
- *  
+ *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  10;
  *  A[1] =  20;
@@ -330,7 +338,7 @@ template<typename ForwardIterator, typename Predicate, typename T>
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void replace_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                   ForwardIterator first, ForwardIterator last,
                   InputIterator stencil,
@@ -373,9 +381,9 @@ __host__ __device__
  *      return x < 0;
  *    }
  *  };
- *  
+ *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  10;
  *  A[1] =  20;
@@ -459,7 +467,7 @@ template<typename ForwardIterator, typename InputIterator, typename Predicate, t
  *  \see \c replace_copy_if
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                               InputIterator first, InputIterator last,
                               OutputIterator result,
@@ -563,13 +571,13 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *  };
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  1;
  *  A[1] = -3;
  *  A[2] =  2;
  *  A[3] = -1;
- 
+
  *  thrust::device_vector<int> B(4);
  *  is_less_than_zero pred;
  *
@@ -584,7 +592,7 @@ template<typename InputIterator, typename OutputIterator, typename T>
  *  \see \c replace_copy
  */
 template<typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator first, InputIterator last,
                                  OutputIterator result,
@@ -630,13 +638,13 @@ __host__ __device__
  *  };
  *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  1;
  *  A[1] = -3;
  *  A[2] =  2;
  *  A[3] = -1;
- 
+
  *  thrust::device_vector<int> B(4);
  *  is_less_than_zero pred;
  *
@@ -673,7 +681,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the sequence to copy to.
  *  \param pred The predicate to test on every value of the range <tt>[stencil, stencil + (last - first))</tt>.
- *  \param new_value The replacement value to assign when <tt>pred(*s)</tt> evaluates to \c true. 
+ *  \param new_value The replacement value to assign when <tt>pred(*s)</tt> evaluates to \c true.
  *  \return <tt>result + (last-first)</tt>
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -701,9 +709,9 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *      return x < 0;
  *    }
  *  };
- *  
+ *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  10;
  *  A[1] =  20;
@@ -728,7 +736,7 @@ template<typename InputIterator, typename OutputIterator, typename Predicate, ty
  *  \see \c replace_if
  */
 template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator replace_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                  InputIterator1 first, InputIterator1 last,
                                  InputIterator2 stencil,
@@ -750,7 +758,7 @@ __host__ __device__
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the sequence to copy to.
  *  \param pred The predicate to test on every value of the range <tt>[stencil, stencil + (last - first))</tt>.
- *  \param new_value The replacement value to assign when <tt>pred(*s)</tt> evaluates to \c true. 
+ *  \param new_value The replacement value to assign when <tt>pred(*s)</tt> evaluates to \c true.
  *  \return <tt>result + (last-first)</tt>
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
@@ -776,9 +784,9 @@ __host__ __device__
  *      return x < 0;
  *    }
  *  };
- *  
+ *
  *  ...
- *  
+ *
  *  thrust::device_vector<int> A(4);
  *  A[0] =  10;
  *  A[1] =  20;

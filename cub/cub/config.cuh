@@ -32,9 +32,20 @@
 
 #pragma once
 
-#include "util_arch.cuh"
-#include "util_compiler.cuh"
-#include "util_cpp_dialect.cuh"
-#include "util_deprecated.cuh"
-#include "util_macro.cuh"
-#include "util_namespace.cuh"
+// For _CCCL_IMPLICIT_SYSTEM_HEADER
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/util_arch.cuh>
+#include <cub/util_compiler.cuh>
+#include <cub/util_cpp_dialect.cuh>
+#include <cub/util_deprecated.cuh>
+#include <cub/util_macro.cuh>
+#include <cub/util_namespace.cuh>

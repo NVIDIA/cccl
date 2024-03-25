@@ -185,9 +185,13 @@ template <class T, class Allocator, class Predicate>
 #include <algorithm>
 #include <version>
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
@@ -527,7 +531,7 @@ protected:
 public:
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(__forward_list_base& __x)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept;
 #else
         noexcept(!__node_traits::propagate_on_container_move_assignment::value ||
@@ -588,7 +592,7 @@ template <class _Tp, class _Alloc>
 inline
 void
 __forward_list_base<_Tp, _Alloc>::swap(__forward_list_base& __x)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept
 #else
         noexcept(!__node_traits::propagate_on_container_move_assignment::value ||
@@ -643,7 +647,7 @@ public:
 
     typedef typename base::iterator       iterator;
     typedef typename base::const_iterator const_iterator;
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
     typedef size_type                                __remove_return_type;
 #else
     typedef void                                     __remove_return_type;
@@ -656,7 +660,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     explicit forward_list(const allocator_type& __a);
     explicit forward_list(size_type __n);
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
     explicit forward_list(size_type __n, const allocator_type& __a);
 #endif
     forward_list(size_type __n, const value_type& __v);
@@ -758,7 +762,7 @@ public:
     _LIBCUDACXX_INLINE_VISIBILITY
     const_reference front() const {return base::__before_begin()->__next_->__value_;}
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     template <class... _Args> reference emplace_front(_Args&&... __args);
 #else
     template <class... _Args> void      emplace_front(_Args&&... __args);
@@ -790,7 +794,7 @@ public:
 
     _LIBCUDACXX_INLINE_VISIBILITY
     void swap(forward_list& __x)
-#if _LIBCUDACXX_STD_VER >= 14
+#if _CCCL_STD_VER >= 2014
         noexcept
 #else
         noexcept(!__node_traits::propagate_on_container_swap::value ||
@@ -817,19 +821,19 @@ public:
     __remove_return_type remove(const value_type& __v);
     template <class _Predicate> __remove_return_type remove_if(_Predicate __pred);
     _LIBCUDACXX_INLINE_VISIBILITY
-    __remove_return_type unique() {return unique(__equal_to<value_type>());}
+    __remove_return_type unique() {return unique(__equal_to{});}
     template <class _BinaryPredicate> __remove_return_type unique(_BinaryPredicate __binary_pred);
     _LIBCUDACXX_INLINE_VISIBILITY
-    void merge(forward_list&& __x) {merge(__x, __less<value_type>());}
+    void merge(forward_list&& __x) {merge(__x, __less{});}
     template <class _Compare>
         _LIBCUDACXX_INLINE_VISIBILITY
         void merge(forward_list&& __x, _Compare __comp)
         {merge(__x, _CUDA_VSTD::move(__comp));}
     _LIBCUDACXX_INLINE_VISIBILITY
-    void merge(forward_list& __x) {merge(__x, __less<value_type>());}
+    void merge(forward_list& __x) {merge(__x, __less{});}
     template <class _Compare> void merge(forward_list& __x, _Compare __comp);
     _LIBCUDACXX_INLINE_VISIBILITY
-    void sort() {sort(__less<value_type>());}
+    void sort() {sort(__less{});}
     template <class _Compare> _LIBCUDACXX_INLINE_VISIBILITY void sort(_Compare __comp);
     void reverse() noexcept;
 
@@ -893,7 +897,7 @@ forward_list<_Tp, _Alloc>::forward_list(size_type __n)
     }
 }
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp, class _Alloc>
 forward_list<_Tp, _Alloc>::forward_list(size_type __n,
                                         const allocator_type& __base_alloc)
@@ -1096,7 +1100,7 @@ forward_list<_Tp, _Alloc>::assign(initializer_list<value_type> __il)
 
 template <class _Tp, class _Alloc>
 template <class... _Args>
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 typename forward_list<_Tp, _Alloc>::reference
 #else
 void
@@ -1110,7 +1114,7 @@ forward_list<_Tp, _Alloc>::emplace_front(_Args&&... __args)
                                   _CUDA_VSTD::forward<_Args>(__args)...);
     __h->__next_ = base::__before_begin()->__next_;
     base::__before_begin()->__next_ = __h.release();
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
     return base::__before_begin()->__next_->__value_;
 #endif
 }
@@ -1498,7 +1502,7 @@ forward_list<_Tp, _Alloc>::remove(const value_type& __v)
         else
             ++__i;
     }
-    
+
     return (__remove_return_type) __count_removed;
 }
 
@@ -1526,7 +1530,7 @@ forward_list<_Tp, _Alloc>::remove_if(_Predicate __pred)
         else
             ++__i;
     }
-    
+
     return (__remove_return_type) __count_removed;
 }
 
@@ -1546,7 +1550,7 @@ forward_list<_Tp, _Alloc>::unique(_BinaryPredicate __binary_pred)
             __deleted_nodes.splice_after(__deleted_nodes.before_begin(), *this, __i, __j);
         __i = __j;
     }
-    
+
     return (__remove_return_type) __count_removed;
 }
 
@@ -1730,12 +1734,12 @@ template <class _Tp, class _Alloc>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void
 swap(forward_list<_Tp, _Alloc>& __x, forward_list<_Tp, _Alloc>& __y)
-    noexcept(_NOEXCEPT_(__x.swap(__y)))
+    noexcept(noexcept(__x.swap(__y)))
 {
     __x.swap(__y);
 }
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template <class _Tp, class _Allocator, class _Predicate>
 inline _LIBCUDACXX_INLINE_VISIBILITY
 void erase_if(forward_list<_Tp, _Allocator>& __c, _Predicate __pred)

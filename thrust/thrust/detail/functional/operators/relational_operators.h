@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/functional/actor.h>
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/operator_adaptors.h>
@@ -29,7 +37,7 @@ namespace functional
 {
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::equal_to<>>,
@@ -45,7 +53,7 @@ operator==(const actor<T1> &_1, const T2 &_2)
 } // end operator==()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::equal_to<>>,
@@ -61,7 +69,7 @@ operator==(const T1 &_1, const actor<T2> &_2)
 } // end operator==()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::equal_to<>>,
@@ -77,7 +85,7 @@ operator==(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator==()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::not_equal_to<>>,
@@ -93,7 +101,7 @@ operator!=(const actor<T1> &_1, const T2 &_2)
 } // end operator!=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::not_equal_to<>>,
@@ -109,7 +117,7 @@ operator!=(const T1 &_1, const actor<T2> &_2)
 } // end operator!=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::not_equal_to<>>,
@@ -125,7 +133,7 @@ operator!=(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator!=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater<>>,
@@ -141,7 +149,7 @@ operator>(const actor<T1> &_1, const T2 &_2)
 } // end operator>()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater<>>,
@@ -157,7 +165,7 @@ operator>(const T1 &_1, const actor<T2> &_2)
 } // end operator>()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater<>>,
@@ -173,7 +181,7 @@ operator>(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator>()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less<>>,
@@ -189,7 +197,7 @@ operator<(const actor<T1> &_1, const T2 &_2)
 } // end operator<()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less<>>,
@@ -205,7 +213,7 @@ operator<(const T1 &_1, const actor<T2> &_2)
 } // end operator<()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less<>>,
@@ -221,7 +229,7 @@ operator<(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator<()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater_equal<>>,
@@ -237,7 +245,7 @@ operator>=(const actor<T1> &_1, const T2 &_2)
 } // end operator>=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater_equal<>>,
@@ -253,7 +261,7 @@ operator>=(const T1 &_1, const actor<T2> &_2)
 } // end operator>=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::greater_equal<>>,
@@ -269,7 +277,7 @@ operator>=(const actor<T1> &_1, const actor<T2> &_2)
 } // end operator>=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less_equal<>>,
@@ -285,7 +293,7 @@ operator<=(const actor<T1> &_1, const T2 &_2)
 } // end operator<=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less_equal<>>,
@@ -301,7 +309,7 @@ operator<=(const T1 &_1, const actor<T2> &_2)
 } // end operator<=()
 
 template<typename T1, typename T2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 actor<
   composite<
     transparent_binary_operator<thrust::less_equal<>>,

@@ -23,6 +23,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 #include <thrust/system/detail/generic/tag.h>
 #include <thrust/detail/type_traits.h>
@@ -38,27 +46,27 @@ namespace generic
 {
 
 template<typename DerivedPolicy, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void malloc(thrust::execution_policy<DerivedPolicy> &, Size);
 
 template<typename T, typename DerivedPolicy>
-__host__ __device__
+_CCCL_HOST_DEVICE
 thrust::pointer<T,DerivedPolicy> malloc(thrust::execution_policy<DerivedPolicy> &s, std::size_t n);
 
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void free(thrust::execution_policy<DerivedPolicy> &, Pointer);
 
 template<typename Pointer1, typename Pointer2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void assign_value(tag, Pointer1, Pointer2);
 
 template<typename DerivedPolicy, typename Pointer>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void get_value(thrust::execution_policy<DerivedPolicy> &, Pointer);
 
 template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void iter_swap(thrust::execution_policy<DerivedPolicy>&, Pointer1, Pointer2);
 
 } // end generic

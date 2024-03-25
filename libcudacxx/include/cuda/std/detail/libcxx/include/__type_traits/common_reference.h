@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/common_type.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/copy_cv.h"
@@ -31,17 +39,13 @@
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // common_reference
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // Let COND_RES(X, Y) be:
-#ifdef _LIBCUDACXX_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 
@@ -154,13 +158,13 @@ struct common_reference;
 template <class... _Types>
 using common_reference_t = typename common_reference<_Types...>::type;
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template<class, class, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference = false;
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
-#endif  // _LIBCUDACXX_STD_VER > 11
+#endif  // _CCCL_STD_VER > 2011
 
 // bullet 1 - sizeof...(T) == 0
 template<>
@@ -230,7 +234,7 @@ struct common_reference<_Tp, _Up, _Vp, void_t<common_reference_t<_Tp, _Up>>, _Re
 // bullet 5 - Otherwise, there shall be no member `type`.
 template <class...> struct common_reference {};
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -16,12 +16,20 @@
 
 
 /*! \file find.h
- *  \brief Sequential implementation of find_if. 
+ *  \brief Sequential implementation of find_if.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
@@ -34,11 +42,11 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator find_if(execution_policy<DerivedPolicy> &,
                       InputIterator first,
                       InputIterator last,

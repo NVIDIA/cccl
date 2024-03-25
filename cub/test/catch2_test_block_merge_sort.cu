@@ -32,15 +32,12 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
-#include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
 #include <algorithm>
 
 #include <cub/block/block_merge_sort.cuh>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 struct CustomLess
@@ -57,7 +54,7 @@ template <int ThreadsInBlock,
           class KeyT,
           class ActionT>
 __global__ void block_merge_sort_kernel(
-    KeyT *data, 
+    KeyT *data,
     int valid_items,
     KeyT oob_default,
     ActionT action)
@@ -101,8 +98,8 @@ template <int ThreadsInBlock,
           class ValueT,
           class ActionT>
 __global__ void block_merge_sort_kernel(
-    KeyT *keys, 
-    ValueT *vals, 
+    KeyT *keys,
+    ValueT *vals,
     int valid_items,
     KeyT oob_default,
     ActionT action)
@@ -202,7 +199,7 @@ template <int ItemsPerThread,
           class KeyT,
           class ActionT>
 void block_merge_sort(
-    thrust::device_vector<KeyT> &keys, 
+    c2h::device_vector<KeyT> &keys,
     ActionT action)
 {
   block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread>
@@ -222,8 +219,8 @@ template <int ItemsPerThread,
           class ValueT,
           class ActionT>
 void block_merge_sort(
-    thrust::device_vector<KeyT> &keys, 
-    thrust::device_vector<ValueT> &vals, 
+    c2h::device_vector<KeyT> &keys,
+    c2h::device_vector<ValueT> &vals,
     ActionT action)
 {
   block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread>
@@ -265,15 +262,15 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_keys(
+  c2h::device_vector<key_t> d_keys(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
 
   c2h::gen(CUB_SEED(10), d_keys);
 
-  thrust::host_vector<key_t> h_reference = d_keys;
+  c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(
-      thrust::raw_pointer_cast(h_reference.data()), 
-      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(), 
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
       CustomLess{});
 
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
@@ -292,14 +289,14 @@ CUB_TEST("Block merge sort can sort keys in full tiles",
   using params = params_t<TestType>;
   using key_t = typename params::key_t;
 
-  thrust::device_vector<key_t> d_keys(params::tile_size);
+  c2h::device_vector<key_t> d_keys(params::tile_size);
 
   c2h::gen(CUB_SEED(10), d_keys);
 
-  thrust::host_vector<key_t> h_reference = d_keys;
+  c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(
-      thrust::raw_pointer_cast(h_reference.data()), 
-      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(), 
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
       CustomLess{});
 
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
@@ -320,17 +317,17 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   using value_t = key_t;
   using pair_t = std::pair<key_t, value_t>;
 
-  thrust::device_vector<key_t> d_keys(
+  c2h::device_vector<key_t> d_keys(
     GENERATE_COPY(take(10, random(0, params::tile_size))));
-  thrust::device_vector<value_t> d_vals(d_keys.size());
+  c2h::device_vector<value_t> d_vals(d_keys.size());
 
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  thrust::host_vector<key_t> h_keys = d_keys;
-  thrust::host_vector<value_t> h_vals = d_vals;
+  c2h::host_vector<key_t> h_keys = d_keys;
+  c2h::host_vector<value_t> h_vals = d_vals;
 
-  thrust::host_vector<pair_t> h_ref(d_keys.size());
+  c2h::host_vector<pair_t> h_ref(d_keys.size());
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -338,8 +335,8 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   }
 
   std::stable_sort(
-      thrust::raw_pointer_cast(h_ref.data()), 
-      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(), 
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
       [](pair_t l, pair_t r) -> bool {
         return l.first < r.first;
       });
@@ -370,16 +367,16 @@ CUB_TEST("Block merge sort can sort pairs in full tiles",
   using value_t = key_t;
   using pair_t = std::pair<key_t, value_t>;
 
-  thrust::device_vector<key_t> d_keys(params::tile_size);
-  thrust::device_vector<value_t> d_vals(d_keys.size());
+  c2h::device_vector<key_t> d_keys(params::tile_size);
+  c2h::device_vector<value_t> d_vals(d_keys.size());
 
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  thrust::host_vector<key_t> h_keys = d_keys;
-  thrust::host_vector<value_t> h_vals = d_vals;
+  c2h::host_vector<key_t> h_keys = d_keys;
+  c2h::host_vector<value_t> h_vals = d_vals;
 
-  thrust::host_vector<pair_t> h_ref(d_keys.size());
+  c2h::host_vector<pair_t> h_ref(d_keys.size());
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -387,8 +384,8 @@ CUB_TEST("Block merge sort can sort pairs in full tiles",
   }
 
   std::stable_sort(
-      thrust::raw_pointer_cast(h_ref.data()), 
-      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(), 
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
       [](pair_t l, pair_t r) -> bool {
         return l.first < r.first;
       });
@@ -421,16 +418,16 @@ CUB_TEST("Block merge sort can sort pairs with mixed types",
   constexpr int threads_in_block = c2h::get<0, TestType>::value;
   constexpr int tile_size = items_per_thread * threads_in_block;
 
-  thrust::device_vector<key_t> d_keys(tile_size);
-  thrust::device_vector<value_t> d_vals(d_keys.size());
+  c2h::device_vector<key_t> d_keys(tile_size);
+  c2h::device_vector<value_t> d_vals(d_keys.size());
 
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  thrust::host_vector<key_t> h_keys = d_keys;
-  thrust::host_vector<value_t> h_vals = d_vals;
+  c2h::host_vector<key_t> h_keys = d_keys;
+  c2h::host_vector<value_t> h_vals = d_vals;
 
-  thrust::host_vector<pair_t> h_ref(d_keys.size());
+  c2h::host_vector<pair_t> h_ref(d_keys.size());
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -438,8 +435,8 @@ CUB_TEST("Block merge sort can sort pairs with mixed types",
   }
 
   std::stable_sort(
-      thrust::raw_pointer_cast(h_ref.data()), 
-      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(), 
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
       [](pair_t l, pair_t r) -> bool {
         return l.first < r.first;
       });
@@ -475,13 +472,13 @@ CUB_TEST("Block merge sort can sort large tiles",
 
   constexpr int tile_size = threads_in_block * items_per_thread;
 
-  thrust::device_vector<key_t> d_keys(tile_size);
+  c2h::device_vector<key_t> d_keys(tile_size);
   c2h::gen(CUB_SEED(10), d_keys);
 
-  thrust::host_vector<key_t> h_reference = d_keys;
+  c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(
-      thrust::raw_pointer_cast(h_reference.data()), 
-      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(), 
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
       CustomLess{});
 
   block_merge_sort<items_per_thread, threads_in_block>(
@@ -502,13 +499,13 @@ CUB_TEST("Block merge sort is stable",
   constexpr int threads_in_block = c2h::get<0, TestType>::value;
   constexpr int tile_size = threads_in_block * items_per_thread;
 
-  thrust::device_vector<key_t> d_keys(tile_size);
+  c2h::device_vector<key_t> d_keys(tile_size);
   c2h::gen(CUB_SEED(10), d_keys);
 
-  thrust::host_vector<key_t> h_reference = d_keys;
+  c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(
-      thrust::raw_pointer_cast(h_reference.data()), 
-      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(), 
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
       CustomLess{});
 
   block_merge_sort<items_per_thread, threads_in_block>(
@@ -517,4 +514,3 @@ CUB_TEST("Block merge sort is stable",
 
   REQUIRE( h_reference == d_keys );
 }
-

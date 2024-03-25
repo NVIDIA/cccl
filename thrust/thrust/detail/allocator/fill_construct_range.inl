@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
@@ -54,13 +62,13 @@ template<typename Allocator, typename Arg1>
   Allocator &a;
   Arg1 arg;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   construct2_via_allocator(Allocator &a, const Arg1 &arg)
     : a(a), arg(arg)
   {}
 
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(T &x)
   {
     allocator_traits<Allocator>::construct(a, &x, arg);
@@ -69,7 +77,7 @@ template<typename Allocator, typename Arg1>
 
 
 template<typename Allocator, typename Pointer, typename Size, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     has_effectful_member_construct2<
       Allocator,
@@ -84,7 +92,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename Pointer, typename Size, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     has_effectful_member_construct2<
       Allocator,
@@ -102,7 +110,7 @@ __host__ __device__
 
 
 template<typename Alloc, typename Pointer, typename Size, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void fill_construct_range(Alloc &a, Pointer p, Size n, const T &value)
 {
   return allocator_traits_detail::fill_construct_range(a,p,n,value);

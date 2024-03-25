@@ -33,16 +33,25 @@
 
 #pragma once
 
-#include <iterator>
+#include <cub/config.cuh>
 
-#include "single_pass_scan_operators.cuh"
-#include "../block/block_load.cuh"
-#include "../block/block_store.cuh"
-#include "../block/block_scan.cuh"
-#include "../block/block_discontinuity.cuh"
-#include "../config.cuh"
-#include "../iterator/cache_modified_input_iterator.cuh"
-#include "../iterator/constant_input_iterator.cuh"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/agent/single_pass_scan_operators.cuh>
+#include <cub/block/block_discontinuity.cuh>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/iterator/constant_input_iterator.cuh>
+
+#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -52,42 +61,81 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentSegmentFixup
+ * @brief Parameterizable tuning policy type for AgentSegmentFixup
+ *
+ * @tparam _BLOCK_THREADS
+ *   Threads per thread block
+ *
+ * @tparam _ITEMS_PER_THREAD
+ *   Items per thread (per tile of input)
+ *
+ * @tparam _LOAD_ALGORITHM
+ *   The BlockLoad algorithm to use
+ *
+ * @tparam _LOAD_MODIFIER
+ *   Cache load modifier for reading input elements
+ *
+ * @tparam _SCAN_ALGORITHM
+ *   The BlockScan algorithm to use
  */
-template <
-    int                         _BLOCK_THREADS,                 ///< Threads per thread block
-    int                         _ITEMS_PER_THREAD,              ///< Items per thread (per tile of input)
-    BlockLoadAlgorithm          _LOAD_ALGORITHM,                ///< The BlockLoad algorithm to use
-    CacheLoadModifier           _LOAD_MODIFIER,                 ///< Cache load modifier for reading input elements
-    BlockScanAlgorithm          _SCAN_ALGORITHM>                ///< The BlockScan algorithm to use
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD,
+          BlockLoadAlgorithm _LOAD_ALGORITHM,
+          CacheLoadModifier _LOAD_MODIFIER,
+          BlockScanAlgorithm _SCAN_ALGORITHM>
 struct AgentSegmentFixupPolicy
 {
-    enum
-    {
-        BLOCK_THREADS           = _BLOCK_THREADS,               ///< Threads per thread block
-        ITEMS_PER_THREAD        = _ITEMS_PER_THREAD,            ///< Items per thread (per tile of input)
-    };
+  enum
+  {
+    /// Threads per thread block
+    BLOCK_THREADS = _BLOCK_THREADS,
 
-    static const BlockLoadAlgorithm     LOAD_ALGORITHM          = _LOAD_ALGORITHM;      ///< The BlockLoad algorithm to use
-    static const CacheLoadModifier      LOAD_MODIFIER           = _LOAD_MODIFIER;       ///< Cache load modifier for reading input elements
-    static const BlockScanAlgorithm     SCAN_ALGORITHM          = _SCAN_ALGORITHM;      ///< The BlockScan algorithm to use
+    /// Items per thread (per tile of input)
+    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+  };
+
+  /// The BlockLoad algorithm to use
+  static constexpr BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+
+  /// Cache load modifier for reading input elements
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
+
+  /// The BlockScan algorithm to use
+  static constexpr BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
 };
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
 /**
- * \brief AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for participating in device-wide reduce-value-by-key
+ * @brief AgentSegmentFixup implements a stateful abstraction of CUDA thread blocks for
+ * participating in device-wide reduce-value-by-key
+ *
+ * @tparam AgentSegmentFixupPolicyT
+ *   Parameterized AgentSegmentFixupPolicy tuning policy type
+ *
+ * @tparam PairsInputIteratorT
+ *   Random-access input iterator type for keys
+ *
+ * @tparam AggregatesOutputIteratorT
+ *   Random-access output iterator type for values
+ *
+ * @tparam EqualityOpT
+ *   KeyT equality operator type
+ *
+ * @tparam ReductionOpT
+ *   ValueT reduction operator type
+ *
+ * @tparam OffsetT
+ *   Signed integer type for global offsets
  */
-template <
-    typename    AgentSegmentFixupPolicyT,       ///< Parameterized AgentSegmentFixupPolicy tuning policy type
-    typename    PairsInputIteratorT,            ///< Random-access input iterator type for keys
-    typename    AggregatesOutputIteratorT,      ///< Random-access output iterator type for values
-    typename    EqualityOpT,                    ///< KeyT equality operator type
-    typename    ReductionOpT,                   ///< ValueT reduction operator type
-    typename    OffsetT>                        ///< Signed integer type for global offsets
+template <typename AgentSegmentFixupPolicyT,
+          typename PairsInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT>
 struct AgentSegmentFixup
 {
     //---------------------------------------------------------------------
@@ -165,8 +213,11 @@ struct AgentSegmentFixup
     {
         struct ScanStorage
         {
-            typename BlockScanT::TempStorage                scan;           // Smem needed for tile scanning
-            typename TilePrefixCallbackOpT::TempStorage     prefix;         // Smem needed for cooperative prefix callback
+          // Smem needed for tile scanning
+          typename BlockScanT::TempStorage scan;
+
+          // Smem needed for cooperative prefix callback
+          typename TilePrefixCallbackOpT::TempStorage prefix;
         } scan_storage;
 
         // Smem needed for loading keys
@@ -181,37 +232,47 @@ struct AgentSegmentFixup
     // Per-thread fields
     //---------------------------------------------------------------------
 
-    _TempStorage&                   temp_storage;       ///< Reference to temp_storage
-    WrappedPairsInputIteratorT      d_pairs_in;          ///< Input keys
-    AggregatesOutputIteratorT       d_aggregates_out;   ///< Output value aggregates
-    WrappedFixupInputIteratorT      d_fixup_in;         ///< Fixup input values
-    InequalityWrapper<EqualityOpT>  inequality_op;      ///< KeyT inequality operator
-    ReductionOpT                    reduction_op;       ///< Reduction operator
-    ReduceBySegmentOpT              scan_op;            ///< Reduce-by-segment scan operator
-
+    _TempStorage &temp_storage;                   ///< Reference to temp_storage
+    WrappedPairsInputIteratorT d_pairs_in;        ///< Input keys
+    AggregatesOutputIteratorT d_aggregates_out;   ///< Output value aggregates
+    WrappedFixupInputIteratorT d_fixup_in;        ///< Fixup input values
+    InequalityWrapper<EqualityOpT> inequality_op; ///< KeyT inequality operator
+    ReductionOpT reduction_op;                    ///< Reduction operator
+    ReduceBySegmentOpT scan_op;                   ///< Reduce-by-segment scan operator
 
     //---------------------------------------------------------------------
     // Constructor
     //---------------------------------------------------------------------
 
-    // Constructor
-    __device__ __forceinline__
-    AgentSegmentFixup(
-        TempStorage&                temp_storage,       ///< Reference to temp_storage
-        PairsInputIteratorT         d_pairs_in,          ///< Input keys
-        AggregatesOutputIteratorT   d_aggregates_out,   ///< Output value aggregates
-        EqualityOpT                 equality_op,        ///< KeyT equality operator
-        ReductionOpT                reduction_op)       ///< ValueT reduction operator
-    :
-        temp_storage(temp_storage.Alias()),
-        d_pairs_in(d_pairs_in),
-        d_aggregates_out(d_aggregates_out),
-        d_fixup_in(d_aggregates_out),
-        inequality_op(equality_op),
-        reduction_op(reduction_op),
-        scan_op(reduction_op)
+    /**
+     * @param temp_storage
+     *   Reference to temp_storage
+     *
+     * @param d_pairs_in
+     *   Input keys
+     *
+     * @param d_aggregates_out
+     *   Output value aggregates
+     *
+     * @param equality_op
+     *   KeyT equality operator
+     *
+     * @param reduction_op
+     *   ValueT reduction operator
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSegmentFixup(TempStorage &temp_storage,
+                                                 PairsInputIteratorT d_pairs_in,
+                                                 AggregatesOutputIteratorT d_aggregates_out,
+                                                 EqualityOpT equality_op,
+                                                 ReductionOpT reduction_op)
+        : temp_storage(temp_storage.Alias())
+        , d_pairs_in(d_pairs_in)
+        , d_aggregates_out(d_aggregates_out)
+        , d_fixup_in(d_aggregates_out)
+        , inequality_op(equality_op)
+        , reduction_op(reduction_op)
+        , scan_op(reduction_op)
     {}
-
 
     //---------------------------------------------------------------------
     // Cooperatively scan a device-wide sequence of tiles with other CTAs
@@ -219,15 +280,29 @@ struct AgentSegmentFixup
 
 
     /**
-     * Process input tile.  Specialized for atomic-fixup
+     * @brief Process input tile. Specialized for atomic-fixup
+     *
+     * @param num_remaining
+     *   Number of global input items remaining (including this tile)
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @param use_atomic_fixup
+     *   Marker whether to use atomicAdd (instead of reduce-by-key)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ void ConsumeTile(
-        OffsetT             num_remaining,      ///< Number of global input items remaining (including this tile)
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state,         ///< Global tile state descriptor
-        Int2Type<true>      use_atomic_fixup)   ///< Marker whether to use atomicAdd (instead of reduce-by-key)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
+                                                int tile_idx,
+                                                OffsetT tile_offset,
+                                                ScanTileStateT &tile_state,
+                                                Int2Type<true> use_atomic_fixup)
     {
         KeyValuePairT   pairs[ITEMS_PER_THREAD];
 
@@ -240,7 +315,7 @@ struct AgentSegmentFixup
         else
             BlockLoadPairs(temp_storage.load_pairs).Load(d_pairs_in + tile_offset, pairs);
 
-        // RLE 
+        // RLE
         #pragma unroll
         for (int ITEM = 1; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
@@ -257,17 +332,30 @@ struct AgentSegmentFixup
             atomicAdd(d_scatter, pairs[ITEMS_PER_THREAD - 1].value);
     }
 
-
     /**
-     * Process input tile.  Specialized for reduce-by-key fixup
+     * @brief Process input tile. Specialized for reduce-by-key fixup
+     *
+     * @param num_remaining
+     *   Number of global input items remaining (including this tile)
+     *
+     * @param tile_idx
+     *   Tile index
+     *
+     * @param tile_offset
+     *   Tile offset
+     *
+     * @param tile_state
+     *   Global tile state descriptor
+     *
+     * @param use_atomic_fixup
+     *   Marker whether to use atomicAdd (instead of reduce-by-key)
      */
     template <bool IS_LAST_TILE>
-    __device__ __forceinline__ void ConsumeTile(
-        OffsetT             num_remaining,      ///< Number of global input items remaining (including this tile)
-        int                 tile_idx,           ///< Tile index
-        OffsetT             tile_offset,        ///< Tile offset
-        ScanTileStateT&     tile_state,         ///< Global tile state descriptor
-        Int2Type<false>     use_atomic_fixup)   ///< Marker whether to use atomicAdd (instead of reduce-by-key)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
+                                                int tile_idx,
+                                                OffsetT tile_offset,
+                                                ScanTileStateT &tile_state,
+                                                Int2Type<false> use_atomic_fixup)
     {
         KeyValuePairT   pairs[ITEMS_PER_THREAD];
         KeyValuePairT   scatter_pairs[ITEMS_PER_THREAD];
@@ -339,19 +427,26 @@ struct AgentSegmentFixup
         }
     }
 
-
     /**
-     * Scan tiles of items as part of a dynamic chained scan
+     * @brief Scan tiles of items as part of a dynamic chained scan
+     *
+     * @param num_items
+     *   Total number of input items
+     *
+     * @param num_tiles
+     *   Total number of input tiles
+     *
+     * @param tile_state
+     *   Global tile state descriptor
      */
-    __device__ __forceinline__ void ConsumeRange(
-        OffsetT             num_items,          ///< Total number of input items
-        int                 num_tiles,          ///< Total number of input tiles
-        ScanTileStateT&     tile_state)         ///< Global tile state descriptor
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
+                                                 int num_tiles,
+                                                 ScanTileStateT &tile_state)
     {
         // Blocks are launched in increasing order, so just assign one tile per block
-        int     tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
-        OffsetT tile_offset     = tile_idx * TILE_ITEMS;                    // Global offset for the current tile
-        OffsetT num_remaining   = num_items - tile_offset;                  // Remaining items (including this tile)
+        int tile_idx          = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+        OffsetT tile_offset   = tile_idx * TILE_ITEMS;   // Global offset for the current tile
+        OffsetT num_remaining = num_items - tile_offset; // Remaining items (including this tile)
 
         if (num_remaining > TILE_ITEMS)
         {

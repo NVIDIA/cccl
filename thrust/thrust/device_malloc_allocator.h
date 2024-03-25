@@ -14,13 +14,21 @@
  *  limitations under the License.
  */
 
-/*! \file 
+/*! \file
  *  \brief An allocator which allocates storage with \p device_malloc.
  */
 
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 #include <thrust/device_malloc.h>
@@ -34,7 +42,7 @@ THRUST_NAMESPACE_BEGIN
 template<typename> class device_ptr;
 template<typename T> device_ptr<T> device_malloc(const std::size_t n);
 
-/*! \addtogroup allocators Allocators 
+/*! \addtogroup allocators Allocators
  *  \ingroup memory_management
  *  \{
  */
@@ -89,36 +97,34 @@ template<typename T>
     }; // end rebind
 
     /*! No-argument constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_malloc_allocator() {}
 
     /*! No-argument destructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline ~device_malloc_allocator() {}
 
     /*! Copy constructor has no effect. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_malloc_allocator(device_malloc_allocator const&) {}
 
     /*! Constructor from other \p device_malloc_allocator has no effect. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline device_malloc_allocator(device_malloc_allocator<U> const&) {}
 
-#if THRUST_CPP_DIALECT >= 2011
     device_malloc_allocator & operator=(const device_malloc_allocator &) = default;
-#endif
 
     /*! Returns the address of an allocated object.
      *  \return <tt>&r</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline pointer address(reference r) { return &r; }
 
     /*! Returns the address an allocated object.
      *  \return <tt>&r</tt>.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline const_pointer address(const_reference r) { return &r; }
 
     /*! Allocates storage for \p cnt objects.
@@ -126,7 +132,7 @@ template<typename T>
      *  \return A \p pointer to uninitialized storage for \p cnt objects.
      *  \note Memory allocated by this function must be deallocated with \p deallocate.
      */
-    __host__
+    _CCCL_HOST
     inline pointer allocate(size_type cnt,
                             const_pointer = const_pointer(static_cast<T*>(0)))
     {
@@ -144,7 +150,7 @@ template<typename T>
      *  \note Memory deallocated by this function must previously have been
      *        allocated with \p allocate.
      */
-    __host__
+    _CCCL_HOST
     inline void deallocate(pointer p, size_type cnt)
     {
       // silence unused parameter warning while still leaving the parameter name for Doxygen
@@ -164,13 +170,13 @@ template<typename T>
     /*! Compares against another \p device_malloc_allocator for equality.
      *  \return \c true
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline bool operator==(device_malloc_allocator const&) const { return true; }
 
     /*! Compares against another \p device_malloc_allocator for inequality.
      *  \return \c false
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     inline bool operator!=(device_malloc_allocator const &a) const {return !operator==(a); }
 }; // end device_malloc_allocator
 

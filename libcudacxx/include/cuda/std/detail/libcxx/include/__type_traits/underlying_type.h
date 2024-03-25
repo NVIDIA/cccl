@@ -14,11 +14,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/is_enum.h"
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
+#include "../__type_traits/is_enum.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,7 +42,7 @@ struct __underlying_type_impl<_Tp, true>
 template <class _Tp>
 struct underlying_type : __underlying_type_impl<_Tp, is_enum<_Tp>::value> {};
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using underlying_type_t = typename underlying_type<_Tp>::type;
 #endif
 

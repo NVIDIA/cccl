@@ -18,7 +18,15 @@
 #include <__config>
 #endif //__cuda_std__
 
-#if _LIBCUDACXX_STD_VER > 11
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_STD_VER > 2011
 
 #define _LIBCUDACXX_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
 #define _LIBCUDACXX_PP_CAT(_Xp, ...) _LIBCUDACXX_PP_CAT_(_Xp, __VA_ARGS__)
@@ -158,7 +166,7 @@
   _LIBCUDACXX_PP_CAT3(_LIBCUDACXX_PP_EAT_TYPENAME_, __VA_ARGS__)
 #define _LIBCUDACXX_PP_EAT_TYPENAME_typename
 
-#if (defined(__cpp_concepts) && _LIBCUDACXX_STD_VER >= 20) ||                  \
+#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) ||                  \
     defined(_LIBCUDACXX_DOXYGEN_INVOKED)
 
 #define _LIBCUDACXX_CONCEPT concept
@@ -217,7 +225,7 @@
   _Concept::_Requires<__VA_ARGS__>
 #define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...)               \
   static_cast<_Concept::_Tag<__VA_ARGS__> *>(nullptr)
-#if defined(_LIBCUDACXX_COMPILER_GCC)
+#if defined(_CCCL_COMPILER_GCC)
 // GCC can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
@@ -237,36 +245,28 @@
 // _LIBCUDACXX_TEMPLATE
 // Usage:
 //   _LIBCUDACXX_TEMPLATE(typename A, typename _Bp)
-//     (requires Concept1<A> _LIBCUDACXX_AND Concept2<_Bp>)
+//     _LIBCUDACXX_REQUIRES( Concept1<A> _LIBCUDACXX_AND Concept2<_Bp>)
 //   void foo(A a, _Bp b)
 //   {}
-#if (defined(__cpp_concepts) && _LIBCUDACXX_STD_VER >= 20)
-#define _LIBCUDACXX_TEMPLATE(...)                                              \
-  template <__VA_ARGS__> _LIBCUDACXX_PP_EXPAND /**/
-#define _LIBCUDACXX_AND &&                     /**/
-#define _LIBCUDACXX_TRAILING_REQUIRES(...)                                     \
-  -> __VA_ARGS__ _LIBCUDACXX_PP_EXPAND
+#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020)
+#define _LIBCUDACXX_TEMPLATE(...) template <__VA_ARGS__>
+#define _LIBCUDACXX_REQUIRES(...) requires __VA_ARGS__
+#define _LIBCUDACXX_AND &&
+#define _LIBCUDACXX_TRAILING_REQUIRES(...) -> __VA_ARGS__ requires _LIBCUDACXX_PP_EXPAND
 #else
-#define _LIBCUDACXX_TEMPLATE(...)                                              \
-  template <__VA_ARGS__ _LIBCUDACXX_TEMPLATE_SFINAE_AUX_ /**/
-#define _LIBCUDACXX_AND                                                        \
-  &&_LIBCUDACXX_true_, int > = 0, _Concept::_Enable_if_t < /**/
+#define _LIBCUDACXX_TEMPLATE(...) template <__VA_ARGS__
+#define _LIBCUDACXX_REQUIRES(...)                                              \
+  , bool _LIBCUDACXX_true_ = true,                                             \
+         _Concept::_Enable_if_t <__VA_ARGS__ &&                                \
+             _LIBCUDACXX_true_,                                                \
+         int > = 0 > /**/
+#define _LIBCUDACXX_AND \
+  && _LIBCUDACXX_true_, int > = 0, _Concept::_Enable_if_t <
+#define _LIBCUDACXX_TRAILING_REQUIRES_AUX_(...)                                \
+  , __VA_ARGS__>
 #define _LIBCUDACXX_TRAILING_REQUIRES(...)                                     \
   -> _Concept::_Requires_t<__VA_ARGS__ _LIBCUDACXX_TRAILING_REQUIRES_AUX_
 #endif
-
-#define _LIBCUDACXX_TEMPLATE_SFINAE(...)                                       \
-  template <__VA_ARGS__ _LIBCUDACXX_TEMPLATE_SFINAE_AUX_ /**/
-#define _LIBCUDACXX_TEMPLATE_SFINAE_AUX_(...)                                  \
-  , bool _LIBCUDACXX_true_ = true,                                             \
-         _Concept::_Enable_if_t <                                              \
-                 _LIBCUDACXX_PP_CAT(_LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_,        \
-                                    __VA_ARGS__) &&                            \
-             _LIBCUDACXX_true_,                                                \
-         int > = 0 > /**/
-#define _LIBCUDACXX_TRAILING_REQUIRES_AUX_(...)                                \
-  , _LIBCUDACXX_PP_CAT(_LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_, __VA_ARGS__)> /**/
-#define _LIBCUDACXX_TEMPLATE_SFINAE_AUX_3_requires
 
 namespace _Concept {
 template <bool> struct _Select {};
@@ -285,7 +285,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool _Is_true() {
   return true;
 }
 
-#if defined(_LIBCUDACXX_COMPILER_CLANG) || defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_MSVC)
 template <bool _Bp>
 _LIBCUDACXX_INLINE_VISIBILITY _Concept::_Enable_if_t<_Bp> _Requires() {}
 #else
@@ -294,6 +294,6 @@ _LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
 #endif
 } // namespace _Concept
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif //_CUDA___CONCEPTS

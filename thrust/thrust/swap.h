@@ -21,6 +21,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -36,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
 /*! \p swap assigns the contents of \c a to \c b and the
  *  contents of \c b to \c a. This is used as a primitive operation
  *  by many other algorithms.
- *  
+ *
  *  \param a The first value of interest. After completion,
  *           the value of b will be returned here.
  *  \param b The second value of interest. After completion,
@@ -58,7 +66,7 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  */
 template<typename Assignable1, typename Assignable2>
-__host__ __device__ 
+_CCCL_HOST_DEVICE
 inline void swap(Assignable1 &a, Assignable2 &b);
 
 /*! \} // swap
@@ -122,7 +130,7 @@ inline void swap(Assignable1 &a, Assignable2 &b);
 template<typename DerivedPolicy,
          typename ForwardIterator1,
          typename ForwardIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator2 swap_ranges(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
                                ForwardIterator1 first1,
                                ForwardIterator1 last1,

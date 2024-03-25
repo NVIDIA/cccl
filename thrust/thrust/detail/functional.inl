@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/functional.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -110,14 +118,14 @@ template<typename Result, typename Argument1, typename Argument2>
 }; // end binary_traits
 
 template<typename Predicate>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   unary_negate<Predicate> not1(const Predicate &pred)
 {
   return unary_negate<Predicate>(pred);
 } // end not1()
 
 template<typename BinaryPredicate>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   binary_negate<BinaryPredicate> not2(const BinaryPredicate &pred)
 {
   return binary_negate<BinaryPredicate>(pred);

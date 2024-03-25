@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script prints the sccache hit rate between two calls to sccache --show-stats.
-# It should be sourced in your script before and after the operations you want to profile, 
+# It should be sourced in your script before and after the operations you want to profile,
 # with the 'start' or 'end' argument respectively.
 
 mode=$1
@@ -10,6 +10,12 @@ if [[ "$mode" != "start" && "$mode" != "end" ]]; then
     echo "Invalid mode: $mode"
     echo "Usage: $0 {start|end}"
     exit 1
+fi
+
+# Check if sccache is available
+if ! command -v sccache &> /dev/null; then
+    echo "Notice: sccache is not available. Skipping..."
+    exit 0
 fi
 
 case $mode in

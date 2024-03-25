@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <thrust/detail/execute_with_allocator_fwd.h>
 #include <thrust/pair.h>
 #include <thrust/detail/raw_pointer_cast.h>
@@ -35,7 +43,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -63,7 +71,7 @@ template <
   , typename Allocator
   , template <typename> class BaseSystem
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system
@@ -84,15 +92,13 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#if THRUST_CPP_DIALECT >= 2011
-
 template <
     typename T,
     template <typename> class BaseSystem,
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
@@ -121,7 +127,7 @@ template <
     typename Allocator,
     typename ...Dependencies
 >
-__host__
+_CCCL_HOST
 void
 return_temporary_buffer(
     thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
@@ -142,7 +148,6 @@ return_temporary_buffer(
   alloc_traits::deallocate(system.get_allocator(), to_ptr, num_elements);
 }
 
-#endif
 
 } // namespace detail
 

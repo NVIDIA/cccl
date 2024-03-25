@@ -18,6 +18,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/config.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
@@ -31,18 +39,18 @@ namespace cuda_cub {
 
 
 template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   void assign_value(thrust::cuda::execution_policy<DerivedPolicy> &exec, Pointer1 dst, Pointer2 src)
 {
   // XXX war nvbugs/881631
   struct war_nvbugs_881631
   {
-    __host__ inline static void host_path(thrust::cuda::execution_policy<DerivedPolicy> &exec, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST inline static void host_path(thrust::cuda::execution_policy<DerivedPolicy> &exec, Pointer1 dst, Pointer2 src)
     {
       cuda_cub::copy(exec, src, src + 1, dst);
     }
 
-    __device__ inline static void device_path(thrust::cuda::execution_policy<DerivedPolicy> &, Pointer1 dst, Pointer2 src)
+    _CCCL_DEVICE inline static void device_path(thrust::cuda::execution_policy<DerivedPolicy> &, Pointer1 dst, Pointer2 src)
     {
       *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
     }
@@ -58,13 +66,13 @@ inline __host__ __device__
 
 
 template<typename System1, typename System2, typename Pointer1, typename Pointer2>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
   void assign_value(cross_system<System1,System2> &systems, Pointer1 dst, Pointer2 src)
 {
   // XXX war nvbugs/881631
   struct war_nvbugs_881631
   {
-    __host__ inline static void host_path(cross_system<System1,System2> &systems, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST inline static void host_path(cross_system<System1,System2> &systems, Pointer1 dst, Pointer2 src)
     {
       // rotate the systems so that they are ordered the same as (src, dst)
       // for the call to thrust::copy
@@ -72,7 +80,7 @@ inline __host__ __device__
       cuda_cub::copy(rotated_systems, src, src + 1, dst);
     }
 
-    __device__ inline static void device_path(cross_system<System1,System2> &, Pointer1 dst, Pointer2 src)
+    _CCCL_DEVICE inline static void device_path(cross_system<System1,System2> &, Pointer1 dst, Pointer2 src)
     {
       // XXX forward the true cuda::execution_policy inside systems here
       //     instead of materializing a tag

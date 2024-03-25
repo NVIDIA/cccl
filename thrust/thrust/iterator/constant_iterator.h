@@ -23,6 +23,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/constant_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
 
@@ -77,15 +85,15 @@ THRUST_NAMESPACE_BEGIN
  *    data[1] = 7;
  *    data[2] = 2;
  *    data[3] = 5;
- *    
+ *
  *    // add 10 to all values in data
  *    thrust::transform(data.begin(), data.end(),
  *                      thrust::make_constant_iterator(10),
  *                      data.begin(),
  *                      thrust::plus<int>());
- *    
+ *
  *    // data is now [13, 17, 12, 15]
- *    
+ *
  *    return 0;
  *  }
  *  \endcode
@@ -112,46 +120,36 @@ template<typename Value,
     /*! \endcond
      */
 
-    /*! Null constructor initializes this \p constant_iterator's constant using its
-     *  null constructor.
+    /*! Default constructor initializes this \p constant_iterator's constant using its default constructor
      */
-    __host__ __device__
-    constant_iterator()
-      : super_t(), m_value() {}
-
-    /*! Copy constructor copies the value of another \p constant_iterator into this
-     *  \p constant_iterator.
-     *
-     *  \p rhs The constant_iterator to copy.
-     */
-    __host__ __device__
-    constant_iterator(constant_iterator const &rhs)
-      : super_t(rhs.base()), m_value(rhs.m_value) {}
+    _CCCL_HOST_DEVICE constant_iterator()
+        : super_t(), m_value() {}
 
     /*! Copy constructor copies the value of another \p constant_iterator with related
      *  System type.
      *
      *  \param rhs The \p constant_iterator to copy.
      */
-    template<typename OtherSystem>
-    __host__ __device__
-    constant_iterator(constant_iterator<Value,Incrementable,OtherSystem> const &rhs,
-                      typename thrust::detail::enable_if_convertible<
-                        typename thrust::iterator_system<constant_iterator<Value,Incrementable,OtherSystem> >::type,
-                        typename thrust::iterator_system<super_t>::type
-                      >::type * = 0)
-      : super_t(rhs.base()), m_value(rhs.value()) {}
+    template <class OtherSystem,
+              detail::enable_if_convertible_t<
+                typename thrust::iterator_system<constant_iterator<Value, Incrementable, OtherSystem>>::type,
+                typename thrust::iterator_system<super_t>::type,
+                int> = 0>
+    _CCCL_HOST_DEVICE constant_iterator(constant_iterator<Value, Incrementable, OtherSystem> const& rhs)
+        : super_t(rhs.base())
+        , m_value(rhs.value())
+    {}
 
     /*! This constructor receives a value to use as the constant value of this
      *  \p constant_iterator and an index specifying the location of this
      *  \p constant_iterator in a sequence.
-     *  
+     *
      *  \p v The value of this \p constant_iterator's constant value.
      *  \p i The index of this \p constant_iterator in a sequence. Defaults to the
      *       value returned by \c Incrementable's null constructor. For example,
      *       when <tt>Incrementable == int</tt>, \c 0.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     constant_iterator(value_type const& v, incrementable const &i = incrementable())
       : super_t(base_iterator(i)), m_value(v) {}
 
@@ -164,14 +162,14 @@ template<typename Value,
      *       when <tt>Incrementable == int</tt>, \c 0.
      */
     template<typename OtherValue, typename OtherIncrementable>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     constant_iterator(OtherValue const& v, OtherIncrementable const& i = incrementable())
       : super_t(base_iterator(i)), m_value(v) {}
 
     /*! This method returns the value of this \p constant_iterator's constant value.
      *  \return A \c const reference to this \p constant_iterator's constant value.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Value const& value() const
     { return m_value; }
 
@@ -179,16 +177,16 @@ template<typename Value,
      */
 
   protected:
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Value const& value_reference() const
     { return m_value; }
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     Value & value_reference()
     { return m_value; }
-  
+
   private: // Core iterator interface
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference dereference() const
     {
       return m_value;
@@ -217,7 +215,7 @@ template<typename Value,
  *  \see constant_iterator
  */
 template<typename ValueT, typename IndexT>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = int())
 {
   return constant_iterator<ValueT, IndexT>(x, i);
@@ -234,7 +232,7 @@ constant_iterator<ValueT, IndexT> make_constant_iterator(ValueT x, IndexT i = in
  *  \see constant_iterator
  */
 template<typename V>
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 constant_iterator<V> make_constant_iterator(V x)
 {
   return constant_iterator<V>(x, 0);

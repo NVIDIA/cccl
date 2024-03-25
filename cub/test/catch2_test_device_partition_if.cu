@@ -27,23 +27,18 @@
 
 #include <cub/device/device_partition.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/distance.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
 #include <algorithm>
 
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
-#include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DevicePartition::If, partition_if);
+DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition_if);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 template <typename T>
 struct less_than_t
@@ -88,12 +83,12 @@ CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
 {
   using type = typename c2h::get<0, TestType>;
 
-  const int num_items = 0;
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  constexpr int num_items = 0;
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   partition_if(in.begin(),
@@ -110,12 +105,12 @@ CUB_TEST("DevicePartition::If handles all matched", "[device][partition_if]", ty
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   partition_if(in.begin(),
@@ -133,12 +128,12 @@ CUB_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   partition_if(in.begin(),
@@ -148,7 +143,7 @@ CUB_TEST("DevicePartition::If handles no matched", "[device][partition_if]", typ
                always_false_t{});
 
   // The false partition is in reverse order
-  thrust::reverse(out.begin(), out.end());
+  thrust::reverse(c2h::device_policy, out.begin(), out.end());
 
   REQUIRE(num_selected_out[0] == 0);
   REQUIRE(out == in);
@@ -159,19 +154,19 @@ CUB_TEST("DevicePartition::If does not change input", "[device][partition_if]", 
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
-  thrust::device_vector<type> reference = in;
+  c2h::device_vector<type> reference = in;
 
   partition_if(in.begin(),
                out.begin(),
@@ -187,19 +182,19 @@ CUB_TEST("DevicePartition::If is stable", "[device][partition_if]")
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   // The main difference between stable_partition and DevicePartition::If is that the false partition is in reverse order
   const auto boundary = std::stable_partition(reference.begin(), reference.end(), le);
   std::reverse(boundary, reference.end());
@@ -219,19 +214,19 @@ CUB_TEST("DevicePartition::If works with iterators", "[device][partition_if]", a
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   // The main difference between stable_partition and DevicePartition::If is that the false partition is in reverse order
   const auto boundary = std::stable_partition(reference.begin(), reference.end(), le);
   std::reverse(boundary, reference.end());
@@ -251,19 +246,19 @@ CUB_TEST("DevicePartition::If works with pointers", "[device][partition_if]", ty
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<type> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<type> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   // The main difference between stable_partition and DevicePartition::If is that the false partition is in reverse order
   const auto boundary = std::stable_partition(reference.begin(), reference.end(), le);
   std::reverse(boundary, reference.end());
@@ -296,19 +291,19 @@ CUB_TEST("DevicePartition::If works with a different output type", "[device][par
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<convertible_from_T<type>> out(num_items);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<convertible_from_T<type>> out(num_items);
   c2h::gen(CUB_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
 
   // Needs to be device accessible
-  thrust::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 0);
   int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Ensure that we create the same output as std
-  thrust::host_vector<type> reference = in;
+  c2h::host_vector<type> reference = in;
   // The main difference between stable_partition and DevicePartition::If is that the false partition is in reverse order
   const auto boundary = std::stable_partition(reference.begin(), reference.end(), le);
   std::reverse(boundary, reference.end());

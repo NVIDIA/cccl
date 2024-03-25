@@ -15,6 +15,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/__concept_macros.h"
 #include "../__functional/invoke.h"
 #include "../__functional/perfect_forward.h"
@@ -25,13 +33,9 @@
 #include "../__type_traits/is_nothrow_constructible.h"
 #include "../__utility/forward.h"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 
 struct __bind_front_op {
     template <class ..._Args>
@@ -45,7 +49,7 @@ struct __bind_front_op {
 template <class _Fn, class ..._BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...> {
     using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#if defined(_LIBCUDACXX_COMPILER_NVRTC)
+#if defined(_CCCL_COMPILER_NVRTC)
     constexpr __bind_front_t() noexcept = default;
 
     template<class... _Args>
@@ -65,13 +69,13 @@ _LIBCUDACXX_CONCEPT __can_bind_front = is_constructible_v<decay_t<_Fn>, _Fn> &&
                                        (is_move_constructible_v<decay_t<_Args>> && ... );
 
 _LIBCUDACXX_TEMPLATE(class _Fn, class... _Args)
-  (requires __can_bind_front<_Fn, _Args...>)
+  _LIBCUDACXX_REQUIRES( __can_bind_front<_Fn, _Args...>)
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
 constexpr auto bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>) {
     return __bind_front_t<decay_t<_Fn>, decay_t<_Args>...>(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

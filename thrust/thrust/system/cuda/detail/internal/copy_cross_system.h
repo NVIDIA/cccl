@@ -26,11 +26,19 @@
  ******************************************************************************/
 #pragma once
 
+#include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 // XXX
 // this file must not be included on its own, ever,
 // but must be part of include in thrust/system/cuda/detail/copy.h
-
-#include <thrust/detail/config.h>
 
 #include <thrust/system/cuda/config.h>
 
@@ -91,7 +99,7 @@ namespace __copy {
             class InputIt,
             class Size,
             class OutputIt>
-  OutputIt __host__
+  OutputIt _CCCL_HOST
   cross_system_copy_n(thrust::execution_policy<System1>& sys1,
                       thrust::execution_policy<System2>& sys2,
                       InputIt                            begin,
@@ -118,7 +126,7 @@ namespace __copy {
             class InputIt,
             class Size,
             class OutputIt>
-  OutputIt __host__
+  OutputIt _CCCL_HOST
   cross_system_copy_n(thrust::cpp::execution_policy<H>&      host_s,
                       thrust::cuda_cub::execution_policy<D>& device_s,
                       InputIt                                first,
@@ -166,7 +174,7 @@ namespace __copy {
             class InputIt,
             class Size,
             class OutputIt>
-  OutputIt __host__
+  OutputIt _CCCL_HOST
   cross_system_copy_n(thrust::cuda_cub::execution_policy<D>& device_s,
                       thrust::cpp::execution_policy<H>&   host_s,
                       InputIt                             first,
@@ -178,7 +186,7 @@ namespace __copy {
     // get type of the input data
     typedef typename thrust::iterator_value<InputIt>::type InputTy;
 
-    // allocate device temp storage 
+    // allocate device temp storage
     thrust::detail::temporary_array<InputTy, D> d_in_ptr(device_s, num_items);
 
     // uninitialize copy into temp device storage
@@ -207,7 +215,7 @@ namespace __copy {
             class InputIt,
             class Size,
             class OutputIt>
-  OutputIt __host__
+  OutputIt _CCCL_HOST
   cross_system_copy_n(cross_system<System1, System2> systems,
                       InputIt  begin,
                       Size     n,
@@ -226,7 +234,7 @@ namespace __copy {
             class System2,
             class InputIterator,
             class OutputIterator>
-  OutputIterator __host__
+  OutputIterator _CCCL_HOST
   cross_system_copy(cross_system<System1, System2> systems,
                     InputIterator  begin,
                     InputIterator  end,

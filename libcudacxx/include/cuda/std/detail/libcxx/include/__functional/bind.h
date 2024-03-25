@@ -19,6 +19,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__functional/invoke.h"
 #include "../__functional/reference_wrapper.h"
 #include "../__functional/weak_result_type.h"
@@ -41,10 +49,6 @@
 #include "../cstddef"
 #include "../tuple"
 
-#if defined(_LIBCUDACXX_USE_PRAGMA_GCC_SYSTEM_HEADER)
-#pragma GCC system_header
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template<class _Tp>
@@ -54,7 +58,7 @@ struct is_bind_expression : _If<
     is_bind_expression<__remove_cvref_t<_Tp> >
 > {};
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 inline constexpr size_t is_bind_expression_v = is_bind_expression<_Tp>::value;
 #endif
@@ -66,7 +70,7 @@ struct is_placeholder : _If<
     is_placeholder<__remove_cvref_t<_Tp> >
 > {};
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 inline constexpr size_t is_placeholder_v = is_placeholder<_Tp>::value;
 #endif
@@ -132,7 +136,7 @@ __enable_if_t
 >
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
-    typedef typename __make_tuple_indices<sizeof...(_Uj)>::type __indices;
+    typedef __make_tuple_indices_t<sizeof...(_Uj)> __indices;
     return _CUDA_VSTD::__mu_expand(__ti, __uj, __indices());
 }
 
@@ -142,7 +146,7 @@ struct __mu_return2 {};
 template <class _Ti, class _Uj>
 struct __mu_return2<true, _Ti, _Uj>
 {
-    typedef typename tuple_element<is_placeholder<_Ti>::value - 1, _Uj>::type type;
+  typedef __tuple_element_t<is_placeholder<_Ti>::value - 1, _Uj> type;
 };
 
 template <class _Ti, class _Uj>
@@ -154,8 +158,8 @@ __enable_if_t
 >
 __mu(_Ti&, _Uj& __uj)
 {
-    const size_t _Indx = is_placeholder<_Ti>::value - 1;
-    return _CUDA_VSTD::forward<typename tuple_element<_Indx, _Uj>::type>(_CUDA_VSTD::get<_Indx>(__uj));
+  const size_t _Indx = is_placeholder<_Ti>::value - 1;
+  return _CUDA_VSTD::forward<__tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
 }
 
 template <class _Ti, class _Uj>
@@ -197,8 +201,7 @@ struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...> >
 template <class _Ti, class _TupleUj>
 struct __mu_return_impl<_Ti, false, false, true, _TupleUj>
 {
-    typedef typename tuple_element<is_placeholder<_Ti>::value - 1,
-                                   _TupleUj>::type&& type;
+  typedef __tuple_element_t<is_placeholder<_Ti>::value - 1, _TupleUj>&& type;
 };
 
 template <class _Ti, class _TupleUj>
@@ -298,7 +301,7 @@ private:
     _Fd __f_;
     _Td __bound_args_;
 
-    typedef typename __make_tuple_indices<sizeof...(_BoundArgs)>::type __indices;
+    typedef __make_tuple_indices_t<sizeof...(_BoundArgs)> __indices;
 public:
     template <class _Gp, class ..._BA,
               class = __enable_if_t
@@ -307,13 +310,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind(_Gp&& __f, _BA&& ...__bound_args)
         : __f_(_CUDA_VSTD::forward<_Gp>(__f)),
           __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args)
         {
@@ -322,7 +325,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args) const
         {
@@ -352,13 +355,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind_r>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind_r(_Gp&& __f, _BA&& ...__bound_args)
         : base(_CUDA_VSTD::forward<_Gp>(__f),
                _CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>,
@@ -372,7 +375,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>,
@@ -390,7 +393,7 @@ template<class _Rp, class _Fp, class ..._BoundArgs>
 struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...> > : public true_type {};
 
 template<class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind<_Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
@@ -399,7 +402,7 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 }
 
 template<class _Rp, class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {

@@ -29,13 +29,8 @@
 
 #include <cub/block/block_radix_sort.cuh>
 
-#include <thrust/gather.h>
-#include <thrust/host_vector.h>
-#include <thrust/sequence.h>
-
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
+#include "catch2_radix_sort_helper.cuh"
 
 
 template <typename InputIteratorT,
@@ -48,8 +43,8 @@ template <typename InputIteratorT,
           cub::BlockScanAlgorithm Algorithm,
           cudaSharedMemConfig ShmemConfig>
 __global__ void kernel(
-    ActionT action, 
-    InputIteratorT input, 
+    ActionT action,
+    InputIteratorT input,
     OutputIteratorT output,
     int begin_bit,
     int end_bit,
@@ -123,8 +118,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputIteratorT,
          OutputIteratorT,
          ActionT,
@@ -152,10 +145,10 @@ template <typename InputKeyIteratorT,
           cub::BlockScanAlgorithm Algorithm,
           cudaSharedMemConfig ShmemConfig>
 __global__ void kernel(
-    ActionT action, 
-    InputKeyIteratorT input_keys, 
+    ActionT action,
+    InputKeyIteratorT input_keys,
     InputValueIteratorT input_values,
-    OutputKeyIteratorT output_keys, 
+    OutputKeyIteratorT output_keys,
     OutputValueIteratorT output_values,
     int begin_bit,
     int end_bit,
@@ -201,7 +194,7 @@ __global__ void kernel(
       output_values[threadIdx.x + ThreadsInBlock * i] = values[i];
     }
   }
-  else 
+  else
   {
     action(block_radix_sort,
            keys,
@@ -239,8 +232,6 @@ void block_radix_sort(
     int end_bit,
     bool striped)
 {
-  cudaDeviceSetSharedMemConfig(ShmemConfig);
-
   kernel<InputKeyIteratorT,
          InputValueIteratorT,
          OutputKeyIteratorT,
@@ -362,96 +353,3 @@ struct descending_sort_pairs_op_t
                                                     end_bit);
   }
 };
-
-template <class KeyT>
-thrust::host_vector<KeyT>
-get_striped_keys(const thrust::host_vector<KeyT> &h_keys,
-                 int begin_bit,
-                 int end_bit)
-{
-  thrust::host_vector<KeyT> h_striped_keys(h_keys);
-  KeyT *h_striped_keys_data = thrust::raw_pointer_cast(h_striped_keys.data());
-
-  if ((begin_bit > 0) || (end_bit < static_cast<int>(sizeof(KeyT) * 8)))
-  {
-    const int num_bits = end_bit - begin_bit;
-
-    for (std::size_t i = 0; i < h_keys.size(); i++)
-    {
-      unsigned long long base = 0;
-      memcpy(&base, h_striped_keys_data + i, sizeof(KeyT));
-      base &= ((1ULL << num_bits) - 1) << begin_bit;
-      memcpy(h_striped_keys_data + i, &base, sizeof(KeyT));
-    }
-  }
-
-  return h_striped_keys;
-}
-
-template <class KeyT>
-thrust::host_vector<std::size_t>
-get_permutation(const thrust::host_vector<KeyT> &h_keys,
-                bool is_descending,
-                int begin_bit,
-                int end_bit)
-{
-  thrust::host_vector<KeyT> h_striped_keys =
-    get_striped_keys(h_keys, begin_bit, end_bit);
-
-  thrust::host_vector<std::size_t> h_permutation(h_keys.size());
-  thrust::sequence(h_permutation.begin(), h_permutation.end());
-
-  std::stable_sort(h_permutation.begin(),
-                   h_permutation.end(),
-                   [&](std::size_t a, std::size_t b) {
-                     if (is_descending)
-                     {
-                       return h_striped_keys[a] > h_striped_keys[b];
-                     }
-
-                     return h_striped_keys[a] < h_striped_keys[b];
-                   });
-
-  return h_permutation;
-}
-
-template <class KeyT>
-thrust::host_vector<KeyT>
-radix_sort_reference(const thrust::device_vector<KeyT> &d_keys,
-                     bool is_descending,
-                     int begin_bit,
-                     int end_bit)
-{
-  thrust::host_vector<KeyT> h_keys(d_keys);
-  thrust::host_vector<std::size_t> h_permutation =
-    get_permutation(h_keys, is_descending, begin_bit, end_bit);
-  thrust::host_vector<KeyT> result(d_keys.size());
-  thrust::gather(h_permutation.cbegin(), h_permutation.cend(), h_keys.cbegin(), result.begin());
-
-  return result;
-}
-
-template <class KeyT, class ValueT>
-std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>>
-radix_sort_reference(const thrust::device_vector<KeyT> &d_keys,
-                     const thrust::device_vector<ValueT> &d_values,
-                     bool is_descending,
-                     int begin_bit,
-                     int end_bit)
-{
-  std::pair<thrust::host_vector<KeyT>, thrust::host_vector<ValueT>> result;
-  result.first.resize(d_keys.size());
-  result.second.resize(d_keys.size());
-
-  thrust::host_vector<KeyT> h_keys(d_keys);
-  thrust::host_vector<std::size_t> h_permutation =
-    get_permutation(h_keys, is_descending, begin_bit, end_bit);
-
-  thrust::host_vector<ValueT> h_values(d_values);
-  thrust::gather(h_permutation.cbegin(),
-                 h_permutation.cend(),
-                 thrust::make_zip_iterator(h_keys.cbegin(), h_values.cbegin()),
-                 thrust::make_zip_iterator(result.first.begin(), result.second.begin()));
-
-  return result;
-}

@@ -23,6 +23,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/functional.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
@@ -62,18 +70,10 @@ struct is_operator_plus_function_object_impl;
  *  \see is_operator_less_or_greater_function_object
  */
 template <typename T>
-#if THRUST_CPP_DIALECT >= 2011
 using is_operator_plus_function_object =
-#else
-struct is_operator_plus_function_object :
-#endif
-  detail::is_operator_plus_function_object_impl<T>
-#if THRUST_CPP_DIALECT < 2011
-{}
-#endif
-;
+  detail::is_operator_plus_function_object_impl<T>;
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a
  *  <a href="https://en.cppreference.com/w/cpp/named_req/FunctionObject">FunctionObject</a>
  *  equivalent to \c operator<, and \c false otherwise.

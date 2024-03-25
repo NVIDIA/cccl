@@ -22,6 +22,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/detail/discard_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
 
@@ -44,7 +52,7 @@ THRUST_NAMESPACE_BEGIN
  *  \p discard_iterator may also be used to count the size of an algorithm's output which
  *  may not be known a priori.
  *
- *  The following code snippet demonstrates how to use \p discard_iterator to ignore
+ *  The following code snippet demonstrates how to use \p discard_iterator to
  *  ignore one of the output ranges of reduce_by_key
  *
  *  \code
@@ -107,18 +115,6 @@ template<typename System = use_default>
     /*! \endcond
      */
 
-    /*! Copy constructor copies from a source discard_iterator.
-     *
-     *  \p rhs The discard_iterator to copy.
-     */
-    __host__ __device__
-    discard_iterator(discard_iterator const &rhs)
-      : super_t(rhs.base()) {}
-
-#if THRUST_CPP_DIALECT >= 2011
-    discard_iterator & operator=(const discard_iterator &) = default;
-#endif
-
     /*! This constructor receives an optional index specifying the position of this
      *  \p discard_iterator in a range.
      *
@@ -126,7 +122,7 @@ template<typename System = use_default>
      *       value returned by \c Incrementable's null constructor. For example,
      *       when <tt>Incrementable == int</tt>, \c 0.
      */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     discard_iterator(incrementable const &i = incrementable())
       : super_t(base_iterator(i)) {}
 
@@ -134,7 +130,7 @@ template<typename System = use_default>
      */
 
   private: // Core iterator interface
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     reference dereference() const
     {
       return m_element;
@@ -156,7 +152,7 @@ template<typename System = use_default>
  *
  *  \see constant_iterator
  */
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 discard_iterator<> make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>::difference_type(0))
 {
   return discard_iterator<>(i);

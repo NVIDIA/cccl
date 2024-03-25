@@ -33,14 +33,23 @@
 
 #pragma once
 
-#include "../thread/thread_reduce.cuh"
-#include "../thread/thread_load.cuh"
-#include "../warp/warp_reduce.cuh"
-#include "../block/block_load.cuh"
-#include "../block/radix_rank_sort_operations.cuh"
-#include "../config.cuh"
-#include "../util_type.cuh"
-#include "../iterator/cache_modified_input_iterator.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_load.cuh>
+#include <cub/block/radix_rank_sort_operations.cuh>
+#include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/thread/thread_load.cuh>
+#include <cub/thread/thread_reduce.cuh>
+#include <cub/util_type.cuh>
+#include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,39 +58,63 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 /**
- * Parameterizable tuning policy type for AgentRadixSortUpsweep
+ * @brief Parameterizable tuning policy type for AgentRadixSortUpsweep
+ *
+ * @tparam NOMINAL_BLOCK_THREADS_4B
+ *   Threads per thread block
+ *
+ * @tparam NOMINAL_ITEMS_PER_THREAD_4B
+ *   Items per thread (per tile of input)
+ *
+ * @tparam ComputeT
+ *   Dominant compute type
+ *
+ * @tparam _LOAD_MODIFIER
+ *   Cache load modifier for reading keys
+ *
+ * @tparam _RADIX_BITS
+ *   The number of radix bits, i.e., log2(bins)
  */
-template <
-    int                 NOMINAL_BLOCK_THREADS_4B,       ///< Threads per thread block
-    int                 NOMINAL_ITEMS_PER_THREAD_4B,    ///< Items per thread (per tile of input)
-    typename            ComputeT,                       ///< Dominant compute type
-    CacheLoadModifier   _LOAD_MODIFIER,                 ///< Cache load modifier for reading keys
-    int                 _RADIX_BITS,                    ///< The number of radix bits, i.e., log2(bins)
-    typename            ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT> >
-struct AgentRadixSortUpsweepPolicy :
-    ScalingType
+template <int NOMINAL_BLOCK_THREADS_4B,
+          int NOMINAL_ITEMS_PER_THREAD_4B,
+          typename ComputeT,
+          CacheLoadModifier _LOAD_MODIFIER,
+          int _RADIX_BITS,
+          typename ScalingType =
+            RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+struct AgentRadixSortUpsweepPolicy : ScalingType
 {
-    enum
-    {
-        RADIX_BITS          = _RADIX_BITS,          ///< The number of radix bits, i.e., log2(bins)
-    };
+  enum
+  {
+    /// The number of radix bits, i.e., log2(bins)
+    RADIX_BITS = _RADIX_BITS,
+  };
 
-    static const CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;      ///< Cache load modifier for reading keys
+  /// Cache load modifier for reading keys
+  static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
-
 
 /******************************************************************************
  * Thread block abstractions
  ******************************************************************************/
 
 /**
- * \brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for participating in device-wide radix sort upsweep .
+ * @brief AgentRadixSortUpsweep implements a stateful abstraction of CUDA thread blocks for
+ * participating in device-wide radix sort upsweep .
+ *
+ * @tparam AgentRadixSortUpsweepPolicy
+ *   Parameterized AgentRadixSortUpsweepPolicy tuning policy type
+ *
+ * @tparam KeyT
+ *   KeyT type
+ *
+ * @tparam DecomposerT = detail::identity_decomposer_t
+ *   Signed integer type for global offsets
  */
-template <
-    typename AgentRadixSortUpsweepPolicy,   ///< Parameterized AgentRadixSortUpsweepPolicy tuning policy type
-    typename KeyT,                          ///< KeyT type
-    typename OffsetT,
-    typename DecomposerT = detail::identity_decomposer_t>                       ///< Signed integer type for global offsets
+template <typename AgentRadixSortUpsweepPolicy,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
 struct AgentRadixSortUpsweep
 {
 
@@ -98,7 +131,7 @@ struct AgentRadixSortUpsweep
     // Integer type for packing DigitCounters into columns of shared memory banks
     typedef unsigned int PackedCounter;
 
-    static const CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
+    static constexpr CacheLoadModifier LOAD_MODIFIER = AgentRadixSortUpsweepPolicy::LOAD_MODIFIER;
 
     enum
     {
@@ -185,7 +218,7 @@ struct AgentRadixSortUpsweep
     struct Iterate
     {
         // BucketKeys
-        static __device__ __forceinline__ void BucketKeys(
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void BucketKeys(
             AgentRadixSortUpsweep       &cta,
             bit_ordered_type             keys[KEYS_PER_THREAD])
         {
@@ -201,14 +234,14 @@ struct AgentRadixSortUpsweep
     struct Iterate<MAX, MAX>
     {
         // BucketKeys
-        static __device__ __forceinline__ void BucketKeys(AgentRadixSortUpsweep &/*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD]) {}
+        static _CCCL_DEVICE _CCCL_FORCEINLINE void BucketKeys(AgentRadixSortUpsweep &/*cta*/, bit_ordered_type /*keys*/[KEYS_PER_THREAD]) {}
     };
 
 
     //---------------------------------------------------------------------
     // Utility methods
     //---------------------------------------------------------------------
-    __device__ __forceinline__ digit_extractor_t digit_extractor()
+    _CCCL_DEVICE _CCCL_FORCEINLINE digit_extractor_t digit_extractor()
     {
         return traits::template digit_extractor<fundamental_digit_extractor_t>(current_bit, num_bits, decomposer);
     }
@@ -216,7 +249,7 @@ struct AgentRadixSortUpsweep
     /**
      * Decode a key and increment corresponding smem digit counter
      */
-    __device__ __forceinline__ void Bucket(bit_ordered_type key)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Bucket(bit_ordered_type key)
     {
         // Perform transform op
         bit_ordered_type converted_key = bit_ordered_conversion::to_bit_ordered(decomposer, key);
@@ -238,7 +271,7 @@ struct AgentRadixSortUpsweep
     /**
      * Reset composite counters
      */
-    __device__ __forceinline__ void ResetDigitCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetDigitCounters()
     {
         #pragma unroll
         for (int LANE = 0; LANE < COUNTER_LANES; LANE++)
@@ -251,7 +284,7 @@ struct AgentRadixSortUpsweep
     /**
      * Reset the unpacked counters in each thread
      */
-    __device__ __forceinline__ void ResetUnpackedCounters()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ResetUnpackedCounters()
     {
         #pragma unroll
         for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
@@ -269,7 +302,7 @@ struct AgentRadixSortUpsweep
      * Extracts and aggregates the digit counters for each counter lane
      * owned by this warp
      */
-    __device__ __forceinline__ void UnpackDigitCounts()
+    _CCCL_DEVICE _CCCL_FORCEINLINE void UnpackDigitCounts()
     {
         unsigned int warp_id = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid = LaneId();
@@ -298,7 +331,7 @@ struct AgentRadixSortUpsweep
     /**
      * Processes a single, full tile
      */
-    __device__ __forceinline__ void ProcessFullTile(OffsetT block_offset)
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessFullTile(OffsetT block_offset)
     {
         // Tile of keys
         bit_ordered_type keys[KEYS_PER_THREAD];
@@ -316,12 +349,12 @@ struct AgentRadixSortUpsweep
     /**
      * Processes a single load (may have some threads masked off)
      */
-    __device__ __forceinline__ void ProcessPartialTile(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessPartialTile(
         OffsetT block_offset,
         const OffsetT &block_end)
     {
         // Process partial tile if necessary using single loads
-        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS) 
+        for (OffsetT offset = threadIdx.x; offset < block_end - block_offset; offset += BLOCK_THREADS)
         {
             // Load and bucket key
             bit_ordered_type key = d_keys_in[block_offset + offset];
@@ -337,7 +370,7 @@ struct AgentRadixSortUpsweep
     /**
      * Constructor
      */
-    __device__ __forceinline__ AgentRadixSortUpsweep(
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentRadixSortUpsweep(
         TempStorage &temp_storage,
         const KeyT  *d_keys_in,
         int         current_bit,
@@ -346,7 +379,7 @@ struct AgentRadixSortUpsweep
     :
         temp_storage(temp_storage.Alias()),
         d_keys_in(reinterpret_cast<const bit_ordered_type*>(d_keys_in)),
-        current_bit(current_bit), 
+        current_bit(current_bit),
         num_bits(num_bits),
         decomposer(decomposer)
     {}
@@ -355,7 +388,7 @@ struct AgentRadixSortUpsweep
     /**
      * Compute radix digit histograms from a segment of input tiles.
      */
-    __device__ __forceinline__ void ProcessRegion(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessRegion(
         OffsetT          block_offset,
         const OffsetT    &block_end)
     {
@@ -406,7 +439,7 @@ struct AgentRadixSortUpsweep
      * Extract counts (saving them to the external array)
      */
     template <bool IS_DESCENDING>
-    __device__ __forceinline__ void ExtractCounts(
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(
         OffsetT     *counters,
         int         bin_stride = 1,
         int         bin_offset = 0)
@@ -476,11 +509,14 @@ struct AgentRadixSortUpsweep
 
 
     /**
-     * Extract counts
+     * @brief Extract counts
+     *
+     * @param[out] bin_count
+     *   The exclusive prefix sum for the digits
+     *   [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
      */
     template <int BINS_TRACKED_PER_THREAD>
-    __device__ __forceinline__ void ExtractCounts(
-        OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])  ///< [out] The exclusive prefix sum for the digits [(threadIdx.x * BINS_TRACKED_PER_THREAD) ... (threadIdx.x * BINS_TRACKED_PER_THREAD) + BINS_TRACKED_PER_THREAD - 1]
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ExtractCounts(OffsetT (&bin_count)[BINS_TRACKED_PER_THREAD])
     {
         unsigned int warp_id    = threadIdx.x >> LOG_WARP_THREADS;
         unsigned int warp_tid   = LaneId();

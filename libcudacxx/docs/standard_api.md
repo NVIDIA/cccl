@@ -27,6 +27,8 @@ Feature availability:
   - `void_t`
   - Trait operations: `conjunction`,`negation`,`disjunction`
   - `invoke_result`
+- C++17/20 constexpr `<array>` is available in C++14.
+  - all operation on array are made constexpr in C++14 with exception of `{c}rbegin` and `{c}rend`, which requires C++17.
 - C++20 constexpr `<complex>` is available in C++14.
   - all operation on complex are made constexpr if `is_constant_evaluated` is supported.
 - C++20 `<concepts>` are available in C++14.

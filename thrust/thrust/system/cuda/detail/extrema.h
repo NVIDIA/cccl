@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/detail/cstdint.h>
@@ -52,10 +60,10 @@ namespace __extrema {
     Predicate predicate;
     typedef tuple<InputType, IndexType> pair_type;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     arg_min_f(Predicate p) : predicate(p) {}
 
-    pair_type __device__
+    pair_type _CCCL_DEVICE
     operator()(pair_type const &lhs, pair_type const &rhs)
     {
       InputType const &rhs_value = get<0>(rhs);
@@ -83,10 +91,10 @@ namespace __extrema {
     Predicate predicate;
     typedef tuple<InputType, IndexType> pair_type;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     arg_max_f(Predicate p) : predicate(p) {}
 
-    pair_type __device__
+    pair_type _CCCL_DEVICE
     operator()(pair_type const &lhs, pair_type const &rhs)
     {
       InputType const &rhs_value = get<0>(rhs);
@@ -119,12 +127,12 @@ namespace __extrema {
     typedef arg_min_f<InputType, IndexType, Predicate> arg_min_t;
     typedef arg_max_f<InputType, IndexType, Predicate> arg_max_t;
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     arg_minmax_f(Predicate p) : predicate(p)
     {
     }
 
-    two_pairs_type __device__
+    two_pairs_type _CCCL_DEVICE
     operator()(two_pairs_type const &lhs, two_pairs_type const &rhs)
     {
       pair_type const &rhs_min = get<0>(rhs);
@@ -140,7 +148,7 @@ namespace __extrema {
 
     struct duplicate_tuple
     {
-      __device__ two_pairs_type
+      _CCCL_DEVICE two_pairs_type
       operator()(pair_type const &t)
       {
         return thrust::make_tuple(t, t);
@@ -408,11 +416,11 @@ namespace __extrema {
 
 /// min element
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class ItemsIt,
           class BinaryPred>
-ItemsIt __host__ __device__
+ItemsIt _CCCL_HOST_DEVICE
 min_element(execution_policy<Derived> &policy,
             ItemsIt                    first,
             ItemsIt                    last,
@@ -432,7 +440,7 @@ min_element(execution_policy<Derived> &policy,
 
 template <class Derived,
           class ItemsIt>
-ItemsIt __host__ __device__
+ItemsIt _CCCL_HOST_DEVICE
 min_element(execution_policy<Derived> &policy,
             ItemsIt                    first,
             ItemsIt                    last)
@@ -443,11 +451,11 @@ min_element(execution_policy<Derived> &policy,
 
 /// max element
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class ItemsIt,
           class BinaryPred>
-ItemsIt __host__ __device__
+ItemsIt _CCCL_HOST_DEVICE
 max_element(execution_policy<Derived> &policy,
             ItemsIt                    first,
             ItemsIt                    last,
@@ -467,7 +475,7 @@ max_element(execution_policy<Derived> &policy,
 
 template <class Derived,
           class ItemsIt>
-ItemsIt __host__ __device__
+ItemsIt _CCCL_HOST_DEVICE
 max_element(execution_policy<Derived> &policy,
             ItemsIt                    first,
             ItemsIt                    last)
@@ -478,11 +486,11 @@ max_element(execution_policy<Derived> &policy,
 
 /// minmax element
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class ItemsIt,
           class BinaryPred>
-pair<ItemsIt, ItemsIt> __host__ __device__
+pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
 minmax_element(execution_policy<Derived> &policy,
                ItemsIt                    first,
                ItemsIt                    last,
@@ -533,7 +541,7 @@ minmax_element(execution_policy<Derived> &policy,
 
 template <class Derived,
           class ItemsIt>
-pair<ItemsIt, ItemsIt> __host__ __device__
+pair<ItemsIt, ItemsIt> _CCCL_HOST_DEVICE
 minmax_element(execution_policy<Derived> &policy,
                ItemsIt                    first,
                ItemsIt                    last)

@@ -58,7 +58,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using input_it_t = const T*;
   using output_it_t = T*;
   using difference_op_t = cub::Difference;
-  using offset_t = typename cub::detail::ChooseOffsetT<OffsetT>::Type;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using dispatch_t = cub::DispatchAdjacentDifference<input_it_t,
@@ -78,9 +78,8 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 #endif // TUNE_BASE
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
-  thrust::device_vector<T> in(elements);
+  thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(elements);
-  gen(seed_t{}, in);
 
   input_it_t d_in   = thrust::raw_pointer_cast(in.data());
   output_it_t d_out = thrust::raw_pointer_cast(out.data());
@@ -101,7 +100,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   std::uint8_t* d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec([&](nvbench::launch &launch) {
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
     dispatch_t::Dispatch(d_temp_storage,
                          temp_storage_bytes,
                          d_in,

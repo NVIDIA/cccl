@@ -30,16 +30,12 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
 
 #include <type_traits>
 
 #include "fill_striped.cuh"
-// Has to go after all cub headers. Otherwise, this test won't catch unused
-// variables in cub kernels.
 #include "catch2_test_helper.h"
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg, typename = void>
@@ -135,7 +131,7 @@ template <int LOGICAL_WARP_THREADS,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT>
-void warp_scatter_strided(thrust::device_vector<InputT> &in, thrust::device_vector<OutputT> &out)
+void warp_scatter_strided(c2h::device_vector<InputT> &in, c2h::device_vector<OutputT> &out)
 {
   scatter_kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT>
     <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
@@ -192,8 +188,8 @@ template <int LOGICAL_WARP_THREADS,
           typename InputT,
           typename OutputT,
           typename ActionT>
-void warp_exchange(thrust::device_vector<InputT> &in,
-                   thrust::device_vector<OutputT> &out,
+void warp_exchange(c2h::device_vector<InputT> &in,
+                   c2h::device_vector<OutputT> &out,
                    ActionT action)
 {
   kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT, ActionT>
@@ -237,10 +233,10 @@ struct striped_to_blocked
 };
 
 template <typename T>
-thrust::host_vector<T> compute_host_reference(const thrust::device_vector<T> &d_input,
+c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T> &d_input,
                                               int tile_size)
 {
-  thrust::host_vector<T> input = d_input;
+  c2h::host_vector<T> input = d_input;
 
   int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(d_input.size()), tile_size);
   for (int warp_id = 0; warp_id < num_warps; warp_id++)

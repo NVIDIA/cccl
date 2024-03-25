@@ -17,6 +17,14 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/use_default.h>
@@ -50,10 +58,10 @@ template<typename Iterator, typename Tag>
     typedef typename tagged_iterator_base<Iterator,Tag>::type super_t;
 
   public:
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     tagged_iterator() {}
 
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     explicit tagged_iterator(Iterator x)
       : super_t(x) {}
 }; // end tagged_iterator

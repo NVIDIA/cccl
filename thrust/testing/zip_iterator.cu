@@ -5,6 +5,8 @@
 #include <thrust/copy.h>
 #include <thrust/transform.h>
 
+#include <cuda/std/type_traits>
+
 using namespace unittest;
 
 template<typename T>
@@ -90,6 +92,7 @@ template<typename T>
   }
 };
 SimpleUnitTest<TestZipIteratorManipulation, type_list<int> > TestZipIteratorManipulationInstance;
+static_assert(cuda::std::is_trivially_copy_constructible<thrust::zip_iterator<thrust::tuple<int*, int*>>>::value, "");
 
 template <typename T>
   struct TestZipIteratorReference
@@ -224,7 +227,7 @@ template <typename T>
 
     //ASSERT_EQUAL(true, (detail::is_convertible<zip_iterator_system_type3, thrust::experimental::space::any>::value) );
 
-    
+
 #if 0
     // test host/any
     typedef tuple<Iterator1, Iterator5>                IteratorTuple4;
@@ -285,9 +288,9 @@ void TestZipIteratorCopy(void)
   sequence(input0.begin(), input0.end(), T{0});
   sequence(input1.begin(), input1.end(), T{13});
 
-  copy( make_zip_iterator(make_tuple(input0.begin(),  input1.begin())),
-        make_zip_iterator(make_tuple(input0.end(),    input1.end())),
-        make_zip_iterator(make_tuple(output0.begin(), output1.begin())));
+  thrust::copy( make_zip_iterator(make_tuple(input0.begin(),  input1.begin())),
+                make_zip_iterator(make_tuple(input0.end(),    input1.end())),
+                make_zip_iterator(make_tuple(output0.begin(), output1.begin())));
 
   ASSERT_EQUAL(input0, output0);
   ASSERT_EQUAL(input1, output1);
@@ -346,8 +349,8 @@ struct TestZipIteratorTransform
                d_result.begin(),
                SumTwoTuple());
     ASSERT_EQUAL(h_result, d_result);
-    
-    
+
+
     // Tuples with 3 elements
     transform( make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin(), h_data2.begin())),
                make_zip_iterator(make_tuple(h_data0.end(),   h_data1.end(),   h_data2.end())),

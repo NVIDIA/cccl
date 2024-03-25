@@ -27,15 +27,26 @@
 
 #pragma once
 
-#include "../config.cuh"
-#include "../util_ptx.cuh"
-#include "../util_type.cuh"
+#include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/util_ptx.cuh>
+#include <cub/util_type.cuh>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
 
 template <typename T>
-__device__ __forceinline__ void Swap(T &lhs, T &rhs)
+_CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T &lhs, T &rhs)
 {
   T temp = lhs;
   lhs    = rhs;
@@ -76,12 +87,12 @@ template <typename KeyT,
           typename ValueT,
           typename CompareOp,
           int ITEMS_PER_THREAD>
-__device__ __forceinline__ void
+_CCCL_DEVICE _CCCL_FORCEINLINE void
 StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD],
                   ValueT (&items)[ITEMS_PER_THREAD],
                   CompareOp compare_op)
 {
-  constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
   #pragma unroll
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)

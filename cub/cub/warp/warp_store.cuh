@@ -29,14 +29,20 @@
 
 #pragma once
 
-#include <cub/block/block_store.cuh>
 #include <cub/config.cuh>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cub/block/block_store.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 #include <cub/warp/warp_exchange.cuh>
-
-#include <iterator>
-#include <type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -226,7 +232,7 @@ class WarpStore
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
                 "LOGICAL_WARP_THREADS must be a power of two");
 
-  constexpr static bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
 
 private:
   /// Store helper
@@ -240,18 +246,18 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr,
                                           T (&items)[ITEMS_PER_THREAD],
                                           int valid_items)
     {
@@ -266,18 +272,18 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
     {
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr,
                                           T (&items)[ITEMS_PER_THREAD],
                                           int valid_items)
     {
@@ -292,23 +298,23 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage & /*temp_storage*/, int linear_tid)
         : linear_tid(linear_tid)
     {}
 
-    __device__ __forceinline__ void Store(T *block_ptr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(T *block_ptr, T (&items)[ITEMS_PER_THREAD])
     {
       StoreDirectBlockedVectorized(linear_tid, block_ptr, items);
     }
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
     {
       StoreDirectBlocked(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr,
                                           T (&items)[ITEMS_PER_THREAD],
                                           int valid_items)
     {
@@ -331,20 +337,20 @@ private:
 
     int linear_tid;
 
-    __device__ __forceinline__ StoreInternal(TempStorage &temp_storage, int linear_tid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE StoreInternal(TempStorage &temp_storage, int linear_tid)
         : temp_storage(temp_storage.Alias())
         , linear_tid(linear_tid)
     {}
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
     {
       WarpExchangeT(temp_storage).BlockedToStriped(items, items);
       StoreDirectStriped<LOGICAL_WARP_THREADS>(linear_tid, block_itr, items);
     }
 
     template <typename OutputIteratorT>
-    __device__ __forceinline__ void Store(OutputIteratorT block_itr,
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr,
                                           T (&items)[ITEMS_PER_THREAD],
                                           int valid_items)
     {
@@ -359,7 +365,7 @@ private:
   /// Shared memory storage layout type
   using _TempStorage = typename InternalStore::TempStorage;
 
-  __device__ __forceinline__ _TempStorage &PrivateStorage()
+  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage &PrivateStorage()
   {
     __shared__ _TempStorage private_storage;
     return private_storage;
@@ -378,14 +384,14 @@ public:
 
   //! @brief Collective constructor using a private static allocation of shared
   //!        memory as temporary storage.
-  __device__ __forceinline__ WarpStore()
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore()
       : temp_storage(PrivateStorage())
       , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
   {}
 
   //! @brief Collective constructor using the specified memory allocation as
   //!        temporary storage.
-  __device__ __forceinline__ WarpStore(TempStorage &temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpStore(TempStorage &temp_storage)
       : temp_storage(temp_storage.Alias())
       , linear_tid(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
   {}
@@ -447,7 +453,7 @@ public:
   //! @param[out] block_itr The thread block's base output iterator for storing to
   //! @param[in] items Data to store
   template <typename OutputIteratorT>
-  __device__ __forceinline__ void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
   {
     InternalStore(temp_storage, linear_tid).Store(block_itr, items);
   }
@@ -510,7 +516,7 @@ public:
   //! @param[in] valid_items Number of valid items to write
   //!
   template <typename OutputIteratorT>
-  __device__ __forceinline__ void Store(OutputIteratorT block_itr,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Store(OutputIteratorT block_itr,
                                         T (&items)[ITEMS_PER_THREAD],
                                         int valid_items)
   {

@@ -28,6 +28,14 @@
 
 #include <thrust/detail/config.h>
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/distance.h>
 #include <thrust/extrema.h>
@@ -369,7 +377,7 @@ namespace __radix_sort {
       Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
       cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
     }
-    THRUST_IF_CONSTEXPR(SORT_ITEMS::value)
+    _CCCL_IF_CONSTEXPR(SORT_ITEMS::value)
     {
       if (items_buffer.selector != 0)
       {
@@ -490,9 +498,9 @@ namespace __smart_sort {
 //-------------------------
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 sort(execution_policy<Derived>& policy,
      ItemsIt                    first,
      ItemsIt                    last,
@@ -509,9 +517,9 @@ sort(execution_policy<Derived>& policy,
     (thrust::sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 stable_sort(execution_policy<Derived>& policy,
             ItemsIt                    first,
             ItemsIt                    last,
@@ -531,9 +539,9 @@ stable_sort(execution_policy<Derived>& policy,
                          compare_op);));
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeysIt, class ValuesIt, class CompareOp>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 sort_by_key(execution_policy<Derived>& policy,
             KeysIt                     keys_first,
             KeysIt                     keys_last,
@@ -554,12 +562,12 @@ sort_by_key(execution_policy<Derived>& policy,
                          compare_op);));
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <class Derived,
           class KeysIt,
           class ValuesIt,
           class CompareOp>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 stable_sort_by_key(execution_policy<Derived> &policy,
             KeysIt                     keys_first,
             KeysIt                     keys_last,
@@ -583,7 +591,7 @@ stable_sort_by_key(execution_policy<Derived> &policy,
 // API with default comparator
 
 template <class Derived, class ItemsIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 sort(execution_policy<Derived>& policy,
      ItemsIt                    first,
      ItemsIt                    last)
@@ -593,7 +601,7 @@ sort(execution_policy<Derived>& policy,
 }
 
 template <class Derived, class ItemsIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 stable_sort(execution_policy<Derived>& policy,
             ItemsIt                    first,
             ItemsIt                    last)
@@ -603,7 +611,7 @@ stable_sort(execution_policy<Derived>& policy,
 }
 
 template <class Derived, class KeysIt, class ValuesIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 sort_by_key(execution_policy<Derived>& policy,
             KeysIt                     keys_first,
             KeysIt                     keys_last,
@@ -614,7 +622,7 @@ sort_by_key(execution_policy<Derived>& policy,
 }
 
 template <class Derived, class KeysIt, class ValuesIt>
-void __host__ __device__
+void _CCCL_HOST_DEVICE
 stable_sort_by_key(
     execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
