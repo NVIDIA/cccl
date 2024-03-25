@@ -60,19 +60,48 @@ struct __libcpp_complex_overload_traits<__half, false, false>
   typedef complex<__half> _ComplexType;
 };
 
+union __complex_half_vector_op
+{
+  struct
+  {
+    complex<__half>& __as_complex_lhs;
+    const complex<__half>& __as_complex_rhs;
+  };
+  struct
+  {
+    __half2& __as_vector_lhs;
+    const __half2& __as_vector_rhs;
+  };
+
+  _LIBCUDACXX_INLINE_VISIBILITY __complex_half_vector_op(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
+      : __as_complex_lhs(__lhs)
+      , __as_complex_rhs(__rhs)
+  {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex<__half>& __plus_op() && noexcept
+  {
+    __as_vector_lhs += __as_vector_rhs;
+    return __as_complex_lhs;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex<__half>& __minus_op() && noexcept
+  {
+    __as_vector_lhs -= __as_vector_rhs;
+    return __as_complex_lhs;
+  }
+};
+
 // We can utilize vectorized operations for those operators
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
 operator+=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
 {
-  reinterpret_cast<__half2&>(__lhs) += reinterpret_cast<const __half2&>(__rhs);
-  return __lhs;
+  return __complex_half_vector_op{__lhs, __rhs}.__plus_op();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
 operator-=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
 {
-  reinterpret_cast<__half2&>(__lhs) -= reinterpret_cast<const __half2&>(__rhs);
-  return __lhs;
+  return __complex_half_vector_op{__lhs, __rhs}.__minus_op();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)

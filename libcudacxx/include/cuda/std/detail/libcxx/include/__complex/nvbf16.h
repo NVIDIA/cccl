@@ -63,19 +63,49 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
   typedef complex<__nv_bfloat16> _ComplexType;
 };
 
+union __complex_bfloat_vector_op
+{
+  struct
+  {
+    complex<__nv_bfloat16>& __as_complex_lhs;
+    const complex<__nv_bfloat16>& __as_complex_rhs;
+  };
+  struct
+  {
+    __nv_bfloat162& __as_vector_lhs;
+    const __nv_bfloat162& __as_vector_rhs;
+  };
+
+  _LIBCUDACXX_INLINE_VISIBILITY
+  __complex_bfloat_vector_op(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
+      : __as_complex_lhs(__lhs)
+      , __as_complex_rhs(__rhs)
+  {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __plus_op() && noexcept
+  {
+    __as_vector_lhs += __as_vector_rhs;
+    return __as_complex_lhs;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __minus_op() && noexcept
+  {
+    __as_vector_lhs -= __as_vector_rhs;
+    return __as_complex_lhs;
+  }
+};
+
 // We can utilize vectorized operations for those operators
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
 operator+=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
 {
-  reinterpret_cast<__nv_bfloat162&>(__lhs) += reinterpret_cast<const __nv_bfloat162&>(__rhs);
-  return __lhs;
+  return __complex_bfloat_vector_op{__lhs, __rhs}.__plus_op();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
 operator-=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
 {
-  reinterpret_cast<__nv_bfloat162&>(__lhs) -= reinterpret_cast<const __nv_bfloat162&>(__rhs);
-  return __lhs;
+  return __complex_bfloat_vector_op{__lhs, __rhs}.__minus_op();
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
