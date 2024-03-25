@@ -27,42 +27,39 @@
 
 #include <cub/device/device_select.cuh>
 
-#include <thrust/count.h>
+#include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
 
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
+template <typename PredOpT>
+struct predicate_op_wrapper_t
+{
+  PredOpT if_pred;
+  template <typename FlagT, typename ItemT>
+  __host__ __device__ bool operator()(thrust::tuple<FlagT, ItemT> tuple) const
+  {
+    const auto flag = thrust::get<0>(tuple);
+    return static_cast<bool>(if_pred(flag));
+  }
+};
+
 template <class T, class FlagT, class Pred>
 static c2h::host_vector<T>
 get_reference(c2h::device_vector<T> const& in, c2h::device_vector<FlagT> const& flags, Pred if_predicate)
 {
-  struct selector
-  {
-    T const* ref_begin      = nullptr;
-    FlagT const* flag_begin = nullptr;
-    Pred const& if_pred;
-
-    constexpr selector(T const* ref, FlagT const* flag, Pred const& pred) noexcept
-        : ref_begin(ref)
-        , flag_begin(flag)
-        , if_pred(pred)
-    {}
-
-    bool operator()(T const& val) const
-    {
-      const auto pos = &val - ref_begin;
-      return static_cast<bool>(if_pred(flag_begin[pos]));
-    }
-  };
-
   c2h::host_vector<T> reference   = in;
   c2h::host_vector<FlagT> h_flags = flags;
+  // Zips flags and items
+  auto zipped_in_it = thrust::make_zip_iterator(h_flags.cbegin(), reference.cbegin());
 
-  const selector pred{
-    thrust::raw_pointer_cast(reference.data()), thrust::raw_pointer_cast(h_flags.data()), if_predicate};
-  const auto boundary = std::stable_partition(reference.begin(), reference.end(), pred);
-  reference.erase(boundary, reference.end());
+  // Discards the flags part and only keeps the items
+  auto zipped_out_it = thrust::make_zip_iterator(thrust::make_discard_iterator(), reference.begin());
+
+  auto end =
+    std::copy_if(zipped_in_it, zipped_in_it + in.size(), zipped_out_it, predicate_op_wrapper_t<Pred>{if_predicate});
+  reference.resize(thrust::distance(zipped_out_it, end));
   return reference;
 }
 
@@ -199,8 +196,8 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(CUB_SEED(1), flags);
-  const int num_selected = static_cast<int>(thrust::count_if(c2h::device_policy, flags.begin(), flags.end(), is_even));
   const c2h::host_vector<input_type> reference_out = get_reference(in, flags, is_even);
+  const int num_selected                           = reference_out.size();
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -236,8 +233,8 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(CUB_SEED(1), flags);
-  const int num_selected = static_cast<int>(thrust::count_if(c2h::device_policy, flags.begin(), flags.end(), is_even));
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
+  const int num_selected                       = reference.size();
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -265,8 +262,8 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(CUB_SEED(1), flags);
 
-  const int num_selected = static_cast<int>(thrust::count_if(c2h::device_policy, flags.begin(), flags.end(), is_even));
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
+  const int num_selected                       = reference.size();
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);

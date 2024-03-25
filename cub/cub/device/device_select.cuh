@@ -702,9 +702,8 @@ struct DeviceSelect
   //! corresponding items from ``d_in`` into ``d_out``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
-  //! - The expression ``select_op(d_flags)`` must be convertible to ``bool`` for
-  //!   every argument ``flag``, where the type of ``flag`` corresponds to the
-  //!   value type of ``FlagIterator``.
+  //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
+  //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted into ``d_out`` and maintain
   //!   their original relative ordering.
   //! - | The range ``[d_out, d_out + *d_num_selected_out)`` shall not overlap
@@ -819,9 +818,8 @@ struct DeviceSelect
   //! corresponding items in ``d_data``.
   //! The total number of items selected is written to ``d_num_selected_out``.
   //!
-  //! - The expression ``select_op(d_flags)`` must be convertible to ``bool`` for
-  //!   every argument ``flag``, where the type of ``flag`` corresponds to the
-  //!   value type of ``FlagIterator``.
+  //! - The expression ``select_op(flag)`` must be convertible to ``bool``,
+  //!   where the type of ``flag`` corresponds to the value type of ``FlagIterator``.
   //! - Copies of the selected items are compacted in-place and maintain their original relative ordering.
   //! - | The ``d_data`` may equal ``d_flags``. The range ``[d_data, d_data + num_items)`` shall not overlap
   //!   | ``[d_flags, d_flags + num_items)`` in any other way.

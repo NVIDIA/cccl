@@ -37,9 +37,9 @@
 // example-begin segmented-select-iseven
 struct is_even_t
 {
-  __host__ __device__ bool operator()(int const& elem) const
+  __host__ __device__ bool operator()(int flag) const
   {
-    return !(elem % 2);
+    return !(flag % 2);
   }
 };
 // example-end segmented-select-iseven
