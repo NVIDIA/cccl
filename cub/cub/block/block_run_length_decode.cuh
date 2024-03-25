@@ -171,6 +171,7 @@ private:
   /// Type used to index into the block's runs
   using RunOffsetT = uint32_t;
 
+  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   /// Shared memory type required by this thread block
   union _TempStorage
   {
@@ -181,6 +182,7 @@ private:
       DecodedOffsetT run_offsets[BLOCK_RUNS];
     } runs;
   }; // union TempStorage
+  #endif // DOXYGEN_SHOULD_SKIP_THIS
 
   /// Internal storage allocator (used when the user does not provide pre-allocated shared memory)
   _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage &PrivateStorage()
