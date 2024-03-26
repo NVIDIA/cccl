@@ -63,59 +63,218 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
   typedef complex<__nv_bfloat16> _ComplexType;
 };
 
-struct __complex_bfloat_vector_op_complex
+template <>
+class _LIBCUDACXX_TEMPLATE_VIS _ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __complex_bfloat_vector_op_complex(
-    complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
-      : __lhs(__lhs)
-      , __rhs(__rhs)
+  __nv_bfloat162 __repr_;
+
+  template <class _Up>
+  friend class complex;
+
+public:
+  using value_type = __nv_bfloat16;
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex(const value_type& __re = value_type(), const value_type& __im = value_type())
+      : __repr_(__re, __im)
   {}
 
-  complex<__nv_bfloat16> __lhs;
-  const complex<__nv_bfloat16> __rhs;
-};
-
-struct __complex_bfloat_vector_op_bfloat
-{
-  __nv_bfloat162 __lhs;
-  const __nv_bfloat162 __rhs;
-};
-
-union __complex_bfloat_vector_op
-{
-  __complex_bfloat_vector_op_complex __as_complex;
-  __complex_bfloat_vector_op_bfloat __as_vector;
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __complex_bfloat_vector_op(
-    complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
-      : __as_complex(__lhs, __rhs)
+  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY complex(const complex<_Up>& __c)
+      : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __plus_op() && noexcept
+  template <class _Up,
+            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
+            __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, value_type, _Up), int>        = 0>
+  _LIBCUDACXX_INLINE_VISIBILITY explicit complex(const complex<_Up>& __c)
+      : __repr_(static_cast<value_type>(__c.real()), static_cast<value_type>(__c.imag()))
+  {}
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const value_type& __re)
   {
-    __as_vector.__lhs += __as_vector.__rhs;
-    return __as_complex.__lhs;
+    __repr_.x = __re;
+    __repr_.y = value_type();
+    return *this;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>& __minus_op() && noexcept
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const complex<_Up>& __c)
   {
-    __as_vector.__lhs -= __as_vector.__rhs;
-    return __as_complex.__lhs;
+    __repr_.x = __c.real();
+    __repr_.y = __c.imag();
+    return *this;
   }
+
+#  if !defined(_CCCL_COMPILER_NVRTC)
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY complex(const ::std::complex<_Up>& __other)
+      : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
+  {}
+
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator=(const ::std::complex<_Up>& __other)
+  {
+    __repr_.x = _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other);
+    __repr_.y = _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other);
+    return *this;
+  }
+
+  _LIBCUDACXX_HOST operator ::std::complex<value_type>() const
+  {
+    return {__repr_.x, __repr_.y};
+  }
+#  endif // !_CCCL_COMPILER_NVRTC
+
+  _LIBCUDACXX_INLINE_VISIBILITY value_type real() const
+  {
+    return __repr_.x;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY value_type imag() const
+  {
+    return __repr_.y;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY void real(value_type __re)
+  {
+    __repr_.x = __re;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY void imag(value_type __im)
+  {
+    __repr_.y = __im;
+  }
+
+  // Those additional volatile overloads are meant to help with reductions in thrust
+  _LIBCUDACXX_INLINE_VISIBILITY value_type real() const volatile
+  {
+    return __repr_.x;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY value_type imag() const volatile
+  {
+    return __repr_.y;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend complex operator+(const complex& __x)
+  {
+    return __x;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend complex operator-(const complex& __x)
+  {
+    return complex(-__x.__repr_.x, -__x.__repr_.y);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const value_type& __re)
+  {
+    __repr_.x += __re;
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator-=(const value_type& __re)
+  {
+    __repr_.x -= __re;
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const value_type& __re)
+  {
+    __repr_.x *= __re;
+    __repr_.y *= __re;
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const value_type& __re)
+  {
+    __repr_.x /= __re;
+    __repr_.y /= __re;
+    return *this;
+  }
+
+  // We can utilize vectorized operations for those operators
+  _LIBCUDACXX_INLINE_VISIBILITY friend complex& operator+=(complex& __lhs, const complex& __rhs) noexcept
+  {
+    __lhs.__repr_ += __rhs.__repr_;
+    return __lhs;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend complex& operator-=(complex& __lhs, const complex& __rhs) noexcept
+  {
+    __lhs.__repr_ -= __rhs.__repr_;
+    return __lhs;
+  }
+
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const complex<_Up>& __c)
+  {
+    *this = *this * complex(__c.real(), __c.imag());
+    return *this;
+  }
+
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const complex<_Up>& __c)
+  {
+    *this = *this / complex(__c.real(), __c.imag());
+    return *this;
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const complex& __y)
+  {
+    return __x.real() == __y.real() && __x.imag() == __y.imag();
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const value_type& __y)
+  {
+    return __x.real() == __y && __x.imag() == value_type(0);
+  }
+
+#  if _CCCL_STD_VER <= 2017
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const value_type& __x, const complex& __y)
+  {
+    return __x == __y.real() && value_type(0) == __y.imag();
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const complex& __y)
+  {
+    return !(__x == __y);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const value_type& __y)
+  {
+    return !(__x == __y);
+  }
+
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const value_type& __x, const complex& __y)
+  {
+    return !(__x == __y);
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+#  if !defined(_CCCL_COMPILER_NVRTC)
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const ::std::complex<_Up>& __y)
+  {
+    return __x.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__y)
+        && __x.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__y);
+  }
+
+#    if _CCCL_STD_VER <= 2017
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const ::std::complex<_Up>& __x, const complex& __y)
+  {
+    return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
+        && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
+  }
+
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const ::std::complex<_Up>& __y)
+  {
+    return !(__x == __y);
+  }
+
+  template <class _Up>
+  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const ::std::complex<_Up>& __x, const complex& __y)
+  {
+    return !(__x == __y);
+  }
+#    endif // _CCCL_STD_VER <= 2017
+#  endif // !_CCCL_COMPILER_NVRTC
 };
-
-// We can utilize vectorized operations for those operators
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
-operator+=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
-{
-  return (__lhs = __complex_bfloat_vector_op{__lhs, __rhs}.__plus_op());
-}
-
-inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
-operator-=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
-{
-  return (__lhs = __complex_bfloat_vector_op{__lhs, __rhs}.__minus_op());
-}
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
