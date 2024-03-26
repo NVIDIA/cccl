@@ -28,7 +28,10 @@
 #include <cub/device/device_select.cuh>
 
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <thrust/logical.h>
+
+#include <algorithm>
 
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
@@ -197,7 +200,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(CUB_SEED(1), flags);
   const c2h::host_vector<input_type> reference_out = get_reference(in, flags, is_even);
-  const std::size_t num_selected                   = reference_out.size();
+  const int num_selected                           = static_cast<int>(reference_out.size());
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -234,7 +237,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   c2h::device_vector<flag_type> flags(num_items);
   c2h::gen(CUB_SEED(1), flags);
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
-  const std::size_t num_selected               = reference.size();
+  const int num_selected                       = static_cast<int>(reference.size());
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -263,7 +266,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   c2h::gen(CUB_SEED(1), flags);
 
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
-  const std::size_t num_selected               = reference.size();
+  const int num_selected                       = static_cast<int>(reference.size());
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
