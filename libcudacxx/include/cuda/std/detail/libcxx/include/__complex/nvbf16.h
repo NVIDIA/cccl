@@ -71,14 +71,14 @@ struct __complex_bfloat_vector_op_complex
       , __rhs(__rhs)
   {}
 
-  complex<__nv_bfloat16>& __lhs;
-  const complex<__nv_bfloat16>& __rhs;
+  complex<__nv_bfloat16> __lhs;
+  const complex<__nv_bfloat16> __rhs;
 };
 
 struct __complex_bfloat_vector_op_bfloat
 {
-  __nv_bfloat162& __lhs;
-  const __nv_bfloat162& __rhs;
+  __nv_bfloat162 __lhs;
+  const __nv_bfloat162 __rhs;
 };
 
 union __complex_bfloat_vector_op
@@ -108,13 +108,13 @@ union __complex_bfloat_vector_op
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
 operator+=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
 {
-  return __complex_bfloat_vector_op{__lhs, __rhs}.__plus_op();
+  return (__lhs = __complex_bfloat_vector_op{__lhs, __rhs}.__plus_op());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__nv_bfloat16>&
 operator-=(complex<__nv_bfloat16>& __lhs, const complex<__nv_bfloat16>& __rhs) noexcept
 {
-  return __complex_bfloat_vector_op{__lhs, __rhs}.__minus_op();
+  return (__lhs = __complex_bfloat_vector_op{__lhs, __rhs}.__minus_op());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)

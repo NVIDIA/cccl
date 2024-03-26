@@ -68,14 +68,14 @@ struct __complex_half_vector_op_complex
       , __rhs(__rhs)
   {}
 
-  complex<__half>& __lhs;
-  const complex<__half>& __rhs;
+  complex<__half> __lhs;
+  const complex<__half> __rhs;
 };
 
 struct __complex_half_vector_op_half
 {
-  __half2& __lhs;
-  const __half2& __rhs;
+  __half2 __lhs;
+  const __half2 __rhs;
 };
 
 union __complex_half_vector_op
@@ -105,13 +105,13 @@ union __complex_half_vector_op
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
 operator+=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
 {
-  return __complex_half_vector_op{__lhs, __rhs}.__plus_op();
+  return (__lhs = __complex_half_vector_op{__lhs, __rhs}.__plus_op());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY complex<__half>&
 operator-=(complex<__half>& __lhs, const complex<__half>& __rhs) noexcept
 {
-  return __complex_half_vector_op{__lhs, __rhs}.__minus_op();
+  return (__lhs = __complex_half_vector_op{__lhs, __rhs}.__minus_op());
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half arg(__half __re)
