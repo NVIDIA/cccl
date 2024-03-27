@@ -24,7 +24,7 @@
 struct equality_comparable_with_ec1;
 struct no_neq;
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct cxx20_member_eq {
   bool operator==(cxx20_member_eq const&) const = default;
 };
@@ -44,7 +44,7 @@ struct friend_three_way_comparable {
 };
 #endif // !__NVCC__
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 struct explicit_operators {
   __host__ __device__ friend bool operator==(explicit_operators, explicit_operators) noexcept;
@@ -211,7 +211,7 @@ struct wrong_return_type {
   __host__ __device__ void operator<=(wrong_return_type_ge) const noexcept;
 };
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 struct cxx20_member_eq_operator_with_deleted_ne {
   bool operator==(cxx20_member_eq_operator_with_deleted_ne const&) const = default;
   __host__ __device__ bool operator!=(cxx20_member_eq_operator_with_deleted_ne const&) const = delete;
@@ -526,7 +526,7 @@ struct returns_int_ptr {
   __host__ __device__ friend int* operator>=(totally_ordered_with_others, returns_int_ptr);
 };
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 struct ForwardingTestObject {
   __host__ __device__ constexpr bool operator<(ForwardingTestObject&&) && { return true; }

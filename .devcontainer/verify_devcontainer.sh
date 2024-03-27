@@ -32,6 +32,13 @@ check_host_compiler_version() {
             exit 1
         fi
         expected_compiler="llvm"
+    elif [[ "$CXX" == "icpc" ]]; then
+        local actual_version=$(echo "$version_output" | head -n 1 | cut -d ' ' -f 3 )
+        # The icpc compiler version of oneAPI release 2023.2.0 is 2021.10.0
+        if [[ "$actual_version" == "2021.10.0" ]]; then
+            actual_version="2023.2.0"
+        fi
+        expected_compiler="oneapi"
     else
         echo "::error:: Unexpected CXX value ($CXX)."
         exit 1

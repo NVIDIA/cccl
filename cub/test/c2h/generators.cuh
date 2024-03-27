@@ -27,13 +27,12 @@
 
 #pragma once
 
-#include <thrust/device_vector.h>
-
-#include <limits>
+#include <cub/util_type.cuh> // __CUDA_FP8_TYPES_EXIST__
 
 #include <c2h/custom_type.cuh>
+#include <c2h/vector.cuh>
 
-#include <cub/util_type.cuh> // __CUDA_FP8_TYPES_EXIST__
+#include <limits>
 
 #if defined(__CUDA_FP8_TYPES_EXIST__)
 #  include <cuda_fp8.h>
@@ -128,7 +127,7 @@ void gen(seed_t seed,
          std::size_t element_size);
 
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
+void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
                        KeyT *d_out,
                        std::size_t element_size);
 
@@ -136,7 +135,7 @@ void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
 
 template <template <typename> class... Ps>
 void gen(seed_t seed,
-         thrust::device_vector<c2h::custom_type_t<Ps...>> &data,
+         c2h::device_vector<c2h::custom_type_t<Ps...>> &data,
          c2h::custom_type_t<Ps...> min = std::numeric_limits<c2h::custom_type_t<Ps...>>::lowest(),
          c2h::custom_type_t<Ps...> max = std::numeric_limits<c2h::custom_type_t<Ps...>>::max())
 {
@@ -150,12 +149,12 @@ void gen(seed_t seed,
 
 template <typename T>
 void gen(seed_t seed,
-         thrust::device_vector<T> &data,
+         c2h::device_vector<T> &data,
          T min = std::numeric_limits<T>::lowest(),
          T max = std::numeric_limits<T>::max());
 
 template <typename T>
-void gen(modulo_t mod, thrust::device_vector<T> &data);
+void gen(modulo_t mod, c2h::device_vector<T> &data);
 
 /**
  * @brief Generates an array of offsets with uniformly distributed segment sizes in the range
@@ -165,7 +164,7 @@ void gen(modulo_t mod, thrust::device_vector<T> &data);
  * `max_segment_size` items.
  */
 template <typename T>
-thrust::device_vector<T>
+c2h::device_vector<T>
 gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_segment_size);
 
 /**
@@ -173,8 +172,8 @@ gen_uniform_offsets(seed_t seed, T total_elements, T min_segment_size, T max_seg
  * `gen_uniform_offset`.
  */
 template <typename OffsetT, typename KeyT>
-void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
-                       thrust::device_vector<KeyT> &keys_out)
+void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
+                       c2h::device_vector<KeyT> &keys_out)
 {
   detail::init_key_segments(segment_offsets,
                             thrust::raw_pointer_cast(keys_out.data()),
@@ -182,8 +181,8 @@ void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
 }
 
 template <typename OffsetT, template <typename> class... Ps>
-void init_key_segments(const thrust::device_vector<OffsetT> &segment_offsets,
-                       thrust::device_vector<custom_type_t<Ps...>> &keys_out)
+void init_key_segments(const c2h::device_vector<OffsetT> &segment_offsets,
+                       c2h::device_vector<custom_type_t<Ps...>> &keys_out)
 {
   detail::init_key_segments(segment_offsets,
                             reinterpret_cast<custom_type_state_t *>(

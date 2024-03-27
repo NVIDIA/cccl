@@ -43,7 +43,7 @@ template<typename DerivedPolicy,
          typename InputIterator2,
          typename OutputIterator1,
          typename OutputIterator2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                   InputIterator1 keys_first,
@@ -58,7 +58,7 @@ template<typename DerivedPolicy,
          typename OutputIterator1,
          typename OutputIterator2,
          typename BinaryPredicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                   InputIterator1 keys_first,
@@ -75,7 +75,7 @@ template<typename DerivedPolicy,
          typename OutputIterator2,
          typename BinaryPredicate,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   thrust::pair<OutputIterator1,OutputIterator2>
     reduce_by_key(thrust::execution_policy<DerivedPolicy> &exec,
                   InputIterator1 keys_first,

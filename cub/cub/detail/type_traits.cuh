@@ -45,15 +45,17 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+#include <cuda/std/functional>
+_CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
-
 
 CUB_NAMESPACE_BEGIN
 namespace detail {
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if CUB_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;

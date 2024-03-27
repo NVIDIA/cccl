@@ -7,9 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-//
-// UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: pre-sm-90
 
 // <cuda/barrier>
 
@@ -17,6 +14,7 @@
 #define TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_
 
 #include <cuda/barrier>
+#include <cuda/std/array>
 #include <cuda/std/utility>     // cuda::std::move
 #include "test_macros.h"        // TEST_NV_DIAG_SUPPRESS
 
@@ -40,24 +38,26 @@ namespace cde = cuda::device::experimental;
  */
 
 // Compute the total number of elements in a tensor
-constexpr __host__ __device__ int tensor_len(std::initializer_list<int> dims) {
-    int len = 1;
-    for (int d : dims) {
+template<class T, size_t num_dims>
+constexpr __host__ __device__ int tensor_len(cuda::std::array<T, num_dims> dims) {
+    T len = 1;
+    for (T d : dims) {
         len *= d;
     }
-    return len;
+    return static_cast<int>(len);
 }
 
 // Function to convert:
 // a linear index into a shared memory tensor
 // into
 // a linear index into a global memory tensor.
+template<size_t num_dims>
 inline __device__
 int smem_lin_idx_to_gmem_lin_idx(
     int smem_lin_idx,
-    std::initializer_list<int> smem_coord,
-    std::initializer_list<int> smem_dims,
-    std::initializer_list<int> gmem_dims) {
+    cuda::std::array<uint32_t, num_dims> smem_coord,
+    cuda::std::array<uint32_t, num_dims> smem_dims,
+    cuda::std::array<uint64_t, num_dims> gmem_dims) {
     assert(smem_coord.size() == smem_dims.size());
     assert(smem_coord.size() == gmem_dims.size());
 
@@ -73,38 +73,36 @@ int smem_lin_idx_to_gmem_lin_idx(
     return gmem_lin_idx;
 }
 
+template<size_t num_dims>
 __device__ inline void cp_tensor_global_to_shared(
     CUtensorMap* tensor_map,
-    std::initializer_list<int> indices,
+    cuda::std::array<uint32_t, num_dims> indices,
     void *smem,
     barrier &bar) {
 
-    const int* idxs = indices.begin();
-
     switch (indices.size()) {
-        case 1: cde::cp_async_bulk_tensor_1d_global_to_shared(smem, tensor_map, idxs[0], bar); break;
-        case 2: cde::cp_async_bulk_tensor_2d_global_to_shared(smem, tensor_map, idxs[0], idxs[1], bar); break;
-        case 3: cde::cp_async_bulk_tensor_3d_global_to_shared(smem, tensor_map, idxs[0], idxs[1], idxs[2], bar); break;
-        case 4: cde::cp_async_bulk_tensor_4d_global_to_shared(smem, tensor_map, idxs[0], idxs[1], idxs[2], idxs[3], bar); break;
-        case 5: cde::cp_async_bulk_tensor_5d_global_to_shared(smem, tensor_map, idxs[0], idxs[1], idxs[2], idxs[3], idxs[4], bar); break;
+        case 1: cde::cp_async_bulk_tensor_1d_global_to_shared(smem, tensor_map, indices[0], bar); break;
+        case 2: cde::cp_async_bulk_tensor_2d_global_to_shared(smem, tensor_map, indices[0], indices[1], bar); break;
+        case 3: cde::cp_async_bulk_tensor_3d_global_to_shared(smem, tensor_map, indices[0], indices[1], indices[2], bar); break;
+        case 4: cde::cp_async_bulk_tensor_4d_global_to_shared(smem, tensor_map, indices[0], indices[1], indices[2], indices[3], bar); break;
+        case 5: cde::cp_async_bulk_tensor_5d_global_to_shared(smem, tensor_map, indices[0], indices[1], indices[2], indices[3], indices[4], bar); break;
         default:
             assert(false && "Wrong number of dimensions.");
     }
 }
 
+template<size_t num_dims>
 __device__ inline void cp_tensor_shared_to_global(
     CUtensorMap* tensor_map,
-    std::initializer_list<int> indices,
+    cuda::std::array<uint32_t, num_dims> indices,
     void *smem) {
 
-    const int* idxs = indices.begin();
-
     switch (indices.size()) {
-        case 1: cde::cp_async_bulk_tensor_1d_shared_to_global(tensor_map, idxs[0], smem); break;
-        case 2: cde::cp_async_bulk_tensor_2d_shared_to_global(tensor_map, idxs[0], idxs[1], smem); break;
-        case 3: cde::cp_async_bulk_tensor_3d_shared_to_global(tensor_map, idxs[0], idxs[1], idxs[2], smem); break;
-        case 4: cde::cp_async_bulk_tensor_4d_shared_to_global(tensor_map, idxs[0], idxs[1], idxs[2], idxs[3], smem); break;
-        case 5: cde::cp_async_bulk_tensor_5d_shared_to_global(tensor_map, idxs[0], idxs[1], idxs[2], idxs[3], idxs[4], smem); break;
+        case 1: cde::cp_async_bulk_tensor_1d_shared_to_global(tensor_map, indices[0], smem); break;
+        case 2: cde::cp_async_bulk_tensor_2d_shared_to_global(tensor_map, indices[0], indices[1], smem); break;
+        case 3: cde::cp_async_bulk_tensor_3d_shared_to_global(tensor_map, indices[0], indices[1], indices[2], smem); break;
+        case 4: cde::cp_async_bulk_tensor_4d_shared_to_global(tensor_map, indices[0], indices[1], indices[2], indices[3], smem); break;
+        case 5: cde::cp_async_bulk_tensor_5d_shared_to_global(tensor_map, indices[0], indices[1], indices[2], indices[3], indices[4], smem); break;
         default:
             assert(false && "Wrong number of dimensions.");
     }
@@ -132,10 +130,10 @@ __constant__ fake_cutensormap global_fake_tensor_map;
  * 5. It writes the tile back to global memory
  * 6. It checks that all the values in global are properly modified.
  */
-template <int smem_len>
-__device__ void test(std::initializer_list<int> smem_coord,
-                     std::initializer_list<int> smem_dims,
-                     std::initializer_list<int> gmem_dims,
+template <size_t smem_len, size_t num_dims>
+__device__ void test(cuda::std::array<uint32_t, num_dims> smem_coord,
+                     cuda::std::array<uint32_t, num_dims> smem_dims,
+                     cuda::std::array<uint64_t, num_dims> gmem_dims,
                      int* gmem_tensor,
                      int gmem_len)
 {
@@ -211,33 +209,26 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled() {
 #endif
 
 #ifndef TEST_COMPILER_NVRTC
-template <typename T>
-CUtensorMap map_encode(T *tensor_ptr, std::initializer_list<int> gmem_dims, std::initializer_list<int> smem_dims) {
+template <typename T, size_t num_dims>
+CUtensorMap map_encode(T *tensor_ptr, const cuda::std::array<uint64_t, num_dims>& gmem_dims, const cuda::std::array<uint32_t, num_dims>& smem_dims) {
     // https://docs.nvidia.com/cuda/cuda-driver-api/group__CUDA__TENSOR__MEMORY.html
     CUtensorMap tensor_map{};
-    assert(gmem_dims.size() == smem_dims.size());
-    // rank is the number of dimensions of the array.
-    int rank = gmem_dims.size();
-    uint64_t size[rank];
-    for (int i  = 0; i < rank; ++i) {
-        size[i] = gmem_dims.begin()[i];
-    }
+
     // The stride is the number of bytes to traverse from the first element of one row to the next.
     // It must be a multiple of 16.
-    uint64_t stride[rank - 1];
-    int base_stride = sizeof(T);
-    for (int i = 0; i < rank - 1; ++i) {
-        base_stride *= gmem_dims.begin()[i];
+    // cuTensorMapEncodeTiled requies that the stride array is a valid pointer, so we add one superfluous element
+    // This is necessary for num_dims == 1
+    cuda::std::array<uint64_t, num_dims> stride;
+    uint64_t base_stride = sizeof(T);
+    for (size_t i = 0; i < stride.size() - 1; ++i) {
+        base_stride *= gmem_dims[i];
         stride[i] = base_stride;
     }
-    // The box_size is the size of the shared memory buffer that is used as the
-    // destination of a TMA transfer. Casting from int -> uint32_t.
-    const uint32_t *box_size = reinterpret_cast<const uint32_t *>(smem_dims.begin());
 
     // The distance between elements in units of sizeof(element). A stride of 2
     // can be used to load only the real component of a complex-valued tensor, for instance.
-    uint32_t elem_stride[rank]; // = {1, .., 1};
-    for (int i = 0; i < rank; ++i) {
+    cuda::std::array<uint32_t, num_dims> elem_stride; // = {1, .., 1};
+    for (size_t i = 0; i < elem_stride.size(); ++i) {
         elem_stride[i] = 1;
     }
 
@@ -248,12 +239,12 @@ CUtensorMap map_encode(T *tensor_ptr, std::initializer_list<int> gmem_dims, std:
     CUresult res = cuTensorMapEncodeTiled(
         &tensor_map,  // CUtensorMap *tensorMap,
         CUtensorMapDataType::CU_TENSOR_MAP_DATA_TYPE_INT32,
-        rank,                       // cuuint32_t tensorRank,
+        num_dims,                   // cuuint32_t tensorRank,
         tensor_ptr,                 // void *globalAddress,
-        size,                       // const cuuint64_t *globalDim,
-        stride,                     // const cuuint64_t *globalStrides,
-        box_size,                   // const cuuint32_t *boxDim,
-        elem_stride,                // const cuuint32_t *elementStrides,
+        gmem_dims.data(),           // const cuuint64_t *globalDim,
+        stride.data(),              // const cuuint64_t *globalStrides,
+        smem_dims.data(),           // const cuuint32_t *boxDim,
+        elem_stride.data(),         // const cuuint32_t *elementStrides,
         CUtensorMapInterleave::CU_TENSOR_MAP_INTERLEAVE_NONE,
         CUtensorMapSwizzle::CU_TENSOR_MAP_SWIZZLE_NONE,
         CUtensorMapL2promotion::CU_TENSOR_MAP_L2_PROMOTION_NONE,
@@ -264,8 +255,8 @@ CUtensorMap map_encode(T *tensor_ptr, std::initializer_list<int> gmem_dims, std:
     return tensor_map;
 }
 
-template <typename T>
-void init_tensor_map(const T& gmem_tensor_symbol, std::initializer_list<int> gmem_dims, std::initializer_list<int> smem_dims) {
+template <typename T, size_t num_dims>
+void init_tensor_map(const T& gmem_tensor_symbol, const cuda::std::array<uint64_t, num_dims>& gmem_dims, const cuda::std::array<uint32_t, num_dims>& smem_dims) {
     // Get pointer to gmem_tensor to create tensor map.
     int * tensor_ptr = nullptr;
     auto code = cudaGetSymbolAddress((void**)&tensor_ptr, gmem_tensor_symbol);

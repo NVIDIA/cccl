@@ -27,12 +27,12 @@ struct NotTotallyOrdered {
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::greater, NotTotallyOrdered, NotTotallyOrdered>);
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17 // MSVC considers implict conversions in C++17
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC considers implict conversions in C++17
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::greater, int, MoveOnly>);
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 17
+#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(cuda::std::is_invocable_v<cuda::std::ranges::greater, explicit_operators, explicit_operators>);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::ranges::greater::is_transparent; });
 #else
 template <class T, class = void>

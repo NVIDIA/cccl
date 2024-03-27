@@ -23,7 +23,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg, class _Result>
 struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
@@ -32,22 +32,22 @@ struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
     typedef _Result result_type;
 };
 
-#endif // _LIBCUDACXX_STD_VER <= 14
+#endif // _CCCL_STD_VER <= 2014
 
 template <class _Arg, class _Result> struct __unary_function_keep_layout_base {
-#if _LIBCUDACXX_STD_VER <= 17 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
+#if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Arg;
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Result;
 #endif
 };
 
-#if _LIBCUDACXX_STD_VER <= 14 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
-_LIBCUDACXX_DIAGNOSTIC_PUSH
-_LIBCUDACXX_CLANG_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
-_LIBCUDACXX_GCC_DIAGNOSTIC_IGNORED("-Wdeprecated-declarations")
+#if _CCCL_STD_VER <= 2014 || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Arg, class _Result>
 using __unary_function = unary_function<_Arg, _Result>;
-_LIBCUDACXX_DIAGNOSTIC_POP
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 #else
 template <class _Arg, class _Result>
 using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;

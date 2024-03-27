@@ -29,7 +29,7 @@ static_assert(cuda::std::sized_sentinel_for<random_access_iterator<int*>, random
 static_assert(!cuda::std::sized_sentinel_for<bidirectional_iterator<int*>, bidirectional_iterator<int*> >);
 
 struct int_sized_sentinel {
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend bool operator==(int_sized_sentinel, int*);
 #else
   __host__ __device__ friend bool operator==(int_sized_sentinel, int*);
@@ -46,7 +46,7 @@ static_assert(!cuda::std::sized_sentinel_for<int*, int_sized_sentinel>);
 
 struct no_default_ctor {
   no_default_ctor() = delete;
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ bool operator==(cuda::std::input_or_output_iterator auto) const { return true; };
 #else
   template<class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>
@@ -62,7 +62,7 @@ static_assert(!cuda::std::sized_sentinel_for<no_default_ctor, int*>);
 struct not_copyable {
   not_copyable() = default;
   not_copyable(not_copyable const&) = delete;
-  #if TEST_STD_VER > 17
+  #if TEST_STD_VER > 2017
   __host__ __device__ bool operator==(cuda::std::input_or_output_iterator auto) const { return true; };
 #else
   template<class It, cuda::std::enable_if_t<cuda::std::input_or_output_iterator<It>, int> = 0>

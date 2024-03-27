@@ -14,7 +14,7 @@
 #include "test_macros.h"
 
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // This overload should never be called. It exists solely to force subsumption.
 template <cuda::std::integral I>
 __host__ __device__ constexpr bool CheckSubsumption(I) {
@@ -32,7 +32,7 @@ requires cuda::std::unsigned_integral<I> && (!cuda::std::signed_integral<I>)
 __host__ __device__ constexpr bool CheckSubsumption(I) {
   return cuda::std::is_unsigned_v<I>;
 }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 
 enum ClassicEnum { a, b, c };
 enum class ScopedEnum { x, y, z };

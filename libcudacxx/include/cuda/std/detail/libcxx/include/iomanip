@@ -641,7 +641,7 @@ __quoted ( basic_string <_CharT, _Traits, _Allocator> &__s, _CharT __delim = _Ch
 }
 
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _CharT, class _Traits, class _Allocator>
 _LIBCUDACXX_INLINE_VISIBILITY

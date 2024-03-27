@@ -32,7 +32,6 @@
 
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/detail/execution_policy.h>
 
@@ -78,7 +77,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see \p shuffle_copy
  */
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(
+_CCCL_HOST_DEVICE void shuffle(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, URBG&& g);
 
@@ -107,7 +106,7 @@ __host__ __device__ void shuffle(
  *  \see \p shuffle_copy
  */
 template <typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
                                  URBG&& g);
 
 /*! shuffle_copy differs from shuffle only in that the reordered sequence is written to different output sequences, rather than in place.
@@ -145,7 +144,7 @@ __host__ __device__ void shuffle(RandomIterator first, RandomIterator last,
  */
 template <typename DerivedPolicy, typename RandomIterator,
           typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(
+_CCCL_HOST_DEVICE void shuffle_copy(
     const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
     RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g);
 
@@ -178,10 +177,9 @@ __host__ __device__ void shuffle_copy(
  *  \see \p shuffle
  */
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(RandomIterator first, RandomIterator last,
+_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
                                       OutputIterator result, URBG&& g);
 
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/shuffle.inl>
-#endif

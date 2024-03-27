@@ -14,11 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_scalar.h"
-#include "../__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +21,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_assignable.h"
+#include "../__type_traits/is_scalar.h"
+#include "../__utility/declval.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -35,7 +35,7 @@ template <class _Tp, class _Arg>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
     : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
 #endif
@@ -59,7 +59,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
     : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 { };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
 #endif
@@ -106,7 +106,7 @@ struct is_nothrow_assignable<_Tp&, _Tp&&>
 
 #endif // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
 #endif

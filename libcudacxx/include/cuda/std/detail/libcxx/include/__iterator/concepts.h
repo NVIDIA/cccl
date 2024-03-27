@@ -15,6 +15,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__concepts/arithmetic.h"
 #include "../__concepts/assignable.h"
 #include "../__concepts/common_reference_with.h"
@@ -45,17 +53,9 @@
 #include "../__type_traits/remove_cvref.h"
 #include "../__type_traits/void_t.h"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [iterator.concept.readable]
 template<class _In>
@@ -305,7 +305,7 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 // [iterator.concept.readable]
 template<class _In>
@@ -476,7 +476,7 @@ template<class _Ip>
 _LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
-#if defined(_LIBCUDACXX_COMPILER_MSVC_2017)
+#if defined(_CCCL_COMPILER_MSVC_2017)
 // For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -489,7 +489,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-#  else // ^^^ _LIBCUDACXX_COMPILER_MSVC_2017 ^^^ / vvv !_LIBCUDACXX_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
 template<class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
@@ -501,7 +501,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip,  decltype(__j -  __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)
   ));
-#  endif // !_LIBCUDACXX_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER_MSVC_2017
 template<class _Ip>
 _LIBCUDACXX_CONCEPT __random_access_iterator_operations = _LIBCUDACXX_FRAGMENT(__random_access_iterator_operations_, _Ip);
 
@@ -653,7 +653,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Fp, class _It1, class _It2 = _It1>
 _LIBCUDACXX_CONCEPT indirect_strict_weak_order = _LIBCUDACXX_FRAGMENT(__indirect_strict_weak_order_, _Fp, _It1, _It2);
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template<class _Fp, class... _Its>
 using indirect_result_t = enable_if_t<(indirectly_readable<_Its> && ...) && invocable<_Fp, iter_reference_t<_Its>...>, invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
 #else
@@ -661,7 +661,7 @@ template<class _Fp, class... _Its>
 using indirect_result_t = enable_if_t<conjunction_v<bool_constant<indirectly_readable<_Its>>...>
                                       && invocable<_Fp, iter_reference_t<_Its>...>,
                                       invoke_result_t<_Fp, iter_reference_t<_Its>...>>;
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 template<class _In, class _Out>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -728,7 +728,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept = false;
 template<class _Ip>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

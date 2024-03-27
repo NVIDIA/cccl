@@ -30,7 +30,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 #  include <type_traits>
 #endif
 
@@ -44,36 +44,15 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-#if THRUST_CPP_DIALECT >= 2011
-
 template <typename...> struct voider { using type = void; };
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 using std::void_t;
 #else
 template <typename... Ts> using void_t = typename voider<Ts...>::type;
 #endif
 
-#else // Older than C++11.
 
-template <
-  typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
-, typename = void
->
-struct voider
-{
-  typedef void type;
-};
-
-#endif
 
 /*! \} // type traits
  */

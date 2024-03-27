@@ -43,13 +43,13 @@ template<typename Allocator>
 {
   Allocator &a;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   construct1_via_allocator(Allocator &a)
     : a(a)
   {}
 
   template<typename T>
-  inline __host__ __device__
+  inline _CCCL_HOST_DEVICE
   void operator()(T &x)
   {
     allocator_traits<Allocator>::construct(a, &x);
@@ -77,7 +77,7 @@ template<typename U, typename T>
 
 
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename enable_if<
     needs_default_construct_via_allocator<
       Allocator,
@@ -91,7 +91,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename disable_if<
     needs_default_construct_via_allocator<
       Allocator,
@@ -108,7 +108,7 @@ __host__ __device__
 
 
 template<typename Allocator, typename Pointer, typename Size>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void default_construct_range(Allocator &a, Pointer p, Size n)
 {
   return allocator_traits_detail::default_construct_range(a,p,n);

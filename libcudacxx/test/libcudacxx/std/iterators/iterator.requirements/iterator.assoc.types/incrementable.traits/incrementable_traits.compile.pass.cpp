@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class T>
 concept check_has_difference_type = requires {
   typename cuda::std::incrementable_traits<T>::difference_type;
@@ -136,9 +136,9 @@ static_assert(!check_has_difference_type<long double>);
 static_assert(!check_has_difference_type<float&>);
 static_assert(!check_has_difference_type<float const&>);
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 20 // gcc 10 has an issue with void
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
 static_assert(!check_has_difference_type<void*>);
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 20
+#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
 static_assert(!check_has_difference_type<cuda::std::nullptr_t>);
 static_assert(!check_has_difference_type<int()>);
 static_assert(!check_has_difference_type<int() noexcept>);

@@ -67,19 +67,19 @@ template<typename Eval>
 {
   typedef Eval eval_type;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   constexpr actor();
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   actor(const Eval &base);
 
   template <typename... Ts>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename apply_actor<eval_type, thrust::tuple<eval_ref<Ts>...>>::type
   operator()(Ts&&... ts) const;
 
   template<typename T>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename assign_result<Eval,T>::type
   operator=(const T &_1) const;
 }; // end actor
@@ -90,7 +90,7 @@ template<typename T>
 {
   typedef value<T> type;
 
-  static inline __host__ __device__ type convert(const T &x)
+  static inline _CCCL_HOST_DEVICE type convert(const T &x)
   {
     return val(x);
   } // end convert()
@@ -102,7 +102,7 @@ template<typename Eval>
 {
   typedef actor<Eval> type;
 
-  static inline __host__ __device__ const type &convert(const actor<Eval> &x)
+  static inline _CCCL_HOST_DEVICE const type &convert(const actor<Eval> &x)
   {
     return x;
   } // end convert()
@@ -110,7 +110,7 @@ template<typename Eval>
 
 template<typename T>
   typename as_actor<T>::type
-  __host__ __device__
+  _CCCL_HOST_DEVICE
     make_actor(const T &x)
 {
   return as_actor<T>::convert(x);

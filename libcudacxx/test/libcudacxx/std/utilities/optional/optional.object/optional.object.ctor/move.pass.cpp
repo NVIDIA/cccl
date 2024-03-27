@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 
-// Throwing bad_optional_access is supported starting in macosx10.13
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
-
 // <cuda/std/optional>
 
 // constexpr optional(optional<T>&& rhs);
@@ -207,6 +204,7 @@ int main(int, char**)
         test_throwing_ctor();
     }
     {
+#ifndef TEST_COMPILER_ICC
         struct ThrowsMove {
           __host__ __device__
           ThrowsMove() noexcept(false) {}
@@ -216,6 +214,7 @@ int main(int, char**)
           ThrowsMove(ThrowsMove &&) noexcept(false) {}
         };
         static_assert(!cuda::std::is_nothrow_move_constructible<optional<ThrowsMove>>::value, "");
+#endif // TEST_COMPILER_ICC
         struct NoThrowMove {
           __host__ __device__
           NoThrowMove() noexcept(false) {}

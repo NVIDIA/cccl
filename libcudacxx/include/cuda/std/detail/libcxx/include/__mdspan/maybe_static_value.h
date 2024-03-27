@@ -48,12 +48,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__mdspan/dynamic_extent.h"
-#include "../__mdspan/macros.h"
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include "../__mdspan/no_unique_address.h"
-#endif
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -62,6 +56,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__mdspan/dynamic_extent.h"
+#include "../__mdspan/macros.h"
+#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#include "../__mdspan/no_unique_address.h"
+#endif
+
 // This is only needed for the non-standard-layout version of partially
 // static array.
 // Needs to be after the includes above to work with the single header generator
@@ -69,7 +69,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 //==============================================================================
 
@@ -162,7 +162,7 @@ struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_d
 //==============================================================================
 
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

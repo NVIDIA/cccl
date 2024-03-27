@@ -24,9 +24,9 @@ struct Data {
   __host__ __device__ constexpr Data(int ii) : i(ii) {}
 
   __host__ __device__ friend constexpr bool operator==(const Data& data, int ii) { return data.i == ii; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator!=(const Data& data, int ii) { return data.i != ii; }
-#endif // TEST_STD_VER < 20
+#endif // TEST_STD_VER < 2020
 };
 
 __host__ __device__ constexpr bool test() {
@@ -53,8 +53,8 @@ __host__ __device__ constexpr bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   return 0;
 }

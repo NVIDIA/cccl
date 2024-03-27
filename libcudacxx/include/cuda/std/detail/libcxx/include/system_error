@@ -164,7 +164,7 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_error_code_enum
     : public false_type {};
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t is_error_code_enum_v = is_error_code_enum<_Tp>::value;
 #endif
@@ -175,7 +175,7 @@ template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_error_condition_enum
     : public false_type {};
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t is_error_condition_enum_v = is_error_condition_enum<_Tp>::value;
 #endif
@@ -207,7 +207,7 @@ public:
     error_category() noexcept;
 #else
     _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 error_category() noexcept = default;
+    _CCCL_CONSTEXPR_CXX14 error_category() noexcept = default;
 #endif
 private:
     error_category(const error_category&);// = delete;

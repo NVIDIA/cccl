@@ -34,9 +34,9 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename Iterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   Iterator prior(Iterator x)
 {
   return --x;
@@ -45,34 +45,7 @@ template<typename Iterator>
 } // end detail
 
 template<typename BidirectionalIterator>
-  __host__ __device__
-  reverse_iterator<BidirectionalIterator>
-    ::reverse_iterator(BidirectionalIterator x)
-      :super_t(x)
-{
-} // end reverse_iterator::reverse_iterator()
-
-template<typename BidirectionalIterator>
-  template<typename OtherBidirectionalIterator>
-    __host__ __device__
-    reverse_iterator<BidirectionalIterator>
-      ::reverse_iterator(reverse_iterator<OtherBidirectionalIterator> const &r
-// XXX msvc screws this up
-#if THRUST_HOST_COMPILER != THRUST_HOST_COMPILER_MSVC
-                     , typename thrust::detail::enable_if<
-                         thrust::detail::is_convertible<
-                           OtherBidirectionalIterator,
-                           BidirectionalIterator
-                         >::value
-                       >::type *
-#endif // MSVC
-                     )
-        :super_t(r.base())
-{
-} // end reverse_iterator::reverse_iterator()
-
-template<typename BidirectionalIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   typename reverse_iterator<BidirectionalIterator>::super_t::reference
     reverse_iterator<BidirectionalIterator>
       ::dereference() const
@@ -81,7 +54,7 @@ template<typename BidirectionalIterator>
 } // end reverse_iterator::increment()
 
 template<typename BidirectionalIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void reverse_iterator<BidirectionalIterator>
     ::increment()
 {
@@ -89,7 +62,7 @@ template<typename BidirectionalIterator>
 } // end reverse_iterator::increment()
 
 template<typename BidirectionalIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void reverse_iterator<BidirectionalIterator>
     ::decrement()
 {
@@ -97,7 +70,7 @@ template<typename BidirectionalIterator>
 } // end reverse_iterator::decrement()
 
 template<typename BidirectionalIterator>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void reverse_iterator<BidirectionalIterator>
     ::advance(typename super_t::difference_type n)
 {
@@ -106,7 +79,7 @@ template<typename BidirectionalIterator>
 
 template<typename BidirectionalIterator>
   template<typename OtherBidirectionalIterator>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     typename reverse_iterator<BidirectionalIterator>::super_t::difference_type
       reverse_iterator<BidirectionalIterator>
         ::distance_to(reverse_iterator<OtherBidirectionalIterator> const &y) const
@@ -115,7 +88,7 @@ template<typename BidirectionalIterator>
 } // end reverse_iterator::distance_to()
 
 template<typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 reverse_iterator<BidirectionalIterator> make_reverse_iterator(BidirectionalIterator x)
 {
   return reverse_iterator<BidirectionalIterator>(x);

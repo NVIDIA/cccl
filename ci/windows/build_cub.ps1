@@ -1,7 +1,7 @@
 
 Param(
     [Parameter(Mandatory = $true)]
-    [Alias("cxx")]
+    [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17

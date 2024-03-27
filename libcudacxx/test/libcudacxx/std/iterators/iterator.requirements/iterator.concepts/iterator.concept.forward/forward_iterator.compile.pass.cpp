@@ -39,7 +39,7 @@ struct not_input_iterator {
   __host__ __device__ not_input_iterator& operator++();
   __host__ __device__ not_input_iterator operator++(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(not_input_iterator const&) const = default;
 #else
     __host__ __device__ bool operator==(const not_input_iterator&) const { return true; };
@@ -60,7 +60,7 @@ struct bad_iterator_tag {
   __host__ __device__ bad_iterator_tag& operator++();
   __host__ __device__ bad_iterator_tag operator++(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(bad_iterator_tag const&) const = default;
 #else
     __host__ __device__ bool operator==(const bad_iterator_tag&) const { return true; };
@@ -79,7 +79,7 @@ struct not_incrementable {
   __host__ __device__ not_incrementable& operator++();
   __host__ __device__ void operator++(int);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   bool operator==(not_incrementable const&) const = default;
 #else
     __host__ __device__ bool operator==(const not_incrementable&) const { return true; };

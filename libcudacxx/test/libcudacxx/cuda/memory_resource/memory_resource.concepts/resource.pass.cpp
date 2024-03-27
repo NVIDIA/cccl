@@ -68,7 +68,7 @@ struct non_eq_comparable {
 };
 static_assert(!cuda::mr::resource<non_eq_comparable>, "");
 
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
 struct non_neq_comparable {
   void* allocate(std::size_t, std::size_t) { return nullptr; }
   void deallocate(void*, std::size_t, std::size_t) {}

@@ -44,7 +44,7 @@ namespace generic
 struct tag
 {
   template<typename T>
-  __host__ __device__ inline
+  _CCCL_HOST_DEVICE inline
   tag(const T &) {}
 };
 

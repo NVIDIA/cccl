@@ -14,9 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/is_same.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,9 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__concepts/__concept_macros.h"
+#include "../__type_traits/is_same.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 // [concept.same]
 
@@ -37,7 +37,7 @@ _LIBCUDACXX_CONCEPT __same_as_impl = _IsSame<_Tp, _Up>::value;
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT same_as = __same_as_impl<_Tp, _Up> && __same_as_impl<_Up, _Tp>;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

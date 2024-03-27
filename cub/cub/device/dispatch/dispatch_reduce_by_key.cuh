@@ -263,7 +263,7 @@ struct DispatchReduceByKey
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION __forceinline__
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
   DispatchReduceByKey(void *d_temp_storage,
                       size_t &temp_storage_bytes,
                       KeysInputIteratorT d_keys_in,
@@ -293,8 +293,8 @@ struct DispatchReduceByKey
   //---------------------------------------------------------------------
 
   template <typename ActivePolicyT, typename ScanInitKernelT, typename ReduceByKeyKernelT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke(ScanInitKernelT init_kernel,
-                                                          ReduceByKeyKernelT reduce_by_key_kernel)
+  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Invoke(ScanInitKernelT init_kernel, ReduceByKeyKernelT reduce_by_key_kernel)
   {
     using AgentReduceByKeyPolicyT = typename ActivePolicyT::ReduceByKeyPolicyT;
     constexpr int block_threads = AgentReduceByKeyPolicyT::BLOCK_THREADS;
@@ -457,7 +457,7 @@ struct DispatchReduceByKey
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
@@ -513,7 +513,7 @@ struct DispatchReduceByKey
    * @param[in] stream
    *   CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            KeysInputIteratorT d_keys_in,
@@ -564,7 +564,7 @@ struct DispatchReduceByKey
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   Dispatch(void *d_temp_storage,
            size_t &temp_storage_bytes,
            KeysInputIteratorT d_keys_in,

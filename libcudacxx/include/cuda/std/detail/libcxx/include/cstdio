@@ -156,7 +156,7 @@ using ::tmpnam;
 
 #ifndef _LIBCUDACXX_HAS_NO_STDIN
 using ::getchar;
-#if _LIBCUDACXX_STD_VER <= 11 && !defined(_LIBCUDACXX_C_HAS_NO_GETS)
+#if _CCCL_STD_VER <= 2011 && !defined(_LIBCUDACXX_C_HAS_NO_GETS)
 using ::gets;
 #endif
 using ::scanf;

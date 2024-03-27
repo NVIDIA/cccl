@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 #define _LIBCUDACXX_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
 #define _LIBCUDACXX_PP_CAT(_Xp, ...) _LIBCUDACXX_PP_CAT_(_Xp, __VA_ARGS__)
@@ -166,7 +166,7 @@
   _LIBCUDACXX_PP_CAT3(_LIBCUDACXX_PP_EAT_TYPENAME_, __VA_ARGS__)
 #define _LIBCUDACXX_PP_EAT_TYPENAME_typename
 
-#if (defined(__cpp_concepts) && _LIBCUDACXX_STD_VER >= 20) ||                  \
+#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) ||                  \
     defined(_LIBCUDACXX_DOXYGEN_INVOKED)
 
 #define _LIBCUDACXX_CONCEPT concept
@@ -225,7 +225,7 @@
   _Concept::_Requires<__VA_ARGS__>
 #define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...)               \
   static_cast<_Concept::_Tag<__VA_ARGS__> *>(nullptr)
-#if defined(_LIBCUDACXX_COMPILER_GCC)
+#if defined(_CCCL_COMPILER_GCC)
 // GCC can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
@@ -248,7 +248,7 @@
 //     _LIBCUDACXX_REQUIRES( Concept1<A> _LIBCUDACXX_AND Concept2<_Bp>)
 //   void foo(A a, _Bp b)
 //   {}
-#if (defined(__cpp_concepts) && _LIBCUDACXX_STD_VER >= 20)
+#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020)
 #define _LIBCUDACXX_TEMPLATE(...) template <__VA_ARGS__>
 #define _LIBCUDACXX_REQUIRES(...) requires __VA_ARGS__
 #define _LIBCUDACXX_AND &&
@@ -285,7 +285,7 @@ _LIBCUDACXX_INLINE_VISIBILITY inline constexpr bool _Is_true() {
   return true;
 }
 
-#if defined(_LIBCUDACXX_COMPILER_CLANG) || defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_MSVC)
 template <bool _Bp>
 _LIBCUDACXX_INLINE_VISIBILITY _Concept::_Enable_if_t<_Bp> _Requires() {}
 #else
@@ -294,6 +294,6 @@ _LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
 #endif
 } // namespace _Concept
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif //_CUDA___CONCEPTS

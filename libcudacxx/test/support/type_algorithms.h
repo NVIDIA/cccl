@@ -57,7 +57,7 @@ struct type_identity {
   using type = T;
 };
 
-#if TEST_STD_VER >= 17
+#if TEST_STD_VER >= 2017
 template <class Func>
 struct apply_type_identity {
   Func func_;
@@ -92,11 +92,9 @@ using character_types =
               ,
               char8_t
 #endif
-#if TEST_STD_VER >= 11
               ,
               char16_t,
               char32_t
-#endif
               >;
 
 using signed_integer_types =

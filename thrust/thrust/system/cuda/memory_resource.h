@@ -31,7 +31,6 @@
 #endif // no system header
 
 #include <thrust/mr/memory_resource.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/detail/bad_alloc.h>
 #include <thrust/system/cuda/error.h>

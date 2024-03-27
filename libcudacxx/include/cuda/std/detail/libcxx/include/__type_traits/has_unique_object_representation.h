@@ -14,10 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/remove_all_extents.h"
-#include "../__type_traits/remove_cv.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,9 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/remove_all_extents.h"
+#include "../__type_traits/remove_cv.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
+#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
 
 template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS has_unique_object_representations
     : public integral_constant<bool,

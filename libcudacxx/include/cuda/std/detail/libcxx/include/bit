@@ -55,18 +55,7 @@ namespace std {
 
 #ifndef __cuda_std__
 #include <__config>
-#include <__debug>
 #endif // __cuda_std__
-
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "cstdint"
-#include "limits"
-#include "type_traits"
-#include "version"
-
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -76,13 +65,24 @@ namespace std {
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-#include <intrin.h>
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#include "__assert" // all public C++ headers provide the assertion handler
+#include "__debug"
+#include "cstdint"
+#include "limits"
+#include "type_traits"
+#include "version"
 
-#if defined(_LIBCUDACXX_COMPILER_IBM)
+#ifndef __cuda_std__
+#include <__pragma_push>
+#endif //__cuda_std__
+
+#if defined(_CCCL_COMPILER_MSVC)
+#include <intrin.h>
+#endif // _CCCL_COMPILER_MSVC
+
+#if defined(_CCCL_COMPILER_IBM)
 #include "support/ibm/support.h"
-#endif // _LIBCUDACXX_COMPILER_IBM
+#endif // _CCCL_COMPILER_IBM
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -191,13 +191,13 @@ int __fallback_popc64(uint64_t __x) {
       __x - ((__x >> 1) & 0x5555555555555555));
 }
 
-#ifndef _LIBCUDACXX_COMPILER_MSVC
+#ifndef _CCCL_COMPILER_MSVC
 
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 int __libcpp_ctz(unsigned __x) noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return (!__x) ? sizeof(unsigned) * 8 : __ffs(__x) - 1;
@@ -205,19 +205,19 @@ int __libcpp_ctz(unsigned __x) noexcept {
       return __builtin_ctz(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
     return __binary_ctz32(static_cast<uint64_t>(__x), 0);
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     return __builtin_ctz(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_ctz(unsigned long __x) noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return (!__x) ? sizeof(unsigned long) * 8 : __ffsll(__x) - 1;
@@ -225,19 +225,19 @@ int __libcpp_ctz(unsigned long __x) noexcept {
       return __builtin_ctzl(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
     return __binary_ctz64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
     return __builtin_ctzl(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_ctz(unsigned long long __x) noexcept {
 // For whatever reason __builtin_ctzll does not compile although it should
-#if 1 //def _LIBCUDACXX_COMPILER_NVRTC
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if 1 //def _CCCL_COMPILER_NVRTC
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return (!__x) ? sizeof(unsigned long long) * 8 : __ffsll(__x) - 1;
@@ -245,19 +245,19 @@ int __libcpp_ctz(unsigned long long __x) noexcept {
       return __builtin_ctzll(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
     return __binary_ctz64(static_cast<uint64_t>(__x));
 #else // 0
     return __builtin_ctzll(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_clz(unsigned __x)           noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return __clz(__x);
@@ -265,18 +265,18 @@ int __libcpp_clz(unsigned __x)           noexcept {
       return __builtin_clz(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_clz(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_clz(unsigned long __x)      noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return __clzll(__x);
@@ -284,19 +284,19 @@ int __libcpp_clz(unsigned long __x)      noexcept {
       return __builtin_clzl(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
   return __binary_clz64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_clzl(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_clz(unsigned long long __x) noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return __clzll(__x);
@@ -304,19 +304,19 @@ int __libcpp_clz(unsigned long long __x) noexcept {
       return __builtin_clzll(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
   return __binary_clz64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_clzll(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_popcount(unsigned __x)           noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return __popc(__x);
@@ -324,19 +324,19 @@ int __libcpp_popcount(unsigned __x)           noexcept {
       return __builtin_popcount(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_popcount(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_popcount(unsigned long __x)      noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
     return __popcll(__x);
@@ -344,19 +344,19 @@ int __libcpp_popcount(unsigned long __x)      noexcept {
       return __builtin_popcountl(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_popcountl(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
 int __libcpp_popcount(unsigned long long __x) noexcept {
-#if defined(_LIBCUDACXX_COMPILER_NVRTC) \
+#if defined(_CCCL_COMPILER_NVRTC) \
  || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
   if (!__libcpp_is_constant_evaluated()) {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
       return __popcll(__x);
@@ -364,15 +364,15 @@ int __libcpp_popcount(unsigned long long __x) noexcept {
       return __builtin_popcountll(__x);
     ))
   }
-#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_LIBCUDACXX_STD_VER >= 14)
+#endif // defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && (_CCCL_STD_VER >= 2014)
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
-#else // ^^^ _LIBCUDACXX_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   return __builtin_popcountll(__x);
-#endif // !_LIBCUDACXX_COMPILER_NVRTC || nvcc >= 11.3
+#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 }
 
-#else  // _LIBCUDACXX_COMPILER_MSVC
+#else  // _CCCL_COMPILER_MSVC
 
 // Precondition:  __x != 0
 inline _LIBCUDACXX_INLINE_VISIBILITY
@@ -500,7 +500,7 @@ constexpr int __libcpp_popcount(unsigned long long __x) {
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
@@ -761,7 +761,7 @@ __ceil2(_Tp __t) noexcept
 }
 
 
-#if (_LIBCUDACXX_STD_VER > 17) || defined(__cuda_std__)
+#if (_CCCL_STD_VER > 2017) || defined(__cuda_std__)
 
 template<class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_BIT_CONSTEXPR
@@ -873,7 +873,7 @@ enum class endian
 #endif
 };
 
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

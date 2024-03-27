@@ -27,7 +27,6 @@
 #endif // no system header
 
 #include <cub/detail/detect_cuda_runtime.cuh>
-#include <cub/detail/exec_check_disable.cuh>
 
 #include <nv/target>
 
@@ -42,7 +41,7 @@ namespace detail
  * Call `cudaDeviceSynchronize()` using the proper API for the current CUB and
  * CUDA configuration.
  */
-CUB_EXEC_CHECK_DISABLE
+_CCCL_EXEC_CHECK_DISABLE
 CUB_RUNTIME_FUNCTION inline cudaError_t device_synchronize()
 {
   cudaError_t result = cudaErrorNotSupported;

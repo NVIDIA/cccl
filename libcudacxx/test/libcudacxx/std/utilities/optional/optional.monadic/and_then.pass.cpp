@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 
-// Throwing bad_optional_access is supported starting in macosx10.13
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
-
 // <cuda/std/optional>
 
 // template<class F> constexpr auto and_then(F&&) &;
@@ -295,7 +292,7 @@ TEST_CONSTEXPR_CXX17 bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   static_assert(test());
 #endif
   return 0;

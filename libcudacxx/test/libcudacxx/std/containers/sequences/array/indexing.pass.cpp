@@ -45,10 +45,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
             LIBCPP_ASSERT_NOEXCEPT(c[0]);
             ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
             if (c.size() > (0)) { // always false
-#if !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_MSVC)
               C::reference r = c[0];
               unused(r);
-#endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_MSVC
             }
         }
         {
@@ -58,10 +58,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
             LIBCPP_ASSERT_NOEXCEPT(c[0]);
             ASSERT_SAME_TYPE(C::reference, decltype(c[0]));
             if (c.size() > (0)) { // always false
-#if !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_MSVC)
               C::reference r = c[0];
               unused(r);
-#endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_MSVC
             }
         }
     }
@@ -72,7 +72,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
     tests();
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
     return 0;

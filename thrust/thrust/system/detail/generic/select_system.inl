@@ -42,7 +42,7 @@ namespace select_system_detail
 
 // min_system case 1: both systems have the same type, just return the first one
 template<typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
 System &min_system(thrust::execution_policy<System> &system1,
                    thrust::execution_policy<System> &)
 {
@@ -52,7 +52,7 @@ System &min_system(thrust::execution_policy<System> &system1,
 
 // min_system case 2: systems have differing type and the first type is considered the minimum
 template<typename System1, typename System2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::enable_if<
   thrust::detail::is_same<
     System1,
@@ -68,7 +68,7 @@ typename thrust::detail::enable_if<
 
 // min_system case 3: systems have differing type and the second type is considered the minimum
 template<typename System1, typename System2>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename thrust::detail::enable_if<
   thrust::detail::is_same<
     System2,
@@ -86,7 +86,7 @@ typename thrust::detail::enable_if<
 
 
 template<typename System>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::disable_if<
     select_system1_exists<System>::value,
     System &
@@ -98,7 +98,7 @@ __host__ __device__
 
 
 template<typename System1, typename System2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::enable_if_defined<
     thrust::detail::minimum_system<System1,System2>
   >::type
@@ -110,7 +110,7 @@ __host__ __device__
 
 
 template<typename System1, typename System2, typename System3>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system3_exists<System1,System2,System3>::value,
     thrust::detail::minimum_system<System1,System2,System3>
@@ -124,7 +124,7 @@ __host__ __device__
 
 
 template<typename System1, typename System2, typename System3, typename System4>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system4_exists<System1,System2,System3,System4>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4>
@@ -139,7 +139,7 @@ __host__ __device__
 
 
 template<typename System1, typename System2, typename System3, typename System4, typename System5>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system5_exists<System1,System2,System3,System4,System5>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4,System5>
@@ -155,7 +155,7 @@ __host__ __device__
 
 
 template<typename System1, typename System2, typename System3, typename System4, typename System5, typename System6>
-__host__ __device__
+_CCCL_HOST_DEVICE
   typename thrust::detail::lazy_disable_if<
     select_system6_exists<System1,System2,System3,System4,System5,System6>::value,
     thrust::detail::minimum_system<System1,System2,System3,System4,System5,System6>
@@ -172,7 +172,7 @@ __host__ __device__
 
 
 // map a single any_system_tag to device_system_tag
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 thrust::device_system_tag select_system(thrust::any_system_tag)
 {
   return thrust::device_system_tag();

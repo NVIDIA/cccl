@@ -129,7 +129,7 @@ _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>
 
 
-#if _LIBCUDACXX_STD_VER > 11 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
+#if _CCCL_STD_VER > 2011 || defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 #include <__mutex_base>
 
@@ -179,7 +179,7 @@ __shared_mutex_base
 };
 
 
-#if _LIBCUDACXX_STD_VER > 14
+#if _CCCL_STD_VER > 2014
 class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_SHARED_MUTEX shared_mutex
 {
     __shared_mutex_base __base;
@@ -505,7 +505,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif  // !_LIBCUDACXX_HAS_NO_THREADS
 
-#endif  // _LIBCUDACXX_STD_VER > 11
+#endif  // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_POP_MACROS
 

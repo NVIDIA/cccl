@@ -31,7 +31,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if  THRUST_CPP_DIALECT >= 2017
+#if  _CCCL_STD_VER >= 2017
 #if __has_include(<version>)
 #  include <version>
 #endif

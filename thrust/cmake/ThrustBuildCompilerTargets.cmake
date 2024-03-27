@@ -26,9 +26,6 @@ function(thrust_build_compiler_targets)
 
   thrust_update_system_found_flags()
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
-
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     append_option_if_available("/W4" cxx_compile_options)
 
@@ -115,6 +112,8 @@ function(thrust_build_compiler_targets)
     # Disable warning that inlining is inhibited by compiler thresholds.
     append_option_if_available("-diag-disable=11074" cxx_compile_options)
     append_option_if_available("-diag-disable=11076" cxx_compile_options)
+    # Disable warning about deprecated classic compiler
+    append_option_if_available("-diag-disable=10441" cxx_compile_options)
   endif()
 
   add_library(thrust.compiler_interface INTERFACE)
@@ -179,7 +178,7 @@ function(thrust_build_compiler_targets)
   if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # C4127: conditional expression is constant
     # Disable this MSVC warning for C++11/C++14. In C++17, we can use
-    # THRUST_IF_CONSTEXPR to address these warnings.
+    # _CCCL_IF_CONSTEXPR to address these warnings.
     target_compile_options(thrust.compiler_interface_cpp11 INTERFACE
       $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>

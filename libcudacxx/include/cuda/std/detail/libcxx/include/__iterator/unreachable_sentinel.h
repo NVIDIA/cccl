@@ -16,8 +16,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/concepts.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,7 +24,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 14
+#include "../__iterator/concepts.h"
+
+#if _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
@@ -37,11 +37,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
     ;
 namespace __unreachable_sentinel_detail {
 struct __unreachable_base
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 {
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
@@ -50,7 +50,7 @@ struct __unreachable_base
       operator==(const unreachable_sentinel_t &, const _Iter &) noexcept {
     return false;
   }
-#if _LIBCUDACXX_STD_VER < 20
+#if _CCCL_STD_VER < 2020
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
   _LIBCUDACXX_HIDE_FROM_ABI
@@ -72,20 +72,20 @@ struct __unreachable_base
       operator!=(const _Iter &, const unreachable_sentinel_t &) noexcept {
     return true;
   }
-#endif // _LIBCUDACXX_STD_VER < 20
+#endif // _CCCL_STD_VER < 2020
 };
 
-#ifdef _LIBCUDACXX_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 } // namespace __unreachable_sentinel_detail
 struct unreachable_sentinel_t
     : __unreachable_sentinel_detail::__unreachable_base {};
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _LIBCUDACXX_CPO_ACCESSIBILITY unreachable_sentinel_t unreachable_sentinel{};
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

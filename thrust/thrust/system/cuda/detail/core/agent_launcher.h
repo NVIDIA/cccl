@@ -41,7 +41,6 @@
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #include <thrust/system/cuda/detail/core/util.h>
-#include <thrust/system/cuda/detail/guarded_cuda_runtime_api.h>
 
 #include <cassert>
 
@@ -56,7 +55,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #if !defined(_CCCL_CUDA_COMPILER_NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#endif // !_LIBCUDACXX_COMPILER_NVHPC_CUDA
+#endif // !_CCCL_CUDA_COMPILER_NVHPC
 #endif // !THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 THRUST_NAMESPACE_BEGIN

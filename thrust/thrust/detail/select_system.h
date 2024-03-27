@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/detail/type_deduction.h>
 #include <thrust/type_traits/remove_cvref.h>
@@ -53,9 +52,9 @@ using thrust::system::detail::generic::select_system;
 
 struct select_system_fn final
 {
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
   ) const
@@ -65,9 +64,9 @@ struct select_system_fn final
     )
   )
 
-  __thrust_exec_check_disable__
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0, typename DerivedPolicy1>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   auto operator()(
     thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
   , thrust::detail::execution_policy_base<DerivedPolicy1> const& exec1
@@ -88,5 +87,4 @@ THRUST_INLINE_CONSTANT select_system_detail::select_system_fn select_system{};
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

@@ -78,7 +78,7 @@ static_assert(cuda::std::contiguous_iterator<simple_contiguous_iterator>);
 struct mismatch_value_iter_ref_t {
     typedef cuda::std::contiguous_iterator_tag  iterator_category;
     typedef short                               value_type;
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
     typedef short                               element_type;
 #endif
     typedef cuda::std::ptrdiff_t                difference_type;

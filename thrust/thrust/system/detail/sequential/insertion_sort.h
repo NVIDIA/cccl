@@ -39,10 +39,10 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename RandomAccessIterator,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void insertion_sort(RandomAccessIterator first,
                     RandomAccessIterator last,
                     StrictWeakOrdering comp)
@@ -87,11 +87,11 @@ void insertion_sort(RandomAccessIterator first,
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename RandomAccessIterator1,
          typename RandomAccessIterator2,
          typename StrictWeakOrdering>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void insertion_sort_by_key(RandomAccessIterator1 first1,
                            RandomAccessIterator1 last1,
                            RandomAccessIterator2 first2,

@@ -136,7 +136,7 @@ struct BlockReduceRaking
 
 
     /// Constructor
-    __device__ __forceinline__ BlockReduceRaking(
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceRaking(
         TempStorage &temp_storage)
     :
         temp_storage(temp_storage.Alias()),
@@ -154,7 +154,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE, typename ReductionOp, int ITERATION>
-    __device__ __forceinline__ T RakingReduction(ReductionOp reduction_op,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(ReductionOp reduction_op,
                                                  T *raking_segment,
                                                  T partial,
                                                  int num_valid,
@@ -180,7 +180,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE, typename ReductionOp>
-    __device__ __forceinline__ T RakingReduction(ReductionOp /*reduction_op*/,
+    _CCCL_DEVICE _CCCL_FORCEINLINE T RakingReduction(ReductionOp /*reduction_op*/,
                                                  T * /*raking_segment*/,
                                                  T partial,
                                                  int /*num_valid*/,
@@ -204,7 +204,7 @@ struct BlockReduceRaking
      *   Binary reduction operator
      */
     template <bool IS_FULL_TILE, typename ReductionOp>
-    __device__ __forceinline__ T Reduce(T partial, int num_valid, ReductionOp reduction_op)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
     {
         if (WARP_SYNCHRONOUS)
         {
@@ -257,7 +257,7 @@ struct BlockReduceRaking
      *   Number of valid elements (may be less than BLOCK_THREADS)
      */
     template <bool IS_FULL_TILE>
-    __device__ __forceinline__ T Sum(T partial, int num_valid)
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
     {
         cub::Sum reduction_op;
 

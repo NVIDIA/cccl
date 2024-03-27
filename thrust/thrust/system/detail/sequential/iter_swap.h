@@ -39,7 +39,7 @@ namespace sequential
 
 
 template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
-__host__ __device__
+_CCCL_HOST_DEVICE
   void iter_swap(sequential::execution_policy<DerivedPolicy> &, Pointer1 a, Pointer2 b)
 {
   using thrust::swap;

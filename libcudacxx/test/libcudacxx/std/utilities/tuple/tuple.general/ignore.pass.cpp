@@ -19,11 +19,8 @@
 #include "test_macros.h"
 
 __host__ __device__
-constexpr bool test_ignore_constexpr()
+TEST_CONSTEXPR_CXX14 bool test()
 {
-// NVCC does not support constexpr non-integral types
-#if TEST_STD_VER > 11
-    NV_IF_TARGET(NV_IS_HOST,(
     { // Test that std::ignore provides constexpr converting assignment.
         auto& res = (cuda::std::ignore = 42);
         assert(&res == &cuda::std::ignore);
@@ -40,22 +37,19 @@ constexpr bool test_ignore_constexpr()
         moved = cuda::std::move(copy);
         unused(moved);
     }
-    ))
-#endif // TEST_STD_VER > 11
     return true;
 }
+static_assert(cuda::std::is_trivial<decltype(cuda::std::ignore)>::value, "");
 
 int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,(
+    {
         constexpr auto& ignore_v = cuda::std::ignore;
         unused(ignore_v);
-    ))
-    {
-        static_assert(test_ignore_constexpr(), "");
     }
-    {
-        LIBCPP_STATIC_ASSERT(cuda::std::is_trivial<decltype(cuda::std::ignore)>::value, "");
-    }
+    test();
+#if TEST_STD_VER >= 2014
+    static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
 
-  return 0;
+    return 0;
 }

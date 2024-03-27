@@ -304,14 +304,31 @@ bool almost_equal(double a, double b, double a_tol, double r_tol)
         return true;
 }
 
+namespace
+{ // anonymous namespace
+
+template <typename>
+struct is_complex : public THRUST_NS_QUALIFIER::false_type
+{};
+
+template <typename T>
+struct is_complex<THRUST_NS_QUALIFIER::complex<T>> : public THRUST_NS_QUALIFIER::true_type
+{};
+
+template <typename T>
+struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
+{};
+
+} // namespace
+
 template <typename T1, typename T2>
-typename THRUST_NS_QUALIFIER::detail::enable_if<THRUST_NS_QUALIFIER::is_complex<T1>::value &&
-                                                         THRUST_NS_QUALIFIER::is_complex<T2>::value,
-                                                       bool>::type
-almost_equal(const T1 &a, const T2 &b, double a_tol, double r_tol)
+inline
+  typename THRUST_NS_QUALIFIER::detail::enable_if<is_complex<T1>::value && is_complex<T2>::value,
+                                                  bool>::type
+  almost_equal(const T1 &a, const T2 &b, double a_tol, double r_tol)
 {
-  return almost_equal(a.real(), b.real(), a_tol, r_tol) &&
-         almost_equal(a.imag(), b.imag(), a_tol, r_tol);
+    return almost_equal(a.real(), b.real(), a_tol, r_tol) &&
+           almost_equal(a.imag(), b.imag(), a_tol, r_tol);
 }
 
 template <typename T1, typename T2>
@@ -400,7 +417,7 @@ void assert_equal(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterat
 
         if(mismatches <= MAX_OUTPUT_LINES)
         {
-          THRUST_IF_CONSTEXPR(sizeof(InputType) == 1)
+          _CCCL_IF_CONSTEXPR(sizeof(InputType) == 1)
           {
             f << "  [" << i << "] " << *first1 + InputType() << "  " << *first2 + InputType() << "\n"; // unprintable chars are a problem
           }

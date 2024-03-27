@@ -14,7 +14,6 @@
 
 // REQUIRES: has-unix-headers
 // UNSUPPORTED: c++03
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx{{10.9|10.10|10.11|10.12|10.13|10.14|10.15|11.0|12.0}}
 // ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_ENABLE_ASSERTIONS=1
 
 #include <cuda/std/iterator>
@@ -73,11 +72,11 @@ __host__ __device__ void test_death() {
 int main(int, char**) {
   tests<Foo*>();
   test_death<Foo*>();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(tests<Foo*>(), "");
 #endif
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   tests<contiguous_iterator<Foo*> >();
   test_death<contiguous_iterator<Foo*> >();
   static_assert(tests<contiguous_iterator<Foo*> >(), "");

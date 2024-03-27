@@ -54,13 +54,13 @@ namespace cuda_cub
 namespace detail
 {
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename InputIt,
           typename Size,
           typename OutputIt,
           typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt inclusive_scan_n_impl(thrust::cuda_cub::execution_policy<Derived> &policy,
                                InputIt first,
                                Size num_items,
@@ -131,14 +131,14 @@ OutputIt inclusive_scan_n_impl(thrust::cuda_cub::execution_policy<Derived> &poli
   return result + num_items;
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename InputIt,
           typename Size,
           typename OutputIt,
           typename InitValueT,
           typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt exclusive_scan_n_impl(thrust::cuda_cub::execution_policy<Derived> &policy,
                                InputIt first,
                                Size num_items,
@@ -216,13 +216,13 @@ OutputIt exclusive_scan_n_impl(thrust::cuda_cub::execution_policy<Derived> &poli
 // Thrust API entry points
 //-------------------------
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename InputIt,
           typename Size,
           typename OutputIt,
           typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt inclusive_scan_n(thrust::cuda_cub::execution_policy<Derived> &policy,
                           InputIt first,
                           Size num_items,
@@ -244,7 +244,7 @@ OutputIt inclusive_scan_n(thrust::cuda_cub::execution_policy<Derived> &policy,
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt inclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                         InputIt first,
                         InputIt last,
@@ -261,7 +261,7 @@ OutputIt inclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt inclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                         InputIt first,
                         InputIt last,
@@ -274,14 +274,14 @@ OutputIt inclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                                           thrust::plus<>{});
 }
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template <typename Derived,
           typename InputIt,
           typename Size,
           typename OutputIt,
           typename T,
           typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt exclusive_scan_n(thrust::cuda_cub::execution_policy<Derived> &policy,
                           InputIt first,
                           Size num_items,
@@ -310,7 +310,7 @@ template <typename Derived,
           typename OutputIt,
           typename T,
           typename ScanOp>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt exclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                         InputIt first,
                         InputIt last,
@@ -329,7 +329,7 @@ OutputIt exclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
 }
 
 template <typename Derived, typename InputIt, typename OutputIt, typename T>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt exclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                         InputIt first,
                         InputIt last,
@@ -345,7 +345,7 @@ OutputIt exclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
 }
 
 template <typename Derived, typename InputIt, typename OutputIt>
-__host__ __device__
+_CCCL_HOST_DEVICE
 OutputIt exclusive_scan(thrust::cuda_cub::execution_policy<Derived> &policy,
                         InputIt first,
                         InputIt last,

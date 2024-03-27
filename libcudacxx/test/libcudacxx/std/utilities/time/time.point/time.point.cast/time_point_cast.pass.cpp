@@ -37,7 +37,7 @@ test(const FromDuration& df, const ToDuration& d)
     }
 }
 
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 template<class FromDuration, long long From, class ToDuration, long long To>
 __host__ __device__
@@ -68,7 +68,7 @@ int main(int, char**)
          cuda::std::chrono::duration<double, cuda::std::ratio<3600> >(7265./3600));
     test(cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> >(9),
          cuda::std::chrono::duration<int, cuda::std::ratio<3, 5> >(10));
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     {
     test_constexpr<cuda::std::chrono::milliseconds, 7265000, cuda::std::chrono::hours,    2> ();
     test_constexpr<cuda::std::chrono::milliseconds, 7265000, cuda::std::chrono::minutes,121> ();

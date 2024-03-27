@@ -44,9 +44,9 @@ public:
     __host__ __device__ friend TEST_CONSTEXPR bool operator>=(const MoveOnly& x, const MoveOnly& y)
         { return x.data_ >= y.data_; }
 
-#if TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
     __host__ __device__ friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
-#endif // TEST_STD_VER > 17 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 
     __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator+(const MoveOnly& x) const
         { return MoveOnly(data_ + x.data_); }

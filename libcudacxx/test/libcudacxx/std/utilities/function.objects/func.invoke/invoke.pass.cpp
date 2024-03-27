@@ -365,17 +365,17 @@ void noexcept_test() {
         NoThrowCallable obj; unused(obj); // suppress unused warning
         CopyThrows arg; unused(arg); // suppress unused warning
         static_assert(noexcept(cuda::std::invoke(obj)), "");
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
     }
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     {
         ThrowsCallable obj; unused(obj); // suppress unused warning
         static_assert(!noexcept(cuda::std::invoke(obj)), "");
     }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     {
         MemberObj obj{42}; unused(obj); // suppress unused warning.
         static_assert(noexcept(cuda::std::invoke(&MemberObj::x, obj)), "");

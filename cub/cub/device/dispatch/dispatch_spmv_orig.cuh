@@ -48,7 +48,6 @@
 #include <cub/agent/agent_segment_fixup.cuh>
 #include <cub/agent/agent_spmv_orig.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
@@ -275,7 +274,7 @@ DeviceSpmvEmptyMatrixKernel(SpmvParams<ValueT, OffsetT> spmv_params)
     {
         ValueT result = 0.0;
 
-        CUB_IF_CONSTEXPR(HAS_BETA)
+        _CCCL_IF_CONSTEXPR(HAS_BETA)
         {
             result += spmv_params.beta * spmv_params.d_vector_y[row];
         }
@@ -527,7 +526,7 @@ struct DispatchSpmv
      * Initialize kernel dispatch configurations with the policies corresponding to the PTX assembly we will use
      */
     template <typename KernelConfig>
-    CUB_RUNTIME_FUNCTION __forceinline__
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
     static void InitConfigs(
         int             ptx_version,
         KernelConfig    &spmv_config,
@@ -573,7 +572,7 @@ struct DispatchSpmv
         int tile_items;
 
         template <typename PolicyT>
-        CUB_RUNTIME_FUNCTION __forceinline__
+        CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
         void Init()
         {
             block_threads       = PolicyT::BLOCK_THREADS;
@@ -612,7 +611,7 @@ struct DispatchSpmv
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage.
      *   When NULL, the required allocation size is written to
-     *   @p temp_storage_bytes and no work is done.
+     *   `temp_storage_bytes` and no work is done.
      *
      * @param[in,out] temp_storage_bytes
      *   Reference to size in bytes of \p d_temp_storage allocation
@@ -649,7 +648,7 @@ struct DispatchSpmv
               typename SpmvKernelT,
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -939,7 +938,7 @@ struct DispatchSpmv
               typename SegmentFixupKernelT,
               typename SpmvEmptyMatrixKernelT>
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,
@@ -978,18 +977,18 @@ struct DispatchSpmv
      * @param[in] d_temp_storage
      *   Device-accessible allocation of temporary storage.
      *   When NULL, the required allocation size is written to
-     *   @p temp_storage_bytes and no work is done.
+     *   `temp_storage_bytes` and no work is done.
      *
      * @param[in,out] temp_storage_bytes
-     *   Reference to size in bytes of @p d_temp_storage allocation
+     *   Reference to size in bytes of `d_temp_storage` allocation
      *
      * @param SpMV spmv_params
      *   input parameter bundle
      *
      * @param[in] stream
-     *   <b>[optional]</b> CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
+     *   **[optional]** CUDA stream to launch kernels within. Default is stream<sub>0</sub>.
      */
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t Dispatch(void *d_temp_storage,
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
                                                                      size_t &temp_storage_bytes,
                                                                      SpmvParamsT &spmv_params,
                                                                      cudaStream_t stream = 0)
@@ -1024,7 +1023,7 @@ struct DispatchSpmv
     }
 
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-    CUB_RUNTIME_FUNCTION __forceinline__ static cudaError_t
+    CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
     Dispatch(void *d_temp_storage,
              size_t &temp_storage_bytes,
              SpmvParamsT &spmv_params,

@@ -1,7 +1,7 @@
 
 Param(
     [Parameter(Mandatory = $true)]
-    [Alias("cxx")]
+    [Alias("std")]
     [ValidateNotNullOrEmpty()]
     [ValidateSet(11, 14, 17, 20)]
     [int]$CXX_STANDARD = 17
@@ -32,11 +32,6 @@ If(!(test-path -PathType container "../build")) {
 
 # The most recent build will always be symlinked to cccl/build/latest
 New-Item -ItemType Directory -Path "$BUILD_DIR" -Force
-
-# replace sccache binary to get it working with MSVC
-$script:path_to_sccache =(gcm sccache).Source
-Remove-Item $path_to_sccache -Force
-Invoke-WebRequest -Uri "https://github.com/robertmaynard/sccache/releases/download/nvcc_msvc_v1/sccache.exe" -OutFile $path_to_sccache
 
 # Prepare environment for CMake:
 $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL

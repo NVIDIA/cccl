@@ -14,6 +14,14 @@
 #include <__config>
 #endif //__cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__memory/addressof.h"
 #include "../__type_traits/conjunction.h"
 #include "../__type_traits/conditional.h"
@@ -26,14 +34,6 @@
 #include "../__type_traits/void_t.h"
 #include "../__utility/declval.h"
 #include "../cstddef"
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -145,9 +145,9 @@ struct __has_rebind
 {
 private:
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
-    _LIBCUDACXX_SUPPRESS_DEPRECATED_PUSH
+    _CCCL_SUPPRESS_DEPRECATED_PUSH
     template <class _Xp> _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Xp::template rebind<_Up>* = 0);
-    _LIBCUDACXX_SUPPRESS_DEPRECATED_POP
+    _CCCL_SUPPRESS_DEPRECATED_POP
 public:
     static const bool value = decltype(__test<_Tp>(0))::value;
 };
@@ -240,7 +240,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits
 private:
     struct __nat {};
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
         {return pointer::pointer_to(__r);}
 };
@@ -257,7 +257,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<_Tp*>
 private:
     struct __nat {};
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     static pointer pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
         {return _CUDA_VSTD::addressof(__r);}
 };
@@ -328,7 +328,7 @@ struct __to_address_helper<_Pointer, decltype((void)pointer_traits<_Pointer>::to
     }
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY constexpr
 auto to_address(_Tp *__p) noexcept {

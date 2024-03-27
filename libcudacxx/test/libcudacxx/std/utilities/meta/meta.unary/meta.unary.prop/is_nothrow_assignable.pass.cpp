@@ -18,7 +18,7 @@ __host__ __device__
 void test_is_nothrow_assignable()
 {
     static_assert(( cuda::std::is_nothrow_assignable<T, U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_nothrow_assignable_v<T, U>), "");
 #endif
 }
@@ -28,7 +28,7 @@ __host__ __device__
 void test_is_not_nothrow_assignable()
 {
     static_assert((!cuda::std::is_nothrow_assignable<T, U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_nothrow_assignable_v<T, U>), "");
 #endif
 }
@@ -62,10 +62,10 @@ int main(int, char**)
     test_is_not_nothrow_assignable<int, int> ();
 
     test_is_not_nothrow_assignable<A, B> ();
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
     test_is_not_nothrow_assignable<B, A> ();
     test_is_not_nothrow_assignable<C, C&> ();
-#endif // TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
   return 0;
 }

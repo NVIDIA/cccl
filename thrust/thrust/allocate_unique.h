@@ -16,8 +16,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/memory_algorithms.h>
@@ -263,14 +261,14 @@ using uninitialized_array_allocator_delete
 template <typename Pointer, typename Lambda>
 struct tagged_deleter : Lambda
 {
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   tagged_deleter(Lambda&& l) : Lambda(THRUST_FWD(l)) {}
 
   using pointer = Pointer;
 };
 
 template <typename Pointer, typename Lambda>
-__host__ __device__
+_CCCL_HOST_DEVICE
 tagged_deleter<Pointer, Lambda>
 make_tagged_deleter(Lambda&& l)
 {
@@ -280,7 +278,7 @@ make_tagged_deleter(Lambda&& l)
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T, typename Allocator, typename... Args>
-__host__
+_CCCL_HOST
 std::unique_ptr<
   T,
   allocator_delete<
@@ -321,7 +319,7 @@ allocate_unique(
 }
 
 template <typename T, typename Allocator>
-__host__
+_CCCL_HOST
 std::unique_ptr<
   T,
   uninitialized_allocator_delete<
@@ -361,7 +359,7 @@ uninitialized_allocate_unique(
 }
 
 template <typename T, typename Allocator, typename Size, typename... Args>
-__host__
+_CCCL_HOST
 std::unique_ptr<
   T[],
   array_allocator_delete<
@@ -404,7 +402,7 @@ allocate_unique_n(
 }
 
 template <typename T, typename Allocator, typename Size>
-__host__
+_CCCL_HOST
 std::unique_ptr<
   T[],
   uninitialized_array_allocator_delete<
@@ -447,5 +445,4 @@ uninitialized_allocate_unique_n(
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

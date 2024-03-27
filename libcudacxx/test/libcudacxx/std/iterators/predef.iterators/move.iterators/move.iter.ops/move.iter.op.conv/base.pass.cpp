@@ -47,7 +47,7 @@ struct MoveOnlyIterator {
    __host__ __device__ friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i) { return i.it_; }
 };
 
-#if TEST_STD_VER > 14 && !defined(TEST_COMPILER_MSVC_2017)
+#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2017)
 static_assert( cuda::std::input_iterator<MoveOnlyIterator>, "");
 #endif
 static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
@@ -59,7 +59,7 @@ template <class It>
     int a[] = {1, 2, 3};
 
     auto i = cuda::std::move_iterator<It>(It(a));
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
     ASSERT_NOEXCEPT(i.base());
 #else
@@ -76,7 +76,7 @@ template <class It>
     int a[] = {1, 2, 3};
 
     const auto i = cuda::std::move_iterator<It>(It(a));
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     ASSERT_SAME_TYPE(decltype(i.base()), const It&);
     ASSERT_NOEXCEPT(i.base());
 #else
@@ -102,7 +102,7 @@ template <class It>
   test_one<random_access_iterator<int*> >();
   test_one<int*>();
   test_one<const int*>();
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
   test_one<contiguous_iterator<int*>>();
 #endif
 
@@ -111,7 +111,7 @@ template <class It>
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
   static_assert(test(), "");
 #endif
 

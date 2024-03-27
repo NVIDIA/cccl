@@ -57,32 +57,30 @@
 #define CUB_DEVICE_COMPILER_CLANG 4
 
 // figure out which host compiler we're using
-#if defined(_MSC_VER)
+#if defined(_CCCL_COMPILER_MSVC)
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_MSVC
 #  define CUB_MSVC_VERSION _MSC_VER
 #  define CUB_MSVC_VERSION_FULL _MSC_FULL_VER
-#elif defined(__clang__)
+#elif defined(_CCCL_COMPILER_CLANG)
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_CLANG
 #  define CUB_CLANG_VERSION                                                    \
     (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
-#elif defined(__GNUC__)
+#elif defined(_CCCL_COMPILER_GCC)
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_GCC
 #  define CUB_GCC_VERSION                                                      \
     (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
-#else
-#  define CUB_HOST_COMPILER CUB_HOST_COMPILER_UNKNOWN
-#endif // CUB_HOST_COMPILER
+#endif
 
 // figure out which device compiler we're using
-#if defined(__CUDACC__) || defined(_NVHPC_CUDA)
+#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_MSVC
+#elif defined(_CCCL_COMPILER_MSVC)
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_MSVC
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_GCC
-#elif CUB_HOST_COMPILER == CUB_HOST_COMPILER_CLANG
+#elif defined(_CCCL_COMPILER_CLANG)
 // CUDA-capable clang should behave similar to NVCC.
-#  if defined(__CUDA__)
+#  if defined(_CCCL_CUDA_COMPILER_NVCC)
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
 #  else
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_CLANG

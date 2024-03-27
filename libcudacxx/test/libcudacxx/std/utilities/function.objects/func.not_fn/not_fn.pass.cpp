@@ -485,11 +485,14 @@ void throws_in_constructor_test()
 
 __host__ __device__
 void call_operator_sfinae_test() {
+#ifndef TEST_COMPILER_ICC
+#if !defined(TEST_COMPILER_MSVC_2017)
     { // wrong number of arguments
         using T = decltype(cuda::std::not_fn(returns_true));
         static_assert(cuda::std::is_invocable<T>::value, ""); // callable only with no args
         static_assert(!cuda::std::is_invocable<T, bool>::value, "");
     }
+#endif // !TEST_COMPILER_MSVC_2017
     { // violates const correctness (member function pointer)
         using T = decltype(cuda::std::not_fn(&MemFunCallable::return_value_nc));
         static_assert(cuda::std::is_invocable<T, MemFunCallable&>::value, "");
@@ -502,9 +505,10 @@ void call_operator_sfinae_test() {
         static_assert(cuda::std::is_invocable<NCT>::value, "");
         static_assert(!cuda::std::is_invocable<CT>::value, "");
     }
+#endif // TEST_COMPILER_ICC
     // NVRTC appears to be unhappy about... the lambda?
     // but doesn't let me fix it with annotations
-#ifndef __CUDACC_RTC__
+#ifndef TEST_COMPILER_NVRTC
     { // returns bad type with no operator!
         auto fn = [](auto x) { return x; };
         using T = decltype(cuda::std::not_fn(fn));
@@ -512,7 +516,7 @@ void call_operator_sfinae_test() {
         // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
         unused(fn);
     }
-#endif
+#endif // TEST_COMPILER_NVRTC
 }
 
 #if 0
@@ -610,13 +614,13 @@ void call_operator_noexcept_test()
         using T = ConstCallable<bool>;
         T value(true);
         auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         auto const& cret = ret;
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         unused(cret);
     }
     {
@@ -625,7 +629,7 @@ void call_operator_noexcept_test()
         auto ret = cuda::std::not_fn(value);
         (void)ret;
         LIBCPP_STATIC_ASSERT(noexcept(!_CUDA_VSTD::__invoke(value)), "");
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
         static_assert(noexcept(!cuda::std::invoke(value)), "");
 #endif
 // TODO: nvcc gets this wrong, investigate
@@ -657,13 +661,13 @@ void call_operator_noexcept_test()
         using T = NoExceptCallable<EvilBool>;
         T value(true);
         auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         auto const& cret = ret;
-#ifndef TEST_COMPILER_NVHPC
+#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
         unused(cret);
     }
 }

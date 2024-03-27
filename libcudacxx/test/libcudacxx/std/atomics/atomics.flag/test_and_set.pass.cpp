@@ -40,7 +40,7 @@ void test()
         assert(f.test_and_set(cuda::std::memory_order_relaxed) == 0);
         assert(f.test_and_set(cuda::std::memory_order_relaxed) == 1);
     }
-#ifndef __INTEL_COMPILER
+#ifndef TEST_COMPILER_ICC
     {
         Selector<cuda::std::atomic_flag, default_initializer> sel;
         cuda::std::atomic_flag & f = *sel.construct();
@@ -91,7 +91,7 @@ void test()
         assert(f.test_and_set(cuda::std::memory_order_relaxed) == 0);
         assert(f.test_and_set(cuda::std::memory_order_relaxed) == 1);
     }
-#ifndef __INTEL_COMPILER
+#ifndef TEST_COMPILER_ICC
     {
         Selector<volatile cuda::std::atomic_flag, default_initializer> sel;
         volatile cuda::std::atomic_flag & f = *sel.construct();

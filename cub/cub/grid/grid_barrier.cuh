@@ -50,12 +50,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * \addtogroup GridModule
- * @{
- */
-
-
-/**
  * \brief GridBarrier implements a software global barrier among thread blocks within a CUDA grid
  */
 class GridBarrier
@@ -78,7 +72,7 @@ public:
     /**
      * Synchronize
      */
-    __device__ __forceinline__ void Sync() const
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
     {
         volatile SyncFlag *d_vol_sync = d_sync;
 
@@ -220,9 +214,6 @@ public:
         return retval;
     }
 };
-
-
-/** @} */       // end group GridModule
 
 CUB_NAMESPACE_END
 

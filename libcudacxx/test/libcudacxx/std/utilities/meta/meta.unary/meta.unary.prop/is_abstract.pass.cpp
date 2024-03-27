@@ -21,7 +21,7 @@ void test_is_abstract()
     static_assert( cuda::std::is_abstract<const T>::value, "");
     static_assert( cuda::std::is_abstract<volatile T>::value, "");
     static_assert( cuda::std::is_abstract<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_abstract_v<T>, "");
     static_assert( cuda::std::is_abstract_v<const T>, "");
     static_assert( cuda::std::is_abstract_v<volatile T>, "");
@@ -37,7 +37,7 @@ void test_is_not_abstract()
     static_assert(!cuda::std::is_abstract<const T>::value, "");
     static_assert(!cuda::std::is_abstract<volatile T>::value, "");
     static_assert(!cuda::std::is_abstract<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_abstract_v<T>, "");
     static_assert(!cuda::std::is_abstract_v<const T>, "");
     static_assert(!cuda::std::is_abstract_v<volatile T>, "");

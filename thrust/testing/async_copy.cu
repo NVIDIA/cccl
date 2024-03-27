@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <unittest/unittest.h>
 #include <unittest/util_async.h>
@@ -268,7 +268,7 @@ struct test_async_copy_counting_iterator_input_to_host_vector
 
       ASSERT_EQUAL(d0, d1);
 
-      #if (THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_INTEL)
+      #if defined(_CCCL_COMPILER_ICC)
       // ICC fails this for some unknown reason - see #1468.
       KNOWN_FAILURE;
       #endif

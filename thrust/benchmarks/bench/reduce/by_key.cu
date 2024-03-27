@@ -57,13 +57,16 @@ static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<KeyT>(unique_keys);
   state.add_global_memory_writes<ValueT>(unique_keys);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & /* launch */) {
-    thrust::reduce_by_key(in_keys.begin(),
-                          in_keys.end(),
-                          in_vals.begin(),
-                          out_keys.begin(),
-                          out_vals.begin());
-  });
+  caching_allocator_t alloc;
+  thrust::reduce_by_key(policy(alloc), in_keys.begin(), in_keys.end(),
+                        in_vals.begin(), out_keys.begin(), out_vals.begin());
+
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::reduce_by_key(policy(alloc, launch), in_keys.begin(),
+                                     in_keys.end(), in_vals.begin(),
+                                     out_keys.begin(), out_vals.begin());
+             });
 }
 
 using key_types = nvbench::type_list<int8_t,

@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-#if defined(__cuda_std__) || _LIBCUDACXX_STD_VER > 17
+#if defined(__cuda_std__) || _CCCL_STD_VER > 2017
 _LIBCUDACXX_INLINE_VISIBILITY
 inline constexpr bool is_constant_evaluated() noexcept {
   return _LIBCUDACXX_IS_CONSTANT_EVALUATED();

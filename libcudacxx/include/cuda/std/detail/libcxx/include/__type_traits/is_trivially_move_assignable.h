@@ -14,10 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/add_rvalue_reference.h"
-#include "../__type_traits/is_trivially_assignable.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +21,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/add_lvalue_reference.h"
+#include "../__type_traits/add_rvalue_reference.h"
+#include "../__type_traits/is_trivially_assignable.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -36,7 +36,7 @@ struct is_trivially_move_assignable
         _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_move_assignable_v =
     _LIBCUDACXX_IS_TRIVIALLY_ASSIGNABLE(__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>);
@@ -49,7 +49,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_move_assignable
     : public is_trivially_assignable<__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_move_assignable_v = is_trivially_move_assignable<_Tp>::value;
 #endif

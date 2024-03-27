@@ -234,7 +234,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   std::size_t log_size{};
   nvrtcResult compile_result = nvrtcCompileProgram(prog, num_includes, includes);
-  
+
   REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
 
   std::unique_ptr<char[]> log{ new char[log_size] };
@@ -249,10 +249,10 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBIN(prog, code.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  CUcontext context;
-  CUdevice device;
-  CUmodule module;
-  CUfunction kernel;
+  CUcontext context{};
+  CUdevice device{};
+  CUmodule module{};
+  CUfunction kernel{};
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
@@ -265,14 +265,14 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   constexpr int items_per_thread = 4;
   constexpr int tile_size = threads_in_block * items_per_thread;
 
-  CUdeviceptr d_ptr;
+  CUdeviceptr d_ptr{};
   REQUIRE(CUDA_SUCCESS == cuMemAlloc(&d_ptr, tile_size * sizeof(int)));
 
-  CUdeviceptr d_err;
+  CUdeviceptr d_err{};
   REQUIRE(CUDA_SUCCESS == cuMemAlloc(&d_err, sizeof(int)));
 
   int h_ptr[tile_size];
-  for (int i = 0; i < tile_size; i++) 
+  for (int i = 0; i < tile_size; i++)
   {
     h_ptr[i] = i;
   }
@@ -289,7 +289,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuMemcpyDtoH(&h_err, d_err, sizeof(int)));
 
   REQUIRE(h_err == 0);
-  for (int i = 0; i < tile_size; i++) 
+  for (int i = 0; i < tile_size; i++)
   {
     const int actual = h_ptr[i];
     const int expected = tile_size - i - 1;

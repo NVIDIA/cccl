@@ -60,12 +60,6 @@ CUB_NAMESPACE_BEGIN
 
 
 /**
- * @addtogroup UtilIterator
- * @{
- */
-
-
-/**
  * @brief A random-access output wrapper for storing array values using a PTX cache-modifier.
  *
  * @par Overview
@@ -125,10 +119,10 @@ private:
         ValueType* ptr;
 
         /// Constructor
-        __host__ __device__ __forceinline__ Reference(ValueType* ptr) : ptr(ptr) {}
+        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Reference(ValueType* ptr) : ptr(ptr) {}
 
         /// Assignment
-        __device__ __forceinline__ ValueType operator =(ValueType val)
+        _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator =(ValueType val)
         {
             ThreadStore<MODIFIER>(ptr, val);
             return val;
@@ -179,12 +173,12 @@ public:
      *   Native pointer to wrap
      */
     template <typename QualifiedValueType>
-    __host__ __device__ __forceinline__ CacheModifiedOutputIterator(QualifiedValueType *ptr)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType *ptr)
         : ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type *>(ptr))
     {}
 
     /// Postfix increment
-    __host__ __device__ __forceinline__ self_type operator++(int)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
     {
         self_type retval = *this;
         ptr++;
@@ -193,21 +187,21 @@ public:
 
 
     /// Prefix increment
-    __host__ __device__ __forceinline__ self_type operator++()
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
     {
         ptr++;
         return *this;
     }
 
     /// Indirection
-    __host__ __device__ __forceinline__ reference operator*() const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
     {
         return Reference(ptr);
     }
 
     /// Addition
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator+(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
     {
         self_type retval(ptr + n);
         return retval;
@@ -215,7 +209,7 @@ public:
 
     /// Addition assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator+=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
     {
         ptr += n;
         return *this;
@@ -223,7 +217,7 @@ public:
 
     /// Subtraction
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type operator-(Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
     {
         self_type retval(ptr - n);
         return retval;
@@ -231,33 +225,33 @@ public:
 
     /// Subtraction assignment
     template <typename Distance>
-    __host__ __device__ __forceinline__ self_type& operator-=(Distance n)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
     {
         ptr -= n;
         return *this;
     }
 
     /// Distance
-    __host__ __device__ __forceinline__ difference_type operator-(self_type other) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
     {
         return ptr - other.ptr;
     }
 
     /// Array subscript
     template <typename Distance>
-    __host__ __device__ __forceinline__ reference operator[](Distance n) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
     {
         return Reference(ptr + n);
     }
 
     /// Equal to
-    __host__ __device__ __forceinline__ bool operator==(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
     {
         return (ptr == rhs.ptr);
     }
 
     /// Not equal to
-    __host__ __device__ __forceinline__ bool operator!=(const self_type& rhs)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
     {
         return (ptr != rhs.ptr);
     }
@@ -268,8 +262,5 @@ public:
         return os;
     }
 };
-
-
-/** @} */       // end group UtilIterator
 
 CUB_NAMESPACE_END

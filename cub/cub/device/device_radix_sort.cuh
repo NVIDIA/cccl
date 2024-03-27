@@ -55,7 +55,6 @@ CUB_NAMESPACE_BEGIN
 //! @brief DeviceRadixSort provides device-wide, parallel operations for
 //!        computing a radix sort across a sequence of data items residing
 //!        within device-accessible memory. ![](sorting_logo.png)
-//! @ingroup SingleModule
 //!
 //! @par Overview
 //! The [*radix sorting method*](http://en.wikipedia.org/wiki/Radix_sort)
@@ -332,7 +331,7 @@ public:
             cudaStream_t stream    = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // TODO API that doesn't accept decomposer should also contain a static
     //      assert that the key type is fundamental.
@@ -510,7 +509,7 @@ public:
            cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -647,7 +646,7 @@ public:
               cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -758,7 +757,7 @@ public:
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to @p temp_storage_bytes and no work is done.
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
   //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
@@ -799,7 +798,7 @@ public:
             cudaStream_t stream    = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -951,7 +950,7 @@ public:
               cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -1094,7 +1093,7 @@ public:
               cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -1191,7 +1190,7 @@ public:
   //!   is done.
   //!
   //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of @p d_temp_storage allocation
+  //!   Reference to size in bytes of `d_temp_storage` allocation
   //!
   //! @param[in] d_keys_in
   //!   Pointer to the input data of key data to sort
@@ -1234,7 +1233,7 @@ public:
                       cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -1409,7 +1408,7 @@ public:
                         cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -1546,7 +1545,7 @@ public:
                         cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -1693,7 +1692,7 @@ public:
                       cudaStream_t stream    = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -1845,7 +1844,7 @@ public:
                         cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -1988,7 +1987,7 @@ public:
                         cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2124,7 +2123,7 @@ public:
            cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -2254,7 +2253,7 @@ public:
            cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2380,7 +2379,7 @@ public:
              cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2542,7 +2541,7 @@ public:
            cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -2597,7 +2596,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
@@ -2682,7 +2681,7 @@ public:
            cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2715,7 +2714,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
   //!   differentiating key bits. This can reduce overall sorting overhead and
@@ -2813,7 +2812,7 @@ public:
            cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2939,7 +2938,7 @@ public:
                      cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -3095,7 +3094,7 @@ public:
                        cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -3218,7 +3217,7 @@ public:
                        cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -3271,7 +3270,7 @@ public:
   //! Performance is similar to DeviceRadixSort::SortKeys.
   //!
   //! @par Snippet
-  //! The code snippet below illustrates the sorting of a device vector of @p int keys.
+  //! The code snippet below illustrates the sorting of a device vector of `i`nt keys.
   //! @par
   //! @code
   //! #include <cub/cub.cuh>
@@ -3347,7 +3346,7 @@ public:
                      cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
-    using OffsetT = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -3402,7 +3401,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * Upon completion, the sorting operation will update the "current"
   //!   indicator within the DoubleBuffer wrapper to reference which of the two
@@ -3487,7 +3486,7 @@ public:
                        cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -3520,7 +3519,7 @@ public:
   //!   any of the provided ranges:
   //!
   //!   * ``[d_keys.Current(),     d_keys.Current()     + num_items)``
-  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)`
+  //!   * ``[d_keys.Alternate(),   d_keys.Alternate()   + num_items)``
   //!
   //! * A bit subrange ``[begin_bit, end_bit)`` is provided to specify
   //!   differentiating key bits. This can reduce overall sorting overhead and
@@ -3618,7 +3617,7 @@ public:
                        cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t           = typename detail::ChooseOffsetT<NumItemsT>::Type;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -3642,11 +3641,7 @@ public:
                                                              stream);
   }
 
-  //@}  end member group
+  //! @}  end member group
 };
-
-/**
- * @example example_device_radix_sort.cu
- */
 
 CUB_NAMESPACE_END

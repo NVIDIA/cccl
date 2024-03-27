@@ -15,9 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/void_t.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,9 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/void_t.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Tp, class, class = void>
 struct __is_transparent : false_type {};

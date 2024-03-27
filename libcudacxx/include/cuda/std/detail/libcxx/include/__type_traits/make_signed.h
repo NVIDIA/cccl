@@ -14,13 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/apply_cv.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_integral.h"
-#include "../__type_traits/nat.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/type_list.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,6 +21,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/apply_cv.h"
+#include "../__type_traits/is_enum.h"
+#include "../__type_traits/is_integral.h"
+#include "../__type_traits/nat.h"
+#include "../__type_traits/remove_cv.h"
+#include "../__type_traits/type_list.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -85,7 +85,7 @@ struct make_signed {
   using type _LIBCUDACXX_NODEBUG_TYPE = __make_signed_t<_Tp>;
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using make_signed_t = __make_signed_t<_Tp>;
 #endif
 

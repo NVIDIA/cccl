@@ -14,13 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/common_reference_with.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/common_type.h"
-#include "../__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,9 +22,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__concepts/__concept_macros.h"
+#include "../__concepts/common_reference_with.h"
+#include "../__concepts/same_as.h"
+#include "../__type_traits/add_lvalue_reference.h"
+#include "../__type_traits/common_type.h"
+#include "../__utility/declval.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.common]
 
@@ -51,7 +51,7 @@ concept common_with =
       add_lvalue_reference_t<const _Tp>,
       add_lvalue_reference_t<const _Up>>>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -95,7 +95,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT common_with = _LIBCUDACXX_FRAGMENT(__common_with_, _Tp, _Up);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

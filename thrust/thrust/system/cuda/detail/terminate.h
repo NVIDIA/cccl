@@ -48,14 +48,14 @@ namespace detail
 {
 
 
-inline __device__
+inline _CCCL_DEVICE
 void terminate()
 {
   thrust::cuda_cub::terminate();
 }
 
 
-inline __host__ __device__
+inline _CCCL_HOST_DEVICE
 void terminate_with_message(const char* message)
 {
   printf("%s\n", message);

@@ -14,14 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_destructible.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_scalar.h"
-#include "../__type_traits/remove_all_extents.h"
-#include "../__utility/declval.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +21,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_destructible.h"
+#include "../__type_traits/is_reference.h"
+#include "../__type_traits/is_scalar.h"
+#include "../__type_traits/remove_all_extents.h"
+#include "../__utility/declval.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -42,23 +42,18 @@ struct is_nothrow_destructible
 
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-template <bool, class _Tp> struct __libcpp_is_nothrow_destructible;
+template <class _Tp, bool = is_destructible<_Tp>::value>
+struct __libcpp_is_nothrow_destructible : false_type {};
 
 template <class _Tp>
-struct __libcpp_is_nothrow_destructible<false, _Tp>
-    : public false_type
-{
-};
-
-template <class _Tp>
-struct __libcpp_is_nothrow_destructible<true, _Tp>
+struct __libcpp_is_nothrow_destructible<_Tp, true>
     : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp()) >
 {
 };
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible
-    : public __libcpp_is_nothrow_destructible<is_destructible<_Tp>::value, _Tp>
+    : public __libcpp_is_nothrow_destructible<_Tp>
 {
 };
 
@@ -95,7 +90,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_destructible<_Tp[]>
 
 #endif // defined(_LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_destructible_v
     = is_nothrow_destructible<_Tp>::value;

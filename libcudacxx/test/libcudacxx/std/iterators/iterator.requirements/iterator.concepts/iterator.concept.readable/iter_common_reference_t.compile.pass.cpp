@@ -54,7 +54,7 @@ struct T3 {
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
 
 // Make sure we're SFINAE-friendly
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 template <class T>
 constexpr bool has_common_reference = requires {
   typename cuda::std::iter_common_reference_t<T>;

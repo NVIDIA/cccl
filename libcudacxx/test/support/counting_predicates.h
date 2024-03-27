@@ -23,7 +23,7 @@ public:
     TEST_CONSTEXPR_CXX14 unary_counting_predicate(Predicate p) : p_(p), count_(0) {}
 
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 bool operator () (const Arg &a) const { ++count_; return p_(a); }
+    TEST_CONSTEXPR_CXX14 bool operator () (const Arg &a) { ++count_; return p_(a); }
     __host__ __device__
     TEST_CONSTEXPR_CXX14 size_t count() const { return count_; }
     __host__ __device__
@@ -31,7 +31,7 @@ public:
 
 private:
     Predicate p_;
-    mutable size_t count_;
+    size_t count_;
 };
 
 
@@ -46,7 +46,7 @@ public:
     TEST_CONSTEXPR_CXX14 binary_counting_predicate ( Predicate p ) : p_(p), count_(0) {}
 
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 bool operator () (const Arg1 &a1, const Arg2 &a2) const { ++count_; return p_(a1, a2); }
+    TEST_CONSTEXPR_CXX14 bool operator () (const Arg1 &a1, const Arg2 &a2) { ++count_; return p_(a1, a2); }
     __host__ __device__
     TEST_CONSTEXPR_CXX14 size_t count() const { return count_; }
     __host__ __device__
@@ -54,7 +54,7 @@ public:
 
 private:
     Predicate p_;
-    mutable size_t count_;
+    size_t count_;
 };
 
 template <class Predicate>
@@ -79,11 +79,11 @@ public:
   }
 };
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 
 template <class Predicate>
 counting_predicate(Predicate pred, int& count) -> counting_predicate<Predicate>;
 
-#endif // TEST_STD_VER > 14
+#endif // TEST_STD_VER > 2014
 
 #endif // TEST_SUPPORT_COUNTING_PREDICATES_H

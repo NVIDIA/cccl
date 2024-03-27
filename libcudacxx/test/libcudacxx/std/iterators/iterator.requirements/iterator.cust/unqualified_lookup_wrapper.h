@@ -35,7 +35,7 @@ public:
   __host__ __device__ constexpr bool operator==(unqualified_lookup_wrapper const& other) const noexcept {
     return base_ == other.base_;
   }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ constexpr bool operator!=(unqualified_lookup_wrapper const& other) const noexcept {
     return base_ != other.base_;
   }

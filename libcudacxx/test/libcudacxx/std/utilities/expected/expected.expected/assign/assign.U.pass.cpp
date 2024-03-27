@@ -93,9 +93,11 @@ static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false
 // !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true, false>, MaybeNoexcept<false, false>>&, int>, "");
 
+#ifndef TEST_COMPILER_ICC
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&, int>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // If has_value() is true, equivalent to: val = cuda::std::forward<U>(v);
@@ -333,9 +335,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

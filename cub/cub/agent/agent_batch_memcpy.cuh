@@ -61,7 +61,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
-__forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
+_CCCL_FORCEINLINE _CCCL_DEVICE void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
                                                           uint32_t bit_shift,
                                                           uint4 &data_out)
 {
@@ -78,7 +78,7 @@ __forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligne
 }
 
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
-__forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
+_CCCL_FORCEINLINE _CCCL_DEVICE void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
                                                           uint32_t bit_shift,
                                                           uint2 &data_out)
 {
@@ -93,7 +93,7 @@ __forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligne
 }
 
 template <bool PTR_IS_FOUR_BYTE_ALIGNED>
-__forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
+_CCCL_FORCEINLINE _CCCL_DEVICE void LoadVectorAndFunnelShiftR(uint32_t const *aligned_ptr,
                                                           uint32_t bit_shift,
                                                           uint32_t &data_out)
 {
@@ -118,7 +118,7 @@ __forceinline__ __device__ void LoadVectorAndFunnelShiftR(uint32_t const *aligne
  * @param data_out The vector type that stores the data loaded from \p ptr
  */
 template <typename VectorT>
-__forceinline__ __device__ void LoadVector(const char *ptr, VectorT &data_out)
+_CCCL_FORCEINLINE _CCCL_DEVICE void LoadVector(const char *ptr, VectorT &data_out)
 {
   const uint32_t offset            = reinterpret_cast<std::uintptr_t>(ptr) % 4U;
   const uint32_t *aligned_ptr      = reinterpret_cast<uint32_t const *>(ptr - offset);
@@ -168,7 +168,7 @@ struct PointerRange
  * @return The byte range that can safely be copied using vectorized stores of type VectorT
  */
 template <typename VectorT, typename ByteOffsetT>
-__device__ __forceinline__ PointerRange<VectorT> GetAlignedPtrs(const void *in_begin,
+_CCCL_DEVICE _CCCL_FORCEINLINE PointerRange<VectorT> GetAlignedPtrs(const void *in_begin,
                                                                 void *out_begin,
                                                                 ByteOffsetT num_bytes)
 {
@@ -246,7 +246,7 @@ __device__ __forceinline__ PointerRange<VectorT> GetAlignedPtrs(const void *in_b
  * @param src Pointer to the memory location to copy from
  */
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
-__device__ __forceinline__ void
+_CCCL_DEVICE _CCCL_FORCEINLINE void
 VectorizedCopy(int32_t thread_rank, void *dest, ByteOffsetT num_bytes, const void *src)
 {
   char *out_ptr      = reinterpret_cast<char *>(dest);
@@ -305,7 +305,7 @@ template <bool IsMemcpy,
           typename OutputBufferT,
           typename OffsetT,
           typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
-__device__ __forceinline__ void copy_items(InputBufferT input_buffer,
+_CCCL_DEVICE _CCCL_FORCEINLINE void copy_items(InputBufferT input_buffer,
                                            OutputBufferT output_buffer,
                                            OffsetT num_bytes,
                                            OffsetT offset = 0)
@@ -322,7 +322,7 @@ template <bool IsMemcpy,
           typename OutputBufferT,
           typename OffsetT,
           typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
-__device__ __forceinline__ void copy_items(InputBufferT input_buffer,
+_CCCL_DEVICE _CCCL_FORCEINLINE void copy_items(InputBufferT input_buffer,
                                            OutputBufferT output_buffer,
                                            OffsetT num_items,
                                            OffsetT offset = 0)
@@ -340,7 +340,7 @@ template <bool IsMemcpy,
           typename InputIt,
           typename OffsetT,
           typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
-__device__ __forceinline__ AliasT read_item(InputIt buffer_src, OffsetT offset)
+_CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(reinterpret_cast<const AliasT *>(buffer_src) + offset);
 }
@@ -350,7 +350,7 @@ template <bool IsMemcpy,
           typename InputIt,
           typename OffsetT,
           typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
-__device__ __forceinline__ AliasT read_item(InputIt buffer_src, OffsetT offset)
+_CCCL_DEVICE _CCCL_FORCEINLINE AliasT read_item(InputIt buffer_src, OffsetT offset)
 {
   return *(buffer_src + offset);
 }
@@ -360,7 +360,7 @@ template <bool IsMemcpy,
           typename OutputIt,
           typename OffsetT,
           typename ::cuda::std::enable_if<IsMemcpy, int>::type = 0>
-__device__ __forceinline__ void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
+_CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(reinterpret_cast<AliasT *>(buffer_dst) + offset) = value;
 }
@@ -370,7 +370,7 @@ template <bool IsMemcpy,
           typename OutputIt,
           typename OffsetT,
           typename ::cuda::std::enable_if<!IsMemcpy, int>::type = 0>
-__device__ __forceinline__ void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
+_CCCL_DEVICE _CCCL_FORCEINLINE void write_item(OutputIt buffer_dst, OffsetT offset, AliasT value)
 {
   *(buffer_dst + offset) = value;
 }
@@ -429,7 +429,7 @@ private:
   // ACCESSORS
   //------------------------------------------------------------------------------
 public:
-  __device__ __forceinline__ uint32_t Get(uint32_t index) const
+  _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t Get(uint32_t index) const
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
     uint32_t val                 = 0;
@@ -448,7 +448,7 @@ public:
     return val;
   }
 
-  __device__ __forceinline__ void Add(uint32_t index, uint32_t value)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Add(uint32_t index, uint32_t value)
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
 
@@ -465,7 +465,7 @@ public:
     }
   }
 
-  __device__ BitPackedCounter operator+(const BitPackedCounter &rhs) const
+  _CCCL_DEVICE BitPackedCounter operator+(const BitPackedCounter &rhs) const
   {
     BitPackedCounter result;
 #pragma unroll
@@ -728,7 +728,7 @@ private:
   /**
    * @brief Loads this tile's buffers' sizes, without any guards (i.e., out-of-bounds checks)
    */
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadBufferSizesFullTile(BufferSizeIteratorT tile_buffer_sizes_it,
                           BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD])
   {
@@ -738,7 +738,7 @@ private:
   /**
    * @brief Loads this tile's buffers' sizes, making sure to read at most \p num_valid items.
    */
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   LoadBufferSizesPartialTile(BufferSizeIteratorT tile_buffer_sizes_it,
                              BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD],
                              BufferOffsetT num_valid)
@@ -755,7 +755,7 @@ private:
    * @brief Computes the histogram over the number of buffers belonging to each of the three
    * size-classes (TLEV, WLEV, BLEV).
    */
-  __device__ __forceinline__ VectorizedSizeClassCounterT
+  _CCCL_DEVICE _CCCL_FORCEINLINE VectorizedSizeClassCounterT
   GetBufferSizeClassHistogram(const BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD])
   {
     VectorizedSizeClassCounterT vectorized_counters{};
@@ -778,7 +778,7 @@ private:
   /**
    * @brief Scatters the buffers into the respective buffer's size-class partition.
    */
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   PartitionBuffersBySize(const BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD],
                          VectorizedSizeClassCounterT &vectorized_offsets,
                          BufferTuple (&buffers_by_size_class)[BUFFERS_PER_BLOCK])
@@ -812,7 +812,7 @@ private:
    * @brief Read in all the buffers that require block-level collaboration and put them to a queue
    * that will get picked up in a separate, subsequent kernel.
    */
-  __device__ __forceinline__ void EnqueueBLEVBuffers(BufferTuple *buffers_by_size_class,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void EnqueueBLEVBuffers(BufferTuple *buffers_by_size_class,
                                                      InputBufferIt tile_buffer_srcs,
                                                      OutputBufferIt tile_buffer_dsts,
                                                      BufferSizeIteratorT tile_buffer_sizes,
@@ -886,7 +886,7 @@ private:
    * @brief Read in all the buffers of this tile that require warp-level collaboration and copy
    * their bytes to the corresponding destination buffer
    */
-  __device__ __forceinline__ void BatchMemcpyWLEVBuffers(BufferTuple *buffers_by_size_class,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BatchMemcpyWLEVBuffers(BufferTuple *buffers_by_size_class,
                                                          InputBufferIt tile_buffer_srcs,
                                                          OutputBufferIt tile_buffer_dsts,
                                                          BufferSizeIteratorT tile_buffer_sizes,
@@ -910,7 +910,7 @@ private:
    * @brief Read in all the buffers of this tile that require thread-level collaboration and copy
    * their bytes to the corresponding destination buffer
    */
-  __device__ __forceinline__ void BatchMemcpyTLEVBuffers(BufferTuple *buffers_by_size_class,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BatchMemcpyTLEVBuffers(BufferTuple *buffers_by_size_class,
                                                          InputBufferIt tile_buffer_srcs,
                                                          OutputBufferIt tile_buffer_dsts,
                                                          BlockBufferOffsetT num_tlev_buffers)
@@ -1038,7 +1038,7 @@ private:
   // PUBLIC MEMBER FUNCTIONS
   //-----------------------------------------------------------------------------
 public:
-  __device__ __forceinline__ void ConsumeTile(BufferOffsetT tile_id)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(BufferOffsetT tile_id)
   {
     // Offset into this tile's buffers
     BufferOffsetT buffer_offset = tile_id * BUFFERS_PER_BLOCK;
@@ -1162,7 +1162,7 @@ public:
   //-----------------------------------------------------------------------------
   // CONSTRUCTOR
   //-----------------------------------------------------------------------------
-  __device__ __forceinline__ AgentBatchMemcpy(TempStorage &temp_storage,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBatchMemcpy(TempStorage &temp_storage,
                                               InputBufferIt input_buffer_it,
                                               OutputBufferIt output_buffer_it,
                                               BufferSizeIteratorT buffer_sizes_it,

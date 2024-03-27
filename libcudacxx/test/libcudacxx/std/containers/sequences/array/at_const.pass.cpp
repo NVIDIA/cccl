@@ -101,7 +101,7 @@ int main(int, char**)
     test_exceptions();
 #endif // TEST_HAS_NO_EXCEPTIONS
 
-#if TEST_STD_VER >= 14
+#if TEST_STD_VER >= 2014
     static_assert(tests(), "");
 #endif
     return 0;

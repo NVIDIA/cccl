@@ -32,7 +32,6 @@
 #endif // no system header
 #include <thrust/detail/type_traits.h>
 #include <thrust/system/error_code.h>
-#include <thrust/system/cuda/detail/guarded_driver_types.h>
 
 THRUST_NAMESPACE_BEGIN
 

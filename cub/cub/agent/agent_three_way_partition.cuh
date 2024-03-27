@@ -48,6 +48,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -67,7 +68,7 @@ struct pair_pack_t
 {
   OffsetT x, y;
 
-  __device__ pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT> &other) const
+  _CCCL_DEVICE pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT> &other) const
   {
     return {x + other.x, y + other.y};
   }
@@ -78,9 +79,9 @@ struct accumulator_pack_base_t
 {
   using pack_t = pair_pack_t<OffsetT>;
 
-  __device__ static pack_t pack(OffsetT f, OffsetT s) { return {f, s}; }
-  __device__ static OffsetT first(pack_t packed) { return packed.x; }
-  __device__ static OffsetT second(pack_t packed) { return packed.y; }
+  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s) { return {f, s}; }
+  _CCCL_DEVICE static OffsetT first(pack_t packed) { return packed.x; }
+  _CCCL_DEVICE static OffsetT second(pack_t packed) { return packed.y; }
 };
 
 template <class OffsetT>
@@ -88,14 +89,14 @@ struct accumulator_pack_base_t<OffsetT, typename cuda::std::enable_if<sizeof(Off
 {
   using pack_t = std::uint64_t;
 
-  __device__ static pack_t pack(OffsetT f, OffsetT s)
+  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
   {
     return (static_cast<pack_t>(f) << 32) | static_cast<pack_t>(s);
   }
 
-  __device__ static OffsetT first(pack_t packed) { return static_cast<OffsetT>(packed >> 32); }
+  _CCCL_DEVICE static OffsetT first(pack_t packed) { return static_cast<OffsetT>(packed >> 32); }
 
-  __device__ static OffsetT second(pack_t packed)
+  _CCCL_DEVICE static OffsetT second(pack_t packed)
   {
     return static_cast<OffsetT>(packed & 0xFFFFFFFF);
   }
@@ -107,17 +108,17 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   using base = accumulator_pack_base_t<OffsetT>;
   using typename base::pack_t;
 
-  __device__ static void subtract(pack_t &packed, OffsetT val)
+  _CCCL_DEVICE static void subtract(pack_t &packed, OffsetT val)
   {
     packed =  base::pack( base::first(packed) - val,  base::second(packed) - val);
   }
 
-  __device__ static OffsetT sum(pack_t &packed)
+  _CCCL_DEVICE static OffsetT sum(pack_t &packed)
   {
     return  base::first(packed) +  base::second(packed);
   }
 
-  __device__ static pack_t zero()
+  _CCCL_DEVICE static pack_t zero()
   {
     return {};
   }
@@ -250,7 +251,7 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   // Constructor
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   AgentThreeWayPartition(TempStorage &temp_storage,
                          InputIteratorT d_in,
                          FirstOutputIteratorT d_first_part_out,
@@ -274,7 +275,7 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   Initialize(OffsetT num_tile_items,
              InputT (&items)[ITEMS_PER_THREAD],
              AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD])
@@ -295,7 +296,7 @@ struct AgentThreeWayPartition
   }
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void Scatter(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT          (&items)[ITEMS_PER_THREAD],
     AccumPackT      (&items_selection_flags)[ITEMS_PER_THREAD],
     AccumPackT      (&items_selection_indices)[ITEMS_PER_THREAD],
@@ -392,7 +393,7 @@ struct AgentThreeWayPartition
    * @param second_tile_state Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeFirstTile(int num_tile_items,
                    OffsetT tile_offset,
                    ScanTileStateT &tile_state,
@@ -463,7 +464,7 @@ struct AgentThreeWayPartition
    * @param second_tile_state Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeSubsequentTile(int num_tile_items,
                         int tile_idx,
                         OffsetT tile_offset,
@@ -537,7 +538,7 @@ struct AgentThreeWayPartition
    * Process a tile of input
    */
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void ConsumeTile(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
     int                 num_tile_items,
     int                 tile_idx,
     OffsetT             tile_offset,
@@ -581,7 +582,7 @@ struct AgentThreeWayPartition
    *   Output total number selection_flags
    */
   template <typename NumSelectedIteratorT>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   ConsumeRange(int num_tiles, ScanTileStateT &tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block

@@ -14,12 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/boolean_testable.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -28,9 +22,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__concepts/__concept_macros.h"
+#include "../__concepts/boolean_testable.h"
+#include "../__concepts/equality_comparable.h"
+#include "../__type_traits/common_reference.h"
+#include "../__type_traits/make_const_lvalue_ref.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concept.totallyordered]
 
@@ -60,7 +60,7 @@ concept totally_ordered_with =
       __make_const_lvalue_ref<_Up>>> &&
   __partially_ordered_with<_Tp, _Up>;
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -106,7 +106,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT totally_ordered_with = _LIBCUDACXX_FRAGMENT(__totally_ordered_with_, _Tp, _Up);;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 
-// This test uses iterator types from cuda::std::filesystem, which were introduced in macOS 10.15.
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12|13|14}}
-
 // template<class T>
 // struct iterator_traits;
 
@@ -140,7 +137,7 @@ struct LegacyInput {
   struct reference { __host__ __device__ operator value_type() const; };
 
   __host__ __device__ friend bool operator==(LegacyInput, LegacyInput);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyInput, LegacyInput);
 #endif
   __host__ __device__ reference operator*() const;
@@ -165,7 +162,7 @@ struct LegacyInputNoValueType {
   struct reference { __host__ __device__ operator not_value_type&() const; };
 
   __host__ __device__ friend bool operator==(LegacyInputNoValueType, LegacyInputNoValueType);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyInputNoValueType, LegacyInputNoValueType);
 #endif
   __host__ __device__ reference operator*() const;
@@ -188,7 +185,7 @@ struct LegacyForward {
   struct not_value_type {};
 
   __host__ __device__ friend bool operator==(LegacyForward, LegacyForward);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyForward, LegacyForward);
 #endif
   __host__ __device__ const not_value_type& operator*() const;
@@ -215,7 +212,7 @@ struct LegacyBidirectional {
   struct value_type {};
 
   __host__ __device__ friend bool operator==(LegacyBidirectional, LegacyBidirectional);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyBidirectional, LegacyBidirectional);
 #endif
   __host__ __device__ const value_type& operator*() const;
@@ -314,7 +311,7 @@ struct LegacyRandomAccess {
   struct value_type {};
 
   __host__ __device__ friend bool operator==(LegacyRandomAccess, LegacyRandomAccess);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyRandomAccess, LegacyRandomAccess);
 #endif
   __host__ __device__ friend bool operator<(LegacyRandomAccess, LegacyRandomAccess);
@@ -424,7 +421,7 @@ struct LegacyOutputWithMemberTypes {
   using difference_type = long;
 
   __host__ __device__ friend bool operator==(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend bool operator!=(LegacyOutputWithMemberTypes, LegacyOutputWithMemberTypes);
 #endif
   __host__ __device__ reference operator*() const;

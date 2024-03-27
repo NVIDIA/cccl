@@ -3,13 +3,12 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
-// XFAIL: c++17, c++20
 
 // template<class I, sentinel_for<I> S>
 //   requires (!sized_sentinel_for<S, I>)
@@ -31,7 +30,7 @@ template<class It>
 struct EvilSentinel {
   It p_;
   __host__ __device__ friend constexpr bool operator==(EvilSentinel s, It p) { return s.p_ == p; }
-#if TEST_STD_VER < 20
+#if TEST_STD_VER < 2020
   __host__ __device__ friend constexpr bool operator==(It p, EvilSentinel s) { return s.p_ == p; }
   __host__ __device__ friend constexpr bool operator!=(EvilSentinel s, It p) { return s.p_ != p; }
   __host__ __device__ friend constexpr bool operator!=(It p, EvilSentinel s) { return s.p_ != p; }

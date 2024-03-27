@@ -28,7 +28,7 @@
 
 struct S { S(); }; // not constexpr
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
 template <typename T, bool isTrivial = cuda::std::is_trivially_default_constructible_v<T>>
 struct test_trivial {
 void operator ()() const {
@@ -54,7 +54,7 @@ int main(int, char**)
     (void)it2;
     }
 
-#if TEST_STD_VER > 14
+#if TEST_STD_VER > 2014
     test_trivial<int>()();
     test_trivial<char>()();
     test_trivial<double>()();

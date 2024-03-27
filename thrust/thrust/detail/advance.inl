@@ -37,14 +37,14 @@ THRUST_NAMESPACE_BEGIN
 __THRUST_DEFINE_HAS_NESTED_TYPE(has_difference_type, difference_type)
 
 template <typename InputIterator, typename Distance>
-__host__ __device__
+_CCCL_HOST_DEVICE
 void advance(InputIterator& i, Distance n)
 {
   thrust::system::detail::generic::advance(i, n);
 }
 
 template <typename InputIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 InputIterator next(
   InputIterator i
 , typename iterator_traits<InputIterator>::difference_type n = 1
@@ -55,7 +55,7 @@ InputIterator next(
 }
 
 template <typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 BidirectionalIterator prev(
   BidirectionalIterator i
 , typename iterator_traits<BidirectionalIterator>::difference_type n = 1
@@ -66,7 +66,7 @@ BidirectionalIterator prev(
 }
 
 template <typename BidirectionalIterator>
-__host__ __device__
+_CCCL_HOST_DEVICE
 typename detail::disable_if<
   has_difference_type<iterator_traits<BidirectionalIterator> >::value
 , BidirectionalIterator

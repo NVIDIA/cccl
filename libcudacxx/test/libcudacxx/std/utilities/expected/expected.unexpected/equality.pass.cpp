@@ -25,7 +25,7 @@
 
 struct Error{
   int i;
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const Error&, const Error&) = default;
 #else
   __host__ __device__ friend constexpr bool operator==(const Error& lhs, const Error& rhs) noexcept { return lhs.i == rhs.i; }

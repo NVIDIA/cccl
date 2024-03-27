@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
 
 #include <thrust/system/detail/generic/per_device_resource.h>
 #include <thrust/system/detail/adl/per_device_resource.h>
@@ -45,7 +44,7 @@ THRUST_NAMESPACE_BEGIN
  *  \return a pointer to a global instance of \p MR for the current device.
  */
 template<typename MR, typename DerivedPolicy>
-__host__
+_CCCL_HOST
 MR * get_per_device_resource(const thrust::detail::execution_policy_base<DerivedPolicy> & system)
 {
     using thrust::system::detail::generic::get_per_device_resource;
@@ -84,27 +83,26 @@ public:
     /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
      *      \p allocator base subobject with that resource.
      */
-    __host__
+    _CCCL_HOST
     per_device_allocator() : base(get_per_device_resource<Upstream>(ExecutionPolicy()))
     {
     }
 
     /*! Copy constructor. Copies the memory resource pointer. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     per_device_allocator(const per_device_allocator & other)
         : base(other) {}
 
     /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
     template<typename U>
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     per_device_allocator(const per_device_allocator<U, Upstream, ExecutionPolicy> & other)
         : base(other) {}
 
     /*! Destructor. */
-    __host__ __device__
+    _CCCL_HOST_DEVICE
     ~per_device_allocator() {}
 };
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011

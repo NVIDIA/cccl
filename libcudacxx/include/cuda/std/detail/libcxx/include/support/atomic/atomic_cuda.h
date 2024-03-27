@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__CUDA_MINIMUM_ARCH__) && ((!defined(_LIBCUDACXX_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 600) || (defined(_LIBCUDACXX_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 700))
+#if defined(__CUDA_MINIMUM_ARCH__) && ((!defined(_CCCL_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 600) || (defined(_CCCL_COMPILER_MSVC) && __CUDA_MINIMUM_ARCH__ < 700))
 #  error "CUDA atomics are only supported for sm_60 and up on *nix and sm_70 and up on Windows."
 #endif
 
@@ -31,14 +31,14 @@ inline _LIBCUDACXX_HOST_DEVICE int __stronger_order_cuda(int __a, int __b) {
 
 // Wrap host atomic implementations into a sub-namespace
 namespace __host {
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 #  include "atomic_msvc.h"
 #elif defined (_LIBCUDACXX_HAS_GCC_ATOMIC_IMP)
 #  include "atomic_gcc.h"
 #elif defined (_LIBCUDACXX_HAS_C11_ATOMIC_IMP)
 //TODO
 // #  include "atomic_c11.h"
-#elif defined(_LIBCUDACXX_COMPILER_NVRTC)
+#elif defined(_CCCL_COMPILER_NVRTC)
 #  include "atomic_nvrtc.h"
 #endif
 }

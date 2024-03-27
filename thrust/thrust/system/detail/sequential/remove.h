@@ -42,11 +42,11 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator remove_if(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -84,12 +84,12 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename ForwardIterator,
          typename InputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   ForwardIterator remove_if(sequential::execution_policy<DerivedPolicy> &,
                             ForwardIterator first,
                             ForwardIterator last,
@@ -133,12 +133,12 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator remove_copy_if(sequential::execution_policy<DerivedPolicy> &,
                                 InputIterator first,
                                 InputIterator last,
@@ -166,13 +166,13 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator1,
          typename InputIterator2,
          typename OutputIterator,
          typename Predicate>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator remove_copy_if(sequential::execution_policy<DerivedPolicy> &,
                                 InputIterator1 first,
                                 InputIterator1 last,

@@ -46,12 +46,12 @@ namespace sequential
 {
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator inclusive_scan(sequential::execution_policy<DerivedPolicy> &,
                                 InputIterator first,
                                 InputIterator last,
@@ -83,13 +83,13 @@ __host__ __device__
 }
 
 
-__thrust_exec_check_disable__
+_CCCL_EXEC_CHECK_DISABLE
 template<typename DerivedPolicy,
          typename InputIterator,
          typename OutputIterator,
          typename InitialValueType,
          typename BinaryFunction>
-__host__ __device__
+_CCCL_HOST_DEVICE
   OutputIterator exclusive_scan(sequential::execution_policy<DerivedPolicy> &,
                                 InputIterator first,
                                 InputIterator last,

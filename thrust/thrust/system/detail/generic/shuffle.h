@@ -32,8 +32,6 @@
 
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,13 +40,13 @@ namespace detail {
 namespace generic {
 
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
-__host__ __device__ void shuffle(
+_CCCL_HOST_DEVICE void shuffle(
     thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first,
     RandomIterator last, URBG&& g);
 
 template <typename ExecutionPolicy, typename RandomIterator,
           typename OutputIterator, typename URBG>
-__host__ __device__ void shuffle_copy(
+_CCCL_HOST_DEVICE void shuffle_copy(
     thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first,
     RandomIterator last, OutputIterator result, URBG&& g);
 
@@ -59,4 +57,3 @@ THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/shuffle.inl>
 
-#endif

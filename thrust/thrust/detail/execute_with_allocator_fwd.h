@@ -28,9 +28,7 @@
 
 #include <thrust/detail/type_traits.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-  #include <thrust/detail/execute_with_dependencies.h>
-#endif
+#include <thrust/detail/execute_with_dependencies.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -47,22 +45,21 @@ private:
   Allocator alloc;
 
 public:
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   execute_with_allocator(super_t const& super, Allocator alloc_)
     : super_t(super), alloc(alloc_)
   {}
 
-  __thrust_exec_check_disable__
-  __host__ __device__
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
   execute_with_allocator(Allocator alloc_)
     : alloc(alloc_)
   {}
 
   typename remove_reference<Allocator>::type& get_allocator() { return alloc; }
 
-#if THRUST_CPP_DIALECT >= 2011
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(Dependencies&& ...dependencies) const
   {
@@ -70,14 +67,14 @@ public:
   }
 
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(std::tuple<Dependencies...>& dependencies) const
   {
       return { alloc, capture_as_dependency(dependencies) };
   }
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(std::tuple<Dependencies...>&& dependencies) const
   {
@@ -85,7 +82,7 @@ public:
   }
 
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   rebind_after(Dependencies&& ...dependencies) const
   {
@@ -93,20 +90,19 @@ public:
   }
 
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   rebind_after(std::tuple<Dependencies...>& dependencies) const
   {
       return { alloc, capture_as_dependency(dependencies) };
   }
   template<typename ...Dependencies>
-  __host__
+  _CCCL_HOST
   execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   rebind_after(std::tuple<Dependencies...>&& dependencies) const
   {
       return { alloc, capture_as_dependency(std::move(dependencies)) };
   }
-#endif
 };
 
 } // namespace detail

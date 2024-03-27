@@ -9,9 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11
 
-// Throwing bad_optional_access is supported starting in macosx10.13
-// XFAIL: use_system_cxx_lib && target={{.+}}-apple-macosx10.{{9|10|11|12}} && !no-exceptions
-
 // <cuda/std/optional>
 
 // constexpr T& optional<T>::value() &;
@@ -61,7 +58,9 @@ int main(int, char**)
 {
     {
         optional<X> opt; unused(opt);
+#ifndef TEST_COMPILER_ICC
         ASSERT_NOT_NOEXCEPT(opt.value());
+#endif // TEST_COMPILER_ICC
         ASSERT_SAME_TYPE(decltype(opt.value()), X&);
     }
     {

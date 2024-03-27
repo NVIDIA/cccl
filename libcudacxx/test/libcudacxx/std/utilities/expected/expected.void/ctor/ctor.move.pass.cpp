@@ -36,12 +36,12 @@ struct MovableNonTrivial {
   int i;
   __host__ __device__ constexpr MovableNonTrivial(int ii) : i(ii) {}
   __host__ __device__ constexpr MovableNonTrivial(MovableNonTrivial&& o) : i(o.i) { o.i = 0; }
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial&, const MovableNonTrivial&) = default;
 #else
   __host__ __device__ friend constexpr bool operator==(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
   __host__ __device__ friend constexpr bool operator!=(const MovableNonTrivial& lhs, const MovableNonTrivial& rhs) noexcept { return lhs.i != rhs.i; }
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 };
 
 struct MoveMayThrow {
@@ -58,11 +58,13 @@ static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<void, NonM
 static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, MovableNonTrivial>>, "");
 
+#ifndef TEST_COMPILER_ICC
 // Test: noexcept(is_nothrow_move_constructible_v<E>)
 static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
+#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // move the error non-trivial
@@ -111,9 +113,9 @@ __host__ __device__ void testException() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 17 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;
 }

@@ -7,6 +7,9 @@ defaults:
   run:
     shell: bash -euo pipefail {0}
 
+permissions:
+  contents: read
+
 jobs:
   verify-make-devcontainers:
     name: Verify devcontainer files are up-to-date
@@ -25,9 +28,10 @@ jobs:
         ./.devcontainer/make_devcontainers.sh --verbose
     - name: Check for changes
       run: |
-        if [[ $(git diff --stat) != '' ]]; then
+        if [[ $(git diff --stat) != '' || $(git status --porcelain | grep '^??') != '' ]]; then
           git diff --minimal
-          echo "::error:: Dev Container files are out of date. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
+          git status --porcelain
+          echo "::error:: Dev Container files are out of date or there are untracked files. Run the .devcontainer/make_devcontainers.sh script and commit the changes."
           exit 1
         else
           echo "::note::Dev Container files are up-to-date."

@@ -105,9 +105,9 @@ template<> class numeric_limits<cv long double>;
 #ifndef __cuda_std__
 #include <__config>
 #else
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
+#ifdef _CCCL_COMPILER_NVRTC
 #include "climits"
-#endif // _LIBCUDACXX_COMPILER_NVRTC
+#endif // _CCCL_COMPILER_NVRTC
 #endif // __cuda_std__
 
 #include "__assert" // all public C++ headers provide the assertion handler
@@ -126,13 +126,13 @@ template<> class numeric_limits<cv long double>;
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 #include "support/win32/limits_msvc_win32.h"
 #endif // _LIBCUDACXX_MSVCRT
 
-#if defined(_LIBCUDACXX_COMPILER_IBM)
+#if defined(_CCCL_COMPILER_IBM)
 #include "support/ibm/limits.h"
-#endif // _LIBCUDACXX_COMPILER_IBM
+#endif // _CCCL_COMPILER_IBM
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -197,18 +197,14 @@ protected:
     static constexpr float_round_style round_style = round_toward_zero;
 };
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-#  pragma warning(push)
-#  pragma warning(disable : 4309)
-#endif // _LIBCUDACXX_COMPILER_MSVC
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4309)
 template <class _Tp, int __digits, bool _IsSigned>
 struct __libcpp_compute_min
 {
     static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
 };
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
-#  pragma warning(pop)
-#endif // _LIBCUDACXX_COMPILER_MSVC
+_CCCL_DIAG_POP
 
 template <class _Tp, int __digits>
 struct __libcpp_compute_min<_Tp, __digits, false>
@@ -349,7 +345,7 @@ protected:
     static constexpr bool has_signaling_NaN = true;
     static constexpr float_denorm_style has_denorm = denorm_present;
     static constexpr bool has_denorm_loss = false;
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
+#ifdef _CCCL_COMPILER_NVRTC
     _LIBCUDACXX_INLINE_VISIBILITY static type infinity() noexcept {return __builtin_huge_valf();}
     _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() noexcept {return __builtin_nanf("");}
     _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() noexcept {return __builtin_nansf("");}
@@ -401,7 +397,7 @@ protected:
     static constexpr bool has_signaling_NaN = true;
     static constexpr float_denorm_style has_denorm = denorm_present;
     static constexpr bool has_denorm_loss = false;
-#ifdef _LIBCUDACXX_COMPILER_NVRTC
+#ifdef _CCCL_COMPILER_NVRTC
     _LIBCUDACXX_INLINE_VISIBILITY static type infinity() noexcept {return __builtin_huge_val();}
     _LIBCUDACXX_INLINE_VISIBILITY static type quiet_NaN() noexcept {return __builtin_nan("");}
     _LIBCUDACXX_INLINE_VISIBILITY static type signaling_NaN() noexcept {return __builtin_nans("");}

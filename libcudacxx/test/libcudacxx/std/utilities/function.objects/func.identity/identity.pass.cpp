@@ -21,7 +21,7 @@
 
 static_assert(cuda::std::semiregular<cuda::std::identity>);
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::identity::is_transparent; });
 #else
 template<class, class = void>
@@ -84,7 +84,7 @@ __host__ __device__ constexpr bool test() {
 
 int main(int, char**) {
   test();
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
   static_assert(test());
 #endif
 

@@ -74,11 +74,11 @@ using radix_bits = c2h::enum_type_list<int, 1, 5>;
 using memoize = c2h::enum_type_list<bool, TEST_MEMOIZE>;
 
 #if TEST_ALGORITHM == 0
-using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm, 
+using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm,
       cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING>;
 #else
-using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm, 
-      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS>; 
+using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm,
+      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS>;
 #endif
 
 using shmem_config = c2h::enum_type_list<cudaSharedMemConfig,
@@ -99,15 +99,15 @@ struct params_t
   static constexpr int tile_size = items_per_thread * threads_in_block;
   static constexpr int radix_bits = c2h::get<4, TestType>::value;
   static constexpr bool memoize = c2h::get<5, TestType>::value;
-  static constexpr cub::BlockScanAlgorithm algorithm = 
+  static constexpr cub::BlockScanAlgorithm algorithm =
     c2h::get<6, TestType>::value;
-  static constexpr cudaSharedMemConfig shmem_config = 
+  static constexpr cudaSharedMemConfig shmem_config =
     c2h::get<7, TestType>::value;
 };
 
 template <class T>
 bool binary_equal(
-  const thrust::device_vector<T>& d_output, const thrust::host_vector<T>& h_reference, thrust::device_vector<T>& d_tmp)
+  const c2h::device_vector<T>& d_output, const c2h::host_vector<T>& h_reference, c2h::device_vector<T>& d_tmp)
 {
   d_tmp = h_reference;
 
@@ -117,7 +117,7 @@ bool binary_equal(
   auto d_output_ptr    = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_output.data()));
   auto d_reference_ptr = reinterpret_cast<const bit_ordered_t*>(thrust::raw_pointer_cast(d_tmp.data()));
 
-  return thrust::equal(thrust::device, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
+  return thrust::equal(c2h::device_policy, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
 
 CUB_TEST("Block radix sort can sort keys",
@@ -134,8 +134,8 @@ CUB_TEST("Block radix sort can sort keys",
   using params = params_t<TestType>;
   using type = typename params::key_type;
 
-  thrust::device_vector<type> d_output(params::tile_size);
-  thrust::device_vector<type> d_input(params::tile_size);
+  c2h::device_vector<type> d_output(params::tile_size);
+  c2h::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
@@ -155,10 +155,10 @@ CUB_TEST("Block radix sort can sort keys",
     thrust::raw_pointer_cast(d_input.data()),
     thrust::raw_pointer_cast(d_output.data()),
     begin_bit,
-    end_bit, 
+    end_bit,
     striped);
 
-  thrust::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
+  c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input` for comparison
   REQUIRE(binary_equal(d_output, h_reference, d_input));
@@ -178,8 +178,8 @@ CUB_TEST("Block radix sort can sort keys in descending order",
   using params = params_t<TestType>;
   using type = typename params::key_type;
 
-  thrust::device_vector<type> d_output(params::tile_size);
-  thrust::device_vector<type> d_input(params::tile_size);
+  c2h::device_vector<type> d_output(params::tile_size);
+  c2h::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
@@ -202,7 +202,7 @@ CUB_TEST("Block radix sort can sort keys in descending order",
     end_bit,
     striped);
 
-  thrust::host_vector<type> h_reference =
+  c2h::host_vector<type> h_reference =
     radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input` for comparison
@@ -222,12 +222,12 @@ CUB_TEST("Block radix sort can sort pairs",
 {
   using params = params_t<TestType>;
   using key_type = typename params::key_type;
-  using value_type = key_type; 
+  using value_type = key_type;
 
-  thrust::device_vector<key_type> d_output_keys(params::tile_size);
-  thrust::device_vector<value_type> d_output_values(params::tile_size);
-  thrust::device_vector<key_type> d_input_keys(params::tile_size);
-  thrust::device_vector<value_type> d_input_values(params::tile_size);
+  c2h::device_vector<key_type> d_output_keys(params::tile_size);
+  c2h::device_vector<value_type> d_output_values(params::tile_size);
+  c2h::device_vector<key_type> d_input_keys(params::tile_size);
+  c2h::device_vector<value_type> d_input_values(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
@@ -253,7 +253,7 @@ CUB_TEST("Block radix sort can sort pairs",
     end_bit,
     striped);
 
-  std::pair<thrust::host_vector<key_type>, thrust::host_vector<value_type>>
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
     h_reference = radix_sort_reference(d_input_keys,
                                        d_input_values,
                                        is_descending,
@@ -278,12 +278,12 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
 {
   using params = params_t<TestType>;
   using key_type = typename params::key_type;
-  using value_type = key_type; 
+  using value_type = key_type;
 
-  thrust::device_vector<key_type> d_output_keys(params::tile_size);
-  thrust::device_vector<value_type> d_output_values(params::tile_size);
-  thrust::device_vector<key_type> d_input_keys(params::tile_size);
-  thrust::device_vector<value_type> d_input_values(params::tile_size);
+  c2h::device_vector<key_type> d_output_keys(params::tile_size);
+  c2h::device_vector<value_type> d_output_values(params::tile_size);
+  c2h::device_vector<key_type> d_input_keys(params::tile_size);
+  c2h::device_vector<value_type> d_input_values(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
@@ -309,7 +309,7 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<thrust::host_vector<key_type>, thrust::host_vector<value_type>>
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
     h_reference = radix_sort_reference(d_input_keys,
                                        d_input_values,
                                        is_descending,
@@ -334,12 +334,12 @@ CUB_TEST("Block radix sort can sort mixed pairs",
 {
   using params = params_t<TestType>;
   using key_type = typename params::key_type;
-  using value_type = typename params::value_type; 
+  using value_type = typename params::value_type;
 
-  thrust::device_vector<key_type> d_output_keys(params::tile_size);
-  thrust::device_vector<value_type> d_output_values(params::tile_size);
-  thrust::device_vector<key_type> d_input_keys(params::tile_size);
-  thrust::device_vector<value_type> d_input_values(params::tile_size);
+  c2h::device_vector<key_type> d_output_keys(params::tile_size);
+  c2h::device_vector<value_type> d_output_values(params::tile_size);
+  c2h::device_vector<key_type> d_input_keys(params::tile_size);
+  c2h::device_vector<value_type> d_input_values(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
@@ -365,7 +365,7 @@ CUB_TEST("Block radix sort can sort mixed pairs",
     end_bit,
     striped);
 
-  std::pair<thrust::host_vector<key_type>, thrust::host_vector<value_type>>
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
     h_reference = radix_sort_reference(d_input_keys,
                                        d_input_values,
                                        is_descending,
@@ -390,12 +390,12 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
 {
   using params = params_t<TestType>;
   using key_type = typename params::key_type;
-  using value_type = typename params::value_type; 
+  using value_type = typename params::value_type;
 
-  thrust::device_vector<key_type> d_output_keys(params::tile_size);
-  thrust::device_vector<value_type> d_output_values(params::tile_size);
-  thrust::device_vector<key_type> d_input_keys(params::tile_size);
-  thrust::device_vector<value_type> d_input_values(params::tile_size);
+  c2h::device_vector<key_type> d_output_keys(params::tile_size);
+  c2h::device_vector<value_type> d_output_values(params::tile_size);
+  c2h::device_vector<key_type> d_input_keys(params::tile_size);
+  c2h::device_vector<value_type> d_input_values(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input_keys);
   c2h::gen(CUB_SEED(2), d_input_values);
 
@@ -421,7 +421,7 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<thrust::host_vector<key_type>, thrust::host_vector<value_type>>
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
     h_reference = radix_sort_reference(d_input_keys,
                                        d_input_values,
                                        is_descending,

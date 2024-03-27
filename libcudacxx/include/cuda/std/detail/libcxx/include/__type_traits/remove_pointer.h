@@ -45,7 +45,7 @@ using __remove_pointer_t = typename remove_pointer<_Tp>::type;
 
 #endif // defined(_LIBCUDACXX_REMOVE_POINTER) && !defined(_LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_pointer_t = __remove_pointer_t<_Tp>;
 #endif
 

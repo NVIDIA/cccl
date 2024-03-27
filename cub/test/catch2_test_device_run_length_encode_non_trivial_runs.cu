@@ -27,8 +27,6 @@
 
 #include <cub/device/device_run_length_encode.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/logical.h>
@@ -38,12 +36,12 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 using all_types = c2h::type_list<std::uint8_t,
                                  std::uint64_t,
@@ -59,7 +57,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
-  thrust::device_vector<int> out_num_runs(1, 42);
+  c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(static_cast<int*>(nullptr),
@@ -74,7 +72,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[devic
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
-  thrust::device_vector<int> out_num_runs(1, 42);
+  c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(static_cast<int*>(nullptr),
@@ -91,7 +89,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
 CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
 {
   constexpr cuda::std::size_t num_items = 1ull << 33;
-  thrust::device_vector<cuda::std::size_t> out_num_runs(1, -1);
+  c2h::device_vector<cuda::std::size_t> out_num_runs(1, -1);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
   run_length_encode(thrust::make_counting_iterator(cuda::std::size_t{0}),
@@ -108,8 +106,8 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting ty
          "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
-  thrust::device_vector<int> in(num_items, 42);
-  thrust::device_vector<int> out_num_runs(1, 42);
+  c2h::device_vector<int> in(num_items, 42);
+  c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output
   // arrays
@@ -129,7 +127,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique",
   using type = typename c2h::get<0, TestType>;
 
   constexpr int num_items = 10;
-  thrust::device_vector<int> out_num_runs(1, -1);
+  c2h::device_vector<int> out_num_runs(1, -1);
 
   run_length_encode(thrust::make_counting_iterator(type{}),
                     static_cast<int *>(nullptr),
@@ -147,12 +145,12 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal",
   using type = typename c2h::get<0, TestType>;
 
   constexpr int num_items = 10;
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<int> out_offsets(1, -1);
-  thrust::device_vector<int> out_lengths(1, -1);
-  thrust::device_vector<int> out_num_runs(1, -1);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<int> out_offsets(1, -1);
+  c2h::device_vector<int> out_lengths(1, -1);
+  c2h::device_vector<int> out_num_runs(1, -1);
   c2h::gen(CUB_SEED(2), in);
-  thrust::fill(in.begin(), in.end(), in.front());
+  thrust::fill(c2h::device_policy, in.begin(), in.end(), in.front());
 
   run_length_encode(in.begin(),
                     out_offsets.begin(),
@@ -166,16 +164,16 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal",
 }
 
 template <class T, class Index>
-bool validate_results(const thrust::device_vector<T> &in,
-                      const thrust::device_vector<Index> &out_offsets,
-                      const thrust::device_vector<Index> &out_lengths,
-                      const thrust::device_vector<Index> &out_num_runs,
+bool validate_results(const c2h::device_vector<T> &in,
+                      const c2h::device_vector<Index> &out_offsets,
+                      const c2h::device_vector<Index> &out_lengths,
+                      const c2h::device_vector<Index> &out_num_runs,
                       const int num_items)
 {
-  const thrust::host_vector<T> &h_in               = in;
-  const thrust::host_vector<Index> &h_out_offsets  = out_offsets;
-  const thrust::host_vector<Index> &h_out_lengths  = out_lengths;
-  const thrust::host_vector<Index> &h_out_num_runs = out_num_runs;
+  const c2h::host_vector<T> &h_in               = in;
+  const c2h::host_vector<Index> &h_out_offsets  = out_offsets;
+  const c2h::host_vector<Index> &h_out_lengths  = out_lengths;
+  const c2h::host_vector<Index> &h_out_num_runs = out_num_runs;
 
   const cuda::std::size_t num_runs = static_cast<cuda::std::size_t>(h_out_num_runs.front());
   for (cuda::std::size_t run = 0; run < num_runs; ++run)
@@ -220,10 +218,10 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<int> out_offsets(num_items, -1);
-  thrust::device_vector<int> out_lengths(num_items, -1);
-  thrust::device_vector<int> out_num_runs(1, -1);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<int> out_offsets(num_items, -1);
+  c2h::device_vector<int> out_lengths(num_items, -1);
+  c2h::device_vector<int> out_num_runs(1, -1);
   c2h::gen(CUB_SEED(2), in);
 
   run_length_encode(in.begin(),
@@ -244,10 +242,10 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers",
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
-  thrust::device_vector<type> in(num_items);
-  thrust::device_vector<int> out_offsets(num_items, -1);
-  thrust::device_vector<int> out_lengths(num_items, -1);
-  thrust::device_vector<int> out_num_runs(1, -1);
+  c2h::device_vector<type> in(num_items);
+  c2h::device_vector<int> out_offsets(num_items, -1);
+  c2h::device_vector<int> out_lengths(num_items, -1);
+  c2h::device_vector<int> out_num_runs(1, -1);
   c2h::gen(CUB_SEED(2), in);
 
   run_length_encode(thrust::raw_pointer_cast(in.data()),
@@ -319,9 +317,8 @@ struct CustomDeviceRunLengthEncode
   }
 };
 
-DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_length_encode_293_true);
-DECLARE_CDP_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>,
-                    run_length_encode_293_false);
+DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<true>, run_length_encode_293_true);
+DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_length_encode_293_false);
 
 using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 
@@ -336,7 +333,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
   constexpr int num_items    = 2 * tile_size;
   constexpr int magic_number = num_items + 1;
 
-  thrust::host_vector<int> h_keys(num_items);
+  c2h::host_vector<int> h_keys(num_items);
   thrust::sequence(h_keys.begin(), h_keys.begin() + tile_size);
 
   int expected_non_trivial_runs = 0;
@@ -364,10 +361,10 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory",
 
   // in #293 we were writing before the output arrays. So add a sentinel element in front to check
   // against OOB writes
-  thrust::device_vector<int> in = h_keys;
-  thrust::device_vector<int> out_offsets(num_items + 1, -1);
-  thrust::device_vector<int> out_lengths(num_items + 1, -1);
-  thrust::device_vector<int> out_num_runs(1, -1);
+  c2h::device_vector<int> in = h_keys;
+  c2h::device_vector<int> out_offsets(num_items + 1, -1);
+  c2h::device_vector<int> out_lengths(num_items + 1, -1);
+  c2h::device_vector<int> out_num_runs(1, -1);
   out_offsets.front() = magic_number;
   out_lengths.front() = magic_number;
 

@@ -25,11 +25,7 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/device/device_scan.cuh>
-
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 
 #include <cstdint>
 #include <type_traits>
@@ -39,15 +35,15 @@
 
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
-DECLARE_CDP_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveSumByKey, device_inclusive_sum_by_key);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_scan_by_key);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
@@ -109,19 +105,19 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
                                        std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = thrust::raw_pointer_cast(segment_keys.data());
 
   // Generate input data
-  thrust::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
   c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
@@ -134,7 +130,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -142,7 +138,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
                                             eq_op_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
     device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, eq_op_t{});
 
@@ -150,7 +146,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -172,7 +168,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -181,7 +177,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
                                             output_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
     device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, eq_op_t{});
 
@@ -189,7 +185,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -212,7 +208,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     using op_t = cub::Min;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -220,7 +216,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
                                             eq_op_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
     device_inclusive_scan_by_key(d_keys_it,
                                  unwrap_it(d_values_it),
@@ -233,7 +229,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -259,7 +255,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     auto scan_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -268,7 +264,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
                                             output_t{});
 
     // Run test
-    thrust::device_vector<output_t> out_values(num_items);
+    c2h::device_vector<output_t> out_values(num_items);
     auto d_values_out_it = thrust::raw_pointer_cast(out_values.data());
     using init_t         = cub::detail::value_t<decltype(unwrap_it(d_values_out_it))>;
     device_exclusive_scan_by_key(d_keys_it,
@@ -283,7 +279,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
     REQUIRE(expected_result == out_values);
 
     // Run test in-place
-    CUB_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
+    _CCCL_IF_CONSTEXPR(std::is_same<value_t, output_t>::value)
     {
       // Copy input values to memory allocated for output values, to ensure in_values are
       // unchanged for a (potentially) subsequent test that uses in_values as input
@@ -340,19 +336,19 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
                                 << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  thrust::device_vector<offset_t> segment_offsets =
+  c2h::device_vector<offset_t> segment_offsets =
     c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
                                        num_items,
                                        std::get<0>(seg_size_range),
                                        std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
-  thrust::device_vector<key_t> segment_keys(num_items);
+  c2h::device_vector<key_t> segment_keys(num_items);
   c2h::init_key_segments(segment_offsets, segment_keys);
   auto d_keys_it = thrust::raw_pointer_cast(segment_keys.data());
 
   // Generate input data
-  thrust::device_vector<value_t> in_values(num_items);
+  c2h::device_vector<value_t> in_values(num_items);
   c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
@@ -361,7 +357,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -370,7 +366,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items);
+    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -381,7 +377,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
     using op_t = cub::Sum;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -391,7 +387,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items);
+    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -402,7 +398,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
     using op_t = cub::Min;
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -411,7 +407,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items);
+    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items, cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -425,7 +421,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
     auto scan_op = op_t{};
 
     // Prepare verification data
-    thrust::host_vector<output_t> expected_result(num_items);
+    c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(in_values,
                                             segment_keys,
                                             expected_result.begin(),
@@ -441,7 +437,8 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
                                  d_values_out_it,
                                  scan_op,
                                  init_t{},
-                                 num_items);
+                                 num_items,
+                                 cub::Equality{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);

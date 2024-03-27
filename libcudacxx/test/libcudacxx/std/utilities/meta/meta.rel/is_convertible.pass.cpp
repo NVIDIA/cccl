@@ -20,7 +20,7 @@ void test_is_convertible()
     static_assert((cuda::std::is_convertible<const T, U>::value), "");
     static_assert((cuda::std::is_convertible<T, const U>::value), "");
     static_assert((cuda::std::is_convertible<const T, const U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_convertible_v<T, U>), "");
     static_assert((cuda::std::is_convertible_v<const T, U>), "");
     static_assert((cuda::std::is_convertible_v<T, const U>), "");
@@ -36,7 +36,7 @@ void test_is_not_convertible()
     static_assert((!cuda::std::is_convertible<const T, U>::value), "");
     static_assert((!cuda::std::is_convertible<T, const U>::value), "");
     static_assert((!cuda::std::is_convertible<const T, const U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((!cuda::std::is_convertible_v<T, U>), "");
     static_assert((!cuda::std::is_convertible_v<const T, U>), "");
     static_assert((!cuda::std::is_convertible_v<T, const U>), "");
@@ -133,7 +133,9 @@ int main(int, char**)
     test_is_not_convertible<Array, Function*> ();
     test_is_not_convertible<Array, Array> ();
 
+#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
     static_assert((!cuda::std::is_convertible<Array, Array&>::value), "");
+#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
     static_assert(( cuda::std::is_convertible<Array, const Array&>::value), "");
 #ifndef TEST_COMPILER_MSVC
     // TODO: Unclear why this fails.
@@ -142,7 +144,9 @@ int main(int, char**)
 
     static_assert((!cuda::std::is_convertible<const Array, Array&>::value), "");
     static_assert(( cuda::std::is_convertible<const Array, const Array&>::value), "");
+#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
     static_assert((!cuda::std::is_convertible<Array, volatile Array&>::value), "");
+#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
 
     static_assert(( cuda::std::is_convertible<Array, Array&&>::value), "");
     static_assert(( cuda::std::is_convertible<Array, const Array&&>::value), "");
@@ -153,8 +157,10 @@ int main(int, char**)
 #endif
     static_assert(( cuda::std::is_convertible<Array, const volatile Array&&>::value), "");
     static_assert(( cuda::std::is_convertible<const Array, const Array&&>::value), "");
+#if !defined(TEST_COMPILER_MSVC_2017) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
     static_assert((!cuda::std::is_convertible<Array&, Array&&>::value), "");
     static_assert((!cuda::std::is_convertible<Array&&, Array&>::value), "");
+#endif // !TEST_COMPILER_MSVC_2017 && !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
 
     test_is_not_convertible<Array, char> ();
     test_is_not_convertible<Array, char&> ();

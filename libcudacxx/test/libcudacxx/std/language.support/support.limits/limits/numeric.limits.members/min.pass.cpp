@@ -34,14 +34,14 @@ test(T expected)
 
 int main(int, char**)
 {
-#ifndef _LIBCUDACXX_COMPILER_NVRTC
+#ifndef TEST_COMPILER_NVRTC
     test<wchar_t>(WCHAR_MIN);
 #endif
     test<bool>(false);
     test<char>(CHAR_MIN);
     test<signed char>(SCHAR_MIN);
     test<unsigned char>(0);
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
     test<char8_t>(0);
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS

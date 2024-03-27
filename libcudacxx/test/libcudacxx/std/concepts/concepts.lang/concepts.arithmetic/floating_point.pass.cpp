@@ -68,9 +68,9 @@ static_assert(!CheckFloatingPointQualifiers<unsigned long long>(), "");
 static_assert(!CheckFloatingPointQualifiers<wchar_t>(), "");
 static_assert(!CheckFloatingPointQualifiers<bool>(), "");
 static_assert(!CheckFloatingPointQualifiers<char>(), "");
-#if TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(!CheckFloatingPointQualifiers<char8_t>(), "");
-#endif // TEST_STD_VER > 17 && defined(__cpp_char8_t)
+#endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(!CheckFloatingPointQualifiers<char16_t>(), "");
 static_assert(!CheckFloatingPointQualifiers<char32_t>(), "");
 static_assert(!floating_point<void>, "");

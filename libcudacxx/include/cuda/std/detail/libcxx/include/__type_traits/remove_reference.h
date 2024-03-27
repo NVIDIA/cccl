@@ -14,8 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -46,7 +46,7 @@ using __libcpp_remove_reference_t = typename remove_reference<_Tp>::type;
 
 #endif // defined(_LIBCUDACXX_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 template <class _Tp> using remove_reference_t = __libcpp_remove_reference_t<_Tp>;
 #endif
 

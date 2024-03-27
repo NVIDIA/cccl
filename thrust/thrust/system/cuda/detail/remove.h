@@ -48,7 +48,7 @@ template <class Derived,
           class InputIt,
           class StencilIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived> &policy,
           InputIt                    first,
           InputIt                    last,
@@ -62,7 +62,7 @@ remove_if(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class Predicate>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove_if(execution_policy<Derived> &policy,
           InputIt                    first,
           InputIt                    last,
@@ -76,7 +76,7 @@ remove_if(execution_policy<Derived> &policy,
 template <class Derived,
           class InputIt,
           class T>
-InputIt __host__ __device__
+InputIt _CCCL_HOST_DEVICE
 remove(execution_policy<Derived> &policy,
        InputIt                    first,
        InputIt                    last,
@@ -94,7 +94,7 @@ template <class Derived,
           class StencilIt,
           class OutputIt,
           class Predicate>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy_if(execution_policy<Derived> &policy,
                InputIt                    first,
                InputIt                    last,
@@ -110,7 +110,7 @@ template <class Derived,
           class InputIt,
           class OutputIt,
           class Predicate>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy_if(execution_policy<Derived> &policy,
                InputIt                    first,
                InputIt                    last,
@@ -126,7 +126,7 @@ template <class Derived,
           class InputIt,
           class OutputIt,
           class T>
-OutputIt __host__ __device__
+OutputIt _CCCL_HOST_DEVICE
 remove_copy(execution_policy<Derived> &policy,
             InputIt                    first,
             InputIt                    last,

@@ -48,7 +48,15 @@
 #include <__config>
 #endif // __cuda_std__
 
-#if _LIBCUDACXX_STD_VER > 11
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_STD_VER > 2011
 
 #ifndef __has_include
 #  define __has_include(x) 0
@@ -198,7 +206,7 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #ifndef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#  if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_LIBCUDACXX_COMPILER_GCC) || __GNUC__ >= 11) \
+#  if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
       && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201703) \
          || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_17))
 #    define __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION 1
@@ -207,7 +215,7 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #ifndef __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#  if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_LIBCUDACXX_COMPILER_GCC) || __GNUC__ >= 11) \
+#  if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
       && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201907) \
           || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_20))
 #    define __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION 1
@@ -282,6 +290,6 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 #  define __MDSPAN_OP6(mds, a, b, c, d, e, f) mds(a,b,c,d,e,f)
 #endif
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___MDSPAN_CONFIG_HPP

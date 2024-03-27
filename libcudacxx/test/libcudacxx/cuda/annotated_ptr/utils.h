@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#include "test_macros.h"
+#if defined(TEST_COMPILER_MSVC)
 #pragma warning(disable: 4505)
 #endif
 
@@ -30,9 +31,6 @@ void assert_rt_wrap(cudaError_t code, const char *file, int line) {
     }
 }
 #define assert_rt(ret) { assert_rt_wrap((ret), __FILE__, __LINE__); }
-
-template <typename ... T>
-__host__ __device__ constexpr bool unused(T...) {return true;}
 
 template<typename T, int N>
 __device__ __host__ __noinline__

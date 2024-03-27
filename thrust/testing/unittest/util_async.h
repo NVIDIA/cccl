@@ -3,7 +3,7 @@
 #include <thrust/detail/config.h>
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #include <unittest/unittest.h>
 
@@ -73,4 +73,4 @@ auto test_future_value_retrieval(
 
 } // namespace unittest
 
-#endif // THRUST_CPP_DIALECT >= 2014
+#endif // _CCCL_STD_VER >= 2014

@@ -24,7 +24,7 @@ void test_is_fundamental()
     static_assert( cuda::std::is_fundamental<const T>::value, "");
     static_assert( cuda::std::is_fundamental<volatile T>::value, "");
     static_assert( cuda::std::is_fundamental<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert( cuda::std::is_fundamental_v<T>, "");
     static_assert( cuda::std::is_fundamental_v<const T>, "");
     static_assert( cuda::std::is_fundamental_v<volatile T>, "");
@@ -40,7 +40,7 @@ void test_is_not_fundamental()
     static_assert(!cuda::std::is_fundamental<const T>::value, "");
     static_assert(!cuda::std::is_fundamental<volatile T>::value, "");
     static_assert(!cuda::std::is_fundamental<const volatile T>::value, "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(!cuda::std::is_fundamental_v<T>, "");
     static_assert(!cuda::std::is_fundamental_v<const T>, "");
     static_assert(!cuda::std::is_fundamental_v<volatile T>, "");

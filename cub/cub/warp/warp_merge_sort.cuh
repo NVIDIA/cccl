@@ -151,7 +151,7 @@ private:
 public:
   WarpMergeSort() = delete;
 
-  __device__ __forceinline__
+  _CCCL_DEVICE _CCCL_FORCEINLINE
   WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage &temp_storage)
       : BlockMergeSortStrategyT(temp_storage,
                                 IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
@@ -159,10 +159,10 @@ public:
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
-  __device__ __forceinline__ unsigned int get_member_mask() const { return member_mask; }
+  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const { return member_mask; }
 
 private:
-  __device__ __forceinline__ void SyncImplementation() const { WARP_SYNC(member_mask); }
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const { WARP_SYNC(member_mask); }
 
   friend BlockMergeSortStrategyT;
 };

@@ -289,7 +289,7 @@ void TestPairSwap(void)
 }
 DECLARE_UNITTEST(TestPairSwap);
 
-#if THRUST_CPP_DIALECT >= 2017
+#if _CCCL_STD_VER >= 2017
 void TestPairStructuredBindings(void)
 {
   const int a = 42;

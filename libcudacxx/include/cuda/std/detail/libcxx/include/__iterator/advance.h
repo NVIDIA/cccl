@@ -15,6 +15,14 @@
 #  include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__assert"
 #include "../__concepts/assignable.h"
 #include "../__concepts/same_as.h"
@@ -25,18 +33,10 @@
 #include "../__utility/move.h"
 #include "../cstdlib"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type __n, input_iterator_tag)
 {
   for (; __n > 0; --__n)
@@ -46,7 +46,7 @@ __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type
 }
 
 template <class _BiDirIter>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type __n, bidirectional_iterator_tag)
 {
   if (__n >= 0)
@@ -66,7 +66,7 @@ __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type
 }
 
 template <class _RandIter>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type __n, random_access_iterator_tag)
 {
   __i += __n;
@@ -76,7 +76,7 @@ template < class _InputIter,
            class _Distance,
            class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
            class                   = __enable_if_t<is_integral<_IntegralDistance>::value> >
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void advance(_InputIter& __i, _Distance __orig_n)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _Distance __orig_n)
 {
   typedef typename iterator_traits<_InputIter>::difference_type _Difference;
   _Difference __n = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
@@ -87,7 +87,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void advance(_In
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 14 && !defined(_LICBUDACXX_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !defined(_LICBUDACXX_COMPILER_MSVC_2017)
 
 // [range.iter.op.advance]
 
@@ -245,6 +245,6 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto advance = __advance::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX_STD_VER > 14 && !_LICBUDACXX_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER > 2014 && !_LICBUDACXX_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX___ITERATOR_ADVANCE_H

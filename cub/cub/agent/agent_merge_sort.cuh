@@ -114,8 +114,6 @@ struct AgentBlockSort
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -132,7 +130,7 @@ struct AgentBlockSort
   ValueT *items_out_raw;
   CompareOpT compare_op;
 
-  __device__ __forceinline__ AgentBlockSort(bool ping_,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentBlockSort(bool ping_,
                                             TempStorage &storage_,
                                             KeysLoadIt keys_in_,
                                             ItemsLoadIt items_in_,
@@ -155,7 +153,7 @@ struct AgentBlockSort
   {
   }
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     auto tile_idx     = static_cast<OffsetT>(blockIdx.x);
     auto num_tiles    = static_cast<OffsetT>(gridDim.x);
@@ -173,7 +171,7 @@ struct AgentBlockSort
   }
 
   template <bool IS_LAST_TILE>
-  __device__ __forceinline__ void consume_tile(OffsetT tile_base,
+  _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base,
                                                int num_remaining)
   {
     ValueT items_local[ITEMS_PER_THREAD];
@@ -315,8 +313,9 @@ struct AgentPartition
   CompareOpT compare_op;
   OffsetT target_merged_tiles_number;
   int items_per_tile;
+  OffsetT num_partitions;
 
-  __device__ __forceinline__ AgentPartition(bool ping,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentPartition(bool ping,
                                             KeyIteratorT keys_ping,
                                             KeyT *keys_pong,
                                             OffsetT keys_count,
@@ -324,7 +323,8 @@ struct AgentPartition
                                             OffsetT *merge_partitions,
                                             CompareOpT compare_op,
                                             OffsetT target_merged_tiles_number,
-                                            int items_per_tile)
+                                            int items_per_tile,
+                                            OffsetT num_partitions)
       : ping(ping)
       , keys_ping(keys_ping)
       , keys_pong(keys_pong)
@@ -334,9 +334,10 @@ struct AgentPartition
       , compare_op(compare_op)
       , target_merged_tiles_number(target_merged_tiles_number)
       , items_per_tile(items_per_tile)
+      , num_partitions(num_partitions)
   {}
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     OffsetT merged_tiles_number = target_merged_tiles_number / 2;
 
@@ -354,27 +355,37 @@ struct AgentPartition
     OffsetT local_tile_idx = mask & partition_idx;
 
     OffsetT keys1_beg = (cub::min)(keys_count, start);
-    OffsetT keys1_end = (cub::min)(keys_count, start + size);
+    OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
     OffsetT keys2_beg = keys1_end;
-    OffsetT keys2_end = (cub::min)(keys_count, keys2_beg + size);
+    OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
-    OffsetT partition_at = (cub::min)(keys2_end - keys1_beg,
-                                      items_per_tile * local_tile_idx);
+    // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
+    if (partition_idx + 1 == num_partitions)
+    {
+      merge_partitions[partition_idx] = keys1_end;
+    }
+    else
+    {
+      OffsetT partition_at = (cub::min)(keys2_end - keys1_beg, items_per_tile * local_tile_idx);
 
-    OffsetT partition_diag = ping ? MergePath<KeyT>(keys_ping + keys1_beg,
-                                                    keys_ping + keys2_beg,
-                                                    keys1_end - keys1_beg,
-                                                    keys2_end - keys2_beg,
-                                                    partition_at,
-                                                    compare_op)
-                                  : MergePath<KeyT>(keys_pong + keys1_beg,
-                                                    keys_pong + keys2_beg,
-                                                    keys1_end - keys1_beg,
-                                                    keys2_end - keys2_beg,
-                                                    partition_at,
-                                                    compare_op);
+      OffsetT partition_diag =
+        ping ? MergePath<KeyT>(
+          keys_ping + keys1_beg,
+          keys_ping + keys2_beg,
+          keys1_end - keys1_beg,
+          keys2_end - keys2_beg,
+          partition_at,
+          compare_op)
+             : MergePath<KeyT>(
+               keys_pong + keys1_beg,
+               keys_pong + keys2_beg,
+               keys1_end - keys1_beg,
+               keys2_end - keys2_beg,
+               partition_at,
+               compare_op);
 
-    merge_partitions[partition_idx] = keys1_beg + partition_diag;
+      merge_partitions[partition_idx] = keys1_beg + partition_diag;
+    }
   }
 };
 
@@ -428,8 +439,6 @@ struct AgentMerge
   static constexpr int BLOCK_THREADS = Policy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = Policy::ITEMS_PER_THREAD;
   static constexpr int ITEMS_PER_TILE = Policy::ITEMS_PER_TILE;
-  static constexpr int SHARED_MEMORY_SIZE =
-    static_cast<int>(sizeof(TempStorage));
 
   //---------------------------------------------------------------------
   // Per thread data
@@ -465,7 +474,7 @@ struct AgentMerge
    * stores the result in output[item].
    */
   template <bool IS_FULL_TILE, class T, class It1, class It2>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   gmem_to_reg(T (&output)[ITEMS_PER_THREAD],
               It1 input1,
               It2 input2,
@@ -497,7 +506,7 @@ struct AgentMerge
 
   /// \brief Stores data in a coalesced fashion in[item] -> out[BLOCK_THREADS * item + tid]
   template <class T, class It>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   reg_to_shared(It output,
                 T (&input)[ITEMS_PER_THREAD])
   {
@@ -510,7 +519,7 @@ struct AgentMerge
   }
 
   template <bool IS_FULL_TILE>
-  __device__ __forceinline__ void
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
   consume_tile(int tid, OffsetT tile_idx, OffsetT tile_base, int count)
   {
     OffsetT partition_beg = merge_partitions[tile_idx + 0];
@@ -529,16 +538,25 @@ struct AgentMerge
 
     OffsetT diag = ITEMS_PER_TILE * tile_idx - start;
 
-    OffsetT keys1_beg = partition_beg;
-    OffsetT keys1_end = partition_end;
-    OffsetT keys2_beg = (cub::min)(keys_count, 2 * start + size + diag - partition_beg);
-    OffsetT keys2_end = (cub::min)(keys_count, 2 * start + size + diag + ITEMS_PER_TILE - partition_end);
+    OffsetT keys1_beg = partition_beg - start;
+    OffsetT keys1_end = partition_end - start;
+
+    OffsetT keys_end_dist_from_start = keys_count - start;
+    OffsetT max_keys2                = (keys_end_dist_from_start > size) ? (keys_end_dist_from_start - size) : 0;
+
+    // We have the following invariants:
+    // diag >= keys1_beg, because diag is the distance of the total merge path so far (keys1 + keys2)
+    // diag+ITEMS_PER_TILE >= keys1_end, because diag+ITEMS_PER_TILE is the distance of the merge path for the next tile
+    // and keys1_end is key1's component of that path
+    OffsetT keys2_beg = (cub::min)(max_keys2, diag - keys1_beg);
+    OffsetT keys2_end =
+      (cub::min)(max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
     {
-      keys1_end = (cub::min)(keys_count, start + size);
-      keys2_end = (cub::min)(keys_count, start + size * 2);
+      keys1_end = (cub::min)(keys_count-start, size);
+      keys2_end = (cub::min)(max_keys2, size);
     }
 
     // number of keys per tile
@@ -551,16 +569,16 @@ struct AgentMerge
     if (ping)
     {
       gmem_to_reg<IS_FULL_TILE>(keys_local,
-                                keys_in_ping + keys1_beg,
-                                keys_in_ping + keys2_beg,
+                                keys_in_ping + start + keys1_beg,
+                                keys_in_ping + start + size + keys2_beg,
                                 num_keys1,
                                 num_keys2);
     }
     else
     {
       gmem_to_reg<IS_FULL_TILE>(keys_local,
-                                keys_in_pong + keys1_beg,
-                                keys_in_pong + keys2_beg,
+                                keys_in_pong + start + keys1_beg,
+                                keys_in_pong + start + size + keys2_beg,
                                 num_keys1,
                                 num_keys2);
     }
@@ -574,16 +592,16 @@ struct AgentMerge
       if (ping)
       {
         gmem_to_reg<IS_FULL_TILE>(items_local,
-                                  items_in_ping + keys1_beg,
-                                  items_in_ping + keys2_beg,
+                                  items_in_ping + start + keys1_beg,
+                                  items_in_ping + start + size + keys2_beg,
                                   num_keys1,
                                   num_keys2);
       }
       else
       {
         gmem_to_reg<IS_FULL_TILE>(items_local,
-                                  items_in_pong + keys1_beg,
-                                  items_in_pong + keys2_beg,
+                                  items_in_pong + start + keys1_beg,
+                                  items_in_pong + start + size + keys2_beg,
                                   num_keys1,
                                   num_keys2);
       }
@@ -705,7 +723,7 @@ struct AgentMerge
     }
   }
 
-  __device__ __forceinline__ AgentMerge(bool ping_,
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentMerge(bool ping_,
                                         TempStorage &storage_,
                                         KeysLoadPingIt keys_in_ping_,
                                         ItemsLoadPingIt items_in_ping_,
@@ -735,7 +753,7 @@ struct AgentMerge
       , target_merged_tiles_number(target_merged_tiles_number_)
   {}
 
-  __device__ __forceinline__ void Process()
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Process()
   {
     int tile_idx      = static_cast<int>(blockIdx.x);
     int num_tiles     = static_cast<int>(gridDim.x);

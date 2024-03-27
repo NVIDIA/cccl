@@ -14,10 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/convertible_to.h"
-#include "../__utility/forward.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,9 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__concepts/__concept_macros.h"
+#include "../__concepts/convertible_to.h"
+#include "../__utility/forward.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 // [concepts.booleantestable]
 
@@ -40,7 +40,7 @@ concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t)
   { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
-#elif _LIBCUDACXX_STD_VER > 11
+#elif _CCCL_STD_VER > 2011
 
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
@@ -56,7 +56,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template<class _Tp>
 _LIBCUDACXX_CONCEPT __boolean_testable = _LIBCUDACXX_FRAGMENT(__boolean_testable_, _Tp);
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

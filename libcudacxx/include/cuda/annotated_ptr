@@ -54,10 +54,19 @@
 #ifndef _CUDA_ANNOTATED_PTR
 #define _CUDA_ANNOTATED_PTR
 
-#include <cuda/std/cstdint>
-#include <cuda/barrier>
-#include <cuda/discard_memory>
+#include "__cccl_config"
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include "barrier"
+#include "discard_memory"
+#include "std/cstdint"
 #include "std/detail/__access_property"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -220,7 +229,7 @@ class annotated_ptr: public __detail_ap::__annotated_ptr_base<_Property> {
     constexpr annotated_ptr() noexcept = default;
     constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
     // No constexpr for c11 as the method can't be const
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+    _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
     _LIBCUDACXX_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)

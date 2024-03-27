@@ -15,9 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__iterator/concepts.h"
-#include "../__iterator/iter_swap.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,9 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__iterator/concepts.h"
+#include "../__iterator/iter_swap.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 
 template <class _Iterator>
 concept permutable =
@@ -36,7 +36,7 @@ concept permutable =
     indirectly_movable_storable<_Iterator, _Iterator> &&
     indirectly_swappable<_Iterator, _Iterator>;
 
-#elif _LIBCUDACXX_STD_VER > 14
+#elif _CCCL_STD_VER > 2014
 
 template<class _Iterator>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -50,7 +50,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Iterator>
 _LIBCUDACXX_CONCEPT permutable = _LIBCUDACXX_FRAGMENT(__permutable_, _Iterator);
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

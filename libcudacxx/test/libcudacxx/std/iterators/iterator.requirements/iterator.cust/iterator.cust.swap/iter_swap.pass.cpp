@@ -38,7 +38,7 @@ struct HasIterSwap {
   }
 };
 
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasIterSwap&>);
@@ -50,7 +50,7 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT&, int&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, HasIterSwap&>);
 static_assert( cuda::std::is_invocable_v<IterSwapT&&, HasIterSwap&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT&&, int&, HasIterSwap&>);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
 struct NodiscardIterSwap {
@@ -84,12 +84,12 @@ struct HasRangesSwapWrapper {
   __host__ __device__ constexpr HasRangesSwap& operator*() const { return value_; }
 };
 
-#ifndef TEST_COMPILER_CUDACC_BELOW_11_3 // nvcc segfaults here
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017) // nvcc segfaults here
 static_assert( cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, HasRangesSwapWrapper&>);
 // Does not satisfy swappable_with, even though swap(X, Y) is valid.
 static_assert(!cuda::std::is_invocable_v<IterSwapT, HasRangesSwapWrapper&, int&>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, int&, HasRangesSwapWrapper&>);
-#endif // TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 
 struct B;
 
@@ -226,7 +226,7 @@ static_assert(!cuda::std::is_invocable_v<IterSwapT, int*, int>);
 static_assert(!cuda::std::is_invocable_v<IterSwapT, void*, void*>);
 #endif // TEST_COMPILER_CUDACC_BELOW_11_3
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
 template<class T> struct Holder { T t; };

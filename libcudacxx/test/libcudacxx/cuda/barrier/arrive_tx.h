@@ -53,7 +53,7 @@ void thread(cuda::barrier<cuda::thread_scope_block>& b, int arrives_per_thread)
   constexpr int tx_count = 1;
   typename cuda::barrier<cuda::thread_scope_block>::arrival_token tok;
 
-  if _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 (split_arrive_and_expect) {
+  if _CCCL_CONSTEXPR_CXX20 (split_arrive_and_expect) {
     cuda::device::barrier_expect_tx(b, tx_count);
     tok = b.arrive(arrives_per_thread);
   } else{

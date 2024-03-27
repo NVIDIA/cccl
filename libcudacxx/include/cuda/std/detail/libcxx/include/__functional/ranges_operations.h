@@ -14,10 +14,6 @@
 #include <__config>
 #endif //__cuda_std__
 
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/totally_ordered.h"
-#include "../__utility/forward.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,7 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 14
+#include "../__concepts/equality_comparable.h"
+#include "../__concepts/totally_ordered.h"
+#include "../__utility/forward.h"
+
+#if _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
@@ -105,7 +105,7 @@ struct greater_equal {
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _LIBCUDACXX_STD_VER > 14
+#endif // _CCCL_STD_VER > 2014
 
 
 #endif // _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H

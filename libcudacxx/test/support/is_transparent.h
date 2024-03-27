@@ -12,7 +12,7 @@
 #include "test_macros.h"
 
 // testing transparent
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
 
 struct transparent_less
 {

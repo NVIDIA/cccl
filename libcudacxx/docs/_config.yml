@@ -5,13 +5,15 @@ repository: nvidia/libcudacxx
 remote_theme: pmarsceill/just-the-docs
 
 color_scheme: nvidia
-logo: /assets/images/nvidia_logo.png
+logo: /images/nvidia_logo.png
 
 search_enabled: true
 search.heading_level: 4
 
 # just-the-docs ignores these filenames by default.
 include: [ "contributing.md", "code_of_conduct.md" ]
+
+baseurl: "cccl/libcudacxx"
 
 plugins_dir:
   - jekyll-remote-theme
@@ -98,6 +100,28 @@ defaults:
       has_children: true
       has_toc: false
       nav_order: 6
+  -
+    scope:
+      path: extended_api/memory_resource.md
+    values:
+      parent: Extended API
+      has_children: true
+      has_toc: false
+      nav_order: 7
+  - scope:
+      path: "ptx/instructions"
+    values:
+      has_children: false
+      has_toc: false
+      parent: PTX Instructions
+      grand_parent: PTX
+  - scope:
+      path: "ptx/examples"
+    values:
+      has_children: false
+      has_toc: false
+      parent: Examples
+      grand_parent: PTX
   -
     scope:
       path: releases/changelog.md

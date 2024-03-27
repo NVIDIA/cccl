@@ -27,20 +27,18 @@
 
 #include <cub/device/device_segmented_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 
 #include <cstdint>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1
 
 // List of types to test
 using offsets = c2h::type_list<std::ptrdiff_t, std::size_t>;
@@ -65,15 +63,15 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
     GENERATE_COPY(take(2, random(min_items_per_segment, max_items_per_segment)));
   const offset_t num_items_in_second_segment =
     GENERATE_COPY(take(2, random(min_items_per_segment, max_items_per_segment)));
-  thrust::device_vector<offset_t> segment_offsets = {offset_zero,
+  c2h::device_vector<offset_t> segment_offsets = {offset_zero,
                                                      num_items_in_first_segment,
                                                      num_items_in_first_segment +
                                                        num_items_in_second_segment};
 
   // store expected result and initialize device output container
-  thrust::host_vector<offset_t> expected_result = {iterator_value * num_items_in_first_segment,
+  c2h::host_vector<offset_t> expected_result = {iterator_value * num_items_in_first_segment,
                                                    iterator_value * num_items_in_second_segment};
-  thrust::device_vector<offset_t> device_result(num_segments);
+  c2h::device_vector<offset_t> device_result(num_segments);
 
   // prepare device iterators
   auto in_it        = thrust::make_constant_iterator(iterator_value);

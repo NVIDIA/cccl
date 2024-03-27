@@ -30,7 +30,7 @@
 int main(int, char**)
 {
     typedef cuda::std::ostreambuf_iterator<char> I1;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((cuda::std::is_convertible<I1,
         cuda::std::iterator<cuda::std::output_iterator_tag, void, void, void, void> >::value), "");
 #else
@@ -46,7 +46,7 @@ int main(int, char**)
     static_assert((cuda::std::is_same<I1::ostream_type, cuda::std::ostream>::value), "");
 
     typedef cuda::std::ostreambuf_iterator<wchar_t> I2;
-#if TEST_STD_VER <= 14
+#if TEST_STD_VER <= 2014
     static_assert((cuda::std::is_convertible<I2,
         cuda::std::iterator<cuda::std::output_iterator_tag, void, void, void, void> >::value), "");
 #else

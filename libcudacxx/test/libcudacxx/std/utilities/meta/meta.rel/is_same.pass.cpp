@@ -22,7 +22,7 @@ void test_is_same()
     static_assert((!cuda::std::is_same<const T, U>::value), "");
     static_assert((!cuda::std::is_same<T, const U>::value), "");
     static_assert(( cuda::std::is_same<const T, const U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(( cuda::std::is_same_v<T, U>), "");
     static_assert((!cuda::std::is_same_v<const T, U>), "");
     static_assert((!cuda::std::is_same_v<T, const U>), "");
@@ -38,7 +38,7 @@ void test_is_same_ref()
     static_assert((cuda::std::is_same<const T, U>::value), "");
     static_assert((cuda::std::is_same<T, const U>::value), "");
     static_assert((cuda::std::is_same<const T, const U>::value), "");
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert((cuda::std::is_same_v<T, U>), "");
     static_assert((cuda::std::is_same_v<const T, U>), "");
     static_assert((cuda::std::is_same_v<T, const U>), "");

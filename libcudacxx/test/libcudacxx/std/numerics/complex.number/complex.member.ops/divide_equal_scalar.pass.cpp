@@ -21,21 +21,21 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> c(1);
-    assert(c.real() == 1);
-    assert(c.imag() == 0);
+    assert(c.real() == T(1));
+    assert(c.imag() == T(0));
     c /= 0.5;
-    assert(c.real() == 2);
-    assert(c.imag() == 0);
+    assert(c.real() == T(2));
+    assert(c.imag() == T(0));
     c /= 0.5;
-    assert(c.real() == 4);
-    assert(c.imag() == 0);
+    assert(c.real() == T(4));
+    assert(c.imag() == T(0));
     c /= -0.5;
-    assert(c.real() == -8);
-    assert(c.imag() == 0);
+    assert(c.real() == T(-8));
+    assert(c.imag() == T(0));
     c.imag(2);
     c /= 0.5;
-    assert(c.real() == -16);
-    assert(c.imag() == 4);
+    assert(c.real() == T(-16));
+    assert(c.imag() == T(4));
 
     return true;
 }
@@ -44,9 +44,15 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+#ifdef _LIBCUDACXX_HAS_NVFP16
+    test<__half>();
+#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+    test<__nv_bfloat16>();
+#endif
 // CUDA treats long double as double
 //  test<long double>();
-#if TEST_STD_VER > 11
+#if TEST_STD_VER > 2011
     static_assert(test<float>(), "");
     static_assert(test<double>(), "");
 // CUDA treats long double as double

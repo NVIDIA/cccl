@@ -72,17 +72,19 @@ int main(int, char**)
 {
     test_constexpr<optional<int>>();
     test_constexpr<optional<int*>>();
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 17
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
     test_constexpr<optional<ImplicitTypes::NoCtors>>();
     test_constexpr<optional<NonTrivialTypes::NoCtors>>();
     test_constexpr<optional<NonConstexprTypes::NoCtors>>();
 #endif
+#ifndef TEST_COMPILER_ICC
     test<optional<NonLiteralTypes::NoCtors>>();
+#endif // TEST_COMPILER_ICC
 
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test_constexpr<optional<int>>(), "");
     static_assert(test_constexpr<optional<int*>>(), "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 17
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
     static_assert(test_constexpr<optional<ImplicitTypes::NoCtors>>(), "");
     static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
     static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");

@@ -27,8 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if THRUST_CPP_DIALECT >= 2011
-
 #include <thrust/detail/type_deduction.h>
 #include <thrust/type_traits/integer_sequence.h>
 
@@ -114,5 +112,4 @@ THRUST_DECLTYPE_RETURNS(
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_CPP_DIALECT >= 2011
 

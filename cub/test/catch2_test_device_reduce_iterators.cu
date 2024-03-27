@@ -27,8 +27,6 @@
 
 #include <cub/device/device_reduce.cuh>
 
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 
@@ -37,13 +35,13 @@
 #include "catch2_test_device_reduce.cuh"
 
 #include "c2h/custom_type.cuh"
-#include "catch2_test_cdp_helper.h"
+#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
 
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
-DECLARE_CDP_WRAPPER(cub::DeviceReduce::Sum, device_sum);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
 
-// %PARAM% TEST_CDP cdp 0:1
+// %PARAM% TEST_LAUNCH lid 0:1:2
 
 // List of types to test
 using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t>;
@@ -57,7 +55,7 @@ template <typename T, typename offset_t>
 void test_big_indices_helper(offset_t num_items)
 {
   thrust::constant_iterator<T> const_iter(T{1});
-  thrust::device_vector<std::size_t> out(1);
+  c2h::device_vector<std::size_t> out(1);
   std::size_t *d_out = thrust::raw_pointer_cast(out.data());
   device_sum(const_iter, d_out, num_items);
   std::size_t result = out[0];
@@ -108,7 +106,7 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
     compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
-  thrust::device_vector<output_t> out_result(num_segments);
+  c2h::device_vector<output_t> out_result(num_segments);
   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
   device_reduce(in_it, d_out_it, num_items, reduction_op, init_t{});
 

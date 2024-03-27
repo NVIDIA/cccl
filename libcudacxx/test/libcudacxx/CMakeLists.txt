@@ -36,12 +36,11 @@ else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h")
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "False")
+  set(LIBCUDACXX_TEST_COMPILER_FLAGS "")
 endif()
 
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_WARNING_LEVEL
-    "--compiler-options=-Wall \
-    --compiler-options=-Wextra")
+  set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
 # sccache cannot handle the -Fd option generationg pdb files
@@ -50,50 +49,35 @@ if (MSVC)
 endif()
 
 # Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS
-    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
-    --compiler-options=-fno-fast-math")
+if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --compiler-options=-fno-fast-math")
 endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
-     " -Xclang -fcuda-allow-variadic-functions"
-     " -Xclang -Wno-unused-parameter"
-     " -Wno-unknown-cuda-version")
-
-  find_package(CUDAToolkit)
+    " -Xclang -fcuda-allow-variadic-functions"
+    " -Xclang -Wno-unused-parameter"
+    " -Wno-unknown-cuda-version"
+    " ${LIBCUDACXX_FORCE_INCLUDE}"
+    " -I${libcudacxx_SOURCE_DIR}/include"
+    " ${LIBCUDACXX_WARNING_LEVEL}")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
-    " -L${CUDAToolkit_LIBRARY_DIR} -lcuda -lcudart")
+    " -L${CUDAToolkit_LIBRARY_DIR}"
+    " -lcuda"
+    " -lcudart")
+elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " ${LIBCUDACXX_FORCE_INCLUDE}"
+    " ${LIBCUDACXX_WARNING_LEVEL}")
+elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " -stdpar")
+  string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " -stdpar")
 endif()
 
-if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS
-    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
-    ${LIBCUDACXX_FORCE_INCLUDE} \
-    ${LIBCUDACXX_WARNING_LEVEL}")
-endif()
-
-if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS
-    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
-    -stdpar")
-  set(LIBCUDACXX_TEST_LINKER_FLAGS
-    "${LIBCUDACXX_TEST_LINKER_FLAGS} \
-    -stdpar")
-endif()
-
-if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
-  set(LIBCUDACXX_TEST_COMPILER_FLAGS
-    "${LIBCUDACXX_TEST_COMPILER_FLAGS} \
-    ${LIBCUDACXX_FORCE_INCLUDE} \
-    -I${libcudacxx_SOURCE_DIR}/include \
-    ${LIBCUDACXX_WARNING_LEVEL}")
-endif()
-
-set(LIBCUDACXX_COMPUTE_ARCHS_STRING
-  "${CMAKE_CUDA_ARCHITECTURES}")
+set(LIBCUDACXX_COMPUTE_ARCHS_STRING "${CMAKE_CUDA_ARCHITECTURES}")
 
 include(AddLLVM)
 
@@ -119,16 +103,18 @@ add_lit_testsuite(check-cudacxx
 
 find_program(libcudacxx_LIT lit REQUIRED)
 
+set(libcudacxx_LIT_FLAGS "" CACHE STRING "Semi-colon separated list of flags passed to the invocation of lit.")
+message(STATUS "libcudacxx_LIT_FLAGS: ${libcudacxx_LIT_FLAGS}")
+
 if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   # Build but don't run the tests. Used by CI to pre-seed sccache for the test machines.
   # Only executed if explicitly requested.
   add_custom_target(libcudacxx.test.lit.precompile
-    "${CMAKE_COMMAND}" -E env
-      "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests
-      "-Dexecutor=\"NoopExecutor()\"" # Don't run the compiled tests.
-      "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
+    COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+    "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS} "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
+
 endif()
 
 # Restricted to avoid oversubscribing the GPU:
@@ -139,7 +125,7 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests
+  "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS}
     -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
       "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )

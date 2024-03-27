@@ -13,9 +13,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__utility/move.h"
-#include "../exception"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,7 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if _LIBCUDACXX_STD_VER > 11
+#include "../__utility/move.h"
+#include "../exception"
+
+#if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -39,7 +39,7 @@ protected:
   bad_expected_access(bad_expected_access&&)                 = default;
   bad_expected_access& operator=(const bad_expected_access&) = default;
   bad_expected_access& operator=(bad_expected_access&&)      = default;
-  ~bad_expected_access() override                            = default;
+  ~bad_expected_access() noexcept override                   = default;
 
 public:
   // The way this has been designed (by using a class template below) means that we'll already
@@ -47,7 +47,7 @@ public:
   // of work to do. So it is not worth hiding the <void> specialization in the dylib, given that
   // it adds deployment target restrictions.
   _LIBCUDACXX_INLINE_VISIBILITY
-  const char* what() const noexcept override { return "bad access to _CUDA_VSTD::expected"; }
+  const char* what() const noexcept override { return "bad access to std::expected"; }
 };
 
 template <class _Err>
@@ -74,6 +74,6 @@ private:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 #endif // _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H

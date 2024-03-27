@@ -223,7 +223,7 @@ void do_test()
         assert(obj == true);
     }
 
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
     NV_DISPATCH_TARGET(
     NV_IS_HOST,(
         typedef Atomic<Scope> A;
@@ -239,7 +239,7 @@ void do_test()
         assert(zero == false);
         zero.~A();
     ))
-#endif // TEST_STD_VER > 17
+#endif // TEST_STD_VER > 2017
 }
 
 template<cuda::thread_scope Scope>

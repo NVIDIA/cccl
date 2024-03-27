@@ -177,7 +177,7 @@ __host__ __device__ constexpr bool test() {
   }
 
   // Make sure we don't treat cuda::std::reference_wrapper specially.
-#if TEST_STD_VER > 17
+#if TEST_STD_VER > 2017
 #if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
   if (!cuda::std::__libcpp_is_constant_evaluated())
 #endif // TEST_COMPILER_NVRTC
@@ -274,9 +274,11 @@ __host__ __device__ constexpr bool test() {
       using X = decltype(cuda::std::bind_front(F{}));
       static_assert( cuda::std::is_invocable_v<X&>);
       static_assert( cuda::std::is_invocable_v<X const&>);
+#ifndef TEST_COMPILER_ICC
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X>);
 #endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_ICC
       static_assert( cuda::std::is_invocable_v<X const>);
     }
 
@@ -292,14 +294,17 @@ __host__ __device__ constexpr bool test() {
       static_assert( cuda::std::is_invocable_v<X&>);
       static_assert( cuda::std::is_invocable_v<X const&>);
       static_assert( cuda::std::is_invocable_v<X>);
+#ifndef TEST_COMPILER_ICC
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X const>);
 #endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_ICC
     }
   }
 #endif
 
   // Some examples by Tim Song
+#ifndef TEST_COMPILER_ICC
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
   {
     {
@@ -323,6 +328,7 @@ __host__ __device__ constexpr bool test() {
     }
   }
 #endif // !TEST_COMPILER_MSVC_2017
+#endif // !TEST_COMPILER_ICC
 
   // Test properties of the constructor of the unspecified-type returned by bind_front.
   {
@@ -410,6 +416,7 @@ __host__ __device__ constexpr bool test() {
     takeAnything();
   }
 
+#if !defined(TEST_COMPILER_ICC) && !defined(TEST_COMPILER_MSVC_2017)
   // Make sure bind_front's unspecified type's operator() is SFINAE-friendly
   {
     using T = decltype(cuda::std::bind_front(cuda::std::declval<int(*)(int, int)>(), 1));
@@ -418,6 +425,7 @@ __host__ __device__ constexpr bool test() {
     static_assert(!cuda::std::is_invocable<T, void*>::value);
     static_assert(!cuda::std::is_invocable<T, int, int>::value);
   }
+#endif // !TEST_COMPILER_ICC && !TEST_COMPILER_MSVC_2017
 
   return true;
 }

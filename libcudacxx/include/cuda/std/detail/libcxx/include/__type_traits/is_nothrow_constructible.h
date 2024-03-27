@@ -14,11 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_scalar.h"
-#include "../__utility/declval.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +21,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/integral_constant.h"
+#include "../__type_traits/is_constructible.h"
+#include "../__type_traits/is_scalar.h"
+#include "../__utility/declval.h"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -36,7 +36,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
     {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class ..._Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...);
 #endif
@@ -134,7 +134,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp, _Tp&>
 
 #endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class ..._Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_Tp, _Args...>::value;
 #endif

@@ -103,11 +103,10 @@ template<typename T> struct is_pod
    : public integral_constant<
        bool,
        is_void<T>::value || is_pointer<T>::value || is_arithmetic<T>::value
-#if THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_MSVC || \
-    THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_CLANG
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_CLANG)
 // use intrinsic type traits
        || __is_pod(T)
-#elif THRUST_HOST_COMPILER == THRUST_HOST_COMPILER_GCC
+#elif defined(_CCCL_COMPILER_GCC)
 // only use the intrinsic for >= 4.3
 #if (__GNUC__ * 100 + __GNUC_MINOR__ >= 403)
        || __is_pod(T)
@@ -254,89 +253,11 @@ template<typename T1, typename T2>
 {
 }; // end lazy_is_different
 
-#if THRUST_CPP_DIALECT >= 2011
 
 template<class From, class To>
 using is_convertible = ::cuda::std::is_convertible<From, To>;
 
-#else
 
-namespace tt_detail
-{
-
-template<typename T>
-  struct is_int_or_cref
-{
-  typedef typename remove_reference<T>::type type_sans_ref;
-  static const bool value = (is_integral<T>::value
-                             || (is_integral<type_sans_ref>::value
-                                 && is_const<type_sans_ref>::value
-                                 && !is_volatile<type_sans_ref>::value));
-}; // end is_int_or_cref
-
-
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
-THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_BEGIN
-
-template<typename From, typename To>
-  struct is_convertible_sfinae
-{
-  private:
-    typedef char                          yes;
-    typedef struct { char two_chars[2]; } no;
-
-    static inline yes   test(To) { return yes(); }
-    static inline no    test(...) { return no(); }
-    static inline typename remove_reference<From>::type& from() { typename remove_reference<From>::type* ptr = 0; return *ptr; }
-
-  public:
-    static const bool value = sizeof(test(from())) == sizeof(yes);
-}; // end is_convertible_sfinae
-
-
-THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_END
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
-
-
-template<typename From, typename To>
-  struct is_convertible_needs_simple_test
-{
-  static const bool from_is_void      = is_void<From>::value;
-  static const bool to_is_void        = is_void<To>::value;
-  static const bool from_is_float     = is_floating_point<typename remove_reference<From>::type>::value;
-  static const bool to_is_int_or_cref = is_int_or_cref<To>::value;
-
-  static const bool value = (from_is_void || to_is_void || (from_is_float && to_is_int_or_cref));
-}; // end is_convertible_needs_simple_test
-
-
-template<typename From, typename To,
-         bool = is_convertible_needs_simple_test<From,To>::value>
-  struct is_convertible
-{
-  static const bool value = (is_void<To>::value
-                             || (is_int_or_cref<To>::value
-                                 && !is_void<From>::value));
-}; // end is_convertible
-
-
-template<typename From, typename To>
-  struct is_convertible<From, To, false>
-{
-  static const bool value = (is_convertible_sfinae<typename
-                             add_reference<From>::type, To>::value);
-}; // end is_convertible
-
-
-} // end tt_detail
-
-template<typename From, typename To>
-  struct is_convertible
-    : public integral_constant<bool, tt_detail::is_convertible<From, To>::value>
-{
-}; // end is_convertible
-
-#endif
 
 template<typename T1, typename T2>
   struct is_one_convertible_to_the_other
@@ -441,6 +362,8 @@ template<typename T1, typename T2, typename T = void>
     : enable_if< is_convertible<T1,T2>::value, T >
 {};
 
+template<typename T1, typename T2, typename T = void>
+using enable_if_convertible_t = typename enable_if_convertible<T1, T2, T>::type;
 
 template<typename T1, typename T2, typename T = void>
   struct disable_if_convertible
@@ -452,7 +375,6 @@ template<typename T1, typename T2, typename Result = void>
   struct enable_if_different
     : enable_if<is_different<T1,T2>::value, Result>
 {};
-
 
 template<typename T>
   struct is_numeric
@@ -539,47 +461,11 @@ template<typename T1, typename T2>
       >
 {};
 
-#if THRUST_CPP_DIALECT >= 2011
 
 template<class Base, class Derived>
 using is_base_of = ::cuda::std::is_base_of<Base, Derived>;
 
-#else
 
-namespace is_base_of_ns
-{
-
-typedef char                          yes;
-typedef struct { char two_chars[2]; } no;
-
-template<typename Base, typename Derived>
-  struct host
-{
-  operator Base*() const;
-  operator Derived*();
-}; // end host
-
-template<typename Base, typename Derived>
-  struct impl
-{
-  template<typename T> static yes check(Derived *, T);
-  static no check(Base*, int);
-
-  static const bool value = sizeof(check(host<Base,Derived>(), int())) == sizeof(yes);
-}; // end impl
-
-} // end is_base_of_ns
-
-
-template<typename Base, typename Derived>
-  struct is_base_of
-    : integral_constant<
-        bool,
-        is_base_of_ns::impl<Base,Derived>::value
-      >
-{};
-
-#endif
 
 template<typename Base, typename Derived, typename Result = void>
   struct enable_if_base_of
@@ -636,7 +522,7 @@ template<typename T1, typename T2, typename Enable = void> struct promoted_numer
 
 template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_floating_point<T1>::type, typename is_floating_point<T2>::type>
+  <typename is_floating_point<T1>::type,typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef typename larger_type<T1,T2>::type type;
@@ -644,7 +530,7 @@ template<typename T1, typename T2>
 
 template<typename T1, typename T2>
   struct promoted_numerical_type<T1,T2,typename enable_if<and_
-  <typename is_integral<T1>::type, typename is_floating_point<T2>::type>
+  <typename is_integral<T1>::type,typename is_floating_point<T2>::type>
   ::value>::type>
   {
   typedef T2 type;
@@ -657,13 +543,6 @@ template<typename T1, typename T2>
   {
   typedef T1 type;
   };
-
-template<typename T1, typename T2, typename = void>
-struct has_promoted_numerical_type : public false_type {};
-
-template<typename T1, typename T2>
-struct has_promoted_numerical_type<T1, T2, ::cuda::std::__void_t<typename promoted_numerical_type<T1, T2>::type>>
-  : public true_type {};
 
 template<typename T>
   struct is_empty_helper : public T
@@ -683,7 +562,7 @@ template<typename T>
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
-#if THRUST_CPP_DIALECT < 2017
+#if _CCCL_STD_VER < 2017
   typename ::cuda::std::result_of<Invokable(Args...)>::type;
 #else // 2017+
   ::cuda::std::invoke_result_t<Invokable, Args...>;

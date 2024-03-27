@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__type_traits/add_lvalue_reference.h"
 #include "../__type_traits/conditional.h"
 #include "../__type_traits/enable_if.h"
@@ -28,14 +36,6 @@
 #include "../__utility/declval.h"
 #include "../cstddef"
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp> struct __is_swappable;
@@ -46,13 +46,13 @@ using __swap_result_t = __enable_if_t<_LIBCUDACXX_TRAIT(is_move_constructible, _
                                    && _LIBCUDACXX_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 __swap_result_t<_Tp>
 swap(_Tp& __x, _Tp& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp)
                                && _LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template<class _Tp, size_t _Np>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 __enable_if_t<__is_swappable<_Tp>::value>
 swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
@@ -105,7 +105,7 @@ struct __is_nothrow_swappable
 {
 };
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
 struct _LIBCUDACXX_TEMPLATE_VIS is_swappable_with
@@ -155,7 +155,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_with_v = is_nothrow_s
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

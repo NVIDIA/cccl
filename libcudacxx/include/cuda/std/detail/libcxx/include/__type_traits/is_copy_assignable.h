@@ -14,10 +14,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/add_const.h"
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/is_assignable.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__type_traits/add_const.h"
+#include "../__type_traits/add_lvalue_reference.h"
+#include "../__type_traits/is_assignable.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -33,7 +33,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_copy_assignable
     : public is_assignable<__add_lvalue_reference_t<_Tp>,
                            __add_lvalue_reference_t<typename add_const<_Tp>::type>> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
 #endif

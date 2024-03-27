@@ -48,9 +48,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__mdspan/macros.h"
-#include "../__utility/integer_sequence.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -59,9 +56,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include "../__mdspan/macros.h"
+#include "../__utility/integer_sequence.h"
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 11
+#if _CCCL_STD_VER > 2011
 
 //==============================================================================
 
@@ -130,7 +130,7 @@ struct __type_at<3, __type_list<_T0, _T1, _T2, _T3, _Ts...>> {
 
 //==============================================================================
 
-#endif // _LIBCUDACXX_STD_VER > 11
+#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

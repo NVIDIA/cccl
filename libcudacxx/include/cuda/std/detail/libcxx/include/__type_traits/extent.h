@@ -15,9 +15,6 @@
 #include <__config>
 #endif // __cuda_std__
 
-#include "../__type_traits/integral_constant.h"
-#include "../cstddef"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -25,6 +22,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include "../__type_traits/integral_constant.h"
+#include "../cstddef"
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -34,7 +34,7 @@ template<class _Tp, size_t _Dim = 0>
 struct _LIBCUDACXX_TEMPLATE_VIS extent
     : integral_constant<size_t, _LIBCUDACXX_ARRAY_EXTENT(_Tp, _Dim)> { };
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
 _LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = _LIBCUDACXX_ARRAY_EXTENT(_Tp, _Ip);
 #endif
@@ -52,7 +52,7 @@ template <class _Tp, size_t _Np> struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[_Np]
 template <class _Tp, size_t _Np, unsigned _Ip> struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[_Np], _Ip>
     : public integral_constant<size_t, extent<_Tp, _Ip-1>::value> {};
 
-#if _LIBCUDACXX_STD_VER > 11 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
 _LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = extent<_Tp, _Ip>::value;
 #endif

@@ -14,6 +14,14 @@
 #include <__config>
 #endif // __cuda_std__
 
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include "../__utility/forward.h"
 #include "../__utility/move.h"
 #include "../__type_traits/disjunction.h"
@@ -27,17 +35,9 @@
 #include <__pragma_push>
 #endif // __cuda_std__
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _LIBCUDACXX_STD_VER > 17
+#if _CCCL_STD_VER > 2017
 template<class _Tp, class... _Up>
 struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...> {};
 
@@ -111,7 +111,7 @@ bool in_range(_Up __u) noexcept
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max()) &&
          _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
-#endif // _LIBCUDACXX_STD_VER > 17
+#endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

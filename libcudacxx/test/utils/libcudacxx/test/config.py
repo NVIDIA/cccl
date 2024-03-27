@@ -368,6 +368,7 @@ class Configuration(object):
 
             if 'icc' in self.config.available_features:
                 self.cxx.link_flags += ['-lirc']
+                self.cxx.compile_flags += ['-Xcompiler=-diag-disable=10441']
 
     def _configure_clang_cl(self, clang_path):
         def _split_env_var(var):
@@ -639,6 +640,7 @@ class Configuration(object):
         # Configure extra flags
         compile_flags_str = self.get_lit_conf('compile_flags', '')
         self.cxx.compile_flags += shlex.split(compile_flags_str)
+        self.cxx.compile_flags += ['-D_CCCL_NO_SYSTEM_HEADER']
         if self.is_windows:
             # FIXME: Can we remove this?
             self.cxx.compile_flags += ['-D_CRT_SECURE_NO_WARNINGS']
@@ -664,17 +666,20 @@ class Configuration(object):
         if self.cxx.type == 'clang':
             real_arch_format = '--cuda-gpu-arch=sm_{0}'
             virt_arch_format = '--cuda-gpu-arch=compute_{0}'
+            self.cxx.compile_flags += ['-O1']
         pre_sm_32 = True
         pre_sm_60 = True
         pre_sm_70 = True
         pre_sm_80 = True
         pre_sm_90 = True
+        pre_sm_90a = True
         if compute_archs and (self.cxx.type == 'nvcc' or self.cxx.type == 'clang' or self.cxx.type == 'nvrtcc'):
             pre_sm_32 = False
             pre_sm_60 = False
             pre_sm_70 = False
             pre_sm_80 = False
             pre_sm_90 = False
+            pre_sm_90a = False
 
             self.lit_config.note('Compute Archs: %s' % compute_archs)
             if compute_archs == 'native':
@@ -684,15 +689,22 @@ class Configuration(object):
             for s in compute_archs:
                 # Split arch and mode i.e. 80-virtual -> 80, virtual
                 arch, *mode = re.split('-', s)
+
+                # With Hopper there are new subarchitectures like 90a we need to handle those
+                subarchitecture = ''
+                if not arch.isnumeric():
+                    subarchitecture = arch[-1]
+                    arch = arch[:-1]
                 arch = int(arch)
                 if arch < 32: pre_sm_32 = True
                 if arch < 60: pre_sm_60 = True
                 if arch < 70: pre_sm_70 = True
                 if arch < 80: pre_sm_80 = True
                 if arch < 90: pre_sm_90 = True
-                arch_flag = real_arch_format.format(arch)
+                if arch < 90 or (arch == 90 and subarchitecture < 'a') : pre_sm_90a = True
+                arch_flag = real_arch_format.format(str(arch) + subarchitecture)
                 if mode.count("virtual"):
-                    arch_flag = virt_arch_format.format(arch)
+                    arch_flag = virt_arch_format.format(str(arch) + subarchitecture)
                 self.cxx.compile_flags += [arch_flag]
         if pre_sm_32:
             self.config.available_features.add("pre-sm-32")
@@ -704,9 +716,12 @@ class Configuration(object):
             self.config.available_features.add("pre-sm-80")
         if pre_sm_90:
             self.config.available_features.add("pre-sm-90")
+        if pre_sm_90a:
+            self.config.available_features.add("pre-sm-90a")
 
     def configure_default_compile_flags(self):
         nvcc_host_compiler = self.get_lit_conf('nvcc_host_compiler')
+
         if nvcc_host_compiler and self.cxx.type == 'nvcc':
             self.cxx.compile_flags += ['-ccbin={0}'.format(nvcc_host_compiler)]
 
@@ -760,10 +775,20 @@ class Configuration(object):
 
         if std:
             # We found a dialect flag.
+            stdflag = '-std={0}'.format(std)
             if self.cxx.type == 'msvc':
-                self.cxx.compile_flags += ['/std:{0}'.format(std)]
-            else:
-                self.cxx.compile_flags += ['-std={0}'.format(std)]
+                stdflag = '/std:{0}'.format(std)
+
+            extraflags = []
+            if self.cxx.type == 'clang':
+                extraflags = ['-Wno-unknown-cuda-version']
+
+            # Do a check with the user/config flag to ensure that the flag is supported.
+            if not self.cxx.hasCompileFlag([stdflag] + extraflags):
+                raise OSError("Configured compiler does not support flag {0}".format(stdflag))
+
+            self.cxx.flags += [stdflag]
+
         if not std:
             # There is no dialect flag. This happens with older MSVC.
             if self.cxx.type == 'nvcc':

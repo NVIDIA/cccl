@@ -41,17 +41,18 @@
 #endif // no system header
 #include <thrust/detail/cpp14_required.h>
 
-#if THRUST_CPP_DIALECT >= 2014
+#if _CCCL_STD_VER >= 2014
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/system/cuda/config.h>
 
 #include <thrust/system/cuda/detail/async/customization.h>
-#include <thrust/system/cuda/detail/parallel_for.h>
 #include <thrust/system/cuda/future.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/distance.h>
+
+#include <cub/device/device_for.cuh>
 
 #include <type_traits>
 
@@ -66,13 +67,13 @@ struct async_for_each_fn
   ForwardIt first;
   UnaryFunction f;
 
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   async_for_each_fn(ForwardIt&& first_, UnaryFunction&& f_)
     : first(std::move(first_)), f(std::move(f_))
   {}
 
   template <typename Index>
-  __host__ __device__
+  _CCCL_HOST_DEVICE
   void operator()(Index idx)
   {
     f(thrust::raw_reference_cast(first[idx]));
@@ -124,7 +125,7 @@ unique_eager_event async_for_each_n(
   );
 
   thrust::cuda_cub::throw_on_error(
-    thrust::cuda_cub::__parallel_for::parallel_for(
+    cub::DeviceFor::Bulk(
       n, std::move(wrapped), e.stream().native_handle()
     )
   , "after for_each launch"

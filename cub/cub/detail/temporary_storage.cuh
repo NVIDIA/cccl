@@ -96,21 +96,21 @@ public:
    * @brief Returns an array of type @p T and length @p elements
    */
   template <typename T>
-  __host__ __device__ alias<T> create_alias(std::size_t elements = 0);
+  _CCCL_HOST_DEVICE alias<T> create_alias(std::size_t elements = 0);
 
 private:
-  __host__ __device__ void set_bytes_required(std::size_t new_size)
+  _CCCL_HOST_DEVICE void set_bytes_required(std::size_t new_size)
   {
     m_size = (max)(m_size, new_size);
   }
 
-  __host__ __device__ std::size_t get_bytes_required() const
+  _CCCL_HOST_DEVICE std::size_t get_bytes_required() const
   {
     return m_size;
   }
 
-  __host__ __device__ void set_storage(void *ptr) { m_pointer = ptr; }
-  __host__ __device__ void *get_storage() const { return m_pointer; }
+  _CCCL_HOST_DEVICE void set_storage(void *ptr) { m_pointer = ptr; }
+  _CCCL_HOST_DEVICE void *get_storage() const { return m_pointer; }
 
   template <typename T>
   friend class alias;
@@ -137,7 +137,7 @@ class alias
   slot &m_slot;
   std::size_t m_elements{};
 
-  __host__ __device__ explicit alias(slot &slot,
+  _CCCL_HOST_DEVICE explicit alias(slot &slot,
                                      std::size_t elements = 0)
     : m_slot(slot)
     , m_elements(elements)
@@ -145,7 +145,7 @@ class alias
     this->update_slot();
   }
 
-  __host__ __device__ void update_slot()
+  _CCCL_HOST_DEVICE void update_slot()
   {
     m_slot.set_bytes_required(m_elements * sizeof(T));
   }
@@ -163,7 +163,7 @@ public:
    *                         temporary slot to fit up to @p new_elements items
    *                         of type @p T.
    */
-  __host__ __device__ void grow(std::size_t new_elements)
+  _CCCL_HOST_DEVICE void grow(std::size_t new_elements)
   {
     m_elements = new_elements;
     this->update_slot();
@@ -175,7 +175,7 @@ public:
    * If the @p elements number is equal to zero, or storage layout isn't mapped,
    * @p nullptr is returned.
    */
-  __host__ __device__ T *get() const
+  _CCCL_HOST_DEVICE T *get() const
   {
     if (m_elements == 0)
     {
@@ -190,7 +190,7 @@ public:
 
 
 template <typename T>
-__host__ __device__ alias<T> slot::create_alias(std::size_t elements)
+_CCCL_HOST_DEVICE alias<T> slot::create_alias(std::size_t elements)
 {
   return alias<T>(*this, elements);
 }
@@ -265,7 +265,7 @@ class layout
 public:
   layout() = default;
 
-  __host__ __device__ slot *get_slot(int slot_id)
+  _CCCL_HOST_DEVICE slot *get_slot(int slot_id)
   {
     if (slot_id < SlotsCount)
     {
@@ -278,7 +278,7 @@ public:
   /**
    * @brief Returns required temporary storage size in bytes
    */
-  __host__ __device__ std::size_t get_size()
+  _CCCL_HOST_DEVICE std::size_t get_size()
   {
     this->prepare_interface();
 
@@ -307,7 +307,7 @@ public:
   /**
    * @brief Maps the layout to the temporary storage buffer.
    */
-  __host__ __device__ cudaError_t map_to_buffer(void *d_temp_storage,
+  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void *d_temp_storage,
                                                 std::size_t temp_storage_bytes)
   {
     if (m_layout_was_mapped)
@@ -336,7 +336,7 @@ public:
   }
 
 private:
-  __host__ __device__ void prepare_interface()
+  _CCCL_HOST_DEVICE void prepare_interface()
   {
     if (m_layout_was_mapped)
     {
