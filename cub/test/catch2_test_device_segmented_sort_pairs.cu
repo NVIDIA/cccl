@@ -185,7 +185,9 @@ CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
   test_edge_case_segments_random<KeyT, ValueT>(CUB_SEED(4));
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random keys", "[pairs][segmented][sort][device]", pair_types)
+CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
+         "[pairs][segmented][sort][device]",
+         pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
   using KeyT   = c2h::get<0, PairT>;

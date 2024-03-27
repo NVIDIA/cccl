@@ -175,15 +175,15 @@ struct segment_filler
   }
 };
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT, bool STABLE>
 struct segment_checker
 {
   const KeyT* d_keys{};
-  const ValueT* d_values{};
+  ValueT* d_values{}; // May be permuted if STABLE is false.
   const int* d_offsets{};
   bool sort_descending{};
 
-  segment_checker(const KeyT* d_keys, const ValueT* d_values, const int* d_offsets, bool sort_descending)
+  segment_checker(const KeyT* d_keys, ValueT* d_values, const int* d_offsets, bool sort_descending)
       : d_keys(d_keys)
       , d_values(d_values)
       , d_offsets(d_offsets)
@@ -200,7 +200,7 @@ struct segment_checker
       return true;
     }
 
-    if (!this->check_results(segment_begin, segment_end, segment_size, ValueT{}))
+    if (!this->check_results(segment_begin, segment_size, ValueT{}))
     {
       return false;
     }
@@ -212,7 +212,6 @@ private:
   // Keys only:
   _CCCL_DEVICE _CCCL_FORCEINLINE bool check_results(
     int segment_begin, //
-    int segment_end,
     int segment_size,
     cub::NullType)
   {
@@ -232,15 +231,12 @@ private:
 
   // Pairs:
   template <typename DispatchValueT> // Same as ValueT if not cub::NullType
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool check_results(
-    int segment_begin, //
-    int segment_end,
-    int segment_size,
-    DispatchValueT)
+  _CCCL_DEVICE _CCCL_FORCEINLINE bool
+  check_results(int segment_begin, //
+                int segment_size,
+                DispatchValueT)
   {
-    // Computing values is trickier, since there may be duplicate keys and the segmented sort implementation is
-    // (currently) always stable. We need to determine the corresponding input key index and then compute the original
-    // input value from it.
+    // Validating values is trickier, since duplicate keys lead to different requirements for stable/unstable sorts.
     const double key_conversion   = compute_conversion_factor(segment_size, KeyT{});
     const double value_conversion = compute_conversion_factor(segment_size, ValueT{});
 
@@ -262,28 +258,62 @@ private:
       } while (key_out_dup_end < segment_size
                && current_key == this->compute_key(key_out_dup_end, segment_size, key_conversion));
 
+      // Bookkeeping for validating unstable sorts:
+      int unchecked_values_for_current_dup_key_begin     = segment_begin + key_out_dup_begin;
+      const int unchecked_values_for_current_dup_key_end = segment_begin + key_out_dup_end;
+
       // Validate all output values for the current key by determining the input key indicies and computing the matching
       // input values.
-      // NOTE: This only works because the current segmented sort implementation is always stable and we can compute
-      // keys and values directly from the segment indices.
       const int num_dup_keys     = key_out_dup_end - key_out_dup_begin;
       const int key_in_dup_begin = segment_size - key_out_dup_end;
 
+      // Validate the range of values corresponding to the current duplicate key:
       for (int dup_idx = 0; dup_idx < num_dup_keys; ++dup_idx)
       {
-        const int in_seg_idx  = key_in_dup_begin + dup_idx;
-        const int out_seg_idx = key_out_dup_begin + dup_idx;
+        const int in_seg_idx = key_in_dup_begin + dup_idx;
 
         // Compute the original input value corresponding to the current duplicate key.
         // NOTE: Keys and values are generated using opposing ascending/descending parameters, so the generated input
         // values are descending when generating ascending input keys for a descending sort.
         const int conv_idx         = sort_descending ? (segment_size - 1 - in_seg_idx) : in_seg_idx;
         const ValueT current_value = static_cast<ValueT>(conv_idx * value_conversion);
-        if (current_value != d_values[segment_begin + out_seg_idx])
+        CUB_IF_CONSTEXPR(STABLE)
         {
-          return false;
+          (void) unchecked_values_for_current_dup_key_begin;
+          (void) unchecked_values_for_current_dup_key_end;
+
+          // For stable sorts, the output value must appear at an exact offset:
+          const int out_seg_idx = key_out_dup_begin + dup_idx;
+          if (current_value != d_values[segment_begin + out_seg_idx])
+          {
+            return false;
+          }
         }
-      }
+        else
+        {
+          // For unstable sorts, the reference value can appear anywhere in the output values corresponding to the
+          // current duplicate key.
+          // For each reference value, find the corresponding value in the output and swap it out of the unchecked
+          // region:
+          int probe_unchecked_idx = unchecked_values_for_current_dup_key_begin;
+          for (; probe_unchecked_idx < unchecked_values_for_current_dup_key_end; ++probe_unchecked_idx)
+          {
+            if (current_value == d_values[probe_unchecked_idx])
+            {
+              using thrust::swap;
+              swap(d_values[probe_unchecked_idx], d_values[unchecked_values_for_current_dup_key_begin]);
+              unchecked_values_for_current_dup_key_begin++;
+              break;
+            }
+          }
+
+          //  Check that the probe found a match:
+          if (probe_unchecked_idx == unchecked_values_for_current_dup_key_end)
+          {
+            return false;
+          }
+        } // End of STABLE/UNSTABLE check
+      } // End of duplicate key value validation
 
       // Prepare for next set of dup keys
       key_out_dup_begin = key_out_dup_end;
@@ -305,12 +335,12 @@ private:
 // If descending_sort is true, the keys will ascend and the values will descend.
 // Duplicate keys will be generated if the segment size exceeds the max KeyT.
 // Sorted results may be validated with validate_sorted_derived_outputs.
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
 void generate_unsorted_derived_inputs(
   bool descending_sort, //
   const c2h::device_vector<int>& d_offsets,
   c2h::device_vector<KeyT>& d_keys,
-  c2h::device_vector<ValueT>& d_values = {})
+  c2h::device_vector<ValueT>& d_values)
 {
   C2H_TIME_SCOPE("GenerateUnsortedDerivedInputs");
 
@@ -341,26 +371,27 @@ void generate_unsorted_derived_inputs(
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-// Verifies the results of stable-sorting the segmented key/value arrays produced by generate_unsorted_derived_inputs.
+// Verifies the results of sorting the segmented key/value arrays produced by generate_unsorted_derived_inputs.
 // Reference values are computed on-the-fly, avoiding the need for host/device transfers and reference array sorting.
-// d_values may be left empty if ValueT == cub::NullType.
-template <typename KeyT, typename ValueT = cub::NullType>
+// d_values may be left empty if ValueT == cub::NullType. d_values may be permuted within duplicate key ranges if STABLE
+// is false.
+template <bool STABLE, typename KeyT, typename ValueT>
 void validate_sorted_derived_outputs(
   bool descending_sort, //
   const c2h::device_vector<int>& d_offsets,
   const c2h::device_vector<KeyT>& d_keys,
-  const c2h::device_vector<ValueT>& d_values = {})
+  c2h::device_vector<ValueT>& d_values)
 {
-  C2H_TIME_SCOPE("ValidateSortedDerivedOutputs");
+  C2H_TIME_SCOPE("validate_sorted_derived_outputs");
   const int num_segments = static_cast<int>(d_offsets.size() - 1);
   const KeyT* keys       = thrust::raw_pointer_cast(d_keys.data());
-  const ValueT* values   = thrust::raw_pointer_cast(d_values.data());
+  ValueT* values         = thrust::raw_pointer_cast(d_values.data());
   const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
 
   REQUIRE(thrust::all_of(c2h::device_policy,
                          thrust::make_counting_iterator(0),
                          thrust::make_counting_iterator(num_segments),
-                         segment_checker<KeyT, ValueT>{keys, values, offsets, descending_sort}));
+                         segment_checker<KeyT, ValueT, STABLE>{keys, values, offsets, descending_sort}));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -368,10 +399,10 @@ void validate_sorted_derived_outputs(
 
 // Generates random key/value pairs in keys/values.
 // d_values may be left empty if ValueT == cub::NullType.
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
 void generate_random_unsorted_inputs(c2h::seed_t seed, //
                                      c2h::device_vector<KeyT>& d_keys,
-                                     c2h::device_vector<ValueT>& d_values = {})
+                                     c2h::device_vector<ValueT>& d_values)
 {
   C2H_TIME_SCOPE("generate_random_unsorted_inputs");
 
@@ -387,7 +418,7 @@ void generate_random_unsorted_inputs(c2h::seed_t seed, //
 
 // Stable sort the segmented key/values pairs in the host arrays.
 // d_values may be left empty if ValueT == cub::NullType.
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
 void host_sort_random_inputs(
   bool sort_descending, //
   int num_segments,
@@ -446,26 +477,113 @@ void host_sort_random_inputs(
   }
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
+struct unstable_segmented_value_checker
+{
+  const KeyT* ref_keys{};
+  const ValueT* ref_values{};
+  ValueT* test_values{};
+  const int* offsets_begin{};
+  const int* offsets_end{};
+
+  _CCCL_DEVICE bool operator()(int segment_id) const
+  {
+    const int segment_begin = offsets_begin[segment_id];
+    const int segment_end   = offsets_end[segment_id];
+
+    // Identify duplicate ranges of keys in the current segment
+    for (int key_offset = segment_begin; key_offset < segment_end; /*inc in loop*/)
+    {
+      // Per range of duplicate keys, find the corresponding range of values:
+      int unchecked_values_for_current_dup_key_begin = key_offset;
+      int unchecked_values_for_current_dup_key_end   = key_offset + 1;
+
+      const KeyT current_key = ref_keys[unchecked_values_for_current_dup_key_begin];
+      while (unchecked_values_for_current_dup_key_end < segment_end
+             && current_key == ref_keys[unchecked_values_for_current_dup_key_end])
+      {
+        unchecked_values_for_current_dup_key_end++;
+      }
+
+      // Iterate through all of the ref values and verify that they each appear once-and-only-once in the test values:
+      for (int value_idx = unchecked_values_for_current_dup_key_begin;
+           value_idx < unchecked_values_for_current_dup_key_end;
+           value_idx++)
+      {
+        const ValueT current_value = ref_values[value_idx];
+        int probe_unchecked_idx    = unchecked_values_for_current_dup_key_begin;
+        for (; probe_unchecked_idx < unchecked_values_for_current_dup_key_end; probe_unchecked_idx++)
+        {
+          if (current_value == test_values[probe_unchecked_idx])
+          {
+            // Swap the found value out of the unchecked region to reduce the search space in future iterations:
+            using thrust::swap;
+            swap(test_values[probe_unchecked_idx], test_values[unchecked_values_for_current_dup_key_begin]);
+            unchecked_values_for_current_dup_key_begin++;
+            break;
+          }
+          probe_unchecked_idx++;
+        }
+
+        // Check that the probe found a match:
+        if (probe_unchecked_idx == unchecked_values_for_current_dup_key_end)
+        {
+          return false;
+        }
+      }
+
+      key_offset = unchecked_values_for_current_dup_key_end;
+    }
+
+    return true;
+  }
+};
+
+// For UNSTABLE verification, test values may be permutated within each duplicate key range.
+// They will not be modified when STABLE.
+template <bool STABLE, typename KeyT, typename ValueT>
 void validate_sorted_random_outputs(
+  int num_segments,
+  const int* d_segment_begin,
+  const int* d_segment_end,
   const c2h::device_vector<KeyT>& d_ref_keys,
   const c2h::device_vector<KeyT>& d_sorted_keys,
-  const c2h::device_vector<ValueT>& d_ref_values    = {},
-  const c2h::device_vector<ValueT>& d_sorted_values = {})
+  const c2h::device_vector<ValueT>& d_ref_values,
+  c2h::device_vector<ValueT>& d_sorted_values)
 {
   C2H_TIME_SCOPE("validate_sorted_random_outputs");
 
-  constexpr bool sort_pairs = !::cuda::std::is_same<ValueT, cub::NullType>::value;
+  (void) d_ref_values;
+  (void) d_sorted_values;
+  (void) num_segments;
+  (void) d_segment_begin;
+  (void) d_segment_end;
 
-  (void) d_ref_values; // Unused for key-only sort.
-  (void) d_sorted_values; // Unused for key-only sort.
-
+  // Verify that the key arrays match exactly:
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
-  CUB_IF_CONSTEXPR(sort_pairs)
+
+  // Verify segment-by-segment that the values are appropriately sorted for an unstable key-value sort:
+  CUB_IF_CONSTEXPR(!::cuda::std::is_same<ValueT, cub::NullType>::value)
   {
-    REQUIRE((d_ref_values == d_sorted_values) == true);
+    CUB_IF_CONSTEXPR(STABLE)
+    {
+      REQUIRE((d_ref_values == d_sorted_values) == true);
+    }
+    else
+    {
+      const KeyT* ref_keys     = thrust::raw_pointer_cast(d_ref_keys.data());
+      const ValueT* ref_values = thrust::raw_pointer_cast(d_ref_values.data());
+      ValueT* test_values      = thrust::raw_pointer_cast(d_sorted_values.data());
+
+      REQUIRE(thrust::all_of(
+        c2h::device_policy,
+        thrust::make_counting_iterator(0),
+        thrust::make_counting_iterator(num_segments),
+        unstable_segmented_value_checker<KeyT, ValueT>{
+          ref_keys, ref_values, test_values, d_segment_begin, d_segment_end}));
+    }
   }
-}
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Sorting abstraction/launcher
@@ -965,8 +1083,8 @@ constexpr bool stable   = true;
 
 // Uses analytically derived key/value pairs for generation and validation.
 // Much faster that test_segments_random, as this avoids H<->D copies and host reference sorting.
-// Drawback is that the unsorted keys are always reversed (though duplicate keys introduce some sorting variation due to
-// stability).
+// Drawback is that the unsorted keys are always reversed (though duplicate keys introduce some sorting variation
+// due to stability).
 template <typename KeyT, typename ValueT = cub::NullType>
 void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 {
@@ -1042,11 +1160,18 @@ void test_segments_derived(const c2h::device_vector<int>& d_offsets_vec)
 
   auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
   auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
-  validate_sorted_derived_outputs(sort_descending, d_offsets_vec, keys, values);
+
+  if (stable_sort)
+  {
+    validate_sorted_derived_outputs<true>(sort_descending, d_offsets_vec, keys, values);
+  }
+  else
+  {
+    validate_sorted_derived_outputs<false>(sort_descending, d_offsets_vec, keys, values);
+  }
 }
 
-// Uses fully random key/value pairs. Slower than test_segments_derived.
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
 void test_segments_random(
   c2h::seed_t seed, //
   int num_items,
@@ -1175,15 +1300,25 @@ void test_segments_random(
         &keys_selector,
         &values_selector);
 
-      need_reset         = true;
-      const auto& keys   = (keys_selector || !sort_buffers) ? keys_output : keys_input;
-      const auto& values = (values_selector || !sort_buffers) ? values_output : values_input;
-      validate_sorted_random_outputs(keys_ref, keys, values_ref, values);
+      need_reset       = true;
+      const auto& keys = (keys_selector || !sort_buffers) ? keys_output : keys_input;
+      auto& values     = (values_selector || !sort_buffers) ? values_output : values_input;
+
+      if (stable_sort)
+      {
+        validate_sorted_random_outputs<true>(
+          num_segments, d_begin_offsets, d_end_offsets, keys_ref, keys, values_ref, values);
+      }
+      else
+      {
+        validate_sorted_random_outputs<false>(
+          num_segments, d_begin_offsets, d_end_offsets, keys_ref, keys, values_ref, values);
+      }
     }
   }
 }
 
-template <typename KeyT, typename ValueT = cub::NullType>
+template <typename KeyT, typename ValueT>
 void test_segments_random(c2h::seed_t seed, const c2h::device_vector<int>& d_offsets_vec)
 {
   const int num_items    = d_offsets_vec.back();
