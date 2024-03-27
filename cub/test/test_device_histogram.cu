@@ -1659,7 +1659,7 @@ int main(int argc, char** argv)
     TestIntegerBinCalcs(); // regression test for NVIDIA/cub#489
 
 #if TEST_HALF_T
-    TestChannels<half_t, int, half_t, int>(256, 256 + 1, true_t{}, true_t{});
+    TestChannels<half_t, int, half_t, int>(half_t{256}, 256 + 1, true_t{}, true_t{});
 #endif
 
     TestChannels <signed char,      int, int,   int>(256,   256 + 1,  true_t{}, true_t{});

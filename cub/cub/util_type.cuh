@@ -280,16 +280,30 @@ struct CUB_DEPRECATED RemoveQualifiers
  */
 struct NullType
 {
-    using value_type = NullType;
+  using value_type = NullType;
 
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE NullType& operator =(const T&) { return *this; }
+  NullType() = default;
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator ==(const NullType&) { return true; }
+  template <typename T>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE explicit NullType(const T&)
+  {}
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator !=(const NullType&) { return false; }
+  template <typename T>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE NullType& operator=(const T&)
+  {
+    return *this;
+  }
+
+  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const NullType&, const NullType&)
+  {
+    return true;
+  }
+
+  friend _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const NullType&, const NullType&)
+  {
+    return false;
+  }
 };
-
 
 /**
  * \brief Allows for the treatment of an integral constant as a type at compile-time (e.g., to achieve static call dispatch based on constant integral values)
