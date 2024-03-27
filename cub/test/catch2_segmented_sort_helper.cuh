@@ -261,8 +261,13 @@ private:
       // Bookkeeping for validating unstable sorts:
       int unchecked_values_for_current_dup_key_begin     = segment_begin + key_out_dup_begin;
       const int unchecked_values_for_current_dup_key_end = segment_begin + key_out_dup_end;
-      (void) unchecked_values_for_current_dup_key_begin; // Unused on some static paths
-      (void) unchecked_values_for_current_dup_key_end;
+
+      // NVCC claims that these variables are set-but-not-used, and the usual tricks to silence
+      // those warnings don't work. This convoluted nonsense, however, does work...
+      if (static_cast<bool>(unchecked_values_for_current_dup_key_begin) || static_cast<bool>(unchecked_values_for_current_dup_key_end))
+      {
+        [](){}(); // no-op lambda
+      }
 
       // Validate all output values for the current key by determining the input key indicies and computing the matching
       // input values.
