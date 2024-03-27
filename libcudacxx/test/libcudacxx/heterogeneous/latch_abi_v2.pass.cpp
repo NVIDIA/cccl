@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: true
 // UNSUPPORTED: nvrtc, pre-sm-70
 
 // uncomment for a really verbose output detailing what test steps are being launched

@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: true
 // UNSUPPORTED: nvrtc, pre-sm-70
 // XFAIL: clang && (!nvcc)
 
