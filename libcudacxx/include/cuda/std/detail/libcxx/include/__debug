@@ -220,7 +220,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_c(_Tp* __c) {
+_CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_c(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__insert_c(__c);
@@ -231,7 +231,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_c(_Tp* __c) {
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_i(_Tp* __i) {
+_CCCL_CONSTEXPR_CXX14 inline void __debug_db_insert_i(_Tp* __i) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__insert_i(__i);
@@ -242,7 +242,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_insert_i(_Tp* __i) {
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_erase_c(_Tp* __c) {
+_CCCL_CONSTEXPR_CXX14 inline void __debug_db_erase_c(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__erase_c(__c);
@@ -253,7 +253,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_erase_c(_Tp* __c) {
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_swap(_Tp* __lhs, _Tp* __rhs) {
+_CCCL_CONSTEXPR_CXX14 inline void __debug_db_swap(_Tp* __lhs, _Tp* __rhs) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->swap(__lhs, __rhs);
@@ -265,7 +265,7 @@ _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_swap(_Tp* __lhs, _Tp* _
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY
-_LIBCUDACXX_CONSTEXPR_AFTER_CXX11 inline void __debug_db_invalidate_all(_Tp* __c) {
+_CCCL_CONSTEXPR_CXX14 inline void __debug_db_invalidate_all(_Tp* __c) {
 #ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
     if (!__libcpp_is_constant_evaluated())
         __get_db()->__invalidate_all(__c);

@@ -178,7 +178,7 @@ function(thrust_build_compiler_targets)
   if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # C4127: conditional expression is constant
     # Disable this MSVC warning for C++11/C++14. In C++17, we can use
-    # THRUST_IF_CONSTEXPR to address these warnings.
+    # _CCCL_IF_CONSTEXPR to address these warnings.
     target_compile_options(thrust.compiler_interface_cpp11 INTERFACE
       $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>

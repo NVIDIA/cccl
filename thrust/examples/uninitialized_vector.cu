@@ -29,9 +29,7 @@ template<typename T>
   __host__
   ~uninitialized_allocator() {}
 
-#if _CCCL_STD_VER >= 2011
-  uninitialized_allocator & operator=(const uninitialized_allocator &) = default;
-#endif
+uninitialized_allocator & operator=(const uninitialized_allocator &) = default;
 
   // for correctness, you should also redefine rebind when you inherit
   // from an allocator type; this way, if the allocator is rebound somewhere,

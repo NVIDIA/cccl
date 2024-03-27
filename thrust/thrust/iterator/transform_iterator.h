@@ -213,9 +213,7 @@ template <class AdaptableUnaryFunction, class Iterator, class Reference = use_de
      */
     transform_iterator() = default;
 
-#if _CCCL_STD_VER >= 2011
     transform_iterator(transform_iterator const&) = default;
-#endif
 
     /*! This constructor takes as arguments an \c Iterator and an \c AdaptableUnaryFunction
      *  and copies them to a new \p transform_iterator.

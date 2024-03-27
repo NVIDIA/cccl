@@ -18,7 +18,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <thrust/detail/preprocessor.h>
 
@@ -94,5 +93,4 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#endif // _CCCL_STD_VER >= 2011
 

@@ -5,7 +5,7 @@
 
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if !defined(THRUST_LEGACY_GCC) 
 #include <thrust/zip_function.h>
 #endif // >= C++11
 
@@ -52,7 +52,8 @@ struct arbitrary_functor1
     }
 };
 
-#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
+
+#if !defined(THRUST_LEGACY_GCC)
 struct arbitrary_functor2
 {
     __host__ __device__
@@ -89,8 +90,9 @@ int main(void)
     for(int i = 0; i < 5; i++)
         std::cout << A[i] << " + " << B[i] << " * " << C[i] << " = " << D1[i] << std::endl;
 
+
     // apply the transformation using zip_function
-#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if !defined(THRUST_LEGACY_GCC)
     thrust::device_vector<float> D2(5);
     thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D2.begin())),
                      thrust::make_zip_iterator(thrust::make_tuple(A.end(),   B.end(),   C.end(),   D2.end())),

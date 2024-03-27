@@ -133,7 +133,6 @@ template<typename T, typename Alloc = thrust::device_allocator<T> >
     device_vector(const device_vector &v, const Alloc &alloc)
       :Parent(v,alloc) {}
 
-  #if _CCCL_STD_VER >= 2011
     /*! Move constructor moves from another \p device_vector.
      *  \param v The device_vector to move.
      */
@@ -146,7 +145,6 @@ template<typename T, typename Alloc = thrust::device_allocator<T> >
      */
     device_vector(device_vector &&v, const Alloc &alloc)
       :Parent(std::move(v), alloc) {}
-  #endif // _CCCL_STD_VER >= 2011
 
     /*! Copy assign operator copies another \p device_vector with the same type.
      *  \param v The \p device_vector to copy.
@@ -154,13 +152,11 @@ template<typename T, typename Alloc = thrust::device_allocator<T> >
     device_vector &operator=(const device_vector &v)
     { Parent::operator=(v); return *this; }
 
-  #if _CCCL_STD_VER >= 2011
     /*! Move assign operator moves from another \p device_vector.
      *  \param v The device_vector to move.
      */
      device_vector &operator=(device_vector &&v)
      { Parent::operator=(std::move(v)); return *this; }
-  #endif // _CCCL_STD_VER >= 2011
 
     /*! Copy constructor copies from an exemplar \p device_vector with different type.
      *  \param v The \p device_vector to copy.

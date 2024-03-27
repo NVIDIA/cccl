@@ -1514,11 +1514,11 @@ public:
 
     template <class _Up> struct rebind {typedef allocator<_Up> other;};
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     allocator() noexcept {}
 
     template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     allocator(const allocator<_Up>&) noexcept {}
 
     _LIBCUDACXX_INLINE_VISIBILITY pointer address(reference __x) const noexcept
@@ -1618,11 +1618,11 @@ public:
 
     template <class _Up> struct rebind {typedef allocator<_Up> other;};
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     allocator() noexcept {}
 
     template <class _Up>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     allocator(const allocator<_Up>&) noexcept {}
 
     _LIBCUDACXX_INLINE_VISIBILITY const_pointer address(const_reference __x) const noexcept
@@ -1869,7 +1869,7 @@ struct __compressed_pair_elem {
     }
 
   template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
@@ -1901,7 +1901,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp {
   {}
 
   template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
   __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args,
                          __tuple_indices<_Indexes...>)
       : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...) {}
@@ -1957,7 +1957,7 @@ public:
       : _Base1(std::forward<_U1>(__t1)), _Base2(std::forward<_U2>(__t2)) {}
 
   template <class... _Args1, class... _Args2>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
   __compressed_pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args,
                     tuple<_Args2...> __second_args)
       : _Base1(__pc, _CUDA_VSTD::move(__first_args),

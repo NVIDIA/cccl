@@ -27,8 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <tuple>
 
 #include <thrust/detail/execute_with_dependencies.h>
@@ -110,5 +108,4 @@ struct dependencies_aware_execution_policy
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011
 

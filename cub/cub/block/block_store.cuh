@@ -1289,6 +1289,7 @@ public:
     //! @}  end member group
 };
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 template <class Policy,
           class It,
           class T = cub::detail::value_t<It>>
@@ -1299,6 +1300,7 @@ struct BlockStoreType
                                Policy::ITEMS_PER_THREAD,
                                Policy::STORE_ALGORITHM>;
 };
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END
 

@@ -259,9 +259,7 @@ private:
         {
         }
 
-#if _CCCL_STD_VER >= 2011
         pool & operator=(const pool &) = default;
-#endif
 
         _CCCL_HOST
         ~pool() {}
