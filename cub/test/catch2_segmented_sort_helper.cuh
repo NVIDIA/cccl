@@ -522,7 +522,6 @@ struct unstable_segmented_value_checker
             unchecked_values_for_current_dup_key_begin++;
             break;
           }
-          probe_unchecked_idx++;
         }
 
         // Check that the probe found a match:
