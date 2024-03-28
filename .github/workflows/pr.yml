@@ -53,13 +53,30 @@ jobs:
         run: |
           .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yaml pull_request
 
+  inspect-changes:
+    name: "Inspect Changes"
+    runs-on: ubuntu-latest
+    outputs:
+      LIBCUDACXX_DIRTY: ${{ steps.set-outputs.outputs.LIBCUDACXX_DIRTY }}
+      CUB_DIRTY: ${{ steps.set-outputs.outputs.CUB_DIRTY }}
+      THRUST_DIRTY: ${{ steps.set-outputs.outputs.THRUST_DIRTY }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Identify dirty subprojects
+        id: set-outputs
+        run: |
+          ./ci/inspect_changes.sh
+
   nvrtc:
-    name: NVRTC CUDA${{matrix.cuda}}
+    name: libcudacxx NVRTC CUDA${{matrix.cuda}}
     permissions:
       id-token: write
       contents: read
-    needs: compute-matrix
-    if: ${{ !contains(github.event.head_commit.message, 'skip-tests') }}
+    needs:
+      - compute-matrix
+      - inspect-changes
+    if: ${{ !contains(github.event.head_commit.message, 'skip-tests') && needs.inspect-changes.outputs.LIBCUDACXX_DIRTY == 'true' }}
     uses: ./.github/workflows/run-as-coder.yml
     strategy:
       fail-fast: false
@@ -77,7 +94,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: compute-matrix
+    needs:
+      - compute-matrix
+      - inspect-changes
+    if: ${{ needs.inspect-changes.outputs.THRUST_DIRTY == 'true' }}
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
@@ -94,7 +114,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: compute-matrix
+    needs:
+      - compute-matrix
+      - inspect-changes
+    if: ${{ needs.inspect-changes.outputs.CUB_DIRTY == 'true' }}
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
@@ -111,7 +134,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: compute-matrix
+    needs:
+      - compute-matrix
+      - inspect-changes
+    if: ${{ needs.inspect-changes.outputs.LIBCUDACXX_DIRTY == 'true' }}
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
