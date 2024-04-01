@@ -119,7 +119,7 @@ template <class charT, class traits, size_t N>
 basic_ostream<charT, traits>&
 operator<<(basic_ostream<charT, traits>& os, const bitset<N>& x);
 
-template <size_t N> struct hash<std::bitset<N>>;
+template <size_t N> struct hash<_CUDA_VSTD::bitset<N>>;
 
 }  // std
 
@@ -130,6 +130,14 @@ template <size_t N> struct hash<std::bitset<N>>;
 #ifndef __cuda_std__
 #include <__config>
 #endif // __cuda_std__
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include "__algorithm/count.h"
 #include "__algorithm/fill.h"
@@ -236,10 +244,6 @@ protected:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY size_t __hash_code() const noexcept;
 
 private:
-#ifdef _LIBCUDACXX_CXX03_LANG
-  void __init(unsigned long long __v, false_type) noexcept;
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void __init(unsigned long long __v, true_type) noexcept;
-#endif // _LIBCUDACXX_CXX03_LANG
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong(false_type) const;
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong(true_type) const;
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long to_ullong(false_type) const;
@@ -250,46 +254,12 @@ private:
 
 template <size_t _N_words, size_t _Size>
 inline constexpr __bitset<_N_words, _Size>::__bitset() noexcept
-#ifndef _LIBCUDACXX_CXX03_LANG
     : __first_{0}
-#endif
 {
-#ifdef _LIBCUDACXX_CXX03_LANG
-  std::fill_n(__first_, _N_words, __storage_type(0));
-#endif
 }
-
-#ifdef _LIBCUDACXX_CXX03_LANG
-
-template <size_t _N_words, size_t _Size>
-void __bitset<_N_words, _Size>::__init(unsigned long long __v, false_type) noexcept {
-  __storage_type __t[sizeof(unsigned long long) / sizeof(__storage_type)];
-  size_t __sz = _Size;
-  for (size_t __i = 0; __i < sizeof(__t) / sizeof(__t[0]); ++__i, __v >>= __bits_per_word, __sz -= __bits_per_word)
-    if (__sz < __bits_per_word)
-      __t[__i] = static_cast<__storage_type>(__v) & (1ULL << __sz) - 1;
-    else
-      __t[__i] = static_cast<__storage_type>(__v);
-
-  std::copy(__t, __t + sizeof(__t) / sizeof(__t[0]), __first_);
-  std::fill(
-      __first_ + sizeof(__t) / sizeof(__t[0]), __first_ + sizeof(__first_) / sizeof(__first_[0]), __storage_type(0));
-}
-
-template <size_t _N_words, size_t _Size>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY void __bitset<_N_words, _Size>::__init(unsigned long long __v, true_type) noexcept {
-  __first_[0] = __v;
-  if (_Size < __bits_per_word)
-    __first_[0] &= (1ULL << _Size) - 1;
-
-  std::fill(__first_ + 1, __first_ + sizeof(__first_) / sizeof(__first_[0]), __storage_type(0));
-}
-
-#endif // _LIBCUDACXX_CXX03_LANG
 
 template <size_t _N_words, size_t _Size>
 inline constexpr __bitset<_N_words, _Size>::__bitset(unsigned long long __v) noexcept
-#ifndef _LIBCUDACXX_CXX03_LANG
 #  if __SIZEOF_SIZE_T__ == 8
     : __first_{__v}
 #  elif __SIZEOF_SIZE_T__ == 4
@@ -301,32 +271,31 @@ inline constexpr __bitset<_N_words, _Size>::__bitset(unsigned long long __v) noe
 #  else
 #    error This constructor has not been ported to this platform
 #  endif
-#endif
 {
-#ifdef _LIBCUDACXX_CXX03_LANG
-  __init(__v, integral_constant<bool, sizeof(unsigned long long) == sizeof(__storage_type)>());
-#endif
 }
 
 template <size_t _N_words, size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __bitset<_N_words, _Size>::operator&=(const __bitset& __v) noexcept {
-  for (size_type __i = 0; __i < _N_words; ++__i)
+  for (size_type __i = 0; __i < _N_words; ++__i) {
     __first_[__i] &= __v.__first_[__i];
+  }
 }
 
 template <size_t _N_words, size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __bitset<_N_words, _Size>::operator|=(const __bitset& __v) noexcept {
-  for (size_type __i = 0; __i < _N_words; ++__i)
+  for (size_type __i = 0; __i < _N_words; ++__i) {
     __first_[__i] |= __v.__first_[__i];
+  }
 }
 
 template <size_t _N_words, size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 __bitset<_N_words, _Size>::operator^=(const __bitset& __v) noexcept {
-  for (size_type __i = 0; __i < _N_words; ++__i)
+  for (size_type __i = 0; __i < _N_words; ++__i) {
     __first_[__i] ^= __v.__first_[__i];
+  }
 }
 
 template <size_t _N_words, size_t _Size>
@@ -334,8 +303,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 vo
   // do middle whole words
   size_type __n         = _Size;
   __storage_pointer __p = __first_;
-  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word)
+  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word) {
     *__p = ~*__p;
+  }
   // do last partial word
   if (__n > 0) {
     __storage_type __m = ~__storage_type(0) >> (__bits_per_word - __n);
@@ -349,9 +319,10 @@ template <size_t _N_words, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long
 __bitset<_N_words, _Size>::to_ulong(false_type) const {
   const_iterator __e = __make_iter(_Size);
-  const_iterator __i = std::find(__make_iter(sizeof(unsigned long) * CHAR_BIT), __e, true);
-  if (__i != __e)
+  const_iterator __i = _CUDA_VSTD::find(__make_iter(sizeof(unsigned long) * CHAR_BIT), __e, true);
+  if (__i != __e) {
     __throw_overflow_error("bitset to_ulong overflow error");
+  }
 
   return __first_[0];
 }
@@ -366,9 +337,10 @@ template <size_t _N_words, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long
 __bitset<_N_words, _Size>::to_ullong(false_type) const {
   const_iterator __e = __make_iter(_Size);
-  const_iterator __i = std::find(__make_iter(sizeof(unsigned long long) * CHAR_BIT), __e, true);
-  if (__i != __e)
+  const_iterator __i = _CUDA_VSTD::find(__make_iter(sizeof(unsigned long long) * CHAR_BIT), __e, true);
+  if (__i != __e) {
     __throw_overflow_error("bitset to_ullong overflow error");
+  }
 
   return to_ullong(true_type());
 }
@@ -389,8 +361,9 @@ template <size_t _N_words, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 unsigned long long
 __bitset<_N_words, _Size>::to_ullong(true_type, true_type) const {
   unsigned long long __r = __first_[0];
-  for (size_t __i = 1; __i < sizeof(unsigned long long) / sizeof(__storage_type); ++__i)
+  for (size_t __i = 1; __i < sizeof(unsigned long long) / sizeof(__storage_type); ++__i) {
     __r |= static_cast<unsigned long long>(__first_[__i]) << __i;
+  }
   return __r;
 }
 
@@ -399,14 +372,17 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bo
   // do middle whole words
   size_type __n               = _Size;
   __const_storage_pointer __p = __first_;
-  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word)
-    if (~*__p)
+  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word) {
+    if (~*__p) {
       return false;
+    }
+  }
   // do last partial word
   if (__n > 0) {
     __storage_type __m = ~__storage_type(0) >> (__bits_per_word - __n);
-    if (~*__p & __m)
+    if (~*__p & __m) {
       return false;
+    }
   }
   return true;
 }
@@ -416,14 +392,17 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bo
   // do middle whole words
   size_type __n               = _Size;
   __const_storage_pointer __p = __first_;
-  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word)
-    if (*__p)
+  for (; __n >= __bits_per_word; ++__p, __n -= __bits_per_word) {
+    if (*__p) {
       return true;
+    }
+  }
   // do last partial word
   if (__n > 0) {
     __storage_type __m = ~__storage_type(0) >> (__bits_per_word - __n);
-    if (*__p & __m)
+    if (*__p & __m) {
       return true;
+    }
   }
   return false;
 }
@@ -431,8 +410,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bo
 template <size_t _N_words, size_t _Size>
 _LIBCUDACXX_INLINE_VISIBILITY inline size_t __bitset<_N_words, _Size>::__hash_code() const noexcept {
   size_t __h = 0;
-  for (size_type __i = 0; __i < _N_words; ++__i)
+  for (size_type __i = 0; __i < _N_words; ++__i) {
     __h ^= __first_[__i];
+  }
   return __h;
 }
 
@@ -646,7 +626,7 @@ public:
       _CharT __zero = _CharT('0'),
       _CharT __one  = _CharT('1')) {
 
-    size_t __rlen = std::min(__n, char_traits<_CharT>::length(__str));
+    size_t __rlen = _CUDA_VSTD::min(__n, char_traits<_CharT>::length(__str));
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
     __init_from_string_view(basic_string_view<_CharT>(__str, __rlen), __zero, __one);
 #else
@@ -662,10 +642,11 @@ public:
       typename basic_string_view<_CharT, _Traits>::size_type __n   = basic_string_view<_CharT, _Traits>::npos,
       _CharT __zero                                                = _CharT('0'),
       _CharT __one                                                 = _CharT('1')) {
-    if (__pos > __str.size())
+    if (__pos > __str.size()) {
       __throw_out_of_range("bitset string pos out of range");
+    }
 
-    size_t __rlen = std::min(__n, __str.size() - __pos);
+    size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
     __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
   }
 #endif
@@ -679,10 +660,11 @@ public:
           basic_string<_CharT, _Traits, _Allocator>::npos,
       _CharT __zero = _CharT('0'),
       _CharT __one  = _CharT('1')) {
-    if (__pos > __str.size())
-      std::__throw_out_of_range("bitset string pos out of range");
+    if (__pos > __str.size()) {
+      _CUDA_VSTD::__throw_out_of_range("bitset string pos out of range");
+    }
 
-    size_t __rlen = std::min(__n, __str.size() - __pos);
+    size_t __rlen = _CUDA_VSTD::min(__n, __str.size() - __pos);
     __init_from_string_view(basic_string_view<_CharT, _Traits>(__str.data() + __pos, __rlen), __zero, __one);
   }
 #endif
@@ -739,33 +721,37 @@ private:
   template <class _CharT, class _Traits>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
   __init_from_string_view(basic_string_view<_CharT, _Traits> __str, _CharT __zero, _CharT __one) {
-    for (size_t __i = 0; __i < __str.size(); ++__i)
-      if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
-        std::__throw_invalid_argument("bitset string ctor has invalid argument");
+    for (size_t __i = 0; __i < __str.size(); ++__i) {
+      if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one)) {
+        _CUDA_VSTD::__throw_invalid_argument("bitset string ctor has invalid argument");
+      }
+    }
 
-    size_t __mp = std::min(__str.size(), _Size);
+    size_t __mp = _CUDA_VSTD::min(__str.size(), _Size);
     size_t __i  = 0;
     for (; __i < __mp; ++__i) {
       _CharT __c   = __str[__mp - 1 - __i];
       (*this)[__i] = _Traits::eq(__c, __one);
     }
-    std::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
+    _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
   }
 #else
   template <class _CharT, class _Traits = char_traits<_CharT>>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
   __init_from_cstr(const _CharT * __str, size_t __size, _CharT __zero, _CharT __one) {
-    for (size_t __i = 0; __i < __size; ++__i)
-      if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one))
-        std::__throw_invalid_argument("bitset string ctor has invalid argument");
+    for (size_t __i = 0; __i < __size; ++__i) {
+      if (!_Traits::eq(__str[__i], __zero) && !_Traits::eq(__str[__i], __one)) {
+        _CUDA_VSTD::__throw_invalid_argument("bitset string ctor has invalid argument");
+      }
+    }
 
-    size_t __mp = std::min(__size, _Size);
+    size_t __mp = _CUDA_VSTD::min(__size, _Size);
     size_t __i  = 0;
     for (; __i < __mp; ++__i) {
       _CharT __c   = __str[__mp - 1 - __i];
       (*this)[__i] = _Traits::eq(__c, __one);
     }
-    std::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
+    _CUDA_VSTD::fill(base::__make_iter(__i), base::__make_iter(_Size), false);
   }
 #endif
 
@@ -797,30 +783,31 @@ bitset<_Size>::operator^=(const bitset& __rhs) noexcept {
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::operator<<=(size_t __pos) noexcept {
-  __pos = std::min(__pos, _Size);
-  std::copy_backward(base::__make_iter(0), base::__make_iter(_Size - __pos), base::__make_iter(_Size));
-  std::fill_n(base::__make_iter(0), __pos, false);
+  __pos = _CUDA_VSTD::min(__pos, _Size);
+  _CUDA_VSTD::copy_backward(base::__make_iter(0), base::__make_iter(_Size - __pos), base::__make_iter(_Size));
+  _CUDA_VSTD::fill_n(base::__make_iter(0), __pos, false);
   return *this;
 }
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::operator>>=(size_t __pos) noexcept {
-  __pos = std::min(__pos, _Size);
-  std::copy(base::__make_iter(__pos), base::__make_iter(_Size), base::__make_iter(0));
-  std::fill_n(base::__make_iter(_Size - __pos), __pos, false);
+  __pos = _CUDA_VSTD::min(__pos, _Size);
+  _CUDA_VSTD::copy(base::__make_iter(__pos), base::__make_iter(_Size), base::__make_iter(0));
+  _CUDA_VSTD::fill_n(base::__make_iter(_Size - __pos), __pos, false);
   return *this;
 }
 
 template <size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::set() noexcept {
-  std::fill_n(base::__make_iter(0), _Size, true);
+  _CUDA_VSTD::fill_n(base::__make_iter(0), _Size, true);
   return *this;
 }
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::set(size_t __pos, bool __val) {
-  if (_Size == 0 || __pos >= _Size)
+  if (_Size == 0 || __pos >= _Size) {
     __throw_out_of_range("bitset set argument out of range");
+  }
 
   (*this)[__pos] = __val;
   return *this;
@@ -828,14 +815,15 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bi
 
 template <size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::reset() noexcept {
-  std::fill_n(base::__make_iter(0), _Size, false);
+  _CUDA_VSTD::fill_n(base::__make_iter(0), _Size, false);
   return *this;
 }
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::reset(size_t __pos) {
-  if (_Size == 0 || __pos >= _Size)
+  if (_Size == 0 || __pos >= _Size) {
     __throw_out_of_range("bitset reset argument out of range");
+  }
 
   (*this)[__pos] = false;
   return *this;
@@ -856,8 +844,9 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset<_Size>& bitset<_Size>::flip(size_t __pos) {
-  if (_Size == 0 || __pos >= _Size)
+  if (_Size == 0 || __pos >= _Size) {
     __throw_out_of_range("bitset flip argument out of range");
+  }
 
   reference __r = base::__make_ref(__pos);
   __r           = ~__r;
@@ -880,8 +869,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 ba
 bitset<_Size>::to_string(_CharT __zero, _CharT __one) const {
   basic_string<_CharT, _Traits, _Allocator> __r(_Size, __zero);
   for (size_t __i = 0; __i != _Size; ++__i) {
-    if ((*this)[__i])
+    if ((*this)[__i]) {
       __r[_Size - 1 - __i] = __one;
+    }
   }
   return __r;
 }
@@ -910,13 +900,13 @@ bitset<_Size>::to_string(char __zero, char __one) const {
 
 template <size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 size_t bitset<_Size>::count() const noexcept {
-  return static_cast<size_t>(std::count(base::__make_iter(0), base::__make_iter(_Size), true));
+  return static_cast<size_t>(_CUDA_VSTD::count(base::__make_iter(0), base::__make_iter(_Size), true));
 }
 
 template <size_t _Size>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 bitset<_Size>::operator==(const bitset& __rhs) const noexcept {
-  return std::equal(base::__make_iter(0), base::__make_iter(_Size), __rhs.__make_iter(0));
+  return _CUDA_VSTD::equal(base::__make_iter(0), base::__make_iter(_Size), __rhs.__make_iter(0));
 }
 
 #if _LIBCUDACXX_STD_VER <= 2017
@@ -930,8 +920,9 @@ inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 
 template <size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool bitset<_Size>::test(size_t __pos) const {
-  if (_Size == 0 || __pos >= _Size)
+  if (_Size == 0 || __pos >= _Size) {
     __throw_out_of_range("bitset test argument out of range");
+  }
 
   return (*this)[__pos];
 }
