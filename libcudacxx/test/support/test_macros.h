@@ -439,6 +439,9 @@ constexpr bool unused(T&&...) {return true;}
 #if defined(__CUDACC__) && _LIBCUDACXX_CUDACC_VER < 1103000
 #define TEST_COMPILER_CUDACC_BELOW_11_3
 #endif // defined(__CUDACC__) && _LIBCUDACXX_CUDACC_VER < 1103000
+#if defined(__CUDACC__) && _LIBCUDACXX_CUDACC_VER < 1203000
+#define TEST_COMPILER_CUDACC_BELOW_12_3
+#endif // defined(__CUDACC__) && _LIBCUDACXX_CUDACC_VER < 1203000
 
 #if defined(TEST_COMPILER_MSVC)
 #if _MSC_VER < 1920
