@@ -31,6 +31,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
 
 #if _CCCL_STD_VER >= 2014
 
@@ -53,11 +54,7 @@ struct cuda_memory_resource
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
-      throw ::cuda::cuda_error{cudaErrorInvalidValue, "Invalid alignment passed to cuda_memory_resource::allocate."};
-#  else
-      _LIBCUDACXX_UNREACHABLE();
-#  endif
+      _CUDA_VSTD_NOVERSION::__throw_bad_alloc();
     }
 
     void* __ptr{nullptr};
