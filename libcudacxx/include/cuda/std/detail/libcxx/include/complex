@@ -428,13 +428,13 @@ public:
 };
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs * complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
 }
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>& operator/=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
 {
   __lhs = __lhs / complex<_Tp>(__rhs.real(), __rhs.imag());
   return __lhs;
@@ -442,7 +442,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>& operator/=(com
 
 // 26.3.6 operators:
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
@@ -451,7 +451,7 @@ operator+(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator+(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
@@ -460,7 +460,7 @@ operator+(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator+(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__y);
@@ -469,7 +469,7 @@ operator+(const _Tp& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
@@ -478,7 +478,7 @@ operator-(const complex<_Tp>& __x, const complex<_Tp>& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator-(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
@@ -487,7 +487,7 @@ operator-(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator-(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(-__y);
@@ -613,7 +613,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator*(const complex<_Tp>& __x, const _Tp& __y)
 {
   complex<_Tp> __t(__x);
@@ -622,7 +622,7 @@ operator*(const complex<_Tp>& __x, const _Tp& __y)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator*(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__y);
@@ -735,14 +735,14 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator/(const complex<_Tp>& __x, const _Tp& __y)
 {
   return complex<_Tp>(__x.real() / __y, __x.imag() / __y);
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 complex<_Tp>
 operator/(const _Tp& __x, const complex<_Tp>& __y)
 {
   complex<_Tp> __t(__x);
