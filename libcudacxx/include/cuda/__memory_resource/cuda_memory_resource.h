@@ -62,7 +62,7 @@ struct cuda_memory_resource
     switch (__status)
     {
       case ::cudaSuccess:
-        return __ptr;
+        break;
       default:
         ::cudaGetLastError(); // Clear CUDA error state
 #  ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -71,6 +71,7 @@ struct cuda_memory_resource
         _LIBCUDACXX_UNREACHABLE();
 #  endif
     }
+    return __ptr;
   }
 
   /**
