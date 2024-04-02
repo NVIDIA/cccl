@@ -11,8 +11,8 @@
 #ifndef __CCCL_EXECUTION_SPACE_H
 #define __CCCL_EXECUTION_SPACE_H
 
-#include "../__cccl/compiler.h"
-#include "../__cccl/system_header.h"
+#include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
+#include <cuda/std/detail/libcxx/include/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

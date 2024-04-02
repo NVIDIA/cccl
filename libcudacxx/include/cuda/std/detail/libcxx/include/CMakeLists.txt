@@ -130,6 +130,10 @@ set(files
   __cuda/barrier.h
   __cuda/chrono.h
   __cuda/climits_prelude.h
+  __cuda/cmath_nvbf16.h
+  __cuda/cmath_nvfp16.h
+  __cuda/complex_nvbf16.h
+  __cuda/complex_nvfp16.h
   __cuda/cstddef_prelude.h
   __cuda/cstdint_prelude.h
   __cuda/latch.h
@@ -140,6 +144,8 @@ set(files
   __expected/unexpected.h
   __expected/unexpect.h
   __expected/unexpected.h
+  __exception/exception.h
+  __exception/terminate.h
   __functional/binary_function.h
   __functional/binary_negate.h
   __functional/bind_back.h
@@ -235,6 +241,9 @@ set(files
   __memory/pointer_traits.h
   __memory/voidify.h
   __mutex_base
+  __new/allocate.h
+  __new/bad_alloc.h
+  __new/launder.h
   __node_handle
   __nullptr
   __ranges/access.h

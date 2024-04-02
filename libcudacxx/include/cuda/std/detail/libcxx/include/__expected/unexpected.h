@@ -22,22 +22,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_const.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_object.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/is_volatile.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/forward.h"
-#include "../__utility/in_place.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_volatile.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
-#include "../initializer_list"
+#include <cuda/std/initializer_list>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -48,12 +48,6 @@
 #  define THRUST_NODISCARD
 #endif
 
-#if _CCCL_STD_VER >= 2017 && __cpp_if_constexpr
-#  define THRUST_IF_CONSTEXPR if constexpr
-#else
-#  define THRUST_IF_CONSTEXPR if
-#endif
-
 // FIXME: Combine THRUST_INLINE_CONSTANT and
 // THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT into one macro when NVCC properly
 // supports `constexpr` globals in host and device code.
@@ -62,25 +56,17 @@
 //#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if _CCCL_STD_VER >= 2011
 #    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-#  else
-#    define THRUST_INLINE_CONSTANT                 static const _CCCL_DEVICE
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
-#  endif
+
 #else
 // FIXME: Add this when NVCC supports inline variables.
 //#  if   _CCCL_STD_VER >= 2017
 //#    define THRUST_INLINE_CONSTANT                 inline constexpr
 //#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT inline constexpr
-#  if _CCCL_STD_VER >= 2011
 #    define THRUST_INLINE_CONSTANT                 static constexpr
 #    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static constexpr
-#  else
-#    define THRUST_INLINE_CONSTANT                 static const
-#    define THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT static const
-#  endif
+
 #endif
 
 // These definitions were intended for internal use only and are now obsolete.

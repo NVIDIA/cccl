@@ -11,6 +11,6 @@
 #ifndef _CUDA_VERSION
 #define _CUDA_VERSION
 
-#include "std/version"
+#include <cuda/std/version>
 
 #endif // _CUDA_VERSION

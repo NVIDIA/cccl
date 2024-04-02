@@ -84,16 +84,8 @@ struct is_contiguous_iterator_impl;
  * \see THRUST_PROCLAIM_CONTIGUOUS_ITERATOR
  */
 template <typename Iterator>
-#if _CCCL_STD_VER >= 2011
 using is_contiguous_iterator =
-#else
-struct is_contiguous_iterator :
-#endif
-  detail::is_contiguous_iterator_impl<Iterator>
-#if _CCCL_STD_VER < 2011
-{}
-#endif
-;
+  detail::is_contiguous_iterator_impl<Iterator>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c Iterator satisfies

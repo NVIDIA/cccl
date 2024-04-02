@@ -23,17 +23,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__functional/invoke.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/integer_sequence.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
-#include "../tuple"
+#include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

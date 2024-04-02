@@ -18,8 +18,7 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 #include <thrust/detail/modern_gcc_required.h>
-
-#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if !defined(THRUST_LEGACY_GCC)
 
 #include <thrust/tuple.h>
 #include <thrust/type_traits/integer_sequence.h>

@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_floating_point.h"
-#include "../__type_traits/underlying_type.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_enum.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_floating_point.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/underlying_type.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

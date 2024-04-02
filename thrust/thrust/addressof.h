@@ -15,9 +15,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2011
-#  include <thrust/detail/memory_wrapper.h>
-#endif
+#include <thrust/detail/memory_wrapper.h>
 
 THRUST_NAMESPACE_BEGIN
 

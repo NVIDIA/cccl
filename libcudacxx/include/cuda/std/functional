@@ -11,12 +11,12 @@
 #ifndef _CUDA_STD_FUNCTIONAL
 #define _CUDA_STD_FUNCTIONAL
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/functional"
+#include <cuda/std/detail/libcxx/include/functional>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif // _CUDA_STD_FUNCTIONAL

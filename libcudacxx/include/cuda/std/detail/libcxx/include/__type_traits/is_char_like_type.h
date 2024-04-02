@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/is_standard_layout.h"
-#include "../__type_traits/is_trivial.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_standard_layout.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivial.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

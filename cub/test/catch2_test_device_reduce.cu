@@ -203,13 +203,15 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cub::KeyValuePair<int, output_t>;
+
+    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
     c2h::device_vector<result_t> out_result(num_segments);
     device_arg_max(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result
     result_t gpu_result = out_result[0];
-    REQUIRE(expected_result[0] == gpu_result.value);
+    output_t gpu_value = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
 
@@ -220,13 +222,14 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
 
     // Run test
-    using result_t = cub::KeyValuePair<int, output_t>;
+    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
     c2h::device_vector<result_t> out_result(num_segments);
     device_arg_min(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
 
     // Verify result
     result_t gpu_result = out_result[0];
-    REQUIRE(expected_result[0] == gpu_result.value);
+    output_t gpu_value = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
 }

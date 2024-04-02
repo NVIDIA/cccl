@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/decay.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

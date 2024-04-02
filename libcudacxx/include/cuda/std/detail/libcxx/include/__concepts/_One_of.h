@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_same.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

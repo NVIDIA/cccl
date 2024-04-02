@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_COUNT_IF_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator_traits.h"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Predicate>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   __iter_diff_t<_InputIterator>
   count_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {

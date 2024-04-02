@@ -33,7 +33,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -385,5 +384,4 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...> >
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011
 

@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/binary_function.h"
-#include "../__functional/invoke.h"
-#include "../__functional/unary_function.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_same.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__functional/binary_function.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

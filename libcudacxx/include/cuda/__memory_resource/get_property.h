@@ -11,7 +11,7 @@
 #ifndef _CUDA__MEMORY_RESOURCE_GET_PROPERTY_H
 #define _CUDA__MEMORY_RESOURCE_GET_PROPERTY_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,8 +23,10 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#include <cuda/std/concepts>
-#include <cuda/std/type_traits>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const_ref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 #if _CCCL_STD_VER >= 2014
 

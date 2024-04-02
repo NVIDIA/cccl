@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/add_pointer.h"
-#include "../__type_traits/is_base_of.h"
-#include "../__type_traits/is_convertible.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

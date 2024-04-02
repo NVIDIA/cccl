@@ -27,11 +27,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
-#include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include <cuda/std/detail/libcxx/include/cstdlib>                // _LIBCUDACXX_UNREACHABLE
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 
 #if defined(_CCCL_CUDA_COMPILER)
-#include "../__cuda/ptx.h"           // cuda::ptx::*
+#include <cuda/std/detail/libcxx/include/__cuda/ptx.h>           // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
 
 #if defined(_CCCL_COMPILER_NVRTC)
@@ -46,14 +46,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template<thread_scope _Scope>
 class pipeline;
 
-template<_CUDA_VSTD::size_t _Alignment>
-struct aligned_size_t {
-    static constexpr _CUDA_VSTD::size_t align = _Alignment;
-    _CUDA_VSTD::size_t value;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    explicit aligned_size_t(size_t __s) : value(__s) { }
-    _LIBCUDACXX_INLINE_VISIBILITY
-    operator size_t() const { return value; }
+template <_CUDA_VSTD::size_t _Alignment>
+struct aligned_size_t
+{
+  static constexpr _CUDA_VSTD::size_t align = _Alignment;
+  _CUDA_VSTD::size_t value;
+  _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr aligned_size_t(size_t __s)
+      : value(__s)
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator size_t() const
+  {
+    return value;
+  }
 };
 
 // Type only used for logging purpose
@@ -1101,8 +1105,9 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 #if __cccl_ptx_isa >= 800
     NV_IF_TARGET(NV_PROVIDES_SM_90, (
         const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
+        _LIBCUDACXX_UNUSED_VAR(__can_use_complete_tx);
         _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle), "Pass non-null bar_handle if and only if can_use_complete_tx.");
-        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 16) {
+        _CCCL_IF_CONSTEXPR (_Align >= 16) {
             if (__can_use_complete_tx && __isShared(__bar_handle)) {
                 __cp_async_bulk_shared_global(__group, __dest_char, __src_char, __size, __bar_handle);
                 return __completion_mechanism::__mbarrier_complete_tx;
@@ -1113,7 +1118,7 @@ __completion_mechanism __dispatch_memcpy_async_global_to_shared(_Group const & _
 #endif // __cccl_ptx_isa >= 800
 
     NV_IF_TARGET(NV_PROVIDES_SM_80, (
-        if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (_Align >= 4) {
+        _CCCL_IF_CONSTEXPR (_Align >= 4) {
             const bool __can_use_async_group = __allowed_completions & uint32_t(__completion_mechanism::__async_group);
             if (__can_use_async_group) {
                 __cp_async_shared_global_mechanism<_Align>(__group, __dest_char, __src_char, __size);

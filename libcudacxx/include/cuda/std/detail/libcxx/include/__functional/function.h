@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,33 +23,33 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__debug"
-#include "../__functional_base"
-#include "../__functional/binary_function.h"
-#include "../__functional/invoke.h"
-#include "../__functional/unary_function.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_scalar.h"
-#include "../__type_traits/is_trivially_copy_constructible.h"
-#include "../__type_traits/is_trivially_destructible.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__utility/piecewise_construct.h"
-#include "../__utility/swap.h"
-#include "../tuple"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__debug>
+#include <cuda/std/detail/libcxx/include/__functional_base>
+#include <cuda/std/detail/libcxx/include/__functional/binary_function.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_scalar.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/exception>
+#include <cuda/std/detail/libcxx/include/new>
+#include <cuda/std/tuple>
 
 #ifndef __cuda_std__
-#include <exception>
 #include <memory>
-#include <new>
 #include <typeinfo>
 #endif // __cuda_std__
 

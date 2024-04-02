@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <thrust/detail/type_deduction.h>
 #include <thrust/type_traits/remove_cvref.h>
@@ -88,5 +87,4 @@ THRUST_INLINE_CONSTANT select_system_detail::select_system_fn select_system{};
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011
 

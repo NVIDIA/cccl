@@ -23,11 +23,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool
 test()
 {
     cuda::std::complex<T> z(1.5, 2.5);
-    assert(z.real() == 1.5);
-    assert(z.imag() == 2.5);
+    assert(z.real() == T(1.5));
+    assert(z.imag() == T(2.5));
     cuda::std::complex<T> c = -z;
-    assert(c.real() == -1.5);
-    assert(c.imag() == -2.5);
+    assert(c.real() == T(-1.5));
+    assert(c.imag() == T(-2.5));
 
     return true;
 }
@@ -36,6 +36,12 @@ int main(int, char**)
 {
     test<float>();
     test<double>();
+#ifdef _LIBCUDACXX_HAS_NVFP16
+    test<__half>();
+#endif
+#ifdef _LIBCUDACXX_HAS_NVBF16
+    test<__nv_bfloat16>();
+#endif
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011

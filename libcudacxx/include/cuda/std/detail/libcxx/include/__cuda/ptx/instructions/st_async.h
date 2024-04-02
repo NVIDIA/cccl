@@ -13,7 +13,7 @@
 #define _CUDA_PTX_ST_ASYNC_H_
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -26,9 +26,9 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-#include "../ptx_dot_variants.h"
-#include "../ptx_helper_functions.h"
-#include "../../../cstdint"
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -53,7 +53,7 @@ _CCCL_DEVICE static inline void st_async(
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+    _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4) {
       asm (
         "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32 [%0], %1, [%2];    // 1. "
         :
@@ -62,7 +62,7 @@ _CCCL_DEVICE static inline void st_async(
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+    } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
       asm (
         "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %1, [%2];    // 1. "
         :
@@ -98,7 +98,7 @@ _CCCL_DEVICE static inline void st_async(
 {
   static_assert(sizeof(_Type) == 4 || sizeof(_Type) == 8, "");
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 4) {
+    _CCCL_IF_CONSTEXPR (sizeof(_Type) == 4) {
       asm (
         "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b32 [%0], {%1, %2}, [%3]; // 2. "
         :
@@ -108,7 +108,7 @@ _CCCL_DEVICE static inline void st_async(
           "r"(__as_ptr_remote_dsmem(__remote_bar))
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (sizeof(_Type) == 8) {
+    } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
       asm (
         "st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b64 [%0], {%1, %2}, [%3]; // 2. "
         :

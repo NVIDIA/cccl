@@ -4,9 +4,7 @@
 #include <thrust/mr/pool.h>
 #include <thrust/mr/new.h>
 
-#if _CCCL_STD_VER >= 2011
 #include <thrust/mr/sync_pool.h>
-#endif
 
 template<typename T>
 struct reference
@@ -246,13 +244,11 @@ void TestUnsynchronizedPool()
 }
 DECLARE_UNITTEST(TestUnsynchronizedPool);
 
-#if _CCCL_STD_VER >= 2011
 void TestSynchronizedPool()
 {
     TestPool<thrust::mr::synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestSynchronizedPool);
-#endif
 
 template<template<typename> class PoolTemplate>
 void TestPoolCachingOversized()
@@ -359,13 +355,11 @@ void TestUnsynchronizedPoolCachingOversized()
 }
 DECLARE_UNITTEST(TestUnsynchronizedPoolCachingOversized);
 
-#if _CCCL_STD_VER >= 2011
 void TestSynchronizedPoolCachingOversized()
 {
     TestPoolCachingOversized<thrust::mr::synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestSynchronizedPoolCachingOversized);
-#endif
 
 template<template<typename> class PoolTemplate>
 void TestGlobalPool()
@@ -383,11 +377,9 @@ void TestUnsynchronizedGlobalPool()
 }
 DECLARE_UNITTEST(TestUnsynchronizedGlobalPool);
 
-#if _CCCL_STD_VER >= 2011
 void TestSynchronizedGlobalPool()
 {
     TestGlobalPool<thrust::mr::synchronized_pool_resource>();
 }
 DECLARE_UNITTEST(TestSynchronizedGlobalPool);
-#endif
 

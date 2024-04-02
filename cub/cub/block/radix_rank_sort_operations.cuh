@@ -43,7 +43,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -601,7 +600,7 @@ public:
     In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    CUB_IF_CONSTEXPR(IS_DESCENDING)
+    _CCCL_IF_CONSTEXPR(IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -613,7 +612,7 @@ public:
     bit_ordered_type
     Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    CUB_IF_CONSTEXPR(IS_DESCENDING)
+    _CCCL_IF_CONSTEXPR(IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }

@@ -23,21 +23,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/common_type.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/copy_cv.h"
-#include "../__type_traits/copy_cvref.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_scalar.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/common_type.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/copy_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/copy_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_scalar.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

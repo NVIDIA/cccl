@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
 
 #include <thrust/system/detail/generic/per_device_resource.h>
 #include <thrust/system/detail/adl/per_device_resource.h>
@@ -107,4 +106,3 @@ public:
 
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011

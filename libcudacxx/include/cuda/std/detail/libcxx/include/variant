@@ -206,7 +206,7 @@ C++20
 */
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -217,55 +217,55 @@ C++20
 #  pragma system_header
 #endif // no system header
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__availability"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__availability>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "__compare/common_comparison_category.h"
-#  include "__compare/compare_three_way_result.h"
-#  include "__compare/three_way_comparable.h"
+#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
+#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
+#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "__functional/hash.h"
-#include "__functional/invoke.h"
-#include "__functional/operations.h"
-#include "__functional/unary_function.h"
-#include "__memory/construct_at.h"
-#include "__memory/addressof.h"
-#include "__tuple_dir/tuple_indices.h"
-#include "__type_traits/add_const.h"
-#include "__type_traits/add_cv.h"
-#include "__type_traits/add_pointer.h"
-#include "__type_traits/add_volatile.h"
-#include "__type_traits/dependent_type.h"
-#include "__type_traits/integral_constant.h"
-#include "__type_traits/is_array.h"
-#include "__type_traits/is_destructible.h"
-#include "__type_traits/is_nothrow_move_constructible.h"
-#include "__type_traits/is_trivially_copy_assignable.h"
-#include "__type_traits/is_trivially_copy_constructible.h"
-#include "__type_traits/is_trivially_destructible.h"
-#include "__type_traits/is_trivially_move_assignable.h"
-#include "__type_traits/is_trivially_move_constructible.h"
-#include "__type_traits/is_void.h"
-#include "__type_traits/remove_const.h"
-#include "__type_traits/remove_cvref.h"
-#include "__type_traits/type_identity.h"
-#include "__type_traits/void_t.h"
-#include "__utility/declval.h"
-#include "__utility/forward.h"
-#include "__utility/in_place.h"
-#include "__utility/integer_sequence.h"
-#include "__utility/move.h"
-#include "__utility/swap.h"
-#include "__variant/monostate.h"
-#include "cstddef"
-#include "cstdlib"
-#include "initializer_list"
-#include "tuple"
-#include "version"
+#include <cuda/std/detail/libcxx/include/__functional/hash.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/operations.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_volatile.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/dependent_type.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/type_identity.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/__variant/monostate.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/initializer_list>
+#include <cuda/std/tuple>
+#include <cuda/std/version>
 
 // [variant.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "compare"
+#  include <cuda/std/detail/libcxx/include/compare>
 #endif
 
 #ifndef __cuda_std__
@@ -350,7 +350,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS variant_alternative<_Ip, variant<_Types...>>
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
 
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 int __choose_index_type(unsigned int __num_elem)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned int __num_elem)
 {
   constexpr unsigned char __small   = static_cast<unsigned char>(-1);
   constexpr unsigned short __medium = static_cast<unsigned short>(-1);
@@ -617,6 +617,7 @@ struct __variant
       _CUDA_VSTD::forward<_Vs>(__vs)...);
   }
 
+_CCCL_NV_DIAG_SUPPRESS(940) // Suppress no return at end of function
   // This overload is needed to tell the compiler that the recursion is indeed limited
   template <class _Visitor, class... _Vs, size_t... _ProcessedIndices, size_t... _UnprocessedIndices>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto) __visit_impl(
@@ -640,6 +641,7 @@ struct __variant
     }
     _LIBCUDACXX_UNREACHABLE();
   }
+_CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
   template <class _Visitor, class... _Vs>
   inline _LIBCUDACXX_HIDDEN _LIBCUDACXX_INLINE_VISIBILITY static constexpr decltype(auto)

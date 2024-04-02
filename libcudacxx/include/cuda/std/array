@@ -10,12 +10,12 @@
 #ifndef _CUDA_STD_ARRAY
 #define _CUDA_STD_ARRAY
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/array"
+#include <cuda/std/detail/libcxx/include/array>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif // _CUDA_STD_ARRAY

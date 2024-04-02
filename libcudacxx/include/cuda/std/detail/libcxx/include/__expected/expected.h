@@ -21,52 +21,52 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/invocable.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-#include "../__expected/bad_expected_access.h"
+#include <cuda/std/detail/libcxx/include/__expected/bad_expected_access.h>
 #endif // _LIBCUDACXX_NO_EXCEPTIONS
-#include "../__expected/expected_base.h"
-#include "../__expected/unexpect.h"
-#include "../__expected/unexpected.h"
-#include "../__memory/addressof.h"
-#include "../__memory/construct_at.h"
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_function.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/is_trivially_copy_constructible.h"
-#include "../__type_traits/is_trivially_destructible.h"
-#include "../__type_traits/is_trivially_move_constructible.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/lazy.h"
-#include "../__type_traits/negation.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/exception_guard.h"
-#include "../__utility/forward.h"
-#include "../__utility/in_place.h"
-#include "../__utility/move.h"
-#include "../__utility/swap.h"
+#include <cuda/std/detail/libcxx/include/__expected/expected_base.h>
+#include <cuda/std/detail/libcxx/include/__expected/unexpect.h>
+#include <cuda/std/detail/libcxx/include/__expected/unexpected.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/lazy.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/negation.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/exception_guard.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
 
-#include "../cstdlib"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/initializer_list>
 
 #if _CCCL_STD_VER > 2011
 
@@ -81,7 +81,7 @@ namespace __expected {
   _LIBCUDACXX_INLINE_VISIBILITY
   void __throw_bad_expected_access(_Arg&& __arg) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    throw _CUDA_STD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
+    throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
 #else
     (void)__arg;
     _LIBCUDACXX_UNREACHABLE();
@@ -187,7 +187,7 @@ public:
               _LIBCUDACXX_TRAIT(is_convertible, const _Up&, _Tp) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_convertible, const _OtherErr&, _Err)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected(const expected<_Up, _OtherErr>& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, const _Up&) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
@@ -204,7 +204,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, const _Up&, const _OtherErr&>::value _LIBCUDACXX_AND
               (!_LIBCUDACXX_TRAIT(is_convertible, const _Up&, _Tp) || !_LIBCUDACXX_TRAIT(is_convertible, const _OtherErr&, _Err))
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   explicit expected(const expected<_Up, _OtherErr>& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, const _Up&) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
@@ -222,7 +222,7 @@ public:
               _LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_convertible, _OtherErr, _Err)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected(expected<_Up, _OtherErr>&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Up) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
@@ -239,7 +239,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, _Up, _OtherErr>::value _LIBCUDACXX_AND
               (!_LIBCUDACXX_TRAIT(is_convertible, _Up, _Tp) || !_LIBCUDACXX_TRAIT(is_convertible, _OtherErr, _Err))
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   explicit expected(expected<_Up, _OtherErr>&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Up) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
@@ -369,7 +369,7 @@ public:
                _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp) ||
                _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err))
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected& operator=(_Up&& __v) {
     if (this->__has_val_) {
       this->__union_.__val_ = _CUDA_VSTD::forward<_Up>(__v);
@@ -393,7 +393,7 @@ private:
 public:
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
     _LIBCUDACXX_REQUIRES( __can_assign_from_unexpected<const _OtherErr&>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected& operator=(const unexpected<_OtherErr>& __un) {
     if (this->__has_val_) {
       this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, __un.error());
@@ -406,7 +406,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _OtherErr)
     _LIBCUDACXX_REQUIRES( __can_assign_from_unexpected<_OtherErr>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected& operator=(unexpected<_OtherErr>&& __un) {
     if (this->__has_val_) {
       this->__reinit_expected(this->__union_.__unex_, this->__union_.__val_, _CUDA_VSTD::move(__un.error()));
@@ -419,7 +419,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   _Tp& emplace(_Args&&... __args) noexcept {
     if (this->__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
@@ -432,7 +432,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args) noexcept {
     if (this->__has_val_) {
       _CUDA_VSTD::__destroy_at(_CUDA_VSTD::addressof(this->__union_.__val_));
@@ -448,7 +448,7 @@ public:
   // [expected.object.swap], swap
   _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp, class _Err2 = _Err)
     _LIBCUDACXX_REQUIRES( __expected::__can_swap<_Tp2, _Err2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void swap(expected<_Tp2, _Err>& __rhs)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
              _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Tp2) &&
@@ -473,7 +473,7 @@ public:
   }
 
   template<class _Tp2 = _Tp, class _Err2 = _Err>
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Tp2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Tp2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
@@ -1111,7 +1111,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, const _OtherErr&>::value _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_convertible, const _OtherErr&, _Err)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected(const expected<_Up, _OtherErr>& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
     : __base(__other.__has_val_)
@@ -1125,7 +1125,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, const _OtherErr&>::value _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_convertible, const _OtherErr&, _Err))
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   explicit expected(const expected<_Up, _OtherErr>& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
     : __base(__other.__has_val_)
@@ -1139,7 +1139,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, _OtherErr>::value _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_convertible, _OtherErr, _Err)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected(expected<_Up, _OtherErr>&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
     : __base(__other.__has_val_)
@@ -1153,7 +1153,7 @@ public:
     _LIBCUDACXX_REQUIRES( __can_convert<_Up, _OtherErr, _OtherErr>::value _LIBCUDACXX_AND
             (!_LIBCUDACXX_TRAIT(is_convertible, _OtherErr, _Err))
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   explicit expected(expected<_Up, _OtherErr>&& __other)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr)) // strengthened
     : __base(__other.__has_val_)
@@ -1237,7 +1237,7 @@ public:
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, const _OtherErr&) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_assignable, _Err&, const _OtherErr&)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected& operator=(const unexpected<_OtherErr>& __un)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_assignable, _Err&, const _OtherErr&) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, const _OtherErr&)) // strengthened
@@ -1255,7 +1255,7 @@ public:
     _LIBCUDACXX_REQUIRES( _LIBCUDACXX_TRAIT(is_constructible, _Err, _OtherErr) _LIBCUDACXX_AND
               _LIBCUDACXX_TRAIT(is_assignable, _Err&, _OtherErr)
     )
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   expected& operator=(unexpected<_OtherErr>&& __un)
     noexcept(_LIBCUDACXX_TRAIT(is_nothrow_assignable, _Err&, _OtherErr) &&
              _LIBCUDACXX_TRAIT(is_nothrow_constructible, _Err, _OtherErr))
@@ -1281,7 +1281,7 @@ public:
   // [expected.void.swap], swap
   _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
     _LIBCUDACXX_REQUIRES( __expected::__can_swap<void, _Err2>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   void swap(expected<void, _Err2>& __rhs) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
   {
@@ -1300,7 +1300,7 @@ public:
   }
 
   template<class _Err2 = _Err>
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   auto swap(expected& __x, expected& __y) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_constructible, _Err2) &&
                                                    _LIBCUDACXX_TRAIT(is_nothrow_swappable, _Err2))
     _LIBCUDACXX_TRAILING_REQUIRES(void)(__expected::__can_swap<void, _Err2>)

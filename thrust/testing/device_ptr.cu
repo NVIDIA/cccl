@@ -92,7 +92,6 @@ void TestRawPointerCast(void)
 DECLARE_VECTOR_UNITTEST(TestRawPointerCast);
 
 
-#if _CCCL_STD_VER >= 2011
 template<typename T>
 void TestDevicePointerNullptrCompatibility()
 {
@@ -117,5 +116,4 @@ void TestDevicePointerBoolConversion()
     ASSERT_EQUAL_QUIET(false, b);
 }
 DECLARE_GENERIC_UNITTEST(TestDevicePointerBoolConversion);
-#endif
 

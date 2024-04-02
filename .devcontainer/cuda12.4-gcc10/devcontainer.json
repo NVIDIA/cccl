@@ -1,0 +1,46 @@
+{
+  "shutdownAction": "stopContainer",
+  "image": "rapidsai/devcontainers:24.06-cpp-gcc10-cuda12.4-ubuntu20.04",
+  "hostRequirements": {
+    "gpu": "optional"
+  },
+  "initializeCommand": [
+    "/bin/bash",
+    "-c",
+    "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config}"
+  ],
+  "containerEnv": {
+    "SCCACHE_REGION": "us-east-2",
+    "SCCACHE_BUCKET": "rapids-sccache-devs",
+    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
+    "DEVCONTAINER_NAME": "cuda12.4-gcc10",
+    "CCCL_CUDA_VERSION": "12.4",
+    "CCCL_HOST_COMPILER": "gcc",
+    "CCCL_HOST_COMPILER_VERSION": "10",
+    "CCCL_BUILD_INFIX": "cuda12.4-gcc10"
+  },
+  "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",
+  "mounts": [
+    "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
+    "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "llvm-vs-code-extensions.vscode-clangd",
+        "xaver.clang-format"
+      ],
+      "settings": {
+        "editor.defaultFormatter": "xaver.clang-format",
+        "clang-format.executable": "/usr/local/bin/clang-format",
+        "clangd.arguments": [
+          "--compile-commands-dir=${workspaceFolder}"
+        ]
+      }
+    }
+  },
+  "name": "cuda12.4-gcc10"
+}

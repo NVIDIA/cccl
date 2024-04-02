@@ -83,6 +83,8 @@ class value_wrapper_t
   T m_val{};
 
 public:
+  using value_type = T;
+
   explicit value_wrapper_t(T val)
       : m_val(val)
   {}

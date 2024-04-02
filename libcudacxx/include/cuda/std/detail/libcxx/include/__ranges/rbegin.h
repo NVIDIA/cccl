@@ -22,16 +22,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/class_or_enum.h"
-#include "../__concepts/same_as.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/readable_traits.h"
-#include "../__iterator/reverse_iterator.h"
-#include "../__ranges/access.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/auto_cast.h"
+#include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/auto_cast.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

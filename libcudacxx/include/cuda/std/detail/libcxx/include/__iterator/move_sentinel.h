@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/assignable.h"
-#include "../__concepts/convertible_to.h"
-#include "../__concepts/semiregular.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__concepts/semiregular.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #if _CCCL_STD_VER > 2014
 

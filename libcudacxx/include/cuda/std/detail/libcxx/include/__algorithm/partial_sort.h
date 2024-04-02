@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,21 +22,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/comp_ref_type.h"
-#include "../__algorithm/iterator_operations.h"
-#include "../__algorithm/make_heap.h"
-#include "../__algorithm/sift_down.h"
-#include "../__algorithm/sort_heap.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/comp_ref_type.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/make_heap.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/sift_down.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/sort_heap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __partial_sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Sentinel __last, _Compare&& __comp)
 {
   if (__first == __middle)
@@ -62,7 +62,7 @@ __partial_sort_impl(_RandomAccessIterator __first, _RandomAccessIterator __middl
 }
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Sentinel __last, _Compare& __comp)
 {
   if (__first == __middle)
@@ -75,7 +75,7 @@ __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _S
 }
 
 template <class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void partial_sort(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void partial_sort(
   _RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last, _Compare __comp)
 {
   static_assert(_LIBCUDACXX_TRAIT(is_copy_constructible, _RandomAccessIterator),
@@ -87,7 +87,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void part
 }
 
 template <class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 void
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
 partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
   _CUDA_VSTD::partial_sort(__first, __middle, __last, __less{});

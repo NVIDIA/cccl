@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___FWD_GET_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,59 +22,59 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/copyable.h"
-#include "../__fwd/array.h"
-#include "../__fwd/pair.h"
-#include "../__fwd/subrange.h"
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__concepts/copyable.h>
+#include <cuda/std/detail/libcxx/include/__fwd/array.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__fwd/subrange.h>
+#include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple<_Tp...>>& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>& get(
     tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple<_Tp...>>& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>& get(
     const tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple<_Tp...>>&& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&& get(
     tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple<_Tp...>>&& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&& get(
     const tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>& get(
     pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>& get(
     const pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(
     pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(
     const pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Tp& get(array<_Tp, _Size>&) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp& get(array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Tp& get(const array<_Tp, _Size>&) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp& get(const array<_Tp, _Size>&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Tp&& get(array<_Tp, _Size>&&) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
