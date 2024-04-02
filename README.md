@@ -151,7 +151,7 @@ It is discoverable by CMake via `find_package(CCCL)` and can be used by any comp
 > **Note**
 > There are also conda packages with names like `cuda-cccl`.
 > Those packages contain the CCCL versions shipped as part of the CUDA Toolkit, but are designed for internal use by the CUDA Toolkit.
-> Use `cccl` for the latest versions and compatibility with CMake and host compilers.
+> Use `cccl` for the latest versions and compatibility with conda compilers.
 > See the [cccl conda-forge recipe](https://github.com/conda-forge/cccl-feedstock/blob/main/recipe/meta.yaml) for more information.
 
 ##### CMake Integration
