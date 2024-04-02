@@ -38,10 +38,6 @@
 #include "__utility/swap.h"
 #include "cstring"
 
-#ifndef __cuda_std__
-#  include <__pragma_push>
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Cp>
@@ -1298,7 +1294,5 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-_LIBCUDACXX_POP_MACROS
 
 #endif // _LIBCUDACXX___BIT_REFERENCE
