@@ -87,3 +87,5 @@
 static_assert(CUB_MAJOR_VERSION == CCCL_MAJOR_VERSION,"");
 static_assert(CUB_MINOR_VERSION == CCCL_MINOR_VERSION,"");
 static_assert(CUB_SUBMINOR_VERSION == CCCL_PATCH_VERSION,"");
+
+static_assert(CUB_VERSION == (CCCL_VERSION / 10), "Conflicting CUB and libcu++ versions detected. Check include paths.");

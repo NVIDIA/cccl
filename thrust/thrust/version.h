@@ -91,3 +91,6 @@
 static_assert(THRUST_MAJOR_VERSION == CCCL_MAJOR_VERSION, "");
 static_assert(THRUST_MINOR_VERSION == CCCL_MINOR_VERSION, "");
 static_assert(THRUST_SUBMINOR_VERSION == CCCL_PATCH_VERSION, "");
+
+static_assert(THRUST_VERSION == (CCCL_VERSION / 10),
+              "Conflicting Thrust and libcu++ versions detected. Check include paths.");
