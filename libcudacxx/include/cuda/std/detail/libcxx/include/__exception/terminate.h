@@ -49,15 +49,15 @@ typedef void (*terminate_handler)();
 __device__
 #endif // __CUDA_ARCH__
   static _LIBCUDACXX_SAFE_STATIC _CUDA_VSTD::atomic<terminate_handler>
-    __cccl_terminate_handler{&__cccl_terminate_impl};
+    __cccl_terminate_handler{&__cccl_terminate};
 
 inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler set_terminate(terminate_handler __func) noexcept
 {
-  return _CUDA_VSTD::atomic_exchange(&__cccl_terminate_handler, __func);
+  return __cccl_terminate_handler.exchange(__func);
 }
 inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler get_terminate() noexcept
 {
-  return _CUDA_VSTD::atomic_load(&__cccl_terminate_handler);
+  return __cccl_terminate_handler.load(__func);
 }
 
 #endif
