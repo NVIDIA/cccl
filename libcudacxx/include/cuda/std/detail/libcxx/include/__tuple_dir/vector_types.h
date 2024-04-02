@@ -38,39 +38,12 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     template <>                                                                                      \
     struct tuple_size<__name##__size> : _CUDA_VSTD::integral_constant<size_t, __size>                \
     {};                                                                                              \
-    template <>                                                                                      \
-    struct tuple_size<const __name##__size> : _CUDA_VSTD::integral_constant<size_t, __size>          \
-    {};                                                                                              \
-    template <>                                                                                      \
-    struct tuple_size<volatile __name##__size> : _CUDA_VSTD::integral_constant<size_t, __size>       \
-    {};                                                                                              \
-    template <>                                                                                      \
-    struct tuple_size<const volatile __name##__size> : _CUDA_VSTD::integral_constant<size_t, __size> \
-    {};                                                                                              \
                                                                                                      \
     template <size_t _Ip>                                                                            \
     struct tuple_element<_Ip, __name##__size>                                                        \
     {                                                                                                \
       static_assert(_Ip < __size, "tuple_element index out of range");                               \
       using type = __type;                                                                           \
-    };                                                                                               \
-    template <size_t _Ip>                                                                            \
-    struct tuple_element<_Ip, const __name##__size>                                                  \
-    {                                                                                                \
-      static_assert(_Ip < __size, "tuple_element index out of range");                               \
-      using type = const __type;                                                                     \
-    };                                                                                               \
-    template <size_t _Ip>                                                                            \
-    struct tuple_element<_Ip, volatile __name##__size>                                               \
-    {                                                                                                \
-      static_assert(_Ip < __size, "tuple_element index out of range");                               \
-      using type = volatile __type;                                                                  \
-    };                                                                                               \
-    template <size_t _Ip>                                                                            \
-    struct tuple_element<_Ip, const volatile __name##__size>                                         \
-    {                                                                                                \
-      static_assert(_Ip < __size, "tuple_element index out of range");                               \
-      using type = const volatile __type;                                                            \
     };
 
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR(__name, __type) \
@@ -81,23 +54,23 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
 #  define _LIBCUDACXX_SPECIALIZE_GET(__name, __base_type)                                                           \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __base_type& get(__name& __val) noexcept        \
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __base_type& get(__name& __val) noexcept        \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __base_type& get(                         \
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __base_type& get(                         \
       const __name& __val) noexcept                                                                                 \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(__val);                              \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __base_type&& get(__name&& __val) noexcept      \
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __base_type&& get(__name&& __val) noexcept      \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<__name&&>(__val));       \
     }                                                                                                               \
     template <size_t _Ip>                                                                                           \
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __base_type&& get(                        \
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __base_type&& get(                        \
       const __name&& __val) noexcept                                                                                \
     {                                                                                                               \
       return _CUDA_VSTD::__get_element<_Ip>::template get<__name, __base_type>(static_cast<const __name&&>(__val)); \
@@ -132,25 +105,25 @@ template <>
 struct __get_element<0>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.x;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.x);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType&&
   get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.x);
@@ -161,25 +134,25 @@ template <>
 struct __get_element<1>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.y;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.y);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType&&
   get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.y);
@@ -189,25 +162,25 @@ template <>
 struct __get_element<2>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.z;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.z);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType&&
   get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.z);
@@ -218,25 +191,25 @@ template <>
 struct __get_element<3>
 {
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType& get(_Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType& get(_Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType& get(const _Vec& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType& get(const _Vec& __val) noexcept
   {
     return __val.w;
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _BaseType&& get(_Vec&& __val) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BaseType&& get(_Vec&& __val) noexcept
   {
     return static_cast<_BaseType&&>(__val.w);
   }
 
   template <class _Vec, class _BaseType>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _BaseType&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _BaseType&&
   get(const _Vec&& __val) noexcept
   {
     return static_cast<const _BaseType&&>(__val.w);
