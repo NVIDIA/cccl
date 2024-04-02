@@ -350,7 +350,33 @@ _LIBCUDACXX_HOST_DEVICE
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Tp __delta, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_add(&__a->__a_value, __delta, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
  _Tp __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_add(&__a->__a_value, __delta, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
+ _Tp* __cxx_atomic_fetch_add(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> * __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             return __atomic_fetch_add_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
@@ -376,7 +402,33 @@ _LIBCUDACXX_HOST_DEVICE
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Tp __delta, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_sub(&__a->__a_value, __delta, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
  _Tp __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __delta, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_sub(&__a->__a_value, __delta, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
+ _Tp* __cxx_atomic_fetch_sub(__cxx_atomic_base_heterogeneous_impl<_Tp*, _Sco, _Ref> * __a, ptrdiff_t __delta, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             return __atomic_fetch_sub_cuda(__cxx_get_underlying_device_atomic(__a), __delta, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
@@ -402,6 +454,19 @@ _LIBCUDACXX_HOST_DEVICE
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_and(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Tp __pattern, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_and_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_and(&__a->__a_value, __pattern, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
  _Tp __cxx_atomic_fetch_and(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -409,6 +474,19 @@ _LIBCUDACXX_HOST_DEVICE
         ),
         NV_IS_HOST, (
             return __host::__cxx_atomic_fetch_and(&__a->__a_value, __pattern, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_or(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Tp __pattern, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_or_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_or(&__a->__a_value, __pattern, __order);
         )
     )
 }
@@ -428,6 +506,19 @@ _LIBCUDACXX_HOST_DEVICE
 
 template <typename _Tp, int _Sco, bool _Ref>
 _LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Tp __pattern, memory_order __order) {
+    NV_DISPATCH_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_xor_cuda(__cxx_get_underlying_device_atomic(__a), __pattern, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ),
+        NV_IS_HOST, (
+            return __host::__cxx_atomic_fetch_xor(&__a->__a_value, __pattern, __order);
+        )
+    )
+}
+
+template <typename _Tp, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
  _Tp __cxx_atomic_fetch_xor(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Tp __pattern, memory_order __order) {
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
@@ -441,12 +532,36 @@ _LIBCUDACXX_HOST_DEVICE
 
 template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
 _LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Delta __val, memory_order __order) {
+    NV_IF_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ), (
+            return __host::__cxx_atomic_fetch_max(&__a->__a_value, __val, __order);
+        )
+    )
+}
+
+template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
  _Tp __cxx_atomic_fetch_max(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> volatile* __a, _Delta __val, memory_order __order) {
     NV_IF_TARGET(
         NV_IS_DEVICE, (
             return __atomic_fetch_max_cuda(__cxx_get_underlying_device_atomic(__a), __val, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
         ), (
             return __host::__cxx_atomic_fetch_max(&__a->__a_value, __val, __order);
+        )
+    )
+}
+
+template <typename _Tp, typename _Delta, int _Sco, bool _Ref>
+_LIBCUDACXX_HOST_DEVICE
+ _Tp __cxx_atomic_fetch_min(__cxx_atomic_base_heterogeneous_impl<_Tp, _Sco, _Ref> * __a, _Delta __val, memory_order __order) {
+    NV_IF_TARGET(
+        NV_IS_DEVICE, (
+            return __atomic_fetch_min_cuda(__cxx_get_underlying_device_atomic(__a), __val, static_cast<__memory_order_underlying_t>(__order), __scope_tag<_Sco>());
+        ), (
+            return __host::__cxx_atomic_fetch_min(&__a->__a_value, __val, __order);
         )
     )
 }
