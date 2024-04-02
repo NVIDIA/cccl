@@ -34,7 +34,9 @@ _CCCL_DIAG_POP
 #  include <cuda/std/complex>
 #  include <cuda/std/detail/libcxx/include/__complex/vector_support.h>
 #  include <cuda/std/detail/libcxx/include/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 #  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
 
 #  if !defined(_CCCL_COMPILER_NVRTC)
 #    include <sstream> // for std::basic_ostringstream
@@ -153,16 +155,6 @@ public:
     return __repr_.y;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY friend complex operator+(const complex& __x)
-  {
-    return __x;
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY friend complex operator-(const complex& __x)
-  {
-    return complex(-__x.__repr_.x, -__x.__repr_.y);
-  }
-
   _LIBCUDACXX_INLINE_VISIBILITY complex& operator+=(const value_type& __re)
   {
     __repr_.x += __re;
@@ -199,81 +191,10 @@ public:
     return __lhs;
   }
 
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator*=(const complex<_Up>& __c)
-  {
-    *this = *this * complex(__c.real(), __c.imag());
-    return *this;
-  }
-
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY complex& operator/=(const complex<_Up>& __c)
-  {
-    *this = *this / complex(__c.real(), __c.imag());
-    return *this;
-  }
-
   _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const complex& __y)
   {
-    return __x.real() == __y.real() && __x.imag() == __y.imag();
+    return __x.__repr_ == __y.__repr_;
   }
-
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const value_type& __y)
-  {
-    return __x.real() == __y && __x.imag() == value_type(0);
-  }
-
-#  if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const value_type& __x, const complex& __y)
-  {
-    return __x == __y.real() && value_type(0) == __y.imag();
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const complex& __y)
-  {
-    return !(__x == __y);
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const value_type& __y)
-  {
-    return !(__x == __y);
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const value_type& __x, const complex& __y)
-  {
-    return !(__x == __y);
-  }
-#  endif // _CCCL_STD_VER <= 2017
-
-#  if !defined(_CCCL_COMPILER_NVRTC)
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const complex& __x, const ::std::complex<_Up>& __y)
-  {
-    return __x.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__y)
-        && __x.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__y);
-  }
-
-#    if _CCCL_STD_VER <= 2017
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator==(const ::std::complex<_Up>& __x, const complex& __y)
-  {
-    return __y.real() == _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__x)
-        && __y.imag() == _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__x);
-  }
-
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const complex& __x, const ::std::complex<_Up>& __y)
-  {
-    return !(__x == __y);
-  }
-
-  template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY friend bool operator!=(const ::std::complex<_Up>& __x, const complex& __y)
-  {
-    return !(__x == __y);
-  }
-#    endif // _CCCL_STD_VER <= 2017
-#  endif // !_CCCL_COMPILER_NVRTC
 };
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __nv_bfloat16 arg(__nv_bfloat16 __re)
