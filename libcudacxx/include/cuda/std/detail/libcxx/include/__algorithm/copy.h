@@ -24,6 +24,7 @@
 
 #include "../__algorithm/iterator_operations.h"
 #include "../__algorithm/unwrap_iter.h"
+#include "../__functional/operations.h"
 #include "../__type_traits/enable_if.h"
 #include "../__type_traits/is_constant_evaluated.h"
 #include "../__type_traits/is_same.h"
@@ -69,6 +70,21 @@ __dispatch_memmove(_Up* __result, _Tp* __first, const size_t __n)
   }
 }
 
+template <class _Tp>
+inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+__constexpr_reachable(const _Tp* __first, const _Tp* __needle, const _Tp* __last)
+{
+  while (__first != __last)
+  {
+    if (__first == __needle)
+    {
+      return true;
+    }
+    ++__first;
+  }
+  return false;
+}
+
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
@@ -84,7 +100,7 @@ __copy(_Tp* __first, _Tp* __last, _Up* __result)
     {
       return {__last, __result + __n};
     }
-    if (__result - __first > 0)
+    if ((!__libcpp_is_constant_evaluated() || __constexpr_reachable(__first, __result, __last)) && __first < __result)
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)
       {
