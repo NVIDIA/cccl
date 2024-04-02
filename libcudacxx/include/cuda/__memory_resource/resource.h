@@ -24,8 +24,10 @@
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
 #include <cuda/__memory_resource/get_property.h>
-#include <cuda/std/concepts>
-#include <cuda/std/type_traits>
+#include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
+#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
 #include <cuda/stream_ref>
 
 #if _CCCL_STD_VER >= 2014
