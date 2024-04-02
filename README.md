@@ -135,7 +135,24 @@ git clone https://github.com/NVIDIA/cccl.git
 nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 ```
 > **Note**
-> Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information. 
+> Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information.
+
+#### Conda
+
+CCCL also provides conda packages of each release via the `conda-forge` channel:
+
+```bash
+conda install -c conda-forge cccl
+```
+
+This will install CCCL to the conda environment's `include/` and `lib/cmake/` directories.
+It is discoverable by CMake via `find_package(CCCL)` and can be used by any compilers in the conda environment.
+
+> **Note**
+> There are also conda packages with names like `cuda-cccl`.
+> Those packages contain the CCCL versions shipped as part of the CUDA Toolkit, but are designed for internal use by the CUDA Toolkit.
+> Use `cccl` for the latest versions and compatibility with CMake and host compilers.
+> See the [cccl conda-forge recipe](https://github.com/conda-forge/cccl-feedstock/blob/main/recipe/meta.yaml) for more information.
 
 ##### CMake Integration
 
