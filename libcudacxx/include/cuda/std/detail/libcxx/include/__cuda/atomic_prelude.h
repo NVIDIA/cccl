@@ -16,7 +16,7 @@
 #endif // __cuda_std__
 
 #ifndef _CCCL_COMPILER_NVRTC
-    #include "../cassert" // TRANSITION: Fix transitive includes
+    #include <cuda/std/cassert> // TRANSITION: Fix transitive includes
     #include <atomic>
     static_assert(ATOMIC_BOOL_LOCK_FREE == 2, "");
     static_assert(ATOMIC_CHAR_LOCK_FREE == 2, "");

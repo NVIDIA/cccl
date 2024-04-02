@@ -23,79 +23,79 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/reverse_iterator.h"
-#include "../cstddef"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/initializer_list>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 reverse_iterator<_Tp*> rbegin(_Tp (&__array)[_Np])
 {
     return reverse_iterator<_Tp*>(__array + _Np);
 }
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 reverse_iterator<_Tp*> rend(_Tp (&__array)[_Np])
 {
     return reverse_iterator<_Tp*>(__array);
 }
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 reverse_iterator<const _Ep*> rbegin(initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.end());
 }
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 reverse_iterator<const _Ep*> rend(initializer_list<_Ep> __il)
 {
     return reverse_iterator<const _Ep*>(__il.begin());
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto rbegin(_Cp& __c) -> decltype(__c.rbegin())
 {
     return __c.rbegin();
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto rbegin(const _Cp& __c) -> decltype(__c.rbegin())
 {
     return __c.rbegin();
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto rend(_Cp& __c) -> decltype(__c.rend())
 {
     return __c.rend();
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto rend(const _Cp& __c) -> decltype(__c.rend())
 {
     return __c.rend();
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto crbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::rbegin(__c))
 {
     return _CUDA_VSTD::rbegin(__c);
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX14
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
 auto crend(const _Cp& __c) -> decltype(_CUDA_VSTD::rend(__c))
 {
     return _CUDA_VSTD::rend(__c);

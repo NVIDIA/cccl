@@ -130,6 +130,10 @@ set(files
   __cuda/barrier.h
   __cuda/chrono.h
   __cuda/climits_prelude.h
+  __cuda/cmath_nvbf16.h
+  __cuda/cmath_nvfp16.h
+  __cuda/complex_nvbf16.h
+  __cuda/complex_nvfp16.h
   __cuda/cstddef_prelude.h
   __cuda/cstdint_prelude.h
   __cuda/latch.h

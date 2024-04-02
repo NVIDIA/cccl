@@ -56,9 +56,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/macros.h"
-#include "../__type_traits/is_convertible.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___ITERATOR_DISTANCE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,19 +23,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__ranges/access.h"
-#include "../__ranges/concepts.h"
-#include "../__ranges/size.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/remove_cvref.h"
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/concepts.h>
+#include <cuda/std/detail/libcxx/include/__ranges/size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   typename iterator_traits<_InputIter>::difference_type
   __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 {
@@ -48,7 +48,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 }
 
 template <class _RandIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   typename iterator_traits<_RandIter>::difference_type
   __distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
 {
@@ -56,7 +56,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 }
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   typename iterator_traits<_InputIter>::difference_type
   distance(_InputIter __first, _InputIter __last)
 {

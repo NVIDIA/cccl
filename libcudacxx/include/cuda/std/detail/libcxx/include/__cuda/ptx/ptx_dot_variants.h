@@ -12,7 +12,7 @@
 #ifndef _CUDA_PTX_DOT_VARIANTS_H_
 #define _CUDA_PTX_DOT_VARIANTS_H_
 
-#include "../../__type_traits/integral_constant.h" // std::integral_constant
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h> // std::integral_constant
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

@@ -22,17 +22,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_base_of.h"
-#include "../__type_traits/is_destructible.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/negation.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/negation.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

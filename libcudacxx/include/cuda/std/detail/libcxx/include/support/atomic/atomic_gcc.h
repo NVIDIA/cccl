@@ -12,6 +12,6 @@
 #ifndef _LIBCUDACXX_ATOMIC_GCC_H
 #define _LIBCUDACXX_ATOMIC_GCC_H
 
-#include "atomic_base.h"
+#include <cuda/std/detail/libcxx/include/support/atomic/atomic_base.h>
 
 #endif // _LIBCUDACXX_ATOMIC_GCC_H

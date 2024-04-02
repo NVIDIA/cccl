@@ -23,11 +23,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/iterator.h"
-#include "../__memory/addressof.h"
-#include "../__utility/move.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,19 +57,19 @@ public:
     typedef void reference;
     typedef _Container container_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
         : container(_CUDA_VSTD::addressof(__x)), iter(__i) {}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator& operator=(const typename _Container::value_type& __value)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(const typename _Container::value_type& __value)
         {iter = container->insert(iter, __value); ++iter; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator& operator=(typename _Container::value_type&& __value)
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(typename _Container::value_type&& __value)
         {iter = container->insert(iter, _CUDA_VSTD::move(__value)); ++iter; return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator& operator*()        {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator& operator++()       {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 insert_iterator& operator++(int)    {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()        {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()       {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)    {return *this;}
 };
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 insert_iterator<_Container>
 inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 {

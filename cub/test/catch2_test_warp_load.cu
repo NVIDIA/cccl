@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 
-#include <cub/detail/cpp_compatibility.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/warp/warp_load.cuh>
 
@@ -173,7 +172,7 @@ c2h::device_vector<T> generate_input()
 
   c2h::device_vector<T> d_input(num_items);
 
-  CUB_IF_CONSTEXPR(LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
+  _CCCL_IF_CONSTEXPR(LoadAlgorithm == cub::WarpLoadAlgorithm::WARP_LOAD_STRIPED)
   {
     c2h::host_vector<T> h_input(num_items);
 

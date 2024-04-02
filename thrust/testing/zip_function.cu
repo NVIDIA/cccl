@@ -1,6 +1,6 @@
 #include <thrust/detail/config.h>
 
-#if _CCCL_STD_VER >= 2011 && !defined(THRUST_LEGACY_GCC)
+#if !defined(THRUST_LEGACY_GCC)
 
 #  include <thrust/device_vector.h>
 #  include <thrust/iterator/zip_iterator.h>

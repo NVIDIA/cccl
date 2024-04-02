@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___UTILITY_PAIR_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,45 +23,45 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/common_comparison_category.h"
-#  include "../__compare/synth_three_way.h"
+#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
+#  include <cuda/std/detail/libcxx/include/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#include "../__functional/unwrap_ref.h"
-#include "../__fwd/get.h"
-#include "../__fwd/pair.h"
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/sfinae_helpers.h"
-#include "../__tuple_dir/structured_bindings.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_implicitly_default_constructible.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_nothrow_assignable.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__utility/piecewise_construct.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
+#include <cuda/std/cstddef>
 
 // Provide compatability between `std::pair` and `cuda::std::pair`
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
@@ -171,7 +171,7 @@ struct __pair_base
 
 protected:
   template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __pair_base(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __pair_base(
     piecewise_construct_t,
     tuple<_Args1...>& __first_args,
     tuple<_Args2...>& __second_args,
@@ -207,7 +207,7 @@ struct __pair_base<_T1, _T2, true>
   constexpr __pair_base(__pair_base&&)      = default;
 
   // We need to ensure that a reference type, which would inhibit the implicit copy assignment still works
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __pair_base& operator=(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __pair_base& operator=(
     __conditional_t<_LIBCUDACXX_TRAIT(is_copy_assignable, _T1) && _LIBCUDACXX_TRAIT(is_copy_assignable, _T2),
                     __pair_base,
                     __nat> const& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T1)
@@ -219,7 +219,7 @@ struct __pair_base<_T1, _T2, true>
   }
 
   // We need to ensure that a reference type, which would inhibit the implicit move assignment still works
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __pair_base& operator=(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __pair_base& operator=(
     __conditional_t<_LIBCUDACXX_TRAIT(is_move_assignable, _T1) && _LIBCUDACXX_TRAIT(is_move_assignable, _T2),
                     __pair_base,
                     __nat>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_move_assignable, _T1)
@@ -239,7 +239,7 @@ struct __pair_base<_T1, _T2, true>
 
 protected:
   template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __pair_base(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __pair_base(
     piecewise_construct_t,
     tuple<_Args1...>& __first_args,
     tuple<_Args2...>& __second_args,
@@ -304,7 +304,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   {}
 
   template <class... _Args1, class... _Args2>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
   pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args) noexcept(
     (is_nothrow_constructible<_T1, _Args1...>::value && is_nothrow_constructible<_T2, _Args2...>::value))
       : __base(__pc,
@@ -322,7 +322,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2 = _T2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair(const pair<_U1, _U2>& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY explicit _CCCL_CONSTEXPR_CXX14 pair(const pair<_U1, _U2>& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
     && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -332,7 +332,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2 = _T2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair(const pair<_U1, _U2>& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair(const pair<_U1, _U2>& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
     && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -343,7 +343,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2          = _T2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair(pair<_U1, _U2>&& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY explicit _CCCL_CONSTEXPR_CXX14 pair(pair<_U1, _U2>&& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
@@ -352,7 +352,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2          = _T2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair(pair<_U1, _U2>&& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair(pair<_U1, _U2>&& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
@@ -363,7 +363,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14
   pair(const ::std::pair<_U1, _U2>& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
                                                   && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -373,7 +373,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   pair(const ::std::pair<_U1, _U2>& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
                                                   && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -383,7 +383,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14
   pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
                                              && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
@@ -393,7 +393,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
                                              && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
@@ -408,7 +408,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__enable_assign, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair& operator=(const pair<_U1, _U2>& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair& operator=(const pair<_U1, _U2>& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_assignable, _T1, const _U1&)
     && _LIBCUDACXX_TRAIT(is_nothrow_assignable, _T2, const _U2&))
   {
@@ -421,7 +421,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<_U1, _U2>,
             __enable_if_t<_Constraints::__enable_assign, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair& operator=(pair<_U1, _U2>&& __p) noexcept(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair& operator=(pair<_U1, _U2>&& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_assignable, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_assignable, _T2, _U2))
   {
     this->first  = _CUDA_VSTD::forward<_U1>(__p.first);
@@ -432,7 +432,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   // std assignments
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
   template <class _UT1 = _T1, __enable_if_t<is_copy_assignable<_UT1>::value && is_copy_assignable<_T2>::value, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair& operator=(::std::pair<_T1, _T2> const& __p) noexcept(
+  _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14 pair& operator=(::std::pair<_T1, _T2> const& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T2))
   {
     this->first  = __p.first;
@@ -441,7 +441,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   }
 
   template <class _UT1 = _T1, __enable_if_t<is_move_assignable<_UT1>::value && is_move_assignable<_T2>::value, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair& operator=(::std::pair<_T1, _T2>&& __p) noexcept(
+  _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14 pair& operator=(::std::pair<_T1, _T2>&& __p) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_assignable, _T2))
   {
     this->first  = _CUDA_VSTD::forward<_T1>(__p.first);
@@ -537,7 +537,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
 #  endif // defined(__cuda_std__) && !defined(__CUDACC_RTC__)
 #endif // _CCCL_STD_VER >= 2023
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void
   swap(pair& __p) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
   {
     using _CUDA_VSTD::swap;
@@ -556,7 +556,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
 #endif // _CCCL_STD_VER >= 2023
 
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)
-  _LIBCUDACXX_HOST _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 operator ::std::pair<_T1, _T2>() const
+  _LIBCUDACXX_HOST _CCCL_CONSTEXPR_CXX14 operator ::std::pair<_T1, _T2>() const
   {
     return {this->first, this->second};
   }
@@ -571,7 +571,7 @@ _LIBCUDACXX_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
 // [pairs.spec], specialized algorithms
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator==(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __x.first == __y.first && __x.second == __y.second;
@@ -595,35 +595,35 @@ operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 #else // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__x == __y);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __x.first < __y.first || (!(__y.first < __x.first) && __x.second < __y.second);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return __y < __x;
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__x < __y);
 }
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
 {
   return !(__y < __x);
@@ -651,7 +651,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 
 template <class _T1, class _T2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-  _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+  _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
   swap(pair<_T1, _T2>& __x,
        pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
@@ -669,7 +669,7 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
   make_pair(_T1&& __t1, _T2&& __t2)
 {
@@ -706,26 +706,26 @@ template <>
 struct __get_pair<0>
 {
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _T1& get(pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _T1& get(pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _T1&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&
   get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _T1&& get(pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _T1&& get(pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<_T1>(__p.first);
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _T1&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&&
   get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T1>(__p.first);
@@ -736,26 +736,26 @@ template <>
 struct __get_pair<1>
 {
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _T2& get(pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _T2& get(pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _T2&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&
   get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _T2&& get(pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _T2&& get(pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<_T2>(__p.second);
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _T2&&
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&&
   get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T2>(__p.second);
@@ -763,28 +763,28 @@ struct __get_pair<1>
 };
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&
 get(const pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
 get(const pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));

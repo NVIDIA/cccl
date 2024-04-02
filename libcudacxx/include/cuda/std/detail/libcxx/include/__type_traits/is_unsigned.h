@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_arithmetic.h"
-#include "../__type_traits/is_integral.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -10,7 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___CUDA_PTX_H
-#define  _LIBCUDACXX___CUDA_PTX_H
+#define _LIBCUDACXX___CUDA_PTX_H
 
 #ifndef __cuda_std__
 #error "<__cuda/ptx.h> should only be included in from <cuda/ptx>"
@@ -71,22 +71,23 @@
  * - Some helper function and types can be found in ptx/ptx_helper_functions.h and ptx/ptx_dot_variants.h.
  */
 
-#include "ptx/instructions/barrier_cluster.h"
-#include "ptx/instructions/cp_async_bulk.h"
-#include "ptx/instructions/cp_async_bulk_commit_group.h"
-#include "ptx/instructions/cp_async_bulk_tensor.h"
-#include "ptx/instructions/cp_async_bulk_wait_group.h"
-#include "ptx/instructions/cp_reduce_async_bulk.h"
-#include "ptx/instructions/cp_reduce_async_bulk_tensor.h"
-#include "ptx/instructions/fence.h"
-#include "ptx/instructions/get_sreg.h"
-#include "ptx/instructions/getctarank.h"
-#include "ptx/instructions/mbarrier_arrive.h"
-#include "ptx/instructions/mbarrier_init.h"
-#include "ptx/instructions/mbarrier_wait.h"
-#include "ptx/instructions/red_async.h"
-#include "ptx/instructions/st_async.h"
-#include "ptx/instructions/tensormap_cp_fenceproxy.h"
-#include "ptx/instructions/tensormap_replace.h"
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/barrier_cluster.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_async_bulk.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_async_bulk_commit_group.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_async_bulk_tensor.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_async_bulk_wait_group.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_reduce_async_bulk.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/cp_reduce_async_bulk_tensor.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/elect_sync.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/fence.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/get_sreg.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/getctarank.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/mbarrier_arrive.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/mbarrier_init.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/mbarrier_wait.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/red_async.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/st_async.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/tensormap_cp_fenceproxy.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/instructions/tensormap_replace.h>
 
 #endif // _LIBCUDACXX___CUDA_PTX_H

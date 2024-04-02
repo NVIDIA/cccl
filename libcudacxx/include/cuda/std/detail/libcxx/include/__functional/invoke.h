@@ -23,23 +23,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/apply_cv.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_base_of.h"
-#include "../__type_traits/is_core_convertible.h"
-#include "../__type_traits/is_member_function_pointer.h"
-#include "../__type_traits/is_member_object_pointer.h"
-#include "../__type_traits/is_reference_wrapper.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/nat.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/apply_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_core_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_member_function_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_member_object_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/nat.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 
@@ -481,11 +481,22 @@ struct __invoke_of
 {
 #if defined(__NVCC__) && defined(__CUDACC_EXTENDED_LAMBDA__) && \
    !defined(__CUDA_ARCH__)
-  static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
-                "Attempt to use an extended __device__ lambda in a context "
-                "that requires querying its return type in host code. Use a "
-                "named function object, a __host__ __device__ lambda, or "
-                "cuda::proclaim_return_type instead.");
+  #if defined(_LIBCUDACXX_CUDACC_BELOW_12_3)
+    static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
+                  "Attempt to use an extended __device__ lambda in a context "
+                  "that requires querying its return type in host code. Use a "
+                  "named function object, an extended __host__ __device__ lambda, or "
+                  "cuda::proclaim_return_type instead.");
+  #else  // ^^^ _LIBCUDACXX_CUDACC_BELOW_12_3 ^^^ / vvv !_LIBCUDACXX_CUDACC_BELOW_12_3 vvv
+    static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp) ||
+                   __nv_is_extended_host_device_lambda_closure_type(_Fp) ||
+                   __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
+                   "Attempt to use an extended __device__ lambda in a context "
+                   "that requires querying its return type in host code. Use a "
+                   "named function object, an extended __host__ __device__ lambda, "
+                   "cuda::proclaim_return_type, or an extended __device__ lambda "
+                   "with a trailing return type instead ([] __device__ (...) -> RETURN_TYPE {...}).");
+  #endif // !_LIBCUDACXX_CUDACC_BELOW_12_3
 #endif
 };
 

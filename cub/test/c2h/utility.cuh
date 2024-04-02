@@ -28,6 +28,8 @@
 #pragma once
 
 #include <cstring>
+#include <string>
+#include <typeinfo>
 
 namespace c2h
 {
@@ -44,6 +46,12 @@ To bit_cast(const From& in)
   To out;
   memcpy(&out, &in, sizeof(To));
   return out;
+}
+
+template <typename T>
+std::string type_name()
+{
+  return typeid(T).name();
 }
 
 }

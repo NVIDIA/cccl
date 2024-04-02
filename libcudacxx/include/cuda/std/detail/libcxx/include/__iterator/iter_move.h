@@ -23,14 +23,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/class_or_enum.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")

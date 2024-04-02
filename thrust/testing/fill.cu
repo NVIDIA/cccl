@@ -334,9 +334,7 @@ struct TypeWithNonTrivialAssigment
   __host__ __device__
   TypeWithNonTrivialAssigment() : x(0), y(0), z(0) {}
 
-#if _CCCL_STD_VER >= 2011
   TypeWithNonTrivialAssigment(const TypeWithNonTrivialAssigment &) = default;
-#endif
 
   __host__ __device__
   TypeWithNonTrivialAssigment& operator=(const TypeWithNonTrivialAssigment& t)

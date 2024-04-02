@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/boolean_testable.h"
-#include "../__concepts/invocable.h"
-#include "../__functional/invoke.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/boolean_testable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

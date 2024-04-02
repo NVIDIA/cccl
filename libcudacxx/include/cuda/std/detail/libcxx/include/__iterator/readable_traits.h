@@ -23,19 +23,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/same_as.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__type_traits/is_primary_template.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_const.h"
-#include "../__type_traits/is_object.h"
-#include "../__type_traits/is_primary_template.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/remove_extent.h"
-#include "../__type_traits/void_t.h"
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_primary_template.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_primary_template.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_extent.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

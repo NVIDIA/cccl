@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/convertible_to.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

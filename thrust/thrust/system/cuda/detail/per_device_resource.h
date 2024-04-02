@@ -38,8 +38,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #include <thrust/system/cuda/config.h>
@@ -76,5 +74,4 @@ THRUST_NAMESPACE_END
 
 #endif
 
-#endif
 

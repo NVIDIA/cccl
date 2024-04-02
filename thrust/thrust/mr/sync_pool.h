@@ -31,8 +31,6 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#if _CCCL_STD_VER >= 2011
-
 #include <mutex>
 
 #include <thrust/mr/pool.h>
@@ -118,5 +116,4 @@ private:
 } // end mr
 THRUST_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2011
 

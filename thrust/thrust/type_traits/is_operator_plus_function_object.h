@@ -70,16 +70,8 @@ struct is_operator_plus_function_object_impl;
  *  \see is_operator_less_or_greater_function_object
  */
 template <typename T>
-#if _CCCL_STD_VER >= 2011
 using is_operator_plus_function_object =
-#else
-struct is_operator_plus_function_object :
-#endif
-  detail::is_operator_plus_function_object_impl<T>
-#if _CCCL_STD_VER < 2011
-{}
-#endif
-;
+  detail::is_operator_plus_function_object_impl<T>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is a

@@ -63,21 +63,28 @@ struct half_t
 
     /// Constructor from __half
     __host__ __device__ __forceinline__
-    half_t(const __half &other)
+    explicit half_t(const __half &other)
     {
         __x = reinterpret_cast<const uint16_t&>(other);
     }
 
     /// Constructor from integer
     __host__ __device__ __forceinline__
-    half_t(int a)
+    explicit half_t(int a)
     {
         *this = half_t(float(a));
     }
 
     /// Constructor from std::size_t
     __host__ __device__ __forceinline__
-    half_t(std::size_t a)
+    explicit half_t(std::size_t a)
+    {
+        *this = half_t(float(a));
+    }
+
+    /// Constructor from double
+    __host__ __device__ __forceinline__
+    explicit half_t(double a)
     {
         *this = half_t(float(a));
     }
@@ -87,7 +94,7 @@ struct half_t
                typename = typename ::cuda::std::enable_if<
                  ::cuda::std::is_same<T, unsigned long long int>::value
                  && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
-    __host__ __device__ __forceinline__ half_t(T a)
+    __host__ __device__ __forceinline__ explicit half_t(T a)
     {
       *this = half_t(float(a));
     }
@@ -97,7 +104,7 @@ struct half_t
 
     /// Constructor from float
     __host__ __device__ __forceinline__
-    half_t(float a)
+    explicit half_t(float a)
     {
         // Stolen from Norbert Juffa
         uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
@@ -223,16 +230,16 @@ struct half_t
 
     /// Equality
     __host__ __device__ __forceinline__
-    bool operator ==(const half_t &other) const
+    friend bool operator ==(const half_t &a, const half_t &b)
     {
-        return (this->__x == other.__x);
+        return (a.__x == b.__x);
     }
 
     /// Inequality
     __host__ __device__ __forceinline__
-    bool operator !=(const half_t &other) const
+    friend bool operator !=(const half_t &a, const half_t &b)
     {
-        return (this->__x != other.__x);
+        return (a.__x != b.__x);
     }
 
     /// Assignment by sum
@@ -249,7 +256,7 @@ struct half_t
     {
         return half_t(float(*this) * float(other));
     }
-    
+
     /// Divide
     __host__ __device__ __forceinline__
     half_t operator/(const half_t &other) const
@@ -263,7 +270,7 @@ struct half_t
     {
         return half_t(float(*this) + float(other));
     }
-    
+
     /// Sub
     __host__ __device__ __forceinline__
     half_t operator-(const half_t &other) const

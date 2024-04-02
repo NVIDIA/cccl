@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/boolean_testable.h"
-#include "../__concepts/common_reference_with.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/boolean_testable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/common_reference_with.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_const_lvalue_ref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

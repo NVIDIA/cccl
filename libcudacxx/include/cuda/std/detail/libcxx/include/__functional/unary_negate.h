@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/unary_function.h"
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -37,17 +37,17 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate
 {
     _Predicate __pred_;
 public:
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     explicit unary_negate(const _Predicate& __pred)
         : __pred_(__pred) {}
     _CCCL_EXEC_CHECK_DISABLE
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
     bool operator()(const typename _Predicate::argument_type& __x) const
         {return !__pred_(__x);}
 };
 
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _LIBCUDACXX_INLINE_VISIBILITY
+_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
 unary_negate<_Predicate>
 not1(const _Predicate& __pred) {return unary_negate<_Predicate>(__pred);}
 

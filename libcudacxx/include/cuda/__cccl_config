@@ -11,6 +11,6 @@
 #ifndef _CUDA__CCCL_CONFIG
 #define _CUDA__CCCL_CONFIG
 
-#include "std/detail/libcxx/include/__cccl_config"
+#include <cuda/std/detail/libcxx/include/__cccl_config>
 
 #endif // _CUDA__CCCL_CONFIG

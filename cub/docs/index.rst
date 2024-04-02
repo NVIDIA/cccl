@@ -3,13 +3,14 @@ CUB
 
 .. toctree::
    :hidden:
-   :maxdepth: 2
+   :maxdepth: 3
 
-   ${repo_docs_api_path}/CUB_api
+   modules
    developer_overview
    test_overview
    tuning
    benchmarking
+   ${repo_docs_api_path}/CUB_api
 
 .. the line below can be used to use the README.md file as the index page
 .. .. mdinclude:: ../README.md
@@ -22,17 +23,17 @@ of the CUDA programming model:
 
 * **Parallel primitives**
 
-  * **Warp-wide "collective" primitives**
+  * :ref:`Warp-wide <warp-module>` "collective" primitives
 
     * Cooperative warp-wide prefix scan, reduction, etc.
     * Safely specialized for each underlying CUDA architecture
 
-  * **Block-wide "collective" primitives**
+  * :ref:`Block-wide <block-module>` "collective" primitives
 
     * Cooperative I/O, sort, scan, reduction, histogram, etc.  
     * Compatible with arbitrary thread block sizes and types 
 
-  * **Device-wide primitives**
+  * :ref:`Device-wide <device-module>` primitives
 
     * Parallel sort, prefix scan, reduction, histogram, etc.  
     * Compatible with CUDA dynamic parallelism

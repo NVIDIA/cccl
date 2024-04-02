@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TUPLE_STRUCTURED_BINDINGS_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -34,13 +34,13 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #    include <utility>
 #  endif
 
-#  include "../__fwd/array.h"
-#  include "../__fwd/pair.h"
-#  include "../__fwd/subrange.h"
-#  include "../__fwd/tuple.h"
-#  include "../__tuple_dir/tuple_element.h"
-#  include "../__tuple_dir/tuple_size.h"
-#  include "../__type_traits/integral_constant.h"
+#  include <cuda/std/detail/libcxx/include/__fwd/array.h>
+#  include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#  include <cuda/std/detail/libcxx/include/__fwd/subrange.h>
+#  include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#  include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#  include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 // This is a workaround for the fact that structured bindings require that the specializations of
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).

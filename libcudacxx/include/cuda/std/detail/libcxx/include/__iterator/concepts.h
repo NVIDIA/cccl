@@ -23,35 +23,35 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/arithmetic.h"
-#include "../__concepts/assignable.h"
-#include "../__concepts/common_reference_with.h"
-#include "../__concepts/constructible.h"
-#include "../__concepts/copyable.h"
-#include "../__concepts/derived_from.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/invocable.h"
-#include "../__concepts/movable.h"
-#include "../__concepts/predicate.h"
-#include "../__concepts/regular.h"
-#include "../__concepts/relation.h"
-#include "../__concepts/same_as.h"
-#include "../__concepts/semiregular.h"
-#include "../__concepts/totally_ordered.h"
-#include "../__functional/invoke.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/readable_traits.h"
-#include "../__memory/pointer_traits.h"
-#include "../__utility/forward.h"
-#include "../__type_traits/add_pointer.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/void_t.h"
+#include <cuda/std/detail/libcxx/include/__concepts/arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/common_reference_with.h>
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__concepts/copyable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/movable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/predicate.h>
+#include <cuda/std/detail/libcxx/include/__concepts/regular.h>
+#include <cuda/std/detail/libcxx/include/__concepts/relation.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__concepts/semiregular.h>
+#include <cuda/std/detail/libcxx/include/__concepts/totally_ordered.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

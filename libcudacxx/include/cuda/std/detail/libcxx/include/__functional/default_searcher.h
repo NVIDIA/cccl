@@ -23,11 +23,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/search.h"
-#include "../__functional/identity.h"
-#include "../__functional/operations.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/search.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/operations.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -39,13 +39,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template<class _ForwardIterator, class _BinaryPredicate = equal_to<>>
 class _LIBCUDACXX_TEMPLATE_VIS default_searcher {
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     default_searcher(_ForwardIterator __f, _ForwardIterator __l,
                        _BinaryPredicate __p = _BinaryPredicate())
         : __first_(__f), __last_(__l), __pred_(__p) {}
 
     template <typename _ForwardIterator2>
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
     pair<_ForwardIterator2, _ForwardIterator2>
     operator () (_ForwardIterator2 __f, _ForwardIterator2 __l) const
     {

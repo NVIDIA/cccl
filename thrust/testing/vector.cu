@@ -4,9 +4,7 @@
 #include <thrust/sequence.h>
 #include <thrust/device_malloc_allocator.h>
 
-#if _CCCL_STD_VER >= 2011
 #include <initializer_list>
-#endif
 #include <vector>
 #include <list>
 #include <limits>
@@ -785,7 +783,6 @@ void TestVectorReversed(void)
 }
 DECLARE_VECTOR_UNITTEST(TestVectorReversed);
 
-#if _CCCL_STD_VER >= 2011
   template <class Vector>
   void TestVectorMove(void)
   {
@@ -836,5 +833,4 @@ DECLARE_VECTOR_UNITTEST(TestVectorReversed);
     ASSERT_EQUAL(ptr3, ptr4);
   }
   DECLARE_VECTOR_UNITTEST(TestVectorMove);
-#endif
 

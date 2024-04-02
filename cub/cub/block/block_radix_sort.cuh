@@ -284,6 +284,7 @@ private:
     /// BlockExchange utility type for values
     typedef BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockExchangeValues;
 
+    #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
     /// Shared memory storage layout type
     union _TempStorage
     {
@@ -292,6 +293,7 @@ private:
         typename BlockExchangeKeys::TempStorage        exchange_keys;
         typename BlockExchangeValues::TempStorage      exchange_values;
     };
+    #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 
     /******************************************************************************

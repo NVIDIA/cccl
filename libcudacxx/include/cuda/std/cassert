@@ -11,12 +11,12 @@
 #ifndef _CUDA_STD_CASSERT
 #define _CUDA_STD_CASSERT
 
-#include "detail/__config"
+#include <cuda/std/detail/__config>
 
-#include "detail/__pragma_push"
+#include <cuda/std/detail/__pragma_push>
 
-#include "detail/libcxx/include/cassert"
+#include <cuda/std/detail/libcxx/include/cassert>
 
-#include "detail/__pragma_pop"
+#include <cuda/std/detail/__pragma_pop>
 
 #endif // _CUDA_STD_CASSERT

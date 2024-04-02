@@ -27,27 +27,27 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
-#include "../__functional/reference_wrapper.h"
-#include "../__functional/weak_result_type.h"
-#include "../__fwd/get.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/reference_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__functional/weak_result_type.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
-#include "../cstddef"
-#include "../tuple"
+#include <cuda/std/cstddef>
+#include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -310,13 +310,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind(_Gp&& __f, _BA&& ...__bound_args)
         : __f_(_CUDA_VSTD::forward<_Gp>(__f)),
           __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args)
         {
@@ -325,7 +325,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
         operator()(_Args&& ...__args) const
         {
@@ -355,13 +355,13 @@ public:
                                   !is_same<__libcpp_remove_reference_t<_Gp>,
                                            __bind_r>::value
                                >>
-      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+      _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
       explicit __bind_r(_Gp&& __f, _BA&& ...__bound_args)
         : base(_CUDA_VSTD::forward<_Gp>(__f),
                _CUDA_VSTD::forward<_BA>(__bound_args)...) {}
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>,
@@ -375,7 +375,7 @@ public:
         }
 
     template <class ..._Args>
-        _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+        _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
         __enable_if_t
         <
             is_convertible<__bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>,
@@ -393,7 +393,7 @@ template<class _Rp, class _Fp, class ..._BoundArgs>
 struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...> > : public true_type {};
 
 template<class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind<_Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
@@ -402,7 +402,7 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 }
 
 template<class _Rp, class _Fp, class ..._BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {

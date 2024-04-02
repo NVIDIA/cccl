@@ -22,10 +22,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_same.h"
-#include "../__utility/declval.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/cstddef>
+
+#ifdef _LIBCUDACXX_HAS_NVFP16
+#include <cuda_fp16.h>
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _LIBCUDACXX_HAS_NVBF16
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -33,6 +43,12 @@ template <class _Tp>
 struct __numeric_type
 {
    _LIBCUDACXX_INLINE_VISIBILITY static void __test(...);
+#ifdef _LIBCUDACXX_HAS_NVFP16
+   _LIBCUDACXX_INLINE_VISIBILITY static __half __test(__half);
+#endif // _LIBCUDACXX_HAS_NVBF16
+#ifdef _LIBCUDACXX_HAS_NVBF16
+   _LIBCUDACXX_INLINE_VISIBILITY static __nv_bfloat16 __test(__nv_bfloat16);
+#endif // _LIBCUDACXX_HAS_NVFP16
    _LIBCUDACXX_INLINE_VISIBILITY static float __test(float);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(char);
    _LIBCUDACXX_INLINE_VISIBILITY static double __test(int);
