@@ -130,7 +130,7 @@ For more information, see the `.devcontainer/make_devcontainers.sh --help` messa
 ### Install WSL on your Windows host
 
 > [!WARNING]
-> Dsiclaimer: This guide was developed for WSL 2 on Windows 11.
+> Disclaimer: This guide was developed for WSL 2 on Windows 11.
 
 1. Launch a Windows terminal (_e.g. Powershell_) as an administrator.
 
