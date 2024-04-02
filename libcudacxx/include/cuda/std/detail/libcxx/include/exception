@@ -1,9 +1,11 @@
 // -*- C++ -*-
-//===-------------------------- exception ---------------------------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -77,7 +79,7 @@ template <class E> void rethrow_if_nested(const E& e);
 */
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -88,246 +90,11 @@ template <class E> void rethrow_if_nested(const E& e);
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/cstdlib>
-#include <cuda/std/type_traits>
+#include <cuda/std/detail/libcxx/include/__assert>  // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__exception/exception.h>
+#include <cuda/std/detail/libcxx/include/__exception/terminate.h>
+#include <cuda/std/detail/libcxx/include/__new/bad_alloc.h>
+
 #include <cuda/std/version>
-
-#if defined(_LIBCUDACXX_ABI_VCRUNTIME)
-#include <vcruntime_exception.h>
-#endif
-_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION  // purposefully not using versioning namespace
-
-#if !defined(_LIBCUDACXX_ABI_VCRUNTIME) || defined(__cuda_std__)
-class _LIBCUDACXX_EXCEPTION_ABI exception
-{
-public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception() noexcept {}
-    _LIBCUDACXX_HOST_DEVICE virtual ~exception() noexcept;
-    _LIBCUDACXX_HOST_DEVICE virtual const char* what() const noexcept;
-};
-
-class _LIBCUDACXX_EXCEPTION_ABI bad_exception
-    : public exception
-{
-public:
-    _LIBCUDACXX_INLINE_VISIBILITY bad_exception() noexcept {}
-    _LIBCUDACXX_HOST_DEVICE virtual ~bad_exception() noexcept;
-    _LIBCUDACXX_HOST_DEVICE virtual const char* what() const noexcept;
-};
-#else // ^^^ !_LIBCUDACXX_ABI_VCRUNTIME || __cuda_std__^^^ / vvv _LIBCUDACXX_ABI_VCRUNTIME vvv
-// pull in the exception definition from vcruntime, which lives in namespace std
-using ::std::exception;
-#endif // !_LIBCUDACXX_ABI_VCRUNTIME
-
-#if _CCCL_STD_VER <= 2014 \
-    || defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNEXPECTED_FUNCTIONS) \
-    || defined(_LIBCUDACXX_BUILDING_LIBRARY)
-typedef void (*unexpected_handler)();
-_LIBCUDACXX_FUNC_VIS unexpected_handler set_unexpected(unexpected_handler) noexcept;
-_LIBCUDACXX_FUNC_VIS unexpected_handler get_unexpected() noexcept;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void unexpected();
-#endif
-
-typedef void (*terminate_handler)();
-_LIBCUDACXX_FUNC_VIS terminate_handler set_terminate(terminate_handler) noexcept;
-_LIBCUDACXX_FUNC_VIS terminate_handler get_terminate() noexcept;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void terminate() noexcept;
-
-_LIBCUDACXX_FUNC_VIS bool uncaught_exception() noexcept;
-_LIBCUDACXX_FUNC_VIS _LIBCUDACXX_AVAILABILITY_UNCAUGHT_EXCEPTIONS int uncaught_exceptions() noexcept;
-
-class _LIBCUDACXX_TYPE_VIS exception_ptr;
-
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
-
-#ifndef _LIBCUDACXX_ABI_MICROSOFT
-
-class _LIBCUDACXX_TYPE_VIS exception_ptr
-{
-    void* __ptr_;
-public:
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr() noexcept : __ptr_() {}
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr(nullptr_t) noexcept : __ptr_() {}
-
-    _LIBCUDACXX_HOST_DEVICE exception_ptr(const exception_ptr&) noexcept;
-    _LIBCUDACXX_HOST_DEVICE exception_ptr& operator=(const exception_ptr&) noexcept;
-    _LIBCUDACXX_HOST_DEVICE ~exception_ptr() noexcept;
-
-    _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_EXPLICIT operator bool() const noexcept
-    {return __ptr_ != nullptr;}
-
-    friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept
-        {return __x.__ptr_ == __y.__ptr_;}
-
-    friend _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
-        {return !(__x == __y);}
-
-    friend _LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
-    friend _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr);
-};
-
-template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) noexcept
-{
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    try
-    {
-        throw __e;
-    }
-    catch (...)
-    {
-        return current_exception();
-    }
-#else
-    ((void)__e);
-    _CUDA_VSTD::abort();
-#endif
-}
-
-#else // _LIBCUDACXX_ABI_MICROSOFT
-
-class _LIBCUDACXX_EXCEPTION_ABI exception_ptr
-{
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-private-field")
-    void* __ptr1_;
-    void* __ptr2_;
-_CCCL_DIAG_POP
-public:
-    exception_ptr() noexcept;
-    exception_ptr(nullptr_t) noexcept;
-    exception_ptr(const exception_ptr& __other) noexcept;
-    exception_ptr& operator=(const exception_ptr& __other) noexcept;
-    exception_ptr& operator=(nullptr_t) noexcept;
-    ~exception_ptr() noexcept;
-    _LIBCUDACXX_EXPLICIT operator bool() const noexcept;
-};
-
-_LIBCUDACXX_FUNC_VIS
-bool operator==(const exception_ptr& __x, const exception_ptr& __y) noexcept;
-
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool operator!=(const exception_ptr& __x, const exception_ptr& __y) noexcept
-    {return !(__x == __y);}
-
-_LIBCUDACXX_FUNC_VIS void swap(exception_ptr&, exception_ptr&) noexcept;
-
-_LIBCUDACXX_FUNC_VIS exception_ptr __copy_exception_ptr(void *__except_, const void* __ptr);
-_LIBCUDACXX_FUNC_VIS exception_ptr current_exception() noexcept;
-_LIBCUDACXX_NORETURN _LIBCUDACXX_FUNC_VIS void rethrow_exception(exception_ptr p);
-
-// This is a built-in template function which automagically extracts the required
-// information.
-template <class _E> void *__GetExceptionInfo(_E);
-
-template<class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) noexcept
-{
-  return __copy_exception_ptr(_CUDA_VSTD::addressof(__e), __GetExceptionInfo(__e));
-}
-
-#endif // _LIBCUDACXX_ABI_MICROSOFT
-// nested_exception
-
-class _LIBCUDACXX_EXCEPTION_ABI nested_exception
-{
-    exception_ptr __ptr_;
-public:
-    _LIBCUDACXX_HOST_DEVICE nested_exception() noexcept;
-//     nested_exception(const nested_exception&) noexcept = default;
-//     nested_exception& operator=(const nested_exception&) noexcept = default;
-    _LIBCUDACXX_HOST_DEVICE virtual ~nested_exception() noexcept;
-
-    // access functions
-    _LIBCUDACXX_NORETURN _LIBCUDACXX_HOST_DEVICE void rethrow_nested() const;
-    _LIBCUDACXX_INLINE_VISIBILITY exception_ptr nested_ptr() const noexcept {return __ptr_;}
-};
-
-template <class _Tp>
-struct __nested
-    : public _Tp,
-      public nested_exception
-{
-    _LIBCUDACXX_INLINE_VISIBILITY explicit __nested(const _Tp& __t) : _Tp(__t) {}
-};
-
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-template <class _Tp, class _Up, bool>
-struct __throw_with_nested;
-
-template <class _Tp, class _Up>
-struct __throw_with_nested<_Tp, _Up, true> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
-    __do_throw(_Tp&& __t)
-    {
-        throw __nested<_Up>(_CUDA_VSTD::forward<_Tp>(__t));
-    }
-};
-
-template <class _Tp, class _Up>
-struct __throw_with_nested<_Tp, _Up, false> {
-    _LIBCUDACXX_NORETURN static inline _LIBCUDACXX_INLINE_VISIBILITY void
-    __do_throw(_Tp&& __t)
-    {
-        throw _CUDA_VSTD::forward<_Tp>(__t);
-    }
-};
-#endif
-
-template <class _Tp>
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-throw_with_nested(_Tp&& __t)
-{
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    typedef __decay_t<_Tp> _Up;
-    static_assert( is_copy_constructible<_Up>::value, "type thrown must be CopyConstructible");
-    __throw_with_nested<_Tp, _Up,
-        is_class<_Up>::value &&
-        !is_base_of<nested_exception, _Up>::value &&
-        !__libcpp_is_final<_Up>::value>::
-            __do_throw(_CUDA_VSTD::forward<_Tp>(__t));
-#else
-    ((void)__t);
-    // FIXME: Make this abort
-#endif
-}
-
-template <class _From, class _To>
-struct __can_dynamic_cast : public
-    _LIBCUDACXX_BOOL_CONSTANT(
-              is_polymorphic<_From>::value &&
-                 (!is_base_of<_To, _From>::value ||
-                   is_convertible<const _From*, const _To*>::value))
-{};
-
-template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-rethrow_if_nested(const _Ep& __e,
-                  typename enable_if< __can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
-{
-#if !defined(_CCCL_COMPILER_MSVC)
-    const nested_exception* __nep = dynamic_cast<const nested_exception*>(_CUDA_VSTD::addressof(__e));
-    if (__nep)
-        __nep->rethrow_nested();
-#endif // _CCCL_COMPILER_MSVC
-}
-
-template <class _Ep>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-void
-rethrow_if_nested(const _Ep&,
-                  typename enable_if<!__can_dynamic_cast<_Ep, nested_exception>::value>::type* = 0)
-{
-}
-
-_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif  // _LIBCUDACXX_EXCEPTION

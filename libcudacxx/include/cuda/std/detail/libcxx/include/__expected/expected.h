@@ -81,7 +81,7 @@ namespace __expected {
   _LIBCUDACXX_INLINE_VISIBILITY
   void __throw_bad_expected_access(_Arg&& __arg) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    throw _CUDA_STD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
+    throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
 #else
     (void)__arg;
     _LIBCUDACXX_UNREACHABLE();
