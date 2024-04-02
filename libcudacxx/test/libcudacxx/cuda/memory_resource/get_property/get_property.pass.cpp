@@ -13,8 +13,10 @@
 
 // cuda::get_property
 
-#include <cuda/std/cassert>
 #include <cuda/memory_resource>
+#include <cuda/std/cassert>
+#include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 
 struct prop_with_value {
   using value_type = int;
