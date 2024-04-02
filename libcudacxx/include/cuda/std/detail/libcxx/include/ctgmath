@@ -29,6 +29,6 @@
 #endif // no system header
 
 #include <ccomplex>
-#include "cmath"
+#include <cuda/std/cmath>
 
 #endif  // _LIBCUDACXX_CTGMATH

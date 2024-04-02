@@ -22,13 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_destructible.h"
-#include "../__type_traits/is_object.h"
-#include "../__type_traits/is_nothrow_destructible.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

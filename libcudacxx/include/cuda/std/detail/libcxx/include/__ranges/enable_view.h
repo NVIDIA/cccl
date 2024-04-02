@@ -23,12 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/derived_from.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/void_t.h"
+#include <cuda/std/detail/libcxx/include/__concepts/derived_from.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_class.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

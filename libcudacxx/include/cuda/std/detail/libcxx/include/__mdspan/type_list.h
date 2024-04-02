@@ -56,8 +56,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/macros.h"
-#include "../__utility/integer_sequence.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

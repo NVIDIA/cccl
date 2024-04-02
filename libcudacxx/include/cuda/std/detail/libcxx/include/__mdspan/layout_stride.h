@@ -56,26 +56,27 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/compressed_pair.h"
-#include "../__mdspan/extents.h"
-#include "../__mdspan/macros.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/compressed_pair.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/extents.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include "../__mdspan/no_unique_address.h"
-#endif
-#include "../__mdspan/static_array.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/remove_const.h"
-#include "../__utility/integer_sequence.h"
-#include "../__utility/move.h"
-#include "../array"
+#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
+#endif // _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#include <cuda/std/detail/libcxx/include/__mdspan/static_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/numeric>
+
+#include <cuda/std/array>
 #if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
-#include "../concepts"
-#endif
-#include "../numeric"
-#include "../span"
+#include <cuda/std/concepts>
+#endif // __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20
+#include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

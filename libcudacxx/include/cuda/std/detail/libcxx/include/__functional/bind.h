@@ -27,27 +27,27 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
-#include "../__functional/reference_wrapper.h"
-#include "../__functional/weak_result_type.h"
-#include "../__fwd/get.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/reference_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__functional/weak_result_type.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
-#include "../cstddef"
-#include "../tuple"
+#include <cuda/std/cstddef>
+#include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

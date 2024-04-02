@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/string.h"
+#include <cuda/std/detail/libcxx/include/__fwd/string.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

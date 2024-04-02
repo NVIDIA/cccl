@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_ITER_SWAP_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__utility/declval.h"
-#include "../__utility/swap.h"
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

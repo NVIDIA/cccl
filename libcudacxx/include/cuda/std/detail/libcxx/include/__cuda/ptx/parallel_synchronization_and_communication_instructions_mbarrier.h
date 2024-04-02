@@ -13,7 +13,7 @@
 #define _CUDA_PTX_PARALLEL_SYNCHRONIZATION_AND_COMMUNICATION_INSTRUCTIONS_MBARRIER_H_
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,9 +24,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "ptx_dot_variants.h"
-#include "ptx_helper_functions.h"
-#include "../../cstdint"
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 

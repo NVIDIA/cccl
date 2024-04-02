@@ -56,17 +56,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/compressed_pair.h"
-#include "../__mdspan/dynamic_extent.h"
-#include "../__mdspan/macros.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/compressed_pair.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include "../__mdspan/no_unique_address.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
 #endif
-#include "../__type_traits/enable_if.h"
-#include "../__utility/integer_sequence.h"
-#include "../array"
-#include "../cstddef"
-#include "../span"
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

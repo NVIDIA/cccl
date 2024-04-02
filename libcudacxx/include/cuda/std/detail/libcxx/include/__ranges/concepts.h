@@ -22,26 +22,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/constructible.h"
-#include "../__concepts/movable.h"
-#include "../__concepts/same_as.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/readable_traits.h"
-#include "../__ranges/access.h"
-#include "../__ranges/data.h"
-#include "../__ranges/enable_borrowed_range.h"
-#include "../__ranges/enable_view.h"
-#include "../__ranges/size.h"
-#include "../__type_traits/add_pointer.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/declval.h"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__concepts/movable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#include <cuda/std/detail/libcxx/include/__ranges/data.h>
+#include <cuda/std/detail/libcxx/include/__ranges/enable_borrowed_range.h>
+#include <cuda/std/detail/libcxx/include/__ranges/enable_view.h>
+#include <cuda/std/detail/libcxx/include/__ranges/size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/initializer_list>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

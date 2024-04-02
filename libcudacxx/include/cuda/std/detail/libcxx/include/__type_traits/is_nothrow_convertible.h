@@ -22,13 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/lazy.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/lazy.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -11,6 +11,6 @@
 #ifndef _CUDA_LATCH
 #define _CUDA_LATCH
 
-#include "std/latch"
+#include <cuda/std/latch>
 
 #endif // _CUDA_LATCH

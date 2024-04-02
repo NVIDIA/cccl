@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_REPLACE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

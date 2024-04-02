@@ -23,19 +23,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/arithmetic.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_const.h"
-#include "../__type_traits/is_object.h"
-#include "../__type_traits/is_pointer.h"
-#include "../__type_traits/is_primary_template.h"
-#include "../__type_traits/make_signed.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__concepts/arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_primary_template.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_signed.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

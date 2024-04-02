@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_MISMATCH_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

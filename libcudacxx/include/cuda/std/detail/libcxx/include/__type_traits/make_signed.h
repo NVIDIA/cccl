@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/apply_cv.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_integral.h"
-#include "../__type_traits/nat.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/type_list.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/apply_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_enum.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/nat.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/type_list.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

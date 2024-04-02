@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/binary_function.h"
-#include "../__functional/unary_function.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__functional/binary_function.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

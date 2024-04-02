@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../cstddef"
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

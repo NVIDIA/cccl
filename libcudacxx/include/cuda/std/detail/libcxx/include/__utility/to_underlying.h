@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/underlying_type.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/underlying_type.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/pair.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/remove_const.h"
-#include "../__type_traits/remove_const_ref.h"
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const_ref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

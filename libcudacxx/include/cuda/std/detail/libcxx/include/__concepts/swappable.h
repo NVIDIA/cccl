@@ -22,22 +22,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/assignable.h"
-#include "../__concepts/class_or_enum.h"
-#include "../__concepts/common_reference_with.h"
-#include "../__concepts/constructible.h"
-#include "../__type_traits/extent.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__type_traits/type_identity.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-#include "../__utility/exchange.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
+#include <cuda/std/detail/libcxx/include/__concepts/common_reference_with.h>
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/extent.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/type_identity.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/exchange.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #if defined(_LIBCUDACXX_COMPILER_MSVC)
 _CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored

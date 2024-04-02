@@ -8,6 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "libcxx/include/__pragma_push"
-#include "libcxx/include/__undef_macros"
+#include <cuda/std/detail/libcxx/include/__pragma_push>
+#include <cuda/std/detail/libcxx/include/__undef_macros>
 

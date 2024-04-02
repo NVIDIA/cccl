@@ -23,22 +23,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/__concept_macros.h"
-#include "../__iterator/access.h"
-#include "../__memory/addressof.h"
-#include "../__memory/voidify.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_arithmetic.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_constant_evaluated.h"
-#include "../__type_traits/is_trivially_move_assignable.h"
-#include "../__type_traits/is_trivially_constructible.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__iterator/access.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/voidify.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #ifdef _CCCL_CUDA_COMPILER_CLANG
 #  include <new>

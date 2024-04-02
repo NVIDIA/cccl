@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_SHIFT_RIGHT_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/move.h"
-#include "../__algorithm/move_backward.h"
-#include "../__algorithm/swap_ranges.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__utility/swap.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/move.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/move_backward.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/swap_ranges.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

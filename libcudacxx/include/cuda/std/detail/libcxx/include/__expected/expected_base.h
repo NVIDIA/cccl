@@ -21,37 +21,37 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/invocable.h"
-#include "../__expected/unexpect.h"
-#include "../__memory/addressof.h"
-#include "../__memory/construct_at.h"
-#include "../__tuple_dir/sfinae_helpers.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_trivially_copy_assignable.h"
-#include "../__type_traits/is_trivially_copy_constructible.h"
-#include "../__type_traits/is_trivially_destructible.h"
-#include "../__type_traits/is_trivially_move_assignable.h"
-#include "../__type_traits/is_trivially_move_constructible.h"
-#include "../__type_traits/is_void.h"
-#include "../__utility/exception_guard.h"
-#include "../__utility/forward.h"
-#include "../__utility/in_place.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
+#include <cuda/std/detail/libcxx/include/__expected/unexpect.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__utility/exception_guard.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #if _CCCL_STD_VER > 2011
 

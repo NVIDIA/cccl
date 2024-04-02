@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_HALF_POSITIVE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_integral.h"
-#include "../__type_traits/make_unsigned.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

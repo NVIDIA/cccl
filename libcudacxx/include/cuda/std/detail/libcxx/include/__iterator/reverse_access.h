@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/reverse_iterator.h"
-#include "../cstddef"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/__iterator/reverse_iterator.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/initializer_list>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

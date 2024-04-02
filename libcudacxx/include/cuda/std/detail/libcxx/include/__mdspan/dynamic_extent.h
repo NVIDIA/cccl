@@ -56,10 +56,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/span.h" // dynamic_extent
-#include "../__mdspan/macros.h"
-#include "../cstddef"
-#include "../limits" // numeric_limits
+#include <cuda/std/detail/libcxx/include/__fwd/span.h> // dynamic_extent
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/limits> // numeric_limits
 
 #ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
 #endif

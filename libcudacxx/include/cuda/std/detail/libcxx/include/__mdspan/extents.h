@@ -56,26 +56,26 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/macros.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include "../__mdspan/no_unique_address.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
 #endif
-#include "../__mdspan/static_array.h"
-#include "../__mdspan/standard_layout_static_array.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/make_unsigned.h"
-#include "../__utility/integer_sequence.h"
-#include "../array"
-#include "../cstddef"
-#include "../span"
+#include <cuda/std/detail/libcxx/include/__mdspan/static_array.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/standard_layout_static_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/std/span>
 
 #if defined(_LIBCUDACXX_PUSH_MACROS)
   _LIBCUDACXX_PUSH_MACROS
 #endif
-#include "../__undef_macros"
+#include <cuda/std/detail/libcxx/include/__undef_macros>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

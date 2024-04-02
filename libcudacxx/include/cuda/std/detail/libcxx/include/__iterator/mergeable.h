@@ -23,10 +23,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/identity.h"
-#include "../__functional/ranges_operations.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/projected.h"
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/ranges_operations.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/projected.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
