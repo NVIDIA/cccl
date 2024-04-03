@@ -670,6 +670,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <cuda/std/__memory/allocator_arg_t.h>
 #include <cuda/std/__memory/allocator_destructor.h>
 #include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/compressed_pair.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__memory/uses_allocator.h>
@@ -732,162 +733,6 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _ValueType __libcpp_acquire_load(_ValueType
 #  else
   return *__value;
 #  endif
-}
-
-template <class _Tp, int _Idx, bool _CanBeEmptyBase = is_empty<_Tp>::value && !__libcpp_is_final<_Tp>::value>
-struct __compressed_pair_elem
-{
-  typedef _Tp _ParamT;
-  typedef _Tp& reference;
-  typedef const _Tp& const_reference;
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem()
-      : __value_()
-  {}
-
-  template <class _Up, class = typename enable_if<!is_same<__compressed_pair_elem, __decay_t<_Up>>::value>::type>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(_Up&& __u)
-      : __value_(_CUDA_VSTD::forward<_Up>(__u))
-  {}
-
-  template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
-  __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args, __tuple_indices<_Indexes...>)
-      : __value_(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...)
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept
-  {
-    return __value_;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY const_reference __get() const noexcept
-  {
-    return __value_;
-  }
-
-private:
-  _Tp __value_;
-};
-
-template <class _Tp, int _Idx>
-struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
-{
-  typedef _Tp _ParamT;
-  typedef _Tp& reference;
-  typedef const _Tp& const_reference;
-  typedef _Tp __value_type;
-
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair_elem() = default;
-
-  template <class _Up, class = typename enable_if<!is_same<__compressed_pair_elem, __decay_t<_Up>>::value>::type>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair_elem(_Up&& __u)
-      : __value_type(_CUDA_VSTD::forward<_Up>(__u))
-  {}
-
-  template <class... _Args, size_t... _Indexes>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
-  __compressed_pair_elem(piecewise_construct_t, tuple<_Args...> __args, __tuple_indices<_Indexes...>)
-      : __value_type(_CUDA_VSTD::forward<_Args>(_CUDA_VSTD::get<_Indexes>(__args))...)
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY reference __get() noexcept
-  {
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY const_reference __get() const noexcept
-  {
-    return *this;
-  }
-};
-
-// Tag used to construct the second element of the compressed pair.
-struct __second_tag
-{};
-
-template <class _T1, class _T2>
-class __compressed_pair
-    : private __compressed_pair_elem<_T1, 0>
-    , private __compressed_pair_elem<_T2, 1>
-{
-  typedef _LIBCUDACXX_NODEBUG_TYPE __compressed_pair_elem<_T1, 0> _Base1;
-  typedef _LIBCUDACXX_NODEBUG_TYPE __compressed_pair_elem<_T2, 1> _Base2;
-
-  // NOTE: This static assert should never fire because __compressed_pair
-  // is *almost never* used in a scenario where it's possible for T1 == T2.
-  // (The exception is std::function where it is possible that the function
-  //  object and the allocator have the same type).
-  static_assert((!is_same<_T1, _T2>::value),
-                "__compressed_pair cannot be instantated when T1 and T2 are the same type; "
-                "The current implementation is NOT ABI-compatible with the previous "
-                "implementation for this configuration");
-
-public:
-  template <bool _Dummy = true,
-            class       = typename enable_if<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
-                                       && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>::type>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair()
-  {}
-
-  template <class _Tp, typename enable_if<!is_same<__decay_t<_Tp>, __compressed_pair>::value, bool>::type = true>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __compressed_pair(_Tp&& __t)
-      : _Base1(std::forward<_Tp>(__t))
-      , _Base2()
-  {}
-
-  template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair(__second_tag, _Tp&& __t)
-      : _Base1()
-      , _Base2(std::forward<_Tp>(__t))
-  {}
-
-  template <class _U1, class _U2>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __compressed_pair(_U1&& __t1, _U2&& __t2)
-      : _Base1(std::forward<_U1>(__t1))
-      , _Base2(std::forward<_U2>(__t2))
-  {}
-
-  template <class... _Args1, class... _Args2>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX17
-  __compressed_pair(piecewise_construct_t __pc, tuple<_Args1...> __first_args, tuple<_Args2...> __second_args)
-      : _Base1(__pc, _CUDA_VSTD::move(__first_args), typename __make_tuple_indices<sizeof...(_Args1)>::type())
-      , _Base2(__pc, _CUDA_VSTD::move(__second_args), typename __make_tuple_indices<sizeof...(_Args2)>::type())
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY typename _Base1::reference first() noexcept
-  {
-    return static_cast<_Base1&>(*this).__get();
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY typename _Base1::const_reference first() const noexcept
-  {
-    return static_cast<_Base1 const&>(*this).__get();
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY typename _Base2::reference second() noexcept
-  {
-    return static_cast<_Base2&>(*this).__get();
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY typename _Base2::const_reference second() const noexcept
-  {
-    return static_cast<_Base2 const&>(*this).__get();
-  }
-
-  _LIBCUDACXX_INLINE_VISIBILITY void
-  swap(__compressed_pair& __x) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
-  {
-    using std::swap;
-    swap(first(), __x.first());
-    swap(second(), __x.second());
-  }
-};
-
-template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY void swap(
-  __compressed_pair<_T1, _T2>& __x,
-  __compressed_pair<_T1, _T2>& __y) noexcept(__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value)
-{
-  __x.swap(__y);
 }
 
 // default_delete
@@ -1020,12 +865,12 @@ public:
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr unique_ptr(nullptr_t) noexcept
-      : __ptr_(pointer())
+      : __ptr_(pointer(), __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
   _LIBCUDACXX_INLINE_VISIBILITY explicit unique_ptr(pointer __p) noexcept
-      : __ptr_(__p)
+      : __ptr_(__p, __value_init_tag())
   {}
 
   template <bool _Dummy = true, class = _EnableIfDeleterConstructible<_LValRefType<_Dummy>>>
@@ -2060,7 +1905,6 @@ class __shared_ptr_emplace : public __shared_weak_count
 
 public:
 #  ifndef _LIBCUDACXX_HAS_NO_VARIADICS
-
   _LIBCUDACXX_INLINE_VISIBILITY __shared_ptr_emplace(_Alloc __a)
       : __data_(_CUDA_VSTD::move(__a))
   {}
