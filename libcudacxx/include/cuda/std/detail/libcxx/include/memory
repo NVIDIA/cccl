@@ -2694,16 +2694,6 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _Tp* undeclare_reachable(_Tp* __p)
   return static_cast<_Tp*>(__undeclare_reachable(__p));
 }
 
-template <typename _Alloc, typename _Traits=allocator_traits<_Alloc> >
-struct __noexcept_move_assign_container : public integral_constant<bool,
-    _Traits::propagate_on_container_move_assignment::value
-#if _CCCL_STD_VER > 2014
-        || _Traits::is_always_equal::value
-#else
-        && is_nothrow_move_assignable<_Alloc>::value
-#endif
-    > {};
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // __cuda_std__
