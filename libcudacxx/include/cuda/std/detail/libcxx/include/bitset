@@ -730,7 +730,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset&
   set(size_t __pos, bool __val = true)
   {
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
+    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset set argument out of range");
     }
@@ -747,7 +749,9 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& reset(size_t __pos)
   {
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
+    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset reset argument out of range");
     }
@@ -771,7 +775,9 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bitset& flip(size_t __pos)
   {
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
+    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset flip argument out of range");
     }
@@ -871,7 +877,9 @@ public:
 #endif
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool test(size_t __pos) const
   {
+    _CCCL_NV_DIAG_SUPPRESS(186) // "pointless" comparison with 0
     if (_Size == 0 || __pos >= _Size)
+    _CCCL_NV_DIAG_DEFAULT(186)
     {
       __throw_out_of_range("bitset test argument out of range");
     }

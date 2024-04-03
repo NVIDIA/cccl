@@ -18,7 +18,7 @@
 
 template <cuda::std::size_t N>
 __host__ __device__
-TEST_CONSTEXPR_CXX14 void test_index_const() {
+BITSET_TEST_CONSTEXPR void test_index_const() {
     span_stub<const char *> const cases = get_test_cases<N>();
     for (cuda::std::size_t c = 0; c != cases.size(); ++c) {
         cuda::std::bitset<N> const v(cases[c]);
@@ -34,7 +34,7 @@ TEST_CONSTEXPR_CXX14 void test_index_const() {
 }
 
 __host__ __device__
-TEST_CONSTEXPR_CXX14 bool test() {
+BITSET_TEST_CONSTEXPR bool test() {
   test_index_const<0>();
   test_index_const<1>();
   test_index_const<31>();
@@ -61,7 +61,7 @@ TEST_CONSTEXPR_CXX14 bool test() {
 int main(int, char**) {
   test();
   test_index_const<1000>(); // not in constexpr because of constexpr evaluation step limits
-#if TEST_STD_VER > 2011
+#if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_4) // 11.4 added support for constexpr device vars needed here
   static_assert(test(), "");
 #endif
 

@@ -101,12 +101,13 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
-    static _CCCL_CONSTEXPR_CXX14
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n);
     _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     size_t length(const char_type* __s);
     _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a);
+    _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n);
     _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       copy(char_type* __s1, const char_type* __s2, size_t __n);
@@ -229,20 +230,16 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     typedef mbstate_t state_type;
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline _CCCL_CONSTEXPR_CXX14
+    _LIBCUDACXX_INLINE_VISIBILITY static inline _CCCL_CONSTEXPR_CXX14
     void assign(char_type& __c1, const char_type& __c2) noexcept {__c1 = __c2;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY static inline constexpr bool eq(char_type __c1, char_type __c2) noexcept
             {return __c1 == __c2;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
+    _LIBCUDACXX_INLINE_VISIBILITY static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return (unsigned char)__c1 < (unsigned char)__c2;}
 
-    static _CCCL_CONSTEXPR_CXX14
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     int compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
-    _LIBCUDACXX_INLINE_VISIBILITY
-    static inline size_t _CCCL_CONSTEXPR_CXX14
+    _LIBCUDACXX_INLINE_VISIBILITY static inline size_t _CCCL_CONSTEXPR_CXX14
     length(const char_type* __s)  noexcept {
         NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
             size_t __len = 0;
@@ -250,14 +247,22 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
                 ++__len;
             return __len;
         ), (
+#ifdef _CCCL_COMPILER_GCC // GCC's builtin_strlen isn't reliable at constexpr time
+            if (__libcpp_is_constant_evaluated()) {
+                size_t __len = 0;
+                for (; !eq(*__s, char(0)); ++__s)
+                    ++__len;
+                return __len;
+            }
+#endif
             return __builtin_strlen(__s);
         ))
     }
-    static _CCCL_CONSTEXPR_CXX14
+    _LIBCUDACXX_INLINE_VISIBILITY static _CCCL_CONSTEXPR_CXX14
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
-        {return __n == 0 ? __s1 : (char_type*) memmove(__s1, __s2, __n);}
+        {return __n == 0 ? __s1 : (char_type*) __copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first - __n;}
     _LIBCUDACXX_INLINE_VISIBILITY
     static inline char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
         {
@@ -858,7 +863,7 @@ __str_find(const _CharT *__p, _SizeT __sz,
 }
 
 template <class _CharT, class _Traits>
-inline _CCCL_CONSTEXPR_CXX14 const _CharT *
+inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY const _CharT *
 __search_substring(const _CharT *__first1, const _CharT *__last1,
                    const _CharT *__first2, const _CharT *__last2) {
   // Take advantage of knowing source and pattern lengths.
@@ -1077,6 +1082,7 @@ struct __quoted_output_proxy
     _CharT  __delim;
     _CharT  __escape;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     __quoted_output_proxy(_Iter __f, _Iter __l, _CharT __d, _CharT __e)
     : __first(__f), __last(__l), __delim(__d), __escape(__e) {}
     //  This would be a nice place for a string_ref

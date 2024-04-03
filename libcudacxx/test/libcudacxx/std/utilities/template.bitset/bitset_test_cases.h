@@ -14,20 +14,26 @@
 #include "test_macros.h"
 #include "template_cost_testing.h" // for base cases of REPEAT_*
 
+#ifdef _LIBCUDACXX_CUDACC_BELOW_11_4 // 11.4 introduced support for constexpr device variables
+#define BITSET_TEST_CONSTEXPR
+#else
+#define BITSET_TEST_CONSTEXPR TEST_CONSTEXPR_CXX14
+#endif
+
 template<typename T>
 class span_stub {
 public:
     template<cuda::std::size_t Size>
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 span_stub(const T (&arr)[Size]) : _ptr(arr), _len(Size) {}
+    BITSET_TEST_CONSTEXPR span_stub(const T (&arr)[Size]) : _ptr(arr), _len(Size) {}
 
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 cuda::std::size_t size() const {
+    BITSET_TEST_CONSTEXPR cuda::std::size_t size() const {
         return _len;
     }
 
     __host__ __device__
-    TEST_CONSTEXPR_CXX14 const T & operator[](cuda::std::size_t idx) const {
+    BITSET_TEST_CONSTEXPR const T & operator[](cuda::std::size_t idx) const {
         return _ptr[idx];
     }
 
@@ -37,24 +43,24 @@ private:
 };
 
 #define DEFINE_CASES(N, ...) \
-    constexpr const char * cases_ ## N[] = { \
+    BITSET_TEST_CONSTEXPR const char * cases_ ## N[] = { \
         __VA_ARGS__ \
     }; \
     \
-    __device__ constexpr const char * cases_ ## N ## _device[] = { \
+    __device__ BITSET_TEST_CONSTEXPR const char * cases_ ## N ## _device[] = { \
         __VA_ARGS__ \
     }; \
     \
     template <> \
     __host__ __device__ \
-    TEST_CONSTEXPR_CXX14 span_stub<const char *> get_test_cases<N>() { \
+    BITSET_TEST_CONSTEXPR span_stub<const char *> get_test_cases<N>() { \
         NV_IF_ELSE_TARGET(NV_IS_HOST, (return cases_ ## N;), (return cases_ ## N ## _device;)); \
     }
 
 
 template <int N>
 __host__ __device__
-TEST_CONSTEXPR_CXX14 span_stub<const char *> get_test_cases();
+BITSET_TEST_CONSTEXPR span_stub<const char *> get_test_cases();
 
 DEFINE_CASES(0,
     "",
