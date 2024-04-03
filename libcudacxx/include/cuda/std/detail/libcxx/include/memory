@@ -2693,46 +2693,15 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _Tp* undeclare_reachable(_Tp* __p)
   return static_cast<_Tp*>(__undeclare_reachable(__p));
 }
 
-// --- Helper for container swap --
-template <typename _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY void __swap_allocator(_Alloc& __a1, _Alloc& __a2)
-#  if _CCCL_STD_VER >= 2014
-  noexcept
-#  else
-  noexcept(__is_nothrow_swappable<_Alloc>::value)
-#  endif
-{
-  __swap_allocator(
-    __a1, __a2, integral_constant<bool, _CUDA_VSTD::allocator_traits<_Alloc>::propagate_on_container_swap::value>());
-}
-
-template <typename _Alloc>
-_LIBCUDACXX_INLINE_VISIBILITY void __swap_allocator(_Alloc& __a1, _Alloc& __a2, true_type)
-#  if _CCCL_STD_VER >= 2014
-  noexcept
-#  else
-  noexcept(__is_nothrow_swappable<_Alloc>::value)
-#  endif
-{
-  using _CUDA_VSTD::swap;
-  swap(__a1, __a2);
-}
-
-template <typename _Alloc>
-inline _LIBCUDACXX_INLINE_VISIBILITY void __swap_allocator(_Alloc&, _Alloc&, false_type) noexcept
-{}
-
-template <typename _Alloc, typename _Traits = allocator_traits<_Alloc>>
-struct __noexcept_move_assign_container
-    : public integral_constant<bool,
-                               _Traits::propagate_on_container_move_assignment::value
-#  if _CCCL_STD_VER > 2014
-                                 || _Traits::is_always_equal::value
-#  else
-                                 && is_nothrow_move_assignable<_Alloc>::value
-#  endif
-                               >
-{};
+template <typename _Alloc, typename _Traits=allocator_traits<_Alloc> >
+struct __noexcept_move_assign_container : public integral_constant<bool,
+    _Traits::propagate_on_container_move_assignment::value
+#if _CCCL_STD_VER > 2014
+        || _Traits::is_always_equal::value
+#else
+        && is_nothrow_move_assignable<_Alloc>::value
+#endif
+    > {};
 
 #  ifndef _LIBCUDACXX_HAS_NO_VARIADICS
 template <class _Tp, class _Alloc>
