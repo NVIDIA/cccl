@@ -713,68 +713,20 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 #include <cuda/std/version>
 
 #ifndef __cuda_std__
+#include <__pragma_push>
+#endif //__cuda_std__
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-//enum class
-#if defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE)
-enum class pointer_safety : unsigned char {
-  relaxed,
-  preferred,
-  strict
-};
-#  else
-struct _LIBCUDACXX_TYPE_VIS pointer_safety
-{
-  enum __lx
-  {
-    relaxed,
-    preferred,
-    strict
-  };
-
-  __lx __v_;
-
-  _LIBCUDACXX_INLINE_VISIBILITY pointer_safety()
-      : __v_()
-  {}
-
-  _LIBCUDACXX_INLINE_VISIBILITY pointer_safety(__lx __v)
-      : __v_(__v)
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY operator int() const
-  {
-    return __v_;
-  }
-};
-#  endif
-
-#  if !defined(_LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE) && defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_LIBCUDACXX_FUNC_VIS pointer_safety get_pointer_safety() noexcept;
-#  else
-// This function is only offered in C++03 under ABI v1.
-inline _LIBCUDACXX_INLINE_VISIBILITY pointer_safety get_pointer_safety() noexcept
-{
-  return pointer_safety::relaxed;
-}
-#  endif
-
-_LIBCUDACXX_FUNC_VIS void declare_reachable(void* __p);
-_LIBCUDACXX_FUNC_VIS void declare_no_pointers(char* __p, size_t __n);
-_LIBCUDACXX_FUNC_VIS void undeclare_no_pointers(char* __p, size_t __n);
-_LIBCUDACXX_FUNC_VIS void* __undeclare_reachable(void* __p);
-
-template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp* undeclare_reachable(_Tp* __p)
-{
-  return static_cast<_Tp*>(__undeclare_reachable(__p));
-}
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // __cuda_std__
-
-#include <cuda/std/__pragma_pop>
+#ifndef __cuda_std__
+#include <__pragma_pop>
+#endif //__cuda_std__
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #  include <__pstl_memory>
