@@ -23,12 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__memory/addressof.h"
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 void* __voidify(_Tp& __from) {
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from) {
   // Cast away cv-qualifiers to allow modifying elements of a range through const iterators.
   return const_cast<void*>(static_cast<const volatile void*>(_CUDA_VSTD::addressof(__from)));
 }

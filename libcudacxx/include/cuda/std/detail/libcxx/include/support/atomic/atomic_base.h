@@ -12,7 +12,7 @@
 #ifndef _LIBCUDACXX_ATOMIC_BASE_H
 #define _LIBCUDACXX_ATOMIC_BASE_H
 
-#include "cxx_atomic.h"
+#include <cuda/std/detail/libcxx/include/support/atomic/cxx_atomic.h>
 
 // Guard ifdef for lock free query in case it is assigned elsewhere (MSVC/CUDA)
 #ifndef _LIBCUDACXX_ATOMIC_IS_LOCK_FREE

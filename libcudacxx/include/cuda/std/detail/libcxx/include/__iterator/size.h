@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/common_type.h"
-#include "../__type_traits/make_signed.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__type_traits/common_type.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_signed.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

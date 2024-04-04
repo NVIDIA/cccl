@@ -12,6 +12,6 @@
 #ifndef _LIBCUDACXX_ATOMIC_NVRTC_H
 #define _LIBCUDACXX_ATOMIC_NVRTC_H
 
-#include "cxx_atomic.h"
+#include <cuda/std/detail/libcxx/include/support/atomic/cxx_atomic.h>
 
 #endif // _LIBCUDACXX_ATOMIC_NVRTC_H

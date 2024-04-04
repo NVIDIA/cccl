@@ -23,11 +23,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__memory/addressof.h"
-#include "../cstddef"
-#include "../iosfwd"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/iosfwd>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

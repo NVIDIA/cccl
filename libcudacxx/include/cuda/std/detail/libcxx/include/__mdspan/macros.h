@@ -57,11 +57,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/config.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/config.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 #if _CCCL_STD_VER > 2011
 

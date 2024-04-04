@@ -78,7 +78,7 @@ CompareSwap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, Co
   if (compare_op(key_rhs, key_lhs))
   {
     Swap(key_lhs, key_rhs);
-    CUB_IF_CONSTEXPR(!KEYS_ONLY)
+    _CCCL_IF_CONSTEXPR(!KEYS_ONLY)
     {
       Swap(item_lhs, item_rhs);
     }
@@ -284,7 +284,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THRE
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadNetworkSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  CUB_IF_CONSTEXPR(IS_STABLE)
+  _CCCL_IF_CONSTEXPR(IS_STABLE)
   {
     StableOddEvenSort(keys, items, compare_op);
   }

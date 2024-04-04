@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___ALGORITHM_UNWRAP_ITER_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,12 +23,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__iterator/iterator_traits.h"
-#include "../__memory/pointer_traits.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__utility/declval.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -78,7 +78,7 @@ struct __unwrap_iter_impl<_Iter, true>
 template <class _Iter,
           class _Impl                                             = __unwrap_iter_impl<_Iter>,
           __enable_if_t<is_copy_constructible<_Iter>::value, int> = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 decltype(_Impl::__unwrap(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 decltype(_Impl::__unwrap(
   _CUDA_VSTD::declval<_Iter>()))
 __unwrap_iter(_Iter __i) noexcept
 {

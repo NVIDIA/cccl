@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

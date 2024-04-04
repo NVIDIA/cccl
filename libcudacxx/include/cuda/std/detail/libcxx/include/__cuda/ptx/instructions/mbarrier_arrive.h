@@ -13,7 +13,7 @@
 #define _CUDA_PTX_MBARRIER_ARRIVE_H_
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -26,9 +26,9 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-#include "../ptx_dot_variants.h"
-#include "../ptx_helper_functions.h"
-#include "../../../cstdint"
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
+#include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -121,14 +121,14 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm (
         "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
         : "r"(__as_ptr_smem(__addr))
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm (
         "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1];           // 3a. "
         : "=l"(__state)
@@ -173,7 +173,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm (
         "mbarrier.arrive.release.cta.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
@@ -181,7 +181,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
           "r"(__count)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm (
         "mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
         : "=l"(__state)
@@ -336,7 +336,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
   // __space == space_shared (due to parameter type constraint)
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
     _CUDA_VSTD::uint64_t __state;
-    if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cta) {
+    _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
       asm (
         "mbarrier.arrive.expect_tx.release.cta.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)
@@ -344,7 +344,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
           "r"(__tx_count)
         : "memory"
       );
-    } else if _LIBCUDACXX_CONSTEXPR_AFTER_CXX14 (__scope == scope_cluster) {
+    } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
       asm (
         "mbarrier.arrive.expect_tx.release.cluster.shared::cta.b64 %0, [%1], %2; // 8. "
         : "=l"(__state)

@@ -57,25 +57,25 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/default_accessor.h"
-#include "../__mdspan/layout_right.h"
-#include "../__mdspan/extents.h"
-#include "../__mdspan/compressed_pair.h"
-#include "../__type_traits/extent.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/rank.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_pointer.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__type_traits/remove_all_extents.h"
-#include "../__utility/as_const.h"
-#include "../__utility/integer_sequence.h"
-#include "../__utility/move.h"
-#include "../array"
-#include "../span"
+#include <cuda/std/detail/libcxx/include/__mdspan/default_accessor.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/layout_right.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/extents.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/compressed_pair.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/extent.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/rank.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_all_extents.h>
+#include <cuda/std/detail/libcxx/include/__utility/as_const.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/array>
+#include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

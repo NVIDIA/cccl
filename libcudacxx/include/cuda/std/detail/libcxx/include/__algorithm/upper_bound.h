@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,21 +22,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/half_positive.h"
-#include "../__algorithm/iterator_operations.h"
-#include "../__functional/identity.h"
-#include "../__functional/invoke.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/distance.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/half_positive.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/distance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _Iter, class _Sent, class _Tp, class _Proj>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Iter
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter
 __upper_bound(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp, _Proj&& __proj)
 {
   auto __len = _IterOps<_AlgPolicy>::distance(__first, __last);
@@ -58,7 +58,7 @@ __upper_bound(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
 }
 
 template <class _ForwardIterator, class _Tp, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
@@ -67,7 +67,7 @@ upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 }
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return _CUDA_VSTD::upper_bound(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, __less{});

@@ -213,7 +213,7 @@ struct AgentBlockSort
 
     if (IS_LAST_TILE)
     {
-      CUB_IF_CONSTEXPR(IS_STABLE) {
+      _CCCL_IF_CONSTEXPR(IS_STABLE) {
         BlockMergeSortT(storage.block_merge)
           .StableSort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
       }
@@ -225,7 +225,7 @@ struct AgentBlockSort
     }
     else
     {
-      CUB_IF_CONSTEXPR(IS_STABLE) {
+      _CCCL_IF_CONSTEXPR(IS_STABLE) {
         BlockMergeSortT(storage.block_merge).StableSort(keys_local, items_local, compare_op);
       }
       else

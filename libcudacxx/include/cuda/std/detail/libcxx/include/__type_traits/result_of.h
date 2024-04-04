@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/invoke.h"
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

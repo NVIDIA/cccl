@@ -281,7 +281,7 @@ public:
         WARP_SYNC(warp_merge_sort.get_member_mask());
       }
 
-      CUB_IF_CONSTEXPR(IS_STABLE) {
+      _CCCL_IF_CONSTEXPR(IS_STABLE) {
         warp_merge_sort.StableSort(keys, values, BinaryOpT{}, segment_size, oob_default);
       }
       else

@@ -157,38 +157,38 @@ template <class... Types>
 #  pragma system_header
 #endif // no system header
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__functional/unwrap_ref.h"
-#include "__functional_base"
-#include "__fwd/array.h"
-#include "__tuple_dir/apply_cv.h"
-#include "__tuple_dir/make_tuple_types.h"
-#include "__tuple_dir/sfinae_helpers.h"
-#include "__tuple_dir/structured_bindings.h"
-#include "__tuple_dir/tuple_element.h"
-#include "__tuple_dir/tuple_indices.h"
-#include "__tuple_dir/tuple_like.h"
-#include "__tuple_dir/tuple_size.h"
-#include "__tuple_dir/tuple_types.h"
-#include "__type_traits/maybe_const.h"
-#include "__utility/forward.h"
-#include "__utility/integer_sequence.h"
-#include "__utility/move.h"
-#include "__utility/pair.h"
-#include "__utility/piecewise_construct.h"
-#include "__utility/swap.h"
-#include "climits"
-#include "cstddef"
-#include "cstdint"
-#include "type_traits"
-#include "utility"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
+#include <cuda/std/detail/libcxx/include/__functional_base>
+#include <cuda/std/detail/libcxx/include/__fwd/array.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/apply_cv.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/make_tuple_types.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_like.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/maybe_const.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
+#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/climits>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 // standard-mandated includes
-#include "version"
+#include <cuda/std/version>
 
 // [tuple.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "compare"
+#include <cuda/std/compare>
 #endif
 
 #ifndef __cuda_std__
@@ -282,7 +282,7 @@ public:
 
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit __tuple_leaf(
+      _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(
           _Tp &&__t) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Hp,
                                                 _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t)) {
@@ -336,11 +336,11 @@ public:
     return 0;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Hp &
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Hp &
   get() noexcept {
     return __value_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Hp &
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Hp &
   get() const noexcept {
     return __value_;
   }
@@ -379,7 +379,7 @@ public:
 
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit __tuple_leaf(
+      _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(
           _Tp &&__t) noexcept((is_nothrow_constructible<_Hp, _Tp>::value))
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t)) {}
 
@@ -416,11 +416,11 @@ public:
     return 0;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _Hp &
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Hp &
   get() noexcept {
     return static_cast<_Hp &>(*this);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const _Hp &
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _Hp &
   get() const noexcept {
     return static_cast<const _Hp &>(*this);
   }
@@ -456,7 +456,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES
             bool __all_nothrow_constructible = __all<_LIBCUDACXX_TRAIT(
                 is_nothrow_constructible, _Tp, _Up)...>::value>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit __tuple_impl(
+      _CCCL_CONSTEXPR_CXX14 explicit __tuple_impl(
           __tuple_variadic_constructor_tag,
           _Up &&...__u) noexcept(__all_nothrow_constructible)
       : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<_Up>(__u))... {}
@@ -465,7 +465,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES
   // Recursively delegate until we have full rank
   template <class... _Up,
             __enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit __tuple_impl(
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit __tuple_impl(
       __tuple_variadic_constructor_tag __tag,
       _Up &&...__u) noexcept(noexcept(__tuple_impl(__tag,
                                                    _CUDA_VSTD::forward<_Up>(
@@ -496,7 +496,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES
   template <class _Tuple,
             __enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value,
                           int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   __tuple_impl(_Tuple &&__t) noexcept(
       (__all<_LIBCUDACXX_TRAIT(is_nothrow_constructible, _Tp,
                                __tuple_elem_at<_Tuple, _Indx>)...>::value))
@@ -679,7 +679,7 @@ template <class... _Tp> class _LIBCUDACXX_TEMPLATE_VIS tuple {
 
 public:
   template <size_t _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple>&
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple>&
   __get_impl() & noexcept
   {
     typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
@@ -687,7 +687,7 @@ public:
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple>&
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple>&
   __get_impl() const& noexcept
   {
     typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
@@ -695,7 +695,7 @@ public:
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple>&&
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple>&&
   __get_impl() && noexcept
   {
     typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
@@ -703,7 +703,7 @@ public:
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple>&&
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple>&&
   __get_impl() const&& noexcept
   {
     typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
@@ -748,7 +748,7 @@ public:
   template <class _Constraints = __tuple_constraints<_Tp...>,
             __enable_if_t<_Constraints::__implicit_variadic_copy_constructible,
                           int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   tuple(const _Tp &...__t) noexcept(
       _Constraints::__nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...) {}
@@ -757,7 +757,7 @@ public:
             __enable_if_t<_Constraints::__explicit_variadic_copy_constructible,
                           int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit tuple(
+      _CCCL_CONSTEXPR_CXX14 explicit tuple(
           const _Tp &...__t) noexcept(_Constraints::
                                           __nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...) {}
@@ -799,7 +799,7 @@ public:
 
   template <class... _Up, class _Constraints = __variadic_constraints<_Up...>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   tuple(_Up &&...__u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{},
                 _CUDA_VSTD::forward<_Up>(__u)...) {}
@@ -807,7 +807,7 @@ public:
   template <class... _Up, class _Constraints = __variadic_constraints<_Up...>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit tuple(_Up &&...__u) noexcept(
+      _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up &&...__u) noexcept(
           _Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{},
                 _CUDA_VSTD::forward<_Up>(__u)...) {}
@@ -824,7 +824,7 @@ public:
             __enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit tuple(_Up &&...__u) noexcept(
+      _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up &&...__u) noexcept(
           __base_noexcept_constructible<__tuple_variadic_constructor_tag,
                                         _Up...>::value)
       : __base_(__tuple_variadic_constructor_tag{},
@@ -859,7 +859,7 @@ public:
   template <class _TupleOfIteratorReferences,
             __enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
             __enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 tuple(_TupleOfIteratorReferences&& __t)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 tuple(_TupleOfIteratorReferences&& __t)
       : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t).template __to_tuple<_Tp...>(
         __make_tuple_indices_t<sizeof...(_Tp)>()))
   {}
@@ -869,7 +869,7 @@ public:
       __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
       __enable_if_t<!_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
       __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   tuple(_Tuple &&__t) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible,
                                                  _BaseT, _Tuple))
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t)) {}
@@ -878,7 +878,7 @@ public:
             class _Constraints = __tuple_like_constraints<const _Tuple &>,
             __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
   tuple(const _Tuple &__t) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible,
                                                       _BaseT, const _Tuple &))
       : __base_(__t) {}
@@ -889,7 +889,7 @@ public:
       __enable_if_t<!_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
       __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit tuple(_Tuple &&__t) noexcept(
+      _CCCL_CONSTEXPR_CXX14 explicit tuple(_Tuple &&__t) noexcept(
           _LIBCUDACXX_TRAIT(is_nothrow_constructible, _BaseT, _Tuple))
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t)) {}
 
@@ -898,7 +898,7 @@ public:
             __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY
-      _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 explicit tuple(
+      _CCCL_CONSTEXPR_CXX14 explicit tuple(
           const _Tuple
               &__t) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _BaseT,
                                                const _Tuple &))
@@ -993,28 +993,28 @@ inline _LIBCUDACXX_INLINE_VISIBILITY
 
 // get
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple<_Tp...>>&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&
 get(tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple<_Tp...>>&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&
 get(const tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 __tuple_element_t<_Ip, tuple<_Tp...>>&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple<_Tp...>>&&
 get(tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple<_Tp...>>&&
 get(const tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
@@ -1091,14 +1091,14 @@ get(tuple<_Args...> const &&__tup) noexcept {
 
 template <class... _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 tuple<_Tp &...>
+    _CCCL_CONSTEXPR_CXX14 tuple<_Tp &...>
     tie(_Tp &...__t) noexcept {
   return tuple<_Tp &...>(__t...);
 }
 
 template <class _Up> struct __ignore_t {
   template <class _Tp>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 const
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const
       __ignore_t &
       operator=(_Tp &&) const {
     return *this;
@@ -1110,7 +1110,7 @@ namespace {
 } // namespace
 
 template <class... _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     tuple<typename __unwrap_ref_decay<_Tp>::type...>
     make_tuple(_Tp &&...__t) {
   return tuple<typename __unwrap_ref_decay<_Tp>::type...>(
@@ -1119,14 +1119,14 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
 
 template <class... _Tp>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-    _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 tuple<_Tp &&...>
+    _CCCL_CONSTEXPR_CXX14 tuple<_Tp &&...>
     forward_as_tuple(_Tp &&...__t) noexcept {
   return tuple<_Tp &&...>(_CUDA_VSTD::forward<_Tp>(__t)...);
 }
 
 template <size_t _Ip> struct __tuple_equal {
   template <class _Tp, class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp &__x, const _Up &__y) {
     return __tuple_equal<_Ip - 1>()(__x, __y) &&
            _CUDA_VSTD::get<_Ip - 1>(__x) == _CUDA_VSTD::get<_Ip - 1>(__y);
@@ -1135,14 +1135,14 @@ template <size_t _Ip> struct __tuple_equal {
 
 template <> struct __tuple_equal<0> {
   template <class _Tp, class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp &, const _Up &) {
     return true;
   }
 };
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator==(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   static_assert(sizeof...(_Tp) == sizeof...(_Up),
                 "Can't compare tuples of different sizes");
@@ -1150,14 +1150,14 @@ operator==(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   return !(__x == __y);
 }
 
 template <size_t _Ip> struct __tuple_less {
   template <class _Tp, class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp &__x, const _Up &__y) {
     const size_t __idx = tuple_size<_Tp>::value - _Ip;
     if (_CUDA_VSTD::get<__idx>(__x) < _CUDA_VSTD::get<__idx>(__y)) {
@@ -1172,14 +1172,14 @@ template <size_t _Ip> struct __tuple_less {
 
 template <> struct __tuple_less<0> {
   template <class _Tp, class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp &, const _Up &) {
     return false;
   }
 };
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   static_assert(sizeof...(_Tp) == sizeof...(_Up),
                 "Can't compare tuples of different sizes");
@@ -1187,19 +1187,19 @@ operator<(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   return __y < __x;
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   return !(__x < __y);
 }
 
 template <class... _Tp, class... _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 bool
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const tuple<_Tp...> &__x, const tuple<_Up...> &__y) {
   return !(__y < __x);
 }
@@ -1245,7 +1245,7 @@ template <> struct __tuple_cat_return<> {
   typedef _LIBCUDACXX_NODEBUG_TYPE tuple<> type;
 };
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 tuple<>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 tuple<>
 tuple_cat() {
   return tuple<>();
 }
@@ -1290,7 +1290,7 @@ template <class... _Types, size_t... _I0, size_t... _J0>
 struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>,
                    __tuple_indices<_J0...>> {
   template <class _Tuple0>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
       typename __tuple_cat_return_ref<tuple<_Types...> &&, _Tuple0 &&>::type
       operator()(tuple<_Types...> __t, _Tuple0 &&__t0) {
     (void)__t;
@@ -1300,7 +1300,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>,
   }
 
   template <class _Tuple0, class _Tuple1, class... _Tuples>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
       typename __tuple_cat_return_ref<tuple<_Types...> &&, _Tuple0 &&,
                                       _Tuple1 &&, _Tuples &&...>::type
       operator()(tuple<_Types...> __t, _Tuple0 &&__t0, _Tuple1 &&__t1,
@@ -1322,7 +1322,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>,
 };
 
 template <class _Tuple0, class... _Tuples>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
     typename __tuple_cat_return<_Tuple0, _Tuples...>::type
     tuple_cat(_Tuple0 &&__t0, _Tuples &&...__tpls) {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
@@ -1338,7 +1338,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS uses_allocator<tuple<_Tp...>, _Alloc>
 
 template <class _T1, class _T2, bool _IsRef>
 template <class... _Args1, class... _Args2, size_t... _I1, size_t... _I2>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX17 __pair_base<_T1, _T2, _IsRef>::__pair_base(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __pair_base<_T1, _T2, _IsRef>::__pair_base(
   piecewise_construct_t,
   tuple<_Args1...>& __first_args,
   tuple<_Args2...>& __second_args,

@@ -8,12 +8,10 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::resource_ref properties
-
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/memory_resource>
 
@@ -63,7 +61,7 @@ struct resource {
   _LIBCUDACXX_TEMPLATE(class Property)
     _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend typename Property::value_type get_property(const resource& res, Property) noexcept {
-    return res._val;
+    return static_cast<typename Property::value_type>(res._val);
   }
 };
 

@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/equality_comparable.h"
-#include "../__concepts/semiregular.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/semiregular.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

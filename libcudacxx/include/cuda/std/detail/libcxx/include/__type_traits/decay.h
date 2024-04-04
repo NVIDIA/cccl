@@ -22,14 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/add_pointer.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_function.h"
-#include "../__type_traits/is_referenceable.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_extent.h"
-#include "../__type_traits/remove_reference.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/add_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_referenceable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_extent.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -8,5 +8,4 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "libcxx/include/__pragma_pop"
-
+#include <cuda/std/detail/libcxx/include/__pragma_pop>

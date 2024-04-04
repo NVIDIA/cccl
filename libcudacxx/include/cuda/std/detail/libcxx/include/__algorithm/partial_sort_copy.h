@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_COPY_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -22,19 +22,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/comp.h"
-#include "../__algorithm/comp_ref_type.h"
-#include "../__algorithm/iterator_operations.h"
-#include "../__algorithm/make_heap.h"
-#include "../__algorithm/make_projected.h"
-#include "../__algorithm/sift_down.h"
-#include "../__algorithm/sort_heap.h"
-#include "../__functional/identity.h"
-#include "../__functional/invoke.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__type_traits/is_callable.h"
-#include "../__utility/move.h"
-#include "../__utility/pair.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/comp.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/comp_ref_type.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/make_heap.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/make_projected.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/sift_down.h>
+#include <cuda/std/detail/libcxx/include/__algorithm/sort_heap.h>
+#include <cuda/std/detail/libcxx/include/__functional/identity.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_callable.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -46,7 +46,7 @@ template <class _AlgPolicy,
           class _Sentinel2,
           class _Proj1,
           class _Proj2>
-_LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 pair<_InputIterator, _RandomAccessIterator>
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _RandomAccessIterator>
 __partial_sort_copy(
   _InputIterator __first,
   _Sentinel1 __last,
@@ -84,7 +84,7 @@ __partial_sort_copy(
 }
 
 template <class _InputIterator, class _RandomAccessIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator partial_sort_copy(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,
@@ -106,7 +106,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAc
 }
 
 template <class _InputIterator, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator partial_sort_copy(
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator partial_sort_copy(
   _InputIterator __first,
   _InputIterator __last,
   _RandomAccessIterator __result_first,

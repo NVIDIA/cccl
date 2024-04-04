@@ -154,7 +154,7 @@ struct test_async_sort
         d0_data.begin(), d0_data.end()
       );
 
-      THRUST_IF_CONSTEXPR(wait_for_futures == WaitPolicy)
+      _CCCL_IF_CONSTEXPR(wait_for_futures == WaitPolicy)
       {
         f0.wait();
 

@@ -11,7 +11,7 @@
 #define _LIBCUDACXX_SUPPORT_IBM_LOCALE_MGMT_AIX_H
 
 #if defined(_AIX)
-#include "cstdlib"
+#include <cuda/std/detail/libcxx/include/cstdlib>
 
 #ifdef __cplusplus
 extern "C" {

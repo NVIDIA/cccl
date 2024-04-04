@@ -56,10 +56,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/dynamic_extent.h"
-#include "../__mdspan/macros.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include "../__mdspan/no_unique_address.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
 #endif
 
 // This is only needed for the non-standard-layout version of partially

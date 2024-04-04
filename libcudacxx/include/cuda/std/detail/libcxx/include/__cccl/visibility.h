@@ -15,8 +15,8 @@
 #error "<__cccl/visibility.h> should only be included in from <cuda/__cccl_config>"
 #endif // __CCCL_CONFIG
 
-#include "../__cccl/compiler.h"
-#include "../__cccl/system_header.h"
+#include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
+#include <cuda/std/detail/libcxx/include/__cccl/system_header.h>
 
 // We want to ensure that all warning emmiting from this header are supressed
 #if defined(_CCCL_FORCE_SYSTEM_HEADER_GCC)

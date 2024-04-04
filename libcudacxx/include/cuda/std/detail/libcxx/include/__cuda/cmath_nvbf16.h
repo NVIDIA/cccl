@@ -32,8 +32,7 @@ _CCCL_DIAG_POP
 
 #  include <nv/target>
 
-#  include "../__type_traits/integral_constant.h"
-#  include "../cmath"
+#  include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

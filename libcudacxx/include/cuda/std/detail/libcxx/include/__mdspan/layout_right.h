@@ -56,15 +56,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__mdspan/extents.h"
-#include "../__mdspan/layout_stride.h"
-#include "../__mdspan/macros.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__utility/integer_sequence.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__mdspan/extents.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/layout_stride.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

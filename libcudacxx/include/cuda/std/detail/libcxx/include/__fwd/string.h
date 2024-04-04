@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/memory_resource.h"
+#include <cuda/std/detail/libcxx/include/__fwd/memory_resource.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
