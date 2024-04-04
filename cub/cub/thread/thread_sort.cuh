@@ -46,18 +46,21 @@
 
 CUB_NAMESPACE_BEGIN
 
-template <typename IntT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr IntT NetworkDegree(IntT n, IntT m = IntT{1})
-{
-  return (m < n) ? NetworkDegree(n, m * 2) + 1 : 0;
-}
-
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 {
   T temp = lhs;
   lhs    = rhs;
   rhs    = temp;
+}
+
+namespace detail
+{
+
+template <typename IntT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr IntT NetworkDegree(IntT n, IntT m = IntT{1})
+{
+  return (m < n) ? NetworkDegree(n, m * 2) + 1 : 0;
 }
 
 template <typename KeyT>
@@ -78,14 +81,14 @@ CompareSwap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, Co
   if (compare_op(key_rhs, key_lhs))
   {
     Swap(key_lhs, key_rhs);
-    _CCCL_IF_CONSTEXPR(!KEYS_ONLY)
+    _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
       Swap(item_lhs, item_rhs);
     }
   }
 }
 
-#define SPECIALIZE_SORT_ASC(T)                                                            \
+#define CUB_SPECIALIZE_SORT_ASC(T)                                                        \
   template <>                                                                             \
   _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwap(                                        \
     T& key_lhs, T& key_rhs, NullType& item_lhs, NullType& item_rhs, cub::Less compare_op) \
@@ -93,7 +96,7 @@ CompareSwap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, Co
     CompareSwapMinMaxAsc(key_lhs, key_rhs);                                               \
   }
 
-#define SPECIALIZE_SORT_DESC(T)                                                              \
+#define CUB_SPECIALIZE_SORT_DESC(T)                                                          \
   template <>                                                                                \
   _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwap(                                           \
     T& key_lhs, T& key_rhs, NullType& item_lhs, NullType& item_rhs, cub::Greater compare_op) \
@@ -101,12 +104,17 @@ CompareSwap(KeyT& key_lhs, KeyT& key_rhs, ValueT& item_lhs, ValueT& item_rhs, Co
     CompareSwapMinMaxAsc(key_rhs, key_lhs);                                                  \
   }
 
-SPECIALIZE_SORT_ASC(::cuda::std::int32_t)
-SPECIALIZE_SORT_ASC(::cuda::std::uint32_t)
-SPECIALIZE_SORT_ASC(float)
-SPECIALIZE_SORT_DESC(::cuda::std::int32_t)
-SPECIALIZE_SORT_DESC(::cuda::std::uint32_t)
-SPECIALIZE_SORT_DESC(float)
+CUB_SPECIALIZE_SORT_ASC(::cuda::std::int32_t)
+CUB_SPECIALIZE_SORT_ASC(::cuda::std::uint32_t)
+CUB_SPECIALIZE_SORT_ASC(float)
+CUB_SPECIALIZE_SORT_DESC(::cuda::std::int32_t)
+CUB_SPECIALIZE_SORT_DESC(::cuda::std::uint32_t)
+CUB_SPECIALIZE_SORT_DESC(float)
+
+#undef CUB_SPECIALIZE_SORT_ASC
+#undef CUB_SPECIALIZE_SORT_DESC
+
+} // namespace detail
 
 /**
  * @brief Sorts data using odd-even transposition sort method
@@ -150,7 +158,7 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
 #pragma unroll
     for (int j = 1 & i; j < ITEMS_PER_THREAD - 1; j += 2)
     {
-      CompareSwap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
+      detail::CompareSwap(keys[j], keys[j + 1], items[j], items[j + 1], compare_op);
     } // inner loop
   } // outer loop
 }
@@ -200,7 +208,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void
 PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
   constexpr int N = ITEMS_PER_THREAD;
-  constexpr int D = NetworkDegree(N);
+  constexpr int D = detail::NetworkDegree(N);
   constexpr int M = 1 << D; // Smallest power of two greater than N
 
 #pragma unroll
@@ -213,7 +221,7 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
       for (int idx_lhs = j; idx_lhs < N - i; idx_lhs += 2 * i)
       {
         const int idx_rhs = idx_lhs + i;
-        CompareSwap(keys[idx_lhs], keys[idx_rhs], items[idx_lhs], items[idx_rhs], compare_op);
+        detail::CompareSwap(keys[idx_lhs], keys[idx_rhs], items[idx_lhs], items[idx_rhs], compare_op);
       }
     }
   }
@@ -235,7 +243,7 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
           int idx_rhs = idx_lhs + delta;
           if (idx_rhs < N)
           {
-            CompareSwap(keys[idx_lhs], keys[idx_rhs], items[idx_lhs], items[idx_rhs], compare_op);
+            detail::CompareSwap(keys[idx_lhs], keys[idx_rhs], items[idx_lhs], items[idx_rhs], compare_op);
           }
         }
       }
@@ -284,7 +292,7 @@ template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THRE
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadNetworkSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  _CCCL_IF_CONSTEXPR(IS_STABLE)
+  _CCCL_IF_CONSTEXPR (IS_STABLE)
   {
     StableOddEvenSort(keys, items, compare_op);
   }
