@@ -221,7 +221,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT, false>;
+      DispatchUnstableMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
@@ -385,13 +385,12 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT,
-                        ValueInputIteratorT,
-                        KeyIteratorT,
-                        ValueIteratorT,
-                        PromotedOffsetT,
-                        CompareOpT,
-                        false>;
+      DispatchUnstableMergeSort<KeyInputIteratorT,
+                                ValueInputIteratorT,
+                                KeyIteratorT,
+                                ValueIteratorT,
+                                PromotedOffsetT,
+                                CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -535,7 +534,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, false>;
+      DispatchUnstableMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -680,7 +679,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, false>;
+      DispatchUnstableMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -829,7 +828,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT, true>;
+      DispatchStableMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
@@ -960,7 +959,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, true>;
+      DispatchStableMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,
@@ -1110,7 +1109,7 @@ struct DeviceMergeSort
     using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     using DispatchMergeSortT =
-      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, true>;
+      DispatchStableMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
     return DispatchMergeSortT::Dispatch(
       d_temp_storage,

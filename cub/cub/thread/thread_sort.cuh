@@ -46,6 +46,12 @@
 
 CUB_NAMESPACE_BEGIN
 
+enum class stability_t
+{
+  stable,
+  unstable
+};
+
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 {
@@ -254,8 +260,8 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
 /**
  * @brief Sorts data using a sorting network
  *
- * Wraps around stable and unstable methods. When stability is not required, setting IS_STABLE
- * to false generally offers better performance.
+ * Wraps around stable and unstable methods. When stability is not required, the unstable sort offers better
+ * performance.
  *
  * For all methods, it is valid to pad `keys` to the right with a key M such that there is no
  * key K in `keys` that satisfies compare_op(M, K).
@@ -273,7 +279,7 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
  * @tparam ITEMS_PER_THREAD
  *   The number of items per thread
  *
- * @tparam IS_STABLE
+ * @tparam Stability
  *   Whether to use a stable sorting method.
  *
  * @param[in,out] keys
@@ -288,11 +294,11 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
  *
  * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
  */
-template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THREAD, bool IS_STABLE>
+template <typename KeyT, typename ValueT, typename CompareOp, int ITEMS_PER_THREAD, stability_t Stability>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 ThreadNetworkSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
-  _CCCL_IF_CONSTEXPR (IS_STABLE)
+  _CCCL_IF_CONSTEXPR (Stability == stability_t::stable)
   {
     StableOddEvenSort(keys, items, compare_op);
   }

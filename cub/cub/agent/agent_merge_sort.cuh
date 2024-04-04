@@ -67,7 +67,7 @@ struct AgentMergeSortPolicy
 
 /// \brief This agent is responsible for the initial in-tile sorting.
 template <typename Policy,
-          bool IS_STABLE,
+          stability_t Stability,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -213,7 +213,7 @@ struct AgentBlockSort
 
     if (IS_LAST_TILE)
     {
-      _CCCL_IF_CONSTEXPR(IS_STABLE) {
+      _CCCL_IF_CONSTEXPR(Stability == stability_t::stable) {
         BlockMergeSortT(storage.block_merge)
           .StableSort(keys_local, items_local, compare_op, num_remaining, keys_local[0]);
       }
@@ -225,7 +225,7 @@ struct AgentBlockSort
     }
     else
     {
-      _CCCL_IF_CONSTEXPR(IS_STABLE) {
+      _CCCL_IF_CONSTEXPR(Stability == stability_t::stable) {
         BlockMergeSortT(storage.block_merge).StableSort(keys_local, items_local, compare_op);
       }
       else

@@ -81,7 +81,12 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
     }
   }
 
-  cub::ThreadNetworkSort<KeyT, ValueT, CompareOp, ItemsPerThread, IsStable>(thread_keys, thread_values, CompareOp{});
+  cub::ThreadNetworkSort<KeyT,
+                         ValueT,
+                         CompareOp,
+                         ItemsPerThread,
+                         IsStable ? cub::stability_t::stable : cub::stability_t::unstable>(
+    thread_keys, thread_values, CompareOp{});
 
   for (int item = 0; item < ItemsPerThread; item++)
   {

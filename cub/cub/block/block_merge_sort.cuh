@@ -213,7 +213,7 @@ private:
 
   const unsigned int linear_tid;
 
-  template <typename CompareOp, bool IS_STABLE, bool IS_LAST_TILE = true>
+  template <typename CompareOp, stability_t Stability, bool IS_LAST_TILE = true>
   _CCCL_DEVICE _CCCL_FORCEINLINE void SortCommon(
     KeyT (&keys)[ITEMS_PER_THREAD],
     ValueT (&items)[ITEMS_PER_THREAD],
@@ -245,7 +245,8 @@ private:
     {
       // Note: ThreadNetworkSort guarantees that it is valid to pad with max_key even when using
       // unstable sorting networks.
-      ThreadNetworkSort<KeyT, ValueT, CompareOp, ITEMS_PER_THREAD, IS_STABLE>(keys, items, compare_op);
+      ThreadNetworkSort<KeyT, ValueT, CompareOp, ITEMS_PER_THREAD, Stability>(
+        keys, items, compare_op);
     }
 
     // each thread has sorted keys merge sort keys in shared memory
@@ -383,7 +384,7 @@ public:
                                        CompareOp compare_op)
   {
     ValueT items[ITEMS_PER_THREAD];
-    SortCommon<CompareOp, false, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+    SortCommon<CompareOp, stability_t::unstable, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -428,7 +429,7 @@ public:
                                        KeyT oob_default)
   {
     ValueT items[ITEMS_PER_THREAD];
-    SortCommon<CompareOp, false, true>(keys, items, compare_op, valid_items, oob_default);
+    SortCommon<CompareOp, stability_t::unstable, true>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**
@@ -461,7 +462,7 @@ public:
                                        ValueT (&items)[ITEMS_PER_THREAD],
                                        CompareOp compare_op)
   {
-    SortCommon<CompareOp, false, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+    SortCommon<CompareOp, stability_t::unstable, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -513,7 +514,7 @@ public:
                                        int valid_items,
                                        KeyT oob_default)
   {
-    SortCommon<CompareOp, false, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
+    SortCommon<CompareOp, stability_t::unstable, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**
@@ -545,7 +546,7 @@ public:
                                              CompareOp compare_op)
   {
     ValueT items[ITEMS_PER_THREAD];
-    SortCommon<CompareOp, true, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+    SortCommon<CompareOp, stability_t::stable, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -580,7 +581,7 @@ public:
                                              ValueT (&items)[ITEMS_PER_THREAD],
                                              CompareOp compare_op)
   {
-    SortCommon<CompareOp, true, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
+    SortCommon<CompareOp, stability_t::stable, false>(keys, items, compare_op, ITEMS_PER_TILE, keys[0]);
   }
 
   /**
@@ -627,7 +628,7 @@ public:
                                              KeyT oob_default)
   {
     ValueT items[ITEMS_PER_THREAD];
-    SortCommon<CompareOp, true, true>(keys, items, compare_op, valid_items, oob_default);
+    SortCommon<CompareOp, stability_t::stable, true>(keys, items, compare_op, valid_items, oob_default);
   }
 
   /**
@@ -680,11 +681,7 @@ public:
                                              int valid_items,
                                              KeyT oob_default)
   {
-    SortCommon<CompareOp, true, IS_LAST_TILE>(keys,
-                                              items,
-                                              compare_op,
-                                              valid_items,
-                                              oob_default);
+    SortCommon<CompareOp, stability_t::stable, IS_LAST_TILE>(keys, items, compare_op, valid_items, oob_default);
   }
 
 private:

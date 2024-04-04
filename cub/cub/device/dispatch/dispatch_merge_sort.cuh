@@ -73,7 +73,7 @@ struct dual_policy_agent_helper_t
  * applicable: we must either use the fallback for both or for none of the two agents.
  */
 template < typename DefaultPolicyT,
-           bool IS_STABLE,
+           stability_t Stability,
            typename KeyInputIteratorT,
            typename ValueInputIteratorT,
            typename KeyIteratorT,
@@ -90,7 +90,7 @@ private:
 
   using default_block_sort_agent_t = AgentBlockSort<
     DefaultPolicyT,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -101,7 +101,7 @@ private:
     ValueT>;
   using fallback_block_sort_agent_t = AgentBlockSort<
     fallback_policy_t,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -146,7 +146,7 @@ public:
 } // namespace detail
 
 template <typename ChainedPolicyT,
-          bool IS_STABLE,
+          stability_t Stability,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -158,7 +158,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(
   cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -181,7 +181,7 @@ __launch_bounds__(
 {
   using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -254,7 +254,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
 }
 
 template <typename ChainedPolicyT,
-          bool IS_STABLE,
+          stability_t Stability,
           typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
@@ -266,7 +266,7 @@ template <typename ChainedPolicyT,
 __launch_bounds__(
   cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -289,7 +289,7 @@ __launch_bounds__(
 {
   using MergeSortHelperT = cub::detail::merge_sort_vsmem_helper_t<
     typename ChainedPolicyT::ActivePolicy::MergeSortPolicy,
-    IS_STABLE,
+    Stability,
     KeyInputIteratorT,
     ValueInputIteratorT,
     KeyIteratorT,
@@ -391,8 +391,8 @@ template <typename KeyInputIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
           typename CompareOpT,
-          bool IS_STABLE = true,
-          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>,
+          stability_t Stability = stability_t::stable>
 struct DispatchMergeSort : SelectedPolicy
 {
   using KeyT   = cub::detail::value_t<KeyIteratorT>;
@@ -493,7 +493,7 @@ struct DispatchMergeSort : SelectedPolicy
 
     using merge_sort_helper_t = cub::detail::merge_sort_vsmem_helper_t<
       MergePolicyT,
-      IS_STABLE,
+      Stability,
       KeyInputIteratorT,
       ValueInputIteratorT,
       KeyIteratorT,
@@ -579,7 +579,7 @@ struct DispatchMergeSort : SelectedPolicy
         .doit(
           DeviceMergeSortBlockSortKernel<
             MaxPolicyT,
-            IS_STABLE,
+            Stability,
             KeyInputIteratorT,
             ValueInputIteratorT,
             KeyIteratorT,
@@ -666,7 +666,7 @@ struct DispatchMergeSort : SelectedPolicy
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream)
           .doit(
             DeviceMergeSortMergeKernel<MaxPolicyT,
-                                       IS_STABLE,
+                                       Stability,
                                        KeyInputIteratorT,
                                        ValueInputIteratorT,
                                        KeyIteratorT,
@@ -781,5 +781,39 @@ struct DispatchMergeSort : SelectedPolicy
       stream);
   }
 };
+
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+using DispatchStableMergeSort =
+  DispatchMergeSort<KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    SelectedPolicy,
+                    stability_t::stable>;
+
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+using DispatchUnstableMergeSort =
+  DispatchMergeSort<KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    SelectedPolicy,
+                    stability_t::unstable>;
 
 CUB_NAMESPACE_END
