@@ -12,7 +12,7 @@ __global__ void sub_relaxed_device_non_volatile(int* data, int n) {
 ; SM8X: Fatbin elf code
 ; SM8X: code for sm_8{{[0-9]}}
 ; SM8X-DAG:  {{^.*}}Function : {{.*}}sub_relaxed_device_non_volatile{{.*$}}
-; SM8X-NOT:  {{^.*}}STL.64{{.*$}}
+; SM8X-NOT:  {{^.*}}STL.{{[0-9]*}}{{.*$}}
 ; SM8X:      {{^.*}}ATOM.E.ADD.STRONG.GPU{{.*$}}
 ; SM8X-DAG:  {{^.*}}EXIT{{.*$}}
 */
