@@ -49,9 +49,9 @@ CUB_NAMESPACE_BEGIN
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 {
-  T temp = lhs;
-  lhs    = rhs;
-  rhs    = temp;
+  const T temp = lhs;
+  lhs          = rhs;
+  rhs          = temp;
 }
 
 namespace detail
@@ -66,10 +66,10 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr IntT NetworkDegree(IntT n, IntT m 
 template <typename KeyT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwapMinMaxAsc(KeyT& key_lhs, KeyT& key_rhs)
 {
-  KeyT pair_min = (cub::min)(key_lhs, key_rhs);
-  KeyT pair_max = (cub::max)(key_lhs, key_rhs);
-  key_lhs       = pair_min;
-  key_rhs       = pair_max;
+  const KeyT pair_min = (cub::min)(key_lhs, key_rhs);
+  const KeyT pair_max = (cub::max)(key_lhs, key_rhs);
+  key_lhs             = pair_min;
+  key_rhs             = pair_max;
 }
 
 template <typename KeyT, typename ValueT, typename CompareOp>
@@ -240,7 +240,7 @@ PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], 
       {
         if ((idx_lhs / i) % 2 == 1)
         {
-          int idx_rhs = idx_lhs + delta;
+          const int idx_rhs = idx_lhs + delta;
           if (idx_rhs < N)
           {
             detail::CompareSwap(keys[idx_lhs], keys[idx_rhs], items[idx_lhs], items[idx_rhs], compare_op);

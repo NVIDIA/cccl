@@ -448,28 +448,26 @@ CUB_TEST("Warp sort on keys-only works",
     oob_default,
     warp_sort_delegate{});
 
-  if(params::is_stable) {
+  if (params::is_stable)
+  {
     c2h::host_vector<type> h_in_out = d_in;
-    compute_stable_host_reference(h_in_out.begin(),
-                                  segment_sizes,
-                                  params::total_warps,
-                                  oob_default,
-                                  params::logical_warp_items,
-                                  CompareOp{});
+    compute_stable_host_reference(
+      h_in_out.begin(), segment_sizes, params::total_warps, oob_default, params::logical_warp_items, CompareOp{});
 
     REQUIRE(h_in_out == d_out);
-  } else {
-    c2h::host_vector<type> h_in = d_in;
+  }
+  else
+  {
+    c2h::host_vector<type> h_in  = d_in;
     c2h::host_vector<type> h_out = d_out;
 
-    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++)
+    {
       unsigned int segment_offset = params::logical_warp_items * segment_id;
-      unsigned int segment_size = params::logical_warp_items;
+      unsigned int segment_size   = params::logical_warp_items;
 
-      std::vector<type> h_in_segment(h_in.begin() + segment_offset,
-                                     h_in.begin() + segment_offset + segment_size);
-      std::vector<type> h_out_segment(h_out.begin() + segment_offset,
-                                      h_out.begin() + segment_offset + segment_size);
+      std::vector<type> h_in_segment(h_in.begin() + segment_offset, h_in.begin() + segment_offset + segment_size);
+      std::vector<type> h_out_segment(h_out.begin() + segment_offset, h_out.begin() + segment_offset + segment_size);
 
       REQUIRE_THAT(h_out_segment, Catch::Matchers::UnorderedEquals(h_in_segment));
       REQUIRE_SORTED(h_out_segment, CompareOp{});
@@ -508,34 +506,34 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
 
   c2h::host_vector<int> segment_sizes = d_segment_sizes;
 
-  if(params::is_stable) {
+  if (params::is_stable)
+  {
     c2h::host_vector<type> h_in_out = d_in;
-    compute_stable_host_reference(h_in_out.begin(),
-                          segment_sizes,
-                          params::total_warps,
-                          oob_default,
-                          params::logical_warp_items,
-                          CompareOp{});
+    compute_stable_host_reference(
+      h_in_out.begin(), segment_sizes, params::total_warps, oob_default, params::logical_warp_items, CompareOp{});
 
     REQUIRE(h_in_out == d_out);
-  } else {
-    c2h::host_vector<type> h_in = d_in;
+  }
+  else
+  {
+    c2h::host_vector<type> h_in  = d_in;
     c2h::host_vector<type> h_out = d_out;
 
-    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++)
+    {
       unsigned int segment_offset = params::logical_warp_items * segment_id;
-      unsigned int segment_size = segment_sizes[segment_id];
+      unsigned int segment_size   = segment_sizes[segment_id];
 
       // Separate in-bounds and out-of-bounds parts
-      std::vector<type> h_in_ib(h_in.begin() + segment_offset,
-                                h_in.begin() + segment_offset + segment_size);
-      std::vector<type> h_out_ib(h_out.begin() + segment_offset,
-                                 h_out.begin() + segment_offset + segment_size);
+      std::vector<type> h_in_ib(h_in.begin() + segment_offset, h_in.begin() + segment_offset + segment_size);
+      std::vector<type> h_out_ib(h_out.begin() + segment_offset, h_out.begin() + segment_offset + segment_size);
 
       REQUIRE_THAT(h_out_ib, Catch::Matchers::UnorderedEquals(h_in_ib));
       REQUIRE(std::all_of(h_out.begin() + segment_offset + segment_size,
                           h_out.begin() + segment_offset + params::logical_warp_items,
-                          [oob_default](type v) { return v == oob_default; }));
+                          [&](type v) {
+                            return v == oob_default;
+                          }));
       REQUIRE_SORTED(h_out_ib, CompareOp{});
     }
   }
@@ -576,39 +574,45 @@ CUB_TEST("Warp sort on keys-value pairs works",
     oob_default,
     warp_sort_delegate{});
 
-  if(params::is_stable) {
+  if (params::is_stable)
+  {
     c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
     c2h::host_vector<value_type> h_values_in_out = d_values_in;
     auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-    compute_stable_host_reference(cpu_kv_pairs,
-                                  segment_sizes,
-                                  params::total_warps,
-                                  thrust::make_tuple(oob_default, value_type{}),
-                                  params::logical_warp_items,
-                                  [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
-                                    CompareOp compare_op;
-                                    return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
-                                  });
+    compute_stable_host_reference(
+      cpu_kv_pairs,
+      segment_sizes,
+      params::total_warps,
+      thrust::make_tuple(oob_default, value_type{}),
+      params::logical_warp_items,
+      [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
+        CompareOp compare_op;
+        return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
+      });
 
     REQUIRE(h_keys_in_out == d_keys_out);
     REQUIRE(h_values_in_out == d_values_out);
-  } else {
+  }
+  else
+  {
     c2h::host_vector<key_type> h_keys_in      = d_keys_in;
     c2h::host_vector<value_type> h_values_in  = d_values_in;
     c2h::host_vector<key_type> h_keys_out     = d_keys_out;
     c2h::host_vector<value_type> h_values_out = d_values_out;
 
-    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++)
+    {
       unsigned int segment_offset = params::logical_warp_items * segment_id;
-      unsigned int segment_size = params::logical_warp_items;
+      unsigned int segment_size   = params::logical_warp_items;
 
       std::vector<std::pair<key_type, value_type>> h_pairs_in_segment(segment_size);
       std::vector<std::pair<key_type, value_type>> h_pairs_out_segment(segment_size);
-      for(unsigned int item_id = 0; item_id < segment_size; item_id++) {
-        h_pairs_in_segment[item_id] = std::make_pair(h_keys_in[item_id + segment_offset],
-                                                     h_values_in[item_id + segment_offset]);
-        h_pairs_out_segment[item_id] = std::make_pair(h_keys_out[item_id + segment_offset],
-                                                      h_values_out[item_id + segment_offset]);
+      for (unsigned int item_id = 0; item_id < segment_size; item_id++)
+      {
+        h_pairs_in_segment[item_id] =
+          std::make_pair(h_keys_in[item_id + segment_offset], h_values_in[item_id + segment_offset]);
+        h_pairs_out_segment[item_id] =
+          std::make_pair(h_keys_out[item_id + segment_offset], h_values_out[item_id + segment_offset]);
       }
 
       REQUIRE_THAT(h_pairs_out_segment, Catch::Matchers::UnorderedEquals(h_pairs_in_segment));
@@ -660,51 +664,57 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
 
   c2h::host_vector<int> segment_sizes          = d_segment_sizes;
 
-  if(params::is_stable) {
+  if (params::is_stable)
+  {
     c2h::host_vector<key_type> h_keys_in_out     = d_keys_in;
     c2h::host_vector<value_type> h_values_in_out = d_values_in;
     auto cpu_kv_pairs = thrust::make_zip_iterator(h_keys_in_out.begin(), h_values_in_out.begin());
-    compute_stable_host_reference(cpu_kv_pairs,
-                                  segment_sizes,
-                                  params::total_warps,
-                                  thrust::make_tuple(oob_default, value_type{}),
-                                  params::logical_warp_items,
-                                  [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
-                                    CompareOp compare_op;
-                                    return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
-                                  });
+    compute_stable_host_reference(
+      cpu_kv_pairs,
+      segment_sizes,
+      params::total_warps,
+      thrust::make_tuple(oob_default, value_type{}),
+      params::logical_warp_items,
+      [](const thrust::tuple<key_type, value_type>& lhs, const thrust::tuple<key_type, value_type>& rhs) -> bool {
+        CompareOp compare_op;
+        return compare_op(thrust::get<0>(lhs), thrust::get<0>(rhs));
+      });
 
     REQUIRE(h_keys_in_out == d_keys_out);
     REQUIRE(h_values_in_out == d_values_out);
-  } else {
+  }
+  else
+  {
     c2h::host_vector<key_type> h_keys_in      = d_keys_in;
     c2h::host_vector<value_type> h_values_in  = d_values_in;
     c2h::host_vector<key_type> h_keys_out     = d_keys_out;
     c2h::host_vector<value_type> h_values_out = d_values_out;
 
-    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++) {
+    for (unsigned int segment_id = 0; segment_id < params::total_warps; segment_id++)
+    {
       unsigned int segment_offset = params::logical_warp_items * segment_id;
-      unsigned int segment_size = segment_sizes[segment_id];
+      unsigned int segment_size   = segment_sizes[segment_id];
 
       std::vector<std::pair<key_type, value_type>> h_pairs_in_ib(segment_size);
       std::vector<std::pair<key_type, value_type>> h_pairs_out_ib(segment_size);
-      for(unsigned int item_id = 0; item_id < segment_size; item_id++) {
-        h_pairs_in_ib[item_id] = std::make_pair(h_keys_in[item_id + segment_offset],
-                                                h_values_in[item_id + segment_offset]);
-        h_pairs_out_ib[item_id] = std::make_pair(h_keys_out[item_id + segment_offset],
-                                                 h_values_out[item_id + segment_offset]);
+      for (unsigned int item_id = 0; item_id < segment_size; item_id++)
+      {
+        h_pairs_in_ib[item_id] =
+          std::make_pair(h_keys_in[item_id + segment_offset], h_values_in[item_id + segment_offset]);
+        h_pairs_out_ib[item_id] =
+          std::make_pair(h_keys_out[item_id + segment_offset], h_values_out[item_id + segment_offset]);
       }
-      std::vector<std::pair<key_type, value_type>> h_pairs_out_oob(
-        params::logical_warp_items - segment_size);
-      for(unsigned int item_id = 0; item_id < params::logical_warp_items - segment_size; item_id++) {
-        h_pairs_out_oob[item_id] = std::make_pair(h_keys_out[item_id + segment_offset + segment_size],
-                                                  h_values_out[item_id + segment_offset + segment_size]);
+      std::vector<std::pair<key_type, value_type>> h_pairs_out_oob(params::logical_warp_items - segment_size);
+      for (unsigned int item_id = 0; item_id < params::logical_warp_items - segment_size; item_id++)
+      {
+        h_pairs_out_oob[item_id] = std::make_pair(
+          h_keys_out[item_id + segment_offset + segment_size], h_values_out[item_id + segment_offset + segment_size]);
       }
 
       REQUIRE_THAT(h_pairs_out_ib, Catch::Matchers::UnorderedEquals(h_pairs_in_ib));
-      REQUIRE(std::all_of(h_pairs_out_oob.begin(), h_pairs_out_oob.end(),
-                          [oob_default](std::pair<key_type, value_type> p) {
-                            return p.first == oob_default && p.second == value_type{}; }));
+      REQUIRE(std::all_of(h_pairs_out_oob.begin(), h_pairs_out_oob.end(), [&](std::pair<key_type, value_type> p) {
+        return p.first == oob_default && p.second == value_type{};
+      }));
       REQUIRE_SORTED(
         h_pairs_out_ib,
         [](const std::pair<key_type, value_type>& lhs, const std::pair<key_type, value_type>& rhs) -> bool {

@@ -213,23 +213,20 @@ private:
 
   const unsigned int linear_tid;
 
-  template <typename CompareOp,
-            bool IS_STABLE,
-            bool IS_LAST_TILE = true>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SortCommon(KeyT (&keys)[ITEMS_PER_THREAD],
-                                       ValueT (&items)[ITEMS_PER_THREAD],
-                                       CompareOp compare_op,
-                                       int valid_items,
-                                       KeyT oob_default)
+  template <typename CompareOp, bool IS_STABLE, bool IS_LAST_TILE = true>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SortCommon(
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&items)[ITEMS_PER_THREAD],
+    CompareOp compare_op,
+    int valid_items,
+    KeyT oob_default)
   {
     if (IS_LAST_TILE)
     {
-      // if last tile, find valid max_key
-      // and fill the remaining keys with it
-      //
+      // if last tile, find valid max_key and fill the remaining keys with it
       KeyT max_key = oob_default;
 
-      #pragma unroll
+#pragma unroll
       for (int item = 1; item < ITEMS_PER_THREAD; ++item)
       {
         if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
@@ -244,7 +241,6 @@ private:
     }
 
     // if first element of thread is in input range, run per-thread sort
-    //
     if (!IS_LAST_TILE || ITEMS_PER_THREAD * linear_tid < valid_items)
     {
       // Note: ThreadNetworkSort guarantees that it is valid to pad with max_key even when using
@@ -252,24 +248,20 @@ private:
       ThreadNetworkSort<KeyT, ValueT, CompareOp, ITEMS_PER_THREAD, IS_STABLE>(keys, items, compare_op);
     }
 
-    // each thread has sorted keys
-    // merge sort keys in shared memory
-    //
-    for (int target_merged_threads_number = 2;
-         target_merged_threads_number <= NUM_THREADS;
+    // each thread has sorted keys merge sort keys in shared memory
+    for (int target_merged_threads_number = 2; target_merged_threads_number <= NUM_THREADS;
          target_merged_threads_number *= 2)
     {
-      int merged_threads_number = target_merged_threads_number / 2;
-      int mask = target_merged_threads_number - 1;
+      const int merged_threads_number = target_merged_threads_number / 2;
+      const int mask                  = target_merged_threads_number - 1;
 
       Sync();
 
       // store keys in shmem
-      //
-      #pragma unroll
+#pragma unroll
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
-        int idx                       = ITEMS_PER_THREAD * linear_tid + item;
+        const int idx                 = ITEMS_PER_THREAD * linear_tid + item;
         temp_storage.keys_shared[idx] = keys[item];
       }
 
@@ -277,64 +269,62 @@ private:
 
       int indices[ITEMS_PER_THREAD];
 
-      int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
-      int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
-      int size  = ITEMS_PER_THREAD * merged_threads_number;
+      const int first_thread_idx_in_thread_group_being_merged = ~mask & linear_tid;
+      const int start = ITEMS_PER_THREAD * first_thread_idx_in_thread_group_being_merged;
+      const int size  = ITEMS_PER_THREAD * merged_threads_number;
 
-      int thread_idx_in_thread_group_being_merged = mask & linear_tid;
+      const int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag =
-        (cub::min)(valid_items,
-                   ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      const int diag = (cub::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (cub::min)(valid_items, start);
-      int keys1_end = (cub::min)(valid_items, keys1_beg + size);
-      int keys2_beg = keys1_end;
-      int keys2_end = (cub::min)(valid_items, keys2_beg + size);
+      const int keys1_beg = (cub::min)(valid_items, start);
+      const int keys1_end = (cub::min)(valid_items, keys1_beg + size);
+      const int keys2_beg = keys1_end;
+      const int keys2_end = (cub::min)(valid_items, keys2_beg + size);
 
-      int keys1_count = keys1_end - keys1_beg;
-      int keys2_count = keys2_end - keys2_beg;
+      const int keys1_count = keys1_end - keys1_beg;
+      const int keys2_count = keys2_end - keys2_beg;
 
-      int partition_diag = MergePath<KeyT>(&temp_storage.keys_shared[keys1_beg],
-                                           &temp_storage.keys_shared[keys2_beg],
-                                           keys1_count,
-                                           keys2_count,
-                                           diag,
-                                           compare_op);
+      const int partition_diag = MergePath<KeyT>(
+        &temp_storage.keys_shared[keys1_beg],
+        &temp_storage.keys_shared[keys2_beg],
+        keys1_count,
+        keys2_count,
+        diag,
+        compare_op);
 
-      int keys1_beg_loc   = keys1_beg + partition_diag;
-      int keys1_end_loc   = keys1_end;
-      int keys2_beg_loc   = keys2_beg + diag - partition_diag;
-      int keys2_end_loc   = keys2_end;
-      int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
-      int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
-      SerialMerge(&temp_storage.keys_shared[0],
-                  keys1_beg_loc,
-                  keys2_beg_loc,
-                  keys1_count_loc,
-                  keys2_count_loc,
-                  keys,
-                  indices,
-                  compare_op);
+      const int keys1_beg_loc   = keys1_beg + partition_diag;
+      const int keys1_end_loc   = keys1_end;
+      const int keys2_beg_loc   = keys2_beg + diag - partition_diag;
+      const int keys2_end_loc   = keys2_end;
+      const int keys1_count_loc = keys1_end_loc - keys1_beg_loc;
+      const int keys2_count_loc = keys2_end_loc - keys2_beg_loc;
+      SerialMerge(
+        &temp_storage.keys_shared[0],
+        keys1_beg_loc,
+        keys2_beg_loc,
+        keys1_count_loc,
+        keys2_count_loc,
+        keys,
+        indices,
+        compare_op);
 
       if (!KEYS_ONLY)
       {
         Sync();
 
         // store keys in shmem
-        //
-        #pragma unroll
+#pragma unroll
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
-          int idx = ITEMS_PER_THREAD * linear_tid + item;
+          const int idx                  = ITEMS_PER_THREAD * linear_tid + item;
           temp_storage.items_shared[idx] = items[item];
         }
 
         Sync();
 
         // gather items from shmem
-        //
-        #pragma unroll
+#pragma unroll
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           items[item] = temp_storage.items_shared[indices[item]];

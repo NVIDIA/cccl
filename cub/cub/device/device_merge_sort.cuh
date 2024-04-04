@@ -218,25 +218,13 @@ struct DeviceMergeSort
             CompareOpT compare_op,
             cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 false>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT, false>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        d_items,
-                                        d_keys,
-                                        d_items,
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
   }
 
   template <typename KeyIteratorT,
@@ -394,25 +382,27 @@ struct DeviceMergeSort
                 CompareOpT compare_op,
                 cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
-                                                 ValueInputIteratorT,
-                                                 KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 false>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT,
+                        ValueInputIteratorT,
+                        KeyIteratorT,
+                        ValueIteratorT,
+                        PromotedOffsetT,
+                        CompareOpT,
+                        false>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_input_keys,
-                                        d_input_items,
-                                        d_output_keys,
-                                        d_output_items,
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_items,
+      d_output_keys,
+      d_output_items,
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyInputIteratorT,
@@ -436,20 +426,16 @@ struct DeviceMergeSort
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairsCopy<KeyInputIteratorT,
-                         ValueInputIteratorT,
-                         KeyIteratorT,
-                         ValueIteratorT,
-                         OffsetT,
-                         CompareOpT>(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_input_keys,
-                                     d_input_items,
-                                     d_output_keys,
-                                     d_output_items,
-                                     num_items,
-                                     compare_op,
-                                     stream);
+    return SortPairsCopy<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_items,
+      d_output_keys,
+      d_output_items,
+      num_items,
+      compare_op,
+      stream);
   }
 
   /**
@@ -546,25 +532,21 @@ struct DeviceMergeSort
            CompareOpT compare_op,
            cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 false>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, false>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyIteratorT,
@@ -582,12 +564,8 @@ struct DeviceMergeSort
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeys<KeyIteratorT, OffsetT, CompareOpT>(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_keys,
-                                                       num_items,
-                                                       compare_op,
-                                                       stream);
+    return SortKeys<KeyIteratorT, OffsetT, CompareOpT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
   /**
@@ -699,25 +677,21 @@ struct DeviceMergeSort
                CompareOpT compare_op,
                cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 false>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, false>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_input_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_output_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      static_cast<NullType*>(nullptr),
+      d_output_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyInputIteratorT,
@@ -852,25 +826,13 @@ struct DeviceMergeSort
                   CompareOpT compare_op,
                   cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 true>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT, true>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        d_items,
-                                        d_keys,
-                                        d_items,
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
   }
 
   template <typename KeyIteratorT,
@@ -995,25 +957,21 @@ struct DeviceMergeSort
                  CompareOpT compare_op,
                  cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 true>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, true>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyIteratorT,
@@ -1149,25 +1107,21 @@ struct DeviceMergeSort
                      CompareOpT compare_op,
                      cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT,
-                                                 true>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT, true>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_input_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_output_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      static_cast<NullType*>(nullptr),
+      d_output_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 };
 
