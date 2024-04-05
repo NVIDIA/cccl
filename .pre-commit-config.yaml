@@ -2,7 +2,7 @@
 ci:
     autofix_commit_msg: |
       [pre-commit.ci] auto code formatting
-    autofix_prs: true
+    autofix_prs: false
     autoupdate_branch: ''
     autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
     autoupdate_schedule: quarterly
