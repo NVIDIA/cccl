@@ -14,13 +14,16 @@
 
 #include <assert.h>
 
-int main(int argc, char** argv) {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (auto f = cuda::proclaim_return_type<double>(
-                         [] __device__() -> int { return 42; });
+int main(int argc, char ** argv)
+{
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
+        auto f = cuda::proclaim_return_type<double>(
+            [] __device__ () -> int { return 42; });
 
-                     assert(f() == 42);),
-                    static_assert(false);)
+        assert(f() == 42);
+    ),
+        static_assert(false);
+    )
 
-  return 0;
+    return 0;
 }

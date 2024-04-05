@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file thrust/system/cuda/error.h
  *  \brief CUDA-specific error reporting
  */
@@ -56,74 +57,75 @@ enum errc_t
 {
   // from cuda/include/driver_types.h
   // mirror their order
-  success                     = cudaSuccess,
-  missing_configuration       = cudaErrorMissingConfiguration,
-  memory_allocation           = cudaErrorMemoryAllocation,
-  initialization_error        = cudaErrorInitializationError,
-  launch_failure              = cudaErrorLaunchFailure,
-  launch_timeout              = cudaErrorLaunchTimeout,
-  launch_out_of_resources     = cudaErrorLaunchOutOfResources,
-  invalid_device_function     = cudaErrorInvalidDeviceFunction,
-  invalid_configuration       = cudaErrorInvalidConfiguration,
-  invalid_device              = cudaErrorInvalidDevice,
-  invalid_value               = cudaErrorInvalidValue,
-  invalid_pitch_value         = cudaErrorInvalidPitchValue,
-  invalid_symbol              = cudaErrorInvalidSymbol,
-  map_buffer_object_failed    = cudaErrorMapBufferObjectFailed,
-  unmap_buffer_object_failed  = cudaErrorUnmapBufferObjectFailed,
-  invalid_texture             = cudaErrorInvalidTexture,
-  invalid_texture_binding     = cudaErrorInvalidTextureBinding,
-  invalid_channel_descriptor  = cudaErrorInvalidChannelDescriptor,
-  invalid_memcpy_direction    = cudaErrorInvalidMemcpyDirection,
-  invalid_filter_setting      = cudaErrorInvalidFilterSetting,
-  invalid_norm_setting        = cudaErrorInvalidNormSetting,
-  cuda_runtime_unloading      = cudaErrorCudartUnloading,
-  unknown                     = cudaErrorUnknown,
-  invalid_resource_handle     = cudaErrorInvalidResourceHandle,
-  not_ready                   = cudaErrorNotReady,
-  insufficient_driver         = cudaErrorInsufficientDriver,
-  set_on_active_process_error = cudaErrorSetOnActiveProcess,
-  no_device                   = cudaErrorNoDevice,
-  ecc_uncorrectable           = cudaErrorECCUncorrectable,
+  success                            = cudaSuccess,
+  missing_configuration              = cudaErrorMissingConfiguration,
+  memory_allocation                  = cudaErrorMemoryAllocation,
+  initialization_error               = cudaErrorInitializationError,
+  launch_failure                     = cudaErrorLaunchFailure,
+  launch_timeout                     = cudaErrorLaunchTimeout,
+  launch_out_of_resources            = cudaErrorLaunchOutOfResources,
+  invalid_device_function            = cudaErrorInvalidDeviceFunction,
+  invalid_configuration              = cudaErrorInvalidConfiguration,
+  invalid_device                     = cudaErrorInvalidDevice,
+  invalid_value                      = cudaErrorInvalidValue,
+  invalid_pitch_value                = cudaErrorInvalidPitchValue,
+  invalid_symbol                     = cudaErrorInvalidSymbol,
+  map_buffer_object_failed           = cudaErrorMapBufferObjectFailed,
+  unmap_buffer_object_failed         = cudaErrorUnmapBufferObjectFailed,
+  invalid_texture                    = cudaErrorInvalidTexture,
+  invalid_texture_binding            = cudaErrorInvalidTextureBinding,
+  invalid_channel_descriptor         = cudaErrorInvalidChannelDescriptor,
+  invalid_memcpy_direction           = cudaErrorInvalidMemcpyDirection,
+  invalid_filter_setting             = cudaErrorInvalidFilterSetting,
+  invalid_norm_setting               = cudaErrorInvalidNormSetting,
+  cuda_runtime_unloading             = cudaErrorCudartUnloading,
+  unknown                            = cudaErrorUnknown,
+  invalid_resource_handle            = cudaErrorInvalidResourceHandle,
+  not_ready                          = cudaErrorNotReady,
+  insufficient_driver                = cudaErrorInsufficientDriver,
+  set_on_active_process_error        = cudaErrorSetOnActiveProcess,
+  no_device                          = cudaErrorNoDevice,
+  ecc_uncorrectable                  = cudaErrorECCUncorrectable,
 
 #if CUDART_VERSION >= 4020
-  shared_object_symbol_not_found = cudaErrorSharedObjectSymbolNotFound,
-  shared_object_init_failed      = cudaErrorSharedObjectInitFailed,
-  unsupported_limit              = cudaErrorUnsupportedLimit,
-  duplicate_variable_name        = cudaErrorDuplicateVariableName,
-  duplicate_texture_name         = cudaErrorDuplicateTextureName,
-  duplicate_surface_name         = cudaErrorDuplicateSurfaceName,
-  devices_unavailable            = cudaErrorDevicesUnavailable,
-  invalid_kernel_image           = cudaErrorInvalidKernelImage,
-  no_kernel_image_for_device     = cudaErrorNoKernelImageForDevice,
-  incompatible_driver_context    = cudaErrorIncompatibleDriverContext,
-  peer_access_already_enabled    = cudaErrorPeerAccessAlreadyEnabled,
-  peer_access_not_enabled        = cudaErrorPeerAccessNotEnabled,
-  device_already_in_use          = cudaErrorDeviceAlreadyInUse,
-  profiler_disabled              = cudaErrorProfilerDisabled,
-  assert_triggered               = cudaErrorAssert,
-  too_many_peers                 = cudaErrorTooManyPeers,
-  host_memory_already_registered = cudaErrorHostMemoryAlreadyRegistered,
-  host_memory_not_registered     = cudaErrorHostMemoryNotRegistered,
-  operating_system_error         = cudaErrorOperatingSystem,
+  shared_object_symbol_not_found     = cudaErrorSharedObjectSymbolNotFound,
+  shared_object_init_failed          = cudaErrorSharedObjectInitFailed,
+  unsupported_limit                  = cudaErrorUnsupportedLimit,
+  duplicate_variable_name            = cudaErrorDuplicateVariableName,
+  duplicate_texture_name             = cudaErrorDuplicateTextureName,
+  duplicate_surface_name             = cudaErrorDuplicateSurfaceName,
+  devices_unavailable                = cudaErrorDevicesUnavailable,
+  invalid_kernel_image               = cudaErrorInvalidKernelImage,
+  no_kernel_image_for_device         = cudaErrorNoKernelImageForDevice,
+  incompatible_driver_context        = cudaErrorIncompatibleDriverContext,
+  peer_access_already_enabled        = cudaErrorPeerAccessAlreadyEnabled,
+  peer_access_not_enabled            = cudaErrorPeerAccessNotEnabled,
+  device_already_in_use              = cudaErrorDeviceAlreadyInUse,
+  profiler_disabled                  = cudaErrorProfilerDisabled,
+  assert_triggered                   = cudaErrorAssert,
+  too_many_peers                     = cudaErrorTooManyPeers,
+  host_memory_already_registered     = cudaErrorHostMemoryAlreadyRegistered,
+  host_memory_not_registered         = cudaErrorHostMemoryNotRegistered,
+  operating_system_error             = cudaErrorOperatingSystem,
 #endif
 
 #if CUDART_VERSION >= 5000
-  peer_access_unsupported           = cudaErrorPeerAccessUnsupported,
-  launch_max_depth_exceeded         = cudaErrorLaunchMaxDepthExceeded,
-  launch_file_scoped_texture_used   = cudaErrorLaunchFileScopedTex,
-  launch_file_scoped_surface_used   = cudaErrorLaunchFileScopedSurf,
-  sync_depth_exceeded               = cudaErrorSyncDepthExceeded,
-  attempted_operation_not_permitted = cudaErrorNotPermitted,
-  attempted_operation_not_supported = cudaErrorNotSupported,
+  peer_access_unsupported            = cudaErrorPeerAccessUnsupported,
+  launch_max_depth_exceeded          = cudaErrorLaunchMaxDepthExceeded,
+  launch_file_scoped_texture_used    = cudaErrorLaunchFileScopedTex,
+  launch_file_scoped_surface_used    = cudaErrorLaunchFileScopedSurf,
+  sync_depth_exceeded                = cudaErrorSyncDepthExceeded,
+  attempted_operation_not_permitted  = cudaErrorNotPermitted,
+  attempted_operation_not_supported  = cudaErrorNotSupported,
 #endif
 
-  startup_failure = cudaErrorStartupFailure
+  startup_failure                    = cudaErrorStartupFailure
 }; // end errc_t
+
 
 } // end namespace errc
 
-} // namespace cuda
+} // end namespace cuda_cub
 
 /*! \return A reference to an object of a type derived from class \p thrust::error_category.
  *  \note The object's \p equivalent virtual functions shall behave as specified
@@ -135,41 +137,43 @@ enum errc_t
  *        shall return <tt>error_condition(ev,cuda_category())</tt>.
  *        Otherwise, the function shall return <tt>system_category.default_error_condition(ev)</tt>.
  */
-inline const error_category& cuda_category(void);
+inline const error_category &cuda_category(void);
+
 
 // XXX N3000 prefers is_error_code_enum<cuda::errc>
 
 /*! Specialization of \p is_error_code_enum for \p cuda::errc::errc_t
  */
-template <>
-struct is_error_code_enum<cuda::errc::errc_t> : thrust::detail::true_type
-{};
+template<> struct is_error_code_enum<cuda::errc::errc_t> : thrust::detail::true_type {};
+
 
 // XXX replace cuda::errc::errc_t with cuda::errc upon c++0x
 /*! \return <tt>error_code(static_cast<int>(e), cuda::error_category())</tt>
  */
 inline error_code make_error_code(cuda::errc::errc_t e);
 
+
 // XXX replace cuda::errc::errc_t with cuda::errc upon c++0x
 /*! \return <tt>error_condition(static_cast<int>(e), cuda::error_category())</tt>.
  */
 inline error_condition make_error_condition(cuda::errc::errc_t e);
 
-} // namespace system
+} // end system
 
 namespace cuda_cub
 {
 namespace errc = system::cuda::errc;
-} // namespace cuda_cub
+} // end cuda_cub
 
 namespace cuda
 {
 // XXX replace with using system::cuda_errc upon c++0x
 namespace errc = system::cuda::errc;
-} // namespace cuda
+} // end cuda
 
 using system::cuda_category;
 
 THRUST_NAMESPACE_END
 
 #include <thrust/system/cuda/detail/error.inl>
+

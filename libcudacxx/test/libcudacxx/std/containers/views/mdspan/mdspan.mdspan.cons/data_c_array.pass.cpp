@@ -13,27 +13,29 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-  {
-    typedef int data_t;
-    typedef size_t index_t;
 
-    data_t data[1] = {42};
-    cuda::std::mdspan<data_t, cuda::std::extents<index_t, 1> > m(data);
-    auto val = m(0);
+int main(int, char**)
+{
+    {
+        typedef int    data_t ;
+        typedef size_t index_t;
 
-    static_assert(m.is_exhaustive() == true, "");
+        data_t data[1] = {42};
+        cuda::std::mdspan<data_t, cuda::std::extents<index_t,1>> m(data);
+        auto val = m(0);
 
-    assert(m.data_handle() == data);
-    assert(m.rank() == 1);
-    assert(m.rank_dynamic() == 0);
-    assert(m.extent(0) == 1);
-    assert(m.static_extent(0) == 1);
-    assert(m.stride(0) == 1);
-    assert(val == 42);
-    assert(m.size() == 1);
-    assert(m.empty() == false);
-  }
+        static_assert(m.is_exhaustive() == true, "");
 
-  return 0;
+        assert(m.data_handle()    == data );
+        assert(m.rank()           == 1    );
+        assert(m.rank_dynamic()   == 0    );
+        assert(m.extent(0)        == 1    );
+        assert(m.static_extent(0) == 1    );
+        assert(m.stride(0)        == 1    );
+        assert(val                == 42   );
+        assert(m.size()           == 1    );
+        assert(m.empty()          == false);
+    }
+
+    return 0;
 }

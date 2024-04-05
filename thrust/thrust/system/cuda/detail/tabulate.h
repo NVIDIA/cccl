@@ -37,39 +37,43 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/distance.h>
-#  include <thrust/system/cuda/config.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
-#  include <thrust/system/cuda/execution_policy.h>
+#include <thrust/distance.h>
+#include <thrust/system/cuda/config.h>
+#include <thrust/system/cuda/execution_policy.h>
+#include <thrust/system/cuda/detail/parallel_for.h>
+#include <thrust/distance.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-namespace __tabulate
-{
+namespace __tabulate {
 
-template <class Iterator, class TabulateOp, class Size>
-struct functor
-{
-  Iterator items;
-  TabulateOp op;
-
-  _CCCL_HOST_DEVICE functor(Iterator items_, TabulateOp op_)
-      : items(items_)
-      , op(op_)
-  {}
-
-  void _CCCL_DEVICE operator()(Size idx)
+  template <class Iterator, class TabulateOp, class Size>
+  struct functor
   {
-    items[idx] = op(idx);
-  }
-}; // struct functor
+    Iterator items;
+    TabulateOp op;
 
-} // namespace __tabulate
+    _CCCL_HOST_DEVICE
+    functor(Iterator items_, TabulateOp op_)
+        : items(items_), op(op_) {}
 
-template <class Derived, class Iterator, class TabulateOp>
-void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
+    void _CCCL_DEVICE operator()(Size idx)
+    {
+      items[idx] = op(idx);
+    }
+  };    // struct functor
+
+}    // namespace __tabulate
+
+template <class Derived,
+          class Iterator,
+          class TabulateOp>
+void _CCCL_HOST_DEVICE
+tabulate(execution_policy<Derived>& policy,
+         Iterator                   first,
+         Iterator                   last,
+         TabulateOp                 tabulate_op)
 {
   typedef typename iterator_traits<Iterator>::difference_type size_type;
 
@@ -77,9 +81,11 @@ void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator firs
 
   typedef __tabulate::functor<Iterator, TabulateOp, size_type> functor_t;
 
-  cuda_cub::parallel_for(policy, functor_t(first, tabulate_op), count);
+  cuda_cub::parallel_for(policy,
+                         functor_t(first, tabulate_op),
+                         count);
 }
 
-} // namespace cuda_cub
+}    // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

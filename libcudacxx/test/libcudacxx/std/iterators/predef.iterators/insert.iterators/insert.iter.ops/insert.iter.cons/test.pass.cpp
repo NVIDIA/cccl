@@ -21,16 +21,23 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c) {
-  cuda::std::insert_iterator<C> i(c, c.begin());
+__host__ __device__
+void
+test(C c)
+{
+    cuda::std::insert_iterator<C> i(c, c.begin());
 }
 
-int main(int, char**) {
-  test(cuda::std::vector<int>());
-  test(nasty_vector<int>());
+int main(int, char**)
+{
+    test(cuda::std::vector<int>());
+    test(nasty_vector<int>());
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

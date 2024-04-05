@@ -8,6 +8,7 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
+
 // trivially_copyable not supported on gcc4.8
 // UNSUPPORTED: gcc-4.8
 
@@ -55,19 +56,21 @@
 #include <cuda/std/cassert>
 
 struct NotTriviallyCopyable {
-  __host__ __device__ NotTriviallyCopyable(int i) : i_(i) {}
-  __host__ __device__ NotTriviallyCopyable(const NotTriviallyCopyable& rhs)
-      : i_(rhs.i_) {}
-  int i_;
+    __host__ __device__ NotTriviallyCopyable ( int i ) : i_(i) {}
+    __host__ __device__ NotTriviallyCopyable ( const NotTriviallyCopyable &rhs) : i_(rhs.i_) {}
+    int i_;
 };
 
 template <class T>
-__host__ __device__ void test(T t) {
-  cuda::std::atomic<T> t0(t);
+__host__ __device__
+void test ( T t ) {
+    cuda::std::atomic<T> t0(t);
 }
 
-int main(int, char**) {
-  test(NotTriviallyCopyable(42));
+
+int main(int, char**)
+{
+    test(NotTriviallyCopyable(42));
 
   return 0;
 }

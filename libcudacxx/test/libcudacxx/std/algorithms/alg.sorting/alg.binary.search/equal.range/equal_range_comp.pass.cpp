@@ -69,9 +69,8 @@ int main(int, char**) {
 
 #if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");
-  static_assert(test<const int*>(),
-                ""); // clang otherwise hits the evaluation limit
-#endif               // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
+  static_assert(test<const int*>(), ""); // clang otherwise hits the evaluation limit
+#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

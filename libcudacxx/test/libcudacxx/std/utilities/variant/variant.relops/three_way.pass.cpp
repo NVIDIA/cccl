@@ -40,8 +40,7 @@ inline bool operator==(const MakeEmptyT&, const MakeEmptyT&) {
   assert(false);
   return false;
 }
-inline cuda::std::weak_ordering operator<= >
-    (const MakeEmptyT&, const MakeEmptyT&) {
+inline cuda::std::weak_ordering operator<=>(const MakeEmptyT&, const MakeEmptyT&) {
   assert(false);
   return cuda::std::weak_ordering::equivalent;
 }
@@ -121,7 +120,7 @@ constexpr bool test_three_way() {
   assert((test_with_types<int, long, cuda::std::strong_ordering>()));
 
   {
-    using V = cuda::std::variant<int, double>;
+    using V              = cuda::std::variant<int, double>;
     constexpr double nan = cuda::std::numeric_limits<double>::quiet_NaN();
     {
       constexpr V v1(cuda::std::in_place_type<int>, 1);
@@ -145,9 +144,7 @@ constexpr bool test_three_way() {
 
 // SFINAE tests
 template <class T, class U = T>
-concept has_three_way_op = requires(T & t, U& u) {
-  t <= > u;
-};
+concept has_three_way_op = requires (T& t, U& u) { t <=> u; };
 
 // cuda::std::three_way_comparable is a more stringent requirement that demands
 // operator== and a few other things.
@@ -160,37 +157,33 @@ struct HasSimpleOrdering {
 
 struct HasOnlySpaceship {
   constexpr bool operator==(const HasOnlySpaceship&) const = delete;
-  constexpr cuda::std::weak_ordering operator<= >
-      (const HasOnlySpaceship&) const;
+  constexpr cuda::std::weak_ordering operator<=>(const HasOnlySpaceship&) const;
 };
 
 struct HasFullOrdering {
   constexpr bool operator==(const HasFullOrdering&) const;
-  constexpr cuda::std::weak_ordering operator<= >
-      (const HasFullOrdering&) const;
+  constexpr cuda::std::weak_ordering operator<=>(const HasFullOrdering&) const;
 };
 
 // operator<=> must resolve the return types of all its union types'
 // operator<=>s to determine its own return type, so it is detectable by SFINAE
 static_assert(!has_three_way_op<HasSimpleOrdering>);
-static_assert(!has_three_way_op<cuda::std::variant<int, HasSimpleOrdering> >);
+static_assert(!has_three_way_op<cuda::std::variant<int, HasSimpleOrdering>>);
 
 static_assert(!three_way_comparable<HasSimpleOrdering>);
-static_assert(
-    !three_way_comparable<cuda::std::variant<int, HasSimpleOrdering> >);
+static_assert(!three_way_comparable<cuda::std::variant<int, HasSimpleOrdering>>);
 
 static_assert(has_three_way_op<HasOnlySpaceship>);
-static_assert(!has_three_way_op<cuda::std::variant<int, HasOnlySpaceship> >);
+static_assert(!has_three_way_op<cuda::std::variant<int, HasOnlySpaceship>>);
 
 static_assert(!three_way_comparable<HasOnlySpaceship>);
-static_assert(
-    !three_way_comparable<cuda::std::variant<int, HasOnlySpaceship> >);
+static_assert(!three_way_comparable<cuda::std::variant<int, HasOnlySpaceship>>);
 
-static_assert(has_three_way_op<HasFullOrdering>);
-static_assert(has_three_way_op<cuda::std::variant<int, HasFullOrdering> >);
+static_assert( has_three_way_op<HasFullOrdering>);
+static_assert( has_three_way_op<cuda::std::variant<int, HasFullOrdering>>);
 
-static_assert(three_way_comparable<HasFullOrdering>);
-static_assert(three_way_comparable<cuda::std::variant<int, HasFullOrdering> >);
+static_assert( three_way_comparable<HasFullOrdering>);
+static_assert( three_way_comparable<cuda::std::variant<int, HasFullOrdering>>);
 
 int main(int, char**) {
   test_three_way();

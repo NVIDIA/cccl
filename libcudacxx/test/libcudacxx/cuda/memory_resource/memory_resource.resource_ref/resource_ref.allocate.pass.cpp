@@ -59,7 +59,9 @@ void test_allocate() {
 }
 
 int main(int, char**) {
-  NV_IF_TARGET(NV_IS_HOST, (test_allocate();))
+    NV_IF_TARGET(NV_IS_HOST,(
+      test_allocate();
+    ))
 
-  return 0;
+    return 0;
 }

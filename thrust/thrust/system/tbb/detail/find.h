@@ -37,7 +37,10 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
+InputIterator find_if(execution_policy<DerivedPolicy> &exec,
+                      InputIterator first,
+                      InputIterator last,
+                      Predicate pred)
 {
   // tbb prefers generic::find_if to cpp::find_if
   return thrust::system::detail::generic::find_if(exec, first, last, pred);
@@ -47,3 +50,4 @@ InputIterator find_if(execution_policy<DerivedPolicy>& exec, InputIterator first
 } // end namespace tbb
 } // end namespace system
 THRUST_NAMESPACE_END
+

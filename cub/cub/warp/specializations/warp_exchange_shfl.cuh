@@ -45,10 +45,13 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename InputT,
+          int ITEMS_PER_THREAD,
+          int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
 class WarpExchangeShfl
 {
-  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
+  static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,
+                "LOGICAL_WARP_THREADS must be a power of two");
 
   static_assert(ITEMS_PER_THREAD == LOGICAL_WARP_THREADS,
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
@@ -219,7 +222,9 @@ class WarpExchangeShfl
     _CCCL_DEVICE void TransposeImpl(unsigned int, unsigned int, Int2Type<0>) {}
 
     template <int NUM_ENTRIES>
-    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id, const unsigned int mask, Int2Type<NUM_ENTRIES>)
+    _CCCL_DEVICE void TransposeImpl(const unsigned int lane_id,
+                                  const unsigned int mask,
+                                  Int2Type<NUM_ENTRIES>)
     {
       const bool xor_bit_set = lane_id & NUM_ENTRIES;
       Foreach<NUM_ENTRIES>(xor_bit_set, mask);
@@ -228,16 +233,13 @@ class WarpExchangeShfl
     }
 
   public:
-    _CCCL_DEVICE
-    CompileTimeArray(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE CompileTimeArray(const InputT (&input_items)[ITEMS_PER_THREAD],
+                                OutputT (&output_items)[ITEMS_PER_THREAD])
         : CompileTimeArray<OutputT, IDX + 1, SIZE>{input_items, output_items}
         , val{input_items[IDX]}
     {}
 
-    _CCCL_DEVICE ~CompileTimeArray()
-    {
-      this->output_items[IDX] = val;
-    }
+    _CCCL_DEVICE ~CompileTimeArray() { this->output_items[IDX] = val; }
 
     _CCCL_DEVICE void Transpose(const unsigned int lane_id, const unsigned int mask)
     {
@@ -258,10 +260,12 @@ class WarpExchangeShfl
     {}
 
   public:
-    _CCCL_DEVICE CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+    _CCCL_DEVICE CompileTimeArray(const InputT (&)[ITEMS_PER_THREAD],
+                                OutputT (&output_items)[ITEMS_PER_THREAD])
         : output_items{output_items}
     {}
   };
+
 
   const unsigned int lane_id;
   const unsigned int warp_id;
@@ -272,23 +276,23 @@ public:
 
   WarpExchangeShfl() = delete;
 
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage&)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchangeShfl(TempStorage &)
       : lane_id(IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
       , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
+                                                   OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     CompileTimeArray<OutputT, 0, ITEMS_PER_THREAD> arr{input_items, output_items};
     arr.Transpose(lane_id, member_mask);
   }
 
   template <typename OutputT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
+                                                   OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     BlockedToStriped(input_items, output_items);
   }
@@ -302,7 +306,9 @@ public:
   };
 
   template <typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(InputT (&)[ITEMS_PER_THREAD], OffsetT (&)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ScatterToStriped(InputT (&)[ITEMS_PER_THREAD],
+                   OffsetT (&)[ITEMS_PER_THREAD])
   {
     static_assert(dependent_false<OffsetT>::value,
                   "Shuffle specialization of warp exchange does not support\n"
@@ -310,9 +316,12 @@ public:
                   "                 OffsetT (&ranks)[ITEMS_PER_THREAD])");
   }
 
-  template <typename OutputT, typename OffsetT>
+  template <typename OutputT,
+            typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(const InputT (&)[ITEMS_PER_THREAD], OutputT (&)[ITEMS_PER_THREAD], OffsetT (&)[ITEMS_PER_THREAD])
+  ScatterToStriped(const InputT (&)[ITEMS_PER_THREAD],
+                   OutputT (&)[ITEMS_PER_THREAD],
+                   OffsetT (&)[ITEMS_PER_THREAD])
   {
     static_assert(dependent_false<OffsetT>::value,
                   "Shuffle specialization of warp exchange does not support\n"

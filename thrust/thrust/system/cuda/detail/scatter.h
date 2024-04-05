@@ -37,40 +37,77 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/iterator/permutation_iterator.h>
-#  include <thrust/system/cuda/detail/transform.h>
+#include <thrust/system/cuda/detail/transform.h>
+#include <thrust/iterator/permutation_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-template <class Derived, class ItemsIt, class MapIt, class ResultIt>
+template <class Derived,
+          class ItemsIt,
+          class MapIt,
+          class ResultIt>
 void _CCCL_HOST_DEVICE
-scatter(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, ResultIt result)
+scatter(execution_policy<Derived>& policy,
+        ItemsIt                    first,
+        ItemsIt                    last,
+        MapIt                      map,
+        ResultIt                   result)
 {
-  cuda_cub::transform(policy, first, last, thrust::make_permutation_iterator(result, map), identity());
+  cuda_cub::transform(policy,
+                   first,
+                   last,
+                   thrust::make_permutation_iterator(result, map),
+                   identity());
 }
 
-template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
-void _CCCL_HOST_DEVICE scatter_if(
-  execution_policy<Derived>& policy,
-  ItemsIt first,
-  ItemsIt last,
-  MapIt map,
-  StencilIt stencil,
-  ResultIt result,
-  Predicate predicate)
+template <class Derived,
+          class ItemsIt,
+          class MapIt,
+          class StencilIt,
+          class ResultIt,
+          class Predicate>
+void _CCCL_HOST_DEVICE
+scatter_if(execution_policy<Derived>& policy,
+           ItemsIt                    first,
+           ItemsIt                    last,
+           MapIt                      map,
+           StencilIt                  stencil,
+           ResultIt                   result,
+           Predicate                  predicate)
 {
-  cuda_cub::transform_if(
-    policy, first, last, stencil, thrust::make_permutation_iterator(result, map), identity(), predicate);
+  cuda_cub::transform_if(policy,
+                      first,
+                      last,
+                      stencil,
+                      thrust::make_permutation_iterator(result, map),
+                      identity(),
+                      predicate);
 }
 
-template <class Derived, class ItemsIt, class MapIt, class StencilIt, class ResultIt, class Predicate>
-void _CCCL_HOST_DEVICE scatter_if(
-  execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, MapIt map, StencilIt stencil, ResultIt result)
+template <class Derived,
+          class ItemsIt,
+          class MapIt,
+          class StencilIt,
+          class ResultIt,
+          class Predicate>
+void _CCCL_HOST_DEVICE
+scatter_if(execution_policy<Derived>& policy,
+           ItemsIt                    first,
+           ItemsIt                    last,
+           MapIt                      map,
+           StencilIt                  stencil,
+           ResultIt                   result)
 {
-  cuda_cub::scatter_if(policy, first, last, map, stencil, result, identity());
+  cuda_cub::scatter_if(policy,
+                    first,
+                    last,
+                    map,
+                    stencil,
+                    result,
+                    identity());
 }
+
 
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

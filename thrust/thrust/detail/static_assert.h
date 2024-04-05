@@ -34,8 +34,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/preprocessor.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/preprocessor.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -48,12 +48,15 @@ struct depend_on_instantiation
   THRUST_INLINE_INTEGRAL_MEMBER_CONSTANT bool value = x;
 };
 
-#if _CCCL_STD_VER >= 2017
-#  define THRUST_STATIC_ASSERT(B) static_assert(B)
-#else
-#  define THRUST_STATIC_ASSERT(B) static_assert(B, "static assertion failed")
-#endif
-#define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
+
+#  if _CCCL_STD_VER >= 2017
+#    define THRUST_STATIC_ASSERT(B)        static_assert(B)
+#  else
+#    define THRUST_STATIC_ASSERT(B)        static_assert(B, "static assertion failed")
+#  endif
+#  define THRUST_STATIC_ASSERT_MSG(B, msg) static_assert(B, msg)
+
+
 
 } // namespace detail
 

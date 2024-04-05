@@ -17,13 +17,14 @@
 //  2. be the same sizeof as void*.
 //  3. be an unsigned integral.
 
-int main(int, char**) {
-  static_assert(sizeof(cuda::std::size_t) == sizeof(void*),
-                "sizeof(cuda::std::size_t) == sizeof(void*)");
-  static_assert(cuda::std::is_unsigned<cuda::std::size_t>::value,
-                "cuda::std::is_unsigned<cuda::std::size_t>::value");
-  static_assert(cuda::std::is_integral<cuda::std::size_t>::value,
-                "cuda::std::is_integral<cuda::std::size_t>::value");
+int main(int, char**)
+{
+    static_assert(sizeof(cuda::std::size_t) == sizeof(void*),
+                  "sizeof(cuda::std::size_t) == sizeof(void*)");
+    static_assert(cuda::std::is_unsigned<cuda::std::size_t>::value,
+                  "cuda::std::is_unsigned<cuda::std::size_t>::value");
+    static_assert(cuda::std::is_integral<cuda::std::size_t>::value,
+                  "cuda::std::is_integral<cuda::std::size_t>::value");
 
   return 0;
 }

@@ -33,31 +33,31 @@
 
 #if !TUNE_BASE
 
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  elif TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#  else // TUNE_LOAD == 2
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#if TUNE_LOAD == 0
+#define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#elif TUNE_LOAD == 1
+#define TUNE_LOAD_MODIFIER cub::LOAD_LDG
+#else // TUNE_LOAD == 2
+#define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#endif // TUNE_LOAD
 
-#  define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
+#define TUNE_VEC_SIZE (1 << TUNE_VEC_SIZE_POW)
 
-#  if TUNE_MEM_PREFERENCE == 0
+#if TUNE_MEM_PREFERENCE == 0
 constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::GMEM;
-#  elif TUNE_MEM_PREFERENCE == 1
+#elif TUNE_MEM_PREFERENCE == 1
 constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::SMEM;
-#  else // TUNE_MEM_PREFERENCE == 2
+#else // TUNE_MEM_PREFERENCE == 2
 constexpr cub::BlockHistogramMemoryPreference MEM_PREFERENCE = cub::BLEND;
-#  endif // TUNE_MEM_PREFERENCE
+#endif // TUNE_MEM_PREFERENCE
 
-#  if TUNE_LOAD_ALGORITHM_ID == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  elif TUNE_LOAD_ALGORITHM_ID == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  else
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
-#  endif // TUNE_LOAD_ALGORITHM_ID
+#if TUNE_LOAD_ALGORITHM_ID == 0
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
+#elif TUNE_LOAD_ALGORITHM_ID == 1
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#else
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_STRIPED
+#endif // TUNE_LOAD_ALGORITHM_ID
 
 template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS>
 struct policy_hub_t
@@ -69,15 +69,14 @@ struct policy_hub_t
         ? (NUM_CHANNELS == 1 ? cub::BLOCK_LOAD_STRIPED : cub::BLOCK_LOAD_DIRECT)
         : TUNE_LOAD_ALGORITHM;
 
-    using AgentHistogramPolicyT = cub::AgentHistogramPolicy<
-      TUNE_THREADS,
-      TUNE_ITEMS,
-      load_algorithm,
-      TUNE_LOAD_MODIFIER,
-      TUNE_RLE_COMPRESS,
-      MEM_PREFERENCE,
-      TUNE_WORK_STEALING,
-      TUNE_VEC_SIZE>;
+    using AgentHistogramPolicyT = cub::AgentHistogramPolicy<TUNE_THREADS,
+                                                            TUNE_ITEMS,
+                                                            load_algorithm,
+                                                            TUNE_LOAD_MODIFIER,
+                                                            TUNE_RLE_COMPRESS,
+                                                            MEM_PREFERENCE,
+                                                            TUNE_WORK_STEALING,
+                                                            TUNE_VEC_SIZE>;
   };
 
   using MaxPolicy = policy_t;

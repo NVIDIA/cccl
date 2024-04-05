@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -26,12 +27,12 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/static_assert.h>
+#include <thrust/system/detail/generic/scan.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/scan.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/scan.h>
-#include <thrust/system/detail/generic/scan.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -41,54 +42,94 @@ namespace detail
 namespace generic
 {
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+  OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
+                                InputIterator first,
+                                InputIterator last,
+                                OutputIterator result)
 {
   // assume plus as the associative operator
   return thrust::inclusive_scan(exec, first, last, result, thrust::plus<>());
 } // end inclusive_scan()
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+  OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
+                                InputIterator first,
+                                InputIterator last,
+                                OutputIterator result)
 {
   // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = typename thrust::iterator_value<InputIterator>::type;
   return thrust::exclusive_scan(exec, first, last, result, ValueType{});
 } // end exclusive_scan()
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  T init)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename T>
+_CCCL_HOST_DEVICE
+  OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
+                                InputIterator first,
+                                InputIterator last,
+                                OutputIterator result,
+                                T init)
 {
   // assume plus as the associative operator
   return thrust::exclusive_scan(exec, first, last, result, init, thrust::plus<>());
 } // end exclusive_scan()
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, BinaryFunction)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator inclusive_scan(thrust::execution_policy<ExecutionPolicy> &,
+                                InputIterator,
+                                InputIterator,
+                                OutputIterator result,
+                                BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  THRUST_STATIC_ASSERT_MSG(
+    (thrust::detail::depend_on_instantiation<InputIterator, false>::value)
+  , "unimplemented for this system"
+  );
   return result;
 } // end inclusive_scan
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, T, BinaryFunction)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename T,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator exclusive_scan(thrust::execution_policy<ExecutionPolicy> &,
+                                InputIterator,
+                                InputIterator,
+                                OutputIterator result,
+                                T,
+                                BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  THRUST_STATIC_ASSERT_MSG(
+    (thrust::detail::depend_on_instantiation<InputIterator, false>::value)
+  , "unimplemented for this system"
+  );
   return result;
 } // end exclusive_scan()
+
 
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

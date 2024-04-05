@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file host_vector.h
  *  \brief A dynamically-sizable array of elements which resides in memory
  *         accessible to hosts.
@@ -34,8 +35,8 @@
 #include <thrust/detail/vector_base.h>
 
 #include <initializer_list>
-#include <utility>
 #include <vector>
+#include <utility>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -56,222 +57,209 @@ THRUST_NAMESPACE_BEGIN
  *  \see device_vector
  *  \see universal_vector
  */
-template <typename T, typename Alloc = std::allocator<T> >
-class host_vector : public detail::vector_base<T, Alloc>
+template<typename T, typename Alloc = std::allocator<T> >
+  class host_vector
+    : public detail::vector_base<T,Alloc>
 {
-private:
-  typedef detail::vector_base<T, Alloc> Parent;
+  private:
+    typedef detail::vector_base<T,Alloc> Parent;
 
-public:
-  /*! \cond
-   */
-  typedef typename Parent::size_type size_type;
-  typedef typename Parent::value_type value_type;
-  /*! \endcond
-   */
+  public:
+    /*! \cond
+     */
+    typedef typename Parent::size_type  size_type;
+    typedef typename Parent::value_type value_type;
+    /*! \endcond
+     */
 
-  /*! This constructor creates an empty \p host_vector.
-   */
-  _CCCL_HOST host_vector(void)
-      : Parent()
-  {}
+    /*! This constructor creates an empty \p host_vector.
+     */
+    _CCCL_HOST
+    host_vector(void)
+      :Parent() {}
 
-  /*! This constructor creates an empty \p host_vector.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  _CCCL_HOST host_vector(const Alloc& alloc)
-      : Parent(alloc)
-  {}
+    /*! This constructor creates an empty \p host_vector.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    _CCCL_HOST
+    host_vector(const Alloc &alloc)
+      :Parent(alloc) {}
 
-  /*! The destructor erases the elements.
-   */
-  //  Define an empty destructor to explicitly specify
-  //  its execution space qualifier, as a workaround for nvcc warning
-  _CCCL_HOST ~host_vector(void) {}
+    /*! The destructor erases the elements.
+     */
+    //  Define an empty destructor to explicitly specify
+    //  its execution space qualifier, as a workaround for nvcc warning
+    _CCCL_HOST
+    ~host_vector(void) {}
 
-  /*! This constructor creates a \p host_vector with the given
-   *  size.
-   *  \param n The number of elements to initially create.
-   */
-  _CCCL_HOST explicit host_vector(size_type n)
-      : Parent(n)
-  {}
+    /*! This constructor creates a \p host_vector with the given
+     *  size.
+     *  \param n The number of elements to initially create.
+     */
+    _CCCL_HOST
+    explicit host_vector(size_type n)
+      :Parent(n) {}
 
-  /*! This constructor creates a \p host_vector with the given
-   *  size.
-   *  \param n The number of elements to initially create.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  _CCCL_HOST explicit host_vector(size_type n, const Alloc& alloc)
-      : Parent(n, alloc)
-  {}
+    /*! This constructor creates a \p host_vector with the given
+     *  size.
+     *  \param n The number of elements to initially create.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    _CCCL_HOST
+    explicit host_vector(size_type n, const Alloc &alloc)
+      :Parent(n,alloc) {}
 
-  /*! This constructor creates a \p host_vector with copies
-   *  of an exemplar element.
-   *  \param n The number of elements to initially create.
-   *  \param value An element to copy.
-   */
-  _CCCL_HOST explicit host_vector(size_type n, const value_type& value)
-      : Parent(n, value)
-  {}
+    /*! This constructor creates a \p host_vector with copies
+     *  of an exemplar element.
+     *  \param n The number of elements to initially create.
+     *  \param value An element to copy.
+     */
+    _CCCL_HOST
+    explicit host_vector(size_type n, const value_type &value)
+      :Parent(n,value) {}
 
-  /*! This constructor creates a \p host_vector with copies
-   *  of an exemplar element.
-   *  \param n The number of elements to initially create.
-   *  \param value An element to copy.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  _CCCL_HOST explicit host_vector(size_type n, const value_type& value, const Alloc& alloc)
-      : Parent(n, value, alloc)
-  {}
+    /*! This constructor creates a \p host_vector with copies
+     *  of an exemplar element.
+     *  \param n The number of elements to initially create.
+     *  \param value An element to copy.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    _CCCL_HOST
+    explicit host_vector(size_type n, const value_type &value, const Alloc &alloc)
+      :Parent(n,value,alloc) {}
 
-  /*! Copy constructor copies from an exemplar \p host_vector.
-   *  \param v The \p host_vector to copy.
-   */
-  _CCCL_HOST host_vector(const host_vector& v)
-      : Parent(v)
-  {}
+    /*! Copy constructor copies from an exemplar \p host_vector.
+     *  \param v The \p host_vector to copy.
+     */
+    _CCCL_HOST
+    host_vector(const host_vector &v)
+      :Parent(v) {}
 
-  /*! Copy constructor copies from an exemplar \p host_vector.
-   *  \param v The \p host_vector to copy.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  _CCCL_HOST host_vector(const host_vector& v, const Alloc& alloc)
-      : Parent(v, alloc)
-  {}
+    /*! Copy constructor copies from an exemplar \p host_vector.
+     *  \param v The \p host_vector to copy.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    _CCCL_HOST
+    host_vector(const host_vector &v, const Alloc &alloc)
+      :Parent(v,alloc) {}
 
-  /*! Move constructor moves from another host_vector.
-   *  \param v The host_vector to move.
-   */
-  _CCCL_HOST host_vector(host_vector&& v)
-      : Parent(std::move(v))
-  {}
+    /*! Move constructor moves from another host_vector.
+     *  \param v The host_vector to move.
+     */
+     _CCCL_HOST
+    host_vector(host_vector &&v)
+      :Parent(std::move(v)) {}
 
-  /*! Move constructor moves from another host_vector.
-   *  \param v The host_vector to move.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  _CCCL_HOST host_vector(host_vector&& v, const Alloc& alloc)
-      : Parent(std::move(v), alloc)
-  {}
+    /*! Move constructor moves from another host_vector.
+     *  \param v The host_vector to move.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+     _CCCL_HOST
+    host_vector(host_vector &&v, const Alloc &alloc)
+      :Parent(std::move(v),alloc) {}
 
   /*! Assign operator copies from an exemplar \p host_vector.
    *  \param v The \p host_vector to copy.
    */
-  _CCCL_HOST host_vector& operator=(const host_vector& v)
-  {
-    Parent::operator=(v);
-    return *this;
-  }
+  _CCCL_HOST
+  host_vector &operator=(const host_vector &v)
+  { Parent::operator=(v); return *this; }
 
-  /*! Move assign operator moves from another host_vector.
-   *  \param v The host_vector to move.
-   */
-  _CCCL_HOST host_vector& operator=(host_vector&& v)
-  {
-    Parent::operator=(std::move(v));
-    return *this;
-  }
+    /*! Move assign operator moves from another host_vector.
+     *  \param v The host_vector to move.
+     */
+     _CCCL_HOST
+     host_vector &operator=(host_vector &&v)
+     { Parent::operator=(std::move(v)); return *this; }
 
-  /*! Copy constructor copies from an exemplar \p host_vector with different type.
-   *  \param v The \p host_vector to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const host_vector<OtherT, OtherAlloc>& v)
-      : Parent(v)
-  {}
+    /*! Copy constructor copies from an exemplar \p host_vector with different type.
+     *  \param v The \p host_vector to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector(const host_vector<OtherT,OtherAlloc> &v)
+      :Parent(v) {}
 
-  /*! Assign operator copies from an exemplar \p host_vector with different type.
-   *  \param v The \p host_vector to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const host_vector<OtherT, OtherAlloc>& v)
-  {
-    Parent::operator=(v);
-    return *this;
-  }
+    /*! Assign operator copies from an exemplar \p host_vector with different type.
+     *  \param v The \p host_vector to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector &operator=(const host_vector<OtherT,OtherAlloc> &v)
+    { Parent::operator=(v); return *this; }
 
-  /*! Copy constructor copies from an exemplar <tt>std::vector</tt>.
-   *  \param v The <tt>std::vector</tt> to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const std::vector<OtherT, OtherAlloc>& v)
-      : Parent(v)
-  {}
+    /*! Copy constructor copies from an exemplar <tt>std::vector</tt>.
+     *  \param v The <tt>std::vector</tt> to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector(const std::vector<OtherT,OtherAlloc> &v)
+      :Parent(v) {}
 
-  /*! Assign operator copies from an exemplar <tt>std::vector</tt>.
-   *  \param v The <tt>std::vector</tt> to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const std::vector<OtherT, OtherAlloc>& v)
-  {
-    Parent::operator=(v);
-    return *this;
-  }
+    /*! Assign operator copies from an exemplar <tt>std::vector</tt>.
+     *  \param v The <tt>std::vector</tt> to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector &operator=(const std::vector<OtherT,OtherAlloc> &v)
+    { Parent::operator=(v); return *this;}
 
-  /*! Copy construct from a \p vector_base whose element type is convertible
-   *  to \c T.
-   *
-   *  \param v The \p vector_base to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector(const detail::vector_base<OtherT, OtherAlloc>& v)
-      : Parent(v)
-  {}
+    /*! Copy construct from a \p vector_base whose element type is convertible
+     *  to \c T.
+     *
+     *  \param v The \p vector_base to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector(const detail::vector_base<OtherT,OtherAlloc> &v)
+      :Parent(v) {}
 
-  /*! Assign a \p vector_base whose element type is convertible to \c T.
-   *
-   *  \param v The \p vector_base to copy.
-   */
-  template <typename OtherT, typename OtherAlloc>
-  _CCCL_HOST host_vector& operator=(const detail::vector_base<OtherT, OtherAlloc>& v)
-  {
-    Parent::operator=(v);
-    return *this;
-  }
+    /*! Assign a \p vector_base whose element type is convertible to \c T.
+     *
+     *  \param v The \p vector_base to copy.
+     */
+    template<typename OtherT, typename OtherAlloc>
+    _CCCL_HOST
+    host_vector &operator=(const detail::vector_base<OtherT,OtherAlloc> &v)
+    { Parent::operator=(v); return *this; }
 
-  /*! This constructor builds a \p host_vector from an intializer_list.
-   *  \param il The intializer_list.
-   */
-  host_vector(std::initializer_list<T> il)
-      : Parent(il)
-  {}
+    /*! This constructor builds a \p host_vector from an intializer_list.
+     *  \param il The intializer_list.
+     */
+    host_vector(std::initializer_list<T> il)
+      :Parent(il) {}
 
-  /*! This constructor builds a \p host_vector from an intializer_list.
-   *  \param il The intializer_list.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  host_vector(std::initializer_list<T> il, const Alloc& alloc)
-      : Parent(il, alloc)
-  {}
+    /*! This constructor builds a \p host_vector from an intializer_list.
+     *  \param il The intializer_list.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    host_vector(std::initializer_list<T> il, const Alloc &alloc)
+      :Parent(il, alloc) {}
 
-  /*! Assign an \p intializer_list with a matching element type
-   *  \param il The intializer_list.
-   */
-  host_vector& operator=(std::initializer_list<T> il)
-  {
-    Parent::operator=(il);
-    return *this;
-  }
+    /*! Assign an \p intializer_list with a matching element type
+     *  \param il The intializer_list.
+     */
+    host_vector &operator=(std::initializer_list<T> il)
+    { Parent::operator=(il); return *this; }
 
-  /*! This constructor builds a \p host_vector from a range.
-   *  \param first The beginning of the range.
-   *  \param last The end of the range.
-   */
-  template <typename InputIterator>
-  _CCCL_HOST host_vector(InputIterator first, InputIterator last)
-      : Parent(first, last)
-  {}
+    /*! This constructor builds a \p host_vector from a range.
+     *  \param first The beginning of the range.
+     *  \param last The end of the range.
+     */
+    template<typename InputIterator>
+    _CCCL_HOST
+    host_vector(InputIterator first, InputIterator last)
+      :Parent(first, last) {}
 
-  /*! This constructor builds a \p host_vector from a range.
-   *  \param first The beginning of the range.
-   *  \param last The end of the range.
-   *  \param alloc The allocator to use by this host_vector.
-   */
-  template <typename InputIterator>
-  _CCCL_HOST host_vector(InputIterator first, InputIterator last, const Alloc& alloc)
-      : Parent(first, last, alloc)
-  {}
+    /*! This constructor builds a \p host_vector from a range.
+     *  \param first The beginning of the range.
+     *  \param last The end of the range.
+     *  \param alloc The allocator to use by this host_vector.
+     */
+    template<typename InputIterator>
+    _CCCL_HOST
+    host_vector(InputIterator first, InputIterator last, const Alloc &alloc)
+      :Parent(first, last, alloc) {}
 
 // declare these members for the purpose of Doxygenating them
 // they actually exist in a derived-from class
@@ -538,8 +526,8 @@ public:
  *  \p x The first \p host_vector of interest.
  *  \p y The second \p host_vector of interest.
  */
-template <typename T, typename Alloc>
-void swap(host_vector<T, Alloc>& a, host_vector<T, Alloc>& b)
+template<typename T, typename Alloc>
+  void swap(host_vector<T,Alloc> &a, host_vector<T,Alloc> &b)
 {
   a.swap(b);
 }

@@ -35,71 +35,74 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  UnaryFunction op);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename UnaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator transform(thrust::execution_policy<DerivedPolicy> &exec,
+                           InputIterator first,
+                           InputIterator last,
+                           OutputIterator result,
+                           UnaryFunction op);
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputIterator result,
-  BinaryFunction op);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator transform(thrust::execution_policy<DerivedPolicy> &exec,
+                           InputIterator1 first1,
+                           InputIterator1 last1,
+                           InputIterator2 first2,
+                           OutputIterator result,
+                           BinaryFunction op);
 
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename ForwardIterator,
-          typename UnaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  ForwardIterator result,
-  UnaryFunction unary_op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(thrust::execution_policy<DerivedPolicy> &exec,
+                               InputIterator first,
+                               InputIterator last,
+                               ForwardIterator result,
+                               UnaryFunction unary_op,
+                               Predicate pred);
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename ForwardIterator,
-          typename UnaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  ForwardIterator result,
-  UnaryFunction unary_op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(thrust::execution_policy<DerivedPolicy> &exec,
+                               InputIterator1 first,
+                               InputIterator1 last,
+                               InputIterator2 stencil,
+                               ForwardIterator result,
+                               UnaryFunction unary_op,
+                               Predicate pred);
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename ForwardIterator,
-          typename BinaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  InputIterator3 stencil,
-  ForwardIterator result,
-  BinaryFunction binary_op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename ForwardIterator,
+         typename BinaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(thrust::execution_policy<DerivedPolicy> &exec,
+                               InputIterator1 first1,
+                               InputIterator1 last1,
+                               InputIterator2 first2,
+                               InputIterator3 stencil,
+                               ForwardIterator result,
+                               BinaryFunction binary_op,
+                               Predicate pred);
 
 } // end namespace generic
 } // end namespace detail
@@ -107,3 +110,4 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/transform.inl>
+

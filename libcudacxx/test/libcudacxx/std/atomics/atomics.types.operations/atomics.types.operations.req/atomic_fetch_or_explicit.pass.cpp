@@ -27,40 +27,45 @@
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
 
-template <class T, template <typename, typename> typename Selector,
-          cuda::thread_scope>
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope>
 struct TestFn {
-  __host__ __device__ void operator()() const {
+  __host__ __device__
+  void operator()() const {
     {
-      typedef cuda::std::atomic<T> A;
-      Selector<A, constructor_initializer> sel;
-      A& t = *sel.construct();
-      cuda::std::atomic_init(&t, T(1));
-      assert(cuda::std::atomic_fetch_or_explicit(
-                 &t, T(2), cuda::std::memory_order_seq_cst) == T(1));
-      assert(t == T(3));
+        typedef cuda::std::atomic<T> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        cuda::std::atomic_init(&t, T(1));
+        assert(cuda::std::atomic_fetch_or_explicit(&t, T(2),
+               cuda::std::memory_order_seq_cst) == T(1));
+        assert(t == T(3));
     }
     {
-      typedef cuda::std::atomic<T> A;
-      Selector<volatile A, constructor_initializer> sel;
-      volatile A& t = *sel.construct();
-      cuda::std::atomic_init(&t, T(3));
-      assert(cuda::std::atomic_fetch_or_explicit(
-                 &t, T(2), cuda::std::memory_order_seq_cst) == T(3));
-      assert(t == T(3));
+        typedef cuda::std::atomic<T> A;
+        Selector<volatile A, constructor_initializer> sel;
+        volatile A & t = *sel.construct();
+        cuda::std::atomic_init(&t, T(3));
+        assert(cuda::std::atomic_fetch_or_explicit(&t, T(2),
+               cuda::std::memory_order_seq_cst) == T(3));
+        assert(t == T(3));
     }
   }
 };
 
-int main(int, char**) {
-  NV_DISPATCH_TARGET(NV_IS_HOST,
-                     (TestEachIntegralType<TestFn, local_memory_selector>()();),
-                     NV_PROVIDES_SM_70,
-                     (TestEachIntegralType<TestFn, local_memory_selector>()();))
+int main(int, char**)
+{
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        TestEachIntegralType<TestFn, local_memory_selector>()();
+    ),
+    NV_PROVIDES_SM_70,(
+        TestEachIntegralType<TestFn, local_memory_selector>()();
+    ))
 
-  NV_IF_TARGET(NV_IS_DEVICE,
-               (TestEachIntegralType<TestFn, shared_memory_selector>()();
-                TestEachIntegralType<TestFn, global_memory_selector>()();))
+    NV_IF_TARGET(NV_IS_DEVICE,(
+        TestEachIntegralType<TestFn, shared_memory_selector>()();
+        TestEachIntegralType<TestFn, global_memory_selector>()();
+    ))
 
-  return 0;
+    return 0;
 }

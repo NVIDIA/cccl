@@ -1,28 +1,22 @@
+#include <unittest/unittest.h>
+#include <thrust/partition.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/retag.h>
-#include <thrust/partition.h>
 
-#include <unittest/unittest.h>
-
-template <typename T>
+template<typename T>
 struct is_even
 {
-  __host__ __device__ bool operator()(T x) const
-  {
-    return ((int) x % 2) == 0;
-  }
+  __host__ __device__
+  bool operator()(T x) const { return ((int) x % 2) == 0; }
 };
 
-template <typename Vector>
+template<typename Vector>
 void TestIsPartitionedSimple(void)
 {
   typedef typename Vector::value_type T;
 
   Vector v(4);
-  v[0] = 1;
-  v[1] = 1;
-  v[2] = 1;
-  v[3] = 0;
+  v[0] = 1; v[1] = 1; v[2] = 1; v[3] = 0;
 
   // empty partition
   ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin(), thrust::identity<T>()));
@@ -39,10 +33,7 @@ void TestIsPartitionedSimple(void)
   // one element false partition
   ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin() + 3, v.end(), thrust::identity<T>()));
 
-  v[0] = 1;
-  v[1] = 0;
-  v[2] = 1;
-  v[3] = 1;
+  v[0] = 1; v[1] = 0; v[2] = 1; v[3] = 1;
 
   // not partitioned
   ASSERT_EQUAL_QUIET(false, thrust::is_partitioned(v.begin(), v.end(), thrust::identity<T>()));
@@ -69,8 +60,9 @@ void TestIsPartitioned(void)
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestIsPartitioned);
 
-template <typename InputIterator, typename Predicate>
-bool is_partitioned(my_system& system, InputIterator /*first*/, InputIterator, Predicate)
+
+template<typename InputIterator, typename Predicate>
+bool is_partitioned(my_system &system, InputIterator /*first*/, InputIterator, Predicate)
 {
   system.validate_dispatch();
   return false;
@@ -87,7 +79,8 @@ void TestIsPartitionedDispatchExplicit()
 }
 DECLARE_UNITTEST(TestIsPartitionedDispatchExplicit);
 
-template <typename InputIterator, typename Predicate>
+
+template<typename InputIterator, typename Predicate>
 bool is_partitioned(my_tag, InputIterator first, InputIterator, Predicate)
 {
   *first = 13;
@@ -98,8 +91,11 @@ void TestIsPartitionedDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::is_partitioned(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 0);
+  thrust::is_partitioned(thrust::retag<my_tag>(vec.begin()),
+                         thrust::retag<my_tag>(vec.end()),
+                         0);
 
   ASSERT_EQUAL(13, vec.front());
 }
 DECLARE_UNITTEST(TestIsPartitionedDispatchImplicit);
+

@@ -45,28 +45,30 @@
 
 // enumerate host compilers we know about
 #define CUB_HOST_COMPILER_UNKNOWN 0
-#define CUB_HOST_COMPILER_MSVC    1
-#define CUB_HOST_COMPILER_GCC     2
-#define CUB_HOST_COMPILER_CLANG   3
+#define CUB_HOST_COMPILER_MSVC 1
+#define CUB_HOST_COMPILER_GCC 2
+#define CUB_HOST_COMPILER_CLANG 3
 
 // enumerate device compilers we know about
 #define CUB_DEVICE_COMPILER_UNKNOWN 0
-#define CUB_DEVICE_COMPILER_MSVC    1
-#define CUB_DEVICE_COMPILER_GCC     2
-#define CUB_DEVICE_COMPILER_NVCC    3
-#define CUB_DEVICE_COMPILER_CLANG   4
+#define CUB_DEVICE_COMPILER_MSVC 1
+#define CUB_DEVICE_COMPILER_GCC 2
+#define CUB_DEVICE_COMPILER_NVCC 3
+#define CUB_DEVICE_COMPILER_CLANG 4
 
 // figure out which host compiler we're using
 #if defined(_CCCL_COMPILER_MSVC)
-#  define CUB_HOST_COMPILER     CUB_HOST_COMPILER_MSVC
-#  define CUB_MSVC_VERSION      _MSC_VER
+#  define CUB_HOST_COMPILER CUB_HOST_COMPILER_MSVC
+#  define CUB_MSVC_VERSION _MSC_VER
 #  define CUB_MSVC_VERSION_FULL _MSC_FULL_VER
 #elif defined(_CCCL_COMPILER_CLANG)
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_CLANG
-#  define CUB_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#  define CUB_CLANG_VERSION                                                    \
+    (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #elif defined(_CCCL_COMPILER_GCC)
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_GCC
-#  define CUB_GCC_VERSION   (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  define CUB_GCC_VERSION                                                      \
+    (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 
 // figure out which device compiler we're using

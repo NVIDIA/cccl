@@ -35,8 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 // 9.7.8.24.10. Data Movement and Conversion Instructions: cp.reduce.async.bulk.tensor
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor
 /*
-// cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80,
-SM_90
+// cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
 // .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
@@ -62,62 +61,90 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      _CCCL_IF_CONSTEXPR (__op == op_add) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
-        asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [%0, {%1}], [%2]; // 1a."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      }),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
+  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec || __op == op_and_op || __op == op_or_op || __op == op_xor_op, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CCCL_IF_CONSTEXPR (__op == op_add) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [%0, {%1}], [%2]; // 1a."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+  ));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
-// cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80,
-SM_90
+// cp.reduce.async.bulk.tensor.2d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1b. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
 // .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
@@ -143,62 +170,98 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      _CCCL_IF_CONSTEXPR (__op == op_add) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
-        asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
-            :
-            : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      }),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
+  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec || __op == op_and_op || __op == op_or_op || __op == op_xor_op, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CCCL_IF_CONSTEXPR (__op == op_add) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+  ));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
-// cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80,
-SM_90
+// cp.reduce.async.bulk.tensor.3d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1c. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
 // .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
@@ -224,94 +287,106 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      _CCCL_IF_CONSTEXPR (__op == op_add) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
-        asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      }),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
+  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec || __op == op_and_op || __op == op_or_op || __op == op_xor_op, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CCCL_IF_CONSTEXPR (__op == op_add) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+  ));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
-// cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80,
-SM_90
+// cp.reduce.async.bulk.tensor.4d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1d. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
 // .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
@@ -337,102 +412,114 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      _CCCL_IF_CONSTEXPR (__op == op_add) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
-        asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      }),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
+  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec || __op == op_and_op || __op == op_or_op || __op == op_xor_op, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CCCL_IF_CONSTEXPR (__op == op_add) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+  ));
 }
 #endif // __cccl_ptx_isa >= 800
 
 /*
-// cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80,
-SM_90
+// cp.reduce.async.bulk.tensor.5d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1e. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
 // .op        = { .add, .min, .max, .inc, .dec, .and, .or, .xor }
@@ -458,112 +545,117 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
 {
   // __space == space_global (due to parameter type constraint)
   // __space == space_shared (due to parameter type constraint)
-  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec
-                  || __op == op_and_op || __op == op_or_op || __op == op_xor_op,
-                "");
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      _CCCL_IF_CONSTEXPR (__op == op_add) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // "
-            "1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
-        asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
-            "// 1e."
-            :
-            : "l"(__tensorMap),
-              "r"(__tensorCoords[0]),
-              "r"(__tensorCoords[1]),
-              "r"(__tensorCoords[2]),
-              "r"(__tensorCoords[3]),
-              "r"(__tensorCoords[4]),
-              "r"(__as_ptr_smem(__srcMem))
-            : "memory");
-      }),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
+  static_assert(__op == op_add || __op == op_min || __op == op_max || __op == op_inc || __op == op_dec || __op == op_and_op || __op == op_or_op || __op == op_xor_op, "");
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
+    _CCCL_IF_CONSTEXPR (__op == op_add) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.add.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      asm (
+        "cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // 1e."
+        :
+        : "l"(__tensorMap),
+          "r"(__tensorCoords[0]),
+          "r"(__tensorCoords[1]),
+          "r"(__tensorCoords[2]),
+          "r"(__tensorCoords[3]),
+          "r"(__tensorCoords[4]),
+          "r"(__as_ptr_smem(__srcMem))
+        : "memory"
+      );
+    }
+  ),(
+    // Unsupported architectures will have a linker error with a semi-decent error message
+    __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();
+  ));
 }
 #endif // __cccl_ptx_isa >= 800
 

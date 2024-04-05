@@ -53,32 +53,36 @@ CUB_NAMESPACE_BEGIN
 template <int BINS>
 struct BlockHistogramAtomic
 {
-  /// Shared memory storage layout type
-  struct TempStorage
-  {};
+    /// Shared memory storage layout type
+    struct TempStorage {};
 
-  /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomic(TempStorage& temp_storage) {}
 
-  /**
-   * @brief Composite data onto an existing histogram
-   *
-   * @param[in] items
-   *   Calling thread's input values to histogram
-   *
-   * @param[out] histogram
-   *   Reference to shared/device-accessible memory histogram
-   */
-  template <typename T, typename CounterT, int ITEMS_PER_THREAD>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
-  {
-// Update histogram
-#pragma unroll
-    for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+    /// Constructor
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramAtomic(
+        TempStorage &temp_storage)
+    {}
+
+    /**
+     * @brief Composite data onto an existing histogram
+     *
+     * @param[in] items
+     *   Calling thread's input values to histogram
+     *
+     * @param[out] histogram
+     *   Reference to shared/device-accessible memory histogram
+     */
+    template <typename T, typename CounterT, int ITEMS_PER_THREAD>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
     {
-      atomicAdd(histogram + items[i], 1);
+      // Update histogram
+      #pragma unroll
+      for (int i = 0; i < ITEMS_PER_THREAD; ++i)
+      {
+        atomicAdd(histogram + items[i], 1);
+      }
     }
-  }
 };
 
 CUB_NAMESPACE_END
+

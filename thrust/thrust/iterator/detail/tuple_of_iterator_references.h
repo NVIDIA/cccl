@@ -42,20 +42,16 @@ namespace detail
 template <typename... Ts >
 class tuple_of_iterator_references;
 
-template <class U, class T>
-struct maybe_unwrap_nested
-{
-  _CCCL_HOST_DEVICE U operator()(const T& t) const
-  {
+template<class U, class T>
+struct maybe_unwrap_nested {
+  _CCCL_HOST_DEVICE U operator()(const T& t) const {
     return t;
   }
 };
 
-template <class... Us, class... Ts>
-struct maybe_unwrap_nested<thrust::tuple<Us...>, tuple_of_iterator_references<Ts...>>
-{
-  _CCCL_HOST_DEVICE thrust::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const
-  {
+template<class... Us, class... Ts>
+struct maybe_unwrap_nested<thrust::tuple<Us...>, tuple_of_iterator_references<Ts...>> {
+  _CCCL_HOST_DEVICE thrust::tuple<Us...> operator()(const tuple_of_iterator_references<Ts...>& t) const {
     return t.template __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});
   }
 };
@@ -142,7 +138,7 @@ THRUST_NAMESPACE_END
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class... Ts>
+template<class... Ts>
 struct __is_tuple_of_iterator_references<THRUST_NS_QUALIFIER::detail::tuple_of_iterator_references<Ts...>>
     : integral_constant<bool, true>
 {};

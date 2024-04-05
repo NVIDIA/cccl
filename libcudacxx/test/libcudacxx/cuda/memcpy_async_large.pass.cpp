@@ -12,8 +12,9 @@
 
 #include "memcpy_async.h"
 
-int main(int argc, char** argv) {
-  test_select_source<large_type>();
+int main(int argc, char ** argv)
+{
+    test_select_source<large_type>();
 
-  return 0;
+    return 0;
 }

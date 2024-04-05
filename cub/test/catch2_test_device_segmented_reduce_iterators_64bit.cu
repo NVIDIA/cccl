@@ -32,8 +32,8 @@
 #include <cstdint>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
@@ -43,10 +43,12 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 // List of types to test
 using offsets = c2h::type_list<std::ptrdiff_t, std::size_t>;
 
-CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets", "[reduce][device]", offsets)
+CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets",
+         "[reduce][device]",
+         offsets)
 {
-  using offset_t = typename c2h::get<0, TestType>;
-  using op_t     = cub::Sum;
+  using offset_t       = typename c2h::get<0, TestType>;
+  using op_t           = cub::Sum;
 
   constexpr offset_t offset_zero           = 0;
   constexpr offset_t offset_one            = 1;
@@ -61,12 +63,14 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
     GENERATE_COPY(take(2, random(min_items_per_segment, max_items_per_segment)));
   const offset_t num_items_in_second_segment =
     GENERATE_COPY(take(2, random(min_items_per_segment, max_items_per_segment)));
-  c2h::device_vector<offset_t> segment_offsets = {
-    offset_zero, num_items_in_first_segment, num_items_in_first_segment + num_items_in_second_segment};
+  c2h::device_vector<offset_t> segment_offsets = {offset_zero,
+                                                     num_items_in_first_segment,
+                                                     num_items_in_first_segment +
+                                                       num_items_in_second_segment};
 
   // store expected result and initialize device output container
-  c2h::host_vector<offset_t> expected_result = {
-    iterator_value * num_items_in_first_segment, iterator_value * num_items_in_second_segment};
+  c2h::host_vector<offset_t> expected_result = {iterator_value * num_items_in_first_segment,
+                                                   iterator_value * num_items_in_second_segment};
   c2h::device_vector<offset_t> device_result(num_segments);
 
   // prepare device iterators
@@ -75,7 +79,13 @@ CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit of
   auto d_out_it     = thrust::raw_pointer_cast(device_result.data());
 
   // reduce
-  device_segmented_reduce(in_it, d_out_it, num_segments, d_offsets_it, d_offsets_it + 1, op_t{}, offset_t{});
+  device_segmented_reduce(in_it,
+                          d_out_it,
+                          num_segments,
+                          d_offsets_it,
+                          d_offsets_it + 1,
+                          op_t{},
+                          offset_t{});
 
   // verify result
   REQUIRE(expected_result == device_result);

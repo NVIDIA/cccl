@@ -51,11 +51,12 @@ namespace detail
 
 template <typename T>
 using is_integral_or_enum =
-  ::cuda::std::integral_constant<bool, ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
+  ::cuda::std::integral_constant<bool,
+                         ::cuda::std::is_integral<T>::value || ::cuda::std::is_enum<T>::value>;
 
 /**
- * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition
- * would overflow. Note, lhs must be non-negative.
+ * Computes lhs + rhs, but bounds the result to the maximum number representable by the given type, if the addition would
+ * overflow. Note, lhs must be non-negative.
  *
  * Effectively performs `min((lhs + rhs), ::cuda::std::numeric_limits<OffsetT>::max())`, but is robust against the case
  * where `(lhs + rhs)` would overflow.
@@ -78,37 +79,47 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
  * `(n + d - 1)` would overflow.
  */
 template <typename NumeratorT, typename DenominatorT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT DivideAndRoundUp(NumeratorT n, DenominatorT d)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT
+DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
-  static_assert(
-    cub::detail::is_integral_or_enum<NumeratorT>::value && cub::detail::is_integral_or_enum<DenominatorT>::value,
-    "DivideAndRoundUp is only intended for integral types.");
+  static_assert(cub::detail::is_integral_or_enum<NumeratorT>::value &&
+                cub::detail::is_integral_or_enum<DenominatorT>::value,
+                "DivideAndRoundUp is only intended for integral types.");
 
   // Static cast to undo integral promotion.
   return static_cast<NumeratorT>(n / d + (n % d != 0 ? 1 : 0));
 }
 
-constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
+constexpr _CCCL_HOST_DEVICE int
+Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
 {
-  return (cub::min)(nominal_4b_items_per_thread, (cub::max)(1, nominal_4b_items_per_thread * 8 / combined_bytes));
+  return (cub::min)(nominal_4b_items_per_thread,
+                    (cub::max)(1,
+                               nominal_4b_items_per_thread * 8 /
+                               combined_bytes));
 }
 
 template <typename T>
-constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItems(int nominal_4b_items_per_thread)
+constexpr _CCCL_HOST_DEVICE int
+Nominal4BItemsToItems(int nominal_4b_items_per_thread)
 {
   return (cub::min)(nominal_4b_items_per_thread,
-                    (cub::max)(1, nominal_4b_items_per_thread * 4 / static_cast<int>(sizeof(T))));
+                    (cub::max)(1,
+                               nominal_4b_items_per_thread * 4 /
+                                 static_cast<int>(sizeof(T))));
 }
 
 template <typename ItemT>
-constexpr _CCCL_HOST_DEVICE int Nominal8BItemsToItems(int nominal_8b_items_per_thread)
+constexpr _CCCL_HOST_DEVICE int
+Nominal8BItemsToItems(int nominal_8b_items_per_thread)
 {
   return sizeof(ItemT) <= 8u
-         ? nominal_8b_items_per_thread
-         : (cub::min)(nominal_8b_items_per_thread,
-                      (cub::max)(1,
-                                 ((nominal_8b_items_per_thread * 8) + static_cast<int>(sizeof(ItemT)) - 1)
-                                   / static_cast<int>(sizeof(ItemT))));
+           ? nominal_8b_items_per_thread
+           : (cub::min)(nominal_8b_items_per_thread,
+                        (cub::max)(1,
+                                   ((nominal_8b_items_per_thread * 8) +
+                                    static_cast<int>(sizeof(ItemT)) - 1) /
+                                     static_cast<int>(sizeof(ItemT))));
 }
 
 /**

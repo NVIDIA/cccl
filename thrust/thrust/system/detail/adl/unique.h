@@ -36,10 +36,10 @@
 // includes, so we fake it out by specifying all possible files we might end up
 // including inside an #if 0.
 #if 0
-#  include <thrust/system/cpp/detail/unique.h>
-#  include <thrust/system/cuda/detail/unique.h>
-#  include <thrust/system/omp/detail/unique.h>
-#  include <thrust/system/tbb/detail/unique.h>
+#include <thrust/system/cpp/detail/unique.h>
+#include <thrust/system/cuda/detail/unique.h>
+#include <thrust/system/omp/detail/unique.h>
+#include <thrust/system/tbb/detail/unique.h>
 #endif
 
 #define __THRUST_HOST_SYSTEM_UNIQUE_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/unique.h>
@@ -49,3 +49,4 @@
 #define __THRUST_DEVICE_SYSTEM_UNIQUE_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/unique.h>
 #include __THRUST_DEVICE_SYSTEM_UNIQUE_HEADER
 #undef __THRUST_DEVICE_SYSTEM_UNIQUE_HEADER
+

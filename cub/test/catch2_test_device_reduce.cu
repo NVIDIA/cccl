@@ -31,11 +31,12 @@
 
 #include <cstdint>
 
+#include "catch2_test_device_reduce.cuh"
+
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -48,14 +49,14 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
-using custom_t =
-  c2h::custom_type_t<c2h::accumulateable_t,
-                     c2h::equal_comparable_t,
-                     c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
+using custom_t = c2h::custom_type_t<c2h::accumulateable_t,
+                                    c2h::equal_comparable_t,
+                                    c2h::lexicographical_less_comparable_t,
+                                    c2h::lexicographical_greater_comparable_t>;
 
 #if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_pair<std::uint8_t>, type_pair<std::int8_t, std::int32_t>>;
+using full_type_list =
+  c2h::type_list<type_pair<std::uint8_t>, type_pair<std::int8_t, std::int32_t>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_pair<std::int32_t>, type_pair<std::int64_t>>;
 #elif TEST_TYPES == 2
@@ -97,15 +98,15 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   constexpr int num_segments = 1;
 
   // Generate the input sizes to test for
-  const int num_items = GENERATE_COPY(
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
+  const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)),
+                                      values({
+                                        min_items,
+                                        max_items,
+                                      }));
 
   // Input data generation to test
-  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM, gen_data_t::GEN_TYPE_CONST);
+  const gen_data_t data_gen_mode = GENERATE_COPY(gen_data_t::GEN_TYPE_RANDOM,
+                                                 gen_data_t::GEN_TYPE_CONST);
 
   // Generate input data
   c2h::device_vector<item_t> in_items(num_items);
@@ -152,7 +153,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
 
     // Prepare verification data
-    output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
+    output_t expected_result =
+      static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
 
     // Run test
     c2h::device_vector<output_t> out_result(num_segments);
@@ -208,7 +210,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Verify result
     result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    output_t gpu_value = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
@@ -226,7 +228,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 
     // Verify result
     result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
+    output_t gpu_value = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }

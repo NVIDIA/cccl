@@ -23,30 +23,26 @@
 
 template <class It>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test(It l, It r, bool x) {
-  const cuda::std::reverse_iterator<It> r1(l);
-  const cuda::std::reverse_iterator<It> r2(r);
-  assert((r1 != r2) == x);
+    const cuda::std::reverse_iterator<It> r1(l);
+    const cuda::std::reverse_iterator<It> r2(r);
+    assert((r1 != r2) == x);
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-  const char* s = "1234567890";
-  test(bidirectional_iterator<const char*>(s),
-       bidirectional_iterator<const char*>(s), false);
-  test(bidirectional_iterator<const char*>(s),
-       bidirectional_iterator<const char*>(s + 1), true);
-  test(random_access_iterator<const char*>(s),
-       random_access_iterator<const char*>(s), false);
-  test(random_access_iterator<const char*>(s),
-       random_access_iterator<const char*>(s + 1), true);
-  test(s, s, false);
-  test(s, s + 1, true);
-  return true;
+    const char* s = "1234567890";
+    test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s), false);
+    test(bidirectional_iterator<const char*>(s), bidirectional_iterator<const char*>(s+1), true);
+    test(random_access_iterator<const char*>(s), random_access_iterator<const char*>(s), false);
+    test(random_access_iterator<const char*>(s), random_access_iterator<const char*>(s+1), true);
+    test(s, s, false);
+    test(s, s+1, true);
+    return true;
 }
 
 int main(int, char**) {
-  tests();
+    tests();
 #if TEST_STD_VER > 2011
-  static_assert(tests(), "");
+    static_assert(tests(), "");
 #endif
-  return 0;
+    return 0;
 }

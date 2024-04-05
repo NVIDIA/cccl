@@ -10,16 +10,18 @@
 
 // UNSUPPORTED: pre-sm-70
 
+
 #include "utils.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv)
+{
 
-  cuda::access_property ap(cuda::access_property::persisting{});
-  int* array0 = new int[9];
-  cuda::annotated_ptr<int, cuda::access_property> array_anno_ptr{array0, ap};
-  cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr;
+    cuda::access_property ap(cuda::access_property::persisting{});
+    int* array0 = new int[9];
+    cuda::annotated_ptr<int, cuda::access_property> array_anno_ptr{array0, ap};
+    cuda::annotated_ptr<int, cuda::access_property::shared> shared_ptr;
 
-  array_anno_ptr = shared_ptr; //  fail to compile, as expected
+    array_anno_ptr = shared_ptr;  //  fail to compile, as expected
 
-  return 0;
+    return 0;
 }

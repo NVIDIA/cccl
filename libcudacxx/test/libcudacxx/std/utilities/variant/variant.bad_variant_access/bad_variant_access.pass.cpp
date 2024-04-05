@@ -31,12 +31,10 @@ public:
 #include "test_macros.h"
 
 int main(int, char**) {
-  static_assert(cuda::std::is_base_of<cuda::std::exception,
-                                      cuda::std::bad_variant_access>::value,
+  static_assert(cuda::std::is_base_of<cuda::std::exception, cuda::std::bad_variant_access>::value,
                 "");
   static_assert(noexcept(cuda::std::bad_variant_access{}), "must be noexcept");
-  static_assert(noexcept(cuda::std::bad_variant_access{}.what()),
-                "must be noexcept");
+  static_assert(noexcept(cuda::std::bad_variant_access{}.what()), "must be noexcept");
   cuda::std::bad_variant_access ex;
   assert(ex.what());
 

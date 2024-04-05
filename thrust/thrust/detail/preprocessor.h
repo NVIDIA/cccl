@@ -48,7 +48,7 @@
 /// }
 /// \endcode
 ///
-#define THRUST_PP_STRINGIZE(expr)       THRUST_PP_STRINGIZE_IMPL0(expr)
+#define THRUST_PP_STRINGIZE(expr) THRUST_PP_STRINGIZE_IMPL0(expr)
 #define THRUST_PP_STRINGIZE_IMPL0(expr) #expr
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,24 +82,31 @@
 ///
 #define THRUST_PP_CAT2(a, b) THRUST_PP_CAT2_IMPL0(a, b)
 
-#if defined(_MSC_VER) && (defined(__EDG__) || defined(__EDG_VERSION__)) \
+#if    defined(_MSC_VER)                                                      \
+  && (defined(__EDG__) || defined(__EDG_VERSION__))                         \
   && (defined(__INTELLISENSE__) || __EDG_VERSION__ >= 308)
-#  define THRUST_PP_CAT2_IMPL0(a, b)   THRUST_PP_CAT2_IMPL1(~, a##b)
-#  define THRUST_PP_CAT2_IMPL1(p, res) res
+  #define THRUST_PP_CAT2_IMPL0(a, b) THRUST_PP_CAT2_IMPL1(~, a ## b)
+  #define THRUST_PP_CAT2_IMPL1(p, res) res
 #else
-#  define THRUST_PP_CAT2_IMPL0(a, b) a##b
+  #define THRUST_PP_CAT2_IMPL0(a, b) a ## b
 #endif
 
-#define THRUST_PP_CAT3(a, b, c)           \
-  THRUST_PP_CAT2(a, THRUST_PP_CAT2(b, c)) \
+#define THRUST_PP_CAT3(a, b, c)                                               \
+  THRUST_PP_CAT2(a,                                                           \
+    THRUST_PP_CAT2(b, c))                                                     \
   /**/
 
-#define THRUST_PP_CAT4(a, b, c, d)                           \
-  THRUST_PP_CAT2(a, THRUST_PP_CAT2(b, THRUST_PP_CAT2(c, d))) \
+#define THRUST_PP_CAT4(a, b, c, d)                                            \
+  THRUST_PP_CAT2(a,                                                           \
+    THRUST_PP_CAT2(b,                                                         \
+      THRUST_PP_CAT2(c, d)))                                                  \
   /**/
 
-#define THRUST_PP_CAT5(a, b, c, d, e)                                           \
-  THRUST_PP_CAT2(a, THRUST_PP_CAT2(b, THRUST_PP_CAT2(c, THRUST_PP_CAT2(d, e)))) \
+#define THRUST_PP_CAT5(a, b, c, d, e)                                         \
+  THRUST_PP_CAT2(a,                                                           \
+    THRUST_PP_CAT2(b,                                                         \
+      THRUST_PP_CAT2(c,                                                       \
+        THRUST_PP_CAT2(d, e))))                                               \
   /**/
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -134,10 +141,10 @@
 /// }
 /// \endcode
 ///
-#define THRUST_PP_EXPAND(x)       THRUST_PP_EXPAND_IMPL0(x)
+#define THRUST_PP_EXPAND(x) THRUST_PP_EXPAND_IMPL0(x)
 #define THRUST_PP_EXPAND_IMPL0(x) x
 
-#define THRUST_PP_EXPAND_ARGS(...)       THRUST_PP_EXPAND_ARGS_IMPL0(__VA_ARGS__)
+#define THRUST_PP_EXPAND_ARGS(...) THRUST_PP_EXPAND_ARGS_IMPL0(__VA_ARGS__)
 #define THRUST_PP_EXPAND_ARGS_IMPL0(...) __VA_ARGS__
 
 #define THRUST_PP_HEAD(x, ...) x
@@ -156,106 +163,106 @@
 
 #define THRUST_PP_INC_IMPL0(x) THRUST_PP_CAT2(THRUST_PP_INC_IMPL_TAG, x)
 
-#define THRUST_PP_INC_IMPL_TAG0   1
-#define THRUST_PP_INC_IMPL_TAG1   2
-#define THRUST_PP_INC_IMPL_TAG2   3
-#define THRUST_PP_INC_IMPL_TAG3   4
-#define THRUST_PP_INC_IMPL_TAG4   5
-#define THRUST_PP_INC_IMPL_TAG5   6
-#define THRUST_PP_INC_IMPL_TAG6   7
-#define THRUST_PP_INC_IMPL_TAG7   8
-#define THRUST_PP_INC_IMPL_TAG8   9
-#define THRUST_PP_INC_IMPL_TAG9   10
-#define THRUST_PP_INC_IMPL_TAG10  11
-#define THRUST_PP_INC_IMPL_TAG11  12
-#define THRUST_PP_INC_IMPL_TAG12  13
-#define THRUST_PP_INC_IMPL_TAG13  14
-#define THRUST_PP_INC_IMPL_TAG14  15
-#define THRUST_PP_INC_IMPL_TAG15  16
-#define THRUST_PP_INC_IMPL_TAG16  17
-#define THRUST_PP_INC_IMPL_TAG17  18
-#define THRUST_PP_INC_IMPL_TAG18  19
-#define THRUST_PP_INC_IMPL_TAG19  20
-#define THRUST_PP_INC_IMPL_TAG20  21
-#define THRUST_PP_INC_IMPL_TAG21  22
-#define THRUST_PP_INC_IMPL_TAG22  23
-#define THRUST_PP_INC_IMPL_TAG23  24
-#define THRUST_PP_INC_IMPL_TAG24  25
-#define THRUST_PP_INC_IMPL_TAG25  26
-#define THRUST_PP_INC_IMPL_TAG26  27
-#define THRUST_PP_INC_IMPL_TAG27  28
-#define THRUST_PP_INC_IMPL_TAG28  29
-#define THRUST_PP_INC_IMPL_TAG29  30
-#define THRUST_PP_INC_IMPL_TAG30  31
-#define THRUST_PP_INC_IMPL_TAG31  32
-#define THRUST_PP_INC_IMPL_TAG32  33
-#define THRUST_PP_INC_IMPL_TAG33  34
-#define THRUST_PP_INC_IMPL_TAG34  35
-#define THRUST_PP_INC_IMPL_TAG35  36
-#define THRUST_PP_INC_IMPL_TAG36  37
-#define THRUST_PP_INC_IMPL_TAG37  38
-#define THRUST_PP_INC_IMPL_TAG38  39
-#define THRUST_PP_INC_IMPL_TAG39  40
-#define THRUST_PP_INC_IMPL_TAG40  41
-#define THRUST_PP_INC_IMPL_TAG41  42
-#define THRUST_PP_INC_IMPL_TAG42  43
-#define THRUST_PP_INC_IMPL_TAG43  44
-#define THRUST_PP_INC_IMPL_TAG44  45
-#define THRUST_PP_INC_IMPL_TAG45  46
-#define THRUST_PP_INC_IMPL_TAG46  47
-#define THRUST_PP_INC_IMPL_TAG47  48
-#define THRUST_PP_INC_IMPL_TAG48  49
-#define THRUST_PP_INC_IMPL_TAG49  50
-#define THRUST_PP_INC_IMPL_TAG50  51
-#define THRUST_PP_INC_IMPL_TAG51  52
-#define THRUST_PP_INC_IMPL_TAG52  53
-#define THRUST_PP_INC_IMPL_TAG53  54
-#define THRUST_PP_INC_IMPL_TAG54  55
-#define THRUST_PP_INC_IMPL_TAG55  56
-#define THRUST_PP_INC_IMPL_TAG56  57
-#define THRUST_PP_INC_IMPL_TAG57  58
-#define THRUST_PP_INC_IMPL_TAG58  59
-#define THRUST_PP_INC_IMPL_TAG59  60
-#define THRUST_PP_INC_IMPL_TAG60  61
-#define THRUST_PP_INC_IMPL_TAG61  62
-#define THRUST_PP_INC_IMPL_TAG62  63
-#define THRUST_PP_INC_IMPL_TAG63  64
-#define THRUST_PP_INC_IMPL_TAG64  65
-#define THRUST_PP_INC_IMPL_TAG65  66
-#define THRUST_PP_INC_IMPL_TAG66  67
-#define THRUST_PP_INC_IMPL_TAG67  68
-#define THRUST_PP_INC_IMPL_TAG68  69
-#define THRUST_PP_INC_IMPL_TAG69  70
-#define THRUST_PP_INC_IMPL_TAG70  71
-#define THRUST_PP_INC_IMPL_TAG71  72
-#define THRUST_PP_INC_IMPL_TAG72  73
-#define THRUST_PP_INC_IMPL_TAG73  74
-#define THRUST_PP_INC_IMPL_TAG74  75
-#define THRUST_PP_INC_IMPL_TAG75  76
-#define THRUST_PP_INC_IMPL_TAG76  77
-#define THRUST_PP_INC_IMPL_TAG77  78
-#define THRUST_PP_INC_IMPL_TAG78  79
-#define THRUST_PP_INC_IMPL_TAG79  80
-#define THRUST_PP_INC_IMPL_TAG80  81
-#define THRUST_PP_INC_IMPL_TAG81  82
-#define THRUST_PP_INC_IMPL_TAG82  83
-#define THRUST_PP_INC_IMPL_TAG83  84
-#define THRUST_PP_INC_IMPL_TAG84  85
-#define THRUST_PP_INC_IMPL_TAG85  86
-#define THRUST_PP_INC_IMPL_TAG86  87
-#define THRUST_PP_INC_IMPL_TAG87  88
-#define THRUST_PP_INC_IMPL_TAG88  89
-#define THRUST_PP_INC_IMPL_TAG89  90
-#define THRUST_PP_INC_IMPL_TAG90  91
-#define THRUST_PP_INC_IMPL_TAG91  92
-#define THRUST_PP_INC_IMPL_TAG92  93
-#define THRUST_PP_INC_IMPL_TAG93  94
-#define THRUST_PP_INC_IMPL_TAG94  95
-#define THRUST_PP_INC_IMPL_TAG95  96
-#define THRUST_PP_INC_IMPL_TAG96  97
-#define THRUST_PP_INC_IMPL_TAG97  98
-#define THRUST_PP_INC_IMPL_TAG98  99
-#define THRUST_PP_INC_IMPL_TAG99  100
+#define THRUST_PP_INC_IMPL_TAG0 1
+#define THRUST_PP_INC_IMPL_TAG1 2
+#define THRUST_PP_INC_IMPL_TAG2 3
+#define THRUST_PP_INC_IMPL_TAG3 4
+#define THRUST_PP_INC_IMPL_TAG4 5
+#define THRUST_PP_INC_IMPL_TAG5 6
+#define THRUST_PP_INC_IMPL_TAG6 7
+#define THRUST_PP_INC_IMPL_TAG7 8
+#define THRUST_PP_INC_IMPL_TAG8 9
+#define THRUST_PP_INC_IMPL_TAG9 10
+#define THRUST_PP_INC_IMPL_TAG10 11
+#define THRUST_PP_INC_IMPL_TAG11 12
+#define THRUST_PP_INC_IMPL_TAG12 13
+#define THRUST_PP_INC_IMPL_TAG13 14
+#define THRUST_PP_INC_IMPL_TAG14 15
+#define THRUST_PP_INC_IMPL_TAG15 16
+#define THRUST_PP_INC_IMPL_TAG16 17
+#define THRUST_PP_INC_IMPL_TAG17 18
+#define THRUST_PP_INC_IMPL_TAG18 19
+#define THRUST_PP_INC_IMPL_TAG19 20
+#define THRUST_PP_INC_IMPL_TAG20 21
+#define THRUST_PP_INC_IMPL_TAG21 22
+#define THRUST_PP_INC_IMPL_TAG22 23
+#define THRUST_PP_INC_IMPL_TAG23 24
+#define THRUST_PP_INC_IMPL_TAG24 25
+#define THRUST_PP_INC_IMPL_TAG25 26
+#define THRUST_PP_INC_IMPL_TAG26 27
+#define THRUST_PP_INC_IMPL_TAG27 28
+#define THRUST_PP_INC_IMPL_TAG28 29
+#define THRUST_PP_INC_IMPL_TAG29 30
+#define THRUST_PP_INC_IMPL_TAG30 31
+#define THRUST_PP_INC_IMPL_TAG31 32
+#define THRUST_PP_INC_IMPL_TAG32 33
+#define THRUST_PP_INC_IMPL_TAG33 34
+#define THRUST_PP_INC_IMPL_TAG34 35
+#define THRUST_PP_INC_IMPL_TAG35 36
+#define THRUST_PP_INC_IMPL_TAG36 37
+#define THRUST_PP_INC_IMPL_TAG37 38
+#define THRUST_PP_INC_IMPL_TAG38 39
+#define THRUST_PP_INC_IMPL_TAG39 40
+#define THRUST_PP_INC_IMPL_TAG40 41
+#define THRUST_PP_INC_IMPL_TAG41 42
+#define THRUST_PP_INC_IMPL_TAG42 43
+#define THRUST_PP_INC_IMPL_TAG43 44
+#define THRUST_PP_INC_IMPL_TAG44 45
+#define THRUST_PP_INC_IMPL_TAG45 46
+#define THRUST_PP_INC_IMPL_TAG46 47
+#define THRUST_PP_INC_IMPL_TAG47 48
+#define THRUST_PP_INC_IMPL_TAG48 49
+#define THRUST_PP_INC_IMPL_TAG49 50
+#define THRUST_PP_INC_IMPL_TAG50 51
+#define THRUST_PP_INC_IMPL_TAG51 52
+#define THRUST_PP_INC_IMPL_TAG52 53
+#define THRUST_PP_INC_IMPL_TAG53 54
+#define THRUST_PP_INC_IMPL_TAG54 55
+#define THRUST_PP_INC_IMPL_TAG55 56
+#define THRUST_PP_INC_IMPL_TAG56 57
+#define THRUST_PP_INC_IMPL_TAG57 58
+#define THRUST_PP_INC_IMPL_TAG58 59
+#define THRUST_PP_INC_IMPL_TAG59 60
+#define THRUST_PP_INC_IMPL_TAG60 61
+#define THRUST_PP_INC_IMPL_TAG61 62
+#define THRUST_PP_INC_IMPL_TAG62 63
+#define THRUST_PP_INC_IMPL_TAG63 64
+#define THRUST_PP_INC_IMPL_TAG64 65
+#define THRUST_PP_INC_IMPL_TAG65 66
+#define THRUST_PP_INC_IMPL_TAG66 67
+#define THRUST_PP_INC_IMPL_TAG67 68
+#define THRUST_PP_INC_IMPL_TAG68 69
+#define THRUST_PP_INC_IMPL_TAG69 70
+#define THRUST_PP_INC_IMPL_TAG70 71
+#define THRUST_PP_INC_IMPL_TAG71 72
+#define THRUST_PP_INC_IMPL_TAG72 73
+#define THRUST_PP_INC_IMPL_TAG73 74
+#define THRUST_PP_INC_IMPL_TAG74 75
+#define THRUST_PP_INC_IMPL_TAG75 76
+#define THRUST_PP_INC_IMPL_TAG76 77
+#define THRUST_PP_INC_IMPL_TAG77 78
+#define THRUST_PP_INC_IMPL_TAG78 79
+#define THRUST_PP_INC_IMPL_TAG79 80
+#define THRUST_PP_INC_IMPL_TAG80 81
+#define THRUST_PP_INC_IMPL_TAG81 82
+#define THRUST_PP_INC_IMPL_TAG82 83
+#define THRUST_PP_INC_IMPL_TAG83 84
+#define THRUST_PP_INC_IMPL_TAG84 85
+#define THRUST_PP_INC_IMPL_TAG85 86
+#define THRUST_PP_INC_IMPL_TAG86 87
+#define THRUST_PP_INC_IMPL_TAG87 88
+#define THRUST_PP_INC_IMPL_TAG88 89
+#define THRUST_PP_INC_IMPL_TAG89 90
+#define THRUST_PP_INC_IMPL_TAG90 91
+#define THRUST_PP_INC_IMPL_TAG91 92
+#define THRUST_PP_INC_IMPL_TAG92 93
+#define THRUST_PP_INC_IMPL_TAG93 94
+#define THRUST_PP_INC_IMPL_TAG94 95
+#define THRUST_PP_INC_IMPL_TAG95 96
+#define THRUST_PP_INC_IMPL_TAG96 97
+#define THRUST_PP_INC_IMPL_TAG97 98
+#define THRUST_PP_INC_IMPL_TAG98 99
+#define THRUST_PP_INC_IMPL_TAG99 100
 #define THRUST_PP_INC_IMPL_TAG100 101
 #define THRUST_PP_INC_IMPL_TAG101 102
 #define THRUST_PP_INC_IMPL_TAG102 103
@@ -418,106 +425,106 @@
 
 #define THRUST_PP_DEC_IMPL0(x) THRUST_PP_CAT2(THRUST_PP_DEC_IMPL_TAG, x)
 
-#define THRUST_PP_DEC_IMPL_TAG0   0
-#define THRUST_PP_DEC_IMPL_TAG1   0
-#define THRUST_PP_DEC_IMPL_TAG2   1
-#define THRUST_PP_DEC_IMPL_TAG3   2
-#define THRUST_PP_DEC_IMPL_TAG4   3
-#define THRUST_PP_DEC_IMPL_TAG5   4
-#define THRUST_PP_DEC_IMPL_TAG6   5
-#define THRUST_PP_DEC_IMPL_TAG7   6
-#define THRUST_PP_DEC_IMPL_TAG8   7
-#define THRUST_PP_DEC_IMPL_TAG9   8
-#define THRUST_PP_DEC_IMPL_TAG10  9
-#define THRUST_PP_DEC_IMPL_TAG11  10
-#define THRUST_PP_DEC_IMPL_TAG12  11
-#define THRUST_PP_DEC_IMPL_TAG13  12
-#define THRUST_PP_DEC_IMPL_TAG14  13
-#define THRUST_PP_DEC_IMPL_TAG15  14
-#define THRUST_PP_DEC_IMPL_TAG16  15
-#define THRUST_PP_DEC_IMPL_TAG17  16
-#define THRUST_PP_DEC_IMPL_TAG18  17
-#define THRUST_PP_DEC_IMPL_TAG19  18
-#define THRUST_PP_DEC_IMPL_TAG20  19
-#define THRUST_PP_DEC_IMPL_TAG21  20
-#define THRUST_PP_DEC_IMPL_TAG22  21
-#define THRUST_PP_DEC_IMPL_TAG23  22
-#define THRUST_PP_DEC_IMPL_TAG24  23
-#define THRUST_PP_DEC_IMPL_TAG25  24
-#define THRUST_PP_DEC_IMPL_TAG26  25
-#define THRUST_PP_DEC_IMPL_TAG27  26
-#define THRUST_PP_DEC_IMPL_TAG28  27
-#define THRUST_PP_DEC_IMPL_TAG29  28
-#define THRUST_PP_DEC_IMPL_TAG30  29
-#define THRUST_PP_DEC_IMPL_TAG31  30
-#define THRUST_PP_DEC_IMPL_TAG32  31
-#define THRUST_PP_DEC_IMPL_TAG33  32
-#define THRUST_PP_DEC_IMPL_TAG34  33
-#define THRUST_PP_DEC_IMPL_TAG35  34
-#define THRUST_PP_DEC_IMPL_TAG36  35
-#define THRUST_PP_DEC_IMPL_TAG37  36
-#define THRUST_PP_DEC_IMPL_TAG38  37
-#define THRUST_PP_DEC_IMPL_TAG39  38
-#define THRUST_PP_DEC_IMPL_TAG40  39
-#define THRUST_PP_DEC_IMPL_TAG41  40
-#define THRUST_PP_DEC_IMPL_TAG42  41
-#define THRUST_PP_DEC_IMPL_TAG43  42
-#define THRUST_PP_DEC_IMPL_TAG44  43
-#define THRUST_PP_DEC_IMPL_TAG45  44
-#define THRUST_PP_DEC_IMPL_TAG46  45
-#define THRUST_PP_DEC_IMPL_TAG47  46
-#define THRUST_PP_DEC_IMPL_TAG48  47
-#define THRUST_PP_DEC_IMPL_TAG49  48
-#define THRUST_PP_DEC_IMPL_TAG50  49
-#define THRUST_PP_DEC_IMPL_TAG51  50
-#define THRUST_PP_DEC_IMPL_TAG52  51
-#define THRUST_PP_DEC_IMPL_TAG53  52
-#define THRUST_PP_DEC_IMPL_TAG54  53
-#define THRUST_PP_DEC_IMPL_TAG55  54
-#define THRUST_PP_DEC_IMPL_TAG56  55
-#define THRUST_PP_DEC_IMPL_TAG57  56
-#define THRUST_PP_DEC_IMPL_TAG58  57
-#define THRUST_PP_DEC_IMPL_TAG59  58
-#define THRUST_PP_DEC_IMPL_TAG60  59
-#define THRUST_PP_DEC_IMPL_TAG61  60
-#define THRUST_PP_DEC_IMPL_TAG62  61
-#define THRUST_PP_DEC_IMPL_TAG63  62
-#define THRUST_PP_DEC_IMPL_TAG64  63
-#define THRUST_PP_DEC_IMPL_TAG65  64
-#define THRUST_PP_DEC_IMPL_TAG66  65
-#define THRUST_PP_DEC_IMPL_TAG67  66
-#define THRUST_PP_DEC_IMPL_TAG68  67
-#define THRUST_PP_DEC_IMPL_TAG69  68
-#define THRUST_PP_DEC_IMPL_TAG70  69
-#define THRUST_PP_DEC_IMPL_TAG71  70
-#define THRUST_PP_DEC_IMPL_TAG72  71
-#define THRUST_PP_DEC_IMPL_TAG73  72
-#define THRUST_PP_DEC_IMPL_TAG74  73
-#define THRUST_PP_DEC_IMPL_TAG75  74
-#define THRUST_PP_DEC_IMPL_TAG76  75
-#define THRUST_PP_DEC_IMPL_TAG77  76
-#define THRUST_PP_DEC_IMPL_TAG78  77
-#define THRUST_PP_DEC_IMPL_TAG79  78
-#define THRUST_PP_DEC_IMPL_TAG80  79
-#define THRUST_PP_DEC_IMPL_TAG81  80
-#define THRUST_PP_DEC_IMPL_TAG82  81
-#define THRUST_PP_DEC_IMPL_TAG83  82
-#define THRUST_PP_DEC_IMPL_TAG84  83
-#define THRUST_PP_DEC_IMPL_TAG85  84
-#define THRUST_PP_DEC_IMPL_TAG86  85
-#define THRUST_PP_DEC_IMPL_TAG87  86
-#define THRUST_PP_DEC_IMPL_TAG88  87
-#define THRUST_PP_DEC_IMPL_TAG89  88
-#define THRUST_PP_DEC_IMPL_TAG90  89
-#define THRUST_PP_DEC_IMPL_TAG91  90
-#define THRUST_PP_DEC_IMPL_TAG92  91
-#define THRUST_PP_DEC_IMPL_TAG93  92
-#define THRUST_PP_DEC_IMPL_TAG94  93
-#define THRUST_PP_DEC_IMPL_TAG95  94
-#define THRUST_PP_DEC_IMPL_TAG96  95
-#define THRUST_PP_DEC_IMPL_TAG97  96
-#define THRUST_PP_DEC_IMPL_TAG98  97
-#define THRUST_PP_DEC_IMPL_TAG99  98
+#define THRUST_PP_DEC_IMPL_TAG0 0
+#define THRUST_PP_DEC_IMPL_TAG1 0
+#define THRUST_PP_DEC_IMPL_TAG2 1
+#define THRUST_PP_DEC_IMPL_TAG3 2
+#define THRUST_PP_DEC_IMPL_TAG4 3
+#define THRUST_PP_DEC_IMPL_TAG5 4
+#define THRUST_PP_DEC_IMPL_TAG6 5
+#define THRUST_PP_DEC_IMPL_TAG7 6
+#define THRUST_PP_DEC_IMPL_TAG8 7
+#define THRUST_PP_DEC_IMPL_TAG9 8
+#define THRUST_PP_DEC_IMPL_TAG10 9
+#define THRUST_PP_DEC_IMPL_TAG11 10
+#define THRUST_PP_DEC_IMPL_TAG12 11
+#define THRUST_PP_DEC_IMPL_TAG13 12
+#define THRUST_PP_DEC_IMPL_TAG14 13
+#define THRUST_PP_DEC_IMPL_TAG15 14
+#define THRUST_PP_DEC_IMPL_TAG16 15
+#define THRUST_PP_DEC_IMPL_TAG17 16
+#define THRUST_PP_DEC_IMPL_TAG18 17
+#define THRUST_PP_DEC_IMPL_TAG19 18
+#define THRUST_PP_DEC_IMPL_TAG20 19
+#define THRUST_PP_DEC_IMPL_TAG21 20
+#define THRUST_PP_DEC_IMPL_TAG22 21
+#define THRUST_PP_DEC_IMPL_TAG23 22
+#define THRUST_PP_DEC_IMPL_TAG24 23
+#define THRUST_PP_DEC_IMPL_TAG25 24
+#define THRUST_PP_DEC_IMPL_TAG26 25
+#define THRUST_PP_DEC_IMPL_TAG27 26
+#define THRUST_PP_DEC_IMPL_TAG28 27
+#define THRUST_PP_DEC_IMPL_TAG29 28
+#define THRUST_PP_DEC_IMPL_TAG30 29
+#define THRUST_PP_DEC_IMPL_TAG31 30
+#define THRUST_PP_DEC_IMPL_TAG32 31
+#define THRUST_PP_DEC_IMPL_TAG33 32
+#define THRUST_PP_DEC_IMPL_TAG34 33
+#define THRUST_PP_DEC_IMPL_TAG35 34
+#define THRUST_PP_DEC_IMPL_TAG36 35
+#define THRUST_PP_DEC_IMPL_TAG37 36
+#define THRUST_PP_DEC_IMPL_TAG38 37
+#define THRUST_PP_DEC_IMPL_TAG39 38
+#define THRUST_PP_DEC_IMPL_TAG40 39
+#define THRUST_PP_DEC_IMPL_TAG41 40
+#define THRUST_PP_DEC_IMPL_TAG42 41
+#define THRUST_PP_DEC_IMPL_TAG43 42
+#define THRUST_PP_DEC_IMPL_TAG44 43
+#define THRUST_PP_DEC_IMPL_TAG45 44
+#define THRUST_PP_DEC_IMPL_TAG46 45
+#define THRUST_PP_DEC_IMPL_TAG47 46
+#define THRUST_PP_DEC_IMPL_TAG48 47
+#define THRUST_PP_DEC_IMPL_TAG49 48
+#define THRUST_PP_DEC_IMPL_TAG50 49
+#define THRUST_PP_DEC_IMPL_TAG51 50
+#define THRUST_PP_DEC_IMPL_TAG52 51
+#define THRUST_PP_DEC_IMPL_TAG53 52
+#define THRUST_PP_DEC_IMPL_TAG54 53
+#define THRUST_PP_DEC_IMPL_TAG55 54
+#define THRUST_PP_DEC_IMPL_TAG56 55
+#define THRUST_PP_DEC_IMPL_TAG57 56
+#define THRUST_PP_DEC_IMPL_TAG58 57
+#define THRUST_PP_DEC_IMPL_TAG59 58
+#define THRUST_PP_DEC_IMPL_TAG60 59
+#define THRUST_PP_DEC_IMPL_TAG61 60
+#define THRUST_PP_DEC_IMPL_TAG62 61
+#define THRUST_PP_DEC_IMPL_TAG63 62
+#define THRUST_PP_DEC_IMPL_TAG64 63
+#define THRUST_PP_DEC_IMPL_TAG65 64
+#define THRUST_PP_DEC_IMPL_TAG66 65
+#define THRUST_PP_DEC_IMPL_TAG67 66
+#define THRUST_PP_DEC_IMPL_TAG68 67
+#define THRUST_PP_DEC_IMPL_TAG69 68
+#define THRUST_PP_DEC_IMPL_TAG70 69
+#define THRUST_PP_DEC_IMPL_TAG71 70
+#define THRUST_PP_DEC_IMPL_TAG72 71
+#define THRUST_PP_DEC_IMPL_TAG73 72
+#define THRUST_PP_DEC_IMPL_TAG74 73
+#define THRUST_PP_DEC_IMPL_TAG75 74
+#define THRUST_PP_DEC_IMPL_TAG76 75
+#define THRUST_PP_DEC_IMPL_TAG77 76
+#define THRUST_PP_DEC_IMPL_TAG78 77
+#define THRUST_PP_DEC_IMPL_TAG79 78
+#define THRUST_PP_DEC_IMPL_TAG80 79
+#define THRUST_PP_DEC_IMPL_TAG81 80
+#define THRUST_PP_DEC_IMPL_TAG82 81
+#define THRUST_PP_DEC_IMPL_TAG83 82
+#define THRUST_PP_DEC_IMPL_TAG84 83
+#define THRUST_PP_DEC_IMPL_TAG85 84
+#define THRUST_PP_DEC_IMPL_TAG86 85
+#define THRUST_PP_DEC_IMPL_TAG87 86
+#define THRUST_PP_DEC_IMPL_TAG88 87
+#define THRUST_PP_DEC_IMPL_TAG89 88
+#define THRUST_PP_DEC_IMPL_TAG90 89
+#define THRUST_PP_DEC_IMPL_TAG91 90
+#define THRUST_PP_DEC_IMPL_TAG92 91
+#define THRUST_PP_DEC_IMPL_TAG93 92
+#define THRUST_PP_DEC_IMPL_TAG94 93
+#define THRUST_PP_DEC_IMPL_TAG95 94
+#define THRUST_PP_DEC_IMPL_TAG96 95
+#define THRUST_PP_DEC_IMPL_TAG97 96
+#define THRUST_PP_DEC_IMPL_TAG98 97
+#define THRUST_PP_DEC_IMPL_TAG99 98
 #define THRUST_PP_DEC_IMPL_TAG100 99
 #define THRUST_PP_DEC_IMPL_TAG101 100
 #define THRUST_PP_DEC_IMPL_TAG102 101
@@ -681,106 +688,106 @@
 
 #define THRUST_PP_BOOL_IMPL0(x) THRUST_PP_CAT2(THRUST_PP_BOOL_IMPL_TAG, x)
 
-#define THRUST_PP_BOOL_IMPL_TAG0   0
-#define THRUST_PP_BOOL_IMPL_TAG1   1
-#define THRUST_PP_BOOL_IMPL_TAG2   1
-#define THRUST_PP_BOOL_IMPL_TAG3   1
-#define THRUST_PP_BOOL_IMPL_TAG4   1
-#define THRUST_PP_BOOL_IMPL_TAG5   1
-#define THRUST_PP_BOOL_IMPL_TAG6   1
-#define THRUST_PP_BOOL_IMPL_TAG7   1
-#define THRUST_PP_BOOL_IMPL_TAG8   1
-#define THRUST_PP_BOOL_IMPL_TAG9   1
-#define THRUST_PP_BOOL_IMPL_TAG10  1
-#define THRUST_PP_BOOL_IMPL_TAG11  1
-#define THRUST_PP_BOOL_IMPL_TAG12  1
-#define THRUST_PP_BOOL_IMPL_TAG13  1
-#define THRUST_PP_BOOL_IMPL_TAG14  1
-#define THRUST_PP_BOOL_IMPL_TAG15  1
-#define THRUST_PP_BOOL_IMPL_TAG16  1
-#define THRUST_PP_BOOL_IMPL_TAG17  1
-#define THRUST_PP_BOOL_IMPL_TAG18  1
-#define THRUST_PP_BOOL_IMPL_TAG19  1
-#define THRUST_PP_BOOL_IMPL_TAG20  1
-#define THRUST_PP_BOOL_IMPL_TAG21  1
-#define THRUST_PP_BOOL_IMPL_TAG22  1
-#define THRUST_PP_BOOL_IMPL_TAG23  1
-#define THRUST_PP_BOOL_IMPL_TAG24  1
-#define THRUST_PP_BOOL_IMPL_TAG25  1
-#define THRUST_PP_BOOL_IMPL_TAG26  1
-#define THRUST_PP_BOOL_IMPL_TAG27  1
-#define THRUST_PP_BOOL_IMPL_TAG28  1
-#define THRUST_PP_BOOL_IMPL_TAG29  1
-#define THRUST_PP_BOOL_IMPL_TAG30  1
-#define THRUST_PP_BOOL_IMPL_TAG31  1
-#define THRUST_PP_BOOL_IMPL_TAG32  1
-#define THRUST_PP_BOOL_IMPL_TAG33  1
-#define THRUST_PP_BOOL_IMPL_TAG34  1
-#define THRUST_PP_BOOL_IMPL_TAG35  1
-#define THRUST_PP_BOOL_IMPL_TAG36  1
-#define THRUST_PP_BOOL_IMPL_TAG37  1
-#define THRUST_PP_BOOL_IMPL_TAG38  1
-#define THRUST_PP_BOOL_IMPL_TAG39  1
-#define THRUST_PP_BOOL_IMPL_TAG40  1
-#define THRUST_PP_BOOL_IMPL_TAG41  1
-#define THRUST_PP_BOOL_IMPL_TAG42  1
-#define THRUST_PP_BOOL_IMPL_TAG43  1
-#define THRUST_PP_BOOL_IMPL_TAG44  1
-#define THRUST_PP_BOOL_IMPL_TAG45  1
-#define THRUST_PP_BOOL_IMPL_TAG46  1
-#define THRUST_PP_BOOL_IMPL_TAG47  1
-#define THRUST_PP_BOOL_IMPL_TAG48  1
-#define THRUST_PP_BOOL_IMPL_TAG49  1
-#define THRUST_PP_BOOL_IMPL_TAG50  1
-#define THRUST_PP_BOOL_IMPL_TAG51  1
-#define THRUST_PP_BOOL_IMPL_TAG52  1
-#define THRUST_PP_BOOL_IMPL_TAG53  1
-#define THRUST_PP_BOOL_IMPL_TAG54  1
-#define THRUST_PP_BOOL_IMPL_TAG55  1
-#define THRUST_PP_BOOL_IMPL_TAG56  1
-#define THRUST_PP_BOOL_IMPL_TAG57  1
-#define THRUST_PP_BOOL_IMPL_TAG58  1
-#define THRUST_PP_BOOL_IMPL_TAG59  1
-#define THRUST_PP_BOOL_IMPL_TAG60  1
-#define THRUST_PP_BOOL_IMPL_TAG61  1
-#define THRUST_PP_BOOL_IMPL_TAG62  1
-#define THRUST_PP_BOOL_IMPL_TAG63  1
-#define THRUST_PP_BOOL_IMPL_TAG64  1
-#define THRUST_PP_BOOL_IMPL_TAG65  1
-#define THRUST_PP_BOOL_IMPL_TAG66  1
-#define THRUST_PP_BOOL_IMPL_TAG67  1
-#define THRUST_PP_BOOL_IMPL_TAG68  1
-#define THRUST_PP_BOOL_IMPL_TAG69  1
-#define THRUST_PP_BOOL_IMPL_TAG70  1
-#define THRUST_PP_BOOL_IMPL_TAG71  1
-#define THRUST_PP_BOOL_IMPL_TAG72  1
-#define THRUST_PP_BOOL_IMPL_TAG73  1
-#define THRUST_PP_BOOL_IMPL_TAG74  1
-#define THRUST_PP_BOOL_IMPL_TAG75  1
-#define THRUST_PP_BOOL_IMPL_TAG76  1
-#define THRUST_PP_BOOL_IMPL_TAG77  1
-#define THRUST_PP_BOOL_IMPL_TAG78  1
-#define THRUST_PP_BOOL_IMPL_TAG79  1
-#define THRUST_PP_BOOL_IMPL_TAG80  1
-#define THRUST_PP_BOOL_IMPL_TAG81  1
-#define THRUST_PP_BOOL_IMPL_TAG82  1
-#define THRUST_PP_BOOL_IMPL_TAG83  1
-#define THRUST_PP_BOOL_IMPL_TAG84  1
-#define THRUST_PP_BOOL_IMPL_TAG85  1
-#define THRUST_PP_BOOL_IMPL_TAG86  1
-#define THRUST_PP_BOOL_IMPL_TAG87  1
-#define THRUST_PP_BOOL_IMPL_TAG88  1
-#define THRUST_PP_BOOL_IMPL_TAG89  1
-#define THRUST_PP_BOOL_IMPL_TAG90  1
-#define THRUST_PP_BOOL_IMPL_TAG91  1
-#define THRUST_PP_BOOL_IMPL_TAG92  1
-#define THRUST_PP_BOOL_IMPL_TAG93  1
-#define THRUST_PP_BOOL_IMPL_TAG94  1
-#define THRUST_PP_BOOL_IMPL_TAG95  1
-#define THRUST_PP_BOOL_IMPL_TAG96  1
-#define THRUST_PP_BOOL_IMPL_TAG97  1
-#define THRUST_PP_BOOL_IMPL_TAG98  1
-#define THRUST_PP_BOOL_IMPL_TAG99  1
+#define THRUST_PP_BOOL_IMPL_TAG0 0
+#define THRUST_PP_BOOL_IMPL_TAG1 1
+#define THRUST_PP_BOOL_IMPL_TAG2 1
+#define THRUST_PP_BOOL_IMPL_TAG3 1
+#define THRUST_PP_BOOL_IMPL_TAG4 1
+#define THRUST_PP_BOOL_IMPL_TAG5 1
+#define THRUST_PP_BOOL_IMPL_TAG6 1
+#define THRUST_PP_BOOL_IMPL_TAG7 1
+#define THRUST_PP_BOOL_IMPL_TAG8 1
+#define THRUST_PP_BOOL_IMPL_TAG9 1
+#define THRUST_PP_BOOL_IMPL_TAG10 1
+#define THRUST_PP_BOOL_IMPL_TAG11 1
+#define THRUST_PP_BOOL_IMPL_TAG12 1
+#define THRUST_PP_BOOL_IMPL_TAG13 1
+#define THRUST_PP_BOOL_IMPL_TAG14 1
+#define THRUST_PP_BOOL_IMPL_TAG15 1
+#define THRUST_PP_BOOL_IMPL_TAG16 1
+#define THRUST_PP_BOOL_IMPL_TAG17 1
+#define THRUST_PP_BOOL_IMPL_TAG18 1
+#define THRUST_PP_BOOL_IMPL_TAG19 1
+#define THRUST_PP_BOOL_IMPL_TAG20 1
+#define THRUST_PP_BOOL_IMPL_TAG21 1
+#define THRUST_PP_BOOL_IMPL_TAG22 1
+#define THRUST_PP_BOOL_IMPL_TAG23 1
+#define THRUST_PP_BOOL_IMPL_TAG24 1
+#define THRUST_PP_BOOL_IMPL_TAG25 1
+#define THRUST_PP_BOOL_IMPL_TAG26 1
+#define THRUST_PP_BOOL_IMPL_TAG27 1
+#define THRUST_PP_BOOL_IMPL_TAG28 1
+#define THRUST_PP_BOOL_IMPL_TAG29 1
+#define THRUST_PP_BOOL_IMPL_TAG30 1
+#define THRUST_PP_BOOL_IMPL_TAG31 1
+#define THRUST_PP_BOOL_IMPL_TAG32 1
+#define THRUST_PP_BOOL_IMPL_TAG33 1
+#define THRUST_PP_BOOL_IMPL_TAG34 1
+#define THRUST_PP_BOOL_IMPL_TAG35 1
+#define THRUST_PP_BOOL_IMPL_TAG36 1
+#define THRUST_PP_BOOL_IMPL_TAG37 1
+#define THRUST_PP_BOOL_IMPL_TAG38 1
+#define THRUST_PP_BOOL_IMPL_TAG39 1
+#define THRUST_PP_BOOL_IMPL_TAG40 1
+#define THRUST_PP_BOOL_IMPL_TAG41 1
+#define THRUST_PP_BOOL_IMPL_TAG42 1
+#define THRUST_PP_BOOL_IMPL_TAG43 1
+#define THRUST_PP_BOOL_IMPL_TAG44 1
+#define THRUST_PP_BOOL_IMPL_TAG45 1
+#define THRUST_PP_BOOL_IMPL_TAG46 1
+#define THRUST_PP_BOOL_IMPL_TAG47 1
+#define THRUST_PP_BOOL_IMPL_TAG48 1
+#define THRUST_PP_BOOL_IMPL_TAG49 1
+#define THRUST_PP_BOOL_IMPL_TAG50 1
+#define THRUST_PP_BOOL_IMPL_TAG51 1
+#define THRUST_PP_BOOL_IMPL_TAG52 1
+#define THRUST_PP_BOOL_IMPL_TAG53 1
+#define THRUST_PP_BOOL_IMPL_TAG54 1
+#define THRUST_PP_BOOL_IMPL_TAG55 1
+#define THRUST_PP_BOOL_IMPL_TAG56 1
+#define THRUST_PP_BOOL_IMPL_TAG57 1
+#define THRUST_PP_BOOL_IMPL_TAG58 1
+#define THRUST_PP_BOOL_IMPL_TAG59 1
+#define THRUST_PP_BOOL_IMPL_TAG60 1
+#define THRUST_PP_BOOL_IMPL_TAG61 1
+#define THRUST_PP_BOOL_IMPL_TAG62 1
+#define THRUST_PP_BOOL_IMPL_TAG63 1
+#define THRUST_PP_BOOL_IMPL_TAG64 1
+#define THRUST_PP_BOOL_IMPL_TAG65 1
+#define THRUST_PP_BOOL_IMPL_TAG66 1
+#define THRUST_PP_BOOL_IMPL_TAG67 1
+#define THRUST_PP_BOOL_IMPL_TAG68 1
+#define THRUST_PP_BOOL_IMPL_TAG69 1
+#define THRUST_PP_BOOL_IMPL_TAG70 1
+#define THRUST_PP_BOOL_IMPL_TAG71 1
+#define THRUST_PP_BOOL_IMPL_TAG72 1
+#define THRUST_PP_BOOL_IMPL_TAG73 1
+#define THRUST_PP_BOOL_IMPL_TAG74 1
+#define THRUST_PP_BOOL_IMPL_TAG75 1
+#define THRUST_PP_BOOL_IMPL_TAG76 1
+#define THRUST_PP_BOOL_IMPL_TAG77 1
+#define THRUST_PP_BOOL_IMPL_TAG78 1
+#define THRUST_PP_BOOL_IMPL_TAG79 1
+#define THRUST_PP_BOOL_IMPL_TAG80 1
+#define THRUST_PP_BOOL_IMPL_TAG81 1
+#define THRUST_PP_BOOL_IMPL_TAG82 1
+#define THRUST_PP_BOOL_IMPL_TAG83 1
+#define THRUST_PP_BOOL_IMPL_TAG84 1
+#define THRUST_PP_BOOL_IMPL_TAG85 1
+#define THRUST_PP_BOOL_IMPL_TAG86 1
+#define THRUST_PP_BOOL_IMPL_TAG87 1
+#define THRUST_PP_BOOL_IMPL_TAG88 1
+#define THRUST_PP_BOOL_IMPL_TAG89 1
+#define THRUST_PP_BOOL_IMPL_TAG90 1
+#define THRUST_PP_BOOL_IMPL_TAG91 1
+#define THRUST_PP_BOOL_IMPL_TAG92 1
+#define THRUST_PP_BOOL_IMPL_TAG93 1
+#define THRUST_PP_BOOL_IMPL_TAG94 1
+#define THRUST_PP_BOOL_IMPL_TAG95 1
+#define THRUST_PP_BOOL_IMPL_TAG96 1
+#define THRUST_PP_BOOL_IMPL_TAG97 1
+#define THRUST_PP_BOOL_IMPL_TAG98 1
+#define THRUST_PP_BOOL_IMPL_TAG99 1
 #define THRUST_PP_BOOL_IMPL_TAG100 1
 #define THRUST_PP_BOOL_IMPL_TAG101 1
 #define THRUST_PP_BOOL_IMPL_TAG102 1
@@ -944,25 +951,26 @@
 #define THRUST_PP_IIF(bit, t, f) THRUST_PP_IIF_IMPL0(bit, t, f)
 
 #if defined(_MSC_VER)
-#  define THRUST_PP_IIF_IMPL0(bit, t, f)                                   \
-    THRUST_PP_IIF_IMPL1(THRUST_PP_CAT2(THRUST_PP_IIF_IMPL_TAG, bit(t, f))) \
+  #define THRUST_PP_IIF_IMPL0(bit, t, f)                                      \
+    THRUST_PP_IIF_IMPL1(THRUST_PP_CAT2(THRUST_PP_IIF_IMPL_TAG, bit(t, f)))    \
     /**/
-#  define THRUST_PP_IIF_IMPL1(id) id
+  #define THRUST_PP_IIF_IMPL1(id) id
 #else
-#  define THRUST_PP_IIF_IMPL0(bit, t, f) THRUST_PP_CAT2(THRUST_PP_IIF_IMPL_TAG, bit(t, f))
-/**/
+  #define THRUST_PP_IIF_IMPL0(bit, t, f)                                      \
+    THRUST_PP_CAT2(THRUST_PP_IIF_IMPL_TAG, bit(t, f))
+    /**/
 #endif
 
 #define THRUST_PP_IIF_IMPL_TAG0(t, f) f
 #define THRUST_PP_IIF_IMPL_TAG1(t, f) t
 
 #if defined(__EDG__)
-#  define THRUST_PP_IF(cond, t, f) THRUST_PP_IF_IMPL0(cond, t, f)
-#  define THRUST_PP_IF_IMPL0(cond, t, f)      \
-    THRUST_PP_IIF(THRUST_PP_BOOL(cond), t, f) \
+  #define THRUST_PP_IF(cond, t, f) THRUST_PP_IF_IMPL0(cond, t, f)
+  #define THRUST_PP_IF_IMPL0(cond, t, f)                                      \
+    THRUST_PP_IIF(THRUST_PP_BOOL(cond), t, f)                                 \
     /**/
 #else
-#  define THRUST_PP_IF(cond, t, f) THRUST_PP_IIF(THRUST_PP_BOOL(cond), t, f)
+  #define THRUST_PP_IF(cond, t, f) THRUST_PP_IIF(THRUST_PP_BOOL(cond), t, f)
 #endif
 
 /// \def THRUST_COMMA_IF(cond)
@@ -995,155 +1003,42 @@
 /// \endcode
 ///
 #if defined(__EDG__)
-#  define THRUST_PP_COMMA_IF(cond)       THRUST_PP_COMMA_IF_IMPL0(cond)
-#  define THRUST_PP_COMMA_IF_IMPL0(cond) THRUST_PP_IF(cond, THRUST_PP_COMMA, THRUST_PP_EMPTY)() /**/
+  #define THRUST_PP_COMMA_IF(cond) THRUST_PP_COMMA_IF_IMPL0(cond)
+  #define THRUST_PP_COMMA_IF_IMPL0(cond)                                      \
+    THRUST_PP_IF(cond, THRUST_PP_COMMA, THRUST_PP_EMPTY)()                    \
+    /**/
 #else
-#  define THRUST_PP_COMMA_IF(cond) THRUST_PP_IF(cond, THRUST_PP_COMMA, THRUST_PP_EMPTY)() /**/
+  #define THRUST_PP_COMMA_IF(cond)                                            \
+    THRUST_PP_IF(cond, THRUST_PP_COMMA, THRUST_PP_EMPTY)()                    \
+    /**/
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
 // http://gustedt.wordpress.com/2010/06/08/detect-empty-macro-arguments
 
-#define THRUST_PP_64TH_ARG( \
-  _1,                       \
-  _2,                       \
-  _3,                       \
-  _4,                       \
-  _5,                       \
-  _6,                       \
-  _7,                       \
-  _8,                       \
-  _9,                       \
-  _10,                      \
-  _11,                      \
-  _12,                      \
-  _13,                      \
-  _14,                      \
-  _15,                      \
-  _16,                      \
-  _17,                      \
-  _18,                      \
-  _19,                      \
-  _20,                      \
-  _21,                      \
-  _22,                      \
-  _23,                      \
-  _24,                      \
-  _25,                      \
-  _26,                      \
-  _27,                      \
-  _28,                      \
-  _29,                      \
-  _30,                      \
-  _31,                      \
-  _32,                      \
-  _33,                      \
-  _34,                      \
-  _35,                      \
-  _36,                      \
-  _37,                      \
-  _38,                      \
-  _39,                      \
-  _40,                      \
-  _41,                      \
-  _42,                      \
-  _43,                      \
-  _44,                      \
-  _45,                      \
-  _46,                      \
-  _47,                      \
-  _48,                      \
-  _49,                      \
-  _50,                      \
-  _51,                      \
-  _52,                      \
-  _53,                      \
-  _54,                      \
-  _55,                      \
-  _56,                      \
-  _57,                      \
-  _58,                      \
-  _59,                      \
-  _60,                      \
-  _61,                      \
-  _62,                      \
-  _63,                      \
-  N,                        \
-  ...)                      \
-  N /**/
+#define THRUST_PP_64TH_ARG(                                                   \
+     _1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16           \
+  , _17,_18,_19,_20,_21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32           \
+  , _33,_34,_35,_36,_37,_38,_39,_40,_41,_42,_43,_44,_45,_46,_47,_48           \
+  , _49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60,_61,_62,_63,  N           \
+  , ...                                                                       \
+  ) N                                                                         \
+  /**/
 
-#define THRUST_PP_HAS_COMMA(...)       \
-  THRUST_PP_EXPAND(THRUST_PP_64TH_ARG( \
-    __VA_ARGS__,                       \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    1,                                 \
-    0))                                \
+#define THRUST_PP_HAS_COMMA(...)                                              \
+  THRUST_PP_EXPAND(THRUST_PP_64TH_ARG(                                        \
+    __VA_ARGS__                                                               \
+  , 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1                                           \
+  , 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1                                           \
+  , 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1                                           \
+  , 1,1,1,1,1,1,1,1,1,1,1,1,1,1,0                                             \
+  ))                                                                          \
   /**/
 
 #define THRUST_PP_TRIGGER_PAREN(...) ,
 
-#define THRUST_PP_IS_VARIADIC_NULLARY(...)                                      \
+#define THRUST_PP_IS_VARIADIC_NULLARY(...)                                    \
   THRUST_PP_IS_VARIADIC_NULLARY_IMPL0(                                        \
     /* Test if there is just one argument, eventually an empty one. */        \
     THRUST_PP_HAS_COMMA(__VA_ARGS__),                                         \
@@ -1155,11 +1050,13 @@
     /* Test if placing it between THRUST_PP_TRIGGER_PAREN and the */          \
     /* parenthesis adds a comma. */                                           \
     THRUST_PP_HAS_COMMA(THRUST_PP_TRIGGER_PAREN __VA_ARGS__ (/*empty*/))      \
-  ) \
+  )                                                                           \
   /**/
 
-#define THRUST_PP_IS_VARIADIC_NULLARY_IMPL0(_0, _1, _2, _3) \
-  THRUST_PP_HAS_COMMA(THRUST_PP_CAT5(THRUST_PP_IS_VARIADIC_NULLARY_IMPL_TAG, _0, _1, _2, _3))
+#define THRUST_PP_IS_VARIADIC_NULLARY_IMPL0(_0, _1, _2, _3)                   \
+  THRUST_PP_HAS_COMMA(                                                        \
+    THRUST_PP_CAT5(THRUST_PP_IS_VARIADIC_NULLARY_IMPL_TAG, _0, _1, _2, _3)    \
+  )                                                                           \
 
 #define THRUST_PP_IS_VARIADIC_NULLARY_IMPL_TAG0001 ,
 
@@ -1199,76 +1096,20 @@
 /// }
 /// \endcode
 ///
-#define THRUST_PP_ARITY(...)                    \
-  THRUST_PP_EXPAND(THRUST_PP_IF(                \
-    THRUST_PP_IS_VARIADIC_NULLARY(__VA_ARGS__), \
-    0,                                          \
-    THRUST_PP_64TH_ARG(                         \
-      __VA_ARGS__,                              \
-      63,                                       \
-      62,                                       \
-      61,                                       \
-      60,                                       \
-      59,                                       \
-      58,                                       \
-      57,                                       \
-      56,                                       \
-      55,                                       \
-      54,                                       \
-      53,                                       \
-      52,                                       \
-      51,                                       \
-      50,                                       \
-      49,                                       \
-      48,                                       \
-      47,                                       \
-      46,                                       \
-      45,                                       \
-      44,                                       \
-      43,                                       \
-      42,                                       \
-      41,                                       \
-      40,                                       \
-      39,                                       \
-      38,                                       \
-      37,                                       \
-      36,                                       \
-      35,                                       \
-      34,                                       \
-      33,                                       \
-      32,                                       \
-      31,                                       \
-      30,                                       \
-      29,                                       \
-      28,                                       \
-      27,                                       \
-      26,                                       \
-      25,                                       \
-      24,                                       \
-      23,                                       \
-      22,                                       \
-      21,                                       \
-      20,                                       \
-      19,                                       \
-      18,                                       \
-      17,                                       \
-      16,                                       \
-      15,                                       \
-      14,                                       \
-      13,                                       \
-      12,                                       \
-      11,                                       \
-      10,                                       \
-      9,                                        \
-      8,                                        \
-      7,                                        \
-      6,                                        \
-      5,                                        \
-      4,                                        \
-      3,                                        \
-      2,                                        \
-      1,                                        \
-      0)))                                      \
+#define THRUST_PP_ARITY(...)                                                  \
+  THRUST_PP_EXPAND(                                                           \
+    THRUST_PP_IF(                                                             \
+      THRUST_PP_IS_VARIADIC_NULLARY(__VA_ARGS__)                              \
+    , 0                                                                       \
+    , THRUST_PP_64TH_ARG(                                                     \
+        __VA_ARGS__                                                           \
+      , 63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48                       \
+      , 47,46,45,44,43,42,41,40,39,38,37,36,35,34,33,32                       \
+      , 31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16                       \
+      , 15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0                       \
+      )                                                                       \
+    )                                                                         \
+  )                                                                           \
   /**/
 
 /// \def THRUST_PP_DISPATCH(basename, ...)
@@ -1312,8 +1153,13 @@
 /// }
 /// \endcode
 ///
-#define THRUST_PP_DISPATCH(basename, ...)                                               \
-  THRUST_PP_EXPAND(THRUST_PP_CAT2(basename, THRUST_PP_ARITY(__VA_ARGS__))(__VA_ARGS__)) \
+#define THRUST_PP_DISPATCH(basename, ...)                                     \
+  THRUST_PP_EXPAND(                                                           \
+    THRUST_PP_CAT2(                                                           \
+      basename,                                                               \
+      THRUST_PP_ARITY(__VA_ARGS__)                                            \
+    )(__VA_ARGS__)                                                            \
+  )                                                                           \
   /**/
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1321,24 +1167,26 @@
 /// \def THRUST_CURRENT_FUNCTION
 /// \brief The name of the current function as a string.
 ///
-#if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) \
-  || defined(__ghs__)
-#  define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__
+#if    defined(__GNUC__)                                                      \
+    || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000))                        \
+    || (defined(__ICC) && (__ICC >= 600)) || defined(__ghs__)
+  #define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #elif defined(__DMC__) && (__DMC__ >= 0x810)
-#  define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__
+  #define THRUST_CURRENT_FUNCTION __PRETTY_FUNCTION__
 #elif defined(__FUNCSIG__)
-#  define THRUST_CURRENT_FUNCTION __FUNCSIG__
-#elif (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 600)) \
-  || (defined(__IBMCTHRUST_PP__) && (__IBMCTHRUST_PP__ >= 500))
-#  define THRUST_CURRENT_FUNCTION __FUNCTION__
+  #define THRUST_CURRENT_FUNCTION __FUNCSIG__
+#elif    (defined(__INTEL_COMPILER) && (__INTEL_COMPILER >= 600))             \
+      || (defined(__IBMCTHRUST_PP__) && (__IBMCTHRUST_PP__ >= 500))
+  #define THRUST_CURRENT_FUNCTION __FUNCTION__
 #elif defined(__BORLANDC__) && (__BORLANDC__ >= 0x550)
-#  define THRUST_CURRENT_FUNCTION __FUNC__
+  #define THRUST_CURRENT_FUNCTION __FUNC__
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901)
-#  define THRUST_CURRENT_FUNCTION __func__
+  #define THRUST_CURRENT_FUNCTION __func__
 #elif defined(__cplusplus) && (__cplusplus >= 201103)
-#  define THRUST_CURRENT_FUNCTION __func__
+  #define THRUST_CURRENT_FUNCTION __func__
 #else
-#  define THRUST_CURRENT_FUNCTION "(unknown)"
+  #define THRUST_CURRENT_FUNCTION "(unknown)"
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+

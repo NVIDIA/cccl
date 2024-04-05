@@ -7,22 +7,22 @@
 // Enable error checking:
 #define CUB_STDERR
 
-#include <cub/device/device_radix_sort.cuh>
-#include <cub/util_debug.cuh>
-
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/sort.h>
 
-#include <cstdint>
-#include <cstdlib>
+#include <cub/device/device_radix_sort.cuh>
+#include <cub/util_debug.cuh>
 
 #include "test_util.h"
+
+#include <cstdint>
+#include <cstdlib>
 
 // Test that we can use a few common utilities and algorithms from wrapped
 // Thrust/CUB namespaces at runtime. More extensive testing is performed by the
 // header tests and the check_namespace.cmake test.
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   CommandLineArgs args(argc, argv);
   CubDebugExit(args.DeviceInit());
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 
   // Fill a vector with random data:
   ::wrap_thrust::thrust::host_vector<int> h_input(n);
-  for (auto& val : h_input)
+  for (auto &val : h_input)
   {
     RandomBits(val);
   }
@@ -52,7 +52,8 @@ int main(int argc, char** argv)
 
   CubDebugExit(error);
 
-  ::wrap_thrust::thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  ::wrap_thrust::thrust::device_vector<std::uint8_t> temp_storage(
+    temp_storage_bytes);
 
   // Test the CUB qualifier macro:
   error = CUB_NS_QUALIFIER::DeviceRadixSort::SortKeys(

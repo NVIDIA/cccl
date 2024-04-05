@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_BINDER2ND_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -36,34 +36,27 @@ class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX11 binder2nd
     : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
 {
 protected:
-  __Operation op;
-  typename __Operation::second_argument_type value;
-
+    __Operation                                op;
+    typename __Operation::second_argument_type value;
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY binder2nd(const __Operation& __x, const typename __Operation::second_argument_type __y)
-      : op(__x)
-      , value(__y)
-  {}
-  _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
-  operator()(typename __Operation::first_argument_type& __x) const
-  {
-    return op(__x, value);
-  }
-  _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type
-  operator()(const typename __Operation::first_argument_type& __x) const
-  {
-    return op(__x, value);
-  }
+    _LIBCUDACXX_INLINE_VISIBILITY
+    binder2nd(const __Operation& __x, const typename __Operation::second_argument_type __y)
+        : op(__x), value(__y) {}
+    _CCCL_EXEC_CHECK_DISABLE
+    _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type operator()
+        (      typename __Operation::first_argument_type& __x) const
+            {return op(__x, value);}
+    _CCCL_EXEC_CHECK_DISABLE
+    _LIBCUDACXX_INLINE_VISIBILITY typename __Operation::result_type operator()
+        (const typename __Operation::first_argument_type& __x) const
+            {return op(__x, value);}
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY binder2nd<__Operation>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY
+binder2nd<__Operation>
 bind2nd(const __Operation& __op, const _Tp& __x)
-{
-  return binder2nd<__Operation>(__op, __x);
-}
+    {return binder2nd<__Operation>(__op, __x);}
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

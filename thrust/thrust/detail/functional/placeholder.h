@@ -34,12 +34,13 @@ namespace detail
 namespace functional
 {
 
-template <unsigned int i>
-struct placeholder
+template<unsigned int i>
+  struct placeholder
 {
   typedef actor<argument<i> > type;
 };
 
-} // namespace functional
-} // namespace detail
+} // end functional
+} // end detail
 THRUST_NAMESPACE_END
+

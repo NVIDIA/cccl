@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool CheckFloatingPointQualifiers() {
 
   static_assert(!floating_point<T (*)()>, "");
   static_assert(!floating_point<T (&)()>, "");
-  static_assert(!floating_point<T (&&)()>, "");
+  static_assert(!floating_point<T(&&)()>, "");
 
   return result;
 }

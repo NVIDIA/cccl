@@ -18,34 +18,36 @@
 #include <cuda/std/type_traits>
 
 constexpr bool test() {
-  // Ensure we can use std:: types inside cuda::std::make_tuple
-  {
-    using ret = cuda::std::tuple<cuda::std::integral_constant<int, 42>,
-                                 std::integral_constant<int, 1337> >;
-    auto t = cuda::std::make_tuple(cuda::std::integral_constant<int, 42>(),
-                                   std::integral_constant<int, 1337>());
-    static_assert(cuda::std::is_same<decltype(t), ret>::value, "");
-    assert(cuda::std::get<0>(t) == 42);
-    assert(cuda::std::get<1>(t) == 1337);
-  }
+    // Ensure we can use std:: types inside cuda::std::make_tuple
+    {
+        using ret = cuda::std::tuple<cuda::std::integral_constant<int, 42>, std::integral_constant<int, 1337>>;
+        auto t = cuda::std::make_tuple(cuda::std::integral_constant<int, 42>(),
+                                             std::integral_constant<int, 1337>());
+        static_assert(cuda::std::is_same<decltype(t), ret>::value, "");
+        assert(cuda::std::get<0>(t) == 42);
+        assert(cuda::std::get<1>(t) == 1337);
+    }
 
-  // Ensure we can use std:: types inside cuda::std::tuple_cat
-  {
-    using ret = cuda::std::tuple<cuda::std::integral_constant<int, 42>,
-                                 std::integral_constant<int, 1337> >;
-    auto t = cuda::std::tuple_cat(
-        cuda::std::make_tuple(cuda::std::integral_constant<int, 42>()),
-        cuda::std::make_tuple(std::integral_constant<int, 1337>()));
-    static_assert(cuda::std::is_same<decltype(t), ret>::value, "");
-    assert(cuda::std::get<0>(t) == 42);
-    assert(cuda::std::get<1>(t) == 1337);
-  }
+    // Ensure we can use std:: types inside cuda::std::tuple_cat
+    {
+        using ret = cuda::std::tuple<cuda::std::integral_constant<int, 42>, std::integral_constant<int, 1337>>;
+        auto t = cuda::std::tuple_cat(cuda::std::make_tuple(cuda::std::integral_constant<int, 42>()),
+                                      cuda::std::make_tuple(      std::integral_constant<int, 1337>()));
+        static_assert(cuda::std::is_same<decltype(t), ret>::value, "");
+        assert(cuda::std::get<0>(t) == 42);
+        assert(cuda::std::get<1>(t) == 1337);
+    }
 
-  return true;
+    return true;
 }
 
-int main(int arg, char** argv) {
-  NV_IF_TARGET(NV_IS_HOST, (test(); static_assert(test(), "");));
+int main(int arg, char ** argv)
+{
+NV_IF_TARGET(
+NV_IS_HOST, (
+    test();
+    static_assert(test(), "");
+));
 
-  return 0;
+    return 0;
 }

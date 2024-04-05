@@ -23,24 +23,26 @@
 #include "test_iterators.h"
 
 template <class It>
-__host__ __device__ void
-test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x) {
-  cuda::std::move_iterator<It> r(i);
-  cuda::std::move_iterator<It>& rr = r += n;
-  assert(r.base() == x);
-  assert(&rr == &r);
+__host__ __device__
+void
+test(It i, typename cuda::std::iterator_traits<It>::difference_type n, It x)
+{
+    cuda::std::move_iterator<It> r(i);
+    cuda::std::move_iterator<It>& rr = r += n;
+    assert(r.base() == x);
+    assert(&rr == &r);
 }
 
-int main(int, char**) {
-  const char* s = "1234567890";
-  test(random_access_iterator<const char*>(s + 5), 5,
-       random_access_iterator<const char*>(s + 10));
-  test(s + 5, 5, s + 10);
+int main(int, char**)
+{
+    const char* s = "1234567890";
+    test(random_access_iterator<const char*>(s+5), 5, random_access_iterator<const char*>(s+10));
+    test(s+5, 5, s+10);
 
 #if TEST_STD_VER > 2011
-  {
-    constexpr const char* p = "123456789";
-    typedef cuda::std::move_iterator<const char*> MI;
+    {
+    constexpr const char *p = "123456789";
+    typedef cuda::std::move_iterator<const char *> MI;
     constexpr MI it1 = cuda::std::make_move_iterator(p);
     constexpr MI it2 = cuda::std::make_move_iterator(p + 5);
 #ifndef TEST_COMPILER_ICC
@@ -51,7 +53,7 @@ int main(int, char**) {
     static_assert(it1 != it3, "");
     static_assert(it2 == it3, "");
 #endif // TEST_COMPILER_ICC
-  }
+    }
 #endif
 
   return 0;

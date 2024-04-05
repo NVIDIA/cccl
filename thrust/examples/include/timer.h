@@ -21,19 +21,15 @@
 #ifdef __CUDACC__
 
 // use CUDA's high-resolution timers when possible
-#  include <thrust/system/cuda/error.h>
-#  include <thrust/system_error.h>
-
-#  include <cuda_runtime_api.h>
-
-#  include <string>
+#include <cuda_runtime_api.h>
+#include <thrust/system/cuda/error.h>
+#include <thrust/system_error.h>
+#include <string>
 
 void cuda_safe_call(cudaError_t error, const std::string& message = "")
 {
-  if (error)
-  {
+  if(error)
     throw thrust::system_error(error, thrust::cuda_category(), message);
-  }
 }
 
 struct timer
@@ -78,7 +74,7 @@ struct timer
 #else
 
 // fallback to clock()
-#  include <ctime>
+#include <ctime>
 
 struct timer
 {
@@ -90,7 +86,9 @@ struct timer
     restart();
   }
 
-  ~timer(void) {}
+  ~timer(void)
+  {
+  }
 
   void restart(void)
   {
@@ -111,3 +109,4 @@ struct timer
 };
 
 #endif
+

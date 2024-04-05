@@ -11,13 +11,13 @@
 #ifndef __CCCL_VERSION_H
 #define __CCCL_VERSION_H
 
-#define CCCL_VERSION       2004000
+#define CCCL_VERSION 2004000
 #define CCCL_MAJOR_VERSION (CCCL_VERSION / 1000000)
 #define CCCL_MINOR_VERSION (((CCCL_VERSION / 1000) % 1000))
 #define CCCL_PATCH_VERSION (CCCL_VERSION % 1000)
 
 #if CCCL_PATCH_VERSION > 99
-#  error "CCCL patch version cannot be greater than 99 for compatibility with Thrust/CUB's MMMmmmpp format."
+#error "CCCL patch version cannot be greater than 99 for compatibility with Thrust/CUB's MMMmmmpp format."
 #endif
 
 #endif // __CCCL_VERSION_H

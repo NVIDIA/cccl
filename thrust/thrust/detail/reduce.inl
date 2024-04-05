@@ -26,130 +26,128 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
-#include <thrust/system/detail/adl/reduce.h>
-#include <thrust/system/detail/adl/reduce_by_key.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/reduce.h>
 #include <thrust/system/detail/generic/reduce_by_key.h>
-#include <thrust/system/detail/generic/select_system.h>
+#include <thrust/system/detail/adl/reduce.h>
+#include <thrust/system/detail/adl/reduce_by_key.h>
 
 THRUST_NAMESPACE_BEGIN
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
-reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
+template<typename DerivedPolicy, typename InputIterator>
+_CCCL_HOST_DEVICE
+  typename thrust::iterator_traits<InputIterator>::value_type
+    reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end reduce()
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init)
+template<typename DerivedPolicy, typename InputIterator, typename T>
+_CCCL_HOST_DEVICE
+  T reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+           InputIterator first,
+           InputIterator last,
+           T init)
 {
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init);
 } // end reduce()
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename T,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  T reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+           InputIterator first,
+           InputIterator last,
+           T init,
+           BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init, binary_op);
 } // end reduce()
 
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output)
-{
-  using thrust::system::detail::generic::reduce_by_key;
-  return reduce_by_key(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-    keys_first,
-    keys_last,
-    values_first,
-    keys_output,
-    values_output);
-} // end reduce_by_key()
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred)
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output)
 {
   using thrust::system::detail::generic::reduce_by_key;
-  return reduce_by_key(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-    keys_first,
-    keys_last,
-    values_first,
-    keys_output,
-    values_output,
-    binary_pred);
+  return reduce_by_key(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), keys_first, keys_last, values_first, keys_output, values_output);
 } // end reduce_by_key()
+
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred)
 {
   using thrust::system::detail::generic::reduce_by_key;
-  return reduce_by_key(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-    keys_first,
-    keys_last,
-    values_first,
-    keys_output,
-    values_output,
-    binary_pred,
-    binary_op);
+  return reduce_by_key(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
 } // end reduce_by_key()
 
-template <typename InputIterator>
-typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator first, InputIterator last)
+
+_CCCL_EXEC_CHECK_DISABLE
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred,
+                BinaryFunction binary_op)
+{
+  using thrust::system::detail::generic::reduce_by_key;
+  return reduce_by_key(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
+} // end reduce_by_key()
+
+
+template<typename InputIterator>
+typename thrust::iterator_traits<InputIterator>::value_type
+  reduce(InputIterator first,
+         InputIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -160,8 +158,12 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
   return thrust::reduce(select_system(system), first, last);
 }
 
-template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init)
+
+template<typename InputIterator,
+         typename T>
+   T reduce(InputIterator first,
+            InputIterator last,
+            T init)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -172,8 +174,14 @@ T reduce(InputIterator first, InputIterator last, T init)
   return thrust::reduce(select_system(system), first, last, init);
 }
 
-template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
+
+template<typename InputIterator,
+         typename T,
+         typename BinaryFunction>
+   T reduce(InputIterator first,
+            InputIterator last,
+            T init,
+            BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -184,18 +192,22 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
   return thrust::reduce(select_system(system), first, last, init, binary_op);
 }
 
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output)
+
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
+  typedef typename thrust::iterator_system<InputIterator1>::type  System1;
+  typedef typename thrust::iterator_system<InputIterator2>::type  System2;
   typedef typename thrust::iterator_system<OutputIterator1>::type System3;
   typedef typename thrust::iterator_system<OutputIterator2>::type System4;
 
@@ -204,27 +216,27 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   System3 system3;
   System4 system4;
 
-  return thrust::reduce_by_key(
-    select_system(system1, system2, system3, system4), keys_first, keys_last, values_first, keys_output, values_output);
+  return thrust::reduce_by_key(select_system(system1,system2,system3,system4), keys_first, keys_last, values_first, keys_output, values_output);
 }
 
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred)
+
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
+  typedef typename thrust::iterator_system<InputIterator1>::type  System1;
+  typedef typename thrust::iterator_system<InputIterator2>::type  System2;
   typedef typename thrust::iterator_system<OutputIterator1>::type System3;
   typedef typename thrust::iterator_system<OutputIterator2>::type System4;
 
@@ -233,35 +245,29 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   System3 system3;
   System4 system4;
 
-  return thrust::reduce_by_key(
-    select_system(system1, system2, system3, system4),
-    keys_first,
-    keys_last,
-    values_first,
-    keys_output,
-    values_output,
-    binary_pred);
+  return thrust::reduce_by_key(select_system(system1,system2,system3,system4), keys_first, keys_last, values_first, keys_output, values_output, binary_pred);
 }
 
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate,
-          typename BinaryFunction>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred,
-  BinaryFunction binary_op)
+
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate,
+         typename BinaryFunction>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred,
+                BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator1>::type System1;
-  typedef typename thrust::iterator_system<InputIterator2>::type System2;
+  typedef typename thrust::iterator_system<InputIterator1>::type  System1;
+  typedef typename thrust::iterator_system<InputIterator2>::type  System2;
   typedef typename thrust::iterator_system<OutputIterator1>::type System3;
   typedef typename thrust::iterator_system<OutputIterator2>::type System4;
 
@@ -270,15 +276,9 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
   System3 system3;
   System4 system4;
 
-  return thrust::reduce_by_key(
-    select_system(system1, system2, system3, system4),
-    keys_first,
-    keys_last,
-    values_first,
-    keys_output,
-    values_output,
-    binary_pred,
-    binary_op);
+  return thrust::reduce_by_key(select_system(system1,system2,system3,system4), keys_first, keys_last, values_first, keys_output, values_output, binary_pred, binary_op);
 }
+
 
 THRUST_NAMESPACE_END
+

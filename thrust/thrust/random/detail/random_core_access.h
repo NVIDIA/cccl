@@ -36,28 +36,31 @@ namespace detail
 
 struct random_core_access
 {
-  template <typename OStream, typename EngineOrDistribution>
-  static OStream& stream_out(OStream& os, const EngineOrDistribution& x)
-  {
-    return x.stream_out(os);
-  }
 
-  template <typename IStream, typename EngineOrDistribution>
-  static IStream& stream_in(IStream& is, EngineOrDistribution& x)
-  {
-    return x.stream_in(is);
-  }
+template<typename OStream, typename EngineOrDistribution>
+static OStream &stream_out(OStream &os, const EngineOrDistribution &x)
+{
+  return x.stream_out(os);
+}
 
-  template <typename EngineOrDistribution>
-  _CCCL_HOST_DEVICE static bool equal(const EngineOrDistribution& lhs, const EngineOrDistribution& rhs)
-  {
-    return lhs.equal(rhs);
-  }
+template<typename IStream, typename EngineOrDistribution>
+static IStream &stream_in(IStream &is, EngineOrDistribution &x)
+{
+  return x.stream_in(is);
+}
+
+template<typename EngineOrDistribution>
+_CCCL_HOST_DEVICE
+static bool equal(const EngineOrDistribution &lhs, const EngineOrDistribution &rhs)
+{
+  return lhs.equal(rhs);
+}
 
 }; // end random_core_access
 
-} // namespace detail
+} // end detail
 
-} // namespace random
+} // end random
 
 THRUST_NAMESPACE_END
+

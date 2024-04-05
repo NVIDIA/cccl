@@ -42,7 +42,7 @@
  * This macro should not be used with any other Thrust namespace macros.
  */
 #ifdef THRUST_CUB_WRAPPED_NAMESPACE
-#  define THRUST_WRAPPED_NAMESPACE THRUST_CUB_WRAPPED_NAMESPACE
+#define THRUST_WRAPPED_NAMESPACE THRUST_CUB_WRAPPED_NAMESPACE
 #endif
 
 /**
@@ -53,13 +53,13 @@
  * This macro should not be used with any other Thrust namespace macros.
  */
 #ifdef THRUST_WRAPPED_NAMESPACE
-#  define THRUST_NS_PREFIX             \
-    namespace THRUST_WRAPPED_NAMESPACE \
-    {
+#define THRUST_NS_PREFIX                                                       \
+  namespace THRUST_WRAPPED_NAMESPACE                                           \
+  {
 
-#  define THRUST_NS_POSTFIX }
+#define THRUST_NS_POSTFIX }
 
-#  define THRUST_NS_QUALIFIER ::THRUST_WRAPPED_NAMESPACE::thrust
+#define THRUST_NS_QUALIFIER ::THRUST_WRAPPED_NAMESPACE::thrust
 #endif
 
 /**
@@ -70,7 +70,7 @@
  * THRUST_NS_POSTFIX, and THRUST_NS_QUALIFIER must all be set consistently.
  */
 #ifndef THRUST_NS_PREFIX
-#  define THRUST_NS_PREFIX
+#define THRUST_NS_PREFIX
 #endif
 
 /**
@@ -82,7 +82,7 @@
  * THRUST_NS_QUALIFIER must all be set consistently.
  */
 #ifndef THRUST_NS_POSTFIX
-#  define THRUST_NS_POSTFIX
+#define THRUST_NS_POSTFIX
 #endif
 
 /**
@@ -94,7 +94,7 @@
  * THRUST_NS_QUALIFIER must all be set consistently.
  */
 #ifndef THRUST_NS_QUALIFIER
-#  define THRUST_NS_QUALIFIER ::thrust
+#define THRUST_NS_QUALIFIER ::thrust
 #endif
 
 // clang-format off
@@ -181,10 +181,10 @@
  * enclosing namespaces requested by THRUST_WRAPPED_NAMESPACE, etc.
  * This macro is defined by Thrust and may not be overridden.
  */
-#define THRUST_NAMESPACE_BEGIN \
-  THRUST_NS_PREFIX             \
-  namespace thrust             \
-  {                            \
+#define THRUST_NAMESPACE_BEGIN                                                 \
+  THRUST_NS_PREFIX                                                             \
+  namespace thrust                                                             \
+  {                                                                            \
   THRUST_DETAIL_ABI_NS_BEGIN
 
 /**
@@ -193,9 +193,9 @@
  * enclosing namespaces requested by THRUST_WRAPPED_NAMESPACE, etc.
  * This macro is defined by Thrust and may not be overridden.
  */
-#define THRUST_NAMESPACE_END   \
-  THRUST_DETAIL_ABI_NS_END     \
-  } /* end namespace thrust */ \
+#define THRUST_NAMESPACE_END                                                   \
+  THRUST_DETAIL_ABI_NS_END                                                     \
+  } /* end namespace thrust */                                                 \
   THRUST_NS_POSTFIX
 
 // The following is just here to add docs for the thrust namespace:

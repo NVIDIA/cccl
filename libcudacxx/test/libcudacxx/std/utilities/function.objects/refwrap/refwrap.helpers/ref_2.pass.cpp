@@ -21,19 +21,18 @@
 
 #include "test_macros.h"
 
-__host__ __device__ bool is5(int i) { return i == 5; }
+__host__ __device__ bool is5 ( int i ) { return i == 5; }
 
 template <typename T>
-__host__ __device__ bool call_pred(T pred) {
-  return pred(5);
-}
+__host__ __device__ bool call_pred ( T pred ) { return pred(5); }
 
 namespace adl {
-struct A {};
-__host__ __device__ void ref(A) {}
-} // namespace adl
+  struct A {};
+  __host__ __device__ void ref(A) {}
+}
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   {
     int i = 0;
     cuda::std::reference_wrapper<int> r1 = cuda::std::ref(i);
@@ -49,14 +48,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && !defined(__CUDACC_RTC__)
   static_assert(test());
 #endif
 
   {
-    unary_counting_predicate<bool (*)(int), int> cp(is5);
+    unary_counting_predicate<bool(*)(int), int> cp(is5);
     assert(!cp(6));
     assert(cp.count() == 1);
     assert(call_pred(cp));

@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file for_each.h
  *  \brief Sequential implementations of for_each functions.
  */
@@ -40,15 +41,24 @@ namespace detail
 namespace sequential
 {
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
-for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, InputIterator last, UnaryFunction f)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename UnaryFunction>
+_CCCL_HOST_DEVICE
+InputIterator for_each(sequential::execution_policy<DerivedPolicy> &,
+                       InputIterator first,
+                       InputIterator last,
+                       UnaryFunction f)
 {
   // wrap f
-  thrust::detail::wrapped_function< UnaryFunction, void > wrapped_f(f);
+  thrust::detail::wrapped_function<
+    UnaryFunction,
+    void
+  > wrapped_f(f);
 
-  for (; first != last; ++first)
+  for(; first != last; ++first)
   {
     wrapped_f(*first);
   }
@@ -56,14 +66,24 @@ for_each(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Inpu
   return first;
 } // end for_each()
 
-template <typename DerivedPolicy, typename InputIterator, typename Size, typename UnaryFunction>
-_CCCL_HOST_DEVICE InputIterator
-for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Size n, UnaryFunction f)
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename Size,
+         typename UnaryFunction>
+_CCCL_HOST_DEVICE
+InputIterator for_each_n(sequential::execution_policy<DerivedPolicy> &,
+                         InputIterator first,
+                         Size n,
+                         UnaryFunction f)
 {
   // wrap f
-  thrust::detail::wrapped_function< UnaryFunction, void > wrapped_f(f);
+  thrust::detail::wrapped_function<
+    UnaryFunction,
+    void
+  > wrapped_f(f);
 
-  for (Size i = 0; i != n; i++)
+  for(Size i = 0; i != n; i++)
   {
     // we can dereference an OutputIterator if f does not
     // try to use the reference for anything besides assignment
@@ -74,7 +94,9 @@ for_each_n(sequential::execution_policy<DerivedPolicy>&, InputIterator first, Si
   return first;
 } // end for_each_n()
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

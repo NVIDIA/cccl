@@ -57,7 +57,10 @@ int main()
   // the stream is synchronized before the algorithm returns. This guarantees
   // there is no pending asynchronous work and the contents of `d_vec` are
   // immediately accessible.
-  thrust::inclusive_scan(sync_exec_policy, d_vec.cbegin(), d_vec.cend(), d_vec.begin());
+  thrust::inclusive_scan(sync_exec_policy,
+                         d_vec.cbegin(),
+                         d_vec.cend(),
+                         d_vec.begin());
 
   // This access is only valid because the stream has been synchronized
   int sum = d_vec.back();

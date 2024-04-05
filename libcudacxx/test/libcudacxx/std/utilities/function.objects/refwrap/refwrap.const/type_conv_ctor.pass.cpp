@@ -29,9 +29,7 @@ struct convertible_to_int_ref {
 template <bool IsNothrow>
 struct nothrow_convertible {
   int val = 0;
-  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow) {
-    return val;
-  }
+  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow) { return val; }
 };
 
 struct convertible_from_int {
@@ -41,7 +39,8 @@ struct convertible_from_int {
 __host__ __device__ void meow(cuda::std::reference_wrapper<int>) {}
 __host__ __device__ void meow(convertible_from_int) {}
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     convertible_to_int_ref t;
     cuda::std::reference_wrapper<convertible_to_int_ref> r(t);
@@ -59,7 +58,9 @@ int main(int, char**) {
     ASSERT_NOT_NOEXCEPT(Ref(nothrow_convertible<false>()));
 #endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
   }
-  { meow(0); }
+  {
+    meow(0);
+  }
 #if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_NVRTC)
   {
     extern cuda::std::reference_wrapper<int> purr();
@@ -71,16 +72,10 @@ int main(int, char**) {
   {
     int i = 0;
     cuda::std::reference_wrapper ri(i);
-    static_assert(
-        (cuda::std::is_same<decltype(ri),
-                            cuda::std::reference_wrapper<int> >::value),
-        "");
+    static_assert((cuda::std::is_same<decltype(ri), cuda::std::reference_wrapper<int>>::value), "" );
     const int j = 0;
     cuda::std::reference_wrapper rj(j);
-    static_assert(
-        (cuda::std::is_same<decltype(rj),
-                            cuda::std::reference_wrapper<const int> >::value),
-        "");
+    static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "" );
   }
 #endif
 #endif

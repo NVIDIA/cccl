@@ -22,46 +22,44 @@
 
 template <class T>
 __host__ __device__ void
-test(T x,
-     typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* =
-         0) {
-  static_assert(
-      (cuda::std::is_same<decltype(cuda::std::norm(x)), double>::value), "");
-  assert(cuda::std::norm(x) ==
-         norm(cuda::std::complex<double>(static_cast<double>(x), 0)));
+test(T x, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0)
+{
+    static_assert((cuda::std::is_same<decltype(cuda::std::norm(x)), double>::value), "");
+    assert(cuda::std::norm(x) == norm(cuda::std::complex<double>(static_cast<double>(x), 0)));
 }
 
 template <class T>
 __host__ __device__ void
-test(T x,
-     typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* =
-         0) {
-  static_assert((cuda::std::is_same<decltype(cuda::std::norm(x)), T>::value),
-                "");
-  assert(cuda::std::norm(x) == norm(cuda::std::complex<T>(x, 0)));
+test(T x, typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0)
+{
+    static_assert((cuda::std::is_same<decltype(cuda::std::norm(x)), T>::value), "");
+    assert(cuda::std::norm(x) == norm(cuda::std::complex<T>(x, 0)));
 }
 
 template <class T>
-__host__ __device__ void test() {
-  test<T>(0);
-  test<T>(1);
-  test<T>(10);
+__host__ __device__ void
+test()
+{
+    test<T>(0);
+    test<T>(1);
+    test<T>(10);
 }
 
-int main(int, char**) {
-  test<float>();
-  test<double>();
+int main(int, char**)
+{
+    test<float>();
+    test<double>();
 // CUDA treats long double as double
 //  test<long double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
-  test<__half>();
+    test<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-  test<__nv_bfloat16>();
+    test<__nv_bfloat16>();
 #endif
-  test<int>();
-  test<unsigned>();
-  test<long long>();
+    test<int>();
+    test<unsigned>();
+    test<long long>();
 
   return 0;
 }

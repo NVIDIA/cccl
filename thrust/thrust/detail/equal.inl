@@ -27,39 +27,35 @@
 #endif // no system header
 #include <thrust/equal.h>
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/adl/equal.h>
-#include <thrust/system/detail/generic/equal.h>
 #include <thrust/system/detail/generic/select_system.h>
+#include <thrust/system/detail/generic/equal.h>
+#include <thrust/system/detail/adl/equal.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename System, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
-      InputIterator1 first1,
-      InputIterator1 last1,
-      InputIterator2 first2)
+template<typename System, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE
+bool equal(const thrust::detail::execution_policy_base<System> &system, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
   using thrust::system::detail::generic::equal;
   return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2);
 } // end equal()
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename System, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE bool
-equal(const thrust::detail::execution_policy_base<System>& system,
-      InputIterator1 first1,
-      InputIterator1 last1,
-      InputIterator2 first2,
-      BinaryPredicate binary_pred)
+template<typename System, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+bool equal(const thrust::detail::execution_policy_base<System> &system, InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
 {
   using thrust::system::detail::generic::equal;
   return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2, binary_pred);
 } // end equal()
 
+
 template <typename InputIterator1, typename InputIterator2>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
+bool equal(InputIterator1 first1, InputIterator1 last1,
+           InputIterator2 first2)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -69,11 +65,14 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
   System1 system1;
   System2 system2;
 
-  return thrust::equal(select_system(system1, system2), first1, last1, first2);
+  return thrust::equal(select_system(system1,system2), first1, last1, first2);
 }
 
-template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
+
+template <typename InputIterator1, typename InputIterator2,
+          typename BinaryPredicate>
+bool equal(InputIterator1 first1, InputIterator1 last1,
+           InputIterator2 first2, BinaryPredicate binary_pred)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -83,7 +82,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, B
   System1 system1;
   System2 system2;
 
-  return thrust::equal(select_system(system1, system2), first1, last1, first2, binary_pred);
+  return thrust::equal(select_system(system1,system2), first1, last1, first2, binary_pred);
 }
 
 THRUST_NAMESPACE_END

@@ -25,12 +25,10 @@
  *
  ******************************************************************************/
 
-#include <cuda.h>
-
-#include <string>
-
 #include "catch2_test_helper.h"
 #include <nvrtc.h>
+#include <cuda.h>
+#include <string>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {
@@ -225,16 +223,21 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   cub::PtxVersion(ptx_version);
   const std::string arch = std::string("-arch=sm_") + std::to_string(ptx_version / 10);
 
-  constexpr int num_includes         = 5;
+  constexpr int num_includes = 5;
   const char* includes[num_includes] = {
-    NVRTC_CUB_PATH, NVRTC_THRUST_PATH, NVRTC_LIBCUDACXX_PATH, NVRTC_CTK_PATH, arch.c_str()};
+    NVRTC_CUB_PATH,
+    NVRTC_THRUST_PATH,
+    NVRTC_LIBCUDACXX_PATH,
+    NVRTC_CTK_PATH,
+    arch.c_str()
+  };
 
   std::size_t log_size{};
   nvrtcResult compile_result = nvrtcCompileProgram(prog, num_includes, includes);
 
   REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLogSize(prog, &log_size));
 
-  std::unique_ptr<char[]> log{new char[log_size]};
+  std::unique_ptr<char[]> log{ new char[log_size] };
   REQUIRE(NVRTC_SUCCESS == nvrtcGetProgramLog(prog, log.get()));
   INFO("nvrtc log = " << log.get());
   REQUIRE(NVRTC_SUCCESS == compile_result);
@@ -242,7 +245,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   std::size_t code_size{};
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBINSize(prog, &code_size));
 
-  std::unique_ptr<char[]> code{new char[code_size]};
+  std::unique_ptr<char[]> code{ new char[code_size] };
   REQUIRE(NVRTC_SUCCESS == nvrtcGetCUBIN(prog, code.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
@@ -260,7 +263,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   // Generate input for execution, and create output buffers.
   constexpr int threads_in_block = 128;
   constexpr int items_per_thread = 4;
-  constexpr int tile_size        = threads_in_block * items_per_thread;
+  constexpr int tile_size = threads_in_block * items_per_thread;
 
   CUdeviceptr d_ptr{};
   REQUIRE(CUDA_SUCCESS == cuMemAlloc(&d_ptr, tile_size * sizeof(int)));
@@ -278,7 +281,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   int h_err{0};
   REQUIRE(CUDA_SUCCESS == cuMemcpyHtoD(d_err, &h_err, sizeof(int)));
 
-  void* args[] = {&d_ptr, &d_err};
+  void *args[] = { &d_ptr, &d_err };
 
   REQUIRE(CUDA_SUCCESS == cuLaunchKernel(kernel, 1, 1, 1, threads_in_block, 1, 1, 0, nullptr, args, 0));
   REQUIRE(CUDA_SUCCESS == cuCtxSynchronize());
@@ -288,7 +291,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(h_err == 0);
   for (int i = 0; i < tile_size; i++)
   {
-    const int actual   = h_ptr[i];
+    const int actual = h_ptr[i];
     const int expected = tile_size - i - 1;
     REQUIRE(actual == expected);
   }

@@ -17,8 +17,9 @@
 #include <cuda/barrier>
 
 #ifndef __cccl_lib_experimental_ctk12_cp_async_exposure
-static_assert(false,
-              "should define __cccl_lib_experimental_ctk12_cp_async_exposure");
+static_assert(false, "should define __cccl_lib_experimental_ctk12_cp_async_exposure");
 #endif
 
-int main(int, char**) { return 0; }
+int main(int, char**){
+    return 0;
+}

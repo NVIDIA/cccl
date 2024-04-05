@@ -39,13 +39,27 @@ namespace detail
 namespace sequential
 {
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy(sequential::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
 
-template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator
-copy_n(sequential::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+  OutputIterator copy(sequential::execution_policy<DerivedPolicy> &exec,
+                      InputIterator first,
+                      InputIterator last,
+                      OutputIterator result);
+
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename Size,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+  OutputIterator copy_n(sequential::execution_policy<DerivedPolicy> &exec,
+                        InputIterator first,
+                        Size n,
+                        OutputIterator result);
+
 
 } // end namespace sequential
 } // end namespace detail
@@ -53,3 +67,4 @@ copy_n(sequential::execution_policy<DerivedPolicy>& exec, InputIterator first, S
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/copy.inl>
+

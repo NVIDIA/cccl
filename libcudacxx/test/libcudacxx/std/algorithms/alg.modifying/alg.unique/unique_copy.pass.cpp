@@ -29,13 +29,11 @@ struct AssignableFromMoveOnly {
   __host__ __device__ constexpr AssignableFromMoveOnly(int i) : data(i) {}
   __host__ __device__ constexpr AssignableFromMoveOnly() : data(0) {}
   int data;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 AssignableFromMoveOnly&
-  operator=(MoveOnly const& m) {
+  __host__ __device__ TEST_CONSTEXPR_CXX14 AssignableFromMoveOnly& operator=(MoveOnly const& m) {
     data = m.get();
     return *this;
   }
-  __host__ __device__ constexpr bool
-  operator==(AssignableFromMoveOnly const& rhs) const {
+  __host__ __device__ constexpr bool operator==(AssignableFromMoveOnly const& rhs) const {
     return data == rhs.data;
   }
 };

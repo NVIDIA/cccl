@@ -1,18 +1,18 @@
 /*
- *  Copyright 2021 NVIDIA Corporation
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
+*  Copyright 2021 NVIDIA Corporation
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
 
 #pragma once
 
@@ -29,13 +29,17 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+
 CUB_NAMESPACE_BEGIN
+
 
 namespace detail
 {
 
+
 namespace temporary_storage
 {
+
 
 class slot;
 
@@ -44,6 +48,7 @@ class alias;
 
 template <int SlotsCount>
 class layout;
+
 
 /**
  * @brief Temporary storage slot that can be considered a C++ union with an
@@ -82,7 +87,7 @@ class layout;
 class slot
 {
   std::size_t m_size{};
-  void* m_pointer{};
+  void *m_pointer{};
 
 public:
   slot() = default;
@@ -96,7 +101,7 @@ public:
 private:
   _CCCL_HOST_DEVICE void set_bytes_required(std::size_t new_size)
   {
-    m_size = (max) (m_size, new_size);
+    m_size = (max)(m_size, new_size);
   }
 
   _CCCL_HOST_DEVICE std::size_t get_bytes_required() const
@@ -104,14 +109,8 @@ private:
     return m_size;
   }
 
-  _CCCL_HOST_DEVICE void set_storage(void* ptr)
-  {
-    m_pointer = ptr;
-  }
-  _CCCL_HOST_DEVICE void* get_storage() const
-  {
-    return m_pointer;
-  }
+  _CCCL_HOST_DEVICE void set_storage(void *ptr) { m_pointer = ptr; }
+  _CCCL_HOST_DEVICE void *get_storage() const { return m_pointer; }
 
   template <typename T>
   friend class alias;
@@ -119,6 +118,7 @@ private:
   template <int>
   friend class layout;
 };
+
 
 /**
  * @brief Named memory region of a temporary storage slot
@@ -134,12 +134,13 @@ private:
 template <typename T>
 class alias
 {
-  slot& m_slot;
+  slot &m_slot;
   std::size_t m_elements{};
 
-  _CCCL_HOST_DEVICE explicit alias(slot& slot, std::size_t elements = 0)
-      : m_slot(slot)
-      , m_elements(elements)
+  _CCCL_HOST_DEVICE explicit alias(slot &slot,
+                                     std::size_t elements = 0)
+    : m_slot(slot)
+    , m_elements(elements)
   {
     this->update_slot();
   }
@@ -174,24 +175,26 @@ public:
    * If the @p elements number is equal to zero, or storage layout isn't mapped,
    * @p nullptr is returned.
    */
-  _CCCL_HOST_DEVICE T* get() const
+  _CCCL_HOST_DEVICE T *get() const
   {
     if (m_elements == 0)
     {
       return nullptr;
     }
 
-    return reinterpret_cast<T*>(m_slot.get_storage());
+    return reinterpret_cast<T *>(m_slot.get_storage());
   }
 
   friend class slot;
 };
+
 
 template <typename T>
 _CCCL_HOST_DEVICE alias<T> slot::create_alias(std::size_t elements)
 {
   return alias<T>(*this, elements);
 }
+
 
 /**
  * @brief Temporary storage layout represents a structure with
@@ -256,13 +259,13 @@ class layout
 {
   slot m_slots[SlotsCount];
   std::size_t m_sizes[SlotsCount];
-  void* m_pointers[SlotsCount];
-  bool m_layout_was_mapped{};
+  void *m_pointers[SlotsCount];
+  bool m_layout_was_mapped {};
 
 public:
   layout() = default;
 
-  _CCCL_HOST_DEVICE slot* get_slot(int slot_id)
+  _CCCL_HOST_DEVICE slot *get_slot(int slot_id)
   {
     if (slot_id < SlotsCount)
     {
@@ -304,7 +307,8 @@ public:
   /**
    * @brief Maps the layout to the temporary storage buffer.
    */
-  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void* d_temp_storage, std::size_t temp_storage_bytes)
+  _CCCL_HOST_DEVICE cudaError_t map_to_buffer(void *d_temp_storage,
+                                                std::size_t temp_storage_bytes)
   {
     if (m_layout_was_mapped)
     {
@@ -314,7 +318,10 @@ public:
     this->prepare_interface();
 
     cudaError_t error = cudaSuccess;
-    if ((error = AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if ((error = AliasTemporaries(d_temp_storage,
+                                  temp_storage_bytes,
+                                  m_pointers,
+                                  m_sizes)))
     {
       return error;
     }

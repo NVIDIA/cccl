@@ -53,32 +53,33 @@
 #  define CUB_DEPRECATED
 #  define CUB_DEPRECATED_BECAUSE(MSG)
 #elif _CCCL_STD_VER >= 2014
-#  define CUB_DEPRECATED              [[deprecated]]
+#  define CUB_DEPRECATED [[deprecated]]
 #  define CUB_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
 #elif defined(_CCCL_COMPILER_MSVC)
-#  define CUB_DEPRECATED              __declspec(deprecated)
+#  define CUB_DEPRECATED __declspec(deprecated)
 #  define CUB_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
 #elif defined(_CCCL_COMPILER_CLANG)
-#  define CUB_DEPRECATED              __attribute__((deprecated))
+#  define CUB_DEPRECATED __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #elif defined(_CCCL_COMPILER_GCC)
-#  define CUB_DEPRECATED              __attribute__((deprecated))
+#  define CUB_DEPRECATED __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else
 #  define CUB_DEPRECATED
 #  define CUB_DEPRECATED_BECAUSE(MSG)
 #endif
 
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED             \
-  CUB_DEPRECATED_BECAUSE(                                          \
-    "CUB no longer accepts `debug_synchronous` parameter. "        \
-    "Define CUB_DEBUG_SYNC instead, or silence this message with " \
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED                         \
+  CUB_DEPRECATED_BECAUSE(                                                      \
+    "CUB no longer accepts `debug_synchronous` parameter. "                    \
+    "Define CUB_DEBUG_SYNC instead, or silence this message with "             \
     "CUB_IGNORE_DEPRECATED_API.")
 
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                     \
-  if (debug_synchronous)                                            \
-  {                                                                 \
-    _CubLog("%s\n",                                                 \
-            "CUB no longer accepts `debug_synchronous` parameter. " \
-            "Define CUB_DEBUG_SYNC instead.");                      \
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                                \
+  if (debug_synchronous)                                                       \
+  {                                                                            \
+    _CubLog("%s\n",                                                            \
+            "CUB no longer accepts `debug_synchronous` parameter. "            \
+            "Define CUB_DEBUG_SYNC instead.");                                 \
   }
+

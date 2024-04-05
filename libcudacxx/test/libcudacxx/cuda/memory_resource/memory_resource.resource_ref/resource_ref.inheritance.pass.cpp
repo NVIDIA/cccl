@@ -36,16 +36,12 @@ struct resource_base {
   bool operator!=(const resource_base& other) const { return false; }
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(
-      (!cuda::property_with_value<Property>)&&_CUDA_VSTD::_One_of<
-          Property, Properties...>) //
+    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
   friend void get_property(const resource_base&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&&
-                           _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const resource_base& res,
-                                                    Property) noexcept {
+    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  friend typename Property::value_type get_property(const resource_base& res, Property) noexcept {
     return 42;
   }
 };
@@ -136,23 +132,20 @@ extern "C" void __cxa_pure_virtual() {
 }
 
 int main(int, char**) {
-  NV_IF_TARGET(
-      NV_IS_HOST,
-      (
-          // Test some basic combinations of properties w/o state
-          test_resource_ref<property_with_value<short>,
-                            property_with_value<int> >();
-          test_resource_ref<property_with_value<short>,
-                            property_without_value<int> >();
-          test_resource_ref<property_without_value<short>,
-                            property_without_value<int> >();
+    NV_IF_TARGET(NV_IS_HOST,(
+        // Test some basic combinations of properties w/o state
+        test_resource_ref<property_with_value<short>, property_with_value<int> >();
+        test_resource_ref<property_with_value<short>, property_without_value<int> >();
+        test_resource_ref<property_without_value<short>,
+                          property_without_value<int> >();
 
-          test_resource_ref_from_pointer<property_with_value<short>,
-                                         property_with_value<int> >();
-          test_resource_ref_from_pointer<property_with_value<short>,
-                                         property_without_value<int> >();
-          test_resource_ref_from_pointer<property_without_value<short>,
-                                         property_without_value<int> >();))
+        test_resource_ref_from_pointer<property_with_value<short>,
+                                      property_with_value<int> >();
+        test_resource_ref_from_pointer<property_with_value<short>,
+                                      property_without_value<int> >();
+        test_resource_ref_from_pointer<property_without_value<short>,
+                                      property_without_value<int> >();
+    ))
 
-  return 0;
+    return 0;
 }

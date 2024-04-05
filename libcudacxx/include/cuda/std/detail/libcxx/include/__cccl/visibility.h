@@ -12,7 +12,7 @@
 #define __CCCL_VISIBILITY_H
 
 #ifndef __CCCL_CONFIG
-#  error "<__cccl/visibility.h> should only be included in from <cuda/__cccl_config>"
+#error "<__cccl/visibility.h> should only be included in from <cuda/__cccl_config>"
 #endif // __CCCL_CONFIG
 
 #include <cuda/std/detail/libcxx/include/__cccl/compiler.h>
@@ -39,7 +39,7 @@
 #elif defined(_CCCL_COMPILER_NVRTC)
 #  define _CCCL_ATTRIBUTE_HIDDEN
 #else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
-#  define _CCCL_ATTRIBUTE_HIDDEN __attribute__((__visibility__("hidden")))
+#  define _CCCL_ATTRIBUTE_HIDDEN __attribute__ ((__visibility__("hidden")))
 #endif // !_CCCL_COMPILER_NVRTC
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)

@@ -37,6 +37,8 @@
 //         to *abbrev if abbrev is non-null. If %z (or a modified variant) is used and
 //         successfully parsed, that value will be assigned to *offset if offset is non-null.
 
+
+
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -44,12 +46,13 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using year_month = cuda::std::chrono::year_month;
-  using year = cuda::std::chrono::year;
-  using month = cuda::std::chrono::month;
+int main(int, char**)
+{
+    using year_month = cuda::std::chrono::year_month;
+    using year       = cuda::std::chrono::year;
+    using month      = cuda::std::chrono::month;
 
-  std::cout << year_month{year{2018}, month{3}};
+    std::cout << year_month{year{2018}, month{3}};
 
   return 0;
 }

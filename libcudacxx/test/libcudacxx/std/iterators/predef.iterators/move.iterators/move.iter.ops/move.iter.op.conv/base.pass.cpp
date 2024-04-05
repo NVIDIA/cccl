@@ -30,46 +30,30 @@ struct MoveOnlyIterator {
   using difference_type = cuda::std::ptrdiff_t;
   using reference = int&;
 
-  __host__ __device__ TEST_CONSTEXPR explicit MoveOnlyIterator(It it)
-      : it_(it) {}
+  __host__ __device__ TEST_CONSTEXPR explicit MoveOnlyIterator(It it) : it_(it) {}
   MoveOnlyIterator(MoveOnlyIterator&&) = default;
   MoveOnlyIterator& operator=(MoveOnlyIterator&&) = default;
   MoveOnlyIterator(const MoveOnlyIterator&) = delete;
   MoveOnlyIterator& operator=(const MoveOnlyIterator&) = delete;
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const {
-    return *it_;
-  }
+   __host__ __device__ TEST_CONSTEXPR reference operator*() const { return *it_; }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator& operator++() {
-    ++it_;
-    return *this;
-  }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator operator++(int) {
-    return MoveOnlyIterator(it_++);
-  }
+   __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator& operator++() { ++it_; return *this; }
+   __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator operator++(int) { return MoveOnlyIterator(it_++); }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y) {
-    return x.it_ == y.it_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool
-  operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y) {
-    return x.it_ != y.it_;
-  }
+   __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y) {return x.it_ == y.it_;}
+   __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y) {return x.it_ != y.it_;}
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i) {
-    return i.it_;
-  }
+   __host__ __device__ friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i) { return i.it_; }
 };
 
 #if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_MSVC_2017)
-static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
+static_assert( cuda::std::input_iterator<MoveOnlyIterator>, "");
 #endif
 static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_one() {
+ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one() {
   // Non-const lvalue.
   {
     int a[] = {1, 2, 3};
@@ -111,7 +95,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one() {
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   test_one<cpp17_input_iterator<int*> >();
   test_one<forward_iterator<int*> >();
   test_one<bidirectional_iterator<int*> >();
@@ -119,7 +103,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   test_one<int*>();
   test_one<const int*>();
 #if TEST_STD_VER > 2014
-  test_one<contiguous_iterator<int*> >();
+  test_one<contiguous_iterator<int*>>();
 #endif
 
   return true;

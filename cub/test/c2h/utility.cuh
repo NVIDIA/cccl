@@ -39,7 +39,8 @@ namespace c2h
  * Types `To` and `From` must be the same size.
  */
 template <typename To, typename From>
-__host__ __device__ To bit_cast(const From& in)
+__host__ __device__
+To bit_cast(const From& in)
 {
   static_assert(sizeof(To) == sizeof(From), "Types must be same size.");
   To out;
@@ -53,4 +54,4 @@ std::string type_name()
   return typeid(T).name();
 }
 
-} // namespace c2h
+}

@@ -24,30 +24,31 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using year = cuda::std::chrono::year;
+int main(int, char**)
+{
+    using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year>().ok());
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year>().ok()));
+    ASSERT_NOEXCEPT(                cuda::std::declval<const year>().ok());
+    ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year>().ok()));
 
-  ASSERT_NOEXCEPT(year::max());
-  ASSERT_SAME_TYPE(year, decltype(year::max()));
+    ASSERT_NOEXCEPT(                year::max());
+    ASSERT_SAME_TYPE(year, decltype(year::max()));
 
-  ASSERT_NOEXCEPT(year::min());
-  ASSERT_SAME_TYPE(year, decltype(year::min()));
+    ASSERT_NOEXCEPT(                year::min());
+    ASSERT_SAME_TYPE(year, decltype(year::min()));
 
-  static_assert(static_cast<int>(year::min()) == -32767, "");
-  static_assert(static_cast<int>(year::max()) == 32767, "");
+    static_assert(static_cast<int>(year::min()) == -32767, "");
+    static_assert(static_cast<int>(year::max()) ==  32767, "");
 
-  assert(year{-20001}.ok());
-  assert(year{-2000}.ok());
-  assert(year{-1}.ok());
-  assert(year{0}.ok());
-  assert(year{1}.ok());
-  assert(year{2000}.ok());
-  assert(year{20001}.ok());
+    assert(year{-20001}.ok());
+    assert(year{ -2000}.ok());
+    assert(year{    -1}.ok());
+    assert(year{     0}.ok());
+    assert(year{     1}.ok());
+    assert(year{  2000}.ok());
+    assert(year{ 20001}.ok());
 
-  static_assert(!year{-32768}.ok(), "");
+    static_assert(!year{-32768}.ok(), "");
 
   return 0;
 }

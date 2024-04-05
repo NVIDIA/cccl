@@ -19,8 +19,7 @@
 #include "test_macros.h"
 
 int main(int, char**) {
-  static_assert(cuda::std::variant_npos == static_cast<cuda::std::size_t>(-1),
-                "");
+  static_assert(cuda::std::variant_npos == static_cast<cuda::std::size_t>(-1), "");
 
   return 0;
 }

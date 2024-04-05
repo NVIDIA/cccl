@@ -25,8 +25,7 @@
 
 template <class Iter1, class Iter2>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  using iter_value_t = typename cuda::std::remove_reference<decltype(
-      *cuda::std::declval<Iter1>())>::type;
+  using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter1>())>::type;
 
   {
     iter_value_t i[3] = {1, 2, 3};
@@ -42,7 +41,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   }
 
   {
-    iter_value_t src[2][2] = {{0, 1}, {2, 3}};
+    iter_value_t src[2][2]  = {{0, 1}, {2, 3}};
     iter_value_t dest[2][2] = {{9, 8}, {7, 6}};
 
     cuda::std::swap(src, dest);

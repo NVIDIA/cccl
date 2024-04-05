@@ -52,8 +52,7 @@ __host__ __device__ constexpr bool test() {
   }
 
   // Check the `noexcept` specification.
-#if (!defined(TEST_COMPILER_GCC) ||                                            \
-     __GNUC__ >= 8) // ancient gcc trips over this not being a literal type
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 8) // ancient gcc trips over this not being a literal type
   {
     {
       struct ThrowingCopyNoexceptDecrement {
@@ -61,37 +60,26 @@ __host__ __device__ constexpr bool test() {
         using difference_type = ptrdiff_t;
 
         __host__ __device__ ThrowingCopyNoexceptDecrement();
-        __host__ __device__
-        ThrowingCopyNoexceptDecrement(const ThrowingCopyNoexceptDecrement&);
+        __host__ __device__ ThrowingCopyNoexceptDecrement(const ThrowingCopyNoexceptDecrement&);
 
-        __host__ __device__ int& operator*() const noexcept {
-          static int x;
-          return x;
-        }
+        __host__ __device__ int& operator*() const noexcept { static int x; return x; }
 
         __host__ __device__ ThrowingCopyNoexceptDecrement& operator++();
         __host__ __device__ ThrowingCopyNoexceptDecrement operator++(int);
-        __host__ __device__ ThrowingCopyNoexceptDecrement&
-        operator--() noexcept;
-        __host__ __device__ ThrowingCopyNoexceptDecrement
-        operator--(int) noexcept;
+        __host__ __device__ ThrowingCopyNoexceptDecrement& operator--() noexcept;
+        __host__ __device__ ThrowingCopyNoexceptDecrement operator--(int) noexcept;
 #if TEST_STD_VER > 2017
         bool operator==(const ThrowingCopyNoexceptDecrement&) const = default;
 #else
-        __host__ __device__ bool
-        operator==(const ThrowingCopyNoexceptDecrement&) const;
-        __host__ __device__ bool
-        operator!=(const ThrowingCopyNoexceptDecrement&) const;
+        __host__ __device__ bool operator==(const ThrowingCopyNoexceptDecrement&) const;
+        __host__ __device__ bool operator!=(const ThrowingCopyNoexceptDecrement&) const;
 #endif
       };
-      static_assert(
-          cuda::std::bidirectional_iterator<ThrowingCopyNoexceptDecrement>);
+      static_assert(cuda::std::bidirectional_iterator<ThrowingCopyNoexceptDecrement>);
 
 #ifndef TEST_COMPILER_ICC
-      static_assert(!cuda::std::is_nothrow_copy_constructible_v<
-                    ThrowingCopyNoexceptDecrement>);
-      ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(
-          --cuda::std::declval<ThrowingCopyNoexceptDecrement&>()));
+      static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
+      ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<ThrowingCopyNoexceptDecrement&>()));
       using RI = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
 #endif // TEST_COMPILER_ICC
@@ -103,13 +91,9 @@ __host__ __device__ constexpr bool test() {
         using difference_type = ptrdiff_t;
 
         __host__ __device__ NoexceptCopyThrowingDecrement();
-        __host__ __device__ NoexceptCopyThrowingDecrement(
-            const NoexceptCopyThrowingDecrement&) noexcept;
+        __host__ __device__ NoexceptCopyThrowingDecrement(const NoexceptCopyThrowingDecrement&) noexcept;
 
-        __host__ __device__ int& operator*() const {
-          static int x;
-          return x;
-        }
+        __host__ __device__ int& operator*() const { static int x; return x; }
 
         __host__ __device__ NoexceptCopyThrowingDecrement& operator++();
         __host__ __device__ NoexceptCopyThrowingDecrement operator++(int);
@@ -119,20 +103,15 @@ __host__ __device__ constexpr bool test() {
 #if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyThrowingDecrement&) const = default;
 #else
-        __host__ __device__ bool
-        operator==(const NoexceptCopyThrowingDecrement&) const;
-        __host__ __device__ bool
-        operator!=(const NoexceptCopyThrowingDecrement&) const;
+        __host__ __device__ bool operator==(const NoexceptCopyThrowingDecrement&) const;
+        __host__ __device__ bool operator!=(const NoexceptCopyThrowingDecrement&) const;
 #endif
       };
-      static_assert(
-          cuda::std::bidirectional_iterator<NoexceptCopyThrowingDecrement>);
+      static_assert(cuda::std::bidirectional_iterator<NoexceptCopyThrowingDecrement>);
 
-      static_assert(cuda::std::is_nothrow_copy_constructible_v<
-                    NoexceptCopyThrowingDecrement>);
+      static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
 #ifndef TEST_COMPILER_ICC
-      ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(
-          --cuda::std::declval<NoexceptCopyThrowingDecrement&>()));
+      ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<NoexceptCopyThrowingDecrement&>()));
       using RI = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
 #endif // TEST_COMPILER_ICC
@@ -144,13 +123,9 @@ __host__ __device__ constexpr bool test() {
         using difference_type = ptrdiff_t;
 
         __host__ __device__ NoexceptCopyAndDecrement();
-        __host__ __device__
-        NoexceptCopyAndDecrement(const NoexceptCopyAndDecrement&) noexcept;
+        __host__ __device__ NoexceptCopyAndDecrement(const NoexceptCopyAndDecrement&) noexcept;
 
-        __host__ __device__ int& operator*() const noexcept {
-          static int x;
-          return x;
-        }
+        __host__ __device__ int& operator*() const noexcept { static int x; return x; }
 
         __host__ __device__ NoexceptCopyAndDecrement& operator++();
         __host__ __device__ NoexceptCopyAndDecrement operator++(int);
@@ -160,19 +135,14 @@ __host__ __device__ constexpr bool test() {
 #if TEST_STD_VER > 2017
         bool operator==(const NoexceptCopyAndDecrement&) const = default;
 #else
-        __host__ __device__ bool
-        operator==(const NoexceptCopyAndDecrement&) const;
-        __host__ __device__ bool
-        operator!=(const NoexceptCopyAndDecrement&) const;
+        __host__ __device__ bool operator==(const NoexceptCopyAndDecrement&) const;
+        __host__ __device__ bool operator!=(const NoexceptCopyAndDecrement&) const;
 #endif
       };
-      static_assert(
-          cuda::std::bidirectional_iterator<NoexceptCopyAndDecrement>);
+      static_assert(cuda::std::bidirectional_iterator<NoexceptCopyAndDecrement>);
 
-      static_assert(
-          cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
-      ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(
-          --cuda::std::declval<NoexceptCopyAndDecrement&>()));
+      static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
+      ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<NoexceptCopyAndDecrement&>()));
       using RI = cuda::std::reverse_iterator<NoexceptCopyAndDecrement>;
       ASSERT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
     }

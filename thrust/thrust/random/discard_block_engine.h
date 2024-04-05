@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file discard_block_engine.h
  *  \brief A random number engine which adapts a base engine and produces
  *         numbers by discarding all but a contiguous blocks of its values.
@@ -31,10 +32,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <iostream>
 #include <thrust/detail/cstdint.h>
 #include <thrust/random/detail/random_core_access.h>
-
-#include <iostream>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -79,157 +79,175 @@ namespace random
  *  }
  *  \endcode
  */
-template <typename Engine, size_t p, size_t r>
-class discard_block_engine
+template<typename Engine, size_t p, size_t r>
+  class discard_block_engine
 {
-public:
-  // types
+  public:
+    // types
 
-  /*! \typedef base_type
-   *  \brief The type of the adapted base random number engine.
-   */
-  typedef Engine base_type;
+    /*! \typedef base_type
+     *  \brief The type of the adapted base random number engine.
+     */
+    typedef Engine base_type;
 
-  /*! \typedef result_type
-   *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
-   */
-  typedef typename base_type::result_type result_type;
+    /*! \typedef result_type
+     *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
+     */
+    typedef typename base_type::result_type result_type;
 
-  // engine characteristics
+    // engine characteristics
 
-  /*! The length of the production cycle.
-   */
-  static const size_t block_size = p;
+    /*! The length of the production cycle.
+     */
+    static const size_t block_size = p;
 
-  /*! The number of used numbers per production cycle.
-   */
-  static const size_t used_block = r;
+    /*! The number of used numbers per production cycle.
+     */
+    static const size_t used_block = r;
 
-  /*! The smallest value this \p discard_block_engine may potentially produce.
-   */
-  static const result_type min = base_type::min;
+    /*! The smallest value this \p discard_block_engine may potentially produce.
+     */
+    static const result_type min = base_type::min;
 
-  /*! The largest value this \p discard_block_engine may potentially produce.
-   */
-  static const result_type max = base_type::max;
+    /*! The largest value this \p discard_block_engine may potentially produce.
+     */
+    static const result_type max = base_type::max;
 
-  // constructors and seeding functions
+    // constructors and seeding functions
 
-  /*! This constructor constructs a new \p discard_block_engine and constructs
-   *  its \p base_type engine using its null constructor.
-   */
-  _CCCL_HOST_DEVICE discard_block_engine();
+    /*! This constructor constructs a new \p discard_block_engine and constructs
+     *  its \p base_type engine using its null constructor.
+     */
+    _CCCL_HOST_DEVICE
+    discard_block_engine();
 
-  /*! This constructor constructs a new \p discard_block_engine using
-   *  a given \p base_type engine to initialize its adapted base engine.
-   *
-   *  \param urng A \p base_type to use to initialize this \p discard_block_engine's
-   *         adapted base engine.
-   */
-  _CCCL_HOST_DEVICE explicit discard_block_engine(const base_type& urng);
+    /*! This constructor constructs a new \p discard_block_engine using
+     *  a given \p base_type engine to initialize its adapted base engine.
+     *
+     *  \param urng A \p base_type to use to initialize this \p discard_block_engine's
+     *         adapted base engine.
+     */
+    _CCCL_HOST_DEVICE
+    explicit discard_block_engine(const base_type &urng);
 
-  /*! This constructor initializes a new \p discard_block_engine with a given seed.
-   *
-   *  \param s The seed used to intialize this \p discard_block_engine's adapted base engine.
-   */
-  _CCCL_HOST_DEVICE explicit discard_block_engine(result_type s);
+    /*! This constructor initializes a new \p discard_block_engine with a given seed.
+     *
+     *  \param s The seed used to intialize this \p discard_block_engine's adapted base engine.
+     */
+    _CCCL_HOST_DEVICE
+    explicit discard_block_engine(result_type s);
 
-  /*! This method initializes the state of this \p discard_block_engine's adapted base engine
-   *  by using its \p default_seed value.
-   */
-  _CCCL_HOST_DEVICE void seed(void);
+    /*! This method initializes the state of this \p discard_block_engine's adapted base engine
+     *  by using its \p default_seed value.
+     */
+    _CCCL_HOST_DEVICE
+    void seed(void);
 
-  /*! This method initializes the state of this \p discard_block_engine's adapted base engine
-   *  by using the given seed.
-   *
-   *  \param s The seed with which to intialize this \p discard_block_engine's adapted base engine.
-   */
-  _CCCL_HOST_DEVICE void seed(result_type s);
+    /*! This method initializes the state of this \p discard_block_engine's adapted base engine
+     *  by using the given seed.
+     *
+     *  \param s The seed with which to intialize this \p discard_block_engine's adapted base engine.
+     */
+    _CCCL_HOST_DEVICE
+    void seed(result_type s);
 
-  // generating functions
+    // generating functions
 
-  /*! This member function produces a new random value and updates this \p discard_block_engine's state.
-   *  \return A new random number.
-   */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+    /*! This member function produces a new random value and updates this \p discard_block_engine's state.
+     *  \return A new random number.
+     */
+    _CCCL_HOST_DEVICE
+    result_type operator()(void);
 
-  /*! This member function advances this \p discard_block_engine's state a given number of times
-   *  and discards the results.
-   *
-   *  \param z The number of random values to discard.
-   *  \note This function is provided because an implementation may be able to accelerate it.
-   */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+    /*! This member function advances this \p discard_block_engine's state a given number of times
+     *  and discards the results.
+     *
+     *  \param z The number of random values to discard.
+     *  \note This function is provided because an implementation may be able to accelerate it.
+     */
+    _CCCL_HOST_DEVICE
+    void discard(unsigned long long z);
 
-  // property functions
+    // property functions
 
-  /*! This member function returns a const reference to this \p discard_block_engine's
-   *  adapted base engine.
-   *
-   *  \return A const reference to the base engine this \p discard_block_engine adapts.
-   */
-  _CCCL_HOST_DEVICE const base_type& base(void) const;
+    /*! This member function returns a const reference to this \p discard_block_engine's
+     *  adapted base engine.
+     *
+     *  \return A const reference to the base engine this \p discard_block_engine adapts.
+     */
+    _CCCL_HOST_DEVICE
+    const base_type &base(void) const;
 
-  /*! \cond
-   */
+    /*! \cond
+     */
+  private:
+    base_type m_e;
+    unsigned int m_n;
 
-private:
-  base_type m_e;
-  unsigned int m_n;
+    friend struct thrust::random::detail::random_core_access;
 
-  friend struct thrust::random::detail::random_core_access;
+    _CCCL_HOST_DEVICE
+    bool equal(const discard_block_engine &rhs) const;
 
-  _CCCL_HOST_DEVICE bool equal(const discard_block_engine& rhs) const;
+    template<typename CharT, typename Traits>
+    std::basic_ostream<CharT,Traits>& stream_out(std::basic_ostream<CharT,Traits> &os) const;
 
-  template <typename CharT, typename Traits>
-  std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
-
-  template <typename CharT, typename Traits>
-  std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
-  /*! \endcond
-   */
+    template<typename CharT, typename Traits>
+    std::basic_istream<CharT,Traits>& stream_in(std::basic_istream<CharT,Traits> &is);
+    /*! \endcond
+     */
 }; // end discard_block_engine
+
 
 /*! This function checks two \p discard_block_engines for equality.
  *  \param lhs The first \p discard_block_engine to test.
  *  \param rhs The second \p discard_block_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE bool
-operator==(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs);
+template<typename Engine, size_t p, size_t r>
+_CCCL_HOST_DEVICE
+bool operator==(const discard_block_engine<Engine,p,r> &lhs,
+                const discard_block_engine<Engine,p,r> &rhs);
+
 
 /*! This function checks two \p discard_block_engines for inequality.
  *  \param lhs The first \p discard_block_engine to test.
  *  \param rhs The second \p discard_block_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename Engine, size_t p, size_t r>
-_CCCL_HOST_DEVICE bool
-operator!=(const discard_block_engine<Engine, p, r>& lhs, const discard_block_engine<Engine, p, r>& rhs);
+template<typename Engine, size_t p, size_t r>
+_CCCL_HOST_DEVICE
+bool operator!=(const discard_block_engine<Engine,p,r> &lhs,
+                const discard_block_engine<Engine,p,r> &rhs);
+
 
 /*! This function streams a discard_block_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p discard_block_engine to stream out.
  *  \return \p os
  */
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const discard_block_engine<Engine, p, r>& e);
+template<typename Engine, size_t p, size_t r,
+         typename CharT, typename Traits>
+std::basic_ostream<CharT,Traits>&
+operator<<(std::basic_ostream<CharT,Traits> &os,
+           const discard_block_engine<Engine,p,r> &e);
+
 
 /*! This function streams a discard_block_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p discard_block_engine to stream in.
  *  \return \p is
  */
-template <typename Engine, size_t p, size_t r, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, discard_block_engine<Engine, p, r>& e);
+template<typename Engine, size_t p, size_t r,
+         typename CharT, typename Traits>
+std::basic_istream<CharT,Traits>&
+operator>>(std::basic_istream<CharT,Traits> &is,
+           discard_block_engine<Engine,p,r> &e);
 
 /*! \} // end random_number_engine_adaptors
  */
 
-} // namespace random
+} // end random
 
 // import names into thrust::
 using random::discard_block_engine;
@@ -237,3 +255,4 @@ using random::discard_block_engine;
 THRUST_NAMESPACE_END
 
 #include <thrust/random/detail/discard_block_engine.inl>
+

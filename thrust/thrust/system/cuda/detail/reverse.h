@@ -37,39 +37,57 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
 template <class Derived, class ItemsIt, class ResultIt>
-ResultIt _CCCL_HOST_DEVICE reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result);
+ResultIt _CCCL_HOST_DEVICE
+reverse_copy(execution_policy<Derived> &policy,
+             ItemsIt                    first,
+             ItemsIt                    last,
+             ResultIt                   result);
 
 template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last);
+void _CCCL_HOST_DEVICE
+reverse(execution_policy<Derived> &policy,
+        ItemsIt                    first,
+        ItemsIt                    last);
 
-} // namespace cuda_cub
+}    // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/advance.h>
-#  include <thrust/distance.h>
-#  include <thrust/iterator/reverse_iterator.h>
-#  include <thrust/system/cuda/detail/copy.h>
-#  include <thrust/system/cuda/detail/swap_ranges.h>
+#include <thrust/advance.h>
+#include <thrust/distance.h>
+#include <thrust/system/cuda/detail/swap_ranges.h>
+#include <thrust/system/cuda/detail/copy.h>
+#include <thrust/iterator/reverse_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-template <class Derived, class ItemsIt, class ResultIt>
-ResultIt _CCCL_HOST_DEVICE reverse_copy(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, ResultIt result)
+template <class Derived,
+          class ItemsIt,
+          class ResultIt>
+ResultIt _CCCL_HOST_DEVICE
+reverse_copy(execution_policy<Derived> &policy,
+             ItemsIt                    first,
+             ItemsIt                    last,
+             ResultIt                   result)
 {
-  return cuda_cub::copy(policy, thrust::make_reverse_iterator(last), thrust::make_reverse_iterator(first), result);
+  return cuda_cub::copy(policy,
+                        thrust::make_reverse_iterator(last),
+                        thrust::make_reverse_iterator(first),
+                        result);
 }
 
-template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
+template <class Derived,
+          class ItemsIt>
+void _CCCL_HOST_DEVICE
+reverse(execution_policy<Derived> &policy,
+        ItemsIt                    first,
+        ItemsIt                    last)
 {
   typedef typename thrust::iterator_difference<ItemsIt>::type difference_type;
 
@@ -81,6 +99,7 @@ void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first,
   cuda_cub::swap_ranges(policy, first, mid, thrust::make_reverse_iterator(last));
 }
 
-} // namespace cuda_cub
+
+}    // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

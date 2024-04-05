@@ -21,25 +21,23 @@
 using RangeSizeT = decltype(cuda::std::ranges::size);
 
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, int[]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int[1]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&&)[1]>);
-static_assert(cuda::std::is_invocable_v<RangeSizeT, int (&)[1]>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, int[1]>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, int (&&)[1]>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, int (&)[1]>);
 
 struct Incomplete;
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete[]>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&)[]>);
-static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete (&&)[]>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete(&)[]>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, Incomplete(&&)[]>);
 
 #ifndef TEST_COMPILER_NVRTC
 extern Incomplete array_of_incomplete[42];
 static_assert(cuda::std::ranges::size(array_of_incomplete) == 42);
-static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) ==
-              42);
+static_assert(cuda::std::ranges::size(cuda::std::move(array_of_incomplete)) == 42);
 
 extern const Incomplete const_array_of_incomplete[42];
 static_assert(cuda::std::ranges::size(const_array_of_incomplete) == 42);
-static_assert(cuda::std::ranges::size(static_cast<const Incomplete (&&)[42]>(
-                  array_of_incomplete)) == 42);
+static_assert(cuda::std::ranges::size(static_cast<const Incomplete(&&)[42]>(array_of_incomplete)) == 42);
 #endif // !TEST_COMPILER_NVRTC
 
 struct SizeMember {
@@ -59,9 +57,7 @@ struct SizeFunction {
 // Make sure the size member is preferred.
 struct SizeMemberAndFunction {
   __host__ __device__ constexpr size_t size() { return 42; }
-  __host__ __device__ friend constexpr size_t size(SizeMemberAndFunction) {
-    return 0;
-  }
+  __host__ __device__ friend constexpr size_t size(SizeMemberAndFunction) { return 0; }
 };
 
 __host__ __device__ bool constexpr testArrayType() {
@@ -103,49 +99,39 @@ __host__ __device__ bool constexpr testHasSizeMember() {
   ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeMemberSigned())), long);
 
   assert(cuda::std::ranges::size(StaticSizeMember()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(StaticSizeMember())),
-                   size_t);
+  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(StaticSizeMember())), size_t);
 
   return true;
 }
 
 struct MoveOnlySizeFunction {
   MoveOnlySizeFunction() = default;
-  MoveOnlySizeFunction(MoveOnlySizeFunction&&) = default;
+  MoveOnlySizeFunction(MoveOnlySizeFunction &&) = default;
   MoveOnlySizeFunction(MoveOnlySizeFunction const&) = delete;
 
-  __host__ __device__ friend constexpr size_t size(MoveOnlySizeFunction) {
-    return 42;
-  }
+  __host__ __device__ friend constexpr size_t size(MoveOnlySizeFunction) { return 42; }
 };
 
-enum EnumSizeFunction { a, b };
+enum EnumSizeFunction {
+  a, b
+};
 
 __host__ __device__ constexpr size_t size(EnumSizeFunction) { return 42; }
 
 struct SizeFunctionConst {
-  __host__ __device__ friend constexpr size_t size(const SizeFunctionConst) {
-    return 42;
-  }
+  __host__ __device__ friend constexpr size_t size(const SizeFunctionConst) { return 42; }
 };
 
 struct SizeFunctionRef {
-  __host__ __device__ friend constexpr size_t size(SizeFunctionRef&) {
-    return 42;
-  }
+  __host__ __device__ friend constexpr size_t size(SizeFunctionRef&) { return 42; }
 };
 
 struct SizeFunctionConstRef {
-  __host__ __device__ friend constexpr size_t
-  size(SizeFunctionConstRef const&) {
-    return 42;
-  }
+  __host__ __device__ friend constexpr size_t size(SizeFunctionConstRef const&) { return 42; }
 };
 
 struct SizeFunctionSigned {
-  __host__ __device__ friend constexpr long size(SizeFunctionSigned) {
-    return 42;
-  }
+  __host__ __device__ friend constexpr long size(SizeFunctionSigned) { return 42; }
 };
 
 __host__ __device__ bool constexpr testHasSizeFunction() {
@@ -162,13 +148,12 @@ __host__ __device__ bool constexpr testHasSizeFunction() {
   assert(cuda::std::ranges::size(b) == 42);
 
   assert(cuda::std::ranges::size(SizeFunctionSigned()) == 42);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeFunctionSigned())),
-                   long);
+  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::size(SizeFunctionSigned())), long);
 
   return true;
 }
 
-struct Empty {};
+struct Empty { };
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Empty>);
 
 struct InvalidReturnTypeMember {
@@ -200,191 +185,113 @@ struct BoolReturnTypeFunction {
 };
 
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction>);
-static_assert(
-    cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember (&)[4]>);
-static_assert(
-    cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction (&)[4]>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeMember>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeFunction>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeMember const&>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeFunction const&>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeMember (&)[4]>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, InvalidReturnTypeFunction (&)[4]>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeMember>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ConvertibleReturnTypeFunction>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeMember const&>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, BoolReturnTypeFunction const&>);
 
 struct SizeMemberDisabled {
   __host__ __device__ size_t size() { return 42; }
 };
 
-namespace cuda {
-namespace std {
-namespace ranges {
+namespace cuda { namespace std { namespace ranges {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<SizeMemberDisabled> =
-    true;
-}
-} // namespace std
-} // namespace cuda
+_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<SizeMemberDisabled> = true;
+}}} // namespace cuda::std::ranges
 struct ImproperlyDisabledMember {
   __host__ __device__ size_t size() const { return 42; }
 };
 
 // Intentionally disabling "const ConstSizeMemberDisabled". This doesn't disable anything
 // because T is always uncvrefed before being checked.
-namespace cuda {
-namespace std {
-namespace ranges {
+namespace cuda { namespace std { namespace ranges {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool
-    disable_sized_range<const ImproperlyDisabledMember> = true;
-}
-} // namespace std
-} // namespace cuda
+_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledMember> = true;
+}}} // namespace cuda::std::ranges
 
 struct SizeFunctionDisabled {
   __host__ __device__ friend size_t size(SizeFunctionDisabled) { return 42; }
 };
 
-namespace cuda {
-namespace std {
-namespace ranges {
+namespace cuda { namespace std { namespace ranges {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool
-    disable_sized_range<SizeFunctionDisabled> = true;
-}
-} // namespace std
-} // namespace cuda
+_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<SizeFunctionDisabled> = true;
+}}} // namespace cuda::std::ranges
 
 struct ImproperlyDisabledFunction {
-  __host__ __device__ friend size_t size(ImproperlyDisabledFunction const&) {
-    return 42;
-  }
+  __host__ __device__ friend size_t size(ImproperlyDisabledFunction const&) { return 42; }
 };
 
-namespace cuda {
-namespace std {
-namespace ranges {
+namespace cuda { namespace std { namespace ranges {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool
-    disable_sized_range<const ImproperlyDisabledFunction> = true;
-}
-} // namespace std
-} // namespace cuda
+_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledFunction> = true;
+}}} // namespace cuda::std::ranges
 
-static_assert(cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledMember&>);
-static_assert(
-    cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledMember&>);
-static_assert(
-    !cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>);
-static_assert(
-    cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunction&>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledMember&>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledMember&>);
+static_assert(!cuda::std::is_invocable_v<RangeSizeT, ImproperlyDisabledFunction&>);
+static_assert( cuda::std::is_invocable_v<RangeSizeT, const ImproperlyDisabledFunction&>);
 
 // No begin end.
 struct HasMinusOperator {
-  __host__ __device__ friend constexpr size_t operator-(HasMinusOperator,
-                                                        HasMinusOperator) {
-    return 2;
-  }
+  __host__ __device__ friend constexpr size_t operator-(HasMinusOperator, HasMinusOperator) { return 2; }
 };
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, HasMinusOperator>);
 
 struct HasMinusBeginEnd {
   struct sentinel {
-    __host__ __device__ friend bool operator==(sentinel,
-                                               forward_iterator<int*>);
+    __host__ __device__ friend bool operator==(sentinel, forward_iterator<int*>);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(forward_iterator<int*>,
-                                               sentinel);
-    __host__ __device__ friend bool operator!=(sentinel,
-                                               forward_iterator<int*>);
-    __host__ __device__ friend bool operator!=(forward_iterator<int*>,
-                                               sentinel);
+    __host__ __device__ friend bool operator==(forward_iterator<int*>, sentinel);
+    __host__ __device__ friend bool operator!=(sentinel, forward_iterator<int*>);
+    __host__ __device__ friend bool operator!=(forward_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const sentinel, const forward_iterator<int*>) {
-      return 2;
-    }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const forward_iterator<int*>, const sentinel) {
-      return 2;
-    }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const forward_iterator<int*>) { return 2; }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const forward_iterator<int*>, const sentinel) { return 2; }
   };
 
-  __host__ __device__ friend constexpr forward_iterator<int*>
-  begin(HasMinusBeginEnd) {
-    return {};
-  }
-  __host__ __device__ friend constexpr sentinel end(HasMinusBeginEnd) {
-    return {};
-  }
+  __host__ __device__ friend constexpr forward_iterator<int*> begin(HasMinusBeginEnd) { return {}; }
+  __host__ __device__ friend constexpr sentinel end(HasMinusBeginEnd) { return {}; }
 };
 
-struct other_forward_iterator : forward_iterator<int*> {};
+struct other_forward_iterator : forward_iterator<int*> { };
 
 struct InvalidMinusBeginEnd {
   struct sentinel {
-    __host__ __device__ friend bool operator==(sentinel,
-                                               other_forward_iterator);
+    __host__ __device__ friend bool operator==(sentinel, other_forward_iterator);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(other_forward_iterator,
-                                               sentinel);
-    __host__ __device__ friend bool operator!=(sentinel,
-                                               other_forward_iterator);
-    __host__ __device__ friend bool operator!=(other_forward_iterator,
-                                               sentinel);
+    __host__ __device__ friend bool operator==(other_forward_iterator, sentinel);
+    __host__ __device__ friend bool operator!=(sentinel, other_forward_iterator);
+    __host__ __device__ friend bool operator!=(other_forward_iterator, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const sentinel, const other_forward_iterator) {
-      return 2;
-    }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const other_forward_iterator, const sentinel) {
-      return 2;
-    }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const other_forward_iterator) { return 2; }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const other_forward_iterator, const sentinel) { return 2; }
   };
 
-  __host__ __device__ friend constexpr other_forward_iterator
-  begin(InvalidMinusBeginEnd) {
-    return {};
-  }
-  __host__ __device__ friend constexpr sentinel end(InvalidMinusBeginEnd) {
-    return {};
-  }
+  __host__ __device__ friend constexpr other_forward_iterator begin(InvalidMinusBeginEnd) { return {}; }
+  __host__ __device__ friend constexpr sentinel end(InvalidMinusBeginEnd) { return {}; }
 };
 
 // short is integer-like, but it is not other_forward_iterator's difference_type.
-static_assert(
-    !cuda::std::same_as<other_forward_iterator::difference_type, short>);
+static_assert(!cuda::std::same_as<other_forward_iterator::difference_type, short>);
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, InvalidMinusBeginEnd>);
 
 struct RandomAccessRange {
   struct sentinel {
-    __host__ __device__ friend bool operator==(sentinel,
-                                               random_access_iterator<int*>);
+    __host__ __device__ friend bool operator==(sentinel, random_access_iterator<int*>);
 #if TEST_STD_VER < 2020
-    __host__ __device__ friend bool operator==(random_access_iterator<int*>,
-                                               sentinel);
-    __host__ __device__ friend bool operator!=(sentinel,
-                                               random_access_iterator<int*>);
-    __host__ __device__ friend bool operator!=(random_access_iterator<int*>,
-                                               sentinel);
+    __host__ __device__ friend bool operator==(random_access_iterator<int*>, sentinel);
+    __host__ __device__ friend bool operator!=(sentinel, random_access_iterator<int*>);
+    __host__ __device__ friend bool operator!=(random_access_iterator<int*>, sentinel);
 #endif
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const sentinel, const random_access_iterator<int*>) {
-      return 2;
-    }
-    __host__ __device__ friend constexpr cuda::std::ptrdiff_t
-    operator-(const random_access_iterator<int*>, const sentinel) {
-      return 2;
-    }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const sentinel, const random_access_iterator<int*>) { return 2; }
+    __host__ __device__ friend constexpr cuda::std::ptrdiff_t operator-(const random_access_iterator<int*>, const sentinel) { return 2; }
   };
 
-  __host__ __device__ constexpr random_access_iterator<int*> begin() {
-    return {};
-  }
+  __host__ __device__ constexpr random_access_iterator<int*> begin() { return {}; }
   __host__ __device__ constexpr sentinel end() { return {}; }
 };
 
@@ -402,9 +309,7 @@ struct DisabledSizeRangeWithBeginEnd {
 };
 
 template <>
-inline constexpr bool
-    cuda::std::ranges::disable_sized_range<DisabledSizeRangeWithBeginEnd> =
-        true;
+inline constexpr bool cuda::std::ranges::disable_sized_range<DisabledSizeRangeWithBeginEnd> = true;
 
 struct SizeBeginAndEndMembers {
   int buff[8];
@@ -438,10 +343,7 @@ __host__ __device__ constexpr bool testRanges() {
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
-template <class T>
-struct Holder {
-  T t;
-};
+template<class T> struct Holder { T t; };
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*>);
 static_assert(!cuda::std::is_invocable_v<RangeSizeT, Holder<Incomplete>*&>);
 #endif // TEST_STD_VER > 2017

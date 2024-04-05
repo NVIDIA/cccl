@@ -15,68 +15,46 @@
 #include <cuda/std/cstddef>
 // #include <functional>
 
-class MoveOnly {
-  int data_;
-
+class MoveOnly
+{
+    int data_;
 public:
-  __host__ __device__ TEST_CONSTEXPR MoveOnly(int data = 1) : data_(data) {}
+    __host__ __device__ TEST_CONSTEXPR MoveOnly(int data = 1) : data_(data) {}
 
-  MoveOnly(const MoveOnly&) = delete;
-  MoveOnly& operator=(const MoveOnly&) = delete;
+    MoveOnly(const MoveOnly&) = delete;
+    MoveOnly& operator=(const MoveOnly&) = delete;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly(MoveOnly&& x)
-      : data_(x.data_) {
-    x.data_ = 0;
-  }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly& operator=(MoveOnly&& x) {
-    data_ = x.data_;
-    x.data_ = 0;
-    return *this;
-  }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly(MoveOnly&& x)
+        : data_(x.data_) {x.data_ = 0;}
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly& operator=(MoveOnly&& x)
+        {data_ = x.data_; x.data_ = 0; return *this;}
 
-  __host__ __device__ TEST_CONSTEXPR int get() const { return data_; }
+    __host__ __device__ TEST_CONSTEXPR int get() const {return data_;}
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnly& x,
-                                                            const MoveOnly& y) {
-    return x.data_ == y.data_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnly& x,
-                                                            const MoveOnly& y) {
-    return x.data_ != y.data_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<(const MoveOnly& x,
-                                                           const MoveOnly& y) {
-    return x.data_ < y.data_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator<=(const MoveOnly& x,
-                                                            const MoveOnly& y) {
-    return x.data_ <= y.data_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>(const MoveOnly& x,
-                                                           const MoveOnly& y) {
-    return x.data_ > y.data_;
-  }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator>=(const MoveOnly& x,
-                                                            const MoveOnly& y) {
-    return x.data_ >= y.data_;
-  }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ == y.data_; }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ != y.data_; }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator< (const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ <  y.data_; }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator<=(const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ <= y.data_; }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator> (const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ >  y.data_; }
+    __host__ __device__ friend TEST_CONSTEXPR bool operator>=(const MoveOnly& x, const MoveOnly& y)
+        { return x.data_ >= y.data_; }
 
 #if TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
-  __host__ __device__ friend constexpr auto operator<= >
-      (const MoveOnly&, const MoveOnly&) = default;
+    __host__ __device__ friend constexpr auto operator<=>(const MoveOnly&, const MoveOnly&) = default;
 #endif // TEST_STD_VER > 2017 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly
-  operator+(const MoveOnly& x) const {
-    return MoveOnly(data_ + x.data_);
-  }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly
-  operator*(const MoveOnly& x) const {
-    return MoveOnly(data_ * x.data_);
-  }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator+(const MoveOnly& x) const
+        { return MoveOnly(data_ + x.data_); }
+    __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator*(const MoveOnly& x) const
+        { return MoveOnly(data_ * x.data_); }
 
-  template <class T>
-  void operator,(T const&) = delete;
+    template <class T>
+    void operator,(T const &) = delete;
 };
 
 /*

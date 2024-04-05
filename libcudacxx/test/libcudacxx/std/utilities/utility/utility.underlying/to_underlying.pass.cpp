@@ -42,10 +42,8 @@ struct WithBitfieldEnums {
 __host__ __device__ constexpr bool test() {
   ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
-  ASSERT_SAME_TYPE(unsigned short,
-                   decltype(cuda::std::to_underlying(e_ushort::d)));
-  ASSERT_SAME_TYPE(long long,
-                   decltype(cuda::std::to_underlying(e_longlong::low)));
+  ASSERT_SAME_TYPE(unsigned short, decltype(cuda::std::to_underlying(e_ushort::d)));
+  ASSERT_SAME_TYPE(long long, decltype(cuda::std::to_underlying(e_longlong::low)));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_min)));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(enum_max)));
 
@@ -66,10 +64,8 @@ __host__ __device__ constexpr bool test() {
   assert(10 == cuda::std::to_underlying(enum_a));
   assert(11 == cuda::std::to_underlying(enum_b));
   assert(12 == cuda::std::to_underlying(enum_c));
-  assert(cuda::std::numeric_limits<int>::min() ==
-         cuda::std::to_underlying(enum_min));
-  assert(cuda::std::numeric_limits<int>::max() ==
-         cuda::std::to_underlying(enum_max));
+  assert(cuda::std::numeric_limits<int>::min() == cuda::std::to_underlying(enum_min));
+  assert(cuda::std::numeric_limits<int>::max() == cuda::std::to_underlying(enum_max));
 
   WithBitfieldEnums bf;
   bf.e1 = static_cast<e_default>(3);

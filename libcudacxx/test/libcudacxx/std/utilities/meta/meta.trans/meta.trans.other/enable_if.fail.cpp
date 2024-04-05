@@ -6,14 +6,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+
 // type_traits
 
 // enable_if
 
 #include <cuda/std/type_traits>
 
-int main(int, char**) {
-  typedef cuda::std::enable_if<false>::type A;
+int main(int, char**)
+{
+    typedef cuda::std::enable_if<false>::type A;
 
   return 0;
 }

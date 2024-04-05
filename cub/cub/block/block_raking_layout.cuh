@@ -73,80 +73,86 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BLOCK_THREADS, int LEGACY_PTX_ARCH = 0>
 struct BlockRakingLayout
 {
-  //---------------------------------------------------------------------
-  // Constants and type definitions
-  //---------------------------------------------------------------------
+    //---------------------------------------------------------------------
+    // Constants and type definitions
+    //---------------------------------------------------------------------
 
-  enum
-  {
-    /// The total number of elements that need to be cooperatively reduced
-    SHARED_ELEMENTS = BLOCK_THREADS,
-
-    /// Maximum number of warp-synchronous raking threads
-    MAX_RAKING_THREADS = CUB_MIN(BLOCK_THREADS, CUB_WARP_THREADS(0)),
-
-    /// Number of raking elements per warp-synchronous raking thread (rounded up)
-    SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS,
-
-    /// Never use a raking thread that will have no valid data (e.g., when BLOCK_THREADS is 62 and SEGMENT_LENGTH is 2,
-    /// we should only use 31 raking threads)
-    RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH,
-
-    /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
-    HAS_CONFLICTS = (CUB_SMEM_BANKS(0) % SEGMENT_LENGTH == 0),
-
-    /// Degree of bank conflicts (e.g., 4-way)
-    CONFLICT_DEGREE = (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / CUB_SMEM_BANKS(0) : 1,
-
-    /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be
-    /// optimized as a vector load
-    USE_SEGMENT_PADDING = ((SEGMENT_LENGTH & 1) == 0) && (SEGMENT_LENGTH > 2),
-
-    /// Total number of elements in the raking grid
-    GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + USE_SEGMENT_PADDING),
-
-    /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the
-    /// number of raking threads)
-    UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0),
-  };
-
-  /**
-   * @brief Shared memory storage type
-   */
-  struct __align__(16) _TempStorage
-  {
-    T buff[BlockRakingLayout::GRID_ELEMENTS];
-  };
-
-  /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  /**
-   * @brief Returns the location for the calling thread to place data into the grid
-   */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(TempStorage& temp_storage, unsigned int linear_tid)
-  {
-    // Offset for partial
-    unsigned int offset = linear_tid;
-
-    // Add in one padding element for every segment
-    if (USE_SEGMENT_PADDING > 0)
+    enum
     {
-      offset += offset / SEGMENT_LENGTH;
+        /// The total number of elements that need to be cooperatively reduced
+        SHARED_ELEMENTS = BLOCK_THREADS,
+
+        /// Maximum number of warp-synchronous raking threads
+        MAX_RAKING_THREADS = CUB_MIN(BLOCK_THREADS, CUB_WARP_THREADS(0)),
+
+        /// Number of raking elements per warp-synchronous raking thread (rounded up)
+        SEGMENT_LENGTH = (SHARED_ELEMENTS + MAX_RAKING_THREADS - 1) / MAX_RAKING_THREADS,
+
+        /// Never use a raking thread that will have no valid data (e.g., when BLOCK_THREADS is 62 and SEGMENT_LENGTH is 2, we should only use 31 raking threads)
+        RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH,
+
+        /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
+        HAS_CONFLICTS = (CUB_SMEM_BANKS(0) % SEGMENT_LENGTH == 0),
+
+        /// Degree of bank conflicts (e.g., 4-way)
+        CONFLICT_DEGREE = (HAS_CONFLICTS) ?
+            (MAX_RAKING_THREADS * SEGMENT_LENGTH) / CUB_SMEM_BANKS(0) :
+            1,
+
+        /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be optimized as a vector load
+        USE_SEGMENT_PADDING = ((SEGMENT_LENGTH & 1) == 0) && (SEGMENT_LENGTH > 2),
+
+        /// Total number of elements in the raking grid
+        GRID_ELEMENTS = RAKING_THREADS * (SEGMENT_LENGTH + USE_SEGMENT_PADDING),
+
+        /// Whether or not we need bounds checking during raking (the number of reduction elements is not a multiple of the number of raking threads)
+        UNGUARDED = (SHARED_ELEMENTS % RAKING_THREADS == 0),
+    };
+
+
+    /**
+     * @brief Shared memory storage type
+     */
+    struct __align__(16) _TempStorage
+    {
+        T buff[BlockRakingLayout::GRID_ELEMENTS];
+    };
+
+    /// Alias wrapper allowing storage to be unioned
+    struct TempStorage : Uninitialized<_TempStorage> {};
+
+
+    /**
+     * @brief Returns the location for the calling thread to place data into the grid
+     */
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* PlacementPtr(
+        TempStorage &temp_storage,
+        unsigned int linear_tid)
+    {
+        // Offset for partial
+        unsigned int offset = linear_tid;
+
+        // Add in one padding element for every segment
+        if (USE_SEGMENT_PADDING > 0)
+        {
+            offset += offset / SEGMENT_LENGTH;
+        }
+
+        // Incorporating a block of padding partials every shared memory segment
+        return temp_storage.Alias().buff + offset;
     }
 
-    // Incorporating a block of padding partials every shared memory segment
-    return temp_storage.Alias().buff + offset;
-  }
 
-  /**
-   * @brief Returns the location for the calling thread to begin sequential raking
-   */
-  static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(TempStorage& temp_storage, unsigned int linear_tid)
-  {
-    return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
-  }
+    /**
+     * @brief Returns the location for the calling thread to begin sequential raking
+     */
+    static _CCCL_DEVICE _CCCL_FORCEINLINE T* RakingPtr(
+        TempStorage &temp_storage,
+        unsigned int linear_tid)
+    {
+        return temp_storage.Alias().buff + (linear_tid * (SEGMENT_LENGTH + USE_SEGMENT_PADDING));
+    }
 };
 
 CUB_NAMESPACE_END
+

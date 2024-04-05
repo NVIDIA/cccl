@@ -15,30 +15,31 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  using index_t = int;
-  using ext2d_t = cuda::std::extents<index_t, dyn, dyn>;
+int main(int, char**)
+{
+    using index_t = int;
+    using ext2d_t = cuda::std::extents<index_t,dyn,dyn>;
 
-  {
-    cuda::std::extents<index_t, 16> e;
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, 16> > m{e};
+    {
+        cuda::std::extents<index_t,16> e;
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,16>> m{e};
 
-    assert(m.required_span_size() == 16);
-  }
+        assert( m.required_span_size() == 16 );
+    }
 
-  {
-    ext2d_t e{16, 32};
-    cuda::std::layout_left::mapping<ext2d_t> m{e};
+    {
+        ext2d_t e{16, 32};
+        cuda::std::layout_left::mapping<ext2d_t> m{e};
 
-    assert(m.required_span_size() == 16 * 32);
-  }
+        assert( m.required_span_size() == 16*32 );
+    }
 
-  {
-    ext2d_t e{16, 0};
-    cuda::std::layout_left::mapping<ext2d_t> m{e};
+    {
+        ext2d_t e{16, 0};
+        cuda::std::layout_left::mapping<ext2d_t> m{e};
 
-    assert(m.required_span_size() == 0);
-  }
+        assert( m.required_span_size() == 0 );
+    }
 
-  return 0;
+    return 0;
 }

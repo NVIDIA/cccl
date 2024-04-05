@@ -39,106 +39,148 @@ namespace generic
 namespace select_system_detail
 {
 
+
 // min_system case 1: both systems have the same type, just return the first one
-template <typename System>
-_CCCL_HOST_DEVICE System& min_system(thrust::execution_policy<System>& system1, thrust::execution_policy<System>&)
+template<typename System>
+_CCCL_HOST_DEVICE
+System &min_system(thrust::execution_policy<System> &system1,
+                   thrust::execution_policy<System> &)
 {
   return thrust::detail::derived_cast(system1);
 } // end min_system()
+
 
 // min_system case 2: systems have differing type and the first type is considered the minimum
-template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if<
-  thrust::detail::is_same< System1, typename thrust::detail::minimum_system<System1, System2>::type >::value,
-  System1& >::type
-min_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>&)
+template<typename System1, typename System2>
+_CCCL_HOST_DEVICE
+typename thrust::detail::enable_if<
+  thrust::detail::is_same<
+    System1,
+    typename thrust::detail::minimum_system<System1,System2>::type
+  >::value,
+  System1 &
+>::type
+  min_system(thrust::execution_policy<System1> &system1, thrust::execution_policy<System2> &)
 {
   return thrust::detail::derived_cast(system1);
 } // end min_system()
 
+
 // min_system case 3: systems have differing type and the second type is considered the minimum
-template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if<
-  thrust::detail::is_same< System2, typename thrust::detail::minimum_system<System1, System2>::type >::value,
-  System2& >::type
-min_system(thrust::execution_policy<System1>&, thrust::execution_policy<System2>& system2)
+template<typename System1, typename System2>
+_CCCL_HOST_DEVICE
+typename thrust::detail::enable_if<
+  thrust::detail::is_same<
+    System2,
+    typename thrust::detail::minimum_system<System1,System2>::type
+  >::value,
+    System2 &
+  >::type
+    min_system(thrust::execution_policy<System1> &, thrust::execution_policy<System2> &system2)
 {
   return thrust::detail::derived_cast(system2);
 } // end min_system()
 
-} // namespace select_system_detail
 
-template <typename System>
-_CCCL_HOST_DEVICE typename thrust::detail::disable_if< select_system1_exists<System>::value, System& >::type
-select_system(thrust::execution_policy<System>& system)
+} // end select_system_detail
+
+
+template<typename System>
+_CCCL_HOST_DEVICE
+  typename thrust::detail::disable_if<
+    select_system1_exists<System>::value,
+    System &
+  >::type
+    select_system(thrust::execution_policy<System> &system)
 {
   return thrust::detail::derived_cast(system);
 } // end select_system()
 
-template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if_defined< thrust::detail::minimum_system<System1, System2> >::type&
-select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
-{
-  return select_system_detail::min_system(system1, system2);
-} // end select_system()
 
-template <typename System1, typename System2, typename System3>
+template<typename System1, typename System2>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::lazy_disable_if< select_system3_exists<System1, System2, System3>::value,
-                                            thrust::detail::minimum_system<System1, System2, System3> >::type&
-  select_system(thrust::execution_policy<System1>& system1,
-                thrust::execution_policy<System2>& system2,
-                thrust::execution_policy<System3>& system3)
+  typename thrust::detail::enable_if_defined<
+    thrust::detail::minimum_system<System1,System2>
+  >::type
+    &select_system(thrust::execution_policy<System1> &system1,
+                   thrust::execution_policy<System2> &system2)
 {
-  return select_system(select_system(system1, system2), system3);
+  return select_system_detail::min_system(system1,system2);
 } // end select_system()
 
-template <typename System1, typename System2, typename System3, typename System4>
+
+template<typename System1, typename System2, typename System3>
 _CCCL_HOST_DEVICE
-  typename thrust::detail::lazy_disable_if< select_system4_exists<System1, System2, System3, System4>::value,
-                                            thrust::detail::minimum_system<System1, System2, System3, System4> >::type&
-  select_system(thrust::execution_policy<System1>& system1,
-                thrust::execution_policy<System2>& system2,
-                thrust::execution_policy<System3>& system3,
-                thrust::execution_policy<System4>& system4)
+  typename thrust::detail::lazy_disable_if<
+    select_system3_exists<System1,System2,System3>::value,
+    thrust::detail::minimum_system<System1,System2,System3>
+  >::type
+    &select_system(thrust::execution_policy<System1> &system1,
+                   thrust::execution_policy<System2> &system2,
+                   thrust::execution_policy<System3> &system3)
 {
-  return select_system(select_system(system1, system2, system3), system4);
+  return select_system(select_system(system1,system2), system3);
 } // end select_system()
 
-template <typename System1, typename System2, typename System3, typename System4, typename System5>
-_CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
-  select_system5_exists<System1, System2, System3, System4, System5>::value,
-  thrust::detail::minimum_system<System1, System2, System3, System4, System5> >::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3,
-              thrust::execution_policy<System4>& system4,
-              thrust::execution_policy<System5>& system5)
+
+template<typename System1, typename System2, typename System3, typename System4>
+_CCCL_HOST_DEVICE
+  typename thrust::detail::lazy_disable_if<
+    select_system4_exists<System1,System2,System3,System4>::value,
+    thrust::detail::minimum_system<System1,System2,System3,System4>
+  >::type
+    &select_system(thrust::execution_policy<System1> &system1,
+                   thrust::execution_policy<System2> &system2,
+                   thrust::execution_policy<System3> &system3,
+                   thrust::execution_policy<System4> &system4)
 {
-  return select_system(select_system(system1, system2, system3, system4), system5);
+  return select_system(select_system(system1,system2,system3), system4);
 } // end select_system()
 
-template <typename System1, typename System2, typename System3, typename System4, typename System5, typename System6>
-_CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
-  select_system6_exists<System1, System2, System3, System4, System5, System6>::value,
-  thrust::detail::minimum_system<System1, System2, System3, System4, System5, System6> >::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3,
-              thrust::execution_policy<System4>& system4,
-              thrust::execution_policy<System5>& system5,
-              thrust::execution_policy<System6>& system6)
+
+template<typename System1, typename System2, typename System3, typename System4, typename System5>
+_CCCL_HOST_DEVICE
+  typename thrust::detail::lazy_disable_if<
+    select_system5_exists<System1,System2,System3,System4,System5>::value,
+    thrust::detail::minimum_system<System1,System2,System3,System4,System5>
+  >::type
+    &select_system(thrust::execution_policy<System1> &system1,
+                   thrust::execution_policy<System2> &system2,
+                   thrust::execution_policy<System3> &system3,
+                   thrust::execution_policy<System4> &system4,
+                   thrust::execution_policy<System5> &system5)
 {
-  return select_system(select_system(system1, system2, system3, system4, system5), system6);
+  return select_system(select_system(system1,system2,system3,system4), system5);
 } // end select_system()
+
+
+template<typename System1, typename System2, typename System3, typename System4, typename System5, typename System6>
+_CCCL_HOST_DEVICE
+  typename thrust::detail::lazy_disable_if<
+    select_system6_exists<System1,System2,System3,System4,System5,System6>::value,
+    thrust::detail::minimum_system<System1,System2,System3,System4,System5,System6>
+  >::type
+    &select_system(thrust::execution_policy<System1> &system1,
+                   thrust::execution_policy<System2> &system2,
+                   thrust::execution_policy<System3> &system3,
+                   thrust::execution_policy<System4> &system4,
+                   thrust::execution_policy<System5> &system5,
+                   thrust::execution_policy<System6> &system6)
+{
+  return select_system(select_system(system1,system2,system3,system4,system5), system6);
+} // end select_system()
+
 
 // map a single any_system_tag to device_system_tag
-inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_system_tag)
+inline _CCCL_HOST_DEVICE
+thrust::device_system_tag select_system(thrust::any_system_tag)
 {
   return thrust::device_system_tag();
 } // end select_system()
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+
+} // end generic
+} // end detail
+} // end system
 THRUST_NAMESPACE_END
+

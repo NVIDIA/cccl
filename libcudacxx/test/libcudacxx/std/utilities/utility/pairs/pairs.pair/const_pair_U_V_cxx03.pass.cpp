@@ -19,15 +19,16 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  {
-    typedef cuda::std::pair<int, short> P1;
-    typedef cuda::std::pair<double, long> P2;
-    const P1 p1(3, static_cast<short>(4));
-    const P2 p2 = p1;
-    assert(p2.first == 3);
-    assert(p2.second == 4);
-  }
+int main(int, char**)
+{
+    {
+        typedef cuda::std::pair<int, short> P1;
+        typedef cuda::std::pair<double, long> P2;
+        const P1 p1(3, static_cast<short>(4));
+        const P2 p2 = p1;
+        assert(p2.first == 3);
+        assert(p2.second == 4);
+    }
 
   return 0;
 }

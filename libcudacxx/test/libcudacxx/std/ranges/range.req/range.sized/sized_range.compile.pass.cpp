@@ -60,30 +60,26 @@ struct sized_sentinel_range_has_size {
   __host__ __device__ int* end();
 };
 static_assert(cuda::std::ranges::sized_range<sized_sentinel_range_has_size>);
-static_assert(
-    !cuda::std::ranges::sized_range<sized_sentinel_range_has_size const>);
+static_assert(!cuda::std::ranges::sized_range<sized_sentinel_range_has_size const>);
 
 struct const_sized_sentinel_range_has_size {
   __host__ __device__ int* begin() const;
   __host__ __device__ int* end() const;
 };
-static_assert(
-    cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size>);
-static_assert(
-    cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size const>);
+static_assert(cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size>);
+static_assert(cuda::std::ranges::sized_range<const_sized_sentinel_range_has_size const>);
 
 struct non_range_has_size {
   __host__ __device__ int size() const;
 };
 #if TEST_STD_VER > 2017
-static_assert(requires(non_range_has_size const x) {
-  unused(cuda::std::ranges::size(x));
-});
+static_assert(requires(non_range_has_size const x) { unused(cuda::std::ranges::size(x)); });
 #else
-static_assert(cuda::std::invocable<decltype(cuda::std::ranges::size),
-                                   non_range_has_size const>);
+static_assert(cuda::std::invocable<decltype(cuda::std::ranges::size), non_range_has_size const>);
 #endif
 static_assert(!cuda::std::ranges::sized_range<non_range_has_size>);
 static_assert(!cuda::std::ranges::sized_range<non_range_has_size const>);
 
-int main(int, char**) { return 0; }
+int main(int, char**) {
+  return 0;
+}

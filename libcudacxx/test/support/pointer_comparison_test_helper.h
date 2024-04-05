@@ -32,10 +32,8 @@ __host__ __device__ void do_pointer_comparison_test() {
   int* pointers[] = {&local.a, &local.b, nullptr, &local.a + 1};
   for (int* lhs : pointers) {
     for (int* rhs : pointers) {
-      cuda::std::uintptr_t lhs_uint =
-          reinterpret_cast<cuda::std::uintptr_t>(lhs);
-      cuda::std::uintptr_t rhs_uint =
-          reinterpret_cast<cuda::std::uintptr_t>(rhs);
+      cuda::std::uintptr_t lhs_uint = reinterpret_cast<cuda::std::uintptr_t>(lhs);
+      cuda::std::uintptr_t rhs_uint = reinterpret_cast<cuda::std::uintptr_t>(rhs);
       assert(comp(lhs, rhs) == ucomp(lhs_uint, rhs_uint));
       assert(vcomp(lhs, rhs) == ucomp(lhs_uint, rhs_uint));
     }
@@ -50,12 +48,10 @@ __host__ __device__ void do_pointer_comparison_test(Comp comp) {
   int* pointers[] = {&local.a, &local.b, nullptr, &local.a + 1};
   for (int* lhs : pointers) {
     for (int* rhs : pointers) {
-      cuda::std::uintptr_t lhs_uint =
-          reinterpret_cast<cuda::std::uintptr_t>(lhs);
-      cuda::std::uintptr_t rhs_uint =
-          reinterpret_cast<cuda::std::uintptr_t>(rhs);
-      void* lhs_void = static_cast<void*>(lhs);
-      void* rhs_void = static_cast<void*>(rhs);
+      cuda::std::uintptr_t lhs_uint = reinterpret_cast<cuda::std::uintptr_t>(lhs);
+      cuda::std::uintptr_t rhs_uint = reinterpret_cast<cuda::std::uintptr_t>(rhs);
+      void*          lhs_void = static_cast<void*>(lhs);
+      void*          rhs_void = static_cast<void*>(rhs);
       assert(comp(lhs, rhs) == comp(lhs_uint, rhs_uint));
       assert(comp(lhs_void, rhs_void) == comp(lhs_uint, rhs_uint));
     }

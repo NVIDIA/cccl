@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file scan.h
  *  \brief Sequential implementations of scan functions.
  */
@@ -29,12 +30,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/function.h>
+#include <thrust/system/detail/sequential/execution_policy.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/detail/type_traits/function_traits.h>
 #include <thrust/detail/type_traits/iterator/is_output_iterator.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/sequential/execution_policy.h>
+#include <thrust/detail/function.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -44,14 +45,18 @@ namespace detail
 namespace sequential
 {
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator inclusive_scan(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator inclusive_scan(sequential::execution_policy<DerivedPolicy> &,
+                                InputIterator first,
+                                InputIterator last,
+                                OutputIterator result,
+                                BinaryFunction binary_op)
 {
   using namespace thrust::detail;
 
@@ -59,62 +64,66 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   using ValueType = typename thrust::iterator_value<InputIterator>::type;
 
   // wrap binary_op
-  thrust::detail::wrapped_function< BinaryFunction, ValueType > wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<
+    BinaryFunction,
+    ValueType
+  > wrapped_binary_op(binary_op);
 
-  if (first != last)
+  if(first != last)
   {
     ValueType sum = *first;
 
     *result = *first;
 
-    for (++first, ++result; first != last; ++first, ++result)
-    {
-      *result = sum = wrapped_binary_op(sum, *first);
-    }
+    for(++first, ++result; first != last; ++first, ++result)
+      *result = sum = wrapped_binary_op(sum,*first);
   }
 
   return result;
 }
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename InitialValueType,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator exclusive_scan(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  InitialValueType init,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename InitialValueType,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator exclusive_scan(sequential::execution_policy<DerivedPolicy> &,
+                                InputIterator first,
+                                InputIterator last,
+                                OutputIterator result,
+                                InitialValueType init,
+                                BinaryFunction binary_op)
 {
   using namespace thrust::detail;
 
   // Use the initial value type per https://wg21.link/P0571
   using ValueType = InitialValueType;
 
-  if (first != last)
+  if(first != last)
   {
-    ValueType tmp = *first; // temporary value allows in-situ scan
+    ValueType tmp = *first;  // temporary value allows in-situ scan
     ValueType sum = init;
 
     *result = sum;
-    sum     = binary_op(sum, tmp);
+    sum = binary_op(sum, tmp);
 
-    for (++first, ++result; first != last; ++first, ++result)
+    for(++first, ++result; first != last; ++first, ++result)
     {
-      tmp     = *first;
+      tmp = *first;
       *result = sum;
-      sum     = binary_op(sum, tmp);
+      sum = binary_op(sum, tmp);
     }
   }
 
   return result;
 }
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

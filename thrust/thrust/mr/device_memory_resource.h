@@ -33,9 +33,14 @@
 
 THRUST_NAMESPACE_BEGIN
 
-typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::memory_resource device_memory_resource;
-typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_memory_resource universal_memory_resource;
+
+typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::memory_resource
+    device_memory_resource;
+typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_memory_resource
+    universal_memory_resource;
 typedef thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_memory_resource
-  universal_host_pinned_memory_resource;
+    universal_host_pinned_memory_resource;
+
 
 THRUST_NAMESPACE_END
+

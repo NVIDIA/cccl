@@ -14,29 +14,33 @@
 
 #include "test_macros.h"
 
-enum Enum { zero, one_ };
+enum Enum {zero, one_};
 
 template <class T, class U>
-__host__ __device__ void test_remove_extent() {
-  ASSERT_SAME_TYPE(U, typename cuda::std::remove_extent<T>::type);
+__host__ __device__
+void test_remove_extent()
+{
+    ASSERT_SAME_TYPE(U, typename cuda::std::remove_extent<T>::type);
 #if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(U, cuda::std::remove_extent_t<T>);
+    ASSERT_SAME_TYPE(U,        cuda::std::remove_extent_t<T>);
 #endif
 }
 
-int main(int, char**) {
-  test_remove_extent<int, int>();
-  test_remove_extent<const Enum, const Enum>();
-  test_remove_extent<int[], int>();
-  test_remove_extent<const int[], const int>();
-  test_remove_extent<int[3], int>();
-  test_remove_extent<const int[3], const int>();
-  test_remove_extent<int[][3], int[3]>();
-  test_remove_extent<const int[][3], const int[3]>();
-  test_remove_extent<int[2][3], int[3]>();
-  test_remove_extent<const int[2][3], const int[3]>();
-  test_remove_extent<int[1][2][3], int[2][3]>();
-  test_remove_extent<const int[1][2][3], const int[2][3]>();
+
+int main(int, char**)
+{
+    test_remove_extent<int, int> ();
+    test_remove_extent<const Enum, const Enum> ();
+    test_remove_extent<int[], int> ();
+    test_remove_extent<const int[], const int> ();
+    test_remove_extent<int[3], int> ();
+    test_remove_extent<const int[3], const int> ();
+    test_remove_extent<int[][3], int[3]> ();
+    test_remove_extent<const int[][3], const int[3]> ();
+    test_remove_extent<int[2][3], int[3]> ();
+    test_remove_extent<const int[2][3], const int[3]> ();
+    test_remove_extent<int[1][2][3], int[2][3]> ();
+    test_remove_extent<const int[1][2][3], const int[2][3]> ();
 
   return 0;
 }

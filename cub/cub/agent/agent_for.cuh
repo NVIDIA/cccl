@@ -72,7 +72,7 @@ struct agent_block_striped_t
 
       if (IsFullTile || idx < items_in_tile)
       {
-        (void) op(tile_base + idx);
+        (void)op(tile_base + idx);
       }
     }
   }

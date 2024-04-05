@@ -28,13 +28,12 @@
 #pragma once
 
 #if !TUNE_BASE
-#  include <cub/agent/single_pass_scan_operators.cuh>
+#include <nvbench_helper.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
 
-#  include <nvbench_helper.cuh>
-
-#  if !defined(TUNE_MAGIC_NS) || !defined(TUNE_L2_WRITE_LATENCY_NS) || !defined(TUNE_DELAY_CONSTRUCTOR_ID)
-#    error "TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS, and TUNE_DELAY_CONSTRUCTOR_ID must be defined"
-#  endif
+#if !defined(TUNE_MAGIC_NS) || !defined(TUNE_L2_WRITE_LATENCY_NS) || !defined(TUNE_DELAY_CONSTRUCTOR_ID)
+#error "TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS, and TUNE_DELAY_CONSTRUCTOR_ID must be defined"
+#endif
 
 using delay_constructors = nvbench::type_list<
   cub::detail::no_delay_constructor_t<TUNE_L2_WRITE_LATENCY_NS>,

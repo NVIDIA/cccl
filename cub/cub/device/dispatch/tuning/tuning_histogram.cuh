@@ -84,7 +84,9 @@ constexpr counter_size classify_counter_size()
 template <class SampleT>
 constexpr sample_size classify_sample_size()
 {
-  return sizeof(SampleT) == 1 ? sample_size::_1 : sizeof(SampleT) == 2 ? sample_size::_2 : sample_size::unknown;
+  return sizeof(SampleT) == 1   ? sample_size::_1
+         : sizeof(SampleT) == 2 ? sample_size::_2
+                                : sample_size::unknown;
 }
 
 template <class SampleT>
@@ -183,17 +185,18 @@ struct device_histogram_policy_hub
   /// SM900
   struct Policy900 : ChainedPolicy<900, Policy900, Policy500>
   {
-    using tuning = detail::histogram::
-      sm90_tuning<SampleT, NumChannels, NumActiveChannels, histogram::classify_counter_size<CounterT>()>;
+    using tuning = detail::histogram::sm90_tuning<SampleT,
+                                                  NumChannels,
+                                                  NumActiveChannels,
+                                                  histogram::classify_counter_size<CounterT>()>;
 
-    using AgentHistogramPolicyT =
-      AgentHistogramPolicy<tuning::threads,
-                           tuning::items,
-                           tuning::load_algorithm,
-                           tuning::load_modifier,
-                           tuning::rle_compress,
-                           tuning::mem_preference,
-                           tuning::work_stealing>;
+    using AgentHistogramPolicyT = AgentHistogramPolicy<tuning::threads,
+                                                       tuning::items,
+                                                       tuning::load_algorithm,
+                                                       tuning::load_modifier,
+                                                       tuning::rle_compress,
+                                                       tuning::mem_preference,
+                                                       tuning::work_stealing>;
   };
 
   using MaxPolicy = Policy900;

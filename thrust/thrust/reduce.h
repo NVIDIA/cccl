@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file thrust/reduce.h
  *  \brief Functions for reducing a range to a single value
  */
@@ -39,6 +40,7 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
+
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
  *  last)</tt>. This version of \p reduce uses \c 0 as the initial value of the
@@ -62,10 +64,11 @@ THRUST_NAMESPACE_BEGIN
  *  \return The result of the reduction.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
- * is convertible to \p InputIterator's \c value_type. If \c T is \c InputIterator's \c value_type, then <tt>T(0)</tt>
- * is defined.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and if \c x and \c y are objects of \p InputIterator's \c value_type,
+ *          then <tt>x + y</tt> is defined and is convertible to \p InputIterator's
+ *          \c value_type. If \c T is \c InputIterator's \c value_type, then
+ *          <tt>T(0)</tt> is defined.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
  *  the sum of a sequence of integers using the \p thrust::host execution policy for parallelization:
@@ -82,9 +85,11 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
-template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
-reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last);
+template<typename DerivedPolicy, typename InputIterator>
+_CCCL_HOST_DEVICE
+  typename thrust::iterator_traits<InputIterator>::value_type
+    reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last);
+
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -105,10 +110,11 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *  \param last The end of the sequence.
  *  \return The result of the reduction.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
- * is convertible to \p InputIterator's \c value_type. If \c T is \c InputIterator's \c value_type, then <tt>T(0)</tt>
- * is defined.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and if \c x and \c y are objects of \p InputIterator's \c value_type,
+ *          then <tt>x + y</tt> is defined and is convertible to \p InputIterator's
+ *          \c value_type. If \c T is \c InputIterator's \c value_type, then
+ *          <tt>T(0)</tt> is defined.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
  *  the sum of a sequence of integers.
@@ -124,8 +130,9 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
-template <typename InputIterator>
-typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator first, InputIterator last);
+template<typename InputIterator> typename
+  thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator first, InputIterator last);
+
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -151,9 +158,10 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
  *  \return The result of the reduction.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
- * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and if \c x and \c y are objects of \p InputIterator's \c value_type,
+ *          then <tt>x + y</tt> is defined and is convertible to \p T.
+ *  \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
  *  the sum of a sequence of integers including an intialization value using the \p thrust::host
@@ -171,9 +179,13 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
-template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
+template<typename DerivedPolicy, typename InputIterator, typename T>
+_CCCL_HOST_DEVICE
+  T reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+           InputIterator first,
+           InputIterator last,
+           T init);
+
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -195,9 +207,10 @@ _CCCL_HOST_DEVICE T reduce(
  *  \param init The initial value.
  *  \return The result of the reduction.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and if \c x and \c y are objects of \p InputIterator's \c value_type, then <tt>x + y</tt> is defined and
- * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and if \c x and \c y are objects of \p InputIterator's \c value_type,
+ *          then <tt>x + y</tt> is defined and is convertible to \p T.
+ *  \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
  *  the sum of a sequence of integers including an intialization value.
@@ -213,8 +226,11 @@ _CCCL_HOST_DEVICE T reduce(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  */
-template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init);
+template<typename InputIterator, typename T>
+  T reduce(InputIterator first,
+           InputIterator last,
+           T init);
+
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -241,12 +257,12 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  \return The result of the reduction.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
+ *          and is convertible to \p BinaryFunction's \c first_argument_type and \c second_argument_type.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
+ *          and \p BinaryFunction's \c result_type is convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers using the \p thrust::host execution policy
@@ -268,13 +284,17 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see transform_reduce
  */
-template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename T,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  T reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+           InputIterator first,
+           InputIterator last,
+           T init,
+           BinaryFunction binary_op);
+
 
 /*! \p reduce is a generalization of summation: it computes the sum (or some
  *  other binary operation) of all the elements in the range <tt>[first,
@@ -297,12 +317,12 @@ _CCCL_HOST_DEVICE T reduce(
  *  \param binary_op The binary function used to 'sum' values.
  *  \return The result of the reduction.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c T. \tparam T is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *          and \c InputIterator's \c value_type is convertible to \c T.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
+ *          and is convertible to \p BinaryFunction's \c first_argument_type and \c second_argument_type.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
+ *          and \p BinaryFunction's \c result_type is convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p reduce to
  *  compute the maximum value of a sequence of integers.
@@ -321,8 +341,14 @@ _CCCL_HOST_DEVICE T reduce(
  *  \see https://en.cppreference.com/w/cpp/algorithm/accumulate
  *  \see transform_reduce
  */
-template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
+template<typename InputIterator,
+         typename T,
+         typename BinaryFunction>
+  T reduce(InputIterator first,
+           InputIterator last,
+           T init,
+           BinaryFunction binary_op);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -341,17 +367,15 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *  \param values_first The beginning of the input value range.
  *  \param keys_output The beginning of the output key range.
  *  \param values_output The beginning of the output value range.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -381,18 +405,20 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -408,16 +434,14 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \param values_first The beginning of the input value range.
  *  \param keys_output The beginning of the output key range.
  *  \param values_output The beginning of the output value range.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -445,13 +469,17 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -471,18 +499,16 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \param keys_output The beginning of the output key range.
  *  \param values_output The beginning of the output value range.
  *  \param binary_pred  The binary predicate used to determine equality.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -513,20 +539,22 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -543,17 +571,15 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \param keys_output The beginning of the output key range.
  *  \param values_output The beginning of the output value range.
  *  \param binary_pred  The binary predicate used to determine equality.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -582,18 +608,19 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -617,20 +644,18 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \param values_output The beginning of the output value range.
  *  \param binary_pred  The binary predicate used to determine equality.
  *  \param binary_op The binary function used to accumulate values.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *          and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -662,22 +687,24 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred,
-  BinaryFunction binary_op);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred,
+                BinaryFunction binary_op);
+
 
 /*! \p reduce_by_key is a generalization of \p reduce to key-value pairs.
  *  For each group of consecutive keys in the range <tt>[keys_first, keys_last)</tt>
@@ -698,19 +725,17 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \param values_output The beginning of the output value range.
  *  \param binary_pred  The binary predicate used to determine equality.
  *  \param binary_op The binary function used to accumulate values.
- *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output,
- * values_output_last)</tt>.
+ *  \return A pair of iterators at end of the ranges <tt>[keys_output, keys_output_last)</tt> and <tt>[values_output, values_output_last)</tt>.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, \tparam InputIterator2 is a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, \tparam OutputIterator1 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type. \tparam OutputIterator2 is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and and \p
- * InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type. \tparam BinaryPredicate is a
- * model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>. \tparam
- * BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary
- * Function</a> and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *  \tparam OutputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator1's \c value_type is convertible to \c OutputIterator1's \c value_type.
+ *  \tparam OutputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a> and
+ *          and \p InputIterator2's \c value_type is convertible to \c OutputIterator2's \c value_type.
+ *  \tparam BinaryPredicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Binary Predicate</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *          and \c BinaryFunction's \c result_type is convertible to \c OutputIterator2's \c value_type.
  *
  *  \pre The input ranges shall not overlap either output range.
  *
@@ -740,20 +765,21 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  \see unique_by_key
  *  \see unique_by_key_copy
  */
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator1,
-          typename OutputIterator2,
-          typename BinaryPredicate,
-          typename BinaryFunction>
-thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
-  InputIterator1 keys_first,
-  InputIterator1 keys_last,
-  InputIterator2 values_first,
-  OutputIterator1 keys_output,
-  OutputIterator2 values_output,
-  BinaryPredicate binary_pred,
-  BinaryFunction binary_op);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator1,
+         typename OutputIterator2,
+         typename BinaryPredicate,
+         typename BinaryFunction>
+  thrust::pair<OutputIterator1,OutputIterator2>
+  reduce_by_key(InputIterator1 keys_first,
+                InputIterator1 keys_last,
+                InputIterator2 values_first,
+                OutputIterator1 keys_output,
+                OutputIterator2 values_output,
+                BinaryPredicate binary_pred,
+                BinaryFunction binary_op);
+
 
 /*! \} // end reductions
  */

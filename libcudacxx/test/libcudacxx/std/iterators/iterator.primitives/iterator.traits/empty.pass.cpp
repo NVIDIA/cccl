@@ -18,29 +18,27 @@
 
 #include "test_macros.h"
 
-struct not_an_iterator {};
-
-template <class T>
-struct has_value_type {
-private:
-  struct two {
-    char lx;
-    char lxx;
-  };
-
-  template <class U>
-  __host__ __device__ static two test(...);
-
-  template <class U>
-  __host__ __device__ static char test(typename U::value_type* = 0);
-
-public:
-  static const bool value = sizeof(test<T>(0)) == 1;
+struct not_an_iterator
+{
 };
 
-int main(int, char**) {
-  typedef cuda::std::iterator_traits<not_an_iterator> It;
-  static_assert(!(has_value_type<It>::value), "");
+template <class T>
+struct has_value_type
+{
+private:
+    struct two {char lx; char lxx;};
+
+    template <class U> __host__ __device__ static two test(...);
+
+    template <class U> __host__ __device__ static char test(typename U::value_type* = 0);
+public:
+    static const bool value = sizeof(test<T>(0)) == 1;
+};
+
+int main(int, char**)
+{
+    typedef cuda::std::iterator_traits<not_an_iterator> It;
+    static_assert(!(has_value_type<It>::value), "");
 
   return 0;
 }

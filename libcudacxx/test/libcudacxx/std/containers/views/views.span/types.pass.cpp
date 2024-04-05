@@ -35,57 +35,61 @@
 #include "test_macros.h"
 
 template <typename S, typename Iter>
-__host__ __device__ void testIterator() {
-  typedef cuda::std::iterator_traits<Iter> ItT;
+__host__ __device__
+void testIterator()
+{
+    typedef cuda::std::iterator_traits<Iter> ItT;
 
-  ASSERT_SAME_TYPE(typename ItT::iterator_category,
-                   cuda::std::random_access_iterator_tag);
-  ASSERT_SAME_TYPE(typename ItT::value_type, typename S::value_type);
-  ASSERT_SAME_TYPE(typename ItT::reference, typename S::reference);
-  ASSERT_SAME_TYPE(typename ItT::pointer, typename S::pointer);
-  ASSERT_SAME_TYPE(typename ItT::difference_type, typename S::difference_type);
+    ASSERT_SAME_TYPE(typename ItT::iterator_category, cuda::std::random_access_iterator_tag);
+    ASSERT_SAME_TYPE(typename ItT::value_type,        typename S::value_type);
+    ASSERT_SAME_TYPE(typename ItT::reference,         typename S::reference);
+    ASSERT_SAME_TYPE(typename ItT::pointer,           typename S::pointer);
+    ASSERT_SAME_TYPE(typename ItT::difference_type,   typename S::difference_type);
 }
 
 template <typename S, typename ElementType, cuda::std::size_t Size>
-__host__ __device__ void testSpan() {
-  ASSERT_SAME_TYPE(typename S::element_type, ElementType);
-  ASSERT_SAME_TYPE(typename S::value_type,
-                   typename cuda::std::remove_cv<ElementType>::type);
-  ASSERT_SAME_TYPE(typename S::size_type, cuda::std::size_t);
-  ASSERT_SAME_TYPE(typename S::difference_type, cuda::std::ptrdiff_t);
-  ASSERT_SAME_TYPE(typename S::pointer, ElementType*);
-  ASSERT_SAME_TYPE(typename S::const_pointer, const ElementType*);
-  ASSERT_SAME_TYPE(typename S::reference, ElementType&);
-  ASSERT_SAME_TYPE(typename S::const_reference, const ElementType&);
+__host__ __device__
+void testSpan()
+{
+    ASSERT_SAME_TYPE(typename S::element_type,    ElementType);
+    ASSERT_SAME_TYPE(typename S::value_type,      typename cuda::std::remove_cv<ElementType>::type);
+    ASSERT_SAME_TYPE(typename S::size_type,       cuda::std::size_t);
+    ASSERT_SAME_TYPE(typename S::difference_type, cuda::std::ptrdiff_t);
+    ASSERT_SAME_TYPE(typename S::pointer,         ElementType *);
+    ASSERT_SAME_TYPE(typename S::const_pointer,   const ElementType *);
+    ASSERT_SAME_TYPE(typename S::reference,       ElementType &);
+    ASSERT_SAME_TYPE(typename S::const_reference, const ElementType &);
 
-  static_assert(S::extent == Size, ""); // check that it exists
+    static_assert(S::extent == Size, ""); // check that it exists
 
-  testIterator<S, typename S::iterator>();
-  testIterator<S, typename S::reverse_iterator>();
+    testIterator<S, typename S::iterator>();
+    testIterator<S, typename S::reverse_iterator>();
 }
+
 
 template <typename T>
-__host__ __device__ void test() {
-  testSpan<cuda::std::span<T>, T, cuda::std::dynamic_extent>();
-  testSpan<cuda::std::span<const T>, const T, cuda::std::dynamic_extent>();
-  testSpan<cuda::std::span<volatile T>, volatile T,
-           cuda::std::dynamic_extent>();
-  testSpan<cuda::std::span<const volatile T>, const volatile T,
-           cuda::std::dynamic_extent>();
+__host__ __device__
+void test()
+{
+    testSpan<cuda::std::span<               T>,                T, cuda::std::dynamic_extent>();
+    testSpan<cuda::std::span<const          T>, const          T, cuda::std::dynamic_extent>();
+    testSpan<cuda::std::span<      volatile T>,       volatile T, cuda::std::dynamic_extent>();
+    testSpan<cuda::std::span<const volatile T>, const volatile T, cuda::std::dynamic_extent>();
 
-  testSpan<cuda::std::span<T, 5>, T, 5>();
-  testSpan<cuda::std::span<const T, 5>, const T, 5>();
-  testSpan<cuda::std::span<volatile T, 5>, volatile T, 5>();
-  testSpan<cuda::std::span<const volatile T, 5>, const volatile T, 5>();
+    testSpan<cuda::std::span<               T, 5>,                T, 5>();
+    testSpan<cuda::std::span<const          T, 5>, const          T, 5>();
+    testSpan<cuda::std::span<      volatile T, 5>,       volatile T, 5>();
+    testSpan<cuda::std::span<const volatile T, 5>, const volatile T, 5>();
 }
 
-struct A {};
+struct A{};
 
-int main(int, char**) {
-  test<int>();
-  test<long>();
-  test<double>();
-  test<A>();
+int main(int, char**)
+{
+    test<int>();
+    test<long>();
+    test<double>();
+    test<A>();
 
-  return 0;
+    return 0;
 }

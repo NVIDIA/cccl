@@ -29,12 +29,13 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
+
+#include "c2h/custom_type.cuh"
+#include "c2h/extended_types.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -45,22 +46,23 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanByKey, device_inclusive_sca
 // %PARAM% TEST_TYPES types 0:1:2:3
 
 // List of types to test
-using custom_t =
-  c2h::custom_type_t<c2h::accumulateable_t,
-                     c2h::equal_comparable_t,
-                     c2h::lexicographical_less_comparable_t,
-                     c2h::lexicographical_greater_comparable_t>;
+using custom_t = c2h::custom_type_t<c2h::accumulateable_t,
+                                    c2h::equal_comparable_t,
+                                    c2h::lexicographical_less_comparable_t,
+                                    c2h::lexicographical_greater_comparable_t>;
 
 // type_quad's parameters and defaults:
 // type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=cub::Equality>
 #if TEST_TYPES == 0
-using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
-                                      type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
+using full_type_list =
+  c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
+                 type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
 #elif TEST_TYPES == 1
 using full_type_list = c2h::type_list<type_quad<std::int32_t>, type_quad<std::uint64_t>>;
 #elif TEST_TYPES == 2
 using full_type_list =
-  c2h::type_list<type_quad<uchar3, uchar3, custom_t>, type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
+  c2h::type_list<type_quad<uchar3, uchar3, custom_t>,
+                 type_quad<ulonglong4, ulonglong4, std::uint8_t, Mod2Equality>>;
 #elif TEST_TYPES == 3
 using full_type_list = c2h::type_list<type_quad<custom_t, custom_t, custom_t>>;
 #endif
@@ -89,22 +91,25 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
-  const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
+  const offset_t num_items = GENERATE_COPY(take(2, random(min_items, max_items)),
+                                           values({
+                                             min_items,
+                                             max_items,
+                                           }));
   INFO("Test num_items: " << num_items);
 
   // Range of segment sizes to generate (a segment is a series of consecutive equal keys)
   const std::tuple<offset_t, offset_t> seg_size_range =
     GENERATE_COPY(table<offset_t, offset_t>({{1, 1}, {1, num_items}, {num_items, num_items}}));
-  INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", " << std::get<1>(seg_size_range) << "]");
+  INFO("Test seg_size_range: [" << std::get<0>(seg_size_range) << ", "
+                                << std::get<1>(seg_size_range) << "]");
 
   // Generate input segments
-  c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+  c2h::device_vector<offset_t> segment_offsets =
+    c2h::gen_uniform_offsets<offset_t>(CUB_SEED(1),
+                                       num_items,
+                                       std::get<0>(seg_size_range),
+                                       std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
   c2h::device_vector<key_t> segment_keys(num_items);
@@ -123,8 +128,12 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_by_key_reference(
-      values_in_it, h_segment_keys.cbegin(), expected_result.begin(), op_t{}, eq_op_t{}, num_items);
+    compute_inclusive_scan_by_key_reference(values_in_it,
+                                            h_segment_keys.cbegin(),
+                                            expected_result.begin(),
+                                            op_t{},
+                                            eq_op_t{},
+                                            num_items);
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
@@ -140,8 +149,13 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_exclusive_scan_by_key_reference(
-      values_in_it, h_segment_keys.cbegin(), expected_result.begin(), op_t{}, eq_op_t{}, output_t{}, num_items);
+    compute_exclusive_scan_by_key_reference(values_in_it,
+                                            h_segment_keys.cbegin(),
+                                            expected_result.begin(),
+                                            op_t{},
+                                            eq_op_t{},
+                                            output_t{},
+                                            num_items);
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
@@ -157,12 +171,21 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_by_key_reference(
-      values_in_it, h_segment_keys.cbegin(), expected_result.begin(), op_t{}, eq_op_t{}, num_items);
+    compute_inclusive_scan_by_key_reference(values_in_it,
+                                            h_segment_keys.cbegin(),
+                                            expected_result.begin(),
+                                            op_t{},
+                                            eq_op_t{},
+                                            num_items);
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
-    device_inclusive_scan_by_key(d_keys_it, values_in_it, out_values.begin(), op_t{}, num_items, eq_op_t{});
+    device_inclusive_scan_by_key(d_keys_it,
+                                 values_in_it,
+                                 out_values.begin(),
+                                 op_t{},
+                                 num_items,
+                                 eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);
@@ -177,13 +200,24 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_exclusive_scan_by_key_reference(
-      values_in_it, h_segment_keys.cbegin(), expected_result.begin(), scan_op, eq_op_t{}, output_t{}, num_items);
+    compute_exclusive_scan_by_key_reference(values_in_it,
+                                            h_segment_keys.cbegin(),
+                                            expected_result.begin(),
+                                            scan_op,
+                                            eq_op_t{},
+                                            output_t{},
+                                            num_items);
 
     // Run test
     c2h::device_vector<output_t> out_values(num_items);
     using init_t = value_t;
-    device_exclusive_scan_by_key(d_keys_it, values_in_it, out_values.begin(), scan_op, init_t{}, num_items, eq_op_t{});
+    device_exclusive_scan_by_key(d_keys_it,
+                                 values_in_it,
+                                 out_values.begin(),
+                                 scan_op,
+                                 init_t{},
+                                 num_items,
+                                 eq_op_t{});
 
     // Verify result
     REQUIRE(expected_result == out_values);

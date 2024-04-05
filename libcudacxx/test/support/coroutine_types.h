@@ -12,8 +12,7 @@
 
 #include <experimental/coroutine>
 
-template <typename Ty>
-struct generator {
+template <typename Ty> struct generator {
   struct promise_type {
     Ty current_value;
     std::experimental::suspend_always yield_value(Ty value) {
@@ -34,21 +33,21 @@ struct generator {
     iterator(std::experimental::coroutine_handle<promise_type> Coro, bool Done)
         : _Coro(Coro), _Done(Done) {}
 
-    iterator& operator++() {
+    iterator &operator++() {
       _Coro.resume();
       _Done = _Coro.done();
       return *this;
     }
 
-    bool operator==(iterator const& _Right) const {
+    bool operator==(iterator const &_Right) const {
       return _Done == _Right._Done;
     }
 
-    bool operator!=(iterator const& _Right) const { return !(*this == _Right); }
+    bool operator!=(iterator const &_Right) const { return !(*this == _Right); }
 
-    Ty const& operator*() const { return _Coro.promise().current_value; }
+    Ty const &operator*() const { return _Coro.promise().current_value; }
 
-    Ty const* operator->() const { return &(operator*()); }
+    Ty const *operator->() const { return &(operator*()); }
   };
 
   iterator begin() {
@@ -58,7 +57,7 @@ struct generator {
 
   iterator end() { return {p, true}; }
 
-  generator(generator&& rhs) : p(rhs.p) { rhs.p = nullptr; }
+  generator(generator &&rhs) : p(rhs.p) { rhs.p = nullptr; }
 
   ~generator() {
     if (p)
@@ -66,9 +65,8 @@ struct generator {
   }
 
 private:
-  explicit generator(promise_type* p)
-      : p(std::experimental::coroutine_handle<promise_type>::from_promise(*p)) {
-  }
+  explicit generator(promise_type *p)
+      : p(std::experimental::coroutine_handle<promise_type>::from_promise(*p)) {}
 
   std::experimental::coroutine_handle<promise_type> p;
 };

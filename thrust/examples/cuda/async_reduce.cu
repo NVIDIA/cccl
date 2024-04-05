@@ -2,8 +2,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/reduce.h>
 #include <thrust/system/cuda/execution_policy.h>
-
 #include <cassert>
+
 #include <future>
 
 // This example demonstrates two ways to achieve algorithm invocations that are asynchronous with
@@ -20,7 +20,7 @@
 // C++11-capable language and library constructs.
 
 #ifdef THRUST_EXAMPLE_DEVICE_SIDE
-template <typename Iterator, typename T, typename BinaryOperation, typename Pointer>
+template<typename Iterator, typename T, typename BinaryOperation, typename Pointer>
 __global__ void reduce_kernel(Iterator first, Iterator last, T init, BinaryOperation binary_op, Pointer result)
 {
   *result = thrust::reduce(thrust::cuda::par, first, last, init, binary_op);
@@ -41,7 +41,7 @@ int main()
 
   // launch a CUDA kernel with only 1 thread on our stream
 #ifdef THRUST_EXAMPLE_DEVICE_SIDE
-  reduce_kernel<<<1, 1, 0, s>>>(data.begin(), data.end(), 0, thrust::plus<int>(), result.data());
+  reduce_kernel<<<1,1,0,s>>>(data.begin(), data.end(), 0, thrust::plus<int>(), result.data());
 #else
   result[0] = thrust::reduce(thrust::cuda::par, data.begin(), data.end(), 0, thrust::plus<int>());
 #endif
@@ -66,7 +66,8 @@ int main()
 
   // std::async captures the algorithm parameters by value
   // use std::launch::async to ensure the creation of a new thread
-  std::future<unsigned int> future_result = std::async(std::launch::async, [=] {
+  std::future<unsigned int> future_result = std::async(std::launch::async, [=]
+  {
     return thrust::reduce(begin, end, init, binary_op);
   });
 
@@ -75,3 +76,4 @@ int main()
 
   return 0;
 }
+

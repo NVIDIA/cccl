@@ -38,31 +38,29 @@
 // %RANGE% TUNE_VEC_SIZE_POW vec 0:2:1
 
 template <typename SampleT, typename CounterT, typename OffsetT>
-static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, OffsetT>)
+static void even(nvbench::state &state, nvbench::type_list<SampleT, CounterT, OffsetT>)
 {
   constexpr int num_channels        = 1;
   constexpr int num_active_channels = 1;
 
-  using sample_iterator_t = SampleT*;
+  using sample_iterator_t = SampleT *;
 
-#if !TUNE_BASE
-  using policy_t = policy_hub_t<key_t, num_channels, num_active_channels>;
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           SampleT,
-                           OffsetT,
-                           policy_t>;
+#if !TUNE_BASE 
+  using policy_t   = policy_hub_t<key_t, num_channels, num_active_channels>;
+  using dispatch_t = cub::DispatchHistogram<num_channels, //
+                                            num_active_channels,
+                                            sample_iterator_t,
+                                            CounterT,
+                                            SampleT,
+                                            OffsetT,
+                                            policy_t>;
 #else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchHistogram<num_channels, //
-                           num_active_channels,
-                           sample_iterator_t,
-                           CounterT,
-                           SampleT,
-                           OffsetT>;
+  using dispatch_t = cub::DispatchHistogram<num_channels, //
+                                            num_active_channels,
+                                            sample_iterator_t,
+                                            CounterT,
+                                            SampleT,
+                                            OffsetT>;
 #endif // TUNE_BASE
 
   const auto entropy   = str_to_entropy(state.get_string("Entropy"));
@@ -76,15 +74,15 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   thrust::device_vector<SampleT> input = generate(elements, entropy, lower_level, upper_level);
   thrust::device_vector<CounterT> hist(num_bins);
 
-  SampleT* d_input      = thrust::raw_pointer_cast(input.data());
-  CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
+  SampleT *d_input      = thrust::raw_pointer_cast(input.data());
+  CounterT *d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  CounterT* d_histogram1[1] = {d_histogram};
+  CounterT *d_histogram1[1] = {d_histogram};
   int num_levels1[1]        = {num_levels};
   SampleT lower_level1[1]   = {lower_level};
   SampleT upper_level1[1]   = {upper_level};
 
-  std::uint8_t* d_temp_storage = nullptr;
+  std::uint8_t *d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
   cub::Int2Type<sizeof(SampleT) == 1> is_byte_sample;
@@ -96,37 +94,35 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   state.add_global_memory_reads<SampleT>(elements);
   state.add_global_memory_writes<CounterT>(num_bins);
 
-  dispatch_t::DispatchEven(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_input,
-    d_histogram1,
-    num_levels1,
-    lower_level1,
-    upper_level1,
-    num_row_pixels,
-    num_rows,
-    row_stride_samples,
-    0,
-    is_byte_sample);
+  dispatch_t::DispatchEven(d_temp_storage,
+                           temp_storage_bytes,
+                           d_input,
+                           d_histogram1,
+                           num_levels1,
+                           lower_level1,
+                           upper_level1,
+                           num_row_pixels,
+                           num_rows,
+                           row_stride_samples,
+                           0,
+                           is_byte_sample);
 
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
-      num_row_pixels,
-      num_rows,
-      row_stride_samples,
-      launch.get_stream(),
-      is_byte_sample);
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
+    dispatch_t::DispatchEven(d_temp_storage,
+                             temp_storage_bytes,
+                             d_input,
+                             d_histogram1,
+                             num_levels1,
+                             lower_level1,
+                             upper_level1,
+                             num_row_pixels,
+                             num_rows,
+                             row_stride_samples,
+                             launch.get_stream(),
+                             is_byte_sample);
   });
 }
 

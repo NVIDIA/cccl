@@ -27,13 +27,13 @@ static_assert(sizeof(A) == 0); // an extension supported by GCC and Clang
 
 __device__ static A a[10];
 
-int main(int, char**) {
+int main(int, char**)
+{
   auto p = cuda::std::ranges::begin(a);
   static_assert(cuda::std::same_as<A*, decltype(cuda::std::ranges::begin(a))>);
   assert(p == a);
   auto cp = cuda::std::ranges::cbegin(a);
-  static_assert(
-      cuda::std::same_as<const A*, decltype(cuda::std::ranges::cbegin(a))>);
+  static_assert(cuda::std::same_as<const A*, decltype(cuda::std::ranges::cbegin(a))>);
   assert(cp == a);
 
   return 0;

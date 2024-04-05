@@ -27,9 +27,7 @@ template <class T, class = void>
 constexpr bool DerefNoexcept = false;
 
 template <class T>
-constexpr bool DerefNoexcept<
-    T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator*())> > =
-    noexcept(cuda::std::declval<T>().operator*());
+constexpr bool DerefNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator*())>> = noexcept(cuda::std::declval<T>().operator*());
 
 static_assert(!DerefNoexcept<int>, "");
 

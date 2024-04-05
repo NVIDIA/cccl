@@ -61,27 +61,29 @@
 #include "test_macros.h"
 
 struct aggregate {
-  double a;
-  double b;
+    double a;
+    double b;
 };
 
 struct small_aggregate {
-  uint8_t a;
-  uint8_t b;
+    uint8_t a;
+    uint8_t b;
 };
 
 template <class T>
-__host__ __device__ void test() {
-  cuda::atomic<T> a({42, 137});
-  cuda::std::atomic<T> b({42, 137});
-  unused(a);
-  unused(b);
+__host__ __device__
+void test() {
+    cuda::atomic<T> a({42, 137});
+    cuda::std::atomic<T> b({42, 137});
+    unused(a);
+    unused(b);
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test<double2>();
-  test<cuda::std::pair<double, double> >();
-  test<cuda::std::tuple<double, double> >();
+  test<cuda::std::pair<double, double>>();
+  test<cuda::std::tuple<double, double>>();
   test<aggregate>();
   test<small_aggregate>();
 

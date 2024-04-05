@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -35,13 +36,24 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE void uninitialized_fill(
-  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& x);
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename T>
+_CCCL_HOST_DEVICE
+  void uninitialized_fill(thrust::execution_policy<DerivedPolicy> &exec,
+                          ForwardIterator first,
+                          ForwardIterator last,
+                          const T &x);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE ForwardIterator
-uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, Size n, const T& x);
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename Size,
+         typename T>
+_CCCL_HOST_DEVICE
+  ForwardIterator uninitialized_fill_n(thrust::execution_policy<DerivedPolicy> &exec,
+                                       ForwardIterator first,
+                                       Size n,
+                                       const T &x);
 
 } // end namespace generic
 } // end namespace detail
@@ -49,3 +61,4 @@ uninitialized_fill_n(thrust::execution_policy<DerivedPolicy>& exec, ForwardItera
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/uninitialized_fill.inl>
+

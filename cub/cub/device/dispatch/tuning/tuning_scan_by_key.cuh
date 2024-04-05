@@ -54,40 +54,11 @@ namespace detail
 namespace scan_by_key
 {
 
-enum class primitive_accum
-{
-  no,
-  yes
-};
-enum class primitive_op
-{
-  no,
-  yes
-};
-enum class offset_size
-{
-  _4,
-  _8,
-  unknown
-};
-enum class val_size
-{
-  _1,
-  _2,
-  _4,
-  _8,
-  _16,
-  unknown
-};
-enum class key_size
-{
-  _1,
-  _2,
-  _4,
-  _8,
-  _16,
-  unknown
-};
+enum class primitive_accum { no, yes };
+enum class primitive_op { no, yes };
+enum class offset_size { _4, _8, unknown };
+enum class val_size { _1, _2, _4, _8, _16, unknown };
+enum class key_size { _1, _2, _4, _8, _16, unknown };
 
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
@@ -104,25 +75,23 @@ constexpr primitive_op is_primitive_op()
 template <class ValueT>
 constexpr val_size classify_val_size()
 {
-  return sizeof(ValueT) == 1 ? val_size::_1
-       : sizeof(ValueT) == 2 ? val_size::_2
-       : sizeof(ValueT) == 4 ? val_size::_4
-       : sizeof(ValueT) == 8 ? val_size::_8
-       : sizeof(ValueT) == 16
-         ? val_size::_16
-         : val_size::unknown;
+  return   sizeof(ValueT) == 1  ? val_size::_1
+         : sizeof(ValueT) == 2  ? val_size::_2
+         : sizeof(ValueT) == 4  ? val_size::_4
+         : sizeof(ValueT) == 8  ? val_size::_8
+         : sizeof(ValueT) == 16 ? val_size::_16
+                                : val_size::unknown;
 }
 
 template <class KeyT>
 constexpr key_size classify_key_size()
 {
-  return sizeof(KeyT) == 1 ? key_size::_1
-       : sizeof(KeyT) == 2 ? key_size::_2
-       : sizeof(KeyT) == 4 ? key_size::_4
-       : sizeof(KeyT) == 8 ? key_size::_8
-       : sizeof(KeyT) == 16
-         ? key_size::_16
-         : key_size::unknown;
+  return   sizeof(KeyT) == 1  ? key_size::_1
+         : sizeof(KeyT) == 2  ? key_size::_2
+         : sizeof(KeyT) == 4  ? key_size::_4
+         : sizeof(KeyT) == 8  ? key_size::_8
+         : sizeof(KeyT) == 16 ? key_size::_16
+                              : key_size::unknown;
 }
 
 template <class KeyT,
@@ -142,7 +111,9 @@ struct sm90_tuning
   static constexpr size_t combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
 
   static constexpr int items =
-    ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
+    ((max_input_bytes <= 8)
+       ? 9
+       : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
@@ -598,7 +569,9 @@ struct sm80_tuning
   static constexpr size_t combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
 
   static constexpr int items =
-    ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
+    ((max_input_bytes <= 8)
+       ? 9
+       : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
@@ -1039,12 +1012,17 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 } // namespace scan_by_key
 } // namespace detail
 
-template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = Sum>
+
+template <typename KeysInputIteratorT,
+          typename AccumT,
+          typename ValueT = AccumT,
+          typename ScanOpT = Sum>
 struct DeviceScanByKeyPolicy
 {
   using KeyT = cub::detail::value_t<KeysInputIteratorT>;
 
-  static constexpr size_t MaxInputBytes = (cub::max)(sizeof(KeyT), sizeof(AccumT));
+  static constexpr size_t MaxInputBytes = (cub::max)(sizeof(KeyT),
+                                                     sizeof(AccumT));
 
   static constexpr size_t CombinedInputBytes = sizeof(KeyT) + sizeof(AccumT);
 
@@ -1053,7 +1031,10 @@ struct DeviceScanByKeyPolicy
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
     static constexpr int ITEMS_PER_THREAD =
-      ((MaxInputBytes <= 8) ? 6 : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD, CombinedInputBytes));
+      ((MaxInputBytes <= 8)
+         ? 6
+         : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD,
+                                         CombinedInputBytes));
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<128,
@@ -1069,7 +1050,10 @@ struct DeviceScanByKeyPolicy
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
     static constexpr int ITEMS_PER_THREAD =
-      ((MaxInputBytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD, CombinedInputBytes));
+      ((MaxInputBytes <= 8)
+         ? 9
+         : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD,
+                                         CombinedInputBytes));
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<256,
@@ -1090,16 +1074,16 @@ struct DeviceScanByKeyPolicy
   // SM800
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
-    using tuning = detail::scan_by_key::sm80_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
+    using tuning =
+      detail::scan_by_key::sm80_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
 
-    using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<tuning::threads,
-                           tuning::items,
-                           tuning::load_algorithm,
-                           LOAD_DEFAULT,
-                           BLOCK_SCAN_WARP_SCANS,
-                           tuning::store_algorithm,
-                           typename tuning::delay_constructor>;
+    using ScanByKeyPolicyT = AgentScanByKeyPolicy<tuning::threads,
+                                                  tuning::items,
+                                                  tuning::load_algorithm,
+                                                  LOAD_DEFAULT,
+                                                  BLOCK_SCAN_WARP_SCANS,
+                                                  tuning::store_algorithm,
+                                                  typename tuning::delay_constructor>;
   };
 
   // SM860
@@ -1111,19 +1095,20 @@ struct DeviceScanByKeyPolicy
   // SM900
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = detail::scan_by_key::sm90_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
+    using tuning =
+      detail::scan_by_key::sm90_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
 
-    using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<tuning::threads,
-                           tuning::items,
-                           tuning::load_algorithm,
-                           LOAD_DEFAULT,
-                           BLOCK_SCAN_WARP_SCANS,
-                           tuning::store_algorithm,
-                           typename tuning::delay_constructor>;
+    using ScanByKeyPolicyT = AgentScanByKeyPolicy<tuning::threads,
+                                                  tuning::items,
+                                                  tuning::load_algorithm,
+                                                  LOAD_DEFAULT,
+                                                  BLOCK_SCAN_WARP_SCANS,
+                                                  tuning::store_algorithm,
+                                                  typename tuning::delay_constructor>;
   };
 
   using MaxPolicy = Policy900;
 };
+
 
 CUB_NAMESPACE_END

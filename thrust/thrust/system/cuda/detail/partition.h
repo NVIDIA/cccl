@@ -56,8 +56,7 @@
 #  include <thrust/system/cuda/detail/util.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
 namespace detail
 {
@@ -223,15 +222,14 @@ THRUST_RUNTIME_FUNCTION pair<SelectedOutIt, RejectedOutIt> stable_partition_copy
   RejectedOutIt rejected_result,
   Predicate predicate)
 {
-  if (thrust::distance(first, last) <= 0)
-  {
+  if(thrust::distance(first, last) <= 0){
     return thrust::make_pair(selected_result, rejected_result);
   }
 
   using output_it_wrapper_t = cub::detail::partition_distinct_output_t<SelectedOutIt, RejectedOutIt>;
-  std::size_t num_items     = static_cast<std::size_t>(thrust::distance(first, last));
-  std::size_t num_selected =
-    partition(policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
+  std::size_t num_items    = static_cast<std::size_t>(thrust::distance(first, last));
+  std::size_t num_selected = partition(
+    policy, first, last, stencil, output_it_wrapper_t{selected_result, rejected_result}, predicate);
   return thrust::make_pair(selected_result + num_selected, rejected_result + num_items - num_selected);
 }
 
@@ -239,8 +237,7 @@ template <typename Derived, typename InputIt, typename StencilIt, typename Predi
 THRUST_RUNTIME_FUNCTION InputIt inplace_partition(
   execution_policy<Derived>& policy, InputIt first, InputIt last, StencilIt stencil, Predicate predicate)
 {
-  if (thrust::distance(first, last) <= 0)
-  {
+  if(thrust::distance(first, last) <= 0){
     return first;
   }
 
@@ -395,15 +392,21 @@ stable_partition(execution_policy<Derived>& policy, Iterator first, Iterator las
   return ret;
 }
 
-template <class Derived, class ItemsIt, class Predicate>
+template <class Derived,
+          class ItemsIt,
+          class Predicate>
 bool _CCCL_HOST_DEVICE
-is_partitioned(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, Predicate predicate)
+is_partitioned(execution_policy<Derived> &policy,
+               ItemsIt                    first,
+               ItemsIt                    last,
+               Predicate                  predicate)
 {
   ItemsIt boundary = cuda_cub::find_if_not(policy, first, last, predicate);
-  ItemsIt end      = cuda_cub::find_if(policy, boundary, last, predicate);
+  ItemsIt end      = cuda_cub::find_if(policy,boundary,last,predicate);
   return end == last;
 }
 
-} // namespace cuda_cub
+
+}    // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

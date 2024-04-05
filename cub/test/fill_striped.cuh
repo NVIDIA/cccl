@@ -32,7 +32,7 @@ struct has_x : std::false_type
 {};
 
 template <typename T>
-struct has_x<T, decltype((void) T::x, 0)> : std::true_type
+struct has_x<T, decltype((void)T::x, 0)> : std::true_type
 {};
 
 template <typename T, typename = int>
@@ -40,7 +40,7 @@ struct has_y : std::false_type
 {};
 
 template <typename T>
-struct has_y<T, decltype((void) T::y, 0)> : std::true_type
+struct has_y<T, decltype((void)T::y, 0)> : std::true_type
 {};
 
 template <typename T, typename = int>
@@ -48,7 +48,7 @@ struct has_z : std::false_type
 {};
 
 template <typename T>
-struct has_z<T, decltype((void) T::z, 0)> : std::true_type
+struct has_z<T, decltype((void)T::z, 0)> : std::true_type
 {};
 
 template <typename T, typename = int>
@@ -56,7 +56,7 @@ struct has_w : std::false_type
 {};
 
 template <typename T>
-struct has_w<T, decltype((void) T::w, 0)> : std::true_type
+struct has_w<T, decltype((void)T::w, 0)> : std::true_type
 {};
 
 template <typename ScalarT, typename = int>
@@ -66,7 +66,7 @@ struct component_type_impl_t
 };
 
 template <typename VectorT>
-struct component_type_impl_t<VectorT, decltype((void) VectorT::x, 0)>
+struct component_type_impl_t<VectorT, decltype((void)VectorT::x, 0)>
 {
   using type = decltype(std::declval<VectorT>().x);
 };
@@ -89,7 +89,8 @@ struct scalar_to_vec_t
 
   template <typename T, typename V = VectorT>
   __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_x<V>::value && !has_y<V>::value, V>::type
+    typename std::enable_if<std::is_same<V, VectorT>::value && has_x<V>::value && !has_y<V>::value,
+                            V>::type
     operator()(T scalar)
   {
     V val;
@@ -99,7 +100,8 @@ struct scalar_to_vec_t
 
   template <typename T, typename V = VectorT>
   __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_y<V>::value && !has_z<V>::value, V>::type
+    typename std::enable_if<std::is_same<V, VectorT>::value && has_y<V>::value && !has_z<V>::value,
+                            V>::type
     operator()(T scalar)
   {
     V val;
@@ -110,7 +112,8 @@ struct scalar_to_vec_t
 
   template <typename T, typename V = VectorT>
   __host__ __device__ __forceinline__
-    typename std::enable_if<std::is_same<V, VectorT>::value && has_z<V>::value && !has_w<V>::value, V>::type
+    typename std::enable_if<std::is_same<V, VectorT>::value && has_z<V>::value && !has_w<V>::value,
+                            V>::type
     operator()(T scalar)
   {
     V val;

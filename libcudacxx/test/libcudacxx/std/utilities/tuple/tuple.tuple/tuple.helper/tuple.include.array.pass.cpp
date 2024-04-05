@@ -21,6 +21,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 // cuda::std::array not supported
 //#include <cuda/std/array>
@@ -48,9 +49,10 @@ __host__ __device__ void test()
 }
 */
 
-int main(int, char**) {
-  // cuda::std::array not supported
-  /*
+int main(int, char**)
+{
+    // cuda::std::array not supported
+    /*
     test<cuda::std::array<int, 5>, 5, int, 0>();
     test<cuda::std::array<int, 5>, 5, int, 1>();
     test<cuda::std::array<const char *, 4>, 4, const char *, 3>();

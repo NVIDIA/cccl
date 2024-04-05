@@ -13,24 +13,22 @@
 #include <cuda/std/type_traits>
 
 template <class Token>
-struct Common {};
+struct Common { };
 
 template <class Token>
-struct T1 : Common<Token> {};
+struct T1 : Common<Token> { };
 
 template <class Token>
-struct T2 : Common<Token> {};
+struct T2 : Common<Token> { };
 
-template <template <class> class T1Qual, template <class> class T2Qual,
-          class Token>
+template <template <class> class T1Qual, template <class> class T2Qual, class Token>
 struct cuda::std::basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual> {
   using type = Common<Token>;
 };
-template <template <class> class T2Qual, template <class> class T1Qual,
-          class Token>
+template <template <class> class T2Qual, template <class> class T1Qual, class Token>
 struct cuda::std::basic_common_reference<T2<Token>, T1<Token>, T2Qual, T1Qual>
-    : cuda::std::basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual> {
-};
+  : cuda::std::basic_common_reference<T1<Token>, T2<Token>, T1Qual, T2Qual>
+{ };
 
 template <class Token>
 struct IndirectlyReadable {

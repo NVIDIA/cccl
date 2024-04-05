@@ -50,34 +50,34 @@ __host__ __device__ void test_constructors_exist() {
   using namespace ConstructorTest;
   {
     test<int>();
-    test<int&>();
-    test<int&&, false, true>();
+    test<int &>();
+    test<int &&, false, true>();
     test<const int>();
-    test<const int&>();
-    test<const int&&, false, true>();
+    test<const int &>();
+    test<const int &&, false, true>();
   }
   {
     test<Copyable>();
-    test<Copyable&>();
-    test<Copyable&&, false, true>();
+    test<Copyable &>();
+    test<Copyable &&, false, true>();
   }
   {
     test<NonCopyable, false>();
-    test<NonCopyable&, true>();
-    test<NonCopyable&&, false, true>();
+    test<NonCopyable &, true>();
+    test<NonCopyable &&, false, true>();
   }
   {
     // Even though CopyOnly has an explicitly deleted move constructor
     // pair's move constructor is only implicitly deleted and therefore
     // it doesn't participate in overload resolution.
     test<CopyOnly, true, true>();
-    test<CopyOnly&, true>();
-    test<CopyOnly&&, false, true>();
+    test<CopyOnly &, true>();
+    test<CopyOnly &&, false, true>();
   }
   {
     test<MoveOnly, false, true>();
-    test<MoveOnly&, true>();
-    test<MoveOnly&&, false, true>();
+    test<MoveOnly &, true>();
+    test<MoveOnly &&, false, true>();
   }
 }
 
@@ -99,31 +99,31 @@ __host__ __device__ void test_assignment_operator_exists() {
   using namespace AssignmentOperatorTest;
   {
     test<int>();
-    test<int&>();
-    test<int&&>();
+    test<int &>();
+    test<int &&>();
     test<const int, false>();
-    test<const int&, false>();
-    test<const int&&, false>();
+    test<const int &, false>();
+    test<const int &&, false>();
   }
   {
     test<Copyable>();
-    test<Copyable&>();
-    test<Copyable&&>();
+    test<Copyable &>();
+    test<Copyable &&>();
   }
   {
     test<NonCopyable, false>();
-    test<NonCopyable&, false>();
-    test<NonCopyable&&, false>();
+    test<NonCopyable &, false>();
+    test<NonCopyable &&, false>();
   }
   {
     test<CopyOnly, true>();
-    test<CopyOnly&, true>();
-    test<CopyOnly&&, true>();
+    test<CopyOnly &, true>();
+    test<CopyOnly &&, true>();
   }
   {
     test<MoveOnly, false, true>();
-    test<MoveOnly&, false, false>();
-    test<MoveOnly&&, false, true>();
+    test<MoveOnly &, false, false>();
+    test<MoveOnly &&, false, true>();
   }
 }
 

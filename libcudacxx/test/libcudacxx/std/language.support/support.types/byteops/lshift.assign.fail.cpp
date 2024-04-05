@@ -19,10 +19,14 @@
 // This function shall not participate in overload resolution unless
 //   is_integral_v<IntegerType> is true.
 
-constexpr cuda::std::byte test(cuda::std::byte b) { return b <<= 2.0; }
+
+constexpr cuda::std::byte test(cuda::std::byte b) {
+    return b <<= 2.0;
+    }
+
 
 int main(int, char**) {
-  constexpr cuda::std::byte b1 = test(cuda::std::byte{1});
+    constexpr cuda::std::byte b1 = test(cuda::std::byte{1});
 
   return 0;
 }

@@ -18,14 +18,17 @@ static_assert(false);
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 struct func {
-  __host__ __device__ __half operator()(cuda::std::size_t i) const {
+  __host__ __device__
+  __half operator()(cuda::std::size_t i) const {
     auto raw = __half_raw();
     raw.x = (unsigned short)i;
     return cuda::std::sqrt(__half(raw));
   }
 };
 
-void test() { compare_host_device<__half>(func()); }
+void test() {
+  compare_host_device<__half>(func());
+}
 
 int main(int argc, char** argv) {
   NV_IF_TARGET(NV_IS_HOST, { test(); })

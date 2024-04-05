@@ -62,7 +62,7 @@ __host__ __device__ constexpr void test_in_range() {
 
 template <class... Ts>
 __host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&) {
-  (test_in_range1<Ts>(), ...);
+  (test_in_range1<Ts>() , ...);
 }
 
 __host__ __device__ constexpr bool test() {
@@ -71,8 +71,7 @@ __host__ __device__ constexpr bool test() {
       __int128_t, __uint128_t,
 #endif
       unsigned long long, long long, unsigned long, long, unsigned int, int,
-      unsigned short, short, unsigned char, signed char>
-      types;
+      unsigned short, short, unsigned char, signed char> types;
   test1(types);
   test_in_range();
   return true;

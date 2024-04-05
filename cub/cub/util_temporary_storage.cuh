@@ -46,6 +46,7 @@
 #include <cub/util_debug.cuh>
 #include <cub/util_namespace.cuh>
 
+
 CUB_NAMESPACE_BEGIN
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
@@ -69,49 +70,49 @@ CUB_NAMESPACE_BEGIN
  *   Sizes in bytes of device allocations needed
  */
 template <int ALLOCATIONS>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  void* (&allocations)[ALLOCATIONS],
-  size_t (&allocation_sizes)[ALLOCATIONS])
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t
+AliasTemporaries(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 void *(&allocations)[ALLOCATIONS],
+                 size_t (&allocation_sizes)[ALLOCATIONS])
 {
-  constexpr int ALIGN_BYTES = 256;
-  constexpr int ALIGN_MASK  = ~(ALIGN_BYTES - 1);
+    constexpr int ALIGN_BYTES   = 256;
+    constexpr int ALIGN_MASK    = ~(ALIGN_BYTES - 1);
 
-  // Compute exclusive prefix sum over allocation requests
-  size_t allocation_offsets[ALLOCATIONS];
-  size_t bytes_needed = 0;
-  for (int i = 0; i < ALLOCATIONS; ++i)
-  {
-    size_t allocation_bytes = (allocation_sizes[i] + ALIGN_BYTES - 1) & ALIGN_MASK;
-    allocation_offsets[i]   = bytes_needed;
-    bytes_needed += allocation_bytes;
-  }
-  bytes_needed += ALIGN_BYTES - 1;
+    // Compute exclusive prefix sum over allocation requests
+    size_t allocation_offsets[ALLOCATIONS];
+    size_t bytes_needed = 0;
+    for (int i = 0; i < ALLOCATIONS; ++i)
+    {
+        size_t allocation_bytes = (allocation_sizes[i] + ALIGN_BYTES - 1) & ALIGN_MASK;
+        allocation_offsets[i] = bytes_needed;
+        bytes_needed += allocation_bytes;
+    }
+    bytes_needed += ALIGN_BYTES - 1;
 
-  // Check if the caller is simply requesting the size of the storage allocation
-  if (!d_temp_storage)
-  {
-    temp_storage_bytes = bytes_needed;
+    // Check if the caller is simply requesting the size of the storage allocation
+    if (!d_temp_storage)
+    {
+        temp_storage_bytes = bytes_needed;
+        return cudaSuccess;
+    }
+
+    // Check if enough storage provided
+    if (temp_storage_bytes < bytes_needed)
+    {
+        return CubDebug(cudaErrorInvalidValue);
+    }
+
+    // Alias
+    d_temp_storage = (void *) ((size_t(d_temp_storage) + ALIGN_BYTES - 1) & ALIGN_MASK);
+    for (int i = 0; i < ALLOCATIONS; ++i)
+    {
+        allocations[i] = static_cast<char*>(d_temp_storage) + allocation_offsets[i];
+    }
+
     return cudaSuccess;
-  }
-
-  // Check if enough storage provided
-  if (temp_storage_bytes < bytes_needed)
-  {
-    return CubDebug(cudaErrorInvalidValue);
-  }
-
-  // Alias
-  d_temp_storage = (void*) ((size_t(d_temp_storage) + ALIGN_BYTES - 1) & ALIGN_MASK);
-  for (int i = 0; i < ALLOCATIONS; ++i)
-  {
-    allocations[i] = static_cast<char*>(d_temp_storage) + allocation_offsets[i];
-  }
-
-  return cudaSuccess;
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif  // DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END

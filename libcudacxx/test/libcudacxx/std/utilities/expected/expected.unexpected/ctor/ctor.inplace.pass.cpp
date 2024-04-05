@@ -26,33 +26,28 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>,
-                                            cuda::std::in_place_t, int>,
-              "");
+static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, cuda::std::in_place_t, int>, "");
 
 // !is_constructible_v<E, Args...>
 struct Foo {};
-static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>,
-                                             cuda::std::in_place_t, int>,
-              "");
+static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, cuda::std::in_place_t, int>, "");
 
 // test explicit
 template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>(
-                                 {cuda::std::forward<Args>(args)...}))));
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  ImplicitlyConstructible_,
+  requires(Args&&... args)(
+    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
+  ));
 
 template <class T, class... Args>
-constexpr bool ImplicitlyConstructible =
-    _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
 
 static_assert(ImplicitlyConstructible<int, int>, "");
-static_assert(!ImplicitlyConstructible<cuda::std::unexpected<int>,
-                                       cuda::std::in_place_t, int>,
-              "");
+static_assert(!ImplicitlyConstructible<cuda::std::unexpected<int>, cuda::std::in_place_t, int>, "");
 
 struct Arg {
   int i;
@@ -64,11 +59,8 @@ struct Arg {
 struct Error {
   Arg arg;
   __host__ __device__ constexpr explicit Error(const Arg& a) : arg(a) {}
-  __host__ __device__ constexpr explicit Error(Arg&& a)
-      : arg(cuda::std::move(a)) {}
-  __host__ __device__ Error(cuda::std::initializer_list<Error>) : arg(0) {
-    assert(false);
-  }
+  __host__ __device__ constexpr explicit Error(Arg&& a) : arg(cuda::std::move(a)) {}
+  __host__ __device__ Error(cuda::std::initializer_list<Error>) :arg(0){ assert(false); }
 };
 
 __host__ __device__ constexpr bool test() {
@@ -97,7 +89,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+__host__ __device__
+void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   struct Except {};
 

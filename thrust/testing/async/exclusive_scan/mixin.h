@@ -4,10 +4,11 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  include <thrust/async/scan.h>
-#  include <thrust/scan.h>
+#include <thrust/async/scan.h>
 
-#  include <async/mixin.h>
+#include <thrust/scan.h>
+
+#include <async/mixin.h>
 
 namespace testing
 {
@@ -26,16 +27,18 @@ namespace postfix_args
 template <typename value_type, typename alternate_binary_op = thrust::maximum<>>
 struct all_overloads
 {
-  using postfix_args_type = std::tuple< // List any extra arg overloads:
-    std::tuple<>, // - no extra args
-    std::tuple<value_type>, // - initial_value
+  using postfix_args_type = std::tuple<         // List any extra arg overloads:
+    std::tuple<>,                               // - no extra args
+    std::tuple<value_type>,                     // - initial_value
     std::tuple<value_type, alternate_binary_op> // - initial_value, binary_op
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{
-      std::tuple<>{}, std::make_tuple(value_type{42}), std::make_tuple(value_type{42}, alternate_binary_op{})};
+    return postfix_args_type{std::tuple<>{},
+                             std::make_tuple(value_type{42}),
+                             std::make_tuple(value_type{42},
+                                             alternate_binary_op{})};
   }
 };
 
@@ -45,26 +48,30 @@ struct all_overloads
 namespace invoke_reference
 {
 
-template <typename input_value_type, typename output_value_type = input_value_type>
+template <typename input_value_type,
+          typename output_value_type = input_value_type>
 struct host_synchronous
 {
-  template <typename InputType, typename OutputType, typename PostfixArgTuple, std::size_t... PostfixArgIndices>
-  static void invoke_reference(
-    InputType const& input,
-    OutputType& output,
-    PostfixArgTuple&& postfix_tuple,
-    std::index_sequence<PostfixArgIndices...>)
+  template <typename InputType,
+            typename OutputType,
+            typename PostfixArgTuple,
+            std::size_t... PostfixArgIndices>
+  static void invoke_reference(InputType const& input,
+                               OutputType& output,
+                               PostfixArgTuple&& postfix_tuple,
+                               std::index_sequence<PostfixArgIndices...>)
   {
     // Create host versions of the input/output:
-    thrust::host_vector<input_value_type> host_input(input.cbegin(), input.cend());
+    thrust::host_vector<input_value_type> host_input(input.cbegin(),
+                                                     input.cend());
     thrust::host_vector<output_value_type> host_output(host_input.size());
 
     // Run host synchronous algorithm to generate reference.
-    thrust::exclusive_scan(
-      host_input.cbegin(),
-      host_input.cend(),
-      host_output.begin(),
-      std::get<PostfixArgIndices>(THRUST_FWD(postfix_tuple))...);
+    thrust::exclusive_scan(host_input.cbegin(),
+                           host_input.cend(),
+                           host_output.begin(),
+                           std::get<PostfixArgIndices>(
+                             THRUST_FWD(postfix_tuple))...);
 
     // Copy back to device.
     output = host_output;
@@ -85,13 +92,12 @@ struct simple
             typename OutputType,
             typename PostfixArgTuple,
             std::size_t... PostfixArgIndices>
-  static auto invoke_async(
-    PrefixArgTuple&& prefix_tuple,
-    std::index_sequence<PrefixArgIndices...>,
-    InputType const& input,
-    OutputType& output,
-    PostfixArgTuple&& postfix_tuple,
-    std::index_sequence<PostfixArgIndices...>)
+  static auto invoke_async(PrefixArgTuple&& prefix_tuple,
+                           std::index_sequence<PrefixArgIndices...>,
+                           InputType const& input,
+                           OutputType& output,
+                           PostfixArgTuple&& postfix_tuple,
+                           std::index_sequence<PostfixArgIndices...>)
   {
     auto e = thrust::async::exclusive_scan(
       std::get<PrefixArgIndices>(THRUST_FWD(prefix_tuple))...,

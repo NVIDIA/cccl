@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file linear_congruential_engine.h
  *  \brief A linear congruential pseudorandom number engine.
  */
@@ -29,11 +30,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/cstdint.h>
-#include <thrust/random/detail/linear_congruential_engine_discard.h>
-#include <thrust/random/detail/random_core_access.h>
-
 #include <iostream>
+#include <thrust/detail/cstdint.h>
+#include <thrust/random/detail/random_core_access.h>
+#include <thrust/random/detail/linear_congruential_engine_discard.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -116,136 +116,152 @@ namespace random
  *  \see thrust::random::minstd_rand
  *  \see thrust::random::minstd_rand0
  */
-template <typename UIntType, UIntType a, UIntType c, UIntType m>
-class linear_congruential_engine
+template<typename UIntType, UIntType a, UIntType c, UIntType m>
+  class linear_congruential_engine
 {
-public:
-  // types
+  public:
+    // types
 
-  /*! \typedef result_type
-   *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
-   */
-  typedef UIntType result_type;
+    /*! \typedef result_type
+     *  \brief The type of the unsigned integer produced by this \p linear_congruential_engine.
+     */
+    typedef UIntType result_type;
 
-  // engine characteristics
+    // engine characteristics
 
-  /*! The multiplier used in the generation algorithm.
-   */
-  static const result_type multiplier = a;
+    /*! The multiplier used in the generation algorithm.
+     */
+    static const result_type multiplier = a;
 
-  /*! The increment used in the generation algorithm.
-   */
-  static const result_type increment = c;
+    /*! The increment used in the generation algorithm.
+     */
+    static const result_type increment = c;
 
-  /*! The modulus used in the generation algorithm.
-   */
-  static const result_type modulus = m;
+    /*! The modulus used in the generation algorithm.
+     */
+    static const result_type modulus = m;
 
-  /*! The smallest value this \p linear_congruential_engine may potentially produce.
-   */
-  static const result_type min = c == 0u ? 1u : 0u;
+    /*! The smallest value this \p linear_congruential_engine may potentially produce.
+     */
+    static const result_type min = c == 0u ? 1u : 0u;
 
-  /*! The largest value this \p linear_congruential_engine may potentially produce.
-   */
-  static const result_type max = m - 1u;
+    /*! The largest value this \p linear_congruential_engine may potentially produce.
+     */
+    static const result_type max = m - 1u;
 
-  /*! The default seed of this \p linear_congruential_engine.
-   */
-  static const result_type default_seed = 1u;
+    /*! The default seed of this \p linear_congruential_engine.
+     */
+    static const result_type default_seed = 1u;
 
-  // constructors and seeding functions
+    // constructors and seeding functions
 
-  /*! This constructor, which optionally accepts a seed, initializes a new
-   *  \p linear_congruential_engine.
-   *
-   *  \param s The seed used to intialize this \p linear_congruential_engine's state.
-   */
-  _CCCL_HOST_DEVICE explicit linear_congruential_engine(result_type s = default_seed);
+    /*! This constructor, which optionally accepts a seed, initializes a new
+     *  \p linear_congruential_engine.
+     *
+     *  \param s The seed used to intialize this \p linear_congruential_engine's state.
+     */
+    _CCCL_HOST_DEVICE
+    explicit linear_congruential_engine(result_type s = default_seed);
 
-  /*! This method initializes this \p linear_congruential_engine's state, and optionally accepts
-   *  a seed value.
-   *
-   *  \param s The seed used to initializes this \p linear_congruential_engine's state.
-   */
-  _CCCL_HOST_DEVICE void seed(result_type s = default_seed);
+    /*! This method initializes this \p linear_congruential_engine's state, and optionally accepts
+     *  a seed value.
+     *
+     *  \param s The seed used to initializes this \p linear_congruential_engine's state.
+     */
+    _CCCL_HOST_DEVICE
+    void seed(result_type s = default_seed);
 
-  // generating functions
+    // generating functions
 
-  /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
-   *  \return A new random number.
-   */
-  _CCCL_HOST_DEVICE result_type operator()(void);
+    /*! This member function produces a new random value and updates this \p linear_congruential_engine's state.
+     *  \return A new random number.
+     */
+    _CCCL_HOST_DEVICE
+    result_type operator()(void);
 
-  /*! This member function advances this \p linear_congruential_engine's state a given number of times
-   *  and discards the results.
-   *
-   *  \param z The number of random values to discard.
-   *  \note This function is provided because an implementation may be able to accelerate it.
-   */
-  _CCCL_HOST_DEVICE void discard(unsigned long long z);
+    /*! This member function advances this \p linear_congruential_engine's state a given number of times
+     *  and discards the results.
+     *
+     *  \param z The number of random values to discard.
+     *  \note This function is provided because an implementation may be able to accelerate it.
+     */
+    _CCCL_HOST_DEVICE
+    void discard(unsigned long long z);
 
-  /*! \cond
-   */
+    /*! \cond
+     */
+  private:
+    result_type m_x;
 
-private:
-  result_type m_x;
+    static void transition(result_type &state);
 
-  static void transition(result_type& state);
+    friend struct thrust::random::detail::random_core_access;
 
-  friend struct thrust::random::detail::random_core_access;
+    friend struct thrust::random::detail::linear_congruential_engine_discard;
 
-  friend struct thrust::random::detail::linear_congruential_engine_discard;
+    _CCCL_HOST_DEVICE
+    bool equal(const linear_congruential_engine &rhs) const;
 
-  _CCCL_HOST_DEVICE bool equal(const linear_congruential_engine& rhs) const;
+    template<typename CharT, typename Traits>
+    std::basic_ostream<CharT,Traits>& stream_out(std::basic_ostream<CharT,Traits> &os) const;
 
-  template <typename CharT, typename Traits>
-  std::basic_ostream<CharT, Traits>& stream_out(std::basic_ostream<CharT, Traits>& os) const;
+    template<typename CharT, typename Traits>
+    std::basic_istream<CharT,Traits>& stream_in(std::basic_istream<CharT,Traits> &is);
 
-  template <typename CharT, typename Traits>
-  std::basic_istream<CharT, Traits>& stream_in(std::basic_istream<CharT, Traits>& is);
-
-  /*! \endcond
-   */
+    /*! \endcond
+     */
 }; // end linear_congruential_engine
+
 
 /*! This function checks two \p linear_congruential_engines for equality.
  *  \param lhs The first \p linear_congruential_engine to test.
  *  \param rhs The second \p linear_congruential_engine to test.
  *  \return \c true if \p lhs is equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-_CCCL_HOST_DEVICE bool operator==(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
-                                  const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+template<typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
+_CCCL_HOST_DEVICE
+bool operator==(const linear_congruential_engine<UIntType_,a_,c_,m_> &lhs,
+                const linear_congruential_engine<UIntType_,a_,c_,m_> &rhs);
+
 
 /*! This function checks two \p linear_congruential_engines for inequality.
  *  \param lhs The first \p linear_congruential_engine to test.
  *  \param rhs The second \p linear_congruential_engine to test.
  *  \return \c true if \p lhs is not equal to \p rhs; \c false, otherwise.
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
-_CCCL_HOST_DEVICE bool operator!=(const linear_congruential_engine<UIntType_, a_, c_, m_>& lhs,
-                                  const linear_congruential_engine<UIntType_, a_, c_, m_>& rhs);
+template<typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_>
+_CCCL_HOST_DEVICE
+bool operator!=(const linear_congruential_engine<UIntType_,a_,c_,m_> &lhs,
+                const linear_congruential_engine<UIntType_,a_,c_,m_> &rhs);
+
 
 /*! This function streams a linear_congruential_engine to a \p std::basic_ostream.
  *  \param os The \p basic_ostream to stream out to.
  *  \param e The \p linear_congruential_engine to stream out.
  *  \return \p os
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
-std::basic_ostream<CharT, Traits>&
-operator<<(std::basic_ostream<CharT, Traits>& os, const linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+template<typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_,
+         typename CharT, typename Traits>
+std::basic_ostream<CharT,Traits>&
+operator<<(std::basic_ostream<CharT,Traits> &os,
+           const linear_congruential_engine<UIntType_,a_,c_,m_> &e);
+
 
 /*! This function streams a linear_congruential_engine in from a std::basic_istream.
  *  \param is The \p basic_istream to stream from.
  *  \param e The \p linear_congruential_engine to stream in.
  *  \return \p is
  */
-template <typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_, typename CharT, typename Traits>
-std::basic_istream<CharT, Traits>&
-operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIntType_, a_, c_, m_>& e);
+template<typename UIntType_, UIntType_ a_, UIntType_ c_, UIntType_ m_,
+         typename CharT, typename Traits>
+std::basic_istream<CharT,Traits>&
+operator>>(std::basic_istream<CharT,Traits> &is,
+           linear_congruential_engine<UIntType_,a_,c_,m_> &e);
+
 
 /*! \} // random_number_engine_templates
  */
+
 
 /*! \addtogroup predefined_random
  *  \{
@@ -261,6 +277,7 @@ operator>>(std::basic_istream<CharT, Traits>& is, linear_congruential_engine<UIn
  */
 typedef linear_congruential_engine<thrust::detail::uint32_t, 16807, 0, 2147483647> minstd_rand0;
 
+
 /*! \typedef minstd_rand
  *  \brief A random number engine with predefined parameters which implements a version of
  *         the Minimal Standard random number generation algorithm.
@@ -272,7 +289,7 @@ typedef linear_congruential_engine<thrust::detail::uint32_t, 48271, 0, 214748364
 /*! \} // predefined_random
  */
 
-} // namespace random
+} // end random
 
 // import names into thrust::
 using random::linear_congruential_engine;
@@ -282,3 +299,4 @@ using random::minstd_rand0;
 THRUST_NAMESPACE_END
 
 #include <thrust/random/detail/linear_congruential_engine.inl>
+

@@ -31,8 +31,10 @@
 // Test Constraints:
 template <class E>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-    HasMemberSwap_, requires(cuda::std::expected<void, E> x,
-                             cuda::std::expected<void, E> y)((x.swap(y))));
+  HasMemberSwap_,
+  requires(cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)(
+    (x.swap(y))
+  ));
 template <class E>
 _LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, E);
 
@@ -46,8 +48,7 @@ static_assert(!HasMemberSwap<NotSwappable>, "");
 
 struct NotMoveContructible {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&,
-                                       NotMoveContructible&) {}
+  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<E>
@@ -59,13 +60,11 @@ struct MoveMayThrow {
   __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
 
-template <class E, bool = HasMemberSwap<E> >
+template <class E, bool = HasMemberSwap<E>>
 constexpr bool MemberSwapNoexcept = false;
 
 template <class E>
-constexpr bool MemberSwapNoexcept<E, true> =
-    noexcept(cuda::std::declval<cuda::std::expected<void, E>&>().swap(
-        cuda::std::declval<cuda::std::expected<void, E>&>()));
+constexpr bool MemberSwapNoexcept<E, true> = noexcept(cuda::std::declval<cuda::std::expected<void, E>&>().swap(cuda::std::declval<cuda::std::expected<void, E>&>()));
 
 static_assert(MemberSwapNoexcept<int>, "");
 
@@ -74,8 +73,7 @@ static_assert(MemberSwapNoexcept<int>, "");
 static_assert(!MemberSwapNoexcept<MoveMayThrow>, "");
 
 struct SwapMayThrow {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&)
-      noexcept(false) {}
+  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 
 // !is_nothrow_swappable_v<E>

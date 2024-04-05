@@ -36,10 +36,10 @@
 // includes, so we fake it out by specifying all possible files we might end up
 // including inside an #if 0.
 #if 0
-#  include <thrust/system/cpp/detail/sequence.h>
-#  include <thrust/system/cuda/detail/sequence.h>
-#  include <thrust/system/omp/detail/sequence.h>
-#  include <thrust/system/tbb/detail/sequence.h>
+#include <thrust/system/cpp/detail/sequence.h>
+#include <thrust/system/cuda/detail/sequence.h>
+#include <thrust/system/omp/detail/sequence.h>
+#include <thrust/system/tbb/detail/sequence.h>
 #endif
 
 #define __THRUST_HOST_SYSTEM_SEQUENCE_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/sequence.h>
@@ -49,3 +49,4 @@
 #define __THRUST_DEVICE_SYSTEM_SEQUENCE_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/sequence.h>
 #include __THRUST_DEVICE_SYSTEM_SEQUENCE_HEADER
 #undef __THRUST_DEVICE_SYSTEM_SEQUENCE_HEADER
+

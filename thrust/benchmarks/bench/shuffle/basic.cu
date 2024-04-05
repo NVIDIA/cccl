@@ -33,7 +33,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void basic(nvbench::state &state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -43,11 +43,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements);
 
-  auto do_engine = [&](auto&& engine_constructor) {
+  auto do_engine = [&](auto &&engine_constructor) {
     caching_allocator_t alloc;
     thrust::shuffle(policy(alloc), data.begin(), data.end(), engine_constructor());
 
-    state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch & launch) {
       thrust::shuffle(policy(alloc, launch), data.begin(), data.end(), engine_constructor());
     });
   };
@@ -55,40 +55,31 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   const auto rng_engine = state.get_string("Engine");
   if (rng_engine == "minstd")
   {
-    do_engine([] {
-      return thrust::random::minstd_rand{};
-    });
+    do_engine([] { return thrust::random::minstd_rand{}; });
   }
   else if (rng_engine == "ranlux24")
   {
-    do_engine([] {
-      return thrust::random::ranlux24{};
-    });
+    do_engine([] { return thrust::random::ranlux24{}; });
   }
   else if (rng_engine == "ranlux48")
   {
-    do_engine([] {
-      return thrust::random::ranlux48{};
-    });
+    do_engine([] { return thrust::random::ranlux48{}; });
   }
   else if (rng_engine == "taus88")
   {
-    do_engine([] {
-      return thrust::random::taus88{};
-    });
+    do_engine([] { return thrust::random::taus88{}; });
   }
 }
 
-using types =
-  nvbench::type_list<int8_t,
-                     int16_t,
-                     int32_t,
-                     int64_t
+using types = nvbench::type_list<int8_t,
+                                 int16_t,
+                                 int32_t,
+                                 int64_t
 #if NVBENCH_HELPER_HAS_I128
-                     ,
-                     int128_t
+                                 ,
+                                 int128_t
 #endif
-                     >;
+                                 >;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")

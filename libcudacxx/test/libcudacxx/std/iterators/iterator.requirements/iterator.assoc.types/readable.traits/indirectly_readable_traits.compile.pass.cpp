@@ -23,32 +23,29 @@ concept has_no_value_type = !requires {
 };
 
 template <class T, class Expected>
-concept value_type_matches = cuda::std::same_as<
-    typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>;
+concept value_type_matches =
+  cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>;
 
 #else
 template <class T>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-    has_no_value_type_,
-    requires() //
-    (typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
+  has_no_value_type_,
+  requires() //
+  (typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
 
 template <class T>
-_LIBCUDACXX_CONCEPT has_no_value_type =
-    !_LIBCUDACXX_FRAGMENT(has_no_value_type_, T);
+_LIBCUDACXX_CONCEPT has_no_value_type = !_LIBCUDACXX_FRAGMENT(has_no_value_type_, T);
 
 template <class T, class Expected>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-    value_type_matches_,
-    requires()(
-        typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
-        requires(cuda::std::same_as<
-                 typename cuda::std::indirectly_readable_traits<T>::value_type,
-                 Expected>)));
+  value_type_matches_,
+  requires()(
+    typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
+    requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>)
+  ));
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT value_type_matches =
-    _LIBCUDACXX_FRAGMENT(value_type_matches_, T, Expected);
+_LIBCUDACXX_CONCEPT value_type_matches = _LIBCUDACXX_FRAGMENT(value_type_matches_, T, Expected);
 #endif
 
 template <class T>
@@ -97,17 +94,17 @@ static_assert(check_array<int>());
 static_assert(check_array<int*>());
 static_assert(check_array<int[10]>());
 
-template <class T>
+template<class T>
 struct ValueOf {
   using value_type = T;
 };
 
-template <class U>
+template<class U>
 struct ElementOf {
   using element_type = U;
 };
 
-template <class T, class U>
+template<class T, class U>
 struct TwoTypes {
   using value_type = T;
   using element_type = U;
@@ -116,18 +113,18 @@ struct TwoTypes {
 static_assert(check_member<ValueOf<int>, int>());
 static_assert(check_member<ValueOf<int[10]>, int[10]>());
 static_assert(check_member<ValueOf<int[]>, int[]>());
-static_assert(has_no_value_type<ValueOf<void> >);
-static_assert(has_no_value_type<ValueOf<int()> >);
-static_assert(has_no_value_type<ValueOf<int&> >);
-static_assert(has_no_value_type<ValueOf<int&&> >);
+static_assert(has_no_value_type<ValueOf<void>>);
+static_assert(has_no_value_type<ValueOf<int()>>);
+static_assert(has_no_value_type<ValueOf<int&>>);
+static_assert(has_no_value_type<ValueOf<int&&>>);
 
 static_assert(check_member<ElementOf<int>, int>());
 static_assert(check_member<ElementOf<int[10]>, int[10]>());
 static_assert(check_member<ElementOf<int[]>, int[]>());
-static_assert(has_no_value_type<ElementOf<void> >);
-static_assert(has_no_value_type<ElementOf<int()> >);
-static_assert(has_no_value_type<ElementOf<int&> >);
-static_assert(has_no_value_type<ElementOf<int&&> >);
+static_assert(has_no_value_type<ElementOf<void>>);
+static_assert(has_no_value_type<ElementOf<int()>>);
+static_assert(has_no_value_type<ElementOf<int&>>);
+static_assert(has_no_value_type<ElementOf<int&&>>);
 
 static_assert(check_member<TwoTypes<int, int>, int>());
 static_assert(check_member<TwoTypes<int, int const>, int>());
@@ -144,11 +141,10 @@ static_assert(check_member<TwoTypes<int volatile, int const volatile>, int>());
 static_assert(check_member<TwoTypes<int const volatile, int>, int>());
 static_assert(check_member<TwoTypes<int const volatile, int const>, int>());
 static_assert(check_member<TwoTypes<int const volatile, int volatile>, int>());
-static_assert(
-    check_member<TwoTypes<int const volatile, int const volatile>, int>());
-static_assert(has_no_value_type<TwoTypes<int, long> >);
-static_assert(has_no_value_type<TwoTypes<int, int&> >);
-static_assert(has_no_value_type<TwoTypes<int&, int> >);
+static_assert(check_member<TwoTypes<int const volatile, int const volatile>, int>());
+static_assert(has_no_value_type<TwoTypes<int, long>>);
+static_assert(has_no_value_type<TwoTypes<int, int&>>);
+static_assert(has_no_value_type<TwoTypes<int&, int>>);
 
 struct S2 {};
 template <>
@@ -166,4 +162,7 @@ static_assert(has_no_value_type<void>);
 static_assert(has_no_value_type<int>);
 static_assert(has_no_value_type<cuda::std::nullptr_t>);
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

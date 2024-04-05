@@ -18,6 +18,7 @@
 //   The destructor of pair shall be a trivial destructor
 //     if (is_trivially_destructible_v<T1> && is_trivially_destructible_v<T2>) is true.
 
+
 #include <cuda/std/utility>
 #include <cuda/std/type_traits>
 // cuda::std::string not supported
@@ -27,17 +28,16 @@
 #include "test_macros.h"
 #include "DefaultOnly.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   static_assert((cuda::std::is_trivially_destructible<
-                    cuda::std::pair<int, float> >::value),
-                "");
+      cuda::std::pair<int, float> >::value), "");
   /*
   static_assert((!cuda::std::is_trivially_destructible<
       cuda::std::pair<int, cuda::std::string> >::value), "");
   */
   static_assert((!cuda::std::is_trivially_destructible<
-                    cuda::std::pair<int, DefaultOnly> >::value),
-                "");
+      cuda::std::pair<int, DefaultOnly> >::value), "");
 
   return 0;
 }

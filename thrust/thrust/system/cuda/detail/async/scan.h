@@ -38,5 +38,6 @@
 #endif // no system header
 
 #include <thrust/detail/cpp14_required.h>
+
 #include <thrust/system/cuda/detail/async/exclusive_scan.h>
 #include <thrust/system/cuda/detail/async/inclusive_scan.h>

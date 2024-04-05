@@ -28,8 +28,8 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include "catch2_test_helper.h"
 #include "fill_striped.cuh"
+#include "catch2_test_helper.h"
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
@@ -69,8 +69,13 @@ template <cub::WarpStoreAlgorithm StoreAlgorithm,
           typename ActionT>
 void warp_store(OutputIteratorT output_iterator, ActionT action)
 {
-  warp_store_kernel<StoreAlgorithm, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, T, OutputIteratorT, ActionT>
-    <<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(output_iterator, action);
+  warp_store_kernel<StoreAlgorithm,
+                    LOGICAL_WARP_THREADS,
+                    ITEMS_PER_THREAD,
+                    TOTAL_WARPS,
+                    T,
+                    OutputIteratorT,
+                    ActionT><<<1, TOTAL_WARPS * LOGICAL_WARP_THREADS>>>(output_iterator, action);
 }
 
 struct guarded_store_t
@@ -81,9 +86,10 @@ struct guarded_store_t
             int ITEMS_PER_THREAD,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
-                             OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+  __device__ void
+  operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+             OutputIteratorT output,
+             T (&reg)[ITEMS_PER_THREAD])
   {
     store.Store(output, reg, valid_items);
   }
@@ -96,9 +102,10 @@ struct unguarded_store_t
             int ITEMS_PER_THREAD,
             typename T,
             typename OutputIteratorT>
-  __device__ void operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
-                             OutputIteratorT output,
-                             T (&reg)[ITEMS_PER_THREAD])
+  __device__ void
+  operator()(cub::WarpStore<T, ITEMS_PER_THREAD, StoreAlgorithm, LOGICAL_WARP_THREADS> store,
+             OutputIteratorT output,
+             T (&reg)[ITEMS_PER_THREAD])
   {
     store.Store(output, reg);
   }
@@ -115,10 +122,11 @@ c2h::device_vector<T> compute_reference(int valid_items)
   constexpr int total_item_count = TOTAL_WARPS * tile_size;
   c2h::device_vector<T> d_input(total_item_count);
 
-  _CCCL_IF_CONSTEXPR (StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
+  _CCCL_IF_CONSTEXPR(StoreAlgorithm == cub::WarpStoreAlgorithm::WARP_STORE_STRIPED)
   {
     c2h::host_vector<T> input(total_item_count);
-    fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(input.begin());
+    fill_striped<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ITEMS_PER_THREAD * TOTAL_WARPS>(
+      input.begin());
     d_input = input;
   }
   else
@@ -141,25 +149,24 @@ c2h::device_vector<T> compute_reference(int valid_items)
 // %PARAM% LWT lwt 4:16:32
 // %PARAM% ALGO_TYPE alg 0:1:2:3
 
-using types                = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
-using items_per_thread     = c2h::enum_type_list<int, 1, 4, 7>;
+using types            = c2h::type_list<std::uint8_t, std::uint16_t, std::int32_t, std::int64_t>;
+using items_per_thread = c2h::enum_type_list<int, 1, 4, 7>;
 using logical_warp_threads = c2h::enum_type_list<int, LWT>;
-using algorithms =
-  c2h::enum_type_list<cub::WarpStoreAlgorithm,
-                      cub::WarpStoreAlgorithm::WARP_STORE_DIRECT,
-                      cub::WarpStoreAlgorithm::WARP_STORE_STRIPED,
-                      cub::WarpStoreAlgorithm::WARP_STORE_TRANSPOSE,
-                      cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE>;
-using algorithm = c2h::enum_type_list<cub::WarpStoreAlgorithm, c2h::get<ALGO_TYPE, algorithms>::value>;
+using algorithms           = c2h::enum_type_list<cub::WarpStoreAlgorithm,
+                                       cub::WarpStoreAlgorithm::WARP_STORE_DIRECT,
+                                       cub::WarpStoreAlgorithm::WARP_STORE_STRIPED,
+                                       cub::WarpStoreAlgorithm::WARP_STORE_TRANSPOSE,
+                                       cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE>;
+using algorithm =
+  c2h::enum_type_list<cub::WarpStoreAlgorithm, c2h::get<ALGO_TYPE, algorithms>::value>;
 
-using cache_store_modifier =
-  c2h::enum_type_list<cub::CacheStoreModifier,
-                      cub::CacheStoreModifier::STORE_DEFAULT,
-                      cub::CacheStoreModifier::STORE_WB,
-                      cub::CacheStoreModifier::STORE_CG,
-                      cub::CacheStoreModifier::STORE_CS,
-                      cub::CacheStoreModifier::STORE_WT,
-                      cub::CacheStoreModifier::STORE_VOLATILE>;
+using cache_store_modifier = c2h::enum_type_list<cub::CacheStoreModifier,
+                                                 cub::CacheStoreModifier::STORE_DEFAULT,
+                                                 cub::CacheStoreModifier::STORE_WB,
+                                                 cub::CacheStoreModifier::STORE_CG,
+                                                 cub::CacheStoreModifier::STORE_CS,
+                                                 cub::CacheStoreModifier::STORE_WT,
+                                                 cub::CacheStoreModifier::STORE_VOLATILE>;
 
 constexpr int guarded_store_tests_count = 30;
 
@@ -173,10 +180,7 @@ private:
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:
-  static constexpr int value()
-  {
-    return total_warps;
-  }
+  static constexpr int value() { return total_warps; }
 };
 
 template <class TestType>
@@ -203,13 +207,19 @@ CUB_TEST("Warp store guarded range works with pointer",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
-  auto out              = thrust::raw_pointer_cast(d_out.data());
-  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-    out, guarded_store_t{valid_items});
-  auto d_expected_output =
-    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-      valid_items);
+  const int valid_items =
+    GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
+  auto out = thrust::raw_pointer_cast(d_out.data());
+  warp_store<params::algorithm,
+             params::logical_warp_threads,
+             params::items_per_thread,
+             params::total_warps,
+             type>(out, guarded_store_t{valid_items});
+  auto d_expected_output = compute_reference<params::algorithm,
+                                             params::logical_warp_threads,
+                                             params::items_per_thread,
+                                             params::total_warps,
+                                             type>(valid_items);
   REQUIRE(d_expected_output == d_out);
 }
 
@@ -226,13 +236,20 @@ CUB_TEST("Warp store guarded range works with cache modified iterator",
   constexpr cub::CacheStoreModifier store_modifier = c2h::get<4, TestType>::value;
 
   c2h::device_vector<type> d_out(params::total_item_count, type{});
-  const int valid_items = GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
-  auto out = cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
-  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-    out, guarded_store_t{valid_items});
-  auto d_expected_output =
-    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-      valid_items);
+  const int valid_items =
+    GENERATE_COPY(take(guarded_store_tests_count, random(0, params::tile_size - 1)));
+  auto out =
+    cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
+  warp_store<params::algorithm,
+             params::logical_warp_threads,
+             params::items_per_thread,
+             params::total_warps,
+             type>(out, guarded_store_t{valid_items});
+  auto d_expected_output = compute_reference<params::algorithm,
+                                             params::logical_warp_threads,
+                                             params::items_per_thread,
+                                             params::total_warps,
+                                             type>(valid_items);
   REQUIRE(d_expected_output == d_out);
 }
 
@@ -248,12 +265,17 @@ CUB_TEST("Warp store unguarded range works with pointer",
 
   c2h::device_vector<type> d_out(params::total_item_count, type{});
   constexpr int valid_items = params::tile_size;
-  auto out                  = thrust::raw_pointer_cast(d_out.data());
-  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-    out, unguarded_store_t{});
-  auto d_expected_output =
-    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-      valid_items);
+  auto out              = thrust::raw_pointer_cast(d_out.data());
+  warp_store<params::algorithm,
+             params::logical_warp_threads,
+             params::items_per_thread,
+             params::total_warps,
+             type>(out, unguarded_store_t{});
+  auto d_expected_output = compute_reference<params::algorithm,
+                                             params::logical_warp_threads,
+                                             params::items_per_thread,
+                                             params::total_warps,
+                                             type>(valid_items);
   REQUIRE(d_expected_output == d_out);
 }
 
@@ -271,11 +293,17 @@ CUB_TEST("Warp store unguarded range works with cache modified iterator",
 
   c2h::device_vector<type> d_out(params::total_item_count, type{});
   constexpr int valid_items = params::tile_size;
-  auto out = cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
-  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-    out, unguarded_store_t{});
-  auto d_expected_output =
-    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-      valid_items);
+  auto out =
+    cub::CacheModifiedOutputIterator<store_modifier, type>(thrust::raw_pointer_cast(d_out.data()));
+  warp_store<params::algorithm,
+             params::logical_warp_threads,
+             params::items_per_thread,
+             params::total_warps,
+             type>(out, unguarded_store_t{});
+  auto d_expected_output = compute_reference<params::algorithm,
+                                             params::logical_warp_threads,
+                                             params::items_per_thread,
+                                             params::total_warps,
+                                             type>(valid_items);
   REQUIRE(d_expected_output == d_out);
 }

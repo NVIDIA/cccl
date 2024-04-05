@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -35,16 +36,18 @@ namespace detail
 namespace generic
 {
 
+
 template <typename DerivedPolicy, typename InputIterator, typename EqualityComparable>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
-count(thrust::execution_policy<DerivedPolicy>& exec,
-      InputIterator first,
-      InputIterator last,
-      const EqualityComparable& value);
+_CCCL_HOST_DEVICE
+typename thrust::iterator_traits<InputIterator>::difference_type
+count(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, const EqualityComparable& value);
+
 
 template <typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
-count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred);
+_CCCL_HOST_DEVICE
+typename thrust::iterator_traits<InputIterator>::difference_type
+count_if(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred);
+
 
 } // end namespace generic
 } // end namespace detail
@@ -52,3 +55,4 @@ count_if(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Inp
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/count.inl>
+

@@ -198,7 +198,7 @@ struct AgentReduceByKey
 
     /// Boolean inequality operator, returns <tt>(a != b)</tt>
     template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int idx) const
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(const T &a, const T &b, int idx) const
     {
       if (idx < num_remaining)
       {
@@ -218,34 +218,35 @@ struct AgentReduceByKey
 
   // Whether or not the scan operation has a zero-valued identity value (true
   // if we're performing addition on a primitive type)
-  static constexpr int HAS_IDENTITY_ZERO = (std::is_same<ReductionOpT, cub::Sum>::value) && (Traits<AccumT>::PRIMITIVE);
+  static constexpr int HAS_IDENTITY_ZERO = (std::is_same<ReductionOpT, cub::Sum>::value) &&
+                                           (Traits<AccumT>::PRIMITIVE);
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for keys Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
-  using WrappedKeysInputIteratorT =
-    cub::detail::conditional_t< std::is_pointer<KeysInputIteratorT>::value,
-                                CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
-                                KeysInputIteratorT>;
+  using WrappedKeysInputIteratorT = cub::detail::conditional_t<
+    std::is_pointer<KeysInputIteratorT>::value,
+    CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, KeyInputT, OffsetT>,
+    KeysInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
-  using WrappedValuesInputIteratorT =
-    cub::detail::conditional_t< std::is_pointer<ValuesInputIteratorT>::value,
-                                CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                                ValuesInputIteratorT>;
+  using WrappedValuesInputIteratorT = cub::detail::conditional_t<
+    std::is_pointer<ValuesInputIteratorT>::value,
+    CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+    ValuesInputIteratorT>;
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier)
   // for fixup values Wrap the native input pointer with
   // CacheModifiedValuesInputIterator or directly use the supplied input
   // iterator type
-  using WrappedFixupInputIteratorT =
-    cub::detail::conditional_t< std::is_pointer<AggregatesOutputIteratorT>::value,
-                                CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
-                                AggregatesOutputIteratorT>;
+  using WrappedFixupInputIteratorT = cub::detail::conditional_t<
+    std::is_pointer<AggregatesOutputIteratorT>::value,
+    CacheModifiedInputIterator<AgentReduceByKeyPolicyT::LOAD_MODIFIER, ValueInputT, OffsetT>,
+    AggregatesOutputIteratorT>;
 
   // Reduce-value-by-segment scan operator
   using ReduceBySegmentOpT = ReduceBySegmentOp<ReductionOpT>;
@@ -255,13 +256,15 @@ struct AgentReduceByKey
     BlockLoad<KeyOutputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for values
-  using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValuesT =
+    BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentReduceByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for keys
   using BlockDiscontinuityKeys = BlockDiscontinuity<KeyOutputT, BLOCK_THREADS>;
 
   // Parameterized BlockScan type
-  using BlockScanT = BlockScan<OffsetValuePairT, BLOCK_THREADS, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
+  using BlockScanT =
+    BlockScan<OffsetValuePairT, BLOCK_THREADS, AgentReduceByKeyPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
   using DelayConstructorT = typename AgentReduceByKeyPolicyT::detail::delay_constructor_t;
@@ -307,7 +310,7 @@ struct AgentReduceByKey
   //---------------------------------------------------------------------
 
   /// Reference to temp_storage
-  _TempStorage& temp_storage;
+  _TempStorage &temp_storage;
 
   /// Input keys
   WrappedKeysInputIteratorT d_keys_in;
@@ -362,15 +365,14 @@ struct AgentReduceByKey
    * @param reduction_op
    *   ValueT reduction operator
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
-    TempStorage& temp_storage,
-    KeysInputIteratorT d_keys_in,
-    UniqueOutputIteratorT d_unique_out,
-    ValuesInputIteratorT d_values_in,
-    AggregatesOutputIteratorT d_aggregates_out,
-    NumRunsOutputIteratorT d_num_runs_out,
-    EqualityOpT equality_op,
-    ReductionOpT reduction_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(TempStorage &temp_storage,
+                                              KeysInputIteratorT d_keys_in,
+                                              UniqueOutputIteratorT d_unique_out,
+                                              ValuesInputIteratorT d_values_in,
+                                              AggregatesOutputIteratorT d_aggregates_out,
+                                              NumRunsOutputIteratorT d_num_runs_out,
+                                              EqualityOpT equality_op,
+                                              ReductionOpT reduction_op)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
@@ -389,10 +391,9 @@ struct AgentReduceByKey
   /**
    * Directly scatter flagged items to output offsets
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(
-    KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
-    OffsetT (&segment_flags)[ITEMS_PER_THREAD],
-    OffsetT (&segment_indices)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterDirect(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+                                                OffsetT (&segment_flags)[ITEMS_PER_THREAD],
+                                                OffsetT (&segment_indices)[ITEMS_PER_THREAD])
   {
 // Scatter flagged keys and values
 #pragma unroll
@@ -413,12 +414,11 @@ struct AgentReduceByKey
    * value aggregate: the scatter offsets must be decremented for value
    * aggregates
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(
-    KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
-    OffsetT (&segment_flags)[ITEMS_PER_THREAD],
-    OffsetT (&segment_indices)[ITEMS_PER_THREAD],
-    OffsetT num_tile_segments,
-    OffsetT num_tile_segments_prefix)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterTwoPhase(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+                                                  OffsetT (&segment_flags)[ITEMS_PER_THREAD],
+                                                  OffsetT (&segment_indices)[ITEMS_PER_THREAD],
+                                                  OffsetT num_tile_segments,
+                                                  OffsetT num_tile_segments_prefix)
   {
     CTA_SYNC();
 
@@ -428,7 +428,8 @@ struct AgentReduceByKey
     {
       if (segment_flags[ITEM])
       {
-        temp_storage.raw_exchange.Alias()[segment_indices[ITEM] - num_tile_segments_prefix] = scatter_items[ITEM];
+        temp_storage.raw_exchange.Alias()[segment_indices[ITEM] - num_tile_segments_prefix] =
+          scatter_items[ITEM];
       }
     }
 
@@ -445,18 +446,21 @@ struct AgentReduceByKey
   /**
    * Scatter flagged items
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
-    KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
-    OffsetT (&segment_flags)[ITEMS_PER_THREAD],
-    OffsetT (&segment_indices)[ITEMS_PER_THREAD],
-    OffsetT num_tile_segments,
-    OffsetT num_tile_segments_prefix)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(KeyValuePairT (&scatter_items)[ITEMS_PER_THREAD],
+                                          OffsetT (&segment_flags)[ITEMS_PER_THREAD],
+                                          OffsetT (&segment_indices)[ITEMS_PER_THREAD],
+                                          OffsetT num_tile_segments,
+                                          OffsetT num_tile_segments_prefix)
   {
     // Do a one-phase scatter if (a) two-phase is disabled or (b) the average
     // number of selected items per thread is less than one
     if (TWO_PHASE_SCATTER && (num_tile_segments > BLOCK_THREADS))
     {
-      ScatterTwoPhase(scatter_items, segment_flags, segment_indices, num_tile_segments, num_tile_segments_prefix);
+      ScatterTwoPhase(scatter_items,
+                      segment_flags,
+                      segment_indices,
+                      num_tile_segments,
+                      num_tile_segments_prefix);
     }
     else
     {
@@ -488,7 +492,7 @@ struct AgentReduceByKey
    */
   template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
+  ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
   {
     // Tile keys
     KeyOutputT keys[ITEMS_PER_THREAD];
@@ -538,7 +542,8 @@ struct AgentReduceByKey
     // Load values
     if (IS_LAST_TILE)
     {
-      BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + tile_offset, values, num_remaining);
+      BlockLoadValuesT(temp_storage.load_values)
+        .Load(d_values_in + tile_offset, values, num_remaining);
     }
     else
     {
@@ -591,7 +596,8 @@ struct AgentReduceByKey
     if (tile_idx == 0)
     {
       // Scan first tile
-      BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
+      BlockScanT(temp_storage.scan_storage.scan)
+        .ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
       num_segments_prefix = 0;
       total_aggregate     = block_aggregate;
 
@@ -604,8 +610,12 @@ struct AgentReduceByKey
     else
     {
       // Scan non-first tile
-      TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
-      BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
+      TilePrefixCallbackOpT prefix_op(tile_state,
+                                      temp_storage.scan_storage.prefix,
+                                      scan_op,
+                                      tile_idx);
+      BlockScanT(temp_storage.scan_storage.scan)
+        .ExclusiveScan(scan_items, scan_items, scan_op, prefix_op);
 
       block_aggregate     = prefix_op.GetBlockAggregate();
       num_segments_prefix = prefix_op.GetExclusivePrefix().key;
@@ -661,7 +671,9 @@ struct AgentReduceByKey
    * @param start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
+                                               ScanTileStateT &tile_state,
+                                               int start_tile)
   {
     // Blocks are launched in increasing order, so just assign one tile per
     // block

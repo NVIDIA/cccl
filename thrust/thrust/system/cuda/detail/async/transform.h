@@ -42,27 +42,24 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#    include <cub/device/device_for.cuh>
+#include <thrust/system/cuda/config.h>
 
-#    include <thrust/advance.h>
-#    include <thrust/distance.h>
-#    include <thrust/iterator/iterator_traits.h>
-#    include <thrust/system/cuda/config.h>
-#    include <thrust/system/cuda/detail/async/customization.h>
-#    include <thrust/system/cuda/detail/parallel_for.h>
-#    include <thrust/system/cuda/future.h>
+#include <thrust/system/cuda/detail/async/customization.h>
+#include <thrust/system/cuda/detail/parallel_for.h>
+#include <thrust/system/cuda/future.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/distance.h>
+#include <thrust/advance.h>
 
-#    include <type_traits>
+#include <cub/device/device_for.cuh>
+
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace system
-{
-namespace cuda
-{
-namespace detail
+namespace system { namespace cuda { namespace detail
 {
 
 template <typename ForwardIt, typename OutputIt, typename UnaryOperation>
@@ -72,23 +69,30 @@ struct async_transform_fn
   OutputIt output_;
   UnaryOperation op_;
 
-  _CCCL_HOST_DEVICE async_transform_fn(ForwardIt&& first, OutputIt&& output, UnaryOperation&& op)
-      : first_(std::move(first))
-      , output_(std::move(output))
-      , op_(std::move(op))
+  _CCCL_HOST_DEVICE
+  async_transform_fn(ForwardIt&& first, OutputIt&& output, UnaryOperation&& op)
+    : first_(std::move(first)), output_(std::move(output)), op_(std::move(op))
   {}
 
   template <typename Index>
-  _CCCL_HOST_DEVICE void operator()(Index idx)
+  _CCCL_HOST_DEVICE
+  void operator()(Index idx)
   {
     output_[idx] = op_(thrust::raw_reference_cast(first_[idx]));
   }
 };
 
-template < typename DerivedPolicy, typename ForwardIt, typename Size, typename OutputIt, typename UnaryOperation >
-unique_eager_event
-async_transform_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt output, UnaryOperation op)
-{
+template <
+  typename DerivedPolicy
+, typename ForwardIt, typename Size, typename OutputIt, typename UnaryOperation
+>
+unique_eager_event async_transform_n(
+  execution_policy<DerivedPolicy>& policy,
+  ForwardIt                        first,
+  Size                             n,
+  OutputIt                         output,
+  UnaryOperation                   op
+) {
   unique_eager_event e;
 
   // Set up stream with dependencies.
@@ -97,42 +101,71 @@ async_transform_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size
 
   if (thrust::cuda_cub::default_stream() != user_raw_stream)
   {
-    e = make_dependent_event(std::tuple_cat(std::make_tuple(unique_stream(nonowning, user_raw_stream)),
-                                            extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
+    e = make_dependent_event(
+      std::tuple_cat(
+        std::make_tuple(
+          unique_stream(nonowning, user_raw_stream)
+        )
+      , extract_dependencies(
+          std::move(thrust::detail::derived_cast(policy))
+        )
+      )
+    );
   }
   else
   {
-    e = make_dependent_event(extract_dependencies(std::move(thrust::detail::derived_cast(policy))));
+    e = make_dependent_event(
+      extract_dependencies(
+        std::move(thrust::detail::derived_cast(policy))
+      )
+    );
   }
 
   // Run transform.
 
-  async_transform_fn<ForwardIt, OutputIt, UnaryOperation> wrapped(std::move(first), std::move(output), std::move(op));
+  async_transform_fn<ForwardIt, OutputIt, UnaryOperation> wrapped(
+    std::move(first), std::move(output), std::move(op)
+  );
 
   thrust::cuda_cub::throw_on_error(
-    cub::DeviceFor::Bulk(n, std::move(wrapped), e.stream().native_handle()), "after transform launch");
+    cub::DeviceFor::Bulk(
+      n, std::move(wrapped), e.stream().native_handle()
+    )
+  , "after transform launch"
+  );
 
   return e;
 }
 
-} // namespace detail
-} // namespace cuda
-} // namespace system
+}}} // namespace system::cuda::detail
 
 namespace cuda_cub
 {
 
 // ADL entry point.
-template < typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation >
+template <
+  typename DerivedPolicy
+, typename ForwardIt, typename Sentinel, typename OutputIt
+, typename UnaryOperation
+>
 auto async_transform(
-  execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, OutputIt output, UnaryOperation&& op)
-  THRUST_RETURNS(
-    thrust::system::cuda::detail::async_transform_n(policy, first, distance(first, last), output, THRUST_FWD(op)));
+  execution_policy<DerivedPolicy>& policy,
+  ForwardIt                        first,
+  Sentinel                         last,
+  OutputIt                         output,
+  UnaryOperation&&                 op
+)
+THRUST_RETURNS(
+  thrust::system::cuda::detail::async_transform_n(
+    policy, first, distance(first, last), output, THRUST_FWD(op)
+  )
+);
 
-} // namespace cuda_cub
+} // cuda_cub
 
 THRUST_NAMESPACE_END
 
-#  endif // THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#endif // THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #endif
+

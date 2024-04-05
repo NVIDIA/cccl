@@ -28,3 +28,4 @@
 
 // this system inherits remove
 #include <thrust/system/detail/sequential/remove.h>
+

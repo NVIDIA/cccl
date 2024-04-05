@@ -84,165 +84,170 @@ template <typename T,
           int LEGACY_PTX_ARCH = 0>
 struct BlockHistogramSort
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-  };
-
-  // Parameterize BlockRadixSort type for our thread block
-  typedef BlockRadixSort<
-    T,
-    BLOCK_DIM_X,
-    ITEMS_PER_THREAD,
-    NullType,
-    4,
-    true,
-    BLOCK_SCAN_WARP_SCANS,
-    cudaSharedMemBankSizeFourByte,
-    BLOCK_DIM_Y,
-    BLOCK_DIM_Z>
-    BlockRadixSortT;
-
-  // Parameterize BlockDiscontinuity type for our thread block
-  typedef BlockDiscontinuity< T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockDiscontinuityT;
-
-  /// Shared memory
-  union _TempStorage
-  {
-    // Storage for sorting bin values
-    typename BlockRadixSortT::TempStorage sort;
-
-    struct Discontinuities
-    {
-      // Storage for detecting discontinuities in the tile of sorted bin values
-      typename BlockDiscontinuityT::TempStorage flag;
-
-      // Storage for noting begin/end offsets of bin runs in the tile of sorted bin values
-      unsigned int run_begin[BINS];
-      unsigned int run_end[BINS];
-    } discontinuities;
-  };
-
-  /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  // Thread fields
-  _TempStorage& temp_storage;
-  unsigned int linear_tid;
-
-  /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-  {}
-
-  // Discontinuity functor
-  struct DiscontinuityOp
-  {
-    // Reference to temp_storage
-    _TempStorage& temp_storage;
-
-    // Constructor
-    _CCCL_DEVICE _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage& temp_storage)
-        : temp_storage(temp_storage)
-    {}
-
-    // Discontinuity predicate
-    _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const T& a, const T& b, int b_index)
-    {
-      if (a != b)
-      {
-        // Note the begin/end offsets in shared storage
-        temp_storage.discontinuities.run_begin[b] = b_index;
-        temp_storage.discontinuities.run_end[a]   = b_index;
-
-        return true;
-      }
-      else
-      {
-        return false;
-      }
-    }
-  };
-
-  /**
-   * @brief Composite data onto an existing histogram
-   *
-   * @param[in] items
-   *   Calling thread's input values to histogram
-   *
-   * @param[out] histogram
-   *   Reference to shared/device-accessible memory histogram
-   */
-  template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
-  {
+    /// Constants
     enum
     {
-      TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD
+        /// The thread block size in threads
+        BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
     };
 
-    // Sort bytes in blocked arrangement
-    BlockRadixSortT(temp_storage.sort).Sort(items);
+    // Parameterize BlockRadixSort type for our thread block
+    typedef BlockRadixSort<
+            T,
+            BLOCK_DIM_X,
+            ITEMS_PER_THREAD,
+            NullType,
+            4,
+            true,
+            BLOCK_SCAN_WARP_SCANS,
+            cudaSharedMemBankSizeFourByte,
+            BLOCK_DIM_Y,
+            BLOCK_DIM_Z>
+        BlockRadixSortT;
 
-    CTA_SYNC();
+    // Parameterize BlockDiscontinuity type for our thread block
+    typedef BlockDiscontinuity<
+            T,
+            BLOCK_DIM_X,
+            BLOCK_DIM_Y,
+            BLOCK_DIM_Z>
+        BlockDiscontinuityT;
 
-    // Initialize the shared memory's run_begin and run_end for each bin
-    int histo_offset = 0;
-
-#pragma unroll
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+    /// Shared memory
+    union _TempStorage
     {
-      temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
-      temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
-    }
-    // Finish up with guarded initialization if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+        // Storage for sorting bin values
+        typename BlockRadixSortT::TempStorage sort;
+
+        struct Discontinuities
+        {
+            // Storage for detecting discontinuities in the tile of sorted bin values
+            typename BlockDiscontinuityT::TempStorage flag;
+
+            // Storage for noting begin/end offsets of bin runs in the tile of sorted bin values
+            unsigned int run_begin[BINS];
+            unsigned int run_end[BINS];
+        } discontinuities;
+    };
+
+
+    /// Alias wrapper allowing storage to be unioned
+    struct TempStorage : Uninitialized<_TempStorage> {};
+
+
+    // Thread fields
+    _TempStorage &temp_storage;
+    unsigned int linear_tid;
+
+
+    /// Constructor
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogramSort(
+        TempStorage     &temp_storage)
+    :
+        temp_storage(temp_storage.Alias()),
+        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    {}
+
+
+    // Discontinuity functor
+    struct DiscontinuityOp
     {
-      temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
-      temp_storage.discontinuities.run_end[histo_offset + linear_tid]   = TILE_SIZE;
-    }
+        // Reference to temp_storage
+        _TempStorage &temp_storage;
 
-    CTA_SYNC();
+        // Constructor
+        _CCCL_DEVICE _CCCL_FORCEINLINE DiscontinuityOp(_TempStorage &temp_storage) :
+            temp_storage(temp_storage)
+        {}
 
-    int flags[ITEMS_PER_THREAD]; // unused
+        // Discontinuity predicate
+        _CCCL_DEVICE _CCCL_FORCEINLINE bool operator()(const T &a, const T &b, int b_index)
+        {
+            if (a != b)
+            {
+                // Note the begin/end offsets in shared storage
+                temp_storage.discontinuities.run_begin[b] = b_index;
+                temp_storage.discontinuities.run_end[a] = b_index;
 
-    // Compute head flags to demarcate contiguous runs of the same bin in the sorted tile
-    DiscontinuityOp flag_op(temp_storage);
-    BlockDiscontinuityT(temp_storage.discontinuities.flag).FlagHeads(flags, items, flag_op);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+    };
 
-    // Update begin for first item
-    if (linear_tid == 0)
+    /**
+     * @brief Composite data onto an existing histogram
+     *
+     * @param[in] items
+     *   Calling thread's input values to histogram
+     *
+     * @param[out] histogram
+     *   Reference to shared/device-accessible memory histogram
+     */
+    template <typename CounterT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
     {
-      temp_storage.discontinuities.run_begin[items[0]] = 0;
+        enum { TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD };
+
+        // Sort bytes in blocked arrangement
+        BlockRadixSortT(temp_storage.sort).Sort(items);
+
+        CTA_SYNC();
+
+        // Initialize the shared memory's run_begin and run_end for each bin
+        int histo_offset = 0;
+
+        #pragma unroll
+        for(; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+        {
+            temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
+            temp_storage.discontinuities.run_end[histo_offset + linear_tid] = TILE_SIZE;
+        }
+        // Finish up with guarded initialization if necessary
+        if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+        {
+            temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
+            temp_storage.discontinuities.run_end[histo_offset + linear_tid] = TILE_SIZE;
+        }
+
+        CTA_SYNC();
+
+        int flags[ITEMS_PER_THREAD];    // unused
+
+        // Compute head flags to demarcate contiguous runs of the same bin in the sorted tile
+        DiscontinuityOp flag_op(temp_storage);
+        BlockDiscontinuityT(temp_storage.discontinuities.flag).FlagHeads(flags, items, flag_op);
+
+        // Update begin for first item
+        if (linear_tid == 0) temp_storage.discontinuities.run_begin[items[0]] = 0;
+
+        CTA_SYNC();
+
+        // Composite into histogram
+        histo_offset = 0;
+
+        #pragma unroll
+        for(; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+        {
+            int thread_offset = histo_offset + linear_tid;
+            CounterT      count = temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
+            histogram[thread_offset] += count;
+        }
+
+        // Finish up with guarded composition if necessary
+        if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+        {
+            int thread_offset = histo_offset + linear_tid;
+            CounterT      count = temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
+            histogram[thread_offset] += count;
+        }
     }
 
-    CTA_SYNC();
-
-    // Composite into histogram
-    histo_offset = 0;
-
-#pragma unroll
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
-    {
-      int thread_offset = histo_offset + linear_tid;
-      CounterT count =
-        temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
-      histogram[thread_offset] += count;
-    }
-
-    // Finish up with guarded composition if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
-    {
-      int thread_offset = histo_offset + linear_tid;
-      CounterT count =
-        temp_storage.discontinuities.run_end[thread_offset] - temp_storage.discontinuities.run_begin[thread_offset];
-      histogram[thread_offset] += count;
-    }
-  }
 };
 
 CUB_NAMESPACE_END
+

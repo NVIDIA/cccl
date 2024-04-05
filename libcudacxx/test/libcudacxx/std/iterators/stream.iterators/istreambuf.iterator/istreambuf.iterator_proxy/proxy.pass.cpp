@@ -32,20 +32,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  {
-    cuda::std::istringstream inf("abc");
-    cuda::std::istreambuf_iterator<char> i(inf);
-    assert(*i++ == 'a');
-  }
-  {
-    cuda::std::wistringstream inf(L"abc");
-    cuda::std::istreambuf_iterator<wchar_t> i(inf);
-    assert(*i++ == L'a');
-  }
+int main(int, char**)
+{
+    {
+        cuda::std::istringstream inf("abc");
+        cuda::std::istreambuf_iterator<char> i(inf);
+        assert(*i++ == 'a');
+    }
+    {
+        cuda::std::wistringstream inf(L"abc");
+        cuda::std::istreambuf_iterator<wchar_t> i(inf);
+        assert(*i++ == L'a');
+    }
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

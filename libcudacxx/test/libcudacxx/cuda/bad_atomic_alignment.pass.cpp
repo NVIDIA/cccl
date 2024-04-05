@@ -21,44 +21,50 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <template <typename, typename> typename Selector>
+template <template<typename, typename> typename Selector>
 struct TestFn {
-  __host__ __device__ void operator()() const {
+  __host__ __device__
+  void operator()() const {
     {
-      struct key {
-        int32_t a;
-        int32_t b;
-      };
-      typedef cuda::std::atomic<key> A;
-      Selector<A, constructor_initializer> sel;
-      A& t = *sel.construct();
-      cuda::std::atomic_init(&t, key{1, 2});
-      auto r = t.load();
-      t.store(r);
-      (void)t.exchange(r);
+        struct key {
+          int32_t a;
+          int32_t b;
+        };
+        typedef cuda::std::atomic<key> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        cuda::std::atomic_init(&t, key{1,2});
+        auto r = t.load();
+        t.store(r);
+        (void)t.exchange(r);
     }
     {
-      struct alignas(8) key {
-        int32_t a;
-        int32_t b;
-      };
-      typedef cuda::std::atomic<key> A;
-      Selector<A, constructor_initializer> sel;
-      A& t = *sel.construct();
-      cuda::std::atomic_init(&t, key{1, 2});
-      auto r = t.load();
-      t.store(r);
-      (void)t.exchange(r);
+        struct alignas(8) key {
+          int32_t a;
+          int32_t b;
+        };
+        typedef cuda::std::atomic<key> A;
+        Selector<A, constructor_initializer> sel;
+        A & t = *sel.construct();
+        cuda::std::atomic_init(&t, key{1,2});
+        auto r = t.load();
+        t.store(r);
+        (void)t.exchange(r);
     }
   }
 };
 
-int main(int, char**) {
-  NV_DISPATCH_TARGET(NV_IS_HOST, TestFn<local_memory_selector>()();
-                     , NV_PROVIDES_SM_70, TestFn<local_memory_selector>()();)
+int main(int, char**)
+{
+  NV_DISPATCH_TARGET(
+  NV_IS_HOST, TestFn<local_memory_selector>()();,
+  NV_PROVIDES_SM_70, TestFn<local_memory_selector>()();
+  )
 
-  NV_IF_TARGET(NV_IS_DEVICE, (TestFn<shared_memory_selector>()();
-                              TestFn<global_memory_selector>()();))
+  NV_IF_TARGET(NV_IS_DEVICE,(
+    TestFn<shared_memory_selector>()();
+    TestFn<global_memory_selector>()();
+  ))
 
   return 0;
 }

@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___RANGES_VIEWS
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

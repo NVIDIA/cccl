@@ -53,14 +53,14 @@
  *
  * If defined, support for device-side usage of CUB is disabled.
  */
-#  define CUB_DISABLE_CDP
+#define CUB_DISABLE_CDP
 
 /**
  * \def CUB_RDC_ENABLED
  *
  * Defined if RDC is enabled and CUB_DISABLE_CDP is not defined.
  */
-#  define CUB_RDC_ENABLED
+#define CUB_RDC_ENABLED
 
 /**
  * \def CUB_RUNTIME_FUNCTION
@@ -68,7 +68,7 @@
  * Execution space for functions that can use the CUDA runtime API (`__host__`
  * when RDC is off, `__host__ __device__` when RDC is on).
  */
-#  define CUB_RUNTIME_FUNCTION
+#define CUB_RUNTIME_FUNCTION
 
 /**
  * \def CUB_RUNTIME_ENABLED
@@ -82,37 +82,37 @@
  *
  * Replace any usages with `CUB_RDC_ENABLED` and `NV_IF_TARGET`.
  */
-#  define CUB_RUNTIME_ENABLED
+#define CUB_RUNTIME_ENABLED
 
 #else // Non-doxygen pass:
 
-#  ifndef CUB_RUNTIME_FUNCTION
+#ifndef CUB_RUNTIME_FUNCTION
 
-#    if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
+#if defined(__CUDACC_RDC__) && !defined(CUB_DISABLE_CDP)
 
-#      define CUB_RDC_ENABLED
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
+#define CUB_RDC_ENABLED
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST_DEVICE
 
-#    else // RDC disabled:
+#else // RDC disabled:
 
-#      define CUB_RUNTIME_FUNCTION _CCCL_HOST
+#define CUB_RUNTIME_FUNCTION _CCCL_HOST
 
-#    endif // RDC enabled
+#endif // RDC enabled
 
-#    if !defined(__CUDA_ARCH__) || defined(__CUDACC_RDC__)
+#if !defined(__CUDA_ARCH__) || defined(__CUDACC_RDC__)
 // Legacy only -- do not use in new code.
-#      define CUB_RUNTIME_ENABLED
-#    endif
+#define CUB_RUNTIME_ENABLED
+#endif
 
-#  endif // CUB_RUNTIME_FUNCTION predefined
+#endif // CUB_RUNTIME_FUNCTION predefined
 
-#  ifdef CUB_RDC_ENABLED
+#ifdef CUB_RDC_ENABLED
 // Detect available version of CDP:
-#    if __CUDACC_VER_MAJOR__ < 12 || defined(CUDA_FORCE_CDP1_IF_SUPPORTED)
-#      define CUB_DETAIL_CDPv1
-#    else
-#      define CUB_DETAIL_CDPv2
-#    endif
-#  endif
+#if __CUDACC_VER_MAJOR__ < 12 || defined(CUDA_FORCE_CDP1_IF_SUPPORTED)
+#define CUB_DETAIL_CDPv1
+#else
+#define CUB_DETAIL_CDPv2
+#endif
+#endif
 
 #endif // Do not document

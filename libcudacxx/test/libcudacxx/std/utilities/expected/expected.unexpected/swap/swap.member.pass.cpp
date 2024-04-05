@@ -31,27 +31,22 @@ struct MayThrowSwap {
   __host__ __device__ friend void swap(MayThrowSwap&, MayThrowSwap&);
 };
 
-template <class T, class = void>
+template<class T, class = void>
 constexpr bool MemberSwapNoexcept = false;
 
-template <class T>
-constexpr bool MemberSwapNoexcept<
-    T, cuda::std::void_t<decltype(
-           cuda::std::declval<T&>().swap(cuda::std::declval<T&>()))> > =
-    noexcept(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()));
+template<class T>
+constexpr bool MemberSwapNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()))>> = noexcept(cuda::std::declval<T&>().swap(cuda::std::declval<T&>()));
 
-static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap> >, "");
+static_assert(MemberSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
 #ifndef TEST_COMPILER_ICC
-static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap> >, "");
+static_assert(!MemberSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
 #endif // TEST_COMPILER_ICC
 
 struct ADLSwap {
   __host__ __device__ constexpr ADLSwap(int ii) : i(ii) {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) {
-    cuda::std::swap(x.i, y.i);
-  }
+  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) { cuda::std::swap(x.i, y.i); }
 };
 
 __host__ __device__ constexpr bool test() {

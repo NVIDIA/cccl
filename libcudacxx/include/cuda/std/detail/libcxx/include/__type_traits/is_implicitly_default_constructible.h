@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_IMPLICITLY_DEFAULT_CONSTRUCTIBLE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -35,20 +35,19 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VISIBILITY void __test_implicit_default_constructible(_Tp);
 
 template <class _Tp, class = void, class = typename is_default_constructible<_Tp>::type>
-struct __is_implicitly_default_constructible : false_type
-{};
+struct __is_implicitly_default_constructible
+    : false_type
+{ };
 
 template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp,
-                                             decltype(__test_implicit_default_constructible<_Tp const&>({})),
-                                             true_type> : true_type
-{};
+struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_default_constructible<_Tp const&>({})), true_type>
+    : true_type
+{ };
 
 template <class _Tp>
-struct __is_implicitly_default_constructible<_Tp,
-                                             decltype(__test_implicit_default_constructible<_Tp const&>({})),
-                                             false_type> : false_type
-{};
+struct __is_implicitly_default_constructible<_Tp, decltype(__test_implicit_default_constructible<_Tp const&>({})), false_type>
+    : false_type
+{ };
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

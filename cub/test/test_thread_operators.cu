@@ -12,9 +12,9 @@
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
  * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
  * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
  * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
@@ -25,9 +25,9 @@
  *
  ******************************************************************************/
 
-#include <cub/thread/thread_operators.cuh>
-
 #include "test_util.h"
+
+#include <cub/thread/thread_operators.cuh>
 
 template <class T>
 T Make(int val)
@@ -58,43 +58,40 @@ public:
       : m_val{val}
   {}
 
-  __host__ __device__ operator int() const
-  {
-    return m_val;
-  }
+  __host__ __device__ operator int() const { return m_val; }
 };
 
-#define CUSTOM_TYPE_FACTORY(NAME, RT, OP, CONVERTABLE) \
-  class Custom##NAME##T : public BaseT<CONVERTABLE>    \
-  {                                                    \
-    explicit Custom##NAME##T(int val)                  \
-        : BaseT<CONVERTABLE>(val)                      \
-    {}                                                 \
-                                                       \
-    friend Custom##NAME##T Make<Custom##NAME##T>(int); \
-                                                       \
-  public:                                              \
-    __host__ __device__ RT operator OP(int val) const  \
-    {                                                  \
-      return m_val OP val;                             \
-    }                                                  \
+#define CUSTOM_TYPE_FACTORY(NAME, RT, OP, CONVERTABLE)                         \
+  class Custom##NAME##T : public BaseT<CONVERTABLE>                            \
+  {                                                                            \
+    explicit Custom##NAME##T(int val)                                          \
+        : BaseT<CONVERTABLE>(val)                                              \
+    {}                                                                         \
+                                                                               \
+    friend Custom##NAME##T Make<Custom##NAME##T>(int);                         \
+                                                                               \
+  public:                                                                      \
+    __host__ __device__ RT operator OP(int val) const                          \
+    {                                                                          \
+      return m_val OP val;                                                     \
+    }                                                                          \
   }
 
 //                  NAME  RT    OP  CONVERTABLE
-CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
+CUSTOM_TYPE_FACTORY(Eq,   bool, ==, false);
 CUSTOM_TYPE_FACTORY(Ineq, bool, !=, false);
-CUSTOM_TYPE_FACTORY(Sum, int, +, false);
-CUSTOM_TYPE_FACTORY(Diff, int, -, false);
-CUSTOM_TYPE_FACTORY(Div, int, /, false);
-CUSTOM_TYPE_FACTORY(Gt, bool, >, true);
-CUSTOM_TYPE_FACTORY(Lt, bool, <, true);
+CUSTOM_TYPE_FACTORY(Sum,  int,  +,  false);
+CUSTOM_TYPE_FACTORY(Diff, int,  -,  false);
+CUSTOM_TYPE_FACTORY(Div,  int,  /,  false);
+CUSTOM_TYPE_FACTORY(Gt,   bool, >,  true);
+CUSTOM_TYPE_FACTORY(Lt,   bool, <,  true);
 
 void TestEquality()
 {
-  cub::Equality op{};
+  cub::Equality op{}; 
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), true);
   AssertEquals(op(const_magic_val, magic_val), true);
@@ -106,10 +103,10 @@ void TestEquality()
 
 void TestInequality()
 {
-  cub::Inequality op{};
+  cub::Inequality op{}; 
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), false);
   AssertEquals(op(const_magic_val, magic_val), false);
@@ -121,11 +118,11 @@ void TestInequality()
 
 void TestInequalityWrapper()
 {
-  cub::Equality wrapped_op{};
+  cub::Equality wrapped_op{}; 
   cub::InequalityWrapper<cub::Equality> op{wrapped_op};
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, const_magic_val), false);
   AssertEquals(op(const_magic_val, magic_val), false);
@@ -135,14 +132,14 @@ void TestInequalityWrapper()
   AssertEquals(op(Make<CustomEqT>(magic_val), magic_val + 1), true);
 }
 
-#define CUSTOM_SYNC_T(NAME, RT, OP)               \
-  struct Custom##NAME##Sink                       \
-  {                                               \
-    template <class T>                            \
-    __host__ __device__ RT operator OP(T&&) const \
-    {                                             \
-      return RT{};                                \
-    }                                             \
+#define CUSTOM_SYNC_T(NAME, RT, OP)                                            \
+  struct Custom ## NAME ## Sink                                                \
+  {                                                                            \
+    template <class T>                                                         \
+    __host__ __device__ RT operator OP (T &&) const                            \
+    {                                                                          \
+      return RT{};                                                             \
+    }                                                                          \
   }
 
 CUSTOM_SYNC_T(SumInt, int, +);
@@ -165,7 +162,7 @@ void TestSum()
   cub::Sum op{};
 
   constexpr int const_magic_val = 40;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
   AssertEquals(op(magic_val, 2), 42);
@@ -182,7 +179,7 @@ void TestDifference()
   cub::Difference op{};
 
   constexpr int const_magic_val = 44;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
   AssertEquals(op(magic_val, 2), 42);
@@ -200,7 +197,7 @@ void TestDivision()
   cub::Division op{};
 
   constexpr int const_magic_val = 44;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 22);
   AssertEquals(op(magic_val, 2), 22);
@@ -218,7 +215,7 @@ void TestMax()
   cub::Max op{};
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 42);
   AssertEquals(op(magic_val, 2), 42);
@@ -235,7 +232,7 @@ void TestMin()
   cub::Min op{};
 
   constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
+  int magic_val = const_magic_val;
 
   AssertEquals(op(const_magic_val, 2), 2);
   AssertEquals(op(magic_val, 2), 2);

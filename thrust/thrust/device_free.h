@@ -70,3 +70,4 @@ inline void device_free(thrust::device_ptr<void> ptr);
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/device_free.inl>
+

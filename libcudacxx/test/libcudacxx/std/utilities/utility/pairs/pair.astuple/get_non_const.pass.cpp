@@ -24,34 +24,34 @@
 
 #if TEST_STD_VER > 2011
 struct S {
-  cuda::std::pair<int, int> a;
-  int k;
-  __device__ __host__ constexpr S() : a{1, 2}, k(cuda::std::get<0>(a)) {}
-};
+   cuda::std::pair<int, int> a;
+   int k;
+   __device__ __host__ constexpr S() : a{1,2}, k(cuda::std::get<0>(a)) {}
+   };
 
-__device__ __host__ constexpr cuda::std::pair<int, int> getP() {
-  return {3, 4};
-}
+__device__ __host__ constexpr cuda::std::pair<int, int> getP () { return { 3, 4 }; }
 #endif
 
-int main(int, char**) {
-  {
-    typedef cuda::std::pair<int, short> P;
-    P p(3, static_cast<short>(4));
-    assert(cuda::std::get<0>(p) == 3);
-    assert(cuda::std::get<1>(p) == 4);
-    cuda::std::get<0>(p) = 5;
-    cuda::std::get<1>(p) = 6;
-    assert(cuda::std::get<0>(p) == 5);
-    assert(cuda::std::get<1>(p) == 6);
-  }
+int main(int, char**)
+{
+    {
+        typedef cuda::std::pair<int, short> P;
+        P p(3, static_cast<short>(4));
+        assert(cuda::std::get<0>(p) == 3);
+        assert(cuda::std::get<1>(p) == 4);
+        cuda::std::get<0>(p) = 5;
+        cuda::std::get<1>(p) = 6;
+        assert(cuda::std::get<0>(p) == 5);
+        assert(cuda::std::get<1>(p) == 6);
+    }
 
 #if TEST_STD_VER > 2011
-  {
-    static_assert(S().k == 1, "");
-    static_assert(cuda::std::get<1>(getP()) == 4, "");
-  }
+    {
+        static_assert(S().k == 1, "");
+        static_assert(cuda::std::get<1>(getP()) == 4, "");
+    }
 #endif
+
 
   return 0;
 }

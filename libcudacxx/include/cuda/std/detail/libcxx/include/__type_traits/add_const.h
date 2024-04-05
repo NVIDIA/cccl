@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_ADD_CONST_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,15 +24,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS add_const
-{
+template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_const {
   typedef _LIBCUDACXX_NODEBUG_TYPE const _Tp type;
 };
 
 #if _CCCL_STD_VER > 2011
-template <class _Tp>
-using add_const_t = typename add_const<_Tp>::type;
+template <class _Tp> using add_const_t = typename add_const<_Tp>::type;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

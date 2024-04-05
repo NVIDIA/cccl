@@ -23,6 +23,8 @@
 //   holding a value in the range [0, 6] even if !x.ok(). —end note]
 //   [Example: Monday + days{6} == Sunday. —end example]
 
+
+
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -31,41 +33,40 @@
 #include "../../euclidian.h"
 
 template <typename M, typename Ms>
-__host__ __device__ constexpr bool testConstexpr() {
-  M m{1};
-  Ms offset{4};
-  if (m + offset != M{5})
-    return false;
-  if (offset + m != M{5})
-    return false;
-  //  Check the example
-  if (M{1} + Ms{6} != M{0})
-    return false;
-  return true;
+__host__ __device__
+constexpr bool testConstexpr()
+{
+    M m{1};
+    Ms offset{4};
+    if (m + offset != M{5}) return false;
+    if (offset + m != M{5}) return false;
+//  Check the example
+    if (M{1} + Ms{6} != M{0}) return false;
+    return true;
 }
 
-int main(int, char**) {
-  using weekday = cuda::std::chrono::weekday;
-  using days = cuda::std::chrono::days;
+int main(int, char**)
+{
+    using weekday = cuda::std::chrono::weekday;
+    using days    = cuda::std::chrono::days;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<weekday>() + cuda::std::declval<days>());
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() +
-                                     cuda::std::declval<days>()));
+    ASSERT_NOEXCEPT(                   cuda::std::declval<weekday>() + cuda::std::declval<days>());
+    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() + cuda::std::declval<days>()));
 
-  ASSERT_NOEXCEPT(cuda::std::declval<days>() + cuda::std::declval<weekday>());
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<days>() +
-                                     cuda::std::declval<weekday>()));
+    ASSERT_NOEXCEPT(                   cuda::std::declval<days>() + cuda::std::declval<weekday>());
+    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<days>() + cuda::std::declval<weekday>()));
 
-  static_assert(testConstexpr<weekday, days>(), "");
+    static_assert(testConstexpr<weekday, days>(), "");
 
-  for (unsigned i = 0; i <= 6; ++i)
-    for (unsigned j = 0; j <= 6; ++j) {
-      weekday wd1 = weekday{i} + days{j};
-      weekday wd2 = days{j} + weekday{i};
-      assert(wd1 == wd2);
-      assert((wd1.c_encoding() == euclidian_addition<unsigned, 0, 6>(i, j)));
-      assert((wd2.c_encoding() == euclidian_addition<unsigned, 0, 6>(i, j)));
-    }
+    for (unsigned i = 0; i <= 6; ++i)
+        for (unsigned j = 0; j <= 6; ++j)
+        {
+            weekday wd1 = weekday{i} + days{j};
+            weekday wd2 = days{j} + weekday{i};
+            assert(wd1 == wd2);
+            assert((wd1.c_encoding() == euclidian_addition<unsigned, 0, 6>(i, j)));
+            assert((wd2.c_encoding() == euclidian_addition<unsigned, 0, 6>(i, j)));
+        }
 
   return 0;
 }

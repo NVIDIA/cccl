@@ -18,31 +18,31 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using cuda::std::optional;
-  {
-    const optional<int> opt;
-    ((void)opt);
-    ASSERT_NOEXCEPT(opt.has_value());
-    ASSERT_SAME_TYPE(decltype(opt.has_value()), bool);
-  }
-  {
-    optional<int> opt;
-    assert(!opt.has_value());
-  }
-  {
-    optional<int> opt(0);
-    assert(opt.has_value());
-  }
+int main(int, char**)
+{
+    using cuda::std::optional;
+    {
+        const optional<int> opt; ((void)opt);
+        ASSERT_NOEXCEPT(opt.has_value());
+        ASSERT_SAME_TYPE(decltype(opt.has_value()), bool);
+    }
+    {
+        optional<int> opt;
+        assert(!opt.has_value());
+    }
+    {
+        optional<int> opt(0);
+        assert(opt.has_value());
+    }
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  {
-    constexpr optional<int> opt;
-    static_assert(!opt.has_value(), "");
-  }
-  {
-    constexpr optional<int> opt(0);
-    static_assert(opt.has_value(), "");
-  }
+    {
+        constexpr optional<int> opt;
+        static_assert(!opt.has_value(), "");
+    }
+    {
+        constexpr optional<int> opt(0);
+        static_assert(opt.has_value(), "");
+    }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;

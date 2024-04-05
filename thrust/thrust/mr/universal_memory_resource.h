@@ -27,3 +27,4 @@
 #endif // no system header
 
 #include <thrust/mr/device_memory_resource.h>
+

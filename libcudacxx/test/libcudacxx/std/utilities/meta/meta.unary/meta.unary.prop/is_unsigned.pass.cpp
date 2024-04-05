@@ -14,58 +14,65 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_unsigned() {
-  static_assert(cuda::std::is_unsigned<T>::value, "");
-  static_assert(cuda::std::is_unsigned<const T>::value, "");
-  static_assert(cuda::std::is_unsigned<volatile T>::value, "");
-  static_assert(cuda::std::is_unsigned<const volatile T>::value, "");
+__host__ __device__
+void test_is_unsigned()
+{
+    static_assert( cuda::std::is_unsigned<T>::value, "");
+    static_assert( cuda::std::is_unsigned<const T>::value, "");
+    static_assert( cuda::std::is_unsigned<volatile T>::value, "");
+    static_assert( cuda::std::is_unsigned<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(cuda::std::is_unsigned_v<T>, "");
-  static_assert(cuda::std::is_unsigned_v<const T>, "");
-  static_assert(cuda::std::is_unsigned_v<volatile T>, "");
-  static_assert(cuda::std::is_unsigned_v<const volatile T>, "");
+    static_assert( cuda::std::is_unsigned_v<T>, "");
+    static_assert( cuda::std::is_unsigned_v<const T>, "");
+    static_assert( cuda::std::is_unsigned_v<volatile T>, "");
+    static_assert( cuda::std::is_unsigned_v<const volatile T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__ void test_is_not_unsigned() {
-  static_assert(!cuda::std::is_unsigned<T>::value, "");
-  static_assert(!cuda::std::is_unsigned<const T>::value, "");
-  static_assert(!cuda::std::is_unsigned<volatile T>::value, "");
-  static_assert(!cuda::std::is_unsigned<const volatile T>::value, "");
+__host__ __device__
+void test_is_not_unsigned()
+{
+    static_assert(!cuda::std::is_unsigned<T>::value, "");
+    static_assert(!cuda::std::is_unsigned<const T>::value, "");
+    static_assert(!cuda::std::is_unsigned<volatile T>::value, "");
+    static_assert(!cuda::std::is_unsigned<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(!cuda::std::is_unsigned_v<T>, "");
-  static_assert(!cuda::std::is_unsigned_v<const T>, "");
-  static_assert(!cuda::std::is_unsigned_v<volatile T>, "");
-  static_assert(!cuda::std::is_unsigned_v<const volatile T>, "");
+    static_assert(!cuda::std::is_unsigned_v<T>, "");
+    static_assert(!cuda::std::is_unsigned_v<const T>, "");
+    static_assert(!cuda::std::is_unsigned_v<volatile T>, "");
+    static_assert(!cuda::std::is_unsigned_v<const volatile T>, "");
 #endif
 }
 
-class Class {
+class Class
+{
 public:
-  __host__ __device__ ~Class();
+    __host__ __device__
+    ~Class();
 };
 
 struct A; // incomplete
 
-int main(int, char**) {
-  test_is_not_unsigned<void>();
-  test_is_not_unsigned<int&>();
-  test_is_not_unsigned<Class>();
-  test_is_not_unsigned<int*>();
-  test_is_not_unsigned<const int*>();
-  test_is_not_unsigned<char[3]>();
-  test_is_not_unsigned<char[]>();
-  test_is_not_unsigned<int>();
-  test_is_not_unsigned<double>();
-  test_is_not_unsigned<A>();
+int main(int, char**)
+{
+    test_is_not_unsigned<void>();
+    test_is_not_unsigned<int&>();
+    test_is_not_unsigned<Class>();
+    test_is_not_unsigned<int*>();
+    test_is_not_unsigned<const int*>();
+    test_is_not_unsigned<char[3]>();
+    test_is_not_unsigned<char[]>();
+    test_is_not_unsigned<int>();
+    test_is_not_unsigned<double>();
+    test_is_not_unsigned<A>();
 
-  test_is_unsigned<bool>();
-  test_is_unsigned<unsigned>();
+    test_is_unsigned<bool>();
+    test_is_unsigned<unsigned>();
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-  test_is_unsigned<__uint128_t>();
-  test_is_not_unsigned<__int128_t>();
+    test_is_unsigned<__uint128_t>();
+    test_is_not_unsigned<__int128_t>();
 #endif
 
   return 0;

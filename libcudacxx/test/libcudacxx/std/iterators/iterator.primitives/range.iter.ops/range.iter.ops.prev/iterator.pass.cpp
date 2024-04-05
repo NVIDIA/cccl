@@ -29,14 +29,15 @@ __host__ __device__ constexpr bool test() {
   int range[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   for (int n = 1; n != 10; ++n) {
-    check<bidirectional_iterator<int*> >(range + n, range + n - 1);
-    check<random_access_iterator<int*> >(range + n, range + n - 1);
-    check<contiguous_iterator<int*> >(range + n, range + n - 1);
-    check<int*>(range + n, range + n - 1);
+    check<bidirectional_iterator<int*>>(range+n, range+n-1);
+    check<random_access_iterator<int*>>(range+n, range+n-1);
+    check<contiguous_iterator<int*>>(   range+n, range+n-1);
+    check<int*>(                        range+n, range+n-1);
   }
 
   return true;
 }
+
 
 int main(int, char**) {
   test();

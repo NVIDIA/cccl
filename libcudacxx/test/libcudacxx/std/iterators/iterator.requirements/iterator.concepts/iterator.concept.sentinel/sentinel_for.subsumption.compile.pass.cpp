@@ -29,7 +29,9 @@ __host__ __device__ constexpr bool check_subsumption() {
 }
 // clang-format on
 
-static_assert(check_subsumption<cuda::std::array<int, 4>::iterator,
-                                cuda::std::array<int, 4>::iterator>());
+static_assert(check_subsumption<cuda::std::array<int, 4>::iterator, cuda::std::array<int, 4>::iterator>());
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

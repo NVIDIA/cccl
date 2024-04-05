@@ -97,25 +97,23 @@ constexpr primitive_val is_primitive_val()
 template <class KeyT>
 constexpr key_size classify_key_size()
 {
-  return sizeof(KeyT) == 1 ? key_size::_1
-       : sizeof(KeyT) == 2 ? key_size::_2
-       : sizeof(KeyT) == 4 ? key_size::_4
-       : sizeof(KeyT) == 8 ? key_size::_8
-       : sizeof(KeyT) == 16
-         ? key_size::_16
-         : key_size::unknown;
+  return sizeof(KeyT) == 1    ? key_size::_1
+         : sizeof(KeyT) == 2  ? key_size::_2
+         : sizeof(KeyT) == 4  ? key_size::_4
+         : sizeof(KeyT) == 8  ? key_size::_8
+         : sizeof(KeyT) == 16 ? key_size::_16
+                              : key_size::unknown;
 }
 
 template <class ValueT>
 constexpr val_size classify_val_size()
 {
-  return sizeof(ValueT) == 1 ? val_size::_1
-       : sizeof(ValueT) == 2 ? val_size::_2
-       : sizeof(ValueT) == 4 ? val_size::_4
-       : sizeof(ValueT) == 8 ? val_size::_8
-       : sizeof(ValueT) == 16
-         ? val_size::_16
-         : val_size::unknown;
+  return sizeof(ValueT) == 1    ? val_size::_1
+         : sizeof(ValueT) == 2  ? val_size::_2
+         : sizeof(ValueT) == 4  ? val_size::_4
+         : sizeof(ValueT) == 8  ? val_size::_8
+         : sizeof(ValueT) == 16 ? val_size::_16
+                                : val_size::unknown;
 }
 
 template <class KeyT,
@@ -703,7 +701,7 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 } // namespace unique_by_key
 } // namespace detail
 
-template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
+template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int *>
 struct DeviceUniqueByKeyPolicy
 {
   using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
@@ -719,13 +717,12 @@ struct DeviceUniqueByKeyPolicy
       ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
     };
 
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<128,
-                             ITEMS_PER_THREAD,
-                             cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                             cub::LOAD_LDG,
-                             cub::BLOCK_SCAN_WARP_SCANS,
-                             detail::default_delay_constructor_t<int>>;
+    using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<128,
+                                                      ITEMS_PER_THREAD,
+                                                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                                                      cub::LOAD_LDG,
+                                                      cub::BLOCK_SCAN_WARP_SCANS,
+                                                      detail::default_delay_constructor_t<int>>;
   };
 
   struct DefaultTuning
@@ -737,13 +734,12 @@ struct DeviceUniqueByKeyPolicy
       ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
     };
 
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<64,
-                             ITEMS_PER_THREAD,
-                             cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                             cub::LOAD_LDG,
-                             cub::BLOCK_SCAN_WARP_SCANS,
-                             detail::default_delay_constructor_t<int>>;
+    using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<64,
+                                                      ITEMS_PER_THREAD,
+                                                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
+                                                      cub::LOAD_LDG,
+                                                      cub::BLOCK_SCAN_WARP_SCANS,
+                                                      detail::default_delay_constructor_t<int>>;
   };
 
   // SM520
@@ -757,13 +753,12 @@ struct DeviceUniqueByKeyPolicy
   {
     using tuning = detail::unique_by_key::sm80_tuning<KeyT, ValueT>;
 
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             tuning::load_modifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<tuning::threads,
+                                                      tuning::items,
+                                                      tuning::load_algorithm,
+                                                      tuning::load_modifier,
+                                                      BLOCK_SCAN_WARP_SCANS,
+                                                      typename tuning::delay_constructor>;
   };
 
   // SM860
@@ -777,13 +772,12 @@ struct DeviceUniqueByKeyPolicy
   {
     using tuning = detail::unique_by_key::sm90_tuning<KeyT, ValueT>;
 
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             tuning::load_modifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using UniqueByKeyPolicyT = AgentUniqueByKeyPolicy<tuning::threads,
+                                                      tuning::items,
+                                                      tuning::load_algorithm,
+                                                      tuning::load_modifier,
+                                                      BLOCK_SCAN_WARP_SCANS,
+                                                      typename tuning::delay_constructor>;
   };
 
   using MaxPolicy = Policy900;

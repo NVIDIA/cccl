@@ -25,9 +25,7 @@
 
 #include "test_macros.h"
 
-struct S {
-  int x;
-};
+struct S { int x; };
 
 __host__ __device__ void test_decomp_user_type() {
   {
@@ -117,10 +115,7 @@ struct Test {
 };
 
 template <size_t N>
-__host__ __device__ int get(Test const&) {
-  static_assert(N == 0, "");
-  return -1;
-}
+__host__ __device__ int get(Test const&) { static_assert(N == 0, ""); return -1; }
 
 template <>
 struct std::tuple_element<0, Test> {

@@ -44,10 +44,10 @@ struct decomposer_t
 
 int main()
 {
-  custom_t* d_in{};
-  custom_t* d_out{};
+  custom_t *d_in{};
+  custom_t *d_out{};
   std::size_t temp_storage_bytes{};
-  std::uint8_t* d_temp_storage{};
+  std::uint8_t *d_temp_storage{};
 
   cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, 0, decomposer_t{});
 }

@@ -22,6 +22,8 @@ static_assert(cuda::std::is_trivial_v<cuda::std::ranges::view_base>);
 
 // Make sure we can inherit from it, as it's intended (that wouldn't be the
 // case if e.g. it was marked as final).
-struct View : cuda::std::ranges::view_base {};
+struct View : cuda::std::ranges::view_base { };
 
-int main(int, char**) { return 0; }
+int main(int, char**) {
+  return 0;
+}

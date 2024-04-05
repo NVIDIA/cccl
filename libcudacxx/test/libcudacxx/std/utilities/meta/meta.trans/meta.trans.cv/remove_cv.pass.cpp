@@ -15,29 +15,34 @@
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_remove_cv_imp() {
-  ASSERT_SAME_TYPE(U, typename cuda::std::remove_cv<T>::type);
+__host__ __device__
+void test_remove_cv_imp()
+{
+    ASSERT_SAME_TYPE(U, typename cuda::std::remove_cv<T>::type);
 #if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(U, cuda::std::remove_cv_t<T>);
+    ASSERT_SAME_TYPE(U,        cuda::std::remove_cv_t<T>);
 #endif
 }
 
 template <class T>
-__host__ __device__ void test_remove_cv() {
-  test_remove_cv_imp<T, T>();
-  test_remove_cv_imp<const T, T>();
-  test_remove_cv_imp<volatile T, T>();
-  test_remove_cv_imp<const volatile T, T>();
+__host__ __device__
+void test_remove_cv()
+{
+    test_remove_cv_imp<T, T>();
+    test_remove_cv_imp<const T, T>();
+    test_remove_cv_imp<volatile T, T>();
+    test_remove_cv_imp<const volatile T, T>();
 }
 
-int main(int, char**) {
-  test_remove_cv<void>();
-  test_remove_cv<int>();
-  test_remove_cv<int[3]>();
-  test_remove_cv<int&>();
-  test_remove_cv<const int&>();
-  test_remove_cv<int*>();
-  test_remove_cv<const int*>();
+int main(int, char**)
+{
+    test_remove_cv<void>();
+    test_remove_cv<int>();
+    test_remove_cv<int[3]>();
+    test_remove_cv<int&>();
+    test_remove_cv<const int&>();
+    test_remove_cv<int*>();
+    test_remove_cv<const int*>();
 
   return 0;
 }

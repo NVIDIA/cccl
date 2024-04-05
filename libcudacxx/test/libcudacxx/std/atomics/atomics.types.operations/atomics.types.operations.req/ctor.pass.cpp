@@ -29,59 +29,61 @@
 #include "cuda_space_selector.h"
 
 struct UserType {
-  int i;
+    int i;
 
-  __host__ __device__ UserType() noexcept {}
-  __host__ __device__ constexpr explicit UserType(int d) noexcept : i(d) {}
+    __host__ __device__
+    UserType() noexcept {}
+    __host__ __device__
+    constexpr explicit UserType(int d) noexcept : i(d) {}
 
-  __host__ __device__ friend bool operator==(const UserType& x,
-                                             const UserType& y) {
-    return x.i == y.i;
-  }
+    __host__ __device__
+    friend bool operator==(const UserType& x, const UserType& y) {
+        return x.i == y.i;
+    }
 };
 
-template <class Tp, template <typename, typename> class,
-          cuda::thread_scope Scope>
+template <class Tp, template<typename, typename> class, cuda::thread_scope Scope>
 struct TestFunc {
-  __host__ __device__ void operator()() const {
-    typedef cuda::atomic<Tp, Scope> Atomic;
-    static_assert(cuda::std::is_literal_type<Atomic>::value, "");
-    constexpr Tp t(42);
-    {
-      constexpr Atomic a(t);
-      assert(a == t);
+    __host__ __device__
+    void operator()() const {
+        typedef cuda::atomic<Tp, Scope> Atomic;
+        static_assert(cuda::std::is_literal_type<Atomic>::value, "");
+        constexpr Tp t(42);
+        {
+            constexpr Atomic a(t);
+            assert(a == t);
+        }
+        {
+            constexpr Atomic a{t};
+            assert(a == t);
+        }
+        #if !defined(_GNUC_VER) || _GNUC_VER >= 409
+        // TODO: Figure out why this is failing with GCC 4.8.2 on CentOS 7 only.
+        {
+            constexpr Atomic a = ATOMIC_VAR_INIT(t);
+            assert(a == t);
+        }
+        #endif
     }
-    {
-      constexpr Atomic a{t};
-      assert(a == t);
-    }
-#if !defined(_GNUC_VER) || _GNUC_VER >= 409
-    // TODO: Figure out why this is failing with GCC 4.8.2 on CentOS 7 only.
-    {
-      constexpr Atomic a = ATOMIC_VAR_INIT(t);
-      assert(a == t);
-    }
-#endif
-  }
 };
 
-int main(int, char**) {
-  NV_DISPATCH_TARGET(
-      NV_IS_HOST,
-      (TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
-       TestEachIntegralType<TestFunc, local_memory_selector,
-                            cuda::thread_scope_system>()();),
-      NV_PROVIDES_SM_60,
-      (TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
-       TestEachIntegralType<TestFunc, local_memory_selector,
-                            cuda::thread_scope_system>()();))
 
-  TestFunc<UserType, local_memory_selector, cuda::thread_scope_device>()();
-  TestEachIntegralType<TestFunc, local_memory_selector,
-                       cuda::thread_scope_device>()();
-  TestFunc<UserType, local_memory_selector, cuda::thread_scope_block>()();
-  TestEachIntegralType<TestFunc, local_memory_selector,
-                       cuda::thread_scope_block>()();
+int main(int, char**)
+{
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+        TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
+        TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();
+    ),
+    NV_PROVIDES_SM_60,(
+        TestFunc<UserType, local_memory_selector, cuda::thread_scope_system>()();
+        TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_system>()();
+    ))
 
-  return 0;
+    TestFunc<UserType, local_memory_selector, cuda::thread_scope_device>()();
+    TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_device>()();
+    TestFunc<UserType, local_memory_selector, cuda::thread_scope_block>()();
+    TestEachIntegralType<TestFunc, local_memory_selector, cuda::thread_scope_block>()();
+
+    return 0;
 }

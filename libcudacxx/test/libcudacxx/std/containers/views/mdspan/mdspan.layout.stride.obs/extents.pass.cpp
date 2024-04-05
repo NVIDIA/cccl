@@ -15,17 +15,18 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  using index_t = int;
-  using ext2d_t = cuda::std::extents<index_t, dyn, dyn>;
+int main(int, char**)
+{
+    using index_t = int;
+    using ext2d_t = cuda::std::extents<index_t,dyn,dyn>;
 
-  {
-    ext2d_t e{16, 32};
-    cuda::std::array<index_t, 2> a{1, 16};
-    cuda::std::layout_stride::mapping<ext2d_t> m{e, a};
+    {
+        ext2d_t e{16, 32};
+        cuda::std::array<index_t,2> a{1,16};
+        cuda::std::layout_stride::mapping<ext2d_t> m{e, a};
 
-    assert(m.extents() == e);
-  }
+        assert( m.extents() == e );
+    }
 
-  return 0;
+    return 0;
 }

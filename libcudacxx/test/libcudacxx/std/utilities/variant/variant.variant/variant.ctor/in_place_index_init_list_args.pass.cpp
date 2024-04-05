@@ -27,75 +27,64 @@
 
 struct InitList {
   cuda::std::size_t size;
-  __host__ __device__ constexpr InitList(cuda::std::initializer_list<int> il)
-      : size(il.size()) {}
+  __host__ __device__
+  constexpr InitList(cuda::std::initializer_list<int> il) : size(il.size()) {}
 };
 
 struct InitListArg {
   cuda::std::size_t size;
   int value;
-  __host__ __device__ constexpr InitListArg(cuda::std::initializer_list<int> il,
-                                            int v)
+  __host__ __device__
+  constexpr InitListArg(cuda::std::initializer_list<int> il, int v)
       : size(il.size()), value(v) {}
 };
 
-__host__ __device__ void test_ctor_sfinae() {
+__host__ __device__
+void test_ctor_sfinae() {
   using IL = cuda::std::initializer_list<int>;
   { // just init list
     using V = cuda::std::variant<InitList, InitListArg, int>;
-    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>,
-                                              IL>::value,
+    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>, IL>::value,
                   "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, IL>(),
-                  "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, IL>(), "");
   }
   { // too many arguments
     using V = cuda::std::variant<InitList, InitListArg, int>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>, IL,
-                                     int>::value,
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>, IL, int>::value,
         "");
-    static_assert(
-        !test_convertible<V, cuda::std::in_place_index_t<0>, IL, int>(), "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, IL, int>(),
+                  "");
   }
   { // too few arguments
     using V = cuda::std::variant<InitList, InitListArg, int>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>,
-                                     IL>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<1>, IL>(),
-                  "");
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>, IL>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<1>, IL>(), "");
   }
   { // init list and arguments
     using V = cuda::std::variant<InitList, InitListArg, int>;
-    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>,
-                                              IL, int>::value,
-                  "");
     static_assert(
-        !test_convertible<V, cuda::std::in_place_index_t<1>, IL, int>(), "");
+        cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>, IL, int>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<1>, IL, int>(),
+                  "");
   }
   { // not constructible from arguments
     using V = cuda::std::variant<InitList, InitListArg, int>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<2>,
-                                     IL>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<2>, IL>(),
-                  "");
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<2>, IL>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<2>, IL>(), "");
   }
   { // index not in variant
     using V = cuda::std::variant<InitList, InitListArg, int>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<3>,
-                                     IL>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<3>, IL>(),
-                  "");
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<3>, IL>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<3>, IL>(), "");
   }
 }
 
-__host__ __device__ void test_ctor_basic() {
+__host__ __device__
+void test_ctor_basic() {
   {
     constexpr cuda::std::variant<InitList, InitListArg, InitList> v(
         cuda::std::in_place_index<0>, {1, 2, 3});

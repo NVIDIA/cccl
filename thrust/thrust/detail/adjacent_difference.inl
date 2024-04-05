@@ -25,46 +25,46 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/adl/adjacent_difference.h>
-#include <thrust/system/detail/generic/adjacent_difference.h>
 #include <thrust/system/detail/generic/select_system.h>
+#include <thrust/system/detail/generic/adjacent_difference.h>
+#include <thrust/system/detail/adl/adjacent_difference.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result)
+_CCCL_HOST_DEVICE
+OutputIterator adjacent_difference(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                                   InputIterator first, InputIterator last,
+                                   OutputIterator result)
 {
   using thrust::system::detail::generic::adjacent_difference;
 
   return adjacent_difference(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end adjacent_difference()
 
+
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE
+OutputIterator adjacent_difference(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                                   InputIterator first, InputIterator last,
+                                   OutputIterator result,
+                                   BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::adjacent_difference;
 
-  return adjacent_difference(
-    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_op);
+  return adjacent_difference(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, binary_op);
 } // end adjacent_difference()
 
+
 template <typename InputIterator, typename OutputIterator>
-OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result)
+OutputIterator adjacent_difference(InputIterator first, InputIterator last,
+                                   OutputIterator result)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
+  typedef typename thrust::iterator_system<InputIterator>::type  System1;
   typedef typename thrust::iterator_system<OutputIterator>::type System2;
 
   System1 system1;
@@ -73,13 +73,15 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
   return thrust::adjacent_difference(select_system(system1, system2), first, last, result);
 } // end adjacent_difference()
 
+
 template <typename InputIterator, typename OutputIterator, typename BinaryFunction>
-OutputIterator
-adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)
+OutputIterator adjacent_difference(InputIterator first, InputIterator last,
+                                   OutputIterator result,
+                                   BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 
-  typedef typename thrust::iterator_system<InputIterator>::type System1;
+  typedef typename thrust::iterator_system<InputIterator>::type  System1;
   typedef typename thrust::iterator_system<OutputIterator>::type System2;
 
   System1 system1;
@@ -87,5 +89,6 @@ adjacent_difference(InputIterator first, InputIterator last, OutputIterator resu
 
   return thrust::adjacent_difference(select_system(system1, system2), first, last, result, binary_op);
 } // end adjacent_difference()
+
 
 THRUST_NAMESPACE_END

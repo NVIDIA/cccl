@@ -19,35 +19,35 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using month = cuda::std::chrono::month;
-  using weekday = cuda::std::chrono::weekday;
-  using weekday_last = cuda::std::chrono::weekday_last;
-  using month_weekday_last = cuda::std::chrono::month_weekday_last;
+int main(int, char**)
+{
+    using month              = cuda::std::chrono::month;
+    using weekday            = cuda::std::chrono::weekday;
+    using weekday_last       = cuda::std::chrono::weekday_last;
+    using month_weekday_last = cuda::std::chrono::month_weekday_last;
 
-  constexpr month January = cuda::std::chrono::January;
-  constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
-  constexpr weekday_last lastTuesday = weekday_last{Tuesday};
+    constexpr month January            = cuda::std::chrono::January;
+    constexpr weekday Tuesday          = cuda::std::chrono::Tuesday;
+    constexpr weekday_last lastTuesday = weekday_last{Tuesday};
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const month_weekday_last>().ok());
-  ASSERT_SAME_TYPE(
-      bool, decltype(cuda::std::declval<const month_weekday_last>().ok()));
+    ASSERT_NOEXCEPT(                cuda::std::declval<const month_weekday_last>().ok());
+    ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const month_weekday_last>().ok()));
 
-  static_assert(!month_weekday_last{month{}, lastTuesday}.ok(),
-                ""); // Bad month
-  static_assert(!month_weekday_last{January, weekday_last{weekday{12}}}.ok(),
-                "");                                                // Bad month
-  static_assert(month_weekday_last{January, lastTuesday}.ok(), ""); // Both OK
+    static_assert(!month_weekday_last{month{}, lastTuesday}.ok(),               ""); // Bad month
+    static_assert(!month_weekday_last{January, weekday_last{weekday{12}}}.ok(), ""); // Bad month
+    static_assert( month_weekday_last{January, lastTuesday}.ok(),               ""); // Both OK
 
-  for (unsigned i = 0; i <= 50; ++i) {
-    month_weekday_last mwdl{month{i}, lastTuesday};
-    assert(mwdl.ok() == month{i}.ok());
-  }
+    for (unsigned i = 0; i <= 50; ++i)
+    {
+        month_weekday_last mwdl{month{i}, lastTuesday};
+        assert( mwdl.ok() == month{i}.ok());
+    }
 
-  for (unsigned i = 0; i <= 50; ++i) {
-    month_weekday_last mwdl{January, weekday_last{weekday{i}}};
-    assert(mwdl.ok() == weekday_last{weekday{i}}.ok());
-  }
+    for (unsigned i = 0; i <= 50; ++i)
+    {
+        month_weekday_last mwdl{January, weekday_last{weekday{i}}};
+        assert( mwdl.ok() == weekday_last{weekday{i}}.ok());
+    }
 
   return 0;
 }

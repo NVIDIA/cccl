@@ -17,35 +17,34 @@
 #include <cuda/std/cassert>
 #include "../mdspan.mdspan.util/mdspan_util.hpp"
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
-  constexpr auto dyn = cuda::std::dynamic_extent;
+    constexpr auto dyn = cuda::std::dynamic_extent;
 
-  // mapping
-  {
-    using data_t = int;
-    using index_t = size_t;
-    cuda::std::array<data_t, 1> d{42};
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, dyn, dyn> > map{
-        cuda::std::dextents<index_t, 2>{64, 128}};
-    cuda::std::mdspan m{d.data(), map};
+    // mapping
+    {
+        using  data_t = int;
+        using index_t = size_t;
+        cuda::std::array<data_t, 1> d{42};
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,dyn,dyn>> map{cuda::std::dextents<index_t,2>{64, 128}};
+        cuda::std::mdspan m{ d.data(), map };
 
-    CHECK_MDSPAN_EXTENT(m, d, 64, 128);
-  }
+        CHECK_MDSPAN_EXTENT(m,d,64,128);
+    }
 
-  // mapping and accessor
-  {
-    using data_t = int;
-    using index_t = size_t;
-    cuda::std::array<data_t, 1> d{42};
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, dyn, dyn> > map{
-        cuda::std::dextents<index_t, 2>{64, 128}};
-    cuda::std::default_accessor<data_t> a;
-    cuda::std::mdspan m{d.data(), map, a};
+    // mapping and accessor
+    {
+        using  data_t = int;
+        using index_t = size_t;
+        cuda::std::array<data_t, 1> d{42};
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,dyn,dyn>> map{cuda::std::dextents<index_t,2>{64, 128}};
+        cuda::std::default_accessor<data_t> a;
+        cuda::std::mdspan m{ d.data(), map, a };
 
-    CHECK_MDSPAN_EXTENT(m, d, 64, 128);
-  }
+        CHECK_MDSPAN_EXTENT(m,d,64,128);
+    }
 #endif
 
-  return 0;
+    return 0;
 }

@@ -19,14 +19,19 @@ void TestWrappedNamespace()
 {
   const std::size_t n = 2048;
 
-  const auto in_1_begin = ::wrap_thrust::thrust::make_constant_iterator<int>(12);
-  const auto in_2_begin = ::wrap_thrust::thrust::make_counting_iterator<int>(1024);
+  const auto in_1_begin =
+    ::wrap_thrust::thrust::make_constant_iterator<int>(12);
+  const auto in_2_begin =
+    ::wrap_thrust::thrust::make_counting_iterator<int>(1024);
 
   // Check that the qualifier resolves properly:
   THRUST_NS_QUALIFIER::device_vector<int> d_out(n);
 
-  ::wrap_thrust::thrust::transform(
-    in_1_begin, in_1_begin + n, in_2_begin, d_out.begin(), ::wrap_thrust::thrust::plus<>{});
+  ::wrap_thrust::thrust::transform(in_1_begin,
+                                   in_1_begin + n,
+                                   in_2_begin,
+                                   d_out.begin(),
+                                   ::wrap_thrust::thrust::plus<>{});
 
   ::wrap_thrust::thrust::host_vector<int> h_out(d_out);
 

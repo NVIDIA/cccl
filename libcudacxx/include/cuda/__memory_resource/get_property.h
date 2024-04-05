@@ -23,12 +23,12 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#  include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/remove_const_ref.h>
-#  include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
-#  include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const_ref.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -38,11 +38,7 @@ template <class _Resource, class _Property, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool has_property = false;
 
 template <class _Resource, class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_property<
-  _Resource,
-  _Property,
-  _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
-  true;
+_LIBCUDACXX_INLINE_VAR constexpr bool has_property<_Resource, _Property, _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> = true;
 
 /// \concept property_with_value
 /// \brief The \c property_with_value concept
@@ -53,8 +49,7 @@ template <class _Property, class = void>
 _LIBCUDACXX_INLINE_VAR constexpr bool property_with_value = false;
 
 template <class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
-  true;
+_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> = true;
 
 /// \concept has_property_with
 /// \brief The \c has_property_with concept
@@ -128,7 +123,7 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto get_property = __get_property::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  endif // _CCCL_STD_VER >= 2014
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER_MSVC_2017
 

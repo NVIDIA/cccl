@@ -17,14 +17,15 @@
 #include <cuda/std/utility>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-  {
-    typedef cuda::std::pair<int, short> P;
-    const P p(3, 4);
-    assert(cuda::std::get<0>(p) == 3);
-    assert(cuda::std::get<1>(p) == 4);
-    cuda::std::get<0>(p) = 5;
-  }
+int main(int, char**)
+{
+    {
+        typedef cuda::std::pair<int, short> P;
+        const P p(3, 4);
+        assert(cuda::std::get<0>(p) == 3);
+        assert(cuda::std::get<1>(p) == 4);
+        cuda::std::get<0>(p) = 5;
+    }
 
   return 0;
 }

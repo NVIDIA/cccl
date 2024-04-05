@@ -19,58 +19,56 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  {
+int main(int, char**)
+{
+    {
     cuda::std::chrono::seconds s1(3);
     cuda::std::chrono::seconds s2(5);
     cuda::std::chrono::seconds r = s1 + s2;
     assert(r.count() == 8);
-  }
-  {
+    }
+    {
     cuda::std::chrono::seconds s1(3);
     cuda::std::chrono::microseconds s2(5);
     cuda::std::chrono::microseconds r = s1 + s2;
     assert(r.count() == 3000005);
-  }
-  {
+    }
+    {
     cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> > s1(3);
     cuda::std::chrono::duration<int, cuda::std::ratio<3, 5> > s2(5);
     cuda::std::chrono::duration<int, cuda::std::ratio<1, 15> > r = s1 + s2;
     assert(r.count() == 75);
-  }
-  {
+    }
+    {
     cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> > s1(3);
     cuda::std::chrono::duration<double, cuda::std::ratio<3, 5> > s2(5);
     cuda::std::chrono::duration<double, cuda::std::ratio<1, 15> > r = s1 + s2;
     assert(r.count() == 75);
-  }
-  {
+    }
+    {
     constexpr cuda::std::chrono::seconds s1(3);
     constexpr cuda::std::chrono::seconds s2(5);
     constexpr cuda::std::chrono::seconds r = s1 + s2;
     static_assert(r.count() == 8, "");
-  }
-  {
+    }
+    {
     constexpr cuda::std::chrono::seconds s1(3);
     constexpr cuda::std::chrono::microseconds s2(5);
     constexpr cuda::std::chrono::microseconds r = s1 + s2;
     static_assert(r.count() == 3000005, "");
-  }
-  {
+    }
+    {
     constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> > s1(3);
     constexpr cuda::std::chrono::duration<int, cuda::std::ratio<3, 5> > s2(5);
-    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<1, 15> > r =
-        s1 + s2;
+    constexpr cuda::std::chrono::duration<int, cuda::std::ratio<1, 15> > r = s1 + s2;
     static_assert(r.count() == 75, "");
-  }
-  {
+    }
+    {
     constexpr cuda::std::chrono::duration<int, cuda::std::ratio<2, 3> > s1(3);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5> > s2(
-        5);
-    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<1, 15> > r =
-        s1 + s2;
+    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<3, 5> > s2(5);
+    constexpr cuda::std::chrono::duration<double, cuda::std::ratio<1, 15> > r = s1 + s2;
     static_assert(r.count() == 75, "");
-  }
+    }
 
   return 0;
 }

@@ -33,8 +33,10 @@
 // Test Constraints:
 template <class T, class E>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-    HasMemberSwap_, requires(cuda::std::expected<T, E> x,
-                             cuda::std::expected<T, E> y)((x.swap(y))));
+  HasMemberSwap_,
+  requires(cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)(
+    (x.swap(y))
+  ));
 template <class T, class E>
 _LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, T, E);
 
@@ -51,8 +53,7 @@ static_assert(!HasMemberSwap<int, NotSwappable>, "");
 
 struct NotMoveContructible {
   NotMoveContructible(NotMoveContructible&&) = delete;
-  __host__ __device__ friend void swap(NotMoveContructible&,
-                                       NotMoveContructible&) {}
+  __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
 
 // !is_move_constructible_v<T>
@@ -78,13 +79,11 @@ static_assert(!HasMemberSwap<MoveMayThrow, MoveMayThrow>, "");
 #endif // TEST_COMPILER_ICC
 
 // Test noexcept
-template <class T, class E, bool = HasMemberSwap<T, E> >
+template <class T, class E, bool = HasMemberSwap<T, E>>
 constexpr bool MemberSwapNoexcept = false;
 
 template <class T, class E>
-constexpr bool MemberSwapNoexcept<T, E, true> =
-    noexcept(cuda::std::declval<cuda::std::expected<T, E>&>().swap(
-        cuda::std::declval<cuda::std::expected<T, E>&>()));
+constexpr bool MemberSwapNoexcept<T, E, true> = noexcept(cuda::std::declval<cuda::std::expected<T, E>&>().swap(cuda::std::declval<cuda::std::expected<T, E>&>()));
 
 static_assert(MemberSwapNoexcept<int, int>, "");
 
@@ -96,8 +95,7 @@ static_assert(!MemberSwapNoexcept<MoveMayThrow, int>, "");
 static_assert(!MemberSwapNoexcept<int, MoveMayThrow>, "");
 
 struct SwapMayThrow {
-  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&)
-      noexcept(false) {}
+  __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 
 // !is_nothrow_swappable_v<T>
@@ -139,10 +137,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && !rhs.has_value()
   // && is_nothrow_move_constructible_v<E>
   {
-    cuda::std::expected<TrackedMove<true>, TrackedMove<true> > e1(
-        cuda::std::in_place, 5);
-    cuda::std::expected<TrackedMove<true>, TrackedMove<true> > e2(
-        cuda::std::unexpect, 10);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<true>> e1(cuda::std::in_place, 5);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<true>> e2(cuda::std::unexpect, 10);
 
     e1.swap(e2);
 
@@ -160,10 +156,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // this->has_value() && !rhs.has_value()
   // && !is_nothrow_move_constructible_v<E>
   {
-    cuda::std::expected<TrackedMove<true>, TrackedMove<false> > e1(
-        cuda::std::in_place, 5);
-    cuda::std::expected<TrackedMove<true>, TrackedMove<false> > e2(
-        cuda::std::unexpect, 10);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<false>> e1(cuda::std::in_place, 5);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<false>> e2(cuda::std::unexpect, 10);
 
     e1.swap(e2);
 
@@ -181,10 +175,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // !this->has_value() && rhs.has_value()
   // && is_nothrow_move_constructible_v<E>
   {
-    cuda::std::expected<TrackedMove<true>, TrackedMove<true> > e1(
-        cuda::std::unexpect, 10);
-    cuda::std::expected<TrackedMove<true>, TrackedMove<true> > e2(
-        cuda::std::in_place, 5);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<true>> e1(cuda::std::unexpect, 10);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<true>> e2(cuda::std::in_place, 5);
 
     e1.swap(e2);
 
@@ -202,10 +194,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // !this->has_value() && rhs.has_value()
   // && !is_nothrow_move_constructible_v<E>
   {
-    cuda::std::expected<TrackedMove<true>, TrackedMove<false> > e1(
-        cuda::std::unexpect, 10);
-    cuda::std::expected<TrackedMove<true>, TrackedMove<false> > e2(
-        cuda::std::in_place, 5);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<false>> e1(cuda::std::unexpect, 10);
+    cuda::std::expected<TrackedMove<true>, TrackedMove<false>> e2(cuda::std::in_place, 5);
 
     e1.swap(e2);
 

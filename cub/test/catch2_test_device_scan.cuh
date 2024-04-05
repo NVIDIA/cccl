@@ -36,7 +36,10 @@
  * @brief Helper class template to facilitate specifying input/output type pairs along with the key
  * type for *-by-key algorithms, and an equality operator type.
  */
-template <typename InputT, typename OutputT = InputT, typename KeyT = std::int32_t, typename EqualityOpT = cub::Equality>
+template <typename InputT,
+          typename OutputT     = InputT,
+          typename KeyT        = std::int32_t,
+          typename EqualityOpT = cub::Equality>
 struct type_quad
 {
   using input_t  = InputT;
@@ -51,14 +54,18 @@ struct type_quad
 struct Mod2Equality
 {
   template <typename T>
-  __host__ __device__ __forceinline__ T operator()(const T& a, const T& b) const
+  __host__ __device__ __forceinline__ T operator()(const T &a, const T &b) const
   {
     return (a % 2) == (b % 2);
   }
 };
 
 template <typename InputIt, typename OutputIt, typename InitT, typename BinaryOp>
-void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt result, InitT init, BinaryOp op)
+void compute_exclusive_scan_reference(InputIt first,
+                                      InputIt last,
+                                      OutputIt result,
+                                      InitT init,
+                                      BinaryOp op)
 {
   using value_t  = cub::detail::value_t<InputIt>;
   using accum_t  = cub::detail::accumulator_t<BinaryOp, InitT, value_t>;
@@ -72,7 +79,11 @@ void compute_exclusive_scan_reference(InputIt first, InputIt last, OutputIt resu
 }
 
 template <typename InputIt, typename OutputIt, typename BinaryOp, typename InitT>
-void compute_inclusive_scan_reference(InputIt first, InputIt last, OutputIt result, BinaryOp op, InitT init)
+void compute_inclusive_scan_reference(InputIt first,
+                                      InputIt last,
+                                      OutputIt result,
+                                      BinaryOp op,
+                                      InitT init)
 {
   using value_t  = cub::detail::value_t<InputIt>;
   using accum_t  = cub::detail::accumulator_t<BinaryOp, InitT, value_t>;
@@ -91,14 +102,13 @@ template <typename ValueInItT,
           typename ScanOpT,
           typename EqualityOpT,
           typename InitT>
-void compute_exclusive_scan_by_key_reference(
-  ValueInItT h_values_it,
-  KeyInItT h_keys_it,
-  ValuesOutItT result_out_it,
-  ScanOpT scan_op,
-  EqualityOpT equality_op,
-  InitT init,
-  std::size_t num_items)
+void compute_exclusive_scan_by_key_reference(ValueInItT h_values_it,
+                                             KeyInItT h_keys_it,
+                                             ValuesOutItT result_out_it,
+                                             ScanOpT scan_op,
+                                             EqualityOpT equality_op,
+                                             InitT init,
+                                             std::size_t num_items)
 {
   using value_t  = cub::detail::value_t<ValueInItT>;
   using accum_t  = cub::detail::accumulator_t<ScanOpT, InitT, value_t>;
@@ -124,32 +134,44 @@ void compute_exclusive_scan_by_key_reference(
   }
 }
 
-template <typename ValueT, typename KeyT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT, typename InitT>
-void compute_exclusive_scan_by_key_reference(
-  const c2h::device_vector<ValueT>& d_values,
-  const c2h::device_vector<KeyT>& d_keys,
-  ValuesOutItT result_out_it,
-  ScanOpT scan_op,
-  EqualityOpT equality_op,
-  InitT init)
+template <typename ValueT,
+          typename KeyT,
+          typename ValuesOutItT,
+          typename ScanOpT,
+          typename EqualityOpT,
+          typename InitT>
+void compute_exclusive_scan_by_key_reference(const c2h::device_vector<ValueT> &d_values,
+                                             const c2h::device_vector<KeyT> &d_keys,
+                                             ValuesOutItT result_out_it,
+                                             ScanOpT scan_op,
+                                             EqualityOpT equality_op,
+                                             InitT init)
 {
   c2h::host_vector<ValueT> host_values(d_values);
   c2h::host_vector<KeyT> host_keys(d_keys);
 
   std::size_t num_items = host_values.size();
 
-  compute_exclusive_scan_by_key_reference(
-    host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, init, num_items);
+  compute_exclusive_scan_by_key_reference(host_values.cbegin(),
+                                          host_keys.cbegin(),
+                                          result_out_it,
+                                          scan_op,
+                                          equality_op,
+                                          init,
+                                          num_items);
 }
 
-template <typename ValueInItT, typename KeyInItT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT>
-void compute_inclusive_scan_by_key_reference(
-  ValueInItT h_values_it,
-  KeyInItT h_keys_it,
-  ValuesOutItT result_out_it,
-  ScanOpT scan_op,
-  EqualityOpT equality_op,
-  std::size_t num_items)
+template <typename ValueInItT,
+          typename KeyInItT,
+          typename ValuesOutItT,
+          typename ScanOpT,
+          typename EqualityOpT>
+void compute_inclusive_scan_by_key_reference(ValueInItT h_values_it,
+                                             KeyInItT h_keys_it,
+                                             ValuesOutItT result_out_it,
+                                             ScanOpT scan_op,
+                                             EqualityOpT equality_op,
+                                             std::size_t num_items)
 {
   using value_t  = cub::detail::value_t<ValueInItT>;
   using accum_t  = cub::detail::accumulator_t<ScanOpT, value_t, value_t>;
@@ -172,18 +194,21 @@ void compute_inclusive_scan_by_key_reference(
 }
 
 template <typename ValueT, typename KeyT, typename ValuesOutItT, typename ScanOpT, typename EqualityOpT>
-void compute_inclusive_scan_by_key_reference(
-  const c2h::device_vector<ValueT>& d_values,
-  const c2h::device_vector<KeyT>& d_keys,
-  ValuesOutItT result_out_it,
-  ScanOpT scan_op,
-  EqualityOpT equality_op)
+void compute_inclusive_scan_by_key_reference(const c2h::device_vector<ValueT> &d_values,
+                                             const c2h::device_vector<KeyT> &d_keys,
+                                             ValuesOutItT result_out_it,
+                                             ScanOpT scan_op,
+                                             EqualityOpT equality_op)
 {
   c2h::host_vector<ValueT> host_values(d_values);
   c2h::host_vector<KeyT> host_keys(d_keys);
 
   std::size_t num_items = host_values.size();
 
-  compute_inclusive_scan_by_key_reference(
-    host_values.cbegin(), host_keys.cbegin(), result_out_it, scan_op, equality_op, num_items);
+  compute_inclusive_scan_by_key_reference(host_values.cbegin(),
+                                          host_keys.cbegin(),
+                                          result_out_it,
+                                          scan_op,
+                                          equality_op,
+                                          num_items);
 }

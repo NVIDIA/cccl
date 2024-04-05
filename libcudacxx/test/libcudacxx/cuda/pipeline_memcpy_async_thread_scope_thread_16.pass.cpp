@@ -12,8 +12,9 @@
 
 #include "pipeline_memcpy_async_thread_scope_thread.h"
 
-int main(int argc, char** argv) {
-  test_select_source<uint16_t>();
+int main(int argc, char ** argv)
+{
+    test_select_source<uint16_t>();
 
-  return 0;
+    return 0;
 }

@@ -24,19 +24,16 @@ template <class T, class = void>
 constexpr bool OpBoolNoexcept = false;
 
 template <class T>
-constexpr bool OpBoolNoexcept<T, cuda::std::void_t<decltype(static_cast<bool>(
-                                     cuda::std::declval<T>()))> > =
-    noexcept(static_cast<bool>(cuda::std::declval<T>()));
+constexpr bool OpBoolNoexcept<T, cuda::std::void_t<decltype(static_cast<bool>(cuda::std::declval<T>()))>> = noexcept(static_cast<bool>(cuda::std::declval<T>()));
 
 struct Foo {};
 static_assert(!OpBoolNoexcept<Foo>, "");
 
-static_assert(OpBoolNoexcept<cuda::std::expected<int, int> >, "");
-static_assert(OpBoolNoexcept<const cuda::std::expected<int, int> >, "");
+static_assert(OpBoolNoexcept<cuda::std::expected<int, int>>, "");
+static_assert(OpBoolNoexcept<const cuda::std::expected<int, int>>, "");
 
 // Test explicit
-static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>,
-              "");
+static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>, "");
 
 __host__ __device__ constexpr bool test() {
   // has_value

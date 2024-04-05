@@ -21,29 +21,24 @@ struct NotRange {
 };
 
 struct Range {
-  __host__ __device__ int* begin();
-  __host__ __device__ int* end();
+  __host__ __device__ int *begin();
+  __host__ __device__ int *end();
 };
 
 struct ConstRange {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  __host__ __device__ int *begin() const;
+  __host__ __device__ int *end() const;
 };
 
 struct BorrowedRange {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ int* end() const;
+  __host__ __device__ int *begin() const;
+  __host__ __device__ int *end() const;
 };
 
-namespace cuda {
-namespace std {
-namespace ranges {
-template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> =
-    true;
-}
-} // namespace std
-} // namespace cuda
+namespace cuda { namespace std { namespace ranges {
+template<>
+_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
+}}} // namespace cuda::std::ranges
 
 static_assert(!cuda::std::ranges::borrowed_range<NotRange>);
 static_assert(!cuda::std::ranges::borrowed_range<NotRange&>);
@@ -52,21 +47,23 @@ static_assert(!cuda::std::ranges::borrowed_range<const NotRange&>);
 static_assert(!cuda::std::ranges::borrowed_range<NotRange&&>);
 
 static_assert(!cuda::std::ranges::borrowed_range<Range>);
-static_assert(cuda::std::ranges::borrowed_range<Range&>);
+static_assert( cuda::std::ranges::borrowed_range<Range&>);
 static_assert(!cuda::std::ranges::borrowed_range<const Range>);
 static_assert(!cuda::std::ranges::borrowed_range<const Range&>);
 static_assert(!cuda::std::ranges::borrowed_range<Range&&>);
 
 static_assert(!cuda::std::ranges::borrowed_range<ConstRange>);
-static_assert(cuda::std::ranges::borrowed_range<ConstRange&>);
+static_assert( cuda::std::ranges::borrowed_range<ConstRange&>);
 static_assert(!cuda::std::ranges::borrowed_range<const ConstRange>);
-static_assert(cuda::std::ranges::borrowed_range<const ConstRange&>);
+static_assert( cuda::std::ranges::borrowed_range<const ConstRange&>);
 static_assert(!cuda::std::ranges::borrowed_range<ConstRange&&>);
 
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>);
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&>);
-static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange>);
-static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange&>);
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&&>);
+static_assert( cuda::std::ranges::borrowed_range<BorrowedRange>);
+static_assert( cuda::std::ranges::borrowed_range<BorrowedRange&>);
+static_assert( cuda::std::ranges::borrowed_range<const BorrowedRange>);
+static_assert( cuda::std::ranges::borrowed_range<const BorrowedRange&>);
+static_assert( cuda::std::ranges::borrowed_range<BorrowedRange&&>);
 
-int main(int, char**) { return 0; }
+int main(int, char**) {
+  return 0;
+}

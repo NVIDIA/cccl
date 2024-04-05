@@ -13,8 +13,9 @@
 
 #include <cuda/std/type_traits>
 
-int main(int, char**) {
-  typedef cuda::std::enable_if_t<false> A;
+int main(int, char**)
+{
+    typedef cuda::std::enable_if_t<false> A;
 
   return 0;
 }

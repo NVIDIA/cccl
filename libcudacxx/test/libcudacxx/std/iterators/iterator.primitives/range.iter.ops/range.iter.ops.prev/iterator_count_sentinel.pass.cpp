@@ -21,15 +21,11 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void check(int* first, int* last,
-                                         cuda::std::iter_difference_t<It> n,
-                                         int* expected) {
+__host__ __device__ constexpr void check(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   It it(last);
-  It sent(
-      first); // for cuda::std::ranges::prev, the sentinel *must* have the same type as the iterator
+  It sent(first); // for cuda::std::ranges::prev, the sentinel *must* have the same type as the iterator
 
-  decltype(auto) result =
-      cuda::std::ranges::prev(cuda::std::move(it), n, cuda::std::move(sent));
+  decltype(auto) result = cuda::std::ranges::prev(cuda::std::move(it), n, cuda::std::move(sent));
   static_assert(cuda::std::same_as<decltype(result), It>);
   assert(base(result) == expected);
 }
@@ -40,10 +36,10 @@ __host__ __device__ constexpr bool test() {
   for (int size = 0; size != 10; ++size) {
     for (int n = 0; n != 20; ++n) {
       int* expected = n > size ? range : range + size - n;
-      check<bidirectional_iterator<int*> >(range, range + size, n, expected);
-      check<random_access_iterator<int*> >(range, range + size, n, expected);
-      check<contiguous_iterator<int*> >(range, range + size, n, expected);
-      check<int*>(range, range + size, n, expected);
+      check<bidirectional_iterator<int*>>(range, range+size, n, expected);
+      check<random_access_iterator<int*>>(range, range+size, n, expected);
+      check<contiguous_iterator<int*>>(   range, range+size, n, expected);
+      check<int*>(                        range, range+size, n, expected);
     }
   }
 

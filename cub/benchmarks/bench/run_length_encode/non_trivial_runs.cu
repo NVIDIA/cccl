@@ -25,10 +25,9 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_run_length_encode.cuh>
-
-#include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
+#include <look_back_helper.cuh>
+#include <cub/device/device_run_length_encode.cuh>
 
 // %RANGE% TUNE_ITEMS ipt 7:24:1
 // %RANGE% TUNE_THREADS tpb 128:1024:32
@@ -40,30 +39,29 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#  if TUNE_TRANSPOSE == 0
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#  else // TUNE_TRANSPOSE == 1
-#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#  endif // TUNE_TRANSPOSE
+#if TUNE_TRANSPOSE == 0
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
+#else // TUNE_TRANSPOSE == 1
+#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#endif // TUNE_TRANSPOSE
 
-#  if TUNE_LOAD == 0
-#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
-#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#  endif // TUNE_LOAD
+#if TUNE_LOAD == 0
+#define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#else // TUNE_LOAD == 1
+#define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#endif // TUNE_LOAD
 
 struct device_rle_policy_hub
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
-    using RleSweepPolicyT =
-      cub::AgentRlePolicy<TUNE_THREADS,
-                          TUNE_ITEMS,
-                          TUNE_LOAD_ALGORITHM,
-                          TUNE_LOAD_MODIFIER,
-                          TUNE_TIME_SLICING,
-                          cub::BLOCK_SCAN_WARP_SCANS,
-                          delay_constructor_t>;
+    using RleSweepPolicyT = cub::AgentRlePolicy<TUNE_THREADS,
+                                                TUNE_ITEMS,
+                                                TUNE_LOAD_ALGORITHM,
+                                                TUNE_LOAD_MODIFIER,
+                                                TUNE_TIME_SLICING,
+                                                cub::BLOCK_SCAN_WARP_SCANS,
+                                                delay_constructor_t>;
   };
 
   using MaxPolicy = Policy350;
@@ -71,76 +69,73 @@ struct device_rle_policy_hub
 #endif // !TUNE_BASE
 
 template <class T, class OffsetT>
-static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+static void rle(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t                   = OffsetT;
-  using keys_input_it_t            = const T*;
-  using offset_output_it_t         = offset_t*;
-  using length_output_it_t         = offset_t*;
+  using offset_t = OffsetT;
+  using keys_input_it_t = const T*;
+  using offset_output_it_t = offset_t*;
+  using length_output_it_t = offset_t*;
   using num_runs_output_iterator_t = offset_t*;
-  using equality_op_t              = cub::Equality;
-  using accum_t                    = offset_t;
+  using equality_op_t = cub::Equality;
+  using accum_t = offset_t;
 
-#if !TUNE_BASE
-  using dispatch_t =
-    cub::DeviceRleDispatch<keys_input_it_t,
-                           offset_output_it_t,
-                           length_output_it_t,
-                           num_runs_output_iterator_t,
-                           equality_op_t,
-                           offset_t,
-                           device_rle_policy_hub>;
-#else
-  using dispatch_t =
-    cub::DeviceRleDispatch<keys_input_it_t,
-                           offset_output_it_t,
-                           length_output_it_t,
-                           num_runs_output_iterator_t,
-                           equality_op_t,
-                           offset_t>;
-#endif
+  #if !TUNE_BASE
+  using dispatch_t = cub::DeviceRleDispatch<keys_input_it_t,
+                                            offset_output_it_t,
+                                            length_output_it_t,
+                                            num_runs_output_iterator_t,
+                                            equality_op_t,
+                                            offset_t,
+                                            device_rle_policy_hub>;
+  #else
+  using dispatch_t = cub::DeviceRleDispatch<keys_input_it_t,
+                                            offset_output_it_t,
+                                            length_output_it_t,
+                                            num_runs_output_iterator_t,
+                                            equality_op_t,
+                                            offset_t>;
+  #endif
 
-  const auto elements                    = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   constexpr std::size_t min_segment_size = 1;
-  const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
+  const std::size_t max_segment_size = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
   thrust::device_vector<offset_t> num_runs_out(1);
   thrust::device_vector<offset_t> out_offsets(elements);
   thrust::device_vector<offset_t> out_lengths(elements);
-  thrust::device_vector<T> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
+  thrust::device_vector<T> in_keys =
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
 
-  T* d_in_keys             = thrust::raw_pointer_cast(in_keys.data());
-  offset_t* d_out_offsets  = thrust::raw_pointer_cast(out_offsets.data());
-  offset_t* d_out_lengths  = thrust::raw_pointer_cast(out_lengths.data());
-  offset_t* d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
+  T *d_in_keys             = thrust::raw_pointer_cast(in_keys.data());
+  offset_t *d_out_offsets  = thrust::raw_pointer_cast(out_offsets.data());
+  offset_t *d_out_lengths  = thrust::raw_pointer_cast(out_lengths.data());
+  offset_t *d_num_runs_out = thrust::raw_pointer_cast(num_runs_out.data());
 
-  std::uint8_t* d_temp_storage{};
+  std::uint8_t *d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_offsets,
-    d_out_lengths,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
+  dispatch_t::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in_keys,
+                       d_out_offsets,
+                       d_out_lengths,
+                       d_num_runs_out,
+                       equality_op_t{},
+                       elements,
+                       0);
 
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  dispatch_t::Dispatch(
-    d_temp_storage,
-    temp_storage_bytes,
-    d_in_keys,
-    d_out_offsets,
-    d_out_lengths,
-    d_num_runs_out,
-    equality_op_t{},
-    elements,
-    0);
+  dispatch_t::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in_keys,
+                       d_out_offsets,
+                       d_out_lengths,
+                       d_num_runs_out,
+                       equality_op_t{},
+                       elements,
+                       0);
   cudaDeviceSynchronize();
   const OffsetT num_runs = num_runs_out[0];
 
@@ -150,17 +145,16 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in_keys,
-      d_out_offsets,
-      d_out_lengths,
-      d_num_runs_out,
-      equality_op_t{},
-      elements,
-      launch.get_stream());
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
+    dispatch_t::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_in_keys,
+                         d_out_offsets,
+                         d_out_lengths,
+                         d_num_runs_out,
+                         equality_op_t{},
+                         elements,
+                         launch.get_stream());
   });
 }
 

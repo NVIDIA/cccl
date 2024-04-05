@@ -11,6 +11,7 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
+
 // <cuda/std/atomic>
 
 // struct atomic_flag
@@ -20,9 +21,10 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-  cuda::std::atomic_flag f0;
-  cuda::std::atomic_flag f(f0);
+int main(int, char**)
+{
+    cuda::std::atomic_flag f0;
+    cuda::std::atomic_flag f(f0);
 
   return 0;
 }

@@ -14,26 +14,31 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-struct B {
-  int id_;
+struct B
+{
+    int id_;
 
-  __host__ __device__ explicit B(int i) : id_(i) {}
+    __host__ __device__ explicit B(int i) : id_(i) {}
 
-  __host__ __device__ virtual ~B() {}
+    __host__ __device__ virtual ~B() {}
 };
 
-struct D : B {
-  __host__ __device__ explicit D(int i) : B(i) {}
+struct D
+    : B
+{
+    __host__ __device__ explicit D(int i) : B(i) {}
 };
 
-int main(int, char**) {
-  // cuda::std::unique_ptr not supported
-  /*
+int main(int, char**)
+{
+    // cuda::std::unique_ptr not supported
+    /*
     {
         typedef cuda::std::pair<long, cuda::std::unique_ptr<D>> T0;
         typedef cuda::std::tuple<long long, cuda::std::unique_ptr<B>> T1;

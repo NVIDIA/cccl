@@ -2,8 +2,9 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  include <async/inclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/test_policy_overloads.h>
+
+#include <async/inclusive_scan/mixin.h>
 
 // Test using mixed int/float types for:
 // - input_value_type       | (int, float)
@@ -27,13 +28,12 @@ struct mixed_type_input_generator
   static input_type generate_input(std::size_t num_values)
   {
     input_type input(num_values);
-    thrust::sequence(
-      input.begin(),
-      input.end(),
-      // fractional values are chosen deliberately to test
-      // casting orders and accumulator types:
-      static_cast<value_type>(1.5),
-      static_cast<value_type>(1));
+    thrust::sequence(input.begin(),
+                     input.end(),
+                     // fractional values are chosen deliberately to test
+                     // casting orders and accumulator types:
+                     static_cast<value_type>(1.5),
+                     static_cast<value_type>(1));
     return input;
   }
 };
@@ -42,29 +42,30 @@ struct mixed_type_input_generator
 // using float vs. int.
 struct mixed_types_postfix_args
 {
-  using postfix_args_type = std::tuple< // Overloads to test:
-    std::tuple<>, // - no extra args
-    std::tuple<thrust::plus<>>, // - plus<>
-    std::tuple<thrust::plus<int>>, // - plus<int>
-    std::tuple<thrust::plus<float>> // - plus<float>
+  using postfix_args_type = std::tuple<  // Overloads to test:
+    std::tuple<>,                        // - no extra args
+    std::tuple<thrust::plus<>>,          // - plus<>
+    std::tuple<thrust::plus<int>>,       // - plus<int>
+    std::tuple<thrust::plus<float>>      // - plus<float>
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{
-      std::tuple<>{},
-      std::make_tuple(thrust::plus<>{}),
-      std::make_tuple(thrust::plus<int>{}),
-      std::make_tuple(thrust::plus<float>{})};
+    return postfix_args_type{std::tuple<>{},
+                             std::make_tuple(thrust::plus<>{}),
+                             std::make_tuple(thrust::plus<int>{}),
+                             std::make_tuple(thrust::plus<float>{})};
   }
 };
 
-template <typename input_value_type, typename output_value_type>
+template <typename input_value_type,
+          typename output_value_type>
 struct invoker
     : mixed_type_input_generator<input_value_type>
     , testing::async::mixin::output::device_vector<output_value_type>
     , mixed_types_postfix_args
-    , testing::async::inclusive_scan::mixin::invoke_reference::host_synchronous<input_value_type, output_value_type>
+    , testing::async::inclusive_scan::mixin::invoke_reference::
+        host_synchronous<input_value_type, output_value_type>
     , testing::async::inclusive_scan::mixin::invoke_async::simple
     // Use almost_equal instead of almost_equal_if_fp because floating point
     // addition may be hidden in the scan_op (thrust::plus<float> is always

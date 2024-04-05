@@ -20,27 +20,29 @@
 #include "../../rep.h"
 
 template <class D>
-__host__ __device__ void test() {
-  LIBCPP_ASSERT_NOEXCEPT(
-      cuda::std::chrono::duration_values<typename D::rep>::min());
+__host__ __device__
+void test()
+{
+    LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<typename D::rep>::min());
 #if TEST_STD_VER > 2017
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<typename D::rep>::min());
+    ASSERT_NOEXCEPT(       cuda::std::chrono::duration_values<typename D::rep>::min());
 #endif
-  {
+    {
     typedef typename D::rep Rep;
     Rep min_rep = cuda::std::chrono::duration_values<Rep>::min();
     assert(D::min().count() == min_rep);
-  }
-  {
+    }
+    {
     typedef typename D::rep Rep;
     constexpr Rep min_rep = cuda::std::chrono::duration_values<Rep>::min();
     static_assert(D::min().count() == min_rep, "");
-  }
+    }
 }
 
-int main(int, char**) {
-  test<cuda::std::chrono::duration<int> >();
-  test<cuda::std::chrono::duration<Rep> >();
+int main(int, char**)
+{
+    test<cuda::std::chrono::duration<int> >();
+    test<cuda::std::chrono::duration<Rep> >();
 
   return 0;
 }

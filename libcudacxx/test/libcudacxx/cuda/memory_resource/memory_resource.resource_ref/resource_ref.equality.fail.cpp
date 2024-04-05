@@ -41,15 +41,15 @@ struct resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(!cuda::property_with_value<Property> &&
-                       _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend void get_property(const resource&, Property) noexcept {}
+  _LIBCUDACXX_REQUIRES( !cuda::property_with_value<Property> &&
+   _CUDA_VSTD::_One_of<Property, Properties...>) //
+      friend void get_property(const resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&&
-                           _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const resource& res,
-                                                    Property) noexcept {
+  _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property>&&
+       _CUDA_VSTD::_One_of<Property, Properties...>) //
+      friend typename Property::value_type
+      get_property(const resource& res, Property) noexcept {
     return res._val;
   }
 };
@@ -76,7 +76,9 @@ void test_equality() {
 }
 
 int main(int, char**) {
-  NV_IF_TARGET(NV_IS_HOST, (test_equality();))
+    NV_IF_TARGET(NV_IS_HOST,(
+        test_equality();
+    ))
 
-  return 0;
+    return 0;
 }

@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_categories.h>
+#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -34,21 +34,34 @@ namespace detail
 {
 
 template <typename T>
-struct is_host_iterator_category
-    : thrust::detail::or_< thrust::detail::is_convertible<T, thrust::input_host_iterator_tag>,
-                           thrust::detail::is_convertible<T, thrust::output_host_iterator_tag> >
-{}; // end is_host_iterator_category
+  struct is_host_iterator_category
+    : thrust::detail::or_<
+        thrust::detail::is_convertible<T, thrust::input_host_iterator_tag>,
+        thrust::detail::is_convertible<T, thrust::output_host_iterator_tag>
+      >
+{
+}; // end is_host_iterator_category
 
 template <typename T>
-struct is_device_iterator_category
-    : thrust::detail::or_< thrust::detail::is_convertible<T, thrust::input_device_iterator_tag>,
-                           thrust::detail::is_convertible<T, thrust::output_device_iterator_tag> >
-{}; // end is_device_iterator_category
+  struct is_device_iterator_category
+    : thrust::detail::or_<
+        thrust::detail::is_convertible<T, thrust::input_device_iterator_tag>,
+        thrust::detail::is_convertible<T, thrust::output_device_iterator_tag>
+      >
+{
+}; // end is_device_iterator_category
+
 
 template <typename T>
-struct is_iterator_category : thrust::detail::or_< is_host_iterator_category<T>, is_device_iterator_category<T> >
-{}; // end is_iterator_category
+  struct is_iterator_category
+    : thrust::detail::or_<
+        is_host_iterator_category<T>,
+        is_device_iterator_category<T>
+      >
+{
+}; // end is_iterator_category
 
-} // namespace detail
+} // end detail
 
 THRUST_NAMESPACE_END
+

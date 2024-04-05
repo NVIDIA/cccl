@@ -23,24 +23,25 @@
 
 #include "test_macros.h"
 
+
 struct Foo;
 
 __host__ __device__ Foo& get_foo();
 
 __host__ __device__ void test() {
-  Foo& foo = get_foo();
-  cuda::std::reference_wrapper<Foo> ref = cuda::std::ref(foo);
-  assert(&ref.get() == &foo);
+    Foo& foo = get_foo();
+    cuda::std::reference_wrapper<Foo> ref = cuda::std::ref(foo);
+    assert(&ref.get() == &foo);
 }
 
-struct Foo {};
+struct Foo { };
 
 __host__ __device__ Foo& get_foo() {
-  static Foo foo;
-  return foo;
+    static Foo foo;
+    return foo;
 }
 
 int main(int, char**) {
-  test();
-  return 0;
+    test();
+    return 0;
 }

@@ -52,10 +52,10 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           cub::BlockScanAlgorithm ScanAlgorithm,
           int Descending,
           typename Key>
-__launch_bounds__(BlockThreads, 1) __global__ void kernel(Key* d_keys, int* d_ranks)
+__launch_bounds__(BlockThreads, 1) __global__ void kernel(Key *d_keys, int *d_ranks)
 {
-  using block_radix_rank =
-    cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
+  using block_radix_rank = cub::detail::
+    block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
 
   using storage_t = typename block_radix_rank::TempStorage;
 
@@ -67,9 +67,9 @@ __launch_bounds__(BlockThreads, 1) __global__ void kernel(Key* d_keys, int* d_ra
   int ranks[ItemsPerThread];
 
   constexpr bool uses_warp_striped_arrangement =
-    RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH
-    || RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH_EARLY_COUNTS_ANY
-    || RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
+    RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH ||
+    RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH_EARLY_COUNTS_ANY ||
+    RankAlgorithm == cub::RadixRankAlgorithm::RADIX_RANK_MATCH_EARLY_COUNTS_ATOMIC_OR;
 
   if (uses_warp_striped_arrangement)
   {
@@ -106,17 +106,14 @@ struct pair_t
   Key key;
   int value;
 
-  bool operator<(const pair_t& b) const
-  {
-    return (key < b.key);
-  }
+  bool operator<(const pair_t &b) const { return (key < b.key); }
 };
 
 template <bool DESCENDING, typename Key>
-void Initialize(GenMode gen_mode, Key* h_keys, int* h_reference_ranks, int num_items, int num_bits)
+void Initialize(GenMode gen_mode, Key *h_keys, int *h_reference_ranks, int num_items, int num_bits)
 {
   std::unique_ptr<pair_t<Key>[]> h_pairs_storage(new pair_t<Key>[num_items]);
-  pair_t<Key>* h_pairs = h_pairs_storage.get();
+  pair_t<Key> *h_pairs = h_pairs_storage.get();
 
   for (int i = 0; i < num_items; ++i)
   {
@@ -167,11 +164,11 @@ void TestDriver(GenMode gen_mode)
   std::unique_ptr<int[]> h_reference_ranks(new int[tile_size]);
 
   // Allocate device arrays
-  Key* d_keys  = nullptr;
-  int* d_ranks = nullptr;
+  Key *d_keys  = nullptr;
+  int *d_ranks = nullptr;
 
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_keys, sizeof(Key) * tile_size));
-  CubDebugExit(g_allocator.DeviceAllocate((void**) &d_ranks, sizeof(int) * tile_size));
+  CubDebugExit(g_allocator.DeviceAllocate((void **)&d_keys, sizeof(Key) * tile_size));
+  CubDebugExit(g_allocator.DeviceAllocate((void **)&d_ranks, sizeof(int) * tile_size));
 
   // Initialize problem and solution on host
   Initialize<Descending>(gen_mode, h_keys.get(), h_reference_ranks.get(), tile_size, RadixBits);
@@ -188,7 +185,8 @@ void TestDriver(GenMode gen_mode)
   CubDebugExit(cudaDeviceSynchronize());
 
   // Check keys results
-  const bool compare = CompareDeviceResults(h_reference_ranks.get(), d_ranks, tile_size, g_verbose, g_verbose);
+  const bool compare =
+    CompareDeviceResults(h_reference_ranks.get(), d_ranks, tile_size, g_verbose, g_verbose);
   AssertEquals(0, compare);
 
   if (d_keys)
@@ -211,9 +209,11 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
           typename Key>
 void TestValid(cub::Int2Type<true> /*fits_smem_capacity*/)
 {
-  TestDriver<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(UNIFORM);
+  TestDriver<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    UNIFORM);
 
-  TestDriver<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(INTEGER_SEED);
+  TestDriver<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    INTEGER_SEED);
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -236,13 +236,14 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
 void Test()
 {
   // Check size of smem storage for the target arch to make sure it will fit
-  using block_radix_rank =
-    cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
+  using block_radix_rank = cub::detail::
+    block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
   cub::Int2Type<(sizeof(storage_t) <= 48 * 1024)> fits_smem_capacity;
 
-  TestValid<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(fits_smem_capacity);
+  TestValid<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(
+    fits_smem_capacity);
 }
 
 template <cub::RadixRankAlgorithm RankAlgorithm,
@@ -312,7 +313,7 @@ void Test()
   Test<BlockThreads>(cub::Int2Type<(BlockThreads % 32) == 0>{});
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   // Initialize command line
   CommandLineArgs args(argc, argv);
@@ -339,3 +340,4 @@ int main(int argc, char** argv)
 
   return 0;
 }
+

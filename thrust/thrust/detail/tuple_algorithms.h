@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
+
 #include <thrust/detail/type_deduction.h>
 #include <thrust/type_traits/integer_sequence.h>
 
@@ -35,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 
 template <typename Tuple, std::size_t... Is>
 auto tuple_subset(Tuple&& t, index_sequence<Is...>)
-  THRUST_DECLTYPE_RETURNS(std::make_tuple(std::get<Is>(THRUST_FWD(t))...));
+THRUST_DECLTYPE_RETURNS(std::make_tuple(std::get<Is>(THRUST_FWD(t))...));
 
 namespace detail
 {
@@ -43,34 +44,72 @@ namespace detail
 template <typename Tuple, typename F, std::size_t... Is>
 void tuple_for_each_impl(Tuple&& t, F&& f, index_sequence<Is...>)
 {
-  auto l = {(f(std::get<Is>(t)), 0)...};
+  auto l = { (f(std::get<Is>(t)), 0)... };
   THRUST_UNUSED_VAR(l);
 }
 
 template <typename Tuple, typename F, std::size_t... Is>
 auto tuple_transform_impl(Tuple&& t, F&& f, index_sequence<Is...>)
-  THRUST_DECLTYPE_RETURNS(std::make_tuple(f(std::get<Is>(t))...));
+THRUST_DECLTYPE_RETURNS(std::make_tuple(f(std::get<Is>(t))...));
 
 } // namespace detail
 
 template <typename... Ts, typename F>
 auto tuple_for_each(std::tuple<Ts...>& t, F&& f)
-  THRUST_DECLTYPE_RETURNS(detail::tuple_for_each_impl(t, THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_for_each_impl(
+    t
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 template <typename... Ts, typename F>
 auto tuple_for_each(std::tuple<Ts...> const& t, F&& f)
-  THRUST_DECLTYPE_RETURNS(detail::tuple_for_each_impl(t, THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_for_each_impl(
+    t
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 template <typename... Ts, typename F>
-auto tuple_for_each(std::tuple<Ts...>&& t, F&& f) THRUST_DECLTYPE_RETURNS(
-  detail::tuple_for_each_impl(std::move(t), THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+auto tuple_for_each(std::tuple<Ts...>&& t, F&& f)
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_for_each_impl(
+    std::move(t)
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 
 template <typename... Ts, typename F>
 auto tuple_transform(std::tuple<Ts...>& t, F&& f)
-  THRUST_DECLTYPE_RETURNS(detail::tuple_transform_impl(t, THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_transform_impl(
+    t
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 template <typename... Ts, typename F>
 auto tuple_transform(std::tuple<Ts...> const& t, F&& f)
-  THRUST_DECLTYPE_RETURNS(detail::tuple_transform_impl(t, THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_transform_impl(
+    t
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 template <typename... Ts, typename F>
-auto tuple_transform(std::tuple<Ts...>&& t, F&& f) THRUST_DECLTYPE_RETURNS(
-  detail::tuple_transform_impl(std::move(t), THRUST_FWD(f), make_index_sequence<sizeof...(Ts)>{}));
+auto tuple_transform(std::tuple<Ts...>&& t, F&& f)
+THRUST_DECLTYPE_RETURNS(
+  detail::tuple_transform_impl(
+    std::move(t)
+  , THRUST_FWD(f)
+  , make_index_sequence<sizeof...(Ts)>{}
+  )
+);
 
 THRUST_NAMESPACE_END
+
+

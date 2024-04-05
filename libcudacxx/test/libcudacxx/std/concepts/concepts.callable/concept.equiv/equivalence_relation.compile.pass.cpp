@@ -12,6 +12,7 @@
 // template<class F, class... Args>
 // concept equivalence_relation;
 
+
 #include <cuda/std/concepts>
 
 using cuda::std::equivalence_relation;
@@ -24,8 +25,8 @@ static_assert(!equivalence_relation<bool (*)(), int, double>, "");
 static_assert(!equivalence_relation<bool (*)(int), int, double>, "");
 static_assert(!equivalence_relation<bool (*)(double), int, double>, "");
 
-static_assert(!equivalence_relation<bool(double, double*), double, double*>,
-              "");
+static_assert(
+    !equivalence_relation<bool(double, double*), double, double*>, "");
 static_assert(!equivalence_relation<bool(int&, int&), double&, double&>, "");
 
 struct S1 {};

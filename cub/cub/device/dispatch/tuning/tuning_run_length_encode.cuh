@@ -54,30 +54,10 @@ namespace detail
 namespace rle
 {
 
-enum class primitive_key
-{
-  no,
-  yes
-};
-enum class primitive_length
-{
-  no,
-  yes
-};
-enum class key_size
-{
-  _1,
-  _2,
-  _4,
-  _8,
-  _16,
-  unknown
-};
-enum class length_size
-{
-  _4,
-  unknown
-};
+enum class primitive_key { no, yes };
+enum class primitive_length { no, yes };
+enum class key_size { _1, _2, _4, _8, _16, unknown };
+enum class length_size { _4, unknown };
 
 template <class T>
 constexpr primitive_key is_primitive_key()
@@ -94,13 +74,12 @@ constexpr primitive_length is_primitive_length()
 template <class KeyT>
 constexpr key_size classify_key_size()
 {
-  return sizeof(KeyT) == 1 ? key_size::_1
-       : sizeof(KeyT) == 2 ? key_size::_2
-       : sizeof(KeyT) == 4 ? key_size::_4
-       : sizeof(KeyT) == 8 ? key_size::_8
-       : sizeof(KeyT) == 16
-         ? key_size::_16
-         : key_size::unknown;
+  return   sizeof(KeyT) == 1  ? key_size::_1
+         : sizeof(KeyT) == 2  ? key_size::_2
+         : sizeof(KeyT) == 4  ? key_size::_4
+         : sizeof(KeyT) == 8  ? key_size::_8
+         : sizeof(KeyT) == 16 ? key_size::_16
+                              : key_size::unknown;
 }
 
 template <class LengthT>
@@ -109,8 +88,7 @@ constexpr length_size classify_length_size()
   return sizeof(LengthT) == 4 ? length_size::_4 : length_size::unknown;
 }
 
-namespace encode
-{
+namespace encode {
 
 template <class LengthT,
           class KeyT,
@@ -131,7 +109,9 @@ struct sm90_tuning
     (max_input_bytes <= 8)
       ? 6
       : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+                CUB_MAX(1,
+                        ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) /
+                          combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -231,7 +211,9 @@ struct sm80_tuning
     (max_input_bytes <= 8)
       ? 6
       : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+                CUB_MAX(1,
+                        ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) /
+                          combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -329,8 +311,8 @@ struct sm90_tuning
 
   static constexpr int nominal_4b_items_per_thread = 15;
 
-  static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
+  static constexpr int items = CUB_MIN(nominal_4b_items_per_thread,
+                                 CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
@@ -437,8 +419,8 @@ struct sm80_tuning
 
   static constexpr int nominal_4b_items_per_thread = 15;
 
-  static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
+  static constexpr int items = CUB_MIN(nominal_4b_items_per_thread,
+                                 CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 
@@ -535,12 +517,13 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 
 } // namespace non_trivial_runs
 
+
 } // namespace rle
 
 template <class LengthT, class KeyT>
 struct device_run_length_encode_policy_hub
 {
-  static constexpr int MAX_INPUT_BYTES      = CUB_MAX(sizeof(KeyT), sizeof(LengthT));
+  static constexpr int MAX_INPUT_BYTES = CUB_MAX(sizeof(KeyT), sizeof(LengthT));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(LengthT);
 
   struct DefaultTuning
@@ -550,7 +533,9 @@ struct device_run_length_encode_policy_hub
       (MAX_INPUT_BYTES <= 8)
         ? 6
         : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
-                  CUB_MAX(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
+                  CUB_MAX(1,
+                          ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) /
+                            COMBINED_INPUT_BYTES));
 
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
@@ -613,8 +598,8 @@ struct device_non_trivial_runs_policy_hub
     {
       NOMINAL_4B_ITEMS_PER_THREAD = 15,
 
-      ITEMS_PER_THREAD =
-        CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(KeyT)))),
+      ITEMS_PER_THREAD = CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
+                                 CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(KeyT)))),
     };
 
     using RleSweepPolicyT =
@@ -638,14 +623,13 @@ struct device_non_trivial_runs_policy_hub
   {
     using tuning = detail::rle::non_trivial_runs::sm80_tuning<LengthT, KeyT>;
 
-    using RleSweepPolicyT =
-      AgentRlePolicy<tuning::threads,
-                     tuning::items,
-                     tuning::load_algorithm,
-                     LOAD_DEFAULT,
-                     tuning::store_with_time_slicing,
-                     BLOCK_SCAN_WARP_SCANS,
-                     typename tuning::delay_constructor>;
+    using RleSweepPolicyT = AgentRlePolicy<tuning::threads,
+                                           tuning::items,
+                                           tuning::load_algorithm,
+                                           LOAD_DEFAULT,
+                                           tuning::store_with_time_slicing,
+                                           BLOCK_SCAN_WARP_SCANS,
+                                           typename tuning::delay_constructor>;
   };
 
   // SM86
@@ -673,5 +657,6 @@ struct device_non_trivial_runs_policy_hub
 };
 
 } // namespace detail
+
 
 CUB_NAMESPACE_END

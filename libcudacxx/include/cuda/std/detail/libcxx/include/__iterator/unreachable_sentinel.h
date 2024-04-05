@@ -13,7 +13,7 @@
 #define _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -37,50 +37,49 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#  ifdef _CCCL_COMPILER_MSVC
-  ;
-namespace __unreachable_sentinel_detail
-{
+#ifdef _CCCL_COMPILER_MSVC
+    ;
+namespace __unreachable_sentinel_detail {
 struct __unreachable_base
-#  endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 {
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
-  operator==(const unreachable_sentinel_t&, const _Iter&) noexcept
-  {
+  _LIBCUDACXX_HIDE_FROM_ABI
+      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+      operator==(const unreachable_sentinel_t &, const _Iter &) noexcept {
     return false;
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
-  operator==(const _Iter&, const unreachable_sentinel_t&) noexcept
-  {
+  _LIBCUDACXX_HIDE_FROM_ABI
+      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+      operator==(const _Iter &, const unreachable_sentinel_t &) noexcept {
     return false;
   }
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
-  operator!=(const unreachable_sentinel_t&, const _Iter&) noexcept
-  {
+  _LIBCUDACXX_HIDE_FROM_ABI
+      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+      operator!=(const unreachable_sentinel_t &, const _Iter &) noexcept {
     return true;
   }
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
-  operator!=(const _Iter&, const unreachable_sentinel_t&) noexcept
-  {
+  _LIBCUDACXX_HIDE_FROM_ABI
+      _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_NODISCARD_FRIEND constexpr bool
+      operator!=(const _Iter &, const unreachable_sentinel_t &) noexcept {
     return true;
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 };
 
-#  ifdef _CCCL_COMPILER_MSVC
+#ifdef _CCCL_COMPILER_MSVC
 } // namespace __unreachable_sentinel_detail
-struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_base
-{};
-#  endif // _CCCL_COMPILER_MSVC
+struct unreachable_sentinel_t
+    : __unreachable_sentinel_detail::__unreachable_base {};
+#endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 

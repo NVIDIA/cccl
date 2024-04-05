@@ -38,20 +38,24 @@
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#  include <cub/device/device_for.cuh>
+#include <cub/device/device_for.cuh>
 
-#  include <thrust/system/cuda/config.h>
-#  include <thrust/system/cuda/detail/cdp_dispatch.h>
-#  include <thrust/system/cuda/detail/util.h>
+#include <thrust/system/cuda/config.h>
+#include <thrust/system/cuda/detail/cdp_dispatch.h>
+#include <thrust/system/cuda/detail/util.h>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub
-{
+namespace cuda_cub {
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived, class F, class Size>
-void _CCCL_HOST_DEVICE parallel_for(execution_policy<Derived>& policy, F f, Size count)
+template <class Derived,
+          class F,
+          class Size>
+void _CCCL_HOST_DEVICE
+parallel_for(execution_policy<Derived> &policy,
+             F                          f,
+             Size                       count)
 {
   if (count == 0)
   {

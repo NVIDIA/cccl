@@ -35,8 +35,9 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
 #include <cuda_fp16.h>
+
+#include <cuda/std/type_traits>
 
 #include <cstdint>
 #include <cstring>
@@ -44,9 +45,10 @@
 
 #ifdef __GNUC__
 // There's a ton of type-punning going on in this file.
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
+
 
 /******************************************************************************
  * half_t
@@ -57,264 +59,287 @@
  */
 struct half_t
 {
-  uint16_t __x;
+    uint16_t __x;
 
-  /// Constructor from __half
-  __host__ __device__ __forceinline__ explicit half_t(const __half& other)
-  {
-    __x = reinterpret_cast<const uint16_t&>(other);
-  }
-
-  /// Constructor from integer
-  __host__ __device__ __forceinline__ explicit half_t(int a)
-  {
-    *this = half_t(float(a));
-  }
-
-  /// Constructor from std::size_t
-  __host__ __device__ __forceinline__ explicit half_t(std::size_t a)
-  {
-    *this = half_t(float(a));
-  }
-
-  /// Constructor from double
-  __host__ __device__ __forceinline__ explicit half_t(double a)
-  {
-    *this = half_t(float(a));
-  }
-
-  /// Constructor from unsigned long long int
-  template < typename T,
-             typename = typename ::cuda::std::enable_if<
-               ::cuda::std::is_same<T, unsigned long long int>::value
-               && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
-  __host__ __device__ __forceinline__ explicit half_t(T a)
-  {
-    *this = half_t(float(a));
-  }
-
-  /// Default constructor
-  half_t() = default;
-
-  /// Constructor from float
-  __host__ __device__ __forceinline__ explicit half_t(float a)
-  {
-    // Stolen from Norbert Juffa
-    uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
-    uint16_t ir;
-
-    ir = (ia >> 16) & 0x8000;
-
-    if ((ia & 0x7f800000) == 0x7f800000)
+    /// Constructor from __half
+    __host__ __device__ __forceinline__
+    explicit half_t(const __half &other)
     {
-      if ((ia & 0x7fffffff) == 0x7f800000)
-      {
-        ir |= 0x7c00; /* infinity */
-      }
-      else
-      {
-        ir = 0x7fff; /* canonical NaN */
-      }
+        __x = reinterpret_cast<const uint16_t&>(other);
     }
-    else if ((ia & 0x7f800000) >= 0x33000000)
+
+    /// Constructor from integer
+    __host__ __device__ __forceinline__
+    explicit half_t(int a)
     {
-      int32_t shift = (int32_t) ((ia >> 23) & 0xff) - 127;
-      if (shift > 15)
-      {
-        ir |= 0x7c00; /* infinity */
-      }
-      else
-      {
-        ia = (ia & 0x007fffff) | 0x00800000; /* extract mantissa */
-        if (shift < -14)
-        { /* denormal */
-          ir |= ia >> (-1 - shift);
-          ia = ia << (32 - (-1 - shift));
-        }
-        else
-        { /* normal */
-          ir |= ia >> (24 - 11);
-          ia = ia << (32 - (24 - 11));
-          ir = static_cast<uint16_t>(ir + ((14 + shift) << 10));
-        }
-        /* IEEE-754 round to nearest of even */
-        if ((ia > 0x80000000) || ((ia == 0x80000000) && (ir & 1)))
+        *this = half_t(float(a));
+    }
+
+    /// Constructor from std::size_t
+    __host__ __device__ __forceinline__
+    explicit half_t(std::size_t a)
+    {
+        *this = half_t(float(a));
+    }
+
+    /// Constructor from double
+    __host__ __device__ __forceinline__
+    explicit half_t(double a)
+    {
+        *this = half_t(float(a));
+    }
+
+    /// Constructor from unsigned long long int
+    template < typename T,
+               typename = typename ::cuda::std::enable_if<
+                 ::cuda::std::is_same<T, unsigned long long int>::value
+                 && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+    __host__ __device__ __forceinline__ explicit half_t(T a)
+    {
+      *this = half_t(float(a));
+    }
+
+    /// Default constructor
+    half_t() = default;
+
+    /// Constructor from float
+    __host__ __device__ __forceinline__
+    explicit half_t(float a)
+    {
+        // Stolen from Norbert Juffa
+        uint32_t ia = *reinterpret_cast<uint32_t*>(&a);
+        uint16_t ir;
+
+        ir = (ia >> 16) & 0x8000;
+
+        if ((ia & 0x7f800000) == 0x7f800000)
         {
-          ir++;
+            if ((ia & 0x7fffffff) == 0x7f800000)
+            {
+                ir |= 0x7c00; /* infinity */
+            }
+            else
+            {
+                ir = 0x7fff; /* canonical NaN */
+            }
         }
-      }
-    }
-
-    this->__x = ir;
-  }
-
-  /// Cast to __half
-  __host__ __device__ __forceinline__ operator __half() const
-  {
-    return reinterpret_cast<const __half&>(__x);
-  }
-
-  /// Cast to float
-  __host__ __device__ __forceinline__ operator float() const
-  {
-    // Stolen from Andrew Kerr
-
-    int sign        = ((this->__x >> 15) & 1);
-    int exp         = ((this->__x >> 10) & 0x1f);
-    int mantissa    = (this->__x & 0x3ff);
-    std::uint32_t f = 0;
-
-    if (exp > 0 && exp < 31)
-    {
-      // normal
-      exp += 112;
-      f = (sign << 31) | (exp << 23) | (mantissa << 13);
-    }
-    else if (exp == 0)
-    {
-      if (mantissa)
-      {
-        // subnormal
-        exp += 113;
-        while ((mantissa & (1 << 10)) == 0)
+        else if ((ia & 0x7f800000) >= 0x33000000)
         {
-          mantissa <<= 1;
-          exp--;
+            int32_t shift = (int32_t) ((ia >> 23) & 0xff) - 127;
+            if (shift > 15)
+            {
+                ir |= 0x7c00; /* infinity */
+            }
+            else
+            {
+                ia = (ia & 0x007fffff) | 0x00800000; /* extract mantissa */
+                if (shift < -14)
+                { /* denormal */
+                    ir |= ia >> (-1 - shift);
+                    ia = ia << (32 - (-1 - shift));
+                }
+                else
+                { /* normal */
+                    ir |= ia >> (24 - 11);
+                    ia = ia << (32 - (24 - 11));
+                    ir = static_cast<uint16_t>(ir + ((14 + shift) << 10));
+                }
+                /* IEEE-754 round to nearest of even */
+                if ((ia > 0x80000000) || ((ia == 0x80000000) && (ir & 1)))
+                {
+                    ir++;
+                }
+            }
         }
-        mantissa &= 0x3ff;
-        f = (sign << 31) | (exp << 23) | (mantissa << 13);
-      }
-      else if (sign)
-      {
-        f = 0x80000000; // negative zero
-      }
-      else
-      {
-        f = 0x0; // zero
-      }
+
+        this->__x = ir;
     }
-    else if (exp == 31)
+
+    /// Cast to __half
+    __host__ __device__ __forceinline__
+    operator __half() const
     {
-      if (mantissa)
-      {
-        f = 0x7fffffff; // not a number
-      }
-      else
-      {
-        f = (0xff << 23) | (sign << 31); //  inf
-      }
+        return reinterpret_cast<const __half&>(__x);
     }
 
-    static_assert(sizeof(float) == sizeof(std::uint32_t), "4-byte size check");
-    float ret{};
-    std::memcpy(&ret, &f, sizeof(float));
-    return ret;
-  }
+    /// Cast to float
+    __host__ __device__ __forceinline__
+    operator float() const
+    {
+        // Stolen from Andrew Kerr
 
-  /// Get raw storage
-  __host__ __device__ __forceinline__ uint16_t raw() const
-  {
-    return this->__x;
-  }
+        int sign        = ((this->__x >> 15) & 1);
+        int exp         = ((this->__x >> 10) & 0x1f);
+        int mantissa    = (this->__x & 0x3ff);
+        std::uint32_t f = 0;
 
-  /// Equality
-  __host__ __device__ __forceinline__ friend bool operator==(const half_t& a, const half_t& b)
-  {
-    return (a.__x == b.__x);
-  }
+        if (exp > 0 && exp < 31)
+        {
+            // normal
+            exp += 112;
+            f = (sign << 31) | (exp << 23) | (mantissa << 13);
+        }
+        else if (exp == 0)
+        {
+            if (mantissa)
+            {
+                // subnormal
+                exp += 113;
+                while ((mantissa & (1 << 10)) == 0)
+                {
+                    mantissa <<= 1;
+                    exp--;
+                }
+                mantissa &= 0x3ff;
+                f = (sign << 31) | (exp << 23) | (mantissa << 13);
+            }
+            else if (sign)
+            {
+                f = 0x80000000; // negative zero
+            }
+            else
+            {
+                f = 0x0;        // zero
+            }
+        }
+        else if (exp == 31)
+        {
+            if (mantissa)
+            {
+                f = 0x7fffffff;     // not a number
+            }
+            else
+            {
+                f = (0xff << 23) | (sign << 31);    //  inf
+            }
+        }
 
-  /// Inequality
-  __host__ __device__ __forceinline__ friend bool operator!=(const half_t& a, const half_t& b)
-  {
-    return (a.__x != b.__x);
-  }
+	static_assert(sizeof(float) == sizeof(std::uint32_t), "4-byte size check");
+	float ret{};
+	std::memcpy(&ret, &f, sizeof(float));
+	return ret;
+    }
 
-  /// Assignment by sum
-  __host__ __device__ __forceinline__ half_t& operator+=(const half_t& rhs)
-  {
-    *this = half_t(float(*this) + float(rhs));
-    return *this;
-  }
 
-  /// Multiply
-  __host__ __device__ __forceinline__ half_t operator*(const half_t& other)
-  {
-    return half_t(float(*this) * float(other));
-  }
+    /// Get raw storage
+    __host__ __device__ __forceinline__
+    uint16_t raw() const
+    {
+        return this->__x;
+    }
 
-  /// Divide
-  __host__ __device__ __forceinline__ half_t operator/(const half_t& other) const
-  {
-    return half_t(float(*this) / float(other));
-  }
+    /// Equality
+    __host__ __device__ __forceinline__
+    friend bool operator ==(const half_t &a, const half_t &b)
+    {
+        return (a.__x == b.__x);
+    }
 
-  /// Add
-  __host__ __device__ __forceinline__ half_t operator+(const half_t& other)
-  {
-    return half_t(float(*this) + float(other));
-  }
+    /// Inequality
+    __host__ __device__ __forceinline__
+    friend bool operator !=(const half_t &a, const half_t &b)
+    {
+        return (a.__x != b.__x);
+    }
 
-  /// Sub
-  __host__ __device__ __forceinline__ half_t operator-(const half_t& other) const
-  {
-    return half_t(float(*this) - float(other));
-  }
+    /// Assignment by sum
+    __host__ __device__ __forceinline__
+    half_t& operator +=(const half_t &rhs)
+    {
+        *this = half_t(float(*this) + float(rhs));
+        return *this;
+    }
 
-  /// Less-than
-  __host__ __device__ __forceinline__ bool operator<(const half_t& other) const
-  {
-    return float(*this) < float(other);
-  }
+    /// Multiply
+    __host__ __device__ __forceinline__
+    half_t operator*(const half_t &other)
+    {
+        return half_t(float(*this) * float(other));
+    }
 
-  /// Less-than-equal
-  __host__ __device__ __forceinline__ bool operator<=(const half_t& other) const
-  {
-    return float(*this) <= float(other);
-  }
+    /// Divide
+    __host__ __device__ __forceinline__
+    half_t operator/(const half_t &other) const
+    {
+        return half_t(float(*this) / float(other));
+    }
 
-  /// Greater-than
-  __host__ __device__ __forceinline__ bool operator>(const half_t& other) const
-  {
-    return float(*this) > float(other);
-  }
+    /// Add
+    __host__ __device__ __forceinline__
+    half_t operator+(const half_t &other)
+    {
+        return half_t(float(*this) + float(other));
+    }
 
-  /// Greater-than-equal
-  __host__ __device__ __forceinline__ bool operator>=(const half_t& other) const
-  {
-    return float(*this) >= float(other);
-  }
+    /// Sub
+    __host__ __device__ __forceinline__
+    half_t operator-(const half_t &other) const
+    {
+        return half_t(float(*this) - float(other));
+    }
 
-  /// numeric_traits<half_t>::max
-  __host__ __device__ __forceinline__ static half_t(max)()
-  {
-    uint16_t max_word = 0x7BFF;
-    return reinterpret_cast<half_t&>(max_word);
-  }
+    /// Less-than
+    __host__ __device__ __forceinline__
+    bool operator<(const half_t &other) const
+    {
+        return float(*this) < float(other);
+    }
 
-  /// numeric_traits<half_t>::lowest
-  __host__ __device__ __forceinline__ static half_t lowest()
-  {
-    uint16_t lowest_word = 0xFBFF;
-    return reinterpret_cast<half_t&>(lowest_word);
-  }
+    /// Less-than-equal
+    __host__ __device__ __forceinline__
+    bool operator<=(const half_t &other) const
+    {
+        return float(*this) <= float(other);
+    }
+
+    /// Greater-than
+    __host__ __device__ __forceinline__
+    bool operator>(const half_t &other) const
+    {
+        return float(*this) > float(other);
+    }
+
+    /// Greater-than-equal
+    __host__ __device__ __forceinline__
+    bool operator>=(const half_t &other) const
+    {
+        return float(*this) >= float(other);
+    }
+
+    /// numeric_traits<half_t>::max
+    __host__ __device__ __forceinline__
+    static half_t (max)() {
+        uint16_t max_word = 0x7BFF;
+        return reinterpret_cast<half_t&>(max_word);
+    }
+
+    /// numeric_traits<half_t>::lowest
+    __host__ __device__ __forceinline__
+    static half_t lowest() {
+        uint16_t lowest_word = 0xFBFF;
+        return reinterpret_cast<half_t&>(lowest_word);
+    }
 };
+
 
 /******************************************************************************
  * I/O stream overloads
  ******************************************************************************/
 
 /// Insert formatted \p half_t into the output stream
-inline std::ostream& operator<<(std::ostream& out, const half_t& x)
+inline std::ostream& operator<<(std::ostream &out, const half_t &x)
 {
-  out << (float) x;
-  return out;
+    out << (float)x;
+    return out;
 }
 
+
 /// Insert formatted \p __half into the output stream
-inline std::ostream& operator<<(std::ostream& out, const __half& x)
+inline std::ostream& operator<<(std::ostream &out, const __half &x)
 {
-  return out << half_t(x);
+    return out << half_t(x);
 }
+
 
 /******************************************************************************
  * Traits overloads
@@ -323,22 +348,17 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
 template <>
 struct CUB_NS_QUALIFIER::FpLimits<half_t>
 {
-  static __host__ __device__ __forceinline__ half_t Max()
-  {
-    return (half_t::max)();
-  }
+    static __host__ __device__ __forceinline__ half_t Max() { return (half_t::max)(); }
 
-  static __host__ __device__ __forceinline__ half_t Lowest()
-  {
-    return half_t::lowest();
-  }
+    static __host__ __device__ __forceinline__ half_t Lowest() { return half_t::lowest(); }
 };
 
 template <>
 struct CUB_NS_QUALIFIER::NumericTraits<half_t>
-    : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, true, false, unsigned short, half_t>
+    : CUB_NS_QUALIFIER::
+        BaseTraits<FLOATING_POINT, true, false, unsigned short, half_t>
 {};
 
 #ifdef __GNUC__
-#  pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif

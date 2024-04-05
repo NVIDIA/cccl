@@ -25,8 +25,7 @@ static_assert(cuda::std::incrementable<int**>);
 static_assert(!cuda::std::incrementable<postfix_increment_returns_void>);
 static_assert(!cuda::std::incrementable<postfix_increment_returns_copy>);
 static_assert(!cuda::std::incrementable<has_integral_minus>);
-static_assert(
-    !cuda::std::incrementable<has_distinct_difference_type_and_minus>);
+static_assert(!cuda::std::incrementable<has_distinct_difference_type_and_minus>);
 static_assert(!cuda::std::incrementable<missing_difference_type>);
 static_assert(!cuda::std::incrementable<floating_difference_type>);
 static_assert(!cuda::std::incrementable<non_const_minus>);
@@ -41,7 +40,9 @@ static_assert(cuda::std::incrementable<incrementable_without_difference_type>);
 static_assert(cuda::std::incrementable<difference_type_and_void_minus>);
 static_assert(!cuda::std::incrementable<noncopyable_with_difference_type>);
 static_assert(!cuda::std::incrementable<noncopyable_without_difference_type>);
-static_assert(
-    !cuda::std::incrementable<noncopyable_with_difference_type_and_minus>);
+static_assert(!cuda::std::incrementable<noncopyable_with_difference_type_and_minus>);
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

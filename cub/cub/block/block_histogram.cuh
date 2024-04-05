@@ -190,234 +190,247 @@ template <typename T,
 class BlockHistogram
 {
 private:
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-  };
 
-  /// Internal specialization.
-  using InternalBlockHistogram =
-    cub::detail::conditional_t<ALGORITHM == BLOCK_HISTO_SORT,
-                               BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
-                               BlockHistogramAtomic<BINS>>;
+    /// Constants
+    enum
+    {
+        /// The thread block size in threads
+        BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+    };
 
-  /// Shared memory storage layout type for BlockHistogram
-  typedef typename InternalBlockHistogram::TempStorage _TempStorage;
+    /// Internal specialization.
+    using InternalBlockHistogram =
+      cub::detail::conditional_t<ALGORITHM == BLOCK_HISTO_SORT,
+                                 BlockHistogramSort<T,
+                                                    BLOCK_DIM_X,
+                                                    ITEMS_PER_THREAD,
+                                                    BINS,
+                                                    BLOCK_DIM_Y,
+                                                    BLOCK_DIM_Z>,
+                                 BlockHistogramAtomic<BINS>>;
 
-  /// Shared storage reference
-  _TempStorage& temp_storage;
+    /// Shared memory storage layout type for BlockHistogram
+    typedef typename InternalBlockHistogram::TempStorage _TempStorage;
 
-  /// Linear thread-id
-  unsigned int linear_tid;
+    /// Shared storage reference
+    _TempStorage &temp_storage;
 
-  /// Internal storage allocator
-  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
-  {
-    __shared__ _TempStorage private_storage;
-    return private_storage;
-  }
+    /// Linear thread-id
+    unsigned int linear_tid;
+
+    /// Internal storage allocator
+    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+    {
+        __shared__ _TempStorage private_storage;
+        return private_storage;
+    }
 
 public:
-  /// @smemstorage{BlockHistogram}
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
 
-  //! @name Collective constructors
-  //! @{
+    /// @smemstorage{BlockHistogram}
+    struct TempStorage : Uninitialized<_TempStorage> {};
 
-  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
-      : temp_storage(PrivateStorage())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-  {}
 
-  /**
-   * @brief Collective constructor using the specified memory allocation as temporary storage.
-   *
-   * @param[in] temp_storage
-   *   Reference to memory allocation having layout type TempStorage
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-  {}
+    //! @name Collective constructors
+    //! @{
 
-  //! @}  end member group
-  //! @name Histogram operations
-  //! @{
+    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram()
+    :
+        temp_storage(PrivateStorage()),
+        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    {}
 
-  //! @rst
-  //! Initialize the shared histogram counters to zero.
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a the initialization and update of a
-  //! histogram of 512 integer samples that are partitioned across 128 threads
-  //! where each thread owns 4 samples.
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!      // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
-  //!      typedef cub::BlockHistogram<unsigned char, 128, 4, 256> BlockHistogram;
-  //!
-  //!      // Allocate shared memory for BlockHistogram
-  //!      __shared__ typename BlockHistogram::TempStorage temp_storage;
-  //!
-  //!      // Allocate shared memory for block-wide histogram bin counts
-  //!      __shared__ unsigned int smem_histogram[256];
-  //!
-  //!      // Obtain input samples per thread
-  //!      unsigned char thread_samples[4];
-  //!      ...
-  //!
-  //!      // Initialize the block-wide histogram
-  //!      BlockHistogram(temp_storage).InitHistogram(smem_histogram);
-  //!
-  //!      // Update the block-wide histogram
-  //!      BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
-  //!
-  //! @endrst
-  //!
-  //! @tparam CounterT
-  //!   **[inferred]** Histogram counter type
-  template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[BINS])
-  {
-    // Initialize histogram bin counts to zeros
-    int histo_offset = 0;
+    /**
+     * @brief Collective constructor using the specified memory allocation as temporary storage.
+     *
+     * @param[in] temp_storage
+     *   Reference to memory allocation having layout type TempStorage
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockHistogram(TempStorage &temp_storage)
+        : temp_storage(temp_storage.Alias())
+        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+    {}
 
-#pragma unroll
-    for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+
+    //! @}  end member group
+    //! @name Histogram operations
+    //! @{
+
+
+    //! @rst
+    //! Initialize the shared histogram counters to zero.
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a the initialization and update of a
+    //! histogram of 512 integer samples that are partitioned across 128 threads
+    //! where each thread owns 4 samples.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!      // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4 character samples each
+    //!      typedef cub::BlockHistogram<unsigned char, 128, 4, 256> BlockHistogram;
+    //!
+    //!      // Allocate shared memory for BlockHistogram
+    //!      __shared__ typename BlockHistogram::TempStorage temp_storage;
+    //!
+    //!      // Allocate shared memory for block-wide histogram bin counts
+    //!      __shared__ unsigned int smem_histogram[256];
+    //!
+    //!      // Obtain input samples per thread
+    //!      unsigned char thread_samples[4];
+    //!      ...
+    //!
+    //!      // Initialize the block-wide histogram
+    //!      BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+    //!
+    //!      // Update the block-wide histogram
+    //!      BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+    //!
+    //! @endrst
+    //!
+    //! @tparam CounterT
+    //!   **[inferred]** Histogram counter type
+    template <typename CounterT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void InitHistogram(CounterT histogram[BINS])
     {
-      histogram[histo_offset + linear_tid] = 0;
+        // Initialize histogram bin counts to zeros
+        int histo_offset = 0;
+
+        #pragma unroll
+        for(; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
+        {
+            histogram[histo_offset + linear_tid] = 0;
+        }
+        // Finish up with guarded initialization if necessary
+        if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+        {
+            histogram[histo_offset + linear_tid] = 0;
+        }
     }
-    // Finish up with guarded initialization if necessary
-    if ((BINS % BLOCK_THREADS != 0) && (histo_offset + linear_tid < BINS))
+
+    //! @rst
+    //! Constructs a block-wide histogram in shared/device-accessible memory.
+    //! Each thread contributes an array of input elements.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a 256-bin histogram of 512 integer samples that
+    //! are partitioned across 128 threads where each thread owns 4 samples.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
+    //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
+    //!        // BlockHistogram;
+    //!
+    //!        // Allocate shared memory for BlockHistogram
+    //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
+    //!
+    //!        // Allocate shared memory for block-wide histogram bin counts
+    //!        __shared__ unsigned int smem_histogram[256];
+    //!
+    //!        // Obtain input samples per thread
+    //!        unsigned char thread_samples[4];
+    //!        ...
+    //!
+    //!        // Compute the block-wide histogram
+    //!        BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
+    //!
+    //! @endrst
+    //!
+    //! @tparam CounterT
+    //!   **[inferred]** Histogram counter type
+    //!
+    //! @param[in] items
+    //!   Calling thread's input values to histogram
+    //!
+    //! @param[out] histogram
+    //!   Reference to shared/device-accessible memory histogram
+    template <typename CounterT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
     {
-      histogram[histo_offset + linear_tid] = 0;
+        // Initialize histogram bin counts to zeros
+        InitHistogram(histogram);
+
+        CTA_SYNC();
+
+        // Composite the histogram
+        InternalBlockHistogram(temp_storage).Composite(items, histogram);
     }
-  }
 
-  //! @rst
-  //! Constructs a block-wide histogram in shared/device-accessible memory.
-  //! Each thread contributes an array of input elements.
-  //!
-  //! - @granularity
-  //! - @smemreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a 256-bin histogram of 512 integer samples that
-  //! are partitioned across 128 threads where each thread owns 4 samples.
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
-  //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
-  //!        // BlockHistogram;
-  //!
-  //!        // Allocate shared memory for BlockHistogram
-  //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
-  //!
-  //!        // Allocate shared memory for block-wide histogram bin counts
-  //!        __shared__ unsigned int smem_histogram[256];
-  //!
-  //!        // Obtain input samples per thread
-  //!        unsigned char thread_samples[4];
-  //!        ...
-  //!
-  //!        // Compute the block-wide histogram
-  //!        BlockHistogram(temp_storage).Histogram(thread_samples, smem_histogram);
-  //!
-  //! @endrst
-  //!
-  //! @tparam CounterT
-  //!   **[inferred]** Histogram counter type
-  //!
-  //! @param[in] items
-  //!   Calling thread's input values to histogram
-  //!
-  //! @param[out] histogram
-  //!   Reference to shared/device-accessible memory histogram
-  template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Histogram(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
-  {
-    // Initialize histogram bin counts to zeros
-    InitHistogram(histogram);
+    //! @rst
+    //! Updates an existing block-wide histogram in shared/device-accessible memory.
+    //! Each thread composites an array of input elements.
+    //!
+    //! - @granularity
+    //! - @smemreuse
+    //!
+    //! Snippet
+    //! +++++++
+    //!
+    //! The code snippet below illustrates a the initialization and update of a
+    //! histogram of 512 integer samples that are partitioned across 128 threads
+    //! where each thread owns 4 samples.
+    //!
+    //! .. code-block:: c++
+    //!
+    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
+    //!
+    //!    __global__ void ExampleKernel(...)
+    //!    {
+    //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
+    //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
+    //!        // BlockHistogram;
+    //!
+    //!        // Allocate shared memory for BlockHistogram
+    //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
+    //!
+    //!        // Allocate shared memory for block-wide histogram bin counts
+    //!        __shared__ unsigned int smem_histogram[256];
+    //!
+    //!        // Obtain input samples per thread
+    //!        unsigned char thread_samples[4];
+    //!        ...
+    //!
+    //!        // Initialize the block-wide histogram
+    //!        BlockHistogram(temp_storage).InitHistogram(smem_histogram);
+    //!
+    //!        // Update the block-wide histogram
+    //!        BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
+    //!
+    //! @endrst
+    //!
+    //! @tparam CounterT
+    //!   **[inferred]** Histogram counter type
+    //!
+    //! @param[in] items
+    //!   Calling thread's input values to histogram
+    //!
+    //! @param[out] histogram
+    //!   Reference to shared/device-accessible memory histogram
+    template <typename CounterT>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD],
+                                              CounterT histogram[BINS])
+    {
+        InternalBlockHistogram(temp_storage).Composite(items, histogram);
+    }
 
-    CTA_SYNC();
-
-    // Composite the histogram
-    InternalBlockHistogram(temp_storage).Composite(items, histogram);
-  }
-
-  //! @rst
-  //! Updates an existing block-wide histogram in shared/device-accessible memory.
-  //! Each thread composites an array of input elements.
-  //!
-  //! - @granularity
-  //! - @smemreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a the initialization and update of a
-  //! histogram of 512 integer samples that are partitioned across 128 threads
-  //! where each thread owns 4 samples.
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_histogram.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize a 256-bin BlockHistogram type for a 1D block of 128 threads having 4
-  //!        // character samples each typedef cub::BlockHistogram<unsigned char, 128, 4, 256>
-  //!        // BlockHistogram;
-  //!
-  //!        // Allocate shared memory for BlockHistogram
-  //!        __shared__ typename BlockHistogram::TempStorage temp_storage;
-  //!
-  //!        // Allocate shared memory for block-wide histogram bin counts
-  //!        __shared__ unsigned int smem_histogram[256];
-  //!
-  //!        // Obtain input samples per thread
-  //!        unsigned char thread_samples[4];
-  //!        ...
-  //!
-  //!        // Initialize the block-wide histogram
-  //!        BlockHistogram(temp_storage).InitHistogram(smem_histogram);
-  //!
-  //!        // Update the block-wide histogram
-  //!        BlockHistogram(temp_storage).Composite(thread_samples, smem_histogram);
-  //!
-  //! @endrst
-  //!
-  //! @tparam CounterT
-  //!   **[inferred]** Histogram counter type
-  //!
-  //! @param[in] items
-  //!   Calling thread's input values to histogram
-  //!
-  //! @param[out] histogram
-  //!   Reference to shared/device-accessible memory histogram
-  template <typename CounterT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
-  {
-    InternalBlockHistogram(temp_storage).Composite(items, histogram);
-  }
 };
 
 CUB_NAMESPACE_END

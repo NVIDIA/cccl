@@ -45,9 +45,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using month = cuda::std::chrono::month;
-  std::cout << month{1};
+int main(int, char**)
+{
+   using month = cuda::std::chrono::month;
+   std::cout << month{1};
 
   return 0;
 }

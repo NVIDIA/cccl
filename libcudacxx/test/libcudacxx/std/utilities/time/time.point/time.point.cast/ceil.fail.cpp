@@ -19,10 +19,12 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
+
 #include <cuda/std/chrono>
 
-int main(int, char**) {
-  cuda::std::chrono::ceil<int>(cuda::std::chrono::system_clock::now());
+int main(int, char**)
+{
+    cuda::std::chrono::ceil<int>(cuda::std::chrono::system_clock::now());
 
   return 0;
 }

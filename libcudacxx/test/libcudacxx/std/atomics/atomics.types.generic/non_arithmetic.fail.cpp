@@ -16,18 +16,19 @@
 
 #include "test_macros.h"
 #if !defined(TEST_COMPILER_MSVC)
-#include "placement_new.h"
+  #include "placement_new.h"
 #endif
 #include "cuda_space_selector.h"
 
 struct non_arithmetic {
-  int a;
+    int a;
 };
 
-int main(int, char**) {
-  cuda::std::atomic<non_arithmetic> a;
-  a.fetch_add(non_arithmetic{0});
-  a.fetch_sub(non_arithmetic{0});
+int main(int, char**)
+{
+    cuda::std::atomic<non_arithmetic> a;
+    a.fetch_add(non_arithmetic{0});
+    a.fetch_sub(non_arithmetic{0});
 
-  return 0;
+    return 0;
 }

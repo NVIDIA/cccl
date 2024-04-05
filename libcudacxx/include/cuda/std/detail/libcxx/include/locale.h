@@ -45,4 +45,4 @@ Functions:
 
 #include_next <locale.h>
 
-#endif // _LIBCUDACXX_LOCALE_H
+#endif  // _LIBCUDACXX_LOCALE_H

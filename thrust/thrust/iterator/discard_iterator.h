@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file thrust/iterator/discard_iterator.h
  *  \brief An iterator which "discards" (ignores) values assigned to it upon dereference
  */
@@ -96,48 +97,51 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see make_discard_iterator
  */
-template <typename System = use_default>
-class discard_iterator : public detail::discard_iterator_base<System>::type
+template<typename System = use_default>
+  class discard_iterator
+    : public detail::discard_iterator_base<System>::type
 {
-  /*! \cond
-   */
-  friend class thrust::iterator_core_access;
-  typedef typename detail::discard_iterator_base<System>::type super_t;
-  typedef typename detail::discard_iterator_base<System>::incrementable incrementable;
-  typedef typename detail::discard_iterator_base<System>::base_iterator base_iterator;
+    /*! \cond
+     */
+    friend class thrust::iterator_core_access;
+    typedef typename detail::discard_iterator_base<System>::type          super_t;
+    typedef typename detail::discard_iterator_base<System>::incrementable incrementable;
+    typedef typename detail::discard_iterator_base<System>::base_iterator base_iterator;
 
-public:
-  typedef typename super_t::reference reference;
-  typedef typename super_t::value_type value_type;
+  public:
+    typedef typename super_t::reference  reference;
+    typedef typename super_t::value_type value_type;
 
-  /*! \endcond
-   */
+    /*! \endcond
+     */
 
-  /*! This constructor receives an optional index specifying the position of this
-   *  \p discard_iterator in a range.
-   *
-   *  \p i The index of this \p discard_iterator in a range. Defaults to the
-   *       value returned by \c Incrementable's null constructor. For example,
-   *       when <tt>Incrementable == int</tt>, \c 0.
-   */
-  _CCCL_HOST_DEVICE discard_iterator(incrementable const& i = incrementable())
-      : super_t(base_iterator(i))
-  {}
+    /*! This constructor receives an optional index specifying the position of this
+     *  \p discard_iterator in a range.
+     *
+     *  \p i The index of this \p discard_iterator in a range. Defaults to the
+     *       value returned by \c Incrementable's null constructor. For example,
+     *       when <tt>Incrementable == int</tt>, \c 0.
+     */
+    _CCCL_HOST_DEVICE
+    discard_iterator(incrementable const &i = incrementable())
+      : super_t(base_iterator(i)) {}
 
-  /*! \cond
-   */
+    /*! \cond
+     */
 
-private: // Core iterator interface
-  _CCCL_HOST_DEVICE reference dereference() const
-  {
-    return m_element;
-  }
+  private: // Core iterator interface
+    _CCCL_HOST_DEVICE
+    reference dereference() const
+    {
+      return m_element;
+    }
 
-  mutable value_type m_element;
+    mutable value_type m_element;
 
-  /*! \endcond
-   */
+    /*! \endcond
+     */
 }; // end constant_iterator
+
 
 /*! \p make_discard_iterator creates a \p discard_iterator from an optional index parameter.
  *
@@ -148,8 +152,8 @@ private: // Core iterator interface
  *
  *  \see constant_iterator
  */
-inline _CCCL_HOST_DEVICE discard_iterator<>
-make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>::difference_type(0))
+inline _CCCL_HOST_DEVICE
+discard_iterator<> make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>::difference_type(0))
 {
   return discard_iterator<>(i);
 } // end make_discard_iterator()
@@ -163,3 +167,4 @@ make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>
 THRUST_NAMESPACE_END
 
 THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
+

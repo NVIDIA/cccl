@@ -172,13 +172,15 @@ private:
     IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
 
     /// Whether the data type is an integer (which has fully-associative addition)
-    IS_INTEGER = ((Traits<T>::CATEGORY == SIGNED_INTEGER) || (Traits<T>::CATEGORY == UNSIGNED_INTEGER))
+    IS_INTEGER = ((Traits<T>::CATEGORY == SIGNED_INTEGER) ||
+                  (Traits<T>::CATEGORY == UNSIGNED_INTEGER))
   };
 
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
-  using InternalWarpScan = cub::detail::
-    conditional_t<IS_POW_OF_TWO, WarpScanShfl<T, LOGICAL_WARP_THREADS>, WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+  using InternalWarpScan = cub::detail::conditional_t<IS_POW_OF_TWO,
+                                                      WarpScanShfl<T, LOGICAL_WARP_THREADS>,
+                                                      WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -188,7 +190,7 @@ private:
    ******************************************************************************/
 
   /// Shared storage reference
-  _TempStorage& temp_storage;
+  _TempStorage &temp_storage;
   unsigned int lane_id;
 
   /******************************************************************************
@@ -208,7 +210,7 @@ public:
   //!
   //! @param[in] temp_storage
   //!   Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage& temp_storage)
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpScan(TempStorage &temp_storage)
       : temp_storage(temp_storage.Alias())
       , lane_id(IS_ARCH_WARP ? LaneId() : LaneId() % LOGICAL_WARP_THREADS)
   {}
@@ -257,7 +259,7 @@ public:
   //!
   //! @param[out] inclusive_output
   //!   Calling thread's output item. May be aliased with `input`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T &inclusive_output)
   {
     InclusiveScan(input, inclusive_output, cub::Sum());
   }
@@ -310,7 +312,7 @@ public:
   //!
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T &inclusive_output, T &warp_aggregate)
   {
     InclusiveScan(input, inclusive_output, cub::Sum(), warp_aggregate);
   }
@@ -361,7 +363,7 @@ public:
   //!
   //! @param[out] exclusive_output
   //!   Calling thread's output item. May be aliased with `input`.
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T &exclusive_output)
   {
     T initial_value{};
     ExclusiveScan(input, exclusive_output, initial_value, cub::Sum());
@@ -418,7 +420,7 @@ public:
   //!
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T &exclusive_output, T &warp_aggregate)
   {
     T initial_value{};
     ExclusiveScan(input, exclusive_output, initial_value, cub::Sum(), warp_aggregate);
@@ -478,7 +480,7 @@ public:
   //! @param[in] can_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T &inclusive_output, ScanOp scan_op)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op);
   }
@@ -539,7 +541,8 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items.
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& inclusive_output, ScanOp scan_op, T& warp_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T &inclusive_output, ScanOp scan_op, T &warp_aggregate)
   {
     InternalWarpScan(temp_storage).InclusiveScan(input, inclusive_output, scan_op, warp_aggregate);
   }
@@ -600,7 +603,7 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T &exclusive_output, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -666,14 +669,20 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScan(T input, T &exclusive_output, T initial_value, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(input,
+                    inclusive_output,
+                    exclusive_output,
+                    scan_op,
+                    initial_value,
+                    Int2Type<IS_INTEGER>());
   }
 
   //! @rst
@@ -737,14 +746,20 @@ public:
   //! @param[out] warp_aggregate
   //!   Warp-wide aggregate reduction of input items
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveScan(T input, T& exclusive_output, ScanOp scan_op, T& warp_aggregate)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ExclusiveScan(T input, T &exclusive_output, ScanOp scan_op, T &warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
 
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, warp_aggregate, scan_op, Int2Type<IS_INTEGER>());
+    internal.Update(input,
+                    inclusive_output,
+                    exclusive_output,
+                    warp_aggregate,
+                    scan_op,
+                    Int2Type<IS_INTEGER>());
   }
 
   //! @rst
@@ -812,15 +827,20 @@ public:
   //!
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ExclusiveScan(T input, T& exclusive_output, T initial_value, ScanOp scan_op, T& warp_aggregate)
+  ExclusiveScan(T input, T &exclusive_output, T initial_value, ScanOp scan_op, T &warp_aggregate)
   {
     InternalWarpScan internal(temp_storage);
 
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(input,
+                    inclusive_output,
+                    exclusive_output,
+                    warp_aggregate,
+                    scan_op,
+                    initial_value,
+                    Int2Type<IS_INTEGER>());
   }
 
   //! @}  end member group
@@ -887,7 +907,8 @@ public:
   //! @param[in] scan_op
   //!   Binary scan operator
   template <typename ScanOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Scan(T input, T& inclusive_output, T& exclusive_output, ScanOp scan_op)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Scan(T input, T &inclusive_output, T &exclusive_output, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
@@ -960,13 +981,18 @@ public:
   //!   Binary scan operator
   template <typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Scan(T input, T& inclusive_output, T& exclusive_output, T initial_value, ScanOp scan_op)
+  Scan(T input, T &inclusive_output, T &exclusive_output, T initial_value, ScanOp scan_op)
   {
     InternalWarpScan internal(temp_storage);
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, initial_value, Int2Type<IS_INTEGER>());
+    internal.Update(input,
+                    inclusive_output,
+                    exclusive_output,
+                    scan_op,
+                    initial_value,
+                    Int2Type<IS_INTEGER>());
   }
 
   //! @}  end member group

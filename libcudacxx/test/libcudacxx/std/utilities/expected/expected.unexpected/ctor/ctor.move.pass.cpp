@@ -20,9 +20,7 @@
 struct Error {
   int i;
   __host__ __device__ constexpr Error(int ii) : i(ii) {}
-  __host__ __device__ constexpr Error(Error&& other) : i(other.i) {
-    other.i = 0;
-  }
+  __host__ __device__ constexpr Error(Error&& other) : i(other.i) {other.i = 0;}
 };
 
 __host__ __device__ constexpr bool test() {

@@ -36,8 +36,7 @@ int main(int, char**) {
 
   {
     cuda::std::variant<int, double> v1(3);
-    cuda::std::variant v2 =
-        cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
+    cuda::std::variant v2 = cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
     ASSERT_SAME_TYPE(decltype(v2), cuda::std::variant<int, double>);
     unused(v2);
   }

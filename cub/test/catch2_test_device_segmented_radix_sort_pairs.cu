@@ -25,12 +25,12 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_segmented_radix_sort.cuh>
-#include <cub/util_type.cuh>
-
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/memory.h>
 #include <thrust/scatter.h>
+
+#include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/util_type.cuh>
 
 #include <algorithm>
 #include <limits>
@@ -46,18 +46,15 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairs, sort_pairs);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortPairsDescending, sort_pairs_descending);
 
 using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
-using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
+using value_types = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
 
 // Index types used for OffsetsT testing
 using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
 
-CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
-         "[pairs][segmented][radix][sort][device]",
-         value_types,
-         offset_types)
+CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing", "[pairs][segmented][radix][sort][device]", value_types, offset_types)
 {
-  using key_t    = cuda::std::uint32_t;
-  using value_t  = c2h::get<0, TestType>;
+  using key_t = cuda::std::uint32_t;
+  using value_t = c2h::get<0, TestType>;
   using offset_t = c2h::get<1, TestType>;
 
   constexpr std::size_t min_num_items = 1 << 5;
@@ -117,9 +114,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
       end_bit<key_t>());
   }
 
-  auto refs        = segmented_radix_sort_reference(in_keys, in_values, is_descending, offsets);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
+  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, offsets);
+  auto &ref_keys = refs.first;
+  auto &ref_values = refs.second;
 
   REQUIRE(ref_keys == out_keys);
   REQUIRE(ref_values == out_values);
@@ -127,8 +124,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
 
 CUB_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API", "[pairs][segmented][radix][sort][device]", value_types)
 {
-  using key_t    = cuda::std::uint32_t;
-  using value_t  = c2h::get<0, TestType>;
+  using key_t = cuda::std::uint32_t;
+  using value_t = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
 
   constexpr std::size_t max_num_items = 1 << 18;
@@ -174,15 +171,15 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: DoubleBuffer API", "[pairs][segme
          begin_bit<key_t>(),
          end_bit<key_t>());
 
-  key_buffer.selector   = action.selector();
+  key_buffer.selector = action.selector();
   value_buffer.selector = action.selector();
   action.finalize();
 
-  auto refs        = segmented_radix_sort_reference(in_keys, in_values, is_descending, offsets);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
+  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, offsets);
+  auto &ref_keys = refs.first;
+  auto &ref_values = refs.second;
 
-  auto& keys   = key_buffer.selector == 0 ? in_keys : out_keys;
+  auto& keys = key_buffer.selector == 0 ? in_keys : out_keys;
   auto& values = value_buffer.selector == 0 ? in_values : out_values;
 
   REQUIRE(ref_keys == keys);
@@ -193,8 +190,8 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
          "[pairs][segmented][radix][sort][device]",
          value_types)
 {
-  using key_t    = cuda::std::uint32_t;
-  using value_t  = c2h::get<0, TestType>;
+  using key_t = cuda::std::uint32_t;
+  using value_t = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
 
   constexpr std::size_t max_num_items = 1 << 18;
@@ -228,7 +225,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
     c2h::device_vector<std::size_t> indices(num_empty_segments);
     c2h::gen(CUB_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = thrust::make_constant_iterator(key_t{0});
-    auto end   = begin + num_empty_segments;
+    auto end = begin + num_empty_segments;
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), end_offsets.begin());
   }
@@ -268,9 +265,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
       end_bit<key_t>());
   }
 
-  auto refs        = segmented_radix_sort_reference(in_keys, in_values, is_descending, begin_offsets, end_offsets);
-  auto& ref_keys   = refs.first;
-  auto& ref_values = refs.second;
+  auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, begin_offsets, end_offsets);
+  auto &ref_keys = refs.first;
+  auto &ref_values = refs.second;
 
   REQUIRE((ref_keys == out_keys) == true);
   REQUIRE((ref_values == out_values) == true);

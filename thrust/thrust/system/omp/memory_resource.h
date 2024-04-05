@@ -29,24 +29,27 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/mr/fancy_pointer_resource.h>
 #include <thrust/mr/new.h>
+#include <thrust/mr/fancy_pointer_resource.h>
+
 #include <thrust/system/omp/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
+namespace system { namespace omp
 {
 
 //! \cond
 namespace detail
 {
-typedef thrust::mr::fancy_pointer_resource< thrust::mr::new_delete_resource, thrust::omp::pointer<void> >
-  native_resource;
+    typedef thrust::mr::fancy_pointer_resource<
+        thrust::mr::new_delete_resource,
+        thrust::omp::pointer<void>
+    > native_resource;
 
-typedef thrust::mr::fancy_pointer_resource< thrust::mr::new_delete_resource, thrust::omp::universal_pointer<void> >
-  universal_native_resource;
+    typedef thrust::mr::fancy_pointer_resource<
+        thrust::mr::new_delete_resource,
+        thrust::omp::universal_pointer<void>
+    > universal_native_resource;
 } // namespace detail
 //! \endcond
 
@@ -69,7 +72,6 @@ typedef detail::native_resource universal_host_pinned_memory_resource;
 /*! \}
  */
 
-} // namespace omp
-} // namespace system
+}} // namespace system::omp
 
 THRUST_NAMESPACE_END

@@ -36,30 +36,25 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __pop_heap(
-  _RandomAccessIterator __first,
-  _RandomAccessIterator __last,
-  _Compare& __comp,
-  typename iterator_traits<_RandomAccessIterator>::difference_type __len)
-{
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+__pop_heap(_RandomAccessIterator __first,
+           _RandomAccessIterator __last,
+           _Compare& __comp,
+           typename iterator_traits<_RandomAccessIterator>::difference_type __len) {
   // Calling `pop_heap` on an empty range is undefined behavior, but in practice it will be a no-op.
   _LIBCUDACXX_ASSERT(__len > 0, "The heap given to pop_heap must be non-empty");
 
   __comp_ref_type<_Compare> __comp_ref = __comp;
 
   using value_type = typename iterator_traits<_RandomAccessIterator>::value_type;
-  if (__len > 1)
-  {
+  if (__len > 1) {
     value_type __top             = _IterOps<_AlgPolicy>::__iter_move(__first); // create a hole at __first
     _RandomAccessIterator __hole = _CUDA_VSTD::__floyd_sift_down<_AlgPolicy>(__first, __comp_ref, __len);
     --__last;
 
-    if (__hole == __last)
-    {
+    if (__hole == __last) {
       *__hole = _CUDA_VSTD::move(__top);
-    }
-    else
-    {
+    } else {
       *__hole = _IterOps<_AlgPolicy>::__iter_move(__last);
       ++__hole;
       *__last = _CUDA_VSTD::move(__top);
@@ -70,10 +65,8 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __pop_heap(
 
 template <class _RandomAccessIterator, class _Compare>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
-{
-  static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value,
-                "Iterators must be copy constructible.");
+pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp) {
+  static_assert(_CUDA_VSTD::is_copy_constructible<_RandomAccessIterator>::value, "Iterators must be copy constructible.");
   static_assert(_CUDA_VSTD::is_copy_assignable<_RandomAccessIterator>::value, "Iterators must be copy assignable.");
 
   typename iterator_traits<_RandomAccessIterator>::difference_type __len = __last - __first;
@@ -82,8 +75,7 @@ pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare _
 
 template <class _RandomAccessIterator>
 inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
-{
+pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last) {
   _CUDA_VSTD::pop_heap(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __less{});
 }
 

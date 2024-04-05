@@ -29,11 +29,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <type_traits>
+#include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-
-#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -62,7 +61,11 @@ namespace cuda_cub
  *  \see raw_pointer_cast
  */
 template <typename T>
-using pointer = thrust::pointer< T, thrust::cuda_cub::tag, thrust::tagged_reference<T, thrust::cuda_cub::tag> >;
+using pointer = thrust::pointer<
+  T,
+  thrust::cuda_cub::tag,
+  thrust::tagged_reference<T, thrust::cuda_cub::tag>
+>;
 
 /*! \p cuda::universal_pointer stores a pointer to an object allocated in
  *  memory accessible by the \p cuda system and host systems.
@@ -87,7 +90,11 @@ using pointer = thrust::pointer< T, thrust::cuda_cub::tag, thrust::tagged_refere
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer< T, thrust::cuda_cub::tag, typename std::add_lvalue_reference<T>::type >;
+using universal_pointer = thrust::pointer<
+  T,
+  thrust::cuda_cub::tag,
+  typename std::add_lvalue_reference<T>::type
+>;
 
 /*! \p cuda::reference is a wrapped reference to an object stored in memory
  *  accessible by the \p cuda system. \p cuda::reference is the type of the
@@ -115,15 +122,12 @@ using reference = thrust::tagged_reference<T, thrust::cuda_cub::tag>;
  *  aliased in the top-level <tt>thrust::cuda</tt> namespace for easy access.
  *
  */
-namespace system
-{
-namespace cuda
+namespace system { namespace cuda
 {
 using thrust::cuda_cub::pointer;
-using thrust::cuda_cub::reference;
 using thrust::cuda_cub::universal_pointer;
-} // namespace cuda
-} // namespace system
+using thrust::cuda_cub::reference;
+}} // namespace system::cuda
 /*! \}
  */
 
@@ -133,8 +137,9 @@ using thrust::cuda_cub::universal_pointer;
 namespace cuda
 {
 using thrust::cuda_cub::pointer;
-using thrust::cuda_cub::reference;
 using thrust::cuda_cub::universal_pointer;
+using thrust::cuda_cub::reference;
 } // namespace cuda
 
 THRUST_NAMESPACE_END
+

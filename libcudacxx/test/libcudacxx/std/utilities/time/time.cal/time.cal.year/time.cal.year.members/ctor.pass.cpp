@@ -23,23 +23,25 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using year = cuda::std::chrono::year;
+int main(int, char**)
+{
+    using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(year{});
-  ASSERT_NOEXCEPT(year(0U));
-  ASSERT_NOEXCEPT(static_cast<int>(year(0U)));
+    ASSERT_NOEXCEPT(year{});
+    ASSERT_NOEXCEPT(year(0U));
+    ASSERT_NOEXCEPT(static_cast<int>(year(0U)));
 
-  constexpr year y0{};
-  static_assert(static_cast<int>(y0) == 0, "");
+    constexpr year y0{};
+    static_assert(static_cast<int>(y0) == 0, "");
 
-  constexpr year y1{1};
-  static_assert(static_cast<int>(y1) == 1, "");
+    constexpr year y1{1};
+    static_assert(static_cast<int>(y1) == 1, "");
 
-  for (int i = 0; i <= 2550; i += 7) {
-    year year(i);
-    assert(static_cast<int>(year) == i);
-  }
+    for (int i = 0; i <= 2550; i += 7)
+    {
+        year year(i);
+        assert(static_cast<int>(year) == i);
+    }
 
   return 0;
 }

@@ -15,35 +15,31 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  // mapping
-  {
-    using data_t = int;
-    using index_t = size_t;
-    cuda::std::array<data_t, 1> d{42};
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, dyn, dyn> > map{
-        cuda::std::dextents<index_t, 2>{64, 128}};
-    cuda::std::mdspan<data_t, cuda::std::extents<index_t, dyn, dyn>,
-                      cuda::std::layout_left>
-        m{d.data(), map};
+int main(int, char**)
+{
+    // mapping
+    {
+        using  data_t = int;
+        using index_t = size_t;
+        cuda::std::array<data_t, 1> d{42};
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,dyn,dyn>> map{cuda::std::dextents<index_t,2>{64, 128}};
+        cuda::std::mdspan<data_t, cuda::std::extents<index_t,dyn,dyn>, cuda::std::layout_left> m{ d.data(), map };
 
-    assert(m.mapping() == map);
-  }
+        assert( m.mapping() == map );
+    }
 
-  // mapping and accessor
-  {
-    using data_t = int;
-    using index_t = size_t;
-    cuda::std::array<data_t, 1> d{42};
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, dyn, dyn> > map{
-        cuda::std::dextents<index_t, 2>{64, 128}};
-    cuda::std::default_accessor<data_t> a;
-    cuda::std::mdspan<data_t, cuda::std::extents<index_t, dyn, dyn>,
-                      cuda::std::layout_left>
-        m{d.data(), map, a};
+    // mapping and accessor
+    {
+        using  data_t = int;
+        using index_t = size_t;
+        cuda::std::array<data_t, 1> d{42};
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,dyn,dyn>> map{cuda::std::dextents<index_t,2>{64, 128}};
+        cuda::std::default_accessor<data_t> a;
+        cuda::std::mdspan<data_t, cuda::std::extents<index_t,dyn,dyn>, cuda::std::layout_left> m{ d.data(), map, a };
 
-    assert(m.mapping() == map);
-  }
+        assert( m.mapping() == map );
+    }
 
-  return 0;
+
+    return 0;
 }

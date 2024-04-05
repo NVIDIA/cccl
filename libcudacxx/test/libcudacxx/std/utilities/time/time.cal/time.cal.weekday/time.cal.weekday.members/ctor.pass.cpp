@@ -26,25 +26,27 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using weekday = cuda::std::chrono::weekday;
+int main(int, char**)
+{
+    using weekday = cuda::std::chrono::weekday;
 
-  ASSERT_NOEXCEPT(weekday{});
-  ASSERT_NOEXCEPT(weekday(1));
-  ASSERT_NOEXCEPT(weekday(1).c_encoding());
+    ASSERT_NOEXCEPT(weekday{});
+    ASSERT_NOEXCEPT(weekday(1));
+    ASSERT_NOEXCEPT(weekday(1).c_encoding());
 
-  constexpr weekday m0{};
-  static_assert(m0.c_encoding() == 0, "");
+    constexpr weekday m0{};
+    static_assert(m0.c_encoding() == 0, "");
 
-  constexpr weekday m1{1};
-  static_assert(m1.c_encoding() == 1, "");
+    constexpr weekday m1{1};
+    static_assert(m1.c_encoding() == 1, "");
 
-  for (unsigned i = 0; i <= 255; ++i) {
-    weekday m(i);
-    assert(m.c_encoding() == (i == 7 ? 0 : i));
-  }
+    for (unsigned i = 0; i <= 255; ++i)
+    {
+        weekday m(i);
+        assert(m.c_encoding() == (i == 7 ? 0 : i));
+    }
 
-  // TODO - sys_days and local_days ctor tests
+// TODO - sys_days and local_days ctor tests
 
   return 0;
 }

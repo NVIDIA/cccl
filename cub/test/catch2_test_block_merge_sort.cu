@@ -32,27 +32,35 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
-#include <cub/block/block_merge_sort.cuh>
-
 #include <thrust/sort.h>
 
 #include <algorithm>
+
+#include <cub/block/block_merge_sort.cuh>
 
 #include "catch2_test_helper.h"
 
 struct CustomLess
 {
   template <typename DataType>
-  __device__ __host__ bool operator()(const DataType& lhs, const DataType& rhs)
+  __device__ __host__ bool operator()(const DataType &lhs, const DataType &rhs)
   {
     return lhs < rhs;
   }
 };
 
-template <int ThreadsInBlock, int ItemsPerThread, class KeyT, class ActionT>
-__global__ void block_merge_sort_kernel(KeyT* data, int valid_items, KeyT oob_default, ActionT action)
+template <int ThreadsInBlock,
+          int ItemsPerThread,
+          class KeyT,
+          class ActionT>
+__global__ void block_merge_sort_kernel(
+    KeyT *data,
+    int valid_items,
+    KeyT oob_default,
+    ActionT action)
 {
-  using BlockMergeSort = cub::BlockMergeSort<KeyT, ThreadsInBlock, ItemsPerThread>;
+  using BlockMergeSort =
+    cub::BlockMergeSort<KeyT, ThreadsInBlock, ItemsPerThread>;
 
   __shared__ typename BlockMergeSort::TempStorage temp_storage_shuffle;
 
@@ -62,7 +70,7 @@ __global__ void block_merge_sort_kernel(KeyT* data, int valid_items, KeyT oob_de
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    const int idx     = thread_offset + item;
+    const int idx = thread_offset + item;
     thread_data[item] = idx < valid_items ? data[idx] : KeyT();
   }
   __syncthreads();
@@ -84,10 +92,20 @@ __global__ void block_merge_sort_kernel(KeyT* data, int valid_items, KeyT oob_de
   }
 }
 
-template <int ThreadsInBlock, int ItemsPerThread, class KeyT, class ValueT, class ActionT>
-__global__ void block_merge_sort_kernel(KeyT* keys, ValueT* vals, int valid_items, KeyT oob_default, ActionT action)
+template <int ThreadsInBlock,
+          int ItemsPerThread,
+          class KeyT,
+          class ValueT,
+          class ActionT>
+__global__ void block_merge_sort_kernel(
+    KeyT *keys,
+    ValueT *vals,
+    int valid_items,
+    KeyT oob_default,
+    ActionT action)
 {
-  using BlockMergeSort = cub::BlockMergeSort<KeyT, ThreadsInBlock, ItemsPerThread, ValueT>;
+  using BlockMergeSort =
+    cub::BlockMergeSort<KeyT, ThreadsInBlock, ItemsPerThread, ValueT>;
 
   __shared__ typename BlockMergeSort::TempStorage temp_storage_shuffle;
 
@@ -98,7 +116,7 @@ __global__ void block_merge_sort_kernel(KeyT* keys, ValueT* vals, int valid_item
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    const int idx     = thread_offset + item;
+    const int idx = thread_offset + item;
     thread_keys[item] = idx < valid_items ? keys[idx] : KeyT{};
     thread_vals[item] = idx < valid_items ? vals[idx] : ValueT{};
   }
@@ -125,72 +143,104 @@ __global__ void block_merge_sort_kernel(KeyT* keys, ValueT* vals, int valid_item
 struct stable_sort_keys_partial_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class DefaultT>
-  __device__ void operator()(BlockMergeSortT& sort, KeyT& thread_data, int valid_items, DefaultT oob_default) const
-  {
-    sort.StableSort(thread_data, CustomLess{}, valid_items, oob_default);
-  }
+  __device__ void operator()(BlockMergeSortT &sort,
+                             KeyT &thread_data,
+                             int valid_items,
+                             DefaultT oob_default) const
+ {
+   sort.StableSort(thread_data, CustomLess{}, valid_items, oob_default);
+ }
 };
 
 struct stable_sort_pairs_partial_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
-  __device__ void
-  operator()(BlockMergeSortT& sort, KeyT& thread_keys, ValueT& thread_vals, int valid_items, DefaultT oob_default) const
-  {
-    sort.StableSort(thread_keys, thread_vals, CustomLess{}, valid_items, oob_default);
-  }
+  __device__ void operator()(BlockMergeSortT &sort,
+                             KeyT &thread_keys,
+                             ValueT &thread_vals,
+                             int valid_items,
+                             DefaultT oob_default) const
+ {
+   sort.StableSort(thread_keys,
+                   thread_vals,
+                   CustomLess{},
+                   valid_items,
+                   oob_default);
+ }
 };
 
 struct stable_sort_pairs_full_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class ValueT, class DefaultT>
-  __device__ void operator()(
-    BlockMergeSortT& sort, KeyT& thread_keys, ValueT& thread_vals, int /* valid_items */, DefaultT /* oob_default */)
-    const
-  {
-    sort.StableSort(thread_keys, thread_vals, CustomLess());
-  }
+  __device__ void operator()(BlockMergeSortT &sort,
+                             KeyT &thread_keys,
+                             ValueT &thread_vals,
+                             int /* valid_items */,
+                             DefaultT /* oob_default */) const
+ {
+   sort.StableSort(thread_keys, thread_vals, CustomLess());
+ }
 };
 
 struct stable_sort_keys_full_tile_t
 {
   template <class BlockMergeSortT, class KeyT, class DefaultT>
-  __device__ void
-  operator()(BlockMergeSortT& sort, KeyT& thread_keys, int /* valid_items */, DefaultT /* oob_default */) const
-  {
-    sort.StableSort(thread_keys, CustomLess());
-  }
+  __device__ void operator()(BlockMergeSortT &sort,
+                             KeyT &thread_keys,
+                             int /* valid_items */,
+                             DefaultT /* oob_default */) const
+ {
+   sort.StableSort(thread_keys, CustomLess());
+ }
 };
 
-template <int ItemsPerThread, int ThreadsInBlock, class KeyT, class ActionT>
-void block_merge_sort(c2h::device_vector<KeyT>& keys, ActionT action)
+template <int ItemsPerThread,
+          int ThreadsInBlock,
+          class KeyT,
+          class ActionT>
+void block_merge_sort(
+    c2h::device_vector<KeyT> &keys,
+    ActionT action)
 {
-  block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread><<<1, ThreadsInBlock>>>(
-    thrust::raw_pointer_cast(keys.data()), static_cast<int>(keys.size()), std::numeric_limits<KeyT>::max(), action);
+  block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread>
+    <<<1, ThreadsInBlock>>>(
+        thrust::raw_pointer_cast(keys.data()),
+        static_cast<int>(keys.size()),
+        std::numeric_limits<KeyT>::max(),
+        action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE( cudaSuccess == cudaPeekAtLastError() );
+  REQUIRE( cudaSuccess == cudaDeviceSynchronize() );
 }
 
-template <int ItemsPerThread, int ThreadsInBlock, class KeyT, class ValueT, class ActionT>
-void block_merge_sort(c2h::device_vector<KeyT>& keys, c2h::device_vector<ValueT>& vals, ActionT action)
+template <int ItemsPerThread,
+          int ThreadsInBlock,
+          class KeyT,
+          class ValueT,
+          class ActionT>
+void block_merge_sort(
+    c2h::device_vector<KeyT> &keys,
+    c2h::device_vector<ValueT> &vals,
+    ActionT action)
 {
-  block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread><<<1, ThreadsInBlock>>>(
-    thrust::raw_pointer_cast(keys.data()),
-    thrust::raw_pointer_cast(vals.data()),
-    static_cast<int>(keys.size()),
-    std::numeric_limits<KeyT>::max(),
-    action);
+  block_merge_sort_kernel<ThreadsInBlock, ItemsPerThread>
+    <<<1, ThreadsInBlock>>>(
+        thrust::raw_pointer_cast(keys.data()),
+        thrust::raw_pointer_cast(vals.data()),
+        static_cast<int>(keys.size()),
+        std::numeric_limits<KeyT>::max(),
+        action);
 
-  REQUIRE(cudaSuccess == cudaPeekAtLastError());
-  REQUIRE(cudaSuccess == cudaDeviceSynchronize());
+  REQUIRE( cudaSuccess == cudaPeekAtLastError() );
+  REQUIRE( cudaSuccess == cudaDeviceSynchronize() );
 }
 
 // %PARAM% THREADS_IN_BLOCK bs 64:256
 
-using key_types        = c2h::type_list<std::int32_t, std::int64_t>;
+using key_types = c2h::type_list<std::int32_t, std::int64_t>;
 using threads_in_block = c2h::enum_type_list<int, THREADS_IN_BLOCK>;
 using items_per_thread = c2h::enum_type_list<int, 1, 2, 10, 15>;
+
 
 template <class TestType>
 struct params_t
@@ -199,8 +249,9 @@ struct params_t
 
   static constexpr int items_per_thread = c2h::get<1, TestType>::value;
   static constexpr int threads_in_block = c2h::get<2, TestType>::value;
-  static constexpr int tile_size        = items_per_thread * threads_in_block;
+  static constexpr int tile_size = items_per_thread * threads_in_block;
 };
+
 
 CUB_TEST("Block merge sort can sort keys in partial tiles",
          "[merge sort][block]",
@@ -209,40 +260,50 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
          threads_in_block)
 {
   using params = params_t<TestType>;
-  using key_t  = typename params::key_t;
+  using key_t = typename params::key_t;
 
-  c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
+  c2h::device_vector<key_t> d_keys(
+    GENERATE_COPY(take(10, random(0, params::tile_size))));
 
   c2h::gen(CUB_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
-  std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
-                   thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-                   CustomLess{});
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
+      CustomLess{});
 
-  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, stable_sort_keys_partial_tile_t{});
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(
+    d_keys,
+    stable_sort_keys_partial_tile_t{});
 
-  REQUIRE(h_reference == d_keys);
+  REQUIRE( h_reference == d_keys );
 }
 
-CUB_TEST(
-  "Block merge sort can sort keys in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
+CUB_TEST("Block merge sort can sort keys in full tiles",
+         "[merge sort][block]",
+         key_types,
+         items_per_thread,
+         threads_in_block)
 {
   using params = params_t<TestType>;
-  using key_t  = typename params::key_t;
+  using key_t = typename params::key_t;
 
   c2h::device_vector<key_t> d_keys(params::tile_size);
 
   c2h::gen(CUB_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
-  std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
-                   thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-                   CustomLess{});
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
+      CustomLess{});
 
-  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, stable_sort_keys_full_tile_t{});
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(
+    d_keys,
+    stable_sort_keys_full_tile_t{});
 
-  REQUIRE(h_reference == d_keys);
+  REQUIRE( h_reference == d_keys );
 }
 
 CUB_TEST("Block merge sort can sort pairs in partial tiles",
@@ -251,18 +312,19 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
          items_per_thread,
          threads_in_block)
 {
-  using params  = params_t<TestType>;
-  using key_t   = typename params::key_t;
+  using params = params_t<TestType>;
+  using key_t = typename params::key_t;
   using value_t = key_t;
-  using pair_t  = std::pair<key_t, value_t>;
+  using pair_t = std::pair<key_t, value_t>;
 
-  c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
+  c2h::device_vector<key_t> d_keys(
+    GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::device_vector<value_t> d_vals(d_keys.size());
 
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  c2h::host_vector<key_t> h_keys   = d_keys;
+  c2h::host_vector<key_t> h_keys = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
 
   c2h::host_vector<pair_t> h_ref(d_keys.size());
@@ -272,11 +334,12 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
     h_ref[idx] = std::make_pair(h_keys[idx], h_vals[idx]);
   }
 
-  std::stable_sort(thrust::raw_pointer_cast(h_ref.data()),
-                   thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
-                   [](pair_t l, pair_t r) -> bool {
-                     return l.first < r.first;
-                   });
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
+      [](pair_t l, pair_t r) -> bool {
+        return l.first < r.first;
+      });
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -285,19 +348,24 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   }
 
   block_merge_sort<params::items_per_thread, params::threads_in_block>(
-    d_keys, d_vals, stable_sort_pairs_partial_tile_t{});
+    d_keys,
+    d_vals,
+    stable_sort_pairs_partial_tile_t{});
 
-  REQUIRE(h_keys == d_keys);
-  REQUIRE(h_vals == d_vals);
+  REQUIRE( h_keys == d_keys );
+  REQUIRE( h_vals == d_vals );
 }
 
-CUB_TEST(
-  "Block merge sort can sort pairs in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
+CUB_TEST("Block merge sort can sort pairs in full tiles",
+         "[merge sort][block]",
+         key_types,
+         items_per_thread,
+         threads_in_block)
 {
-  using params  = params_t<TestType>;
-  using key_t   = typename params::key_t;
+  using params = params_t<TestType>;
+  using key_t = typename params::key_t;
   using value_t = key_t;
-  using pair_t  = std::pair<key_t, value_t>;
+  using pair_t = std::pair<key_t, value_t>;
 
   c2h::device_vector<key_t> d_keys(params::tile_size);
   c2h::device_vector<value_t> d_vals(d_keys.size());
@@ -305,7 +373,7 @@ CUB_TEST(
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  c2h::host_vector<key_t> h_keys   = d_keys;
+  c2h::host_vector<key_t> h_keys = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
 
   c2h::host_vector<pair_t> h_ref(d_keys.size());
@@ -315,11 +383,12 @@ CUB_TEST(
     h_ref[idx] = std::make_pair(h_keys[idx], h_vals[idx]);
   }
 
-  std::stable_sort(thrust::raw_pointer_cast(h_ref.data()),
-                   thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
-                   [](pair_t l, pair_t r) -> bool {
-                     return l.first < r.first;
-                   });
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
+      [](pair_t l, pair_t r) -> bool {
+        return l.first < r.first;
+      });
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -327,21 +396,27 @@ CUB_TEST(
     h_vals[idx] = h_ref[idx].second;
   }
 
-  block_merge_sort<params::items_per_thread, params::threads_in_block>(d_keys, d_vals, stable_sort_pairs_full_tile_t{});
+  block_merge_sort<params::items_per_thread, params::threads_in_block>(
+    d_keys,
+    d_vals,
+    stable_sort_pairs_full_tile_t{});
 
-  REQUIRE(h_keys == d_keys);
-  REQUIRE(h_vals == d_vals);
+  REQUIRE( h_keys == d_keys );
+  REQUIRE( h_vals == d_vals );
 }
 
-CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block]", threads_in_block)
+
+CUB_TEST("Block merge sort can sort pairs with mixed types",
+         "[merge sort][block]",
+         threads_in_block)
 {
-  using key_t   = std::int32_t;
+  using key_t = std::int32_t;
   using value_t = std::int64_t;
-  using pair_t  = std::pair<key_t, value_t>;
+  using pair_t = std::pair<key_t, value_t>;
 
   constexpr int items_per_thread = 2;
   constexpr int threads_in_block = c2h::get<0, TestType>::value;
-  constexpr int tile_size        = items_per_thread * threads_in_block;
+  constexpr int tile_size = items_per_thread * threads_in_block;
 
   c2h::device_vector<key_t> d_keys(tile_size);
   c2h::device_vector<value_t> d_vals(d_keys.size());
@@ -349,7 +424,7 @@ CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
   c2h::gen(CUB_SEED(5), d_keys);
   c2h::gen(CUB_SEED(5), d_vals);
 
-  c2h::host_vector<key_t> h_keys   = d_keys;
+  c2h::host_vector<key_t> h_keys = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
 
   c2h::host_vector<pair_t> h_ref(d_keys.size());
@@ -359,11 +434,12 @@ CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
     h_ref[idx] = std::make_pair(h_keys[idx], h_vals[idx]);
   }
 
-  std::stable_sort(thrust::raw_pointer_cast(h_ref.data()),
-                   thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
-                   [](pair_t l, pair_t r) -> bool {
-                     return l.first < r.first;
-                   });
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_ref.data()),
+      thrust::raw_pointer_cast(h_ref.data()) + h_ref.size(),
+      [](pair_t l, pair_t r) -> bool {
+        return l.first < r.first;
+      });
 
   for (std::size_t idx = 0; idx < h_ref.size(); idx++)
   {
@@ -371,13 +447,18 @@ CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
     h_vals[idx] = h_ref[idx].second;
   }
 
-  block_merge_sort<items_per_thread, threads_in_block>(d_keys, d_vals, stable_sort_pairs_full_tile_t{});
+  block_merge_sort<items_per_thread, threads_in_block>(
+    d_keys,
+    d_vals,
+    stable_sort_pairs_full_tile_t{});
 
-  REQUIRE(h_keys == d_keys);
-  REQUIRE(h_vals == d_vals);
+  REQUIRE( h_keys == d_keys );
+  REQUIRE( h_vals == d_vals );
 }
 
-CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads_in_block)
+CUB_TEST("Block merge sort can sort large tiles",
+         "[merge sort][block]",
+         threads_in_block)
 {
   using key_t = std::uint16_t;
 
@@ -385,7 +466,9 @@ CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads
 
   // Repurpose block sizes
   constexpr int cmake_threads_in_block = c2h::get<0, TestType>::value;
-  constexpr int threads_in_block       = cmake_threads_in_block < 256 ? 512 : 1024;
+  constexpr int threads_in_block = cmake_threads_in_block < 256
+                                 ? 512
+                                 : 1024;
 
   constexpr int tile_size = threads_in_block * items_per_thread;
 
@@ -393,32 +476,41 @@ CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads
   c2h::gen(CUB_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
-  std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
-                   thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-                   CustomLess{});
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
+      CustomLess{});
 
-  block_merge_sort<items_per_thread, threads_in_block>(d_keys, stable_sort_keys_full_tile_t{});
+  block_merge_sort<items_per_thread, threads_in_block>(
+    d_keys,
+    stable_sort_keys_full_tile_t{});
 
-  REQUIRE(h_reference == d_keys);
+  REQUIRE( h_reference == d_keys );
 }
 
-CUB_TEST("Block merge sort is stable", "[merge sort][block]", threads_in_block)
+CUB_TEST("Block merge sort is stable",
+         "[merge sort][block]",
+         threads_in_block)
 {
-  using key_t = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
+  using key_t = c2h::custom_type_t<c2h::less_comparable_t,
+                                   c2h::equal_comparable_t>;
 
   constexpr int items_per_thread = 2;
   constexpr int threads_in_block = c2h::get<0, TestType>::value;
-  constexpr int tile_size        = threads_in_block * items_per_thread;
+  constexpr int tile_size = threads_in_block * items_per_thread;
 
   c2h::device_vector<key_t> d_keys(tile_size);
   c2h::gen(CUB_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
-  std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
-                   thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
-                   CustomLess{});
+  std::stable_sort(
+      thrust::raw_pointer_cast(h_reference.data()),
+      thrust::raw_pointer_cast(h_reference.data()) + h_reference.size(),
+      CustomLess{});
 
-  block_merge_sort<items_per_thread, threads_in_block>(d_keys, stable_sort_keys_full_tile_t{});
+  block_merge_sort<items_per_thread, threads_in_block>(
+    d_keys,
+    stable_sort_keys_full_tile_t{});
 
-  REQUIRE(h_reference == d_keys);
+  REQUIRE( h_reference == d_keys );
 }

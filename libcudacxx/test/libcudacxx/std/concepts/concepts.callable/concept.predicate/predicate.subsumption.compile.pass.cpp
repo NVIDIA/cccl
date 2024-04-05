@@ -18,8 +18,7 @@
 #include "test_macros.h"
 #if TEST_STD_VER > 2017
 
-__host__ __device__ constexpr bool
-check_subsumption(cuda::std::regular_invocable auto) {
+__host__ __device__ constexpr bool check_subsumption(cuda::std::regular_invocable auto) {
   return false;
 }
 
@@ -44,4 +43,7 @@ static_assert(check_subsumption(predicate{}), "");
 
 #endif // TEST_STD_VER > 2017
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

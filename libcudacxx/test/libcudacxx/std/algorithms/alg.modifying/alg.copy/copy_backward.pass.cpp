@@ -80,8 +80,7 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test() {
     }
     value_type ib[N] = {0};
 
-    OutIter r =
-        cuda::std::copy_backward(InIter(ia), InIter(ia + N), OutIter(ib + N));
+    OutIter r = cuda::std::copy_backward(InIter(ia), InIter(ia + N), OutIter(ib + N));
     assert(base(r) == ib);
     for (int i = 0; i < N; ++i) {
       assert(ia[i] == ib[i]);

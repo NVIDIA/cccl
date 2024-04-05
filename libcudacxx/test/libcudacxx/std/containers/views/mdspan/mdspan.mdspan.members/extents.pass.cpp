@@ -15,14 +15,15 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  {
-    cuda::std::array<int, 1> d{42};
-    cuda::std::extents<int, dyn, dyn> e{64, 128};
-    cuda::std::mdspan<int, cuda::std::extents<int, dyn, dyn> > m{d.data(), e};
+int main(int, char**)
+{
+    {
+        cuda::std::array<int, 1> d{42};
+        cuda::std::extents<int,dyn,dyn> e{64, 128};
+        cuda::std::mdspan<int, cuda::std::extents<int,dyn,dyn>> m{ d.data(), e };
 
-    assert(&m.extents() == &m.mapping().extents());
-  }
+        assert( &m.extents() == &m.mapping().extents() );
+    }
 
-  return 0;
+    return 0;
 }

@@ -36,10 +36,10 @@
 // includes, so we fake it out by specifying all possible files we might end up
 // including inside an #if 0.
 #if 0
-#  include <thrust/system/cpp/detail/find.h>
-#  include <thrust/system/cuda/detail/find.h>
-#  include <thrust/system/omp/detail/find.h>
-#  include <thrust/system/tbb/detail/find.h>
+#include <thrust/system/cpp/detail/find.h>
+#include <thrust/system/cuda/detail/find.h>
+#include <thrust/system/omp/detail/find.h>
+#include <thrust/system/tbb/detail/find.h>
 #endif
 
 #define __THRUST_HOST_SYSTEM_FIND_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/find.h>
@@ -49,3 +49,4 @@
 #define __THRUST_DEVICE_SYSTEM_FIND_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/find.h>
 #include __THRUST_DEVICE_SYSTEM_FIND_HEADER
 #undef __THRUST_DEVICE_SYSTEM_FIND_HEADER
+

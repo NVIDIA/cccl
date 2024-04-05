@@ -30,8 +30,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -48,7 +48,8 @@ THRUST_NAMESPACE_BEGIN
  *  otherwise.
  */
 template <typename T>
-using is_execution_policy = detail::is_base_of<detail::execution_policy_marker, T>;
+using is_execution_policy =
+  detail::is_base_of<detail::execution_policy_marker, T>;
 
 #if _CCCL_STD_VER >= 2014
 /*! \brief <tt>constexpr bool</tt> that is \c true if \c T is an
@@ -65,3 +66,4 @@ constexpr bool is_execution_policy_v = is_execution_policy<T>::value;
  */
 
 THRUST_NAMESPACE_END
+

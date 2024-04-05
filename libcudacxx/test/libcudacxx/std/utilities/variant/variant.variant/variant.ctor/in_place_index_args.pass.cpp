@@ -24,66 +24,54 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-__host__ __device__ void test_ctor_sfinae() {
+__host__ __device__
+void test_ctor_sfinae() {
   {
     using V = cuda::std::variant<int>;
-    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>,
-                                              int>::value,
-                  "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, int>(),
-                  "");
+    static_assert(
+        cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>, int>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, int>(), "");
   }
   {
     using V = cuda::std::variant<int, long, long long>;
-    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>,
-                                              int>::value,
-                  "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<1>, int>(),
-                  "");
+    static_assert(
+        cuda::std::is_constructible<V, cuda::std::in_place_index_t<1>, int>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<1>, int>(), "");
   }
   {
-    using V = cuda::std::variant<int, long, int*>;
-    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_index_t<2>,
-                                              int*>::value,
-                  "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<2>, int*>(),
-                  "");
+    using V = cuda::std::variant<int, long, int *>;
+    static_assert(
+        cuda::std::is_constructible<V, cuda::std::in_place_index_t<2>, int *>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<2>, int *>(), "");
   }
   { // args not convertible to type
-    using V = cuda::std::variant<int, long, int*>;
+    using V = cuda::std::variant<int, long, int *>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>,
-                                     int*>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, int*>(),
-                  "");
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<0>, int *>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<0>, int *>(), "");
   }
   { // index not in variant
-    using V = cuda::std::variant<int, long, int*>;
+    using V = cuda::std::variant<int, long, int *>;
     static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<3>,
-                                     int>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_index_t<3>, int>(),
-                  "");
+        !cuda::std::is_constructible<V, cuda::std::in_place_index_t<3>, int>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_index_t<3>, int>(), "");
   }
 }
 
-__host__ __device__ void test_ctor_basic() {
+__host__ __device__
+void test_ctor_basic() {
   {
     constexpr cuda::std::variant<int> v(cuda::std::in_place_index<0>, 42);
     static_assert(v.index() == 0, "");
     static_assert(cuda::std::get<0>(v) == 42, "");
   }
   {
-    constexpr cuda::std::variant<int, long, long> v(
-        cuda::std::in_place_index<1>, 42);
+    constexpr cuda::std::variant<int, long, long> v(cuda::std::in_place_index<1>, 42);
     static_assert(v.index() == 1, "");
     static_assert(cuda::std::get<1>(v) == 42, "");
   }
   {
-    constexpr cuda::std::variant<int, const int, long> v(
-        cuda::std::in_place_index<1>, 42);
+    constexpr cuda::std::variant<int, const int, long> v(cuda::std::in_place_index<1>, 42);
     static_assert(v.index() == 1, "");
     static_assert(cuda::std::get<1>(v) == 42, "");
   }

@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_MAYBE_CONST_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -26,7 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <bool _Const, class _Tp>
+template<bool _Const, class _Tp>
 using __maybe_const = __conditional_t<_Const, const _Tp, _Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD

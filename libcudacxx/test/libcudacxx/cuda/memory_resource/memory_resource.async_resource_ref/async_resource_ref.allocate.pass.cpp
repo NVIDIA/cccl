@@ -99,7 +99,10 @@ void test_allocate_async() {
 }
 
 int main(int, char**) {
-  NV_IF_TARGET(NV_IS_HOST, (test_allocate(); test_allocate_async();))
+    NV_IF_TARGET(NV_IS_HOST,(
+        test_allocate();
+        test_allocate_async();
+    ))
 
-  return 0;
+    return 0;
 }

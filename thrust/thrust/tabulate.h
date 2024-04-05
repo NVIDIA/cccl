@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file tabulate.h
  *  \brief Fills a range with the tabulation of a function
  */
@@ -37,6 +38,7 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
+
 /*! \p tabulate fills the range <tt>[first, last)</tt> with the value of a function applied to each
  *     element's index.
  *
@@ -51,12 +53,12 @@ THRUST_NAMESPACE_BEGIN
  *  \param unary_op The unary operation to apply.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator is mutable, and if \c x and \c y are objects of \c ForwardIterator's \c
- * value_type, then <tt>x + y</tt> is defined, and if \c T is \p ForwardIterator's \c value_type, then <tt>T(0)</tt> is
- * defined. \tparam UnaryOperation is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator is mutable,
+ *          and if \c x and \c y are objects of \c ForwardIterator's \c value_type, then <tt>x + y</tt> is defined,
+ *          and if \c T is \p ForwardIterator's \c value_type, then <tt>T(0)</tt> is defined.
+ *  \tparam UnaryOperation is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                         and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p tabulate to generate the first \c n non-positive integers
  *  using the \p thrust::host execution policy for parallelization:
@@ -76,12 +78,13 @@ THRUST_NAMESPACE_BEGIN
  *  \see thrust::generate
  *  \see thrust::sequence
  */
-template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
-_CCCL_HOST_DEVICE void
-tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-         ForwardIterator first,
-         ForwardIterator last,
-         UnaryOperation unary_op);
+template<typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
+_CCCL_HOST_DEVICE
+  void tabulate(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                ForwardIterator first,
+                ForwardIterator last,
+                UnaryOperation unary_op);
+
 
 /*! \p tabulate fills the range <tt>[first, last)</tt> with the value of a function applied to each
  *     element's index.
@@ -93,12 +96,12 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \param last The end of the range.
  *  \param unary_op The unary operation to apply.
  *
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator is mutable, and if \c x and \c y are objects of \c ForwardIterator's \c
- * value_type, then <tt>x + y</tt> is defined, and if \c T is \p ForwardIterator's \c value_type, then <tt>T(0)</tt> is
- * defined. \tparam UnaryOperation is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator is mutable,
+ *          and if \c x and \c y are objects of \c ForwardIterator's \c value_type, then <tt>x + y</tt> is defined,
+ *          and if \c T is \p ForwardIterator's \c value_type, then <tt>T(0)</tt> is defined.
+ *  \tparam UnaryOperation is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                         and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p tabulate to generate the first \c n non-positive integers:
  *
@@ -116,8 +119,11 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \see thrust::generate
  *  \see thrust::sequence
  */
-template <typename ForwardIterator, typename UnaryOperation>
-void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
+template<typename ForwardIterator, typename UnaryOperation>
+  void tabulate(ForwardIterator first,
+                ForwardIterator last,
+                UnaryOperation unary_op);
+
 
 /*! \} // end transformations
  */

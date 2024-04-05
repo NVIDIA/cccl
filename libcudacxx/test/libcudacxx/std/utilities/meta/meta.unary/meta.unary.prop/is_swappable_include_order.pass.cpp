@@ -27,21 +27,22 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  // Use a builtin type so we don't get ADL lookup.
-  typedef double T[17][29];
-  {
-    LIBCPP_STATIC_ASSERT(cuda::std::__is_swappable<T>::value, "");
+int main(int, char**)
+{
+    // Use a builtin type so we don't get ADL lookup.
+    typedef double T[17][29];
+    {
+        LIBCPP_STATIC_ASSERT(cuda::std::__is_swappable<T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert(cuda::std::is_swappable_v<T>, "");
+        static_assert(cuda::std::is_swappable_v<T>, "");
 #endif
-  }
-  {
-    T t1 = {};
-    T t2 = {};
-    cuda::std::iter_swap(t1, t2);
-    cuda::std::swap_ranges(t1, t1 + 17, t2);
-  }
+    }
+    {
+        T t1 = {};
+        T t2 = {};
+       cuda::std::iter_swap(t1, t2);
+       cuda::std::swap_ranges(t1, t1 + 17, t2);
+    }
 
   return 0;
 }

@@ -21,33 +21,32 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool equalToTwo(const int v) noexcept {
-  return v == 2;
-}
+TEST_CONSTEXPR_CXX14 __host__ __device__  bool equalToTwo(const int v) noexcept { return v == 2; }
 
 template <class Iter>
 TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
-  constexpr int N = 5;
-  int ia[N] = {0, 1, 2, 3, 4};
-  constexpr int expected[N] = {0, 1, 5, 3, 4};
-  cuda::std::replace_if(Iter(ia), Iter(ia + N), equalToTwo, 5);
+    constexpr int N = 5;
+    int ia[N] = {0, 1, 2, 3, 4};
+    constexpr int expected[N] = {0, 1, 5, 3, 4};
+    cuda::std::replace_if(Iter(ia), Iter(ia + N), equalToTwo, 5);
 
-  for (int i = 0; i < N; ++i) {
-    assert(ia[i] == expected[i]);
-  }
+    for (int i = 0; i < N; ++i) {
+      assert(ia[i] == expected[i]);
+    }
 }
 
 TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
-  test<cpp17_input_iterator<int*> >();
-  test<forward_iterator<int*> >();
-  test<bidirectional_iterator<int*> >();
-  test<random_access_iterator<int*> >();
-  test<int*>();
+    test<cpp17_input_iterator<int*> >();
+    test<forward_iterator<int*> >();
+    test<bidirectional_iterator<int*> >();
+    test<random_access_iterator<int*> >();
+    test<int*>();
 
-  return true;
+    return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 
 #if TEST_STD_VER >= 2014

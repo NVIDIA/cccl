@@ -24,14 +24,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   assert(cuda::std::launder(&gi) == &gi);
   assert(cuda::std::launder(&gf) == &gf);
 
-  const int* i = &gi;
-  const float* f = &gf;
-  static_assert(
-      cuda::std::is_same<decltype(i), decltype(cuda::std::launder(i))>::value,
-      "");
-  static_assert(
-      cuda::std::is_same<decltype(f), decltype(cuda::std::launder(f))>::value,
-      "");
+  const int *i = &gi;
+  const float *f = &gf;
+  static_assert(cuda::std::is_same<decltype(i), decltype(cuda::std::launder(i))>::value, "");
+  static_assert(cuda::std::is_same<decltype(f), decltype(cuda::std::launder(f))>::value, "");
 
   assert(cuda::std::launder(i) == i);
   assert(cuda::std::launder(f) == f);

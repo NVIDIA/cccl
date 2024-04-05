@@ -27,16 +27,14 @@
 
 #include "catch2_test_warp_exchange.cuh"
 
-namespace
-{
+namespace {
 
-using inout_types =
-  c2h::type_list<c2h::pair<std::uint16_t, std::int64_t>,
-                 c2h::pair<std::uint16_t, std::uint32_t>,
-                 c2h::pair<std::int32_t, std::int32_t>,
-                 c2h::pair<std::int64_t, std::int64_t>,
-                 c2h::pair<uchar3, uchar3>,
-                 c2h::pair<ulonglong4, ulonglong4>>;
+using inout_types = c2h::type_list<c2h::pair<std::uint16_t, std::int64_t>,
+                                   c2h::pair<std::uint16_t, std::uint32_t>,
+                                   c2h::pair<std::int32_t, std::int32_t>,
+                                   c2h::pair<std::int64_t, std::int64_t>,
+                                   c2h::pair<uchar3, uchar3>,
+                                   c2h::pair<ulonglong4, ulonglong4>>;
 
 using logical_warp_threads = c2h::enum_type_list<int, 4, 16, 32>;
 using items_per_thread     = c2h::enum_type_list<int, 1, 4, 7>;
@@ -56,7 +54,11 @@ struct params_t
 
 } // namespace
 
-CUB_TEST("Scatter to striped works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST("Scatter to striped works",
+         "[exchange][warp][smem]",
+         inout_types,
+         logical_warp_threads,
+         items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -66,16 +68,19 @@ CUB_TEST("Scatter to striped works", "[exchange][warp][smem]", inout_types, logi
 
   c2h::gen(c2h::modulo_t{d_in.size()}, d_in);
 
-  warp_scatter_strided<params::logical_warp_threads,
-                       params::items_per_thread,
-                       params::total_warps,
-                       cub::WARP_EXCHANGE_SMEM>(d_in, d_out);
+  warp_scatter_strided<params::logical_warp_threads, params::items_per_thread, params::total_warps, cub::WARP_EXCHANGE_SMEM>(
+    d_in,
+    d_out);
 
   auto h_expected_output = compute_host_reference(d_in, params::tile_size);
   REQUIRE(h_expected_output == d_out);
 }
 
-CUB_TEST("Blocked to striped works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST("Blocked to striped works",
+         "[exchange][warp][smem]",
+         inout_types,
+         logical_warp_threads,
+         items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -86,7 +91,9 @@ CUB_TEST("Blocked to striped works", "[exchange][warp][smem]", inout_types, logi
   c2h::gen(c2h::modulo_t{d_in.size()}, d_in);
 
   warp_exchange<params::logical_warp_threads, params::items_per_thread, params::total_warps, cub::WARP_EXCHANGE_SMEM>(
-    d_in, d_out, blocked_to_striped{});
+    d_in,
+    d_out,
+    blocked_to_striped{});
   c2h::host_vector<out_type> h_expected_output(d_out.size());
   fill_striped<params::logical_warp_threads,
                params::items_per_thread,
@@ -95,7 +102,11 @@ CUB_TEST("Blocked to striped works", "[exchange][warp][smem]", inout_types, logi
   REQUIRE(h_expected_output == d_out);
 }
 
-CUB_TEST("Striped to blocked works", "[exchange][warp][smem]", inout_types, logical_warp_threads, items_per_thread)
+CUB_TEST("Striped to blocked works",
+         "[exchange][warp][smem]",
+         inout_types,
+         logical_warp_threads,
+         items_per_thread)
 {
   using params   = params_t<TestType>;
   using in_type  = typename params::in_type;
@@ -109,7 +120,9 @@ CUB_TEST("Striped to blocked works", "[exchange][warp][smem]", inout_types, logi
   c2h::device_vector<in_type> d_in = h_in;
 
   warp_exchange<params::logical_warp_threads, params::items_per_thread, params::total_warps, cub::WARP_EXCHANGE_SMEM>(
-    d_in, d_out, striped_to_blocked{});
+    d_in,
+    d_out,
+    striped_to_blocked{});
   c2h::device_vector<out_type> d_expected_output(d_out.size());
   c2h::gen(c2h::modulo_t{d_out.size()}, d_expected_output);
 

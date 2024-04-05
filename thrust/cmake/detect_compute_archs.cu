@@ -18,33 +18,23 @@
 #include <set>
 #include <string>
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
   std::set<std::string> archs;
   int devices;
-  if ((cudaGetDeviceCount(&devices) == cudaSuccess) && (devices > 0))
-  {
-    for (int dev = 0; dev < devices; ++dev)
-    {
+  if ((cudaGetDeviceCount(&devices) == cudaSuccess) && (devices > 0)) {
+    for (int dev = 0; dev < devices; ++dev) {
       char buff[32];
       cudaDeviceProp prop;
-      if (cudaGetDeviceProperties(&prop, dev) != cudaSuccess)
-      {
-        continue;
-      }
+      if(cudaGetDeviceProperties(&prop, dev) != cudaSuccess) continue;
       sprintf(buff, "%d%d", prop.major, prop.minor);
       archs.insert(buff);
     }
   }
-  if (archs.empty())
-  {
+  if (archs.empty()) {
     printf("NONE");
-  }
-  else
-  {
+  } else {
     bool first = true;
-    for (const auto& arch : archs)
-    {
+    for(const auto& arch : archs) {
       printf(first ? "%s" : ";%s", arch.c_str());
       first = false;
     }

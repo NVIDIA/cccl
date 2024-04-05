@@ -75,10 +75,8 @@ struct __tuple_sfinae_base
 
 // __tuple_convertible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+    bool = __tuple_like_ext<_Up>::value>
 struct __tuple_convertible : public false_type
 {};
 
@@ -89,10 +87,8 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+    bool = __tuple_like_ext<_Up>::value>
 struct __tuple_constructible : public false_type
 {};
 
@@ -103,10 +99,8 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp,
-          class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-          bool = __tuple_like_ext<_Up>::value>
+template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+    bool = __tuple_like_ext<_Up>::value>
 struct __tuple_assignable : public false_type
 {};
 
@@ -129,7 +123,8 @@ template <class _SizeTrait, size_t _Expected>
 struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_constant<bool, _SizeTrait::value == _Expected>
 {};
 
-template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t<_Tuple>>
+template <class _Tuple, size_t _ExpectedSize,
+          class _RawTuple = __remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
 

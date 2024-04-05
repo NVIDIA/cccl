@@ -16,6 +16,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 #include <cuda/std/array>
 #include <cuda/std/type_traits>
@@ -39,7 +40,8 @@ public:
 template <>
 struct cuda::std::tuple_size<Dummy3> {};
 
-int main(int, char**) {
+int main(int, char**)
+{
   // Test that tuple_size<const T> is not incomplete when tuple_size<T>::value
   // is well-formed but not a constant expression.
   {

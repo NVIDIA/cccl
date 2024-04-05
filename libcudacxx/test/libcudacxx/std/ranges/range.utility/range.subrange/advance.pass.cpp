@@ -32,20 +32,17 @@ __host__ __device__ constexpr bool test() {
   assert(a4.begin() == buff + 4);
   assert(a4.size() == 4);
 
-  cuda::std::ranges::subrange<InputIter, sentinel_wrapper<InputIter> > b(
-      InputIter(buff), sentinel_wrapper<InputIter>(InputIter(buff + 8)));
+  cuda::std::ranges::subrange<InputIter, sentinel_wrapper<InputIter>> b(InputIter(buff), sentinel_wrapper<InputIter>(InputIter(buff + 8)));
   auto b1 = cuda::std::move(b).next();
   assert(base(b1.begin()) == buff + 1);
 
-  cuda::std::ranges::subrange<BidirIter> c(BidirIter(buff + 4),
-                                           BidirIter(buff + 8));
+  cuda::std::ranges::subrange<BidirIter> c(BidirIter(buff + 4), BidirIter(buff + 8));
   auto c1 = c.prev();
   assert(base(c1.begin()) == buff + 3);
   auto c2 = c.prev(4);
   assert(base(c2.begin()) == buff);
 
-  cuda::std::ranges::subrange<BidirIter> d(BidirIter(buff + 4),
-                                           BidirIter(buff + 8));
+  cuda::std::ranges::subrange<BidirIter> d(BidirIter(buff + 4), BidirIter(buff + 8));
   auto d1 = d.advance(4);
   assert(base(d1.begin()) == buff + 8);
   assert(d1.empty());

@@ -38,8 +38,7 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-template <typename T>
-class device_reference;
+template <typename T> class device_reference;
 
 /*! \brief \c device_ptr is a pointer-like object which points to an object that
  *  resides in memory associated with the \ref device system.
@@ -71,99 +70,108 @@ class device_reference;
  */
 template <typename T>
 class device_ptr
-    : public thrust::pointer< T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T> >
+  : public thrust::pointer<
+      T,
+      thrust::device_system_tag,
+      thrust::device_reference<T>,
+      thrust::device_ptr<T>
+    >
 {
-private:
-  using super_t = thrust::pointer< T, thrust::device_system_tag, thrust::device_reference<T>, thrust::device_ptr<T> >;
+  private:
+    using super_t = thrust::pointer<
+      T,
+      thrust::device_system_tag,
+      thrust::device_reference<T>,
+      thrust::device_ptr<T>
+    >;
 
-public:
-  /*! \brief Construct a null \c device_ptr.
-   *
-   *  \post <tt>get() == nullptr</tt>.
-   */
-  _CCCL_HOST_DEVICE device_ptr()
-      : super_t()
-  {}
+  public:
+    /*! \brief Construct a null \c device_ptr.
+     *
+     *  \post <tt>get() == nullptr</tt>.
+     */
+    _CCCL_HOST_DEVICE
+    device_ptr() : super_t() {}
 
-  /*! \brief Construct a null \c device_ptr.
-   *
-   *  \param ptr A null pointer.
-   *
-   *  \post <tt>get() == nullptr</tt>.
-   */
-  _CCCL_HOST_DEVICE device_ptr(std::nullptr_t)
-      : super_t(nullptr)
-  {}
+    /*! \brief Construct a null \c device_ptr.
+     *
+     *  \param ptr A null pointer.
+     *
+     *  \post <tt>get() == nullptr</tt>.
+     */
+    _CCCL_HOST_DEVICE
+    device_ptr(std::nullptr_t) : super_t(nullptr) {}
 
-  /*! \brief Construct a \c device_ptr from a raw pointer which is
-   *  convertible to \c T*.
-   *
-   *  \tparam U   A type whose pointer is convertible to \c T*.
-   *  \param  ptr A raw pointer to a \c U in device memory to construct from.
-   *
-   *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
-   *
-   *  \pre \c ptr points to a location in device memory.
-   *
-   *  \post <tt>get() == nullptr</tt>.
-   */
-  template <typename U>
-  _CCCL_HOST_DEVICE explicit device_ptr(U* ptr)
-      : super_t(ptr)
-  {}
+    /*! \brief Construct a \c device_ptr from a raw pointer which is
+     *  convertible to \c T*.
+     *
+     *  \tparam U   A type whose pointer is convertible to \c T*.
+     *  \param  ptr A raw pointer to a \c U in device memory to construct from.
+     *
+     *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
+     *
+     *  \pre \c ptr points to a location in device memory.
+     *
+     *  \post <tt>get() == nullptr</tt>.
+     */
+    template <typename U>
+    _CCCL_HOST_DEVICE
+    explicit device_ptr(U* ptr) : super_t(ptr) {}
 
-  /*! \brief Copy construct a \c device_ptr from another \c device_ptr whose
-   *  pointer type is convertible to \c T*.
-   *
-   *  \tparam U     A type whose pointer is convertible to \c T*.
-   *  \param  other A \c device_ptr to a \c U to construct from.
-   *
-   *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
-   *
-   *  \post <tt>get() == other.get()</tt>.
-   */
-  template <typename U>
-  _CCCL_HOST_DEVICE device_ptr(device_ptr<U> const& other)
-      : super_t(other)
-  {}
+    /*! \brief Copy construct a \c device_ptr from another \c device_ptr whose
+     *  pointer type is convertible to \c T*.
+     *
+     *  \tparam U     A type whose pointer is convertible to \c T*.
+     *  \param  other A \c device_ptr to a \c U to construct from.
+     *
+     *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
+     *
+     *  \post <tt>get() == other.get()</tt>.
+     */
+    template <typename U>
+    _CCCL_HOST_DEVICE
+    device_ptr(device_ptr<U> const& other) : super_t(other) {}
 
-  /*! \brief Set this \c device_ptr to point to the same object as another
-   *  \c device_ptr whose pointer type is convertible to \c T*.
-   *
-   *  \tparam U     A type whose pointer is convertible to \c T*.
-   *  \param  other A \c device_ptr to a \c U to assign from.
-   *
-   *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
-   *
-   *  \post <tt>get() == other.get()</tt>.
-   *
-   *  \return \c *this.
-   */
-  template <typename U>
-  _CCCL_HOST_DEVICE device_ptr& operator=(device_ptr<U> const& other)
-  {
-    super_t::operator=(other);
-    return *this;
-  }
+    /*! \brief Set this \c device_ptr to point to the same object as another
+     *  \c device_ptr whose pointer type is convertible to \c T*.
+     *
+     *  \tparam U     A type whose pointer is convertible to \c T*.
+     *  \param  other A \c device_ptr to a \c U to assign from.
+     *
+     *  \pre <tt>std::is_convertible_v<U*, T*> == true</tt>.
+     *
+     *  \post <tt>get() == other.get()</tt>.
+     *
+     *  \return \c *this.
+     */
+    template <typename U>
+    _CCCL_HOST_DEVICE
+    device_ptr &operator=(device_ptr<U> const& other)
+    {
+      super_t::operator=(other);
+      return *this;
+    }
 
-  /*! \brief Set this \c device_ptr to null.
-   *
-   *  \param ptr A null pointer.
-   *
-   *  \post <tt>get() == nullptr</tt>.
-   *
-   *  \return \c *this.
-   */
-  _CCCL_HOST_DEVICE device_ptr& operator=(std::nullptr_t)
-  {
-    super_t::operator=(nullptr);
-    return *this;
-  }
+    /*! \brief Set this \c device_ptr to null.
+     *
+     *  \param ptr A null pointer.
+     *
+     *  \post <tt>get() == nullptr</tt>.
+     *
+     *  \return \c *this.
+     */
+    _CCCL_HOST_DEVICE
+    device_ptr& operator=(std::nullptr_t)
+    {
+      super_t::operator=(nullptr);
+      return *this;
+    }
 
 #if THRUST_DOXYGEN
-  /*! \brief Return the raw pointer that this \c device_ptr points to.
-   */
-  _CCCL_HOST_DEVICE T* get() const;
+    /*! \brief Return the raw pointer that this \c device_ptr points to.
+     */
+    _CCCL_HOST_DEVICE
+    T* get() const;
 #endif
 };
 
@@ -176,7 +184,8 @@ public:
  *  \return \c os.
  */
 template <typename T, typename CharT, typename Traits>
-_CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
+_CCCL_HOST std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, device_ptr<T> const& dp);
 #endif
 
 /*! \brief Create a \c device_ptr from a raw pointer.
@@ -189,15 +198,17 @@ _CCCL_HOST std::basic_ostream<CharT, Traits>& operator<<(std::basic_ostream<Char
  *  \return A \c device_ptr<T> pointing to \c ptr.
  */
 template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr);
+_CCCL_HOST_DEVICE
+device_ptr<T> device_pointer_cast(T* ptr);
 
 /*! \brief Create a \c device_ptr from another \c device_ptr.
  *
  *  \tparam T    Any type.
  *  \param  dptr A \c device_ptr to a \c T.
  */
-template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
+template<typename T>
+_CCCL_HOST_DEVICE
+device_ptr<T> device_pointer_cast(device_ptr<T> const& dptr);
 
 /*! \} // memory_management
  */

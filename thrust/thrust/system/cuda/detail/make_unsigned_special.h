@@ -27,35 +27,25 @@
 #endif // no system header
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-namespace detail
-{
+namespace detail {
 
-template <typename Size>
-struct make_unsigned_special;
+    template<typename Size>
+    struct make_unsigned_special;
 
-template <>
-struct make_unsigned_special<int>
-{
-  typedef unsigned int type;
-};
+    template<>
+    struct make_unsigned_special<int> { typedef unsigned int type; };
 
-// this is special, because CUDA's atomicAdd doesn't have an overload
-// for unsigned long, for some godforsaken reason
-template <>
-struct make_unsigned_special<long>
-{
-  typedef unsigned long long type;
-};
+    // this is special, because CUDA's atomicAdd doesn't have an overload
+    // for unsigned long, for some godforsaken reason
+    template<>
+    struct make_unsigned_special<long> { typedef unsigned long long type; };
 
-template <>
-struct make_unsigned_special<long long>
-{
-  typedef unsigned long long type;
-};
+    template<>
+    struct make_unsigned_special<long long> { typedef unsigned long long type; };
 
-} // namespace detail
-} // namespace cuda_cub
+}
+}
 THRUST_NAMESPACE_END
+

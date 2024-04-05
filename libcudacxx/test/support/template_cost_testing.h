@@ -12,31 +12,25 @@
 // This is useful for testing the compile time and memory usage
 // of templates.
 
-#define REPEAT_10(DO_IT)                                                       \
-  DO_IT()                                                                      \
-  DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() DO_IT()
-#define REPEAT_100(DO_IT)                                                      \
-  REPEAT_10(DO_IT)                                                             \
-  REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT)          \
-      REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT)      \
-          REPEAT_10(DO_IT)
-#define REPEAT_200(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
-#define REPEAT_300(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
-#define REPEAT_500(DO_IT)                                                      \
-  REPEAT_100(DO_IT)                                                            \
-  REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
-#define REPEAT_1000(DO_IT)                                                     \
-  REPEAT_100(DO_IT)                                                            \
-  REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)      \
-      REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)  \
-          REPEAT_100(DO_IT)
-#define REPEAT_5000(DO_IT)                                                     \
-  REPEAT_1000(DO_IT)                                                           \
-  REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)
-#define REPEAT_10000(DO_IT)                                                    \
-  REPEAT_1000(DO_IT)                                                           \
-  REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)  \
-      REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)                 \
-          REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)
+#define REPEAT_10(DO_IT) \
+    DO_IT() DO_IT() DO_IT() DO_IT() DO_IT() \
+    DO_IT() DO_IT() DO_IT() DO_IT() DO_IT()
+#define REPEAT_100(DO_IT) \
+    REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) \
+    REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT) REPEAT_10(DO_IT)
+#define REPEAT_200(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT)
+#define REPEAT_300(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
+#define REPEAT_500(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
+#define REPEAT_1000(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) \
+    REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT) REPEAT_100(DO_IT)
+#define REPEAT_5000(DO_IT) \
+    REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)
+#define REPEAT_10000(DO_IT) \
+    REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) \
+    REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT) REPEAT_1000(DO_IT)
 
 #endif // TEST_SUPPORT_TEMPLATE_COST_TESTING_H

@@ -42,12 +42,8 @@ __host__ __device__ constexpr bool check_equivalence_relation_subsumes_relation(
 }
 // clang-format on
 
-static_assert(
-    check_equivalence_relation_subsumes_relation<int (*)(int, int), int, int>(),
-    "");
-static_assert(check_equivalence_relation_subsumes_relation<int (*)(int, double),
-                                                           int, double>(),
-              "");
+static_assert(check_equivalence_relation_subsumes_relation<int (*)(int, int), int, int>(), "");
+static_assert(check_equivalence_relation_subsumes_relation<int (*)(int, double), int, double>(), "");
 static_assert(check_equivalence_relation_subsumes_relation<R, S1, S1>(), "");
 static_assert(check_equivalence_relation_subsumes_relation<R, S1, S2>(), "");
 
@@ -65,12 +61,8 @@ __host__ __device__ constexpr bool check_relation_subsumes_equivalence_relation(
 }
 // clang-format on
 
-static_assert(
-    check_relation_subsumes_equivalence_relation<int (*)(int, int), int, int>(),
-    "");
-static_assert(check_relation_subsumes_equivalence_relation<int (*)(int, double),
-                                                           int, double>(),
-              "");
+static_assert(check_relation_subsumes_equivalence_relation<int (*)(int, int), int, int>(), "");
+static_assert(check_relation_subsumes_equivalence_relation<int (*)(int, double), int, double>(), "");
 static_assert(check_relation_subsumes_equivalence_relation<R, S1, S1>(), "");
 static_assert(check_relation_subsumes_equivalence_relation<R, S1, S2>(), "");
 
@@ -89,10 +81,12 @@ __host__ __device__ constexpr bool check_equivalence_relation_subsumes_itself() 
 // clang-format on
 
 static_assert(
-    check_equivalence_relation_subsumes_itself<int (*)(int, int), int, int>(),
-    "");
+    check_equivalence_relation_subsumes_itself<int (*)(int, int), int, int>(), "");
 static_assert(check_equivalence_relation_subsumes_itself<R, S1, S1>(), "");
 
 #endif // TEST_STD_VER > 2017
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

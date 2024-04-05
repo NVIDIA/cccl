@@ -30,13 +30,14 @@
 #  pragma system_header
 #endif // no system header
 
+#include <limits>
+
 #include <thrust/detail/config.h>
 #include <thrust/detail/config/memory_resource.h>
 #include <thrust/detail/type_traits/pointer_traits.h>
-#include <thrust/mr/polymorphic_adaptor.h>
-#include <thrust/mr/validator.h>
 
-#include <limits>
+#include <thrust/mr/validator.h>
+#include <thrust/mr/polymorphic_adaptor.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -56,174 +57,188 @@ namespace mr
  *  \tparam MR the upstream memory resource to use for memory allocation. Must derive from
  *      \p thrust::mr::memory_resource and must be \p final (in C++11 and beyond).
  */
-template <typename T, class MR>
+template<typename T, class MR>
 class allocator : private validator<MR>
 {
 public:
-  /*! The pointer to void type of this allocator. */
-  typedef typename MR::pointer void_pointer;
+    /*! The pointer to void type of this allocator. */
+    typedef typename MR::pointer void_pointer;
 
-  /*! The value type allocated by this allocator. Equivalent to \p T. */
-  typedef T value_type;
-  /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
-  typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other pointer;
-  /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
-  typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other const_pointer;
-  /*! The reference to the type allocated by this allocator. Supports smart references. */
-  typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
-  /*! The const reference to the type allocated by this allocator. Supports smart references. */
-  typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
-  /*! The size type of this allocator. Always \p std::size_t. */
-  typedef std::size_t size_type;
-  /*! The difference type between pointers allocated by this allocator. */
-  typedef typename thrust::detail::pointer_traits<pointer>::difference_type difference_type;
+    /*! The value type allocated by this allocator. Equivalent to \p T. */
+    typedef T value_type;
+    /*! The pointer type allocated by this allocator. Equivaled to the pointer type of \p MR rebound to \p T. */
+    typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<T>::other pointer;
+    /*! The pointer to const type. Equivalent to a pointer type of \p MR rebound to <tt>const T</tt>. */
+    typedef typename thrust::detail::pointer_traits<void_pointer>::template rebind<const T>::other const_pointer;
+    /*! The reference to the type allocated by this allocator. Supports smart references. */
+    typedef typename thrust::detail::pointer_traits<pointer>::reference reference;
+    /*! The const reference to the type allocated by this allocator. Supports smart references. */
+    typedef typename thrust::detail::pointer_traits<const_pointer>::reference const_reference;
+    /*! The size type of this allocator. Always \p std::size_t. */
+    typedef std::size_t size_type;
+    /*! The difference type between pointers allocated by this allocator. */
+    typedef typename thrust::detail::pointer_traits<pointer>::difference_type difference_type;
 
-  /*! Specifies that the allocator shall be propagated on container copy assignment. */
-  typedef detail::true_type propagate_on_container_copy_assignment;
-  /*! Specifies that the allocator shall be propagated on container move assignment. */
-  typedef detail::true_type propagate_on_container_move_assignment;
-  /*! Specifies that the allocator shall be propagated on container swap. */
-  typedef detail::true_type propagate_on_container_swap;
+    /*! Specifies that the allocator shall be propagated on container copy assignment. */
+    typedef detail::true_type propagate_on_container_copy_assignment;
+    /*! Specifies that the allocator shall be propagated on container move assignment. */
+    typedef detail::true_type propagate_on_container_move_assignment;
+    /*! Specifies that the allocator shall be propagated on container swap. */
+    typedef detail::true_type propagate_on_container_swap;
 
-  /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
-   *
-   *  \tparam U the other type to use for instantiation.
-   */
-  template <typename U>
-  struct rebind
-  {
-    /*! The typedef \p other gives the type of the rebound \p allocator.
+    /*! The \p rebind metafunction provides the type of an \p allocator instantiated with another type.
+     *
+     *  \tparam U the other type to use for instantiation.
      */
-    typedef allocator<U, MR> other;
-  };
+    template<typename U>
+    struct rebind
+    {
+        /*! The typedef \p other gives the type of the rebound \p allocator.
+         */
+        typedef allocator<U, MR> other;
+    };
 
-  /*! Calculates the maximum number of elements allocated by this allocator.
-   *
-   *  \return the maximum value of \p std::size_t, divided by the size of \p T.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE size_type max_size() const
-  {
-    return (std::numeric_limits<size_type>::max)() / sizeof(T);
-  }
+    /*! Calculates the maximum number of elements allocated by this allocator.
+     *
+     *  \return the maximum value of \p std::size_t, divided by the size of \p T.
+     */
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
+    size_type max_size() const
+    {
+        return (std::numeric_limits<size_type>::max)() / sizeof(T);
+    }
 
-  /*! Constructor.
-   *
-   *  \param resource the resource to be used to allocate raw memory.
-   */
-  _CCCL_HOST_DEVICE allocator(MR* resource)
-      : mem_res(resource)
-  {}
+    /*! Constructor.
+     *
+     *  \param resource the resource to be used to allocate raw memory.
+     */
+    _CCCL_HOST_DEVICE
+    allocator(MR * resource) : mem_res(resource)
+    {
+    }
 
-  /*! Copy constructor. Copies the resource pointer. */
-  template <typename U>
-  _CCCL_HOST_DEVICE allocator(const allocator<U, MR>& other)
-      : mem_res(other.resource())
-  {}
+    /*! Copy constructor. Copies the resource pointer. */
+    template<typename U>
+    _CCCL_HOST_DEVICE
+    allocator(const allocator<U, MR> & other) : mem_res(other.resource())
+    {
+    }
 
-  /*! Allocates objects of type \p T.
-   *
-   *  \param n number of elements to allocate
-   *  \return a pointer to the newly allocated storage.
-   */
-  THRUST_NODISCARD
-  _CCCL_HOST pointer allocate(size_type n)
-  {
-    return static_cast<pointer>(mem_res->do_allocate(n * sizeof(T), alignof(T)));
-  }
+    /*! Allocates objects of type \p T.
+     *
+     *  \param n number of elements to allocate
+     *  \return a pointer to the newly allocated storage.
+     */
+    THRUST_NODISCARD
+    _CCCL_HOST
+    pointer allocate(size_type n)
+    {
+        return static_cast<pointer>(mem_res->do_allocate(n * sizeof(T), alignof(T)));
+    }
 
-  /*! Deallocates objects of type \p T.
-   *
-   *  \param p pointer returned by a previous call to \p allocate
-   *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
-   */
-  _CCCL_HOST void deallocate(pointer p, size_type n)
-  {
-    return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
-  }
+    /*! Deallocates objects of type \p T.
+     *
+     *  \param p pointer returned by a previous call to \p allocate
+     *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
+     */
+    _CCCL_HOST
+    void deallocate(pointer p, size_type n)
+    {
+        return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
+    }
 
-  /*! Extracts the memory resource used by this allocator.
-   *
-   *  \return the memory resource used by this allocator.
-   */
-  _CCCL_HOST_DEVICE MR* resource() const
-  {
-    return mem_res;
-  }
+    /*! Extracts the memory resource used by this allocator.
+     *
+     *  \return the memory resource used by this allocator.
+     */
+    _CCCL_HOST_DEVICE
+    MR * resource() const
+    {
+        return mem_res;
+    }
 
 private:
-  MR* mem_res;
+    MR * mem_res;
 };
 
 /*! Compares the allocators for equality by comparing the underlying memory resources. */
-template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator==(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+template<typename T, typename MR>
+_CCCL_HOST_DEVICE
+bool operator==(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noexcept
 {
-  return *lhs.resource() == *rhs.resource();
+    return *lhs.resource() == *rhs.resource();
 }
 
 /*! Compares the allocators for inequality by comparing the underlying memory resources. */
-template <typename T, typename MR>
-_CCCL_HOST_DEVICE bool operator!=(const allocator<T, MR>& lhs, const allocator<T, MR>& rhs) noexcept
+template<typename T, typename MR>
+_CCCL_HOST_DEVICE
+bool operator!=(const allocator<T, MR> & lhs, const allocator<T, MR> & rhs) noexcept
 {
-  return !(lhs == rhs);
+    return !(lhs == rhs);
 }
 
-template <typename T, typename Pointer>
+
+template<typename T, typename Pointer>
 using polymorphic_allocator = allocator<T, polymorphic_adaptor_resource<Pointer> >;
 
-/*! A helper allocator class that uses global instances of a given upstream memory resource. Requires the memory
- * resource to be default constructible.
+
+
+/*! A helper allocator class that uses global instances of a given upstream memory resource. Requires the memory resource
+ *      to be default constructible.
  *
  *  \tparam T the type that will be allocated by this allocator.
  *  \tparam Upstream the upstream memory resource to use for memory allocation. Must derive from
  *      \p thrust::mr::memory_resource and must be \p final (in C++11 and beyond).
  */
-template <typename T, typename Upstream>
+template<typename T, typename Upstream>
 class stateless_resource_allocator : public thrust::mr::allocator<T, Upstream>
 {
-  typedef thrust::mr::allocator<T, Upstream> base;
+    typedef thrust::mr::allocator<T, Upstream> base;
 
 public:
-  /*! The \p rebind metafunction provides the type of an \p stateless_resource_allocator instantiated with another type.
-   *
-   *  \tparam U the other type to use for instantiation.
-   */
-  template <typename U>
-  struct rebind
-  {
-    /*! The typedef \p other gives the type of the rebound \p stateless_resource_allocator.
+    /*! The \p rebind metafunction provides the type of an \p stateless_resource_allocator instantiated with another type.
+     *
+     *  \tparam U the other type to use for instantiation.
      */
-    typedef stateless_resource_allocator<U, Upstream> other;
-  };
+    template<typename U>
+    struct rebind
+    {
+        /*! The typedef \p other gives the type of the rebound \p stateless_resource_allocator.
+         */
+        typedef stateless_resource_allocator<U, Upstream> other;
+    };
 
-  /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
-   *      \p allocator base subobject with that resource.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE stateless_resource_allocator()
-      : base(get_global_resource<Upstream>())
-  {}
+    /*! Default constructor. Uses \p get_global_resource to get the global instance of \p Upstream and initializes the
+     *      \p allocator base subobject with that resource.
+     */
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_HOST_DEVICE
+    stateless_resource_allocator() : base(get_global_resource<Upstream>())
+    {
+    }
 
-  /*! Copy constructor. Copies the memory resource pointer. */
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator& other)
-      : base(other)
-  {}
+    /*! Copy constructor. Copies the memory resource pointer. */
+    _CCCL_HOST_DEVICE
+    stateless_resource_allocator(const stateless_resource_allocator & other)
+        : base(other) {}
 
-  /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
-  template <typename U>
-  _CCCL_HOST_DEVICE stateless_resource_allocator(const stateless_resource_allocator<U, Upstream>& other)
-      : base(other)
-  {}
+    /*! Conversion constructor from an allocator of a different type. Copies the memory resource pointer. */
+    template<typename U>
+    _CCCL_HOST_DEVICE
+    stateless_resource_allocator(const stateless_resource_allocator<U, Upstream> & other)
+        : base(other) {}
 
-  stateless_resource_allocator& operator=(const stateless_resource_allocator&) = default;
+    stateless_resource_allocator & operator=(const stateless_resource_allocator &) = default;
 
-  /*! Destructor. */
-  _CCCL_HOST_DEVICE ~stateless_resource_allocator() {}
+    /*! Destructor. */
+    _CCCL_HOST_DEVICE
+    ~stateless_resource_allocator() {}
 };
 
 /*! \} // allocators
  */
 
-} // namespace mr
+} // end mr
 THRUST_NAMESPACE_END
+

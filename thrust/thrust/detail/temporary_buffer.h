@@ -25,52 +25,52 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/execute_with_allocator.h>
 #include <thrust/detail/execution_policy.h>
+#include <thrust/pair.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/pair.h>
-#include <thrust/system/detail/adl/temporary_buffer.h>
+#include <thrust/detail/execute_with_allocator.h>
 #include <thrust/system/detail/generic/temporary_buffer.h>
+#include <thrust/system/detail/adl/temporary_buffer.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename T, typename DerivedPolicy, typename Pair>
+
+template<typename T, typename DerivedPolicy, typename Pair>
 _CCCL_HOST_DEVICE
-  thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
-  down_cast_pair(Pair p)
+  thrust::pair<thrust::pointer<T,DerivedPolicy>, typename thrust::pointer<T,DerivedPolicy>::difference_type>
+    down_cast_pair(Pair p)
 {
   // XXX should use a hypothetical thrust::static_pointer_cast here
-  thrust::pointer<T, DerivedPolicy> ptr =
-    thrust::pointer<T, DerivedPolicy>(static_cast<T*>(thrust::raw_pointer_cast(p.first)));
+  thrust::pointer<T,DerivedPolicy> ptr = thrust::pointer<T,DerivedPolicy>(static_cast<T*>(thrust::raw_pointer_cast(p.first)));
 
-  typedef thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
-    result_type;
+  typedef thrust::pair<thrust::pointer<T,DerivedPolicy>, typename thrust::pointer<T,DerivedPolicy>::difference_type> result_type;
   return result_type(ptr, p.second);
 } // end down_cast_pair()
 
-} // namespace detail
+
+} // end detail
+
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename T, typename DerivedPolicy>
+template<typename T, typename DerivedPolicy>
 _CCCL_HOST_DEVICE
-  thrust::pair<thrust::pointer<T, DerivedPolicy>, typename thrust::pointer<T, DerivedPolicy>::difference_type>
-  get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-                       typename thrust::pointer<T, DerivedPolicy>::difference_type n)
+  thrust::pair<thrust::pointer<T,DerivedPolicy>, typename thrust::pointer<T,DerivedPolicy>::difference_type>
+    get_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, typename thrust::pointer<T,DerivedPolicy>::difference_type n)
 {
   using thrust::detail::get_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::get_temporary_buffer;
 
-  return thrust::detail::down_cast_pair<T, DerivedPolicy>(
-    get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n));
+  return thrust::detail::down_cast_pair<T,DerivedPolicy>(get_temporary_buffer<T>(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), n));
 } // end get_temporary_buffer()
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE void
-return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer p, std::ptrdiff_t n)
+template<typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE
+  void return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, Pointer p, std::ptrdiff_t n)
 {
   using thrust::detail::return_temporary_buffer; // execute_with_allocator
   using thrust::system::detail::generic::return_temporary_buffer;
@@ -78,4 +78,6 @@ return_temporary_buffer(const thrust::detail::execution_policy_base<DerivedPolic
   return return_temporary_buffer(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), p, n);
 } // end return_temporary_buffer()
 
+
 THRUST_NAMESPACE_END
+

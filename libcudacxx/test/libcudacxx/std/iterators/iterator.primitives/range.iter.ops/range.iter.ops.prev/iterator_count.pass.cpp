@@ -21,8 +21,7 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void
-check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
+__host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
   It it(first);
   decltype(auto) result = cuda::std::ranges::prev(cuda::std::move(it), n);
   static_assert(cuda::std::same_as<decltype(result), It>);
@@ -34,18 +33,18 @@ __host__ __device__ constexpr bool test() {
 
   // Check prev() forward
   for (int n = 0; n != 10; ++n) {
-    check<bidirectional_iterator<int*> >(range + n, n, range);
-    check<random_access_iterator<int*> >(range + n, n, range);
-    check<contiguous_iterator<int*> >(range + n, n, range);
-    check<int*>(range + n, n, range);
+    check<bidirectional_iterator<int*>>(range+n, n, range);
+    check<random_access_iterator<int*>>(range+n, n, range);
+    check<contiguous_iterator<int*>>(   range+n, n, range);
+    check<int*>(                        range+n, n, range);
   }
 
   // Check prev() backward
   for (int n = 0; n != 10; ++n) {
-    check<bidirectional_iterator<int*> >(range, -n, range + n);
-    check<random_access_iterator<int*> >(range, -n, range + n);
-    check<contiguous_iterator<int*> >(range, -n, range + n);
-    check<int*>(range, -n, range + n);
+    check<bidirectional_iterator<int*>>(range, -n, range+n);
+    check<random_access_iterator<int*>>(range, -n, range+n);
+    check<contiguous_iterator<int*>>(   range, -n, range+n);
+    check<int*>(                        range, -n, range+n);
   }
 
   return true;

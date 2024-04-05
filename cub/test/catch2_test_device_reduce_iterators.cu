@@ -32,10 +32,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
+
+#include "c2h/custom_type.cuh"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -55,7 +56,7 @@ void test_big_indices_helper(offset_t num_items)
 {
   thrust::constant_iterator<T> const_iter(T{1});
   c2h::device_vector<std::size_t> out(1);
-  std::size_t* d_out = thrust::raw_pointer_cast(out.data());
+  std::size_t *d_out = thrust::raw_pointer_cast(out.data());
   device_sum(const_iter, d_out, num_items);
   std::size_t result = out[0];
 
@@ -82,12 +83,11 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   constexpr int num_segments = 1;
 
   // Generate the input sizes to test for
-  const int num_items = GENERATE_COPY(
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
+  const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)),
+                                      values({
+                                        min_items,
+                                        max_items,
+                                      }));
 
   // Prepare input data
   item_t default_constant{};
@@ -101,8 +101,9 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   auto reduction_op = op_t{};
 
   // Prepare verification data
-  using accum_t            = cub::detail::accumulator_t<op_t, init_t, item_t>;
-  output_t expected_result = compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
+  using accum_t = cub::detail::accumulator_t<op_t, init_t, item_t>;
+  output_t expected_result =
+    compute_single_problem_reference(in_it, in_it + num_items, reduction_op, accum_t{});
 
   // Run test
   c2h::device_vector<output_t> out_result(num_segments);
@@ -113,7 +114,9 @@ CUB_TEST("Device reduce works with fancy input iterators", "[reduce][device]", i
   REQUIRE(expected_result == out_result[0]);
 }
 
-CUB_TEST("Device reduce compiles with discard output iterator", "[reduce][device]", iterator_type_list)
+CUB_TEST("Device reduce compiles with discard output iterator",
+         "[reduce][device]",
+         iterator_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;

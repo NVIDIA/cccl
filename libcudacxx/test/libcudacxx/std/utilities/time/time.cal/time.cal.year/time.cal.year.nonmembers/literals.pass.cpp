@@ -21,26 +21,27 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-  {
+    {
     using namespace cuda::std::chrono;
     ASSERT_NOEXCEPT(4y);
 
-    static_assert(2017y == year(2017), "");
+    static_assert( 2017y == year(2017), "");
     year y1 = 2018y;
-    assert(y1 == year(2018));
-  }
+    assert (y1 == year(2018));
+    }
 
-  {
+    {
     using namespace cuda::std::literals;
     ASSERT_NOEXCEPT(4d);
 
-    static_assert(2017y == cuda::std::chrono::year(2017), "");
+    static_assert( 2017y == cuda::std::chrono::year(2017), "");
 
     cuda::std::chrono::year y1 = 2020y;
-    assert(y1 == cuda::std::chrono::year(2020));
-  }
+    assert (y1 == cuda::std::chrono::year(2020));
+    }
 #endif // !_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 
   return 0;

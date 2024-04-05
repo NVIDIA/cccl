@@ -26,7 +26,8 @@
 #include "test_macros.h"
 #include "MoveOnly.h"
 
-__host__ __device__ constexpr bool tests() {
+__host__ __device__ constexpr bool tests()
+{
   //  Test deduced type.
   {
     auto arr = cuda::std::to_array({1, 2, 3});
@@ -88,7 +89,8 @@ __host__ __device__ constexpr bool tests() {
   }
 #endif // !TEST_COMPILER_MSVC_2017
 
-#if defined(TEST_COMPILER_NVRTC) && defined(TEST_COMPILER_MSVC)
+#if defined(TEST_COMPILER_NVRTC) \
+ && defined(TEST_COMPILER_MSVC)
   // Test C99 compound literal.
   {
     auto arr = cuda::std::to_array((int[]){3, 4});
@@ -122,7 +124,8 @@ __host__ __device__ constexpr bool tests() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   tests();
   static_assert(tests(), "");
   return 0;

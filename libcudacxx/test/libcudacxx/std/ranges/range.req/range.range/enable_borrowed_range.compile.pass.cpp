@@ -42,4 +42,6 @@ __host__ __device__ void test() {
   // Both cuda::std::span and cuda::std::string_view have their own test.
 }
 
-int main(int, char**) { return 0; }
+int main(int, char**) {
+  return 0;
+}

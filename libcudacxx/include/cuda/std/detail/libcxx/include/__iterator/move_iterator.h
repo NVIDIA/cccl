@@ -70,8 +70,7 @@ concept __move_iter_comparable = requires {
 };
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #elif _CCCL_STD_VER >= 2017
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -95,8 +94,7 @@ template <class _Iter, class _Sent>
 _LIBCUDACXX_CONCEPT __move_iter_comparable = _LIBCUDACXX_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #endif // _CCCL_STD_VER >= 2017
 
 template <class _Iter>
@@ -113,7 +111,8 @@ private:
 
 #if _CCCL_STD_VER >= 2017
 #  if !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto __mi_get_iter_concept()
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
+  __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
     {
@@ -169,7 +168,8 @@ public:
     reference;
 #endif // _CCCL_STD_VER < 2017
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 explicit move_iterator(
+    _Iter __i)
       : __current_(_CUDA_VSTD::move(__i))
   {}
 
@@ -179,8 +179,9 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pointer
-  operator->() const
+  _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+    pointer
+    operator->() const
   {
     return __current_;
   }
@@ -279,8 +280,8 @@ public:
     return static_cast<reference>(*__current_);
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
   operator[](difference_type __n) const
@@ -288,7 +289,7 @@ public:
     return static_cast<reference>(__current_[__n]);
   }
 
-  _CCCL_DIAG_POP
+_CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 move_iterator operator++(int)
   {
@@ -389,23 +390,23 @@ public:
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
-  template <class _Iter2, class _Iter1 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto iter_swap(
-    const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
+#if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+  template<class _Iter2, class _Iter1 = _Iter>
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
+  iter_swap(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
+  _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter> && indirectly_swappable<_Iter2, _Iter1>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
-  template <class _Iter2>
+#else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+  template<class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+  _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);

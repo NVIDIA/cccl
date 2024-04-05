@@ -31,31 +31,29 @@
 #endif // no system header
 
 #include <thrust/detail/cpp11_required.h>
+
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace generic
-{
+namespace system {
+namespace detail {
+namespace generic {
 
 template <typename ExecutionPolicy, typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void
-shuffle(thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g);
+_CCCL_HOST_DEVICE void shuffle(
+    thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first,
+    RandomIterator last, URBG&& g);
 
-template <typename ExecutionPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
+template <typename ExecutionPolicy, typename RandomIterator,
+          typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(
-  thrust::execution_policy<ExecutionPolicy>& exec,
-  RandomIterator first,
-  RandomIterator last,
-  OutputIterator result,
-  URBG&& g);
+    thrust::execution_policy<ExecutionPolicy>& exec, RandomIterator first,
+    RandomIterator last, OutputIterator result, URBG&& g);
 
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+}  // end namespace generic
+}  // end namespace detail
+}  // end namespace system
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/shuffle.inl>
+

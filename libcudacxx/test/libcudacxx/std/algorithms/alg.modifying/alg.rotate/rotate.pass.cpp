@@ -23,8 +23,7 @@
 
 template <class Iter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  using iter_value_t = typename cuda::std::remove_reference<decltype(
-      *cuda::std::declval<Iter>())>::type;
+  using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
 
   iter_value_t ia[] = {0};
   const int sa = static_cast<int>(sizeof(ia) / sizeof(ia[0]));
@@ -213,6 +212,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   assert(ig[4] == 1);
   assert(ig[5] == 2);
 }
+
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   test<forward_iterator<int*> >();

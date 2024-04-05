@@ -29,18 +29,15 @@ struct CopyMoveInfo {
   enum { none, copy, move } copy_kind;
 
   __host__ __device__ constexpr CopyMoveInfo() : copy_kind(none) {}
-  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo const&)
-      : copy_kind(copy) {}
-  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo&&)
-      : copy_kind(move) {}
+  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo const&) : copy_kind(copy) {}
+  __host__ __device__ constexpr CopyMoveInfo(CopyMoveInfo&&) : copy_kind(move) {}
 };
 
-template <class... Args>
+template <class ...Args>
 struct is_bind_frontable {
-  template <class... LocalArgs>
-  __host__ __device__ static auto test(int) -> decltype(
-      (void)cuda::std::bind_front(cuda::std::declval<LocalArgs>()...),
-      cuda::std::true_type());
+  template <class ...LocalArgs>
+  __host__ __device__ static auto test(int)
+      -> decltype((void)cuda::std::bind_front(cuda::std::declval<LocalArgs>()...), cuda::std::true_type());
 
   template <class...>
   __host__ __device__ static cuda::std::false_type test(...);
@@ -52,8 +49,8 @@ struct NotCopyMove {
   NotCopyMove() = delete;
   NotCopyMove(const NotCopyMove&) = delete;
   NotCopyMove(NotCopyMove&&) = delete;
-  template <class... Args>
-  __host__ __device__ void operator()(Args&&...) const {}
+  template <class ...Args>
+  __host__ __device__ void operator()(Args&& ...) const { }
 };
 
 struct NonConstCopyConstructible {
@@ -67,8 +64,8 @@ struct MoveConstructible {
 };
 
 struct MakeTuple {
-  template <class... Args>
-  __host__ __device__ constexpr auto operator()(Args&&... args) const {
+  template <class ...Args>
+  __host__ __device__ constexpr auto operator()(Args&& ...args) const {
     return cuda::std::make_tuple(cuda::std::forward<Args>(args)...);
   }
 };
@@ -76,13 +73,12 @@ struct MakeTuple {
 template <int X>
 struct Elem {
   template <int Y>
-  __host__ __device__ constexpr bool operator==(Elem<Y> const&) const {
-    return X == Y;
-  }
+  __host__ __device__ constexpr bool operator==(Elem<Y> const&) const
+  { return X == Y; }
 };
 
 struct TakeAnything {
-  template <class... Ts>
+  template<class... Ts>
   __host__ __device__ constexpr void operator()(Ts&&...) const {}
 };
 
@@ -102,8 +98,7 @@ __host__ __device__ constexpr bool test() {
       assert(f() == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}));
     }
     {
-      auto f =
-          cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
+      auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
       assert(f() == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}));
     }
   }
@@ -116,13 +111,11 @@ __host__ __device__ constexpr bool test() {
     }
     {
       auto f = cuda::std::bind_front(MakeTuple{});
-      assert(f(Elem<1>{}, Elem<2>{}) ==
-             cuda::std::make_tuple(Elem<1>{}, Elem<2>{}));
+      assert(f(Elem<1>{}, Elem<2>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}));
     }
     {
       auto f = cuda::std::bind_front(MakeTuple{});
-      assert(f(Elem<1>{}, Elem<2>{}, Elem<3>{}) ==
-             cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}));
+      assert(f(Elem<1>{}, Elem<2>{}, Elem<3>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}));
     }
   }
 
@@ -134,33 +127,24 @@ __host__ __device__ constexpr bool test() {
     }
     {
       auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{});
-      assert(f(Elem<10>{}) ==
-             cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<10>{}));
+      assert(f(Elem<10>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<10>{}));
     }
     {
-      auto f =
-          cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
-      assert(f(Elem<10>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{},
-                                                    Elem<3>{}, Elem<10>{}));
+      auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
+      assert(f(Elem<10>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}, Elem<10>{}));
     }
 
     {
       auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{});
-      assert(f(Elem<10>{}, Elem<11>{}) ==
-             cuda::std::make_tuple(Elem<1>{}, Elem<10>{}, Elem<11>{}));
+      assert(f(Elem<10>{}, Elem<11>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<10>{}, Elem<11>{}));
     }
     {
       auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{});
-      assert(
-          f(Elem<10>{}, Elem<11>{}) ==
-          cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<10>{}, Elem<11>{}));
+      assert(f(Elem<10>{}, Elem<11>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<10>{}, Elem<11>{}));
     }
     {
-      auto f =
-          cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
-      assert(f(Elem<10>{}, Elem<11>{}) ==
-             cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}, Elem<10>{},
-                                   Elem<11>{}));
+      auto f = cuda::std::bind_front(MakeTuple{}, Elem<1>{}, Elem<2>{}, Elem<3>{});
+      assert(f(Elem<10>{}, Elem<11>{}) == cuda::std::make_tuple(Elem<1>{}, Elem<2>{}, Elem<3>{}, Elem<10>{}, Elem<11>{}));
     }
   }
 
@@ -194,18 +178,16 @@ __host__ __device__ constexpr bool test() {
 
   // Make sure we don't treat cuda::std::reference_wrapper specially.
 #if TEST_STD_VER > 2017
-#if defined(                                                                   \
-    TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
+#if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
   if (!cuda::std::__libcpp_is_constant_evaluated())
 #endif // TEST_COMPILER_NVRTC
   {
-    auto add = [](cuda::std::reference_wrapper<int> a,
-                  cuda::std::reference_wrapper<int> b) {
-      return a.get() + b.get();
-    };
-    int i = 1, j = 2;
-    auto f = cuda::std::bind_front(add, cuda::std::ref(i));
-    assert(f(cuda::std::ref(j)) == 3);
+      auto add = [](cuda::std::reference_wrapper<int> a, cuda::std::reference_wrapper<int> b) {
+        return a.get() + b.get();
+      };
+      int i = 1, j = 2;
+      auto f = cuda::std::bind_front(add, cuda::std::ref(i));
+      assert(f(cuda::std::ref(j)) == 3);
   }
 #endif
 
@@ -277,6 +259,7 @@ __host__ __device__ constexpr bool test() {
   {
     // Make sure we delete the & overload when the underlying call isn't valid
 
+
     // There's no way to make sure we delete the const& overload when the underlying call isn't valid,
     // so we can't check this one.
 
@@ -289,14 +272,14 @@ __host__ __device__ constexpr bool test() {
         __host__ __device__ void operator()() const&& {}
       };
       using X = decltype(cuda::std::bind_front(F{}));
-      static_assert(cuda::std::is_invocable_v<X&>);
-      static_assert(cuda::std::is_invocable_v<X const&>);
+      static_assert( cuda::std::is_invocable_v<X&>);
+      static_assert( cuda::std::is_invocable_v<X const&>);
 #ifndef TEST_COMPILER_ICC
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X>);
 #endif // !TEST_COMPILER_MSVC_2017
 #endif // !TEST_COMPILER_ICC
-      static_assert(cuda::std::is_invocable_v<X const>);
+      static_assert( cuda::std::is_invocable_v<X const>);
     }
 
     // Make sure we delete the const&& overload when the underlying call isn't valid
@@ -308,9 +291,9 @@ __host__ __device__ constexpr bool test() {
         void operator()() const&& = delete;
       };
       using X = decltype(cuda::std::bind_front(F{}));
-      static_assert(cuda::std::is_invocable_v<X&>);
-      static_assert(cuda::std::is_invocable_v<X const&>);
-      static_assert(cuda::std::is_invocable_v<X>);
+      static_assert( cuda::std::is_invocable_v<X&>);
+      static_assert( cuda::std::is_invocable_v<X const&>);
+      static_assert( cuda::std::is_invocable_v<X>);
 #ifndef TEST_COMPILER_ICC
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
       static_assert(!cuda::std::is_invocable_v<X const>);
@@ -325,9 +308,9 @@ __host__ __device__ constexpr bool test() {
 #ifndef TEST_COMPILER_MSVC_2017 // ICE during invoke check
   {
     {
-      struct T {};
+      struct T { };
       struct F {
-        __host__ __device__ void operator()(T&&) const& {}
+        __host__ __device__ void operator()(T&&) const & {}
         void operator()(T&&) && = delete;
       };
       using X = decltype(cuda::std::bind_front(F{}));
@@ -335,7 +318,7 @@ __host__ __device__ constexpr bool test() {
     }
 
     {
-      struct T {};
+      struct T { };
       struct F {
         __host__ __device__ void operator()(T const&) const {}
         void operator()(T&&) const = delete;
@@ -361,7 +344,7 @@ __host__ __device__ constexpr bool test() {
       assert(ret1(1, 2, 3));
 
       using RetT = decltype(ret);
-      static_assert(cuda::std::is_move_constructible<RetT>::value);
+      static_assert( cuda::std::is_move_constructible<RetT>::value);
       static_assert(!cuda::std::is_copy_constructible<RetT>::value);
       static_assert(!cuda::std::is_move_assignable<RetT>::value);
       static_assert(!cuda::std::is_copy_assignable<RetT>::value);
@@ -382,8 +365,8 @@ __host__ __device__ constexpr bool test() {
       assert(ret2(1, 2, 3));
 
       using RetT = decltype(ret);
-      static_assert(cuda::std::is_move_constructible<RetT>::value);
-      static_assert(cuda::std::is_copy_constructible<RetT>::value);
+      static_assert( cuda::std::is_move_constructible<RetT>::value);
+      static_assert( cuda::std::is_copy_constructible<RetT>::value);
       static_assert(!cuda::std::is_move_assignable<RetT>::value);
       static_assert(!cuda::std::is_copy_assignable<RetT>::value);
     }
@@ -402,9 +385,9 @@ __host__ __device__ constexpr bool test() {
       MoveAssignableWrapper value(true);
       using RetT = decltype(cuda::std::bind_front(cuda::std::move(value), 1));
 
-      static_assert(cuda::std::is_move_constructible<RetT>::value);
+      static_assert( cuda::std::is_move_constructible<RetT>::value);
       static_assert(!cuda::std::is_copy_constructible<RetT>::value);
-      static_assert(cuda::std::is_move_assignable<RetT>::value);
+      static_assert( cuda::std::is_move_assignable<RetT>::value);
       static_assert(!cuda::std::is_copy_assignable<RetT>::value);
 
       value();
@@ -420,22 +403,15 @@ __host__ __device__ constexpr bool test() {
     static_assert(!is_bind_frontable<NotCopyMove>::value);
     static_assert(!is_bind_frontable<NotCopyMove&>::value);
 
-    static_assert(
-        !cuda::std::is_constructible_v<MoveConstructible, MoveConstructible&>);
-    static_assert(cuda::std::is_move_constructible_v<MoveConstructible>);
-    static_assert(
-        is_bind_frontable<decltype(takeAnything), MoveConstructible>::value);
-    static_assert(
-        !is_bind_frontable<decltype(takeAnything), MoveConstructible&>::value);
+    static_assert(!cuda::std::is_constructible_v<MoveConstructible, MoveConstructible&>);
+    static_assert( cuda::std::is_move_constructible_v<MoveConstructible>);
+    static_assert( is_bind_frontable<decltype(takeAnything), MoveConstructible>::value);
+    static_assert(!is_bind_frontable<decltype(takeAnything), MoveConstructible&>::value);
 
-    static_assert(cuda::std::is_constructible_v<NonConstCopyConstructible,
-                                                NonConstCopyConstructible&>);
-    static_assert(
-        !cuda::std::is_move_constructible_v<NonConstCopyConstructible>);
-    static_assert(!is_bind_frontable<decltype(takeAnything),
-                                     NonConstCopyConstructible&>::value);
-    static_assert(!is_bind_frontable<decltype(takeAnything),
-                                     NonConstCopyConstructible>::value);
+    static_assert( cuda::std::is_constructible_v<NonConstCopyConstructible, NonConstCopyConstructible&>);
+    static_assert(!cuda::std::is_move_constructible_v<NonConstCopyConstructible>);
+    static_assert(!is_bind_frontable<decltype(takeAnything), NonConstCopyConstructible&>::value);
+    static_assert(!is_bind_frontable<decltype(takeAnything), NonConstCopyConstructible>::value);
 
     takeAnything();
   }
@@ -443,10 +419,9 @@ __host__ __device__ constexpr bool test() {
 #if !defined(TEST_COMPILER_ICC) && !defined(TEST_COMPILER_MSVC_2017)
   // Make sure bind_front's unspecified type's operator() is SFINAE-friendly
   {
-    using T = decltype(
-        cuda::std::bind_front(cuda::std::declval<int (*)(int, int)>(), 1));
+    using T = decltype(cuda::std::bind_front(cuda::std::declval<int(*)(int, int)>(), 1));
     static_assert(!cuda::std::is_invocable<T>::value);
-    static_assert(cuda::std::is_invocable<T, int>::value);
+    static_assert( cuda::std::is_invocable<T, int>::value);
     static_assert(!cuda::std::is_invocable<T, void*>::value);
     static_assert(!cuda::std::is_invocable<T, int, int>::value);
   }

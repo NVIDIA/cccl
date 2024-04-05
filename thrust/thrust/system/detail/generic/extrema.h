@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file extrema.h
  *  \brief Generic device implementations of extrema functions.
  */
@@ -40,29 +41,51 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
-max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
-
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator max_element(
-  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
-min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_DEVICE
+ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
+                            ForwardIterator first,
+                            ForwardIterator last);
+
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator min_element(
-  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_DEVICE
+ForwardIterator max_element(thrust::execution_policy<DerivedPolicy> &exec,
+                            ForwardIterator first,
+                            ForwardIterator last,
+                            BinaryPredicate comp);
+
 
 template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator>
-minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
+_CCCL_HOST_DEVICE
+ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
+                            ForwardIterator first,
+                            ForwardIterator last);
+
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
-  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate comp);
+_CCCL_HOST_DEVICE
+ForwardIterator min_element(thrust::execution_policy<DerivedPolicy> &exec,
+                            ForwardIterator first,
+                            ForwardIterator last,
+                            BinaryPredicate comp);
+
+
+template <typename DerivedPolicy, typename ForwardIterator>
+_CCCL_HOST_DEVICE
+thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_policy<DerivedPolicy> &exec,
+                                                             ForwardIterator first,
+                                                             ForwardIterator last);
+
+
+template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+thrust::pair<ForwardIterator,ForwardIterator> minmax_element(thrust::execution_policy<DerivedPolicy> &exec,
+                                                             ForwardIterator first,
+                                                             ForwardIterator last,
+                                                             BinaryPredicate comp);
+
 
 } // end namespace generic
 } // end namespace detail
@@ -70,3 +93,4 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/extrema.inl>
+

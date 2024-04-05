@@ -30,54 +30,39 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>,
-                                            cuda::std::unexpect_t>,
-              "");
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>,
-                                            cuda::std::unexpect_t, int>,
-              "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
 
 // !is_constructible_v<T, Args...>
 struct foo {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, foo>,
-                                             cuda::std::unexpect_t, int>,
-              "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<void, foo>, cuda::std::unexpect_t, int>, "");
 
 // test explicit
 template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>(
-                                 {cuda::std::forward<Args>(args)...}))));
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  ImplicitlyConstructible_,
+  requires(Args&&... args)(
+    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
+  ));
 
 template <class T, class... Args>
-constexpr bool ImplicitlyConstructible =
-    _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
 static_assert(ImplicitlyConstructible<int, int>, "");
 
-static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>,
-                                       cuda::std::unexpect_t>,
-              "");
-static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>,
-                                       cuda::std::unexpect_t, int>,
-              "");
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t>, "");
+static_assert(!ImplicitlyConstructible<cuda::std::expected<void, int>, cuda::std::unexpect_t, int>, "");
 
 struct CopyOnly {
   int i;
   __host__ __device__ constexpr CopyOnly(int ii) : i(ii) {}
   CopyOnly(const CopyOnly&) = default;
-  __host__ __device__ CopyOnly(CopyOnly&&) = delete;
-  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi,
-                                                       int ii) {
-    return mi.i == ii;
-  }
+  __host__ __device__ CopyOnly(CopyOnly&&)      = delete;
+  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi,
-                                                       int ii) {
-    return mi.i != ii;
-  }
+  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
 #endif // TEST_STD_VER < 2020
 };
 
@@ -128,11 +113,9 @@ __host__ __device__ constexpr bool test() {
 
   // multi args
   {
-    cuda::std::expected<void, cuda::std::tuple<int, short, MoveOnly> > e(
-        cuda::std::unexpect, 1, short{2}, MoveOnly(3));
+    cuda::std::expected<void, cuda::std::tuple<int, short, MoveOnly>> e(cuda::std::unexpect, 1, short{2}, MoveOnly(3));
     assert(!e.has_value());
-    assert((e.error() ==
-            cuda::std::tuple<int, short, MoveOnly>(1, short{2}, MoveOnly(3))));
+    assert((e.error() == cuda::std::tuple<int, short, MoveOnly>(1, short{2}, MoveOnly(3))));
   }
 
   return true;

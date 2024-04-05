@@ -18,18 +18,19 @@
 #include "test_macros.h"
 #include "../../rep.h"
 
-int main(int, char**) {
-  typedef cuda::std::chrono::system_clock Clock;
-  typedef cuda::std::chrono::duration<Rep, cuda::std::milli> Duration;
-  {
+int main(int, char**)
+{
+    typedef cuda::std::chrono::system_clock Clock;
+    typedef cuda::std::chrono::duration<Rep, cuda::std::milli> Duration;
+    {
     cuda::std::chrono::time_point<Clock, Duration> t;
     assert(t.time_since_epoch() == Duration::zero());
-  }
+    }
 #if TEST_STD_VER > 2011
-  {
+    {
     constexpr cuda::std::chrono::time_point<Clock, Duration> t;
     static_assert(t.time_since_epoch() == Duration::zero(), "");
-  }
+    }
 #endif
 
   return 0;

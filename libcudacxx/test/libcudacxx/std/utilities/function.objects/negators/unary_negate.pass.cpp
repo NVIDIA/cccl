@@ -19,26 +19,29 @@
 #include <cuda/std/cassert>
 
 // ensure that we allow `__device__` functions too
-struct with_device_op {
-  using argument_type = int;
-  using result_type = bool;
-  __device__ constexpr bool operator()(const int&) const { return true; }
+struct with_device_op
+{
+    using argument_type  = int;
+    using result_type    = bool;
+    __device__ constexpr bool operator()(const int&) const {return true;}
 };
 
-__global__ void test_global_kernel() {
-  const cuda::std::unary_negate<with_device_op> f{with_device_op{}};
-  assert(!f(36));
+__global__
+void test_global_kernel() {
+    const cuda::std::unary_negate<with_device_op> f{with_device_op{}};
+    assert(!f(36));
 }
 
-int main(int, char**) {
-  typedef cuda::std::unary_negate<cuda::std::logical_not<int> > F;
-  const F f = F(cuda::std::logical_not<int>());
+int main(int, char**)
+{
+    typedef cuda::std::unary_negate<cuda::std::logical_not<int> > F;
+    const F f = F(cuda::std::logical_not<int>());
 #if TEST_STD_VER <= 2017
-  static_assert((cuda::std::is_same<F::argument_type, int>::value), "");
-  static_assert((cuda::std::is_same<F::result_type, bool>::value), "");
+    static_assert((cuda::std::is_same<F::argument_type, int>::value), "" );
+    static_assert((cuda::std::is_same<F::result_type, bool>::value), "" );
 #endif
-  assert(f(36));
-  assert(!f(0));
+    assert(f(36));
+    assert(!f(0));
 
   return 0;
 }

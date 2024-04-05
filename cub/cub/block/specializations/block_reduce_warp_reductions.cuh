@@ -71,187 +71,205 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
 struct BlockReduceWarpReductions
 {
-  /// Constants
-  enum
-  {
-    /// The thread block size in threads
-    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-
-    /// Number of warp threads
-    WARP_THREADS = CUB_WARP_THREADS(0),
-
-    /// Number of active warps
-    WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
-
-    /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = CUB_MIN(BLOCK_THREADS, WARP_THREADS),
-
-    /// Whether or not the logical warp size evenly divides the thread block size
-    EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
-  };
-
-  ///  WarpReduce utility type
-  typedef typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce WarpReduce;
-
-  /// Shared memory storage layout type
-  struct _TempStorage
-  {
-    /// Buffer for warp-synchronous reduction
-    typename WarpReduce::TempStorage warp_reduce[WARPS];
-
-    /// Shared totals from each warp-synchronous reduction
-    T warp_aggregates[WARPS];
-
-    /// Shared prefix for the entire thread block
-    T block_prefix;
-  };
-
-  /// Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  // Thread fields
-  _TempStorage& temp_storage;
-  int linear_tid;
-  int warp_id;
-  int lane_id;
-
-  /// Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
-      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-      , warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS)
-      , lane_id(LaneId())
-  {}
-
-  /**
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp reduction_op, T warp_aggregate, int num_valid, Int2Type<SUCCESSOR_WARP> /*successor_warp*/)
-  {
-    if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
+    /// Constants
+    enum
     {
-      T addend       = temp_storage.warp_aggregates[SUCCESSOR_WARP];
-      warp_aggregate = reduction_op(warp_aggregate, addend);
-    }
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<SUCCESSOR_WARP + 1>());
-  }
+        /// The thread block size in threads
+        BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
-  /**
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(
-    ReductionOp /*reduction_op*/, T warp_aggregate, int /*num_valid*/, Int2Type<WARPS> /*successor_warp*/)
-  {
-    return warp_aggregate;
-  }
+        /// Number of warp threads
+        WARP_THREADS = CUB_WARP_THREADS(0),
 
-  /**
-   * @brief Returns block-wide aggregate in <em>thread</em><sub>0</sub>.
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   *
-   * @param[in] warp_aggregate
-   *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op, T warp_aggregate, int num_valid)
-  {
-    // Share lane aggregates
-    if (lane_id == 0)
+        /// Number of active warps
+        WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
+
+        /// The logical warp size for warp reductions
+        LOGICAL_WARP_SIZE = CUB_MIN(BLOCK_THREADS, WARP_THREADS),
+
+        /// Whether or not the logical warp size evenly divides the thread block size
+        EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
+    };
+
+
+    ///  WarpReduce utility type
+    typedef typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce WarpReduce;
+
+    /// Shared memory storage layout type
+    struct _TempStorage
     {
-      detail::uninitialized_copy(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      /// Buffer for warp-synchronous reduction
+      typename WarpReduce::TempStorage warp_reduce[WARPS];
+
+      /// Shared totals from each warp-synchronous reduction
+      T warp_aggregates[WARPS];
+
+      /// Shared prefix for the entire thread block
+      T block_prefix;
+    };
+
+    /// Alias wrapper allowing storage to be unioned
+    struct TempStorage : Uninitialized<_TempStorage> {};
+
+
+    // Thread fields
+    _TempStorage &temp_storage;
+    int linear_tid;
+    int warp_id;
+    int lane_id;
+
+
+    /// Constructor
+    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduceWarpReductions(
+        TempStorage &temp_storage)
+    :
+        temp_storage(temp_storage.Alias()),
+        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z)),
+        warp_id((WARPS == 1) ? 0 : linear_tid / WARP_THREADS),
+        lane_id(LaneId())
+    {}
+
+    /**
+     * @param[in] reduction_op
+     *   Binary reduction operator
+     *
+     * @param[in] warp_aggregate
+     *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     */
+    template <bool FULL_TILE, typename ReductionOp, int SUCCESSOR_WARP>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op,
+                                                     T warp_aggregate,
+                                                     int num_valid,
+                                                     Int2Type<SUCCESSOR_WARP> /*successor_warp*/)
+    {
+        if (FULL_TILE || (SUCCESSOR_WARP * LOGICAL_WARP_SIZE < num_valid))
+        {
+            T addend = temp_storage.warp_aggregates[SUCCESSOR_WARP];
+            warp_aggregate = reduction_op(warp_aggregate, addend);
+        }
+        return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<SUCCESSOR_WARP + 1>());
     }
 
-    CTA_SYNC();
-
-    // Update total aggregate in warp 0, lane 0
-    if (linear_tid == 0)
+    /**
+     * @param[in] reduction_op
+     *   Binary reduction operator
+     *
+     * @param[in] warp_aggregate
+     *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     */
+    template <bool FULL_TILE, typename ReductionOp>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp /*reduction_op*/,
+                                                     T warp_aggregate,
+                                                     int /*num_valid*/,
+                                                     Int2Type<WARPS> /*successor_warp*/)
     {
-      warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<1>());
+        return warp_aggregate;
     }
 
-    return warp_aggregate;
-  }
+    /**
+     * @brief Returns block-wide aggregate in <em>thread</em><sub>0</sub>.
+     *
+     * @param[in] reduction_op
+     *   Binary reduction operator
+     *
+     * @param[in] warp_aggregate
+     *   <b>[<em>lane</em><sub>0</sub> only]</b> Warp-wide aggregate reduction of input items
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     */
+    template <bool FULL_TILE, typename ReductionOp>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T ApplyWarpAggregates(ReductionOp reduction_op,
+                                                     T warp_aggregate,
+                                                     int num_valid)
+    {
+        // Share lane aggregates
+        if (lane_id == 0)
+        {
+          detail::uninitialized_copy(temp_storage.warp_aggregates + warp_id,
+                                     warp_aggregate);
+        }
 
-  /**
-   * @brief Computes a thread block-wide reduction using addition (+) as the reduction operator.
-   *        The first num_valid threads each contribute one reduction partial. The return value is
-   *        only valid for thread<sub>0</sub>.
-   *
-   * @param[in] input
-   *   Calling thread's input partial reductions
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   */
-  template <bool FULL_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
-  {
-    cub::Sum reduction_op;
-    int warp_offset    = (warp_id * LOGICAL_WARP_SIZE);
-    int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
-                         ? LOGICAL_WARP_SIZE
-                         : num_valid - warp_offset;
+        CTA_SYNC();
 
-    // Warp reduction in every warp
-    T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id])
-                         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, cub::Sum());
+        // Update total aggregate in warp 0, lane 0
+        if (linear_tid == 0)
+        {
+            warp_aggregate = ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid, Int2Type<1>());
+        }
 
-    // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
-  }
+        return warp_aggregate;
+    }
 
-  /**
-   * @brief Computes a thread block-wide reduction using the specified reduction operator.
-   *        The first num_valid threads each contribute one reduction partial.
-   *        The return value is only valid for thread<sub>0</sub>.
-   *
-   * @param[in] input
-   *   Calling thread's input partial reductions
-   *
-   * @param[in] num_valid
-   *   Number of valid elements (may be less than BLOCK_THREADS)
-   *
-   * @param[in] reduction_op
-   *   Binary reduction operator
-   */
-  template <bool FULL_TILE, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
-  {
-    int warp_offset    = warp_id * LOGICAL_WARP_SIZE;
-    int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
-                         ? LOGICAL_WARP_SIZE
-                         : num_valid - warp_offset;
+    /**
+     * @brief Computes a thread block-wide reduction using addition (+) as the reduction operator.
+     *        The first num_valid threads each contribute one reduction partial. The return value is
+     *        only valid for thread<sub>0</sub>.
+     *
+     * @param[in] input
+     *   Calling thread's input partial reductions
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     */
+    template <bool FULL_TILE>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+    {
+        cub::Sum    reduction_op;
+        int         warp_offset = (warp_id * LOGICAL_WARP_SIZE);
+        int         warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid)) ?
+                            LOGICAL_WARP_SIZE :
+                            num_valid - warp_offset;
 
-    // Warp reduction in every warp
-    T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id])
-                         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
+        // Warp reduction in every warp
+        T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id]).template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(
+            input,
+            warp_num_valid,
+            cub::Sum());
 
-    // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
-    return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
-  }
+        // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
+        return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
+    }
+
+    /**
+     * @brief Computes a thread block-wide reduction using the specified reduction operator.
+     *        The first num_valid threads each contribute one reduction partial.
+     *        The return value is only valid for thread<sub>0</sub>.
+     *
+     * @param[in] input
+     *   Calling thread's input partial reductions
+     *
+     * @param[in] num_valid
+     *   Number of valid elements (may be less than BLOCK_THREADS)
+     *
+     * @param[in] reduction_op
+     *   Binary reduction operator
+     */
+    template <bool FULL_TILE, typename ReductionOp>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int num_valid, ReductionOp reduction_op)
+    {
+        int         warp_offset = warp_id * LOGICAL_WARP_SIZE;
+        int         warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid)) ?
+                            LOGICAL_WARP_SIZE :
+                            num_valid - warp_offset;
+
+        // Warp reduction in every warp
+        T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id]).template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(
+            input,
+            warp_num_valid,
+            reduction_op);
+
+        // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
+        return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
+    }
+
 };
 
+
 CUB_NAMESPACE_END
+

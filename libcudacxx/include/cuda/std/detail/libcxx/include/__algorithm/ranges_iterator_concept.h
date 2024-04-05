@@ -31,30 +31,19 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _IterMaybeQualified>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr auto __get_iterator_concept()
-{
+_LIBCUDACXX_INLINE_VISIBILITY constexpr auto __get_iterator_concept() {
   using _Iter = __remove_cvref_t<_IterMaybeQualified>;
 
   if constexpr (contiguous_iterator<_Iter>)
-  {
     return contiguous_iterator_tag();
-  }
   else if constexpr (random_access_iterator<_Iter>)
-  {
     return random_access_iterator_tag();
-  }
   else if constexpr (bidirectional_iterator<_Iter>)
-  {
     return bidirectional_iterator_tag();
-  }
   else if constexpr (forward_iterator<_Iter>)
-  {
     return forward_iterator_tag();
-  }
   else if constexpr (input_iterator<_Iter>)
-  {
     return input_iterator_tag();
-  }
 }
 
 template <class _Iter>

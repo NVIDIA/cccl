@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file scatter.h
  *  \brief Irregular copying to a destination range
  */
@@ -38,6 +39,7 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
+
 /*! \p scatter copies elements from a source range into an output array
  *  according to a map. For each iterator \c i in the range [\p first, \p last),
  *  the value \c *i is assigned to <tt>output[*(map + (i - first))]</tt>. The
@@ -54,18 +56,13 @@ THRUST_NAMESPACE_BEGIN
  *  \param result Destination of the source elements.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
  *  \pre The expression `result[*i]` shall be valid for all iterators in the range `[map,map + (last - first))`.
  *
@@ -95,13 +92,17 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \note \p scatter is the inverse of thrust::gather.
  */
-template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
-scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-        InputIterator1 first,
-        InputIterator1 last,
-        InputIterator2 map,
-        RandomAccessIterator result);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename RandomAccessIterator>
+_CCCL_HOST_DEVICE
+  void scatter(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+               InputIterator1 first,
+               InputIterator1 last,
+               InputIterator2 map,
+               RandomAccessIterator result);
+
 
 /*! \p scatter copies elements from a source range into an output array
  *  according to a map. For each iterator \c i in the range [\p first, \p last),
@@ -115,18 +116,13 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  \param map  Beginning of the sequence of output indices.
  *  \param result Destination of the source elements.
  *
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
  *  \pre The expression `result[*i]` shall be valid for all iterators in the range `[map,map + (last - first))`.
  *
@@ -154,8 +150,14 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *
  *  \note \p scatter is the inverse of thrust::gather.
  */
-template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator result);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename RandomAccessIterator>
+  void scatter(InputIterator1 first,
+               InputIterator1 last,
+               InputIterator2 map,
+               RandomAccessIterator result);
+
 
 /*! \p scatter_if conditionally copies elements from a source range into an
  *  output array according to a map. For each iterator \c i in the
@@ -175,26 +177,18 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, Rand
  *  \param output Beginning of the destination range.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam InputIterator3 must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c bool. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam InputIterator3 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c value_type must be convertible to \c bool.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for
- * which the following condition holds: `*(stencil + i) != false`.
+ *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for which the following condition holds: `*(stencil + i) != false`.
  *
  *  \code
  *  #include <thrust/scatter.h>
@@ -212,18 +206,19 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, Rand
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 map,
-  InputIterator3 stencil,
-  RandomAccessIterator output);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator>
+_CCCL_HOST_DEVICE
+  void scatter_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                  InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output);
+
 
 /*! \p scatter_if conditionally copies elements from a source range into an
  *  output array according to a map. For each iterator \c i in the
@@ -239,26 +234,18 @@ _CCCL_HOST_DEVICE void scatter_if(
  *  \param stencil Beginning of the sequence of predicate values.
  *  \param output Beginning of the destination range.
  *
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam InputIterator3 must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c bool. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam InputIterator3 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c value_type must be convertible to \c bool.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for
- * which the following condition holds: `*(stencil + i) != false`.
+ *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for which the following condition holds: `*(stencil + i) != false`.
  *
  *  \code
  *  #include <thrust/scatter.h>
@@ -275,9 +262,16 @@ _CCCL_HOST_DEVICE void scatter_if(
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
  */
-template <typename InputIterator1, typename InputIterator2, typename InputIterator3, typename RandomAccessIterator>
-void scatter_if(
-  InputIterator1 first, InputIterator1 last, InputIterator2 map, InputIterator3 stencil, RandomAccessIterator output);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator>
+  void scatter_if(InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output);
+
 
 /*! \p scatter_if conditionally copies elements from a source range into an
  *  output array according to a map. For each iterator \c i in the
@@ -298,27 +292,19 @@ void scatter_if(
  *  \param pred Predicate to apply to the stencil values.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam InputIterator3 must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>. \tparam
- * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam InputIterator3 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c value_type must be convertible to \c Predicate's \c argument_type.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for
- * which the following condition holds: `pred(*(stencil + i)) != false`.
+ *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for which the following condition holds: `pred(*(stencil + i)) != false`.
  *
  *  \code
  *  #include <thrust/scatter.h>
@@ -348,20 +334,21 @@ void scatter_if(
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename RandomAccessIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 map,
-  InputIterator3 stencil,
-  RandomAccessIterator output,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  void scatter_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                  InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output,
+                  Predicate pred);
+
 
 /*! \p scatter_if conditionally copies elements from a source range into an
  *  output array according to a map. For each iterator \c i in the
@@ -378,27 +365,19 @@ _CCCL_HOST_DEVICE void scatter_if(
  *  \param output Beginning of the destination range.
  *  \param pred Predicate to apply to the stencil values.
  *
- *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
- *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c
- * difference_type. \tparam InputIterator3 must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
- * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>. \tparam
- * Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c value_type.
+ *  \tparam InputIterator2 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c value_type must be convertible to \c RandomAccessIterator's \c difference_type.
+ *  \tparam InputIterator3 must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator3's \c value_type must be convertible to \c Predicate's \c argument_type.
+ *  \tparam RandomAccessIterator must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a>.
+ *  \tparam Predicate must be a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[first,last)` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map
- * + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[map,map + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range
- * `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
+ *  \pre The iterator `result + i` shall not refer to any element referenced by any iterator `j` in the range `[stencil,stencil + (last - first))` for all iterators `i` in the range `[map,map + (last - first))`.
  *
- *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for
- * which the following condition holds: `pred(*(stencil + i)) != false`.
+ *  \pre The expression `result[*i]` shall be valid for all iterators `i` in the range `[map,map + (last - first))` for which the following condition holds: `pred(*(stencil + i)) != false`.
  *
  *  \code
  *  #include <thrust/scatter.h>
@@ -427,17 +406,18 @@ _CCCL_HOST_DEVICE void scatter_if(
  *
  *  \note \p scatter_if is the inverse of thrust::gather_if.
  */
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename RandomAccessIterator,
-          typename Predicate>
-void scatter_if(InputIterator1 first,
-                InputIterator1 last,
-                InputIterator2 map,
-                InputIterator3 stencil,
-                RandomAccessIterator output,
-                Predicate pred);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator,
+         typename Predicate>
+  void scatter_if(InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output,
+                  Predicate pred);
+
 
 /*! \} // end scattering
  */

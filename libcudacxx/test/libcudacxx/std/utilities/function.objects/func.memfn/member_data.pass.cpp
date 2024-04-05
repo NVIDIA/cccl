@@ -13,13 +13,17 @@
 #include <cuda/std/functional>
 #include <cuda/std/cassert>
 
-struct A {
-  double data_;
+struct A
+{
+    double data_;
 };
 
 template <class F>
-__host__ __device__ void test(F f) {
-  {
+__host__ __device__
+void
+test(F f)
+{
+    {
     A a;
     f(a) = 5;
     assert(a.data_ == 5);
@@ -30,11 +34,12 @@ __host__ __device__ void test(F f) {
     assert(f(cap) == f(ap));
     const F& cf = f;
     assert(cf(ap) == f(ap));
-  }
+    }
 }
 
-int main(int, char**) {
-  test(cuda::std::mem_fn(&A::data_));
+int main(int, char**)
+{
+    test(cuda::std::mem_fn(&A::data_));
 
   return 0;
 }

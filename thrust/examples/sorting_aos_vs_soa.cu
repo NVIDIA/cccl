@@ -1,10 +1,10 @@
-#include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
-#include <thrust/random.h>
+#include <thrust/device_vector.h>
 #include <thrust/sort.h>
+#include <thrust/random.h>
+#include <assert.h>
 
 #include "include/timer.h"
-#include <assert.h>
 
 // This examples compares sorting performance using Array of Structures (AoS)
 // and Structure of Arrays (SoA) data layout.  Legacy applications will often
@@ -20,10 +20,11 @@ struct MyStruct
   int key;
   float value;
 
-  __host__ __device__ bool operator<(const MyStruct other) const
-  {
-    return key < other.key;
-  }
+  __host__ __device__
+    bool operator<(const MyStruct other) const
+    {
+      return key < other.key;
+    }
 };
 
 void initialize_keys(thrust::device_vector<int>& keys)
@@ -33,13 +34,12 @@ void initialize_keys(thrust::device_vector<int>& keys)
 
   thrust::host_vector<int> h_keys(keys.size());
 
-  for (size_t i = 0; i < h_keys.size(); i++)
-  {
+  for(size_t i = 0; i < h_keys.size(); i++)
     h_keys[i] = dist(rng);
-  }
 
   keys = h_keys;
 }
+
 
 void initialize_keys(thrust::device_vector<MyStruct>& structures)
 {
@@ -48,10 +48,8 @@ void initialize_keys(thrust::device_vector<MyStruct>& structures)
 
   thrust::host_vector<MyStruct> h_structures(structures.size());
 
-  for (size_t i = 0; i < h_structures.size(); i++)
-  {
+  for(size_t i = 0; i < h_structures.size(); i++)
     h_structures[i].key = dist(rng);
-  }
 
   structures = h_structures;
 }
@@ -76,7 +74,7 @@ int main(void)
 
   // Sort Key-Value pairs using Structure of Arrays (SoA) storage
   {
-    thrust::device_vector<int> keys(N);
+    thrust::device_vector<int>   keys(N);
     thrust::device_vector<float> values(N);
 
     initialize_keys(keys);
@@ -91,3 +89,4 @@ int main(void)
 
   return 0;
 }
+

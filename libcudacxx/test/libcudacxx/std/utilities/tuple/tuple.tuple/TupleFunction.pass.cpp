@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 // This is for bugs 18853 and 19118
 
 #include <cuda/std/tuple>
@@ -16,16 +17,18 @@
 
 #include "test_macros.h"
 
-struct X {
-  __device__ __host__ X() {}
+struct X
+{
+    __device__ __host__ X() {}
 
-  template <class T>
-  __device__ __host__ X(T);
+    template <class T>
+    __device__ __host__ X(T);
 
-  __device__ __host__ void operator()() {}
+    __device__ __host__ void operator()() {}
 };
 
-int main(int, char**) {
+int main(int, char**)
+{
   // cuda::std::function not supported
   /*
     X x;

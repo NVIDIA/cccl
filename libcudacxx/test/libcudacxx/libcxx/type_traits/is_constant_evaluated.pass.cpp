@@ -19,16 +19,16 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  ASSERT_SAME_TYPE(decltype(cuda::std::__libcpp_is_constant_evaluated()), bool);
-  ASSERT_NOEXCEPT(cuda::std::__libcpp_is_constant_evaluated());
+int main (int, char**) {
+    ASSERT_SAME_TYPE(decltype(cuda::std::__libcpp_is_constant_evaluated()), bool);
+    ASSERT_NOEXCEPT(cuda::std::__libcpp_is_constant_evaluated());
 
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
-  static_assert(cuda::std::__libcpp_is_constant_evaluated(), "");
+    static_assert(cuda::std::__libcpp_is_constant_evaluated(), "");
 #endif
 
-  bool p = cuda::std::__libcpp_is_constant_evaluated();
-  assert(!p);
+    bool p = cuda::std::__libcpp_is_constant_evaluated();
+    assert(!p);
 
-  return 0;
+    return 0;
 }

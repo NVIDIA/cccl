@@ -25,8 +25,7 @@
 
 #include "test_macros.h"
 
-template <class V, size_t E>
-__host__ __device__ void test() {
+template <class V, size_t E> __host__ __device__ void test() {
   static_assert(cuda::std::variant_size<V>::value == E, "");
   static_assert(cuda::std::variant_size<const V>::value == E, "");
   static_assert(cuda::std::variant_size<volatile V>::value == E, "");
@@ -35,16 +34,15 @@ __host__ __device__ void test() {
   static_assert(cuda::std::variant_size_v<const V> == E, "");
   static_assert(cuda::std::variant_size_v<volatile V> == E, "");
   static_assert(cuda::std::variant_size_v<const volatile V> == E, "");
-  static_assert(
-      cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, E>,
-                            cuda::std::variant_size<V> >::value,
-      "");
+  static_assert(cuda::std::is_base_of<cuda::std::integral_constant<cuda::std::size_t, E>,
+                                cuda::std::variant_size<V>>::value,
+                "");
 };
 
 int main(int, char**) {
   test<cuda::std::variant<>, 0>();
-  test<cuda::std::variant<void*>, 1>();
-  test<cuda::std::variant<long, long, void*, double>, 4>();
+  test<cuda::std::variant<void *>, 1>();
+  test<cuda::std::variant<long, long, void *, double>, 4>();
 
   return 0;
 }

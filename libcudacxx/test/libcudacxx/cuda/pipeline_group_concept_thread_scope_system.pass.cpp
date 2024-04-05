@@ -12,8 +12,9 @@
 
 #include "pipeline_group_concept.h"
 
-int main(int argc, char** argv) {
-  test_select_size_type<cuda::thread_scope::thread_scope_system>();
+int main(int argc, char ** argv)
+{
+    test_select_size_type<cuda::thread_scope::thread_scope_system>();
 
-  return 0;
+    return 0;
 }

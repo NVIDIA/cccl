@@ -130,11 +130,12 @@ template <typename KeyT,
           typename ValueT          = NullType,
           int LEGACY_PTX_ARCH      = 0>
 class WarpMergeSort
-    : public BlockMergeSortStrategy< KeyT,
-                                     ValueT,
-                                     LOGICAL_WARP_THREADS,
-                                     ITEMS_PER_THREAD,
-                                     WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
+    : public BlockMergeSortStrategy<
+        KeyT,
+        ValueT,
+        LOGICAL_WARP_THREADS,
+        ITEMS_PER_THREAD,
+        WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
@@ -150,22 +151,18 @@ private:
 public:
   WarpMergeSort() = delete;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage& temp_storage)
-      : BlockMergeSortStrategyT(temp_storage, IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
+  _CCCL_DEVICE _CCCL_FORCEINLINE
+  WarpMergeSort(typename BlockMergeSortStrategyT::TempStorage &temp_storage)
+      : BlockMergeSortStrategyT(temp_storage,
+                                IS_ARCH_WARP ? LaneId() : (LaneId() % LOGICAL_WARP_THREADS))
       , warp_id(IS_ARCH_WARP ? 0 : (LaneId() / LOGICAL_WARP_THREADS))
       , member_mask(WarpMask<LOGICAL_WARP_THREADS>(warp_id))
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const
-  {
-    return member_mask;
-  }
+  _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int get_member_mask() const { return member_mask; }
 
 private:
-  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
-  {
-    WARP_SYNC(member_mask);
-  }
+  _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const { WARP_SYNC(member_mask); }
 
   friend BlockMergeSortStrategyT;
 };

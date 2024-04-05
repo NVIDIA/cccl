@@ -18,9 +18,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  assert(cuda::std::kill_dependency(5) == 5);
-  assert(cuda::std::kill_dependency(-5.5) == -5.5);
+int main(int, char**)
+{
+    assert(cuda::std::kill_dependency(5) == 5);
+    assert(cuda::std::kill_dependency(-5.5) == -5.5);
 
   return 0;
 }

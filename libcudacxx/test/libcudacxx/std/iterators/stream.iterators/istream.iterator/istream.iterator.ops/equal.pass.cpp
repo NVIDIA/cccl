@@ -26,37 +26,41 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  cuda::std::istringstream inf1(" 1 23");
-  cuda::std::istringstream inf2(" 1 23");
-  cuda::std::istream_iterator<int> i1(inf1);
-  cuda::std::istream_iterator<int> i2(inf1);
-  cuda::std::istream_iterator<int> i3(inf2);
-  cuda::std::istream_iterator<int> i4;
-  cuda::std::istream_iterator<int> i5;
-  assert(i1 == i1);
-  assert(i1 == i2);
-  assert(i1 != i3);
-  assert(i1 != i4);
-  assert(i1 != i5);
+int main(int, char**)
+{
+    cuda::std::istringstream inf1(" 1 23");
+    cuda::std::istringstream inf2(" 1 23");
+    cuda::std::istream_iterator<int> i1(inf1);
+    cuda::std::istream_iterator<int> i2(inf1);
+    cuda::std::istream_iterator<int> i3(inf2);
+    cuda::std::istream_iterator<int> i4;
+    cuda::std::istream_iterator<int> i5;
+    assert(i1 == i1);
+    assert(i1 == i2);
+    assert(i1 != i3);
+    assert(i1 != i4);
+    assert(i1 != i5);
 
-  assert(i2 == i2);
-  assert(i2 != i3);
-  assert(i2 != i4);
-  assert(i2 != i5);
+    assert(i2 == i2);
+    assert(i2 != i3);
+    assert(i2 != i4);
+    assert(i2 != i5);
 
-  assert(i3 == i3);
-  assert(i3 != i4);
-  assert(i3 != i5);
+    assert(i3 == i3);
+    assert(i3 != i4);
+    assert(i3 != i5);
 
-  assert(i4 == i4);
-  assert(i4 == i5);
+    assert(i4 == i4);
+    assert(i4 == i5);
 
-  assert(cuda::std::operator==(i1, i2));
-  assert(cuda::std::operator!=(i1, i3));
+    assert(cuda::std::operator==(i1, i2));
+    assert(cuda::std::operator!=(i1, i3));
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

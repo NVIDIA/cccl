@@ -18,11 +18,10 @@
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 
-int main(int, char**) {
-  static_assert((cuda::std::is_same<
-                    cuda::std::chrono::duration<int, cuda::std::ratio<1> >,
-                    cuda::std::chrono::duration<int> >::value),
-                "");
+int main(int, char**)
+{
+    static_assert((cuda::std::is_same<cuda::std::chrono::duration<int, cuda::std::ratio<1> >,
+                   cuda::std::chrono::duration<int> >::value), "");
 
   return 0;
 }

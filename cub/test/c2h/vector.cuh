@@ -29,9 +29,9 @@
 
 #include <thrust/detail/vector_base.h>
 
-#include <memory>
-
 #include <c2h/checked_allocator.cuh>
+
+#include <memory>
 
 namespace c2h
 {

@@ -47,16 +47,17 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 
-#include <iostream>
-#include <iterator>
-
 #include <nv/target>
 
+#include <iterator>
+#include <iostream>
+
 #if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
+    // This iterator is compatible with Thrust API 1.7 and newer
+    #include <thrust/iterator/iterator_facade.h>
+    #include <thrust/iterator/iterator_traits.h>
 #endif // THRUST_VERSION
+
 
 CUB_NAMESPACE_BEGIN
 
@@ -107,220 +108,230 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template < typename T, typename OffsetT = ptrdiff_t>
+template <
+    typename    T,
+    typename    OffsetT = ptrdiff_t>
 class TexObjInputIterator
 {
 public:
-  // Required iterator traits
 
-  /// My own type
-  typedef TexObjInputIterator self_type;
+    // Required iterator traits
 
-  /// Type to express the result of subtracting one iterator from another
-  typedef OffsetT difference_type;
+    /// My own type
+    typedef TexObjInputIterator self_type;
 
-  /// The type of the element the iterator can point to
-  typedef T value_type;
+    /// Type to express the result of subtracting one iterator from another
+    typedef OffsetT difference_type;
 
-  /// The type of a pointer to an element the iterator can point to
-  typedef T* pointer;
+    /// The type of the element the iterator can point to
+    typedef T value_type;
 
-  /// The type of a reference to an element the iterator can point to
-  typedef T reference;
+    /// The type of a pointer to an element the iterator can point to
+    typedef T *pointer;
+
+    /// The type of a reference to an element the iterator can point to
+    typedef T reference;
 
 #if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+    // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
 
-  /// The iterator category
-  typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-    THRUST_NS_QUALIFIER::device_system_tag,
-    THRUST_NS_QUALIFIER::random_access_traversal_tag,
-    value_type,
-    reference >::type iterator_category;
+    /// The iterator category
+    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+        THRUST_NS_QUALIFIER::device_system_tag,
+        THRUST_NS_QUALIFIER::random_access_traversal_tag,
+        value_type,
+        reference
+      >::type iterator_category;
 #else
-  /// The iterator category
-  typedef std::random_access_iterator_tag iterator_category;
-#endif // THRUST_VERSION
+    /// The iterator category
+    typedef std::random_access_iterator_tag     iterator_category;
+#endif  // THRUST_VERSION
 
 private:
-  // Largest texture word we can use in device
-  typedef typename UnitWord<T>::TextureWord TextureWord;
 
-  // Number of texture words per T
-  enum
-  {
-    TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord)
-  };
+    // Largest texture word we can use in device
+    typedef typename UnitWord<T>::TextureWord TextureWord;
+
+    // Number of texture words per T
+    enum {
+        TEXTURE_MULTIPLE = sizeof(T) / sizeof(TextureWord)
+    };
 
 private:
-  T* ptr;
-  difference_type tex_offset;
-  cudaTextureObject_t tex_obj;
+
+    T*                  ptr;
+    difference_type     tex_offset;
+    cudaTextureObject_t tex_obj;
 
 public:
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
-      : ptr(NULL)
-      , tex_offset(0)
-      , tex_obj(0)
-  {}
 
-  /**
-   * @brief Use this iterator to bind @p ptr with a texture reference
-   *
-   * @param ptr
-   *   Native pointer to wrap that is aligned to cudaDeviceProp::textureAlignment
-   *
-   * @param bytes
-   *   Number of bytes in the range
-   *
-   * @param tex_offset
-   *   OffsetT (in items) from @p ptr denoting the position of the iterator
-   */
-  template <typename QualifiedT>
-  cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
-  {
-    this->ptr        = const_cast<typename std::remove_cv<QualifiedT>::type*>(ptr);
-    this->tex_offset = static_cast<difference_type>(tex_offset);
+    /// Constructor
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TexObjInputIterator()
+    :
+        ptr(NULL),
+        tex_offset(0),
+        tex_obj(0)
+    {}
 
-    cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
-    cudaResourceDesc res_desc;
-    cudaTextureDesc tex_desc;
-    memset(&res_desc, 0, sizeof(cudaResourceDesc));
-    memset(&tex_desc, 0, sizeof(cudaTextureDesc));
-    res_desc.resType                = cudaResourceTypeLinear;
-    res_desc.res.linear.devPtr      = this->ptr;
-    res_desc.res.linear.desc        = channel_desc;
-    res_desc.res.linear.sizeInBytes = bytes;
-    tex_desc.readMode               = cudaReadModeElementType;
-    return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL));
-  }
-
-  /// Unbind this iterator from its texture reference
-  cudaError_t UnbindTexture()
-  {
-    return CubDebug(cudaDestroyTextureObject(tex_obj));
-  }
-
-  /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
-  {
-    self_type retval = *this;
-    tex_offset++;
-    return retval;
-  }
-
-  /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
-  {
-    tex_offset++;
-    return *this;
-  }
-
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-  {
-    NV_IF_TARGET(NV_IS_HOST, (return ptr[tex_offset];), (return this->device_deref();));
-  }
-
-  /// Addition
-  template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
-  {
-    self_type retval;
-    retval.ptr        = ptr;
-    retval.tex_obj    = tex_obj;
-    retval.tex_offset = tex_offset + n;
-    return retval;
-  }
-
-  /// Addition assignment
-  template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
-  {
-    tex_offset += n;
-    return *this;
-  }
-
-  /// Subtraction
-  template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
-  {
-    self_type retval;
-    retval.ptr        = ptr;
-    retval.tex_obj    = tex_obj;
-    retval.tex_offset = tex_offset - n;
-    return retval;
-  }
-
-  /// Subtraction assignment
-  template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
-  {
-    tex_offset -= n;
-    return *this;
-  }
-
-  /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
-  {
-    return tex_offset - other.tex_offset;
-  }
-
-  /// Array subscript
-  template <typename Distance>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
-  {
-    self_type offset = (*this) + n;
-    return *offset;
-  }
-
-  /// Structure dereference
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
-  {
-    return &(*(*this));
-  }
-
-  /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
-  {
-    return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
-  }
-
-  /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
-  {
-    return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
-  }
-
-  /// ostream operator
-  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
-  {
-    os << "cub::TexObjInputIterator( ptr=" << itr.ptr << ", offset=" << itr.tex_offset << ", tex_obj=" << itr.tex_obj
-       << " )";
-    return os;
-  }
-
-private:
-  // This is hoisted out of operator* because #pragma can't be used inside of
-  // NV_IF_TARGET
-  _CCCL_DEVICE _CCCL_FORCEINLINE reference device_deref() const
-  {
-    // Move array of uninitialized words, then alias and assign to return
-    // value
-    TextureWord words[TEXTURE_MULTIPLE];
-
-    const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
-
-#pragma unroll
-    for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
+    /**
+     * @brief Use this iterator to bind @p ptr with a texture reference
+     *
+     * @param ptr
+     *   Native pointer to wrap that is aligned to cudaDeviceProp::textureAlignment
+     *
+     * @param bytes
+     *   Number of bytes in the range
+     *
+     * @param tex_offset
+     *   OffsetT (in items) from @p ptr denoting the position of the iterator
+     */
+    template <typename QualifiedT>
+    cudaError_t BindTexture(QualifiedT *ptr, size_t bytes, size_t tex_offset = 0)
     {
-      words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);
+        this->ptr = const_cast<typename std::remove_cv<QualifiedT>::type *>(ptr);
+        this->tex_offset = static_cast<difference_type>(tex_offset);
+
+        cudaChannelFormatDesc   channel_desc = cudaCreateChannelDesc<TextureWord>();
+        cudaResourceDesc        res_desc;
+        cudaTextureDesc         tex_desc;
+        memset(&res_desc, 0, sizeof(cudaResourceDesc));
+        memset(&tex_desc, 0, sizeof(cudaTextureDesc));
+        res_desc.resType                = cudaResourceTypeLinear;
+        res_desc.res.linear.devPtr      = this->ptr;
+        res_desc.res.linear.desc        = channel_desc;
+        res_desc.res.linear.sizeInBytes = bytes;
+        tex_desc.readMode               = cudaReadModeElementType;
+        return CubDebug(cudaCreateTextureObject(&tex_obj, &res_desc, &tex_desc, NULL));
     }
 
-    // Load from words
-    return *reinterpret_cast<T*>(words);
-  }
+    /// Unbind this iterator from its texture reference
+    cudaError_t UnbindTexture()
+    {
+        return CubDebug(cudaDestroyTextureObject(tex_obj));
+    }
+
+    /// Postfix increment
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+    {
+        self_type retval = *this;
+        tex_offset++;
+        return retval;
+    }
+
+    /// Prefix increment
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+    {
+        tex_offset++;
+        return *this;
+    }
+
+    /// Indirection
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+    {
+        NV_IF_TARGET(NV_IS_HOST,
+                     (return ptr[tex_offset];),
+                     (return this->device_deref();));
+    }
+
+    /// Addition
+    template <typename Distance>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+    {
+        self_type retval;
+        retval.ptr          = ptr;
+        retval.tex_obj      = tex_obj;
+        retval.tex_offset   = tex_offset + n;
+        return retval;
+    }
+
+    /// Addition assignment
+    template <typename Distance>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+    {
+        tex_offset += n;
+        return *this;
+    }
+
+    /// Subtraction
+    template <typename Distance>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+    {
+        self_type retval;
+        retval.ptr          = ptr;
+        retval.tex_obj      = tex_obj;
+        retval.tex_offset   = tex_offset - n;
+        return retval;
+    }
+
+    /// Subtraction assignment
+    template <typename Distance>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+    {
+        tex_offset -= n;
+        return *this;
+    }
+
+    /// Distance
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+    {
+        return tex_offset - other.tex_offset;
+    }
+
+    /// Array subscript
+    template <typename Distance>
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+    {
+        self_type offset = (*this) + n;
+        return *offset;
+    }
+
+    /// Structure dereference
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+    {
+        return &(*(*this));
+    }
+
+    /// Equal to
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+    {
+        return ((ptr == rhs.ptr) && (tex_offset == rhs.tex_offset) && (tex_obj == rhs.tex_obj));
+    }
+
+    /// Not equal to
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+    {
+        return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
+    }
+
+    /// ostream operator
+    friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+    {
+        os << "cub::TexObjInputIterator( ptr=" << itr.ptr
+           << ", offset=" << itr.tex_offset
+           << ", tex_obj=" << itr.tex_obj << " )";
+        return os;
+    }
+
+private:
+    // This is hoisted out of operator* because #pragma can't be used inside of
+    // NV_IF_TARGET
+    _CCCL_DEVICE _CCCL_FORCEINLINE reference device_deref() const
+    {
+        // Move array of uninitialized words, then alias and assign to return
+        // value
+        TextureWord words[TEXTURE_MULTIPLE];
+
+        const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
+
+        #pragma unroll
+        for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
+        {
+          words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);
+        }
+
+        // Load from words
+        return *reinterpret_cast<T *>(words);
+    }
 };
 
 CUB_NAMESPACE_END

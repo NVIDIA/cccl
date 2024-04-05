@@ -17,8 +17,9 @@
 #include <cuda/std/utility>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-  cuda::std::reference_wrapper<const int> r(3);
+int main(int, char**)
+{
+    cuda::std::reference_wrapper<const int> r(3);
 
   return 0;
 }

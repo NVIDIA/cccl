@@ -27,20 +27,24 @@ typedef cuda::std::basic_ostream<char, MyTraits> BasicStream;
 
 void operator&(BasicStream const&) {}
 
-int main(int, char**) {
-  {
-    cuda::std::ostringstream outf;
-    cuda::std::ostream_iterator<int> i(outf);
-    assert(outf.good());
-  }
-  {
-    StringStream outf;
-    cuda::std::ostream_iterator<int, char, MyTraits> i(outf);
-    assert(outf.good());
-  }
+int main(int, char**)
+{
+    {
+        cuda::std::ostringstream outf;
+        cuda::std::ostream_iterator<int> i(outf);
+        assert(outf.good());
+    }
+    {
+        StringStream outf;
+        cuda::std::ostream_iterator<int, char, MyTraits> i(outf);
+        assert(outf.good());
+    }
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

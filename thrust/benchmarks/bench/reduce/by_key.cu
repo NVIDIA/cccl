@@ -33,18 +33,20 @@
 #include "nvbench_helper.cuh"
 
 template <class KeyT, class ValueT>
-static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
+static void basic(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
   constexpr std::size_t min_segment_size = 1;
   const std::size_t max_segment_size     = static_cast<std::size_t>(state.get_int64("MaxSegSize"));
 
-  thrust::device_vector<KeyT> in_keys  = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
+  thrust::device_vector<KeyT> in_keys =
+    generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
   thrust::device_vector<KeyT> out_keys = in_keys;
   thrust::device_vector<ValueT> in_vals(elements);
 
-  const std::size_t unique_keys = thrust::distance(out_keys.begin(), thrust::unique(out_keys.begin(), out_keys.end()));
+  const std::size_t unique_keys =
+    thrust::distance(out_keys.begin(), thrust::unique(out_keys.begin(), out_keys.end()));
 
   thrust::device_vector<ValueT> out_vals(unique_keys);
 
@@ -56,25 +58,26 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<ValueT>(unique_keys);
 
   caching_allocator_t alloc;
-  thrust::reduce_by_key(
-    policy(alloc), in_keys.begin(), in_keys.end(), in_vals.begin(), out_keys.begin(), out_vals.begin());
+  thrust::reduce_by_key(policy(alloc), in_keys.begin(), in_keys.end(),
+                        in_vals.begin(), out_keys.begin(), out_vals.begin());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::reduce_by_key(
-      policy(alloc, launch), in_keys.begin(), in_keys.end(), in_vals.begin(), out_keys.begin(), out_vals.begin());
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::reduce_by_key(policy(alloc, launch), in_keys.begin(),
+                                     in_keys.end(), in_vals.begin(),
+                                     out_keys.begin(), out_vals.begin());
+             });
 }
 
-using key_types =
-  nvbench::type_list<int8_t,
-                     int16_t,
-                     int32_t,
-                     int64_t
+using key_types = nvbench::type_list<int8_t,
+                                     int16_t,
+                                     int32_t,
+                                     int64_t
 #if NVBENCH_HELPER_HAS_I128
-                     ,
-                     int128_t
+                                     ,
+                                     int128_t
 #endif
-                     >;
+                                     >;
 
 using value_types = all_types;
 

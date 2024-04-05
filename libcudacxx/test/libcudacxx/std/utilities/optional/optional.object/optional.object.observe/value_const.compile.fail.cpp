@@ -19,16 +19,18 @@
 
 using cuda::std::optional;
 
-struct X {
-  constexpr int test() const { return 3; }
-  int test() { return 4; }
+struct X
+{
+    constexpr int test() const {return 3;}
+    int test() {return 4;}
 };
 
-int main(int, char**) {
-  {
-    constexpr optional<X> opt;
-    static_assert(opt.value().test() == 3, "");
-  }
+int main(int, char**)
+{
+    {
+        constexpr optional<X> opt;
+        static_assert(opt.value().test() == 3, "");
+    }
 
   return 0;
 }

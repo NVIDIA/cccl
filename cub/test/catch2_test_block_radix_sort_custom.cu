@@ -26,13 +26,14 @@
  ******************************************************************************/
 
 #undef NDEBUG
-#include <algorithm>
 #include <cassert>
-#include <type_traits>
-#include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
 #include "cub/block/radix_rank_sort_operations.cuh"
+
+#include <algorithm>
+#include <type_traits>
+#include <utility>
 
 // example-begin custom-type
 struct custom_t
@@ -49,15 +50,15 @@ struct custom_t
   {}
 };
 
-static __device__ bool operator==(const custom_t& lhs, const custom_t& rhs)
+static __device__ bool operator==(const custom_t &lhs, const custom_t &rhs)
 {
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
 
 struct decomposer_t
 {
-  __device__ ::cuda::std::tuple<float&, long long int&> //
-  operator()(custom_t & key) const
+  __device__ ::cuda::std::tuple<float &, long long int &> //
+  operator()(custom_t &key) const
   {
     return {key.f, key.lli};
   }
@@ -85,7 +86,7 @@ __global__ void sort_keys()
        // thread 1 keys
        {+0.0, 1}, //
        {-0.0, 2}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   // Collectively sort the keys
@@ -96,13 +97,13 @@ __global__ void sort_keys()
        // thread 0 expected keys
        {-2.5, 0}, //
        {+0.0, 1}, //
-       {-0.0, 2} //
+       {-0.0, 2}  //
      },
      {
        // thread 1 expected keys
        {+1.1, 3}, //
        {+2.5, 4}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
   // example-end keys
 
@@ -130,24 +131,25 @@ __global__ void sort_keys_bits()
      }};
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
   // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).Sort(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+  block_radix_sort_t(temp_storage)
+    .Sort(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
 
   custom_t expected_output[2][3] = //
     {{
@@ -182,7 +184,7 @@ __global__ void sort_keys_descending()
        // thread 1 keys
        {+0.0, 3}, //
        {-2.5, 5}, //
-       {+3.7, 0} //
+       {+3.7, 0}  //
      }};
 
   // Collectively sort the keys
@@ -199,7 +201,7 @@ __global__ void sort_keys_descending()
        // thread 1 expected keys
        {-0.0, 4}, //
        {+0.0, 3}, //
-       {-2.5, 5} //
+       {-2.5, 5}  //
      }};
   // example-end keys-descending
 
@@ -227,31 +229,32 @@ __global__ void sort_keys_descending_bits()
      }};
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
   // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).SortDescending(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+  block_radix_sort_t(temp_storage)
+    .SortDescending(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
 
   custom_t expected_output[2][3] = //
     {{
        {24.2, 1ll << 61}, // thread 0 expected keys
      },
      {
-       {42.4, 1ll << 60} // thread 1 expected keys
+       {42.4, 1ll << 60}  // thread 1 expected keys
      }};
   // example-end keys-descending-bits
 
@@ -279,32 +282,33 @@ __global__ void sort_pairs()
        // thread 1 keys
        {+0.0, 1}, //
        {-0.0, 2}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   int thread_values[2][3] = //
-    {{4, 0, 3}, // thread 0 values
-     {1, 2, 5}}; // thread 1 values
+    {{4, 0, 3},             // thread 0 values
+     {1, 2, 5}};            // thread 1 values
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).Sort(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{});
+  block_radix_sort_t(temp_storage)
+    .Sort(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{});
 
   custom_t expected_keys[2][3] = //
     {{
        // thread 0 expected keys
        {-2.5, 0}, //
        {+0.0, 1}, //
-       {-0.0, 2} //
+       {-0.0, 2}  //
      },
      {
        // thread 1 expected keys
        {+1.1, 3}, //
        {+2.5, 4}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   int expected_values[2][3] = //
-    {{0, 1, 2}, // thread 0 expected values
+    {{0, 1, 2},  // thread 0 expected values
      {3, 4, 5}}; // thread 1 expected values
   // example-end pairs
 
@@ -336,25 +340,25 @@ __global__ void sort_pairs_bits()
      }};
 
   int thread_values[2][1] = //
-    {{1}, // thread 0 values
+    {{1},  // thread 0 values
      {0}}; // thread 1 values
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = 01000001110000011001100110011010 00100000000000...0000
   // decompose(in[1]) = 01000010001010011001100110011010 00010000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
@@ -369,7 +373,7 @@ __global__ void sort_pairs_bits()
      }};
 
   int expected_values[2][1] = //
-    {{0}, // thread 0 values
+    {{0},  // thread 0 values
      {1}}; // thread 1 values
   // example-end pairs-bits
 
@@ -398,15 +402,16 @@ __global__ void sort_pairs_descending()
        // thread 1 keys
        {+0.0, 3}, //
        {-2.5, 5}, //
-       {+3.7, 0} //
+       {+3.7, 0}  //
      }};
 
   int thread_values[2][3] = //
-    {{2, 1, 4}, // thread 0 values
+    {{2, 1, 4},  // thread 0 values
      {3, 5, 0}}; // thread 1 values
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).SortDescending(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{});
+  block_radix_sort_t(temp_storage)
+    .SortDescending(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{});
 
   custom_t expected_keys[2][3] = //
     {{
@@ -419,11 +424,11 @@ __global__ void sort_pairs_descending()
        // thread 1 expected keys
        {-0.0, 4}, //
        {+0.0, 3}, //
-       {-2.5, 5} //
+       {-2.5, 5}  //
      }};
 
   int expected_values[2][3] = //
-    {{0, 1, 2}, // thread 0 expected values
+    {{0, 1, 2},  // thread 0 expected values
      {4, 3, 5}}; // thread 1 expected values
   // example-end pairs-descending
 
@@ -455,40 +460,44 @@ __global__ void sort_pairs_descending_bits()
      }};
 
   int thread_values[2][1] = //
-    {{1}, // thread 0 values
+    {{1},  // thread 0 values
      {0}}; // thread 1 values
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = 01000010001010011001100110011010 00010000000000...0000
   // decompose(in[1]) = 01000001110000011001100110011010 00100000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
   //                    <------------- fp32 -----------> <------ int64 ------>
   // decompose(in[0]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
-    .SortDescending(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+    .SortDescending(thread_keys[threadIdx.x],
+                    thread_values[threadIdx.x],
+                    decomposer_t{},
+                    begin_bit,
+                    end_bit);
 
   custom_t expected_output[2][3] = //
     {{
        {24.2, 1ll << 61}, // thread 0 expected keys
      },
      {
-       {42.4, 1ll << 60} // thread 1 expected keys
+       {42.4, 1ll << 60}  // thread 1 expected keys
      }};
 
   int expected_values[2][1] = //
-    {{0}, // thread 0 expected values
+    {{0},  // thread 0 expected values
      {1}}; // thread 1 expected values
   // example-end pairs-descending-bits
 
@@ -517,7 +526,7 @@ __global__ void sort_keys_blocked_to_striped()
        // thread 1 keys
        {+0.0, 1}, //
        {-0.0, 2}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   // Collectively sort the keys
@@ -528,16 +537,16 @@ __global__ void sort_keys_blocked_to_striped()
        // thread 0 expected keys
        {-2.5, 0}, //
        {-0.0, 2}, //
-       {+2.5, 4} //
+       {+2.5, 4}  //
      },
      {
        // thread 1 expected keys
        {+0.0, 1}, //
        {+1.1, 3}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
   // example-end keys-striped
-
+  
   assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
   assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
   assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
@@ -554,15 +563,17 @@ __global__ void sort_keys_blocked_to_striped_bits()
 
   // Obtain a segment of consecutive items that are blocked across threads
   custom_t thread_keys[2][2] = //
-    {{// thread 0 keys
-      {24.2, 1ll << 62},
-      {42.4, 1ll << 61}},
-     {// thread 1 keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 59}}};
+    {{ // thread 0 keys
+       {24.2, 1ll << 62}, 
+       {42.4, 1ll << 61} 
+     },
+     { // thread 1 keys
+       {42.4, 1ll << 60}, 
+       {24.2, 1ll << 59}  
+     }};
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -571,7 +582,7 @@ __global__ void sort_keys_blocked_to_striped_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00100000000000...0000
   // decompose(in[2]) = 01000001110000011001100110011010 00010000000000...0000
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
@@ -580,18 +591,21 @@ __global__ void sort_keys_blocked_to_striped_bits()
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[2]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[3]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0000xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).SortBlockedToStriped(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+  block_radix_sort_t(temp_storage)
+    .SortBlockedToStriped(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
 
   custom_t expected_output[2][3] = //
-    {{// thread 0 expected keys
-      {24.2, 1ll << 59},
-      {42.4, 1ll << 61}},
-     {// thread 1 expected keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 62}}};
+    {{ // thread 0 expected keys
+       {24.2, 1ll << 59}, 
+       {42.4, 1ll << 61}
+     },
+     { // thread 1 expected keys
+       {42.4, 1ll << 60},
+       {24.2, 1ll << 62} 
+     }};
   // example-end keys-striped-bits
 
   assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
@@ -619,11 +633,11 @@ __global__ void sort_pairs_blocked_to_striped()
        // thread 1 keys
        {+0.0, 1}, //
        {-0.0, 2}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   int thread_values[2][3] = //
-    {{4, 0, 3}, // thread 0 values
+    {{4, 0, 3},  // thread 0 values
      {1, 2, 5}}; // thread 1 values
 
   // Collectively sort the keys
@@ -635,20 +649,20 @@ __global__ void sort_pairs_blocked_to_striped()
        // thread 0 expected keys
        {-2.5, 0}, //
        {-0.0, 2}, //
-       {+2.5, 4} //
+       {+2.5, 4}  //
      },
      {
        // thread 1 expected keys
        {+0.0, 1}, //
        {+1.1, 3}, //
-       {+3.7, 5} //
+       {+3.7, 5}  //
      }};
 
   int expected_values[2][3] = //
-    {{0, 2, 4}, // thread 0 values
+    {{0, 2, 4},  // thread 0 values
      {1, 3, 5}}; // thread 1 values
   // example-end pairs-striped
-
+  
   assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
   assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
   assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
@@ -669,19 +683,21 @@ __global__ void sort_pairs_blocked_to_striped_bits()
 
   // Obtain a segment of consecutive items that are blocked across threads
   custom_t thread_keys[2][2] = //
-    {{// thread 0 keys
-      {24.2, 1ll << 62},
-      {42.4, 1ll << 61}},
-     {// thread 1 keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 59}}};
+    {{ // thread 0 keys
+       {24.2, 1ll << 62}, 
+       {42.4, 1ll << 61} 
+     },
+     { // thread 1 keys
+       {42.4, 1ll << 60}, 
+       {24.2, 1ll << 59}  
+     }};
 
   int thread_values[2][2] = //
-    {{3, 2}, // thread 0 values
+    {{3, 2},  // thread 0 values
      {1, 0}}; // thread 1 values
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -690,7 +706,7 @@ __global__ void sort_pairs_blocked_to_striped_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00100000000000...0000
   // decompose(in[2]) = 01000001110000011001100110011010 00010000000000...0000
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
@@ -699,22 +715,28 @@ __global__ void sort_pairs_blocked_to_striped_bits()
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[2]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[3]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0000xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
-    .SortBlockedToStriped(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+    .SortBlockedToStriped(thread_keys[threadIdx.x],
+                          thread_values[threadIdx.x],
+                          decomposer_t{},
+                          begin_bit,
+                          end_bit);
 
   custom_t expected_output[2][3] = //
-    {{// thread 0 expected keys
-      {24.2, 1ll << 59},
-      {42.4, 1ll << 61}},
-     {// thread 1 expected keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 62}}};
+    {{ // thread 0 expected keys
+       {24.2, 1ll << 59}, 
+       {42.4, 1ll << 61}
+     },
+     { // thread 1 expected keys
+       {42.4, 1ll << 60},
+       {24.2, 1ll << 62} 
+     }};
 
   int expected_values[2][2] = //
-    {{0, 2}, // thread 0 values
+    {{0, 2},  // thread 0 values
      {1, 3}}; // thread 1 values
   // example-end pairs-striped-bits
 
@@ -746,27 +768,28 @@ __global__ void sort_keys_descending_blocked_to_striped()
        // thread 1 keys
        {+0.0, 3}, //
        {-2.5, 5}, //
-       {+3.7, 0} //
+       {+3.7, 0}  //
      }};
 
   // Collectively sort the keys
-  block_radix_sort_t(temp_storage).SortDescendingBlockedToStriped(thread_keys[threadIdx.x], decomposer_t{});
+  block_radix_sort_t(temp_storage)
+    .SortDescendingBlockedToStriped(thread_keys[threadIdx.x], decomposer_t{});
 
   custom_t expected_output[2][3] = //
     {{
        // thread 0 expected keys
        {+3.7, 0}, //
        {+1.1, 2}, //
-       {+0.0, 3} //
+       {+0.0, 3}  //
      },
      {
        // thread 1 expected keys
        {+2.5, 1}, //
        {-0.0, 4}, //
-       {-2.5, 5} //
+       {-2.5, 5}  //
      }};
   // example-end keys-striped-descending
-
+  
   assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
   assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
   assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
@@ -783,15 +806,17 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
 
   // Obtain a segment of consecutive items that are blocked across threads
   custom_t thread_keys[2][2] = //
-    {{// thread 0 keys
-      {24.2, 1ll << 62},
-      {42.4, 1ll << 61}},
-     {// thread 1 keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 59}}};
+    {{ // thread 0 keys
+       {24.2, 1ll << 62}, 
+       {42.4, 1ll << 61} 
+     },
+     { // thread 1 keys
+       {42.4, 1ll << 60}, 
+       {24.2, 1ll << 59}  
+     }};
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -800,7 +825,7 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00100000000000...0000
   // decompose(in[2]) = 01000001110000011001100110011010 00010000000000...0000
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
@@ -809,22 +834,20 @@ __global__ void sort_keys_descending_blocked_to_striped_bits()
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[2]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[3]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0000xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
     .SortDescendingBlockedToStriped(thread_keys[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
 
   custom_t expected_output[2][2] = //
-    {{
-       // thread 0 expected keys
+    {{ // thread 0 expected keys
        {24.2, 1ll << 62}, //
-       {42.4, 1ll << 60} //
+       {42.4, 1ll << 60}  //
      },
-     {
-       // thread 1 expected keys
+     { // thread 1 expected keys
        {42.4, 1ll << 61}, //
-       {24.2, 1ll << 59} //
+       {24.2, 1ll << 59}  //
      }};
   // example-end keys-striped-descending-bits
 
@@ -853,36 +876,38 @@ __global__ void sort_pairs_descending_blocked_to_striped()
        // thread 1 keys
        {+0.0, 3}, //
        {-2.5, 5}, //
-       {+3.7, 0} //
+       {+3.7, 0}  //
      }};
 
   int thread_values[2][3] = //
-    {{2, 1, 4}, // thread 0 values
+    {{2, 1, 4},  // thread 0 values
      {3, 5, 0}}; // thread 1 values
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
-    .SortDescendingBlockedToStriped(thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{});
+    .SortDescendingBlockedToStriped(thread_keys[threadIdx.x],
+                                    thread_values[threadIdx.x],
+                                    decomposer_t{});
 
   custom_t expected_output[2][3] = //
     {{
        // thread 0 expected keys
        {+3.7, 0}, //
        {+1.1, 2}, //
-       {+0.0, 3} //
+       {+0.0, 3}  //
      },
      {
        // thread 1 expected keys
        {+2.5, 1}, //
        {-0.0, 4}, //
-       {-2.5, 5} //
+       {-2.5, 5}  //
      }};
 
   int expected_values[2][3] = //
-    {{0, 2, 3}, // thread 0 values
+    {{0, 2, 3},  // thread 0 values
      {1, 4, 5}}; // thread 1 values
   // example-end pairs-striped-descending
-
+  
   assert(thread_keys[threadIdx.x][0] == expected_output[threadIdx.x][0]);
   assert(thread_keys[threadIdx.x][1] == expected_output[threadIdx.x][1]);
   assert(thread_keys[threadIdx.x][2] == expected_output[threadIdx.x][2]);
@@ -903,19 +928,21 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
 
   // Obtain a segment of consecutive items that are blocked across threads
   custom_t thread_keys[2][2] = //
-    {{// thread 0 keys
-      {24.2, 1ll << 62},
-      {42.4, 1ll << 61}},
-     {// thread 1 keys
-      {42.4, 1ll << 60},
-      {24.2, 1ll << 59}}};
+    {{ // thread 0 keys
+       {24.2, 1ll << 62}, 
+       {42.4, 1ll << 61} 
+     },
+     { // thread 1 keys
+       {42.4, 1ll << 60}, 
+       {24.2, 1ll << 59}  
+     }};
 
   int thread_values[2][2] = //
-    {{3, 2}, // thread 0 values
+    {{3, 2},  // thread 0 values
      {1, 0}}; // thread 1 values
 
   constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
-  constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
+  constexpr int end_bit = sizeof(long long int) * 8 + 4; // 68
 
   // Decomposition orders the bits as follows:
   //
@@ -924,7 +951,7 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
   // decompose(in[1]) = 01000010001010011001100110011010 00100000000000...0000
   // decompose(in[2]) = 01000001110000011001100110011010 00010000000000...0000
   // decompose(in[3]) = 01000010001010011001100110011010 00001000000000...0000
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
   //
   // The bit subrange `[60, 68)` specifies differentiating key bits:
   //
@@ -933,27 +960,28 @@ __global__ void sort_pairs_descending_blocked_to_striped_bits()
   // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
   // decompose(in[2]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
   // decompose(in[3]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0000xxxxxxxxxx...xxxx
-  //                    <-----------  higher bits  /  lower bits  ----------->
+  //                    <-----------  higher bits  /  lower bits  -----------> 
 
   // Collectively sort the keys
   block_radix_sort_t(temp_storage)
-    .SortDescendingBlockedToStriped(
-      thread_keys[threadIdx.x], thread_values[threadIdx.x], decomposer_t{}, begin_bit, end_bit);
+    .SortDescendingBlockedToStriped(thread_keys[threadIdx.x],
+                                    thread_values[threadIdx.x],
+                                    decomposer_t{},
+                                    begin_bit,
+                                    end_bit);
 
   custom_t expected_output[2][2] = //
-    {{
-       // thread 0 expected keys
+    {{ // thread 0 expected keys
        {24.2, 1ll << 62}, //
-       {42.4, 1ll << 60} //
+       {42.4, 1ll << 60}  //
      },
-     {
-       // thread 1 expected keys
+     { // thread 1 expected keys
        {42.4, 1ll << 61}, //
-       {24.2, 1ll << 59} //
+       {24.2, 1ll << 59}  //
      }};
 
   int expected_values[2][2] = //
-    {{3, 1}, // thread 0 values
+    {{3, 1},  // thread 0 values
      {2, 0}}; // thread 1 values
   // example-end pairs-striped-descending-bits
 

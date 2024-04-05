@@ -25,9 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cpp/detail/malloc_and_free.h>
 #include <thrust/system/cpp/memory.h>
-
+#include <thrust/system/cpp/detail/malloc_and_free.h>
 #include <limits>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,7 +41,7 @@ pointer<void> malloc(std::size_t n)
   return pointer<void>(thrust::system::detail::sequential::malloc(t, n));
 } // end malloc()
 
-template <typename T>
+template<typename T>
 pointer<T> malloc(std::size_t n)
 {
   pointer<void> raw_ptr = thrust::system::cpp::malloc(sizeof(T) * n);
@@ -55,6 +54,7 @@ void free(pointer<void> ptr)
   return thrust::system::detail::sequential::free(t, ptr);
 } // end free()
 
-} // namespace cpp
-} // namespace system
+} // end cpp
+} // end system
 THRUST_NAMESPACE_END
+

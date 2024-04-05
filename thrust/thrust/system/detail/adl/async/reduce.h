@@ -30,12 +30,13 @@
 #  pragma system_header
 #endif // no system header
 
-// #include <thrust/system/detail/sequential/async/reduce.h>
+//#include <thrust/system/detail/sequential/async/reduce.h>
 
-// #define __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/reduce.h>
-// #include __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER
-// #undef __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER
+//#define __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/async/reduce.h>
+//#include __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER
+//#undef __THRUST_HOST_SYSTEM_ASYNC_REDUCE_HEADER
 
 #define __THRUST_DEVICE_SYSTEM_ASYNC_REDUCE_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/async/reduce.h>
 #include __THRUST_DEVICE_SYSTEM_ASYNC_REDUCE_HEADER
 #undef __THRUST_DEVICE_SYSTEM_ASYNC_REDUCE_HEADER
+

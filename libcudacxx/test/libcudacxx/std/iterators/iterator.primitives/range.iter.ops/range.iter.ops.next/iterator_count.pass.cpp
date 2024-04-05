@@ -21,8 +21,7 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void
-check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
+__host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
   It it(first);
   decltype(auto) result = cuda::std::ranges::next(cuda::std::move(it), n);
   static_assert(cuda::std::same_as<decltype(result), It>);
@@ -34,22 +33,22 @@ __host__ __device__ constexpr bool test() {
 
   // Check next() forward
   for (int n = 0; n != 10; ++n) {
-    check<cpp17_input_iterator<int*> >(range, n, range + n);
-    check<cpp20_input_iterator<int*> >(range, n, range + n);
-    check<forward_iterator<int*> >(range, n, range + n);
-    check<bidirectional_iterator<int*> >(range, n, range + n);
-    check<random_access_iterator<int*> >(range, n, range + n);
-    check<contiguous_iterator<int*> >(range, n, range + n);
-    check<int*>(range, n, range + n);
-    check<cpp17_output_iterator<int*> >(range, n, range + n);
+    check<cpp17_input_iterator<int*>>(  range, n, range+n);
+    check<cpp20_input_iterator<int*>>(  range, n, range+n);
+    check<forward_iterator<int*>>(      range, n, range+n);
+    check<bidirectional_iterator<int*>>(range, n, range+n);
+    check<random_access_iterator<int*>>(range, n, range+n);
+    check<contiguous_iterator<int*>>(   range, n, range+n);
+    check<int*>(                        range, n, range+n);
+    check<cpp17_output_iterator<int*> >(range, n, range+n);
   }
 
   // Check next() backward
   for (int n = 0; n != 10; ++n) {
-    check<bidirectional_iterator<int*> >(range + 9, -n, range + 9 - n);
-    check<random_access_iterator<int*> >(range + 9, -n, range + 9 - n);
-    check<contiguous_iterator<int*> >(range + 9, -n, range + 9 - n);
-    check<int*>(range + 9, -n, range + 9 - n);
+    check<bidirectional_iterator<int*>>(range+9, -n, range+9 - n);
+    check<random_access_iterator<int*>>(range+9, -n, range+9 - n);
+    check<contiguous_iterator<int*>>(   range+9, -n, range+9 - n);
+    check<int*>(                        range+9, -n, range+9 - n);
   }
 
   return true;

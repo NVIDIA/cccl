@@ -67,18 +67,24 @@ constexpr bool isUnordered(ContainerType CT) {
 }
 
 constexpr bool isSet(ContainerType CT) {
-  return CT == CT_Set || CT == CT_MultiSet || CT == CT_UnorderedSet ||
-         CT == CT_UnorderedMultiSet;
+  return CT == CT_Set
+      || CT == CT_MultiSet
+      || CT == CT_UnorderedSet
+      || CT == CT_UnorderedMultiSet;
 }
 
 constexpr bool isMap(ContainerType CT) {
-  return CT == CT_Map || CT == CT_MultiMap || CT == CT_UnorderedMap ||
-         CT == CT_UnorderedMultiMap;
+  return CT == CT_Map
+      || CT == CT_MultiMap
+      || CT == CT_UnorderedMap
+      || CT == CT_UnorderedMultiMap;
 }
 
 constexpr bool isMulti(ContainerType CT) {
-  return CT == CT_MultiMap || CT == CT_MultiSet || CT == CT_UnorderedMultiMap ||
-         CT == CT_UnorderedMultiSet;
+  return CT == CT_MultiMap
+      || CT == CT_MultiSet
+      || CT == CT_UnorderedMultiMap
+      || CT == CT_UnorderedMultiSet;
 }
 
 template <class Container, class ValueType = typename Container::value_type>
@@ -93,7 +99,9 @@ struct ContainerDebugHelper {
 
 template <class Container>
 struct ContainerDebugHelper<Container, char> {
-  static char makeValueType(int = 0, int = 0) { return 'A'; }
+  static char makeValueType(int = 0, int = 0) {
+    return 'A';
+  }
 };
 
 template <class Container, class Key, class Value>
@@ -110,7 +118,7 @@ struct ContainerDebugHelper<Container, std::pair<const Key, Value> > {
 };
 
 template <class Container, ContainerType CT,
-          class Helper = ContainerDebugHelper<Container> >
+    class Helper = ContainerDebugHelper<Container> >
 struct BasicContainerChecks {
   using value_type = typename Container::value_type;
   using iterator = typename Container::iterator;
@@ -125,7 +133,7 @@ struct BasicContainerChecks {
   static constexpr bool IsBiDir =
       std::is_convertible<category, std::bidirectional_iterator_tag>::value;
 
-public:
+ public:
   static void run() {
     run_iterator_tests();
     run_container_tests();
@@ -135,9 +143,7 @@ public:
   static void run_iterator_tests() {
     TestNullIterators<iterator>();
     TestNullIterators<const_iterator>();
-    if constexpr (IsBiDir) {
-      DecrementBegin();
-    }
+    if constexpr (IsBiDir) { DecrementBegin(); }
     IncrementEnd();
     DerefEndIterator();
   }
@@ -153,14 +159,13 @@ public:
 
   static void run_allocator_aware_tests() {
     SwapNonEqualAllocators();
-    if constexpr (CT != CT_ForwardList) {
+    if constexpr (CT != CT_ForwardList ) {
       // FIXME: This should work for both forward_list and string
       SwapInvalidatesIterators();
     }
   }
 
-  static Container makeContainer(int size,
-                                 allocator_type A = allocator_type()) {
+  static Container makeContainer(int size, allocator_type A = allocator_type()) {
     Container C(A);
     if constexpr (CT == CT_ForwardList) {
       for (int i = 0; i < size; ++i)
@@ -177,21 +182,21 @@ public:
     return Helper::makeValueType(value);
   }
 
-private:
+ private:
   // Iterator tests
   template <class Iter>
   static void TestNullIterators() {
     // testing null iterator
     Iter it;
-    EXPECT_DEATH(++it);
-    EXPECT_DEATH(it++);
-    EXPECT_DEATH(*it);
+    EXPECT_DEATH( ++it );
+    EXPECT_DEATH( it++ );
+    EXPECT_DEATH( *it );
     if constexpr (CT != CT_VectorBool) {
-      EXPECT_DEATH(it.operator->());
+      EXPECT_DEATH( it.operator->() );
     }
     if constexpr (IsBiDir) {
-      EXPECT_DEATH(--it);
-      EXPECT_DEATH(it--);
+      EXPECT_DEATH( --it );
+      EXPECT_DEATH( it-- );
     }
   }
 
@@ -203,10 +208,10 @@ private:
     --i;
     --ci;
     assert(i == C.begin());
-    EXPECT_DEATH(--i);
-    EXPECT_DEATH(i--);
-    EXPECT_DEATH(--ci);
-    EXPECT_DEATH(ci--);
+    EXPECT_DEATH( --i );
+    EXPECT_DEATH( i-- );
+    EXPECT_DEATH( --ci );
+    EXPECT_DEATH( ci-- );
   }
 
   static void IncrementEnd() {
@@ -217,10 +222,10 @@ private:
     ++i;
     ++ci;
     assert(i == C.end());
-    EXPECT_DEATH(++i);
-    EXPECT_DEATH(i++);
-    EXPECT_DEATH(++ci);
-    EXPECT_DEATH(ci++);
+    EXPECT_DEATH( ++i );
+    EXPECT_DEATH( i++ );
+    EXPECT_DEATH( ++ci );
+    EXPECT_DEATH( ci++ );
   }
 
   static void DerefEndIterator() {
@@ -228,20 +233,18 @@ private:
     Container C = makeContainer(1);
     iterator i = C.begin();
     const_iterator ci = C.cbegin();
-    (void)*i;
-    (void)*ci;
+    (void)*i; (void)*ci;
     if constexpr (CT != CT_VectorBool) {
       i.operator->();
       ci.operator->();
     }
-    ++i;
-    ++ci;
+    ++i; ++ci;
     assert(i == C.end());
-    EXPECT_DEATH(*i);
-    EXPECT_DEATH(*ci);
+    EXPECT_DEATH( *i );
+    EXPECT_DEATH( *ci );
     if constexpr (CT != CT_VectorBool) {
-      EXPECT_DEATH(i.operator->());
-      EXPECT_DEATH(ci.operator->());
+      EXPECT_DEATH( i.operator->() );
+      EXPECT_DEATH( ci.operator->() );
     }
   }
 
@@ -255,14 +258,14 @@ private:
       iterator i_next = i;
       ++i_next;
       (void)*i_next;
-      EXPECT_DEATH(C2.erase_after(i));
+      EXPECT_DEATH( C2.erase_after(i) );
       C1.erase_after(i);
-      EXPECT_DEATH(*i_next);
+      EXPECT_DEATH( *i_next );
     } else {
-      EXPECT_DEATH(C2.erase(i));
+      EXPECT_DEATH( C2.erase(i) );
       (void)*i;
       C1.erase(i);
-      EXPECT_DEATH(*i);
+      EXPECT_DEATH( *i );
     }
   }
 
@@ -271,12 +274,12 @@ private:
     Container C1 = makeContainer(3);
     iterator i = C1.begin();
     Container C2 = std::move(C1);
-    (void)*i;
+    (void) *i;
     if constexpr (CT == CT_ForwardList) {
-      EXPECT_DEATH(C1.erase_after(i));
+      EXPECT_DEATH( C1.erase_after(i) );
       C2.erase_after(i);
     } else {
-      EXPECT_DEATH(C1.erase(i));
+      EXPECT_DEATH( C1.erase(i) );
       C2.erase(i);
       EXPECT_DEATH(*i);
     }
@@ -289,12 +292,12 @@ private:
     iterator it1_next = it1;
     ++it1_next;
     Container C2 = C1;
-    EXPECT_DEATH(C2.erase(it1));      // wrong container
-    EXPECT_DEATH(C2.erase(C2.end())); // erase with end
+    EXPECT_DEATH( C2.erase(it1) ); // wrong container
+    EXPECT_DEATH( C2.erase(C2.end()) ); // erase with end
     C1.erase(it1_next);
-    EXPECT_DEATH(C1.erase(it1_next)); // invalidated iterator
+    EXPECT_DEATH( C1.erase(it1_next) ); // invalidated iterator
     C1.erase(it1);
-    EXPECT_DEATH(C1.erase(it1)); // invalidated iterator
+    EXPECT_DEATH( C1.erase(it1) ); // invalidated iterator
   }
 
   static void EraseIterIter() {
@@ -307,9 +310,9 @@ private:
     iterator it2 = C2.begin();
     iterator it2_next = it2;
     ++it2_next;
-    EXPECT_DEATH(C2.erase(it1, it1_next)); // begin from wrong container
-    EXPECT_DEATH(C2.erase(it1, it2_next)); // end   from wrong container
-    EXPECT_DEATH(C2.erase(it2, it1_next)); // both  from wrong container
+    EXPECT_DEATH( C2.erase(it1, it1_next) ); // begin from wrong container
+    EXPECT_DEATH( C2.erase(it1, it2_next) ); // end   from wrong container
+    EXPECT_DEATH( C2.erase(it2, it1_next) ); // both  from wrong container
     C2.erase(it2, it2_next);
   }
 
@@ -321,13 +324,13 @@ private:
     iterator it1 = C1.begin();
     iterator it2 = C2.begin();
     swap(C1, C2);
-    EXPECT_DEATH(C1.erase(it1));
+    EXPECT_DEATH( C1.erase(it1) );
     if (CT == CT_String) {
       EXPECT_DEATH(C1.erase(it2));
     } else
       C1.erase(it2);
     //C2.erase(it1);
-    EXPECT_DEATH(C1.erase(it1));
+    EXPECT_DEATH( C1.erase(it1) );
   }
 
   static void SwapNonEqualAllocators() {
@@ -336,10 +339,10 @@ private:
     Container C2 = makeContainer(1, allocator_type(2));
     Container C3 = makeContainer(2, allocator_type(2));
     swap(C2, C3);
-    EXPECT_DEATH(swap(C1, C2));
+    EXPECT_DEATH( swap(C1, C2) );
   }
 
-private:
+ private:
   BasicContainerChecks() = delete;
 };
 

@@ -25,13 +25,14 @@
  *
  ******************************************************************************/
 
+#include "catch2_test_block_radix_sort.cuh"
+
 #include <thrust/execution_policy.h>
 
 #include <algorithm>
 #include <type_traits>
 #include <utility>
 
-#include "catch2_test_block_radix_sort.cuh"
 #include "catch2_test_helper.h" // __CUDA_FP8_TYPES_EXIST__
 
 // %PARAM% TEST_MEMOIZE mem 0:1
@@ -69,33 +70,39 @@ using value_types = c2h::type_list<std::int8_t, c2h::custom_type_t<c2h::equal_co
 
 using threads_in_block = c2h::enum_type_list<int, TEST_THREADS_IN_BLOCK>;
 using items_per_thread = c2h::enum_type_list<int, TEST_IPT>;
-using radix_bits       = c2h::enum_type_list<int, 1, 5>;
-using memoize          = c2h::enum_type_list<bool, TEST_MEMOIZE>;
+using radix_bits = c2h::enum_type_list<int, 1, 5>;
+using memoize = c2h::enum_type_list<bool, TEST_MEMOIZE>;
 
 #if TEST_ALGORITHM == 0
-using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm, cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING>;
+using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm,
+      cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING>;
 #else
-using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm, cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS>;
+using algorithm = c2h::enum_type_list<cub::BlockScanAlgorithm,
+      cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS>;
 #endif
 
-using shmem_config =
-  c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte, cudaSharedMemBankSizeEightByte>;
+using shmem_config = c2h::enum_type_list<cudaSharedMemConfig,
+                                         cudaSharedMemBankSizeFourByte,
+                                         cudaSharedMemBankSizeEightByte>;
 
-using shmem_config_4 = c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte>;
+using shmem_config_4 =
+  c2h::enum_type_list<cudaSharedMemConfig, cudaSharedMemBankSizeFourByte>;
 
 template <class TestType>
 struct params_t
 {
-  using key_type   = typename c2h::get<0, TestType>;
+  using key_type = typename c2h::get<0, TestType>;
   using value_type = typename c2h::get<1, TestType>;
 
-  static constexpr int items_per_thread              = c2h::get<2, TestType>::value;
-  static constexpr int threads_in_block              = c2h::get<3, TestType>::value;
-  static constexpr int tile_size                     = items_per_thread * threads_in_block;
-  static constexpr int radix_bits                    = c2h::get<4, TestType>::value;
-  static constexpr bool memoize                      = c2h::get<5, TestType>::value;
-  static constexpr cub::BlockScanAlgorithm algorithm = c2h::get<6, TestType>::value;
-  static constexpr cudaSharedMemConfig shmem_config  = c2h::get<7, TestType>::value;
+  static constexpr int items_per_thread = c2h::get<2, TestType>::value;
+  static constexpr int threads_in_block = c2h::get<3, TestType>::value;
+  static constexpr int tile_size = items_per_thread * threads_in_block;
+  static constexpr int radix_bits = c2h::get<4, TestType>::value;
+  static constexpr bool memoize = c2h::get<5, TestType>::value;
+  static constexpr cub::BlockScanAlgorithm algorithm =
+    c2h::get<6, TestType>::value;
+  static constexpr cudaSharedMemConfig shmem_config =
+    c2h::get<7, TestType>::value;
 };
 
 template <class T>
@@ -125,16 +132,16 @@ CUB_TEST("Block radix sort can sort keys",
          shmem_config)
 {
   using params = params_t<TestType>;
-  using type   = typename params::key_type;
+  using type = typename params::key_type;
 
   c2h::device_vector<type> d_output(params::tile_size);
   c2h::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
 
@@ -169,16 +176,16 @@ CUB_TEST("Block radix sort can sort keys in descending order",
          shmem_config)
 {
   using params = params_t<TestType>;
-  using type   = typename params::key_type;
+  using type = typename params::key_type;
 
   c2h::device_vector<type> d_output(params::tile_size);
   c2h::device_vector<type> d_input(params::tile_size);
   c2h::gen(CUB_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
 
@@ -195,7 +202,8 @@ CUB_TEST("Block radix sort can sort keys in descending order",
     end_bit,
     striped);
 
-  c2h::host_vector<type> h_reference = radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
+  c2h::host_vector<type> h_reference =
+    radix_sort_reference(d_input, is_descending, begin_bit, end_bit);
 
   // overwrite `d_input` for comparison
   REQUIRE(binary_equal(d_output, h_reference, d_input));
@@ -212,8 +220,8 @@ CUB_TEST("Block radix sort can sort pairs",
          algorithm,
          shmem_config_4)
 {
-  using params     = params_t<TestType>;
-  using key_type   = typename params::key_type;
+  using params = params_t<TestType>;
+  using key_type = typename params::key_type;
   using value_type = key_type;
 
   c2h::device_vector<key_type> d_output_keys(params::tile_size);
@@ -224,9 +232,9 @@ CUB_TEST("Block radix sort can sort pairs",
   c2h::gen(CUB_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
 
@@ -245,8 +253,12 @@ CUB_TEST("Block radix sort can sort pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
-    radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
+    h_reference = radix_sort_reference(d_input_keys,
+                                       d_input_values,
+                                       is_descending,
+                                       begin_bit,
+                                       end_bit);
 
   // overwrite `d_input_*` for comparison
   REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
@@ -264,8 +276,8 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
          algorithm,
          shmem_config_4)
 {
-  using params     = params_t<TestType>;
-  using key_type   = typename params::key_type;
+  using params = params_t<TestType>;
+  using key_type = typename params::key_type;
   using value_type = key_type;
 
   c2h::device_vector<key_type> d_output_keys(params::tile_size);
@@ -276,9 +288,9 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
   c2h::gen(CUB_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
 
@@ -297,8 +309,12 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
-    radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
+    h_reference = radix_sort_reference(d_input_keys,
+                                       d_input_values,
+                                       is_descending,
+                                       begin_bit,
+                                       end_bit);
 
   // overwrite `d_input_*` for comparison
   REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
@@ -316,8 +332,8 @@ CUB_TEST("Block radix sort can sort mixed pairs",
          algorithm,
          shmem_config_4)
 {
-  using params     = params_t<TestType>;
-  using key_type   = typename params::key_type;
+  using params = params_t<TestType>;
+  using key_type = typename params::key_type;
   using value_type = typename params::value_type;
 
   c2h::device_vector<key_type> d_output_keys(params::tile_size);
@@ -328,9 +344,9 @@ CUB_TEST("Block radix sort can sort mixed pairs",
   c2h::gen(CUB_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = false;
 
@@ -349,8 +365,12 @@ CUB_TEST("Block radix sort can sort mixed pairs",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
-    radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
+    h_reference = radix_sort_reference(d_input_keys,
+                                       d_input_values,
+                                       is_descending,
+                                       begin_bit,
+                                       end_bit);
 
   // overwrite `d_input_*` for comparison
   REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));
@@ -368,8 +388,8 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
          algorithm,
          shmem_config_4)
 {
-  using params     = params_t<TestType>;
-  using key_type   = typename params::key_type;
+  using params = params_t<TestType>;
+  using key_type = typename params::key_type;
   using value_type = typename params::value_type;
 
   c2h::device_vector<key_type> d_output_keys(params::tile_size);
@@ -380,9 +400,9 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
   c2h::gen(CUB_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
-  const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
-  const int end_bit      = GENERATE_COPY(take(2, random(begin_bit, key_size)));
-  const bool striped     = GENERATE_COPY(false, true);
+  const int begin_bit = GENERATE_COPY(take(2, random(0, key_size)));
+  const int end_bit   = GENERATE_COPY(take(2, random(begin_bit, key_size)));
+  const bool striped  = GENERATE_COPY(false, true);
 
   constexpr bool is_descending = true;
 
@@ -401,8 +421,12 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
     end_bit,
     striped);
 
-  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>> h_reference =
-    radix_sort_reference(d_input_keys, d_input_values, is_descending, begin_bit, end_bit);
+  std::pair<c2h::host_vector<key_type>, c2h::host_vector<value_type>>
+    h_reference = radix_sort_reference(d_input_keys,
+                                       d_input_values,
+                                       is_descending,
+                                       begin_bit,
+                                       end_bit);
 
   // overwrite `d_input_*` for comparison
   REQUIRE(binary_equal(d_output_keys, h_reference.first, d_input_keys));

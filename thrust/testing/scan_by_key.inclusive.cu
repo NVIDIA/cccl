@@ -1,9 +1,10 @@
+#include <thrust/scan.h>
+
 #include <thrust/functional.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/retag.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/random.h>
-#include <thrust/scan.h>
 
 #include <unittest/unittest.h>
 
@@ -28,7 +29,10 @@ void TestInclusiveScanByKeySimple()
   keys[6] = 3; vals[6] = 7;
   // clang-format on
 
-  Iterator iter = thrust::inclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
+  Iterator iter = thrust::inclusive_scan_by_key(keys.begin(),
+                                                keys.end(),
+                                                vals.begin(),
+                                                output.begin());
 
   ASSERT_EQUAL_QUIET(iter, output.end());
 
@@ -40,8 +44,12 @@ void TestInclusiveScanByKeySimple()
   ASSERT_EQUAL(output[5], 6);
   ASSERT_EQUAL(output[6], 13);
 
-  thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), thrust::equal_to<T>(), thrust::multiplies<T>());
+  thrust::inclusive_scan_by_key(keys.begin(),
+                                keys.end(),
+                                vals.begin(),
+                                output.begin(),
+                                thrust::equal_to<T>(),
+                                thrust::multiplies<T>());
 
   ASSERT_EQUAL(output[0], 1);
   ASSERT_EQUAL(output[1], 2);
@@ -51,7 +59,11 @@ void TestInclusiveScanByKeySimple()
   ASSERT_EQUAL(output[5], 6);
   ASSERT_EQUAL(output[6], 42);
 
-  thrust::inclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), thrust::equal_to<T>());
+  thrust::inclusive_scan_by_key(keys.begin(),
+                                keys.end(),
+                                vals.begin(),
+                                output.begin(),
+                                thrust::equal_to<T>());
 
   ASSERT_EQUAL(output[0], 1);
   ASSERT_EQUAL(output[1], 2);
@@ -63,9 +75,15 @@ void TestInclusiveScanByKeySimple()
 }
 DECLARE_VECTOR_UNITTEST(TestInclusiveScanByKeySimple);
 
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator
-inclusive_scan_by_key(my_system& system, InputIterator1, InputIterator1, InputIterator2, OutputIterator result)
+
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator>
+OutputIterator inclusive_scan_by_key(my_system& system,
+                                     InputIterator1,
+                                     InputIterator1,
+                                     InputIterator2,
+                                     OutputIterator result)
 {
   system.validate_dispatch();
   return result;
@@ -76,14 +94,25 @@ void TestInclusiveScanByKeyDispatchExplicit()
   thrust::device_vector<int> vec(1);
 
   my_system sys(0);
-  thrust::inclusive_scan_by_key(sys, vec.begin(), vec.begin(), vec.begin(), vec.begin());
+  thrust::inclusive_scan_by_key(sys,
+                                vec.begin(),
+                                vec.begin(),
+                                vec.begin(),
+                                vec.begin());
 
   ASSERT_EQUAL(true, sys.is_valid());
 }
 DECLARE_UNITTEST(TestInclusiveScanByKeyDispatchExplicit);
 
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator>
-OutputIterator inclusive_scan_by_key(my_tag, InputIterator1, InputIterator1, InputIterator2, OutputIterator result)
+
+template <typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator>
+OutputIterator inclusive_scan_by_key(my_tag,
+                                     InputIterator1,
+                                     InputIterator1,
+                                     InputIterator2,
+                                     OutputIterator result)
 {
   *result = 13;
   return result;
@@ -93,11 +122,10 @@ void TestInclusiveScanByKeyDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  thrust::inclusive_scan_by_key(
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()),
-    thrust::retag<my_tag>(vec.begin()));
+  thrust::inclusive_scan_by_key(thrust::retag<my_tag>(vec.begin()),
+                                thrust::retag<my_tag>(vec.begin()),
+                                thrust::retag<my_tag>(vec.begin()),
+                                thrust::retag<my_tag>(vec.begin()));
 
   ASSERT_EQUAL(13, vec.front());
 }
@@ -132,8 +160,12 @@ void TestScanByKeyHeadFlags()
   keys[6] = 0; vals[6] = 7;
   // clang-format on
 
-  thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), head_flag_predicate(), thrust::plus<T>());
+  thrust::inclusive_scan_by_key(keys.begin(),
+                                keys.end(),
+                                vals.begin(),
+                                output.begin(),
+                                head_flag_predicate(),
+                                thrust::plus<T>());
 
   ASSERT_EQUAL(output[0], 1);
   ASSERT_EQUAL(output[1], 2);
@@ -166,7 +198,10 @@ void TestInclusiveScanByKeyTransformIterator()
   // clang-format on
 
   thrust::inclusive_scan_by_key(
-    keys.begin(), keys.end(), thrust::make_transform_iterator(vals.begin(), thrust::negate<T>()), output.begin());
+    keys.begin(),
+    keys.end(),
+    thrust::make_transform_iterator(vals.begin(), thrust::negate<T>()),
+    output.begin());
 
   ASSERT_EQUAL(output[0], -1);
   ASSERT_EQUAL(output[1], -2);
@@ -177,6 +212,7 @@ void TestInclusiveScanByKeyTransformIterator()
   ASSERT_EQUAL(output[6], -13);
 }
 DECLARE_VECTOR_UNITTEST(TestInclusiveScanByKeyTransformIterator);
+
 
 template <typename Vector>
 void TestScanByKeyReusedKeys()
@@ -196,7 +232,10 @@ void TestScanByKeyReusedKeys()
   keys[6] = 1; vals[6] = 7;
   // clang-format on
 
-  thrust::inclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin());
+  thrust::inclusive_scan_by_key(keys.begin(),
+                                keys.end(),
+                                vals.begin(),
+                                output.begin());
 
   ASSERT_EQUAL(output[0], 1);
   ASSERT_EQUAL(output[1], 2);
@@ -207,6 +246,7 @@ void TestScanByKeyReusedKeys()
   ASSERT_EQUAL(output[6], 13);
 }
 DECLARE_VECTOR_UNITTEST(TestScanByKeyReusedKeys);
+
 
 template <typename T>
 void TestInclusiveScanByKey(const size_t n)
@@ -225,19 +265,24 @@ void TestInclusiveScanByKey(const size_t n)
 
   thrust::host_vector<T> h_vals = unittest::random_integers<int>(n);
   for (size_t i = 0; i < n; i++)
-  {
     h_vals[i] = static_cast<int>(i % 10);
-  }
   thrust::device_vector<T> d_vals = h_vals;
 
   thrust::host_vector<T> h_output(n);
   thrust::device_vector<T> d_output(n);
 
-  thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin());
-  thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
+  thrust::inclusive_scan_by_key(h_keys.begin(),
+                                h_keys.end(),
+                                h_vals.begin(),
+                                h_output.begin());
+  thrust::inclusive_scan_by_key(d_keys.begin(),
+                                d_keys.end(),
+                                d_vals.begin(),
+                                d_output.begin());
   ASSERT_EQUAL(d_output, h_output);
 }
 DECLARE_VARIABLE_UNITTEST(TestInclusiveScanByKey);
+
 
 template <typename T>
 void TestInclusiveScanByKeyInPlace(const size_t n)
@@ -267,16 +312,29 @@ void TestInclusiveScanByKeyInPlace(const size_t n)
   // in-place scans: in/out values aliasing
   h_output = h_vals;
   d_output = d_vals;
-  thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_output.begin(), h_output.begin());
-  thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_output.begin(), d_output.begin());
+  thrust::inclusive_scan_by_key(h_keys.begin(),
+                                h_keys.end(),
+                                h_output.begin(),
+                                h_output.begin());
+  thrust::inclusive_scan_by_key(d_keys.begin(),
+                                d_keys.end(),
+                                d_output.begin(),
+                                d_output.begin());
   ASSERT_EQUAL(d_output, h_output);
 
   // in-place scans: in/out keys aliasing
-  thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_keys.begin());
-  thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_keys.begin());
+  thrust::inclusive_scan_by_key(h_keys.begin(),
+                                h_keys.end(),
+                                h_vals.begin(),
+                                h_keys.begin());
+  thrust::inclusive_scan_by_key(d_keys.begin(),
+                                d_keys.end(),
+                                d_vals.begin(),
+                                d_keys.begin());
   ASSERT_EQUAL(d_keys, h_keys);
 }
 DECLARE_VARIABLE_UNITTEST(TestInclusiveScanByKeyInPlace);
+
 
 void TestScanByKeyMixedTypes()
 {
@@ -294,11 +352,10 @@ void TestScanByKeyMixedTypes()
   }
   thrust::device_vector<int> d_keys = h_keys;
 
-  thrust::host_vector<unsigned int> h_vals = unittest::random_integers<unsigned int>(n);
+  thrust::host_vector<unsigned int> h_vals =
+    unittest::random_integers<unsigned int>(n);
   for (size_t i = 0; i < n; i++)
-  {
     h_vals[i] %= 10;
-  }
   thrust::device_vector<unsigned int> d_vals = h_vals;
 
   thrust::host_vector<float> h_float_output(n);
@@ -307,11 +364,18 @@ void TestScanByKeyMixedTypes()
   thrust::device_vector<int> d_int_output(n);
 
   // mixed vals/output types
-  thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_float_output.begin());
-  thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_float_output.begin());
+  thrust::inclusive_scan_by_key(h_keys.begin(),
+                                h_keys.end(),
+                                h_vals.begin(),
+                                h_float_output.begin());
+  thrust::inclusive_scan_by_key(d_keys.begin(),
+                                d_keys.end(),
+                                d_vals.begin(),
+                                d_float_output.begin());
   ASSERT_EQUAL(d_float_output, h_float_output);
 }
 DECLARE_UNITTEST(TestScanByKeyMixedTypes);
+
 
 template <typename T>
 void TestScanByKeyDiscardOutput(std::size_t n)
@@ -339,20 +403,34 @@ void TestScanByKeyDiscardOutput(std::size_t n)
   auto out = thrust::make_discard_iterator();
 
   // These are no-ops, but they should compile.
-  thrust::inclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out);
-  thrust::inclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, thrust::equal_to<T>{});
-  thrust::inclusive_scan_by_key(
-    d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, thrust::equal_to<T>{}, thrust::multiplies<T>{});
+  thrust::inclusive_scan_by_key(d_keys.cbegin(),
+                                d_keys.cend(),
+                                d_vals.cbegin(),
+                                out);
+  thrust::inclusive_scan_by_key(d_keys.cbegin(),
+                                d_keys.cend(),
+                                d_vals.cbegin(),
+                                out,
+                                thrust::equal_to<T>{});
+  thrust::inclusive_scan_by_key(d_keys.cbegin(),
+                                d_keys.cend(),
+                                d_vals.cbegin(),
+                                out,
+                                thrust::equal_to<T>{},
+                                thrust::multiplies<T>{});
 }
 DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
+
 
 void TestScanByKeyLargeInput()
 {
   const unsigned int N = 1 << 20;
 
-  thrust::host_vector<unsigned int> vals_sizes = unittest::random_integers<unsigned int>(10);
+  thrust::host_vector<unsigned int> vals_sizes =
+    unittest::random_integers<unsigned int>(10);
 
-  thrust::host_vector<unsigned int> h_vals   = unittest::random_integers<unsigned int>(N);
+  thrust::host_vector<unsigned int> h_vals =
+    unittest::random_integers<unsigned int>(N);
   thrust::device_vector<unsigned int> d_vals = h_vals;
 
   thrust::host_vector<unsigned int> h_output(N, 0);
@@ -375,12 +453,19 @@ void TestScanByKeyLargeInput()
     }
     thrust::device_vector<unsigned int> d_keys = h_keys;
 
-    thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.begin() + n, h_vals.begin(), h_output.begin());
-    thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.begin() + n, d_vals.begin(), d_output.begin());
+    thrust::inclusive_scan_by_key(h_keys.begin(),
+                                  h_keys.begin() + n,
+                                  h_vals.begin(),
+                                  h_output.begin());
+    thrust::inclusive_scan_by_key(d_keys.begin(),
+                                  d_keys.begin() + n,
+                                  d_vals.begin(),
+                                  d_output.begin());
     ASSERT_EQUAL(d_output, h_output);
   }
 }
 DECLARE_UNITTEST(TestScanByKeyLargeInput);
+
 
 template <typename T, unsigned int N>
 void _TestScanByKeyWithLargeTypes()
@@ -406,8 +491,14 @@ void _TestScanByKeyWithLargeTypes()
   thrust::device_vector<FixedVector<T, N>> d_vals = h_vals;
   thrust::device_vector<FixedVector<T, N>> d_output(n);
 
-  thrust::inclusive_scan_by_key(h_keys.begin(), h_keys.end(), h_vals.begin(), h_output.begin());
-  thrust::inclusive_scan_by_key(d_keys.begin(), d_keys.end(), d_vals.begin(), d_output.begin());
+  thrust::inclusive_scan_by_key(h_keys.begin(),
+                                h_keys.end(),
+                                h_vals.begin(),
+                                h_output.begin());
+  thrust::inclusive_scan_by_key(d_keys.begin(),
+                                d_keys.end(),
+                                d_vals.begin(),
+                                d_output.begin());
 
   ASSERT_EQUAL_QUIET(h_output, d_output);
 }

@@ -20,17 +20,18 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  {
+int main(int, char**)
+{
+    {
     cuda::std::chrono::milliseconds ms(1);
     cuda::std::chrono::microseconds us = ms;
     assert(us.count() == 1000);
-  }
-  {
+    }
+    {
     constexpr cuda::std::chrono::milliseconds ms(1);
     constexpr cuda::std::chrono::microseconds us = ms;
     static_assert(us.count() == 1000, "");
-  }
+    }
 
-  return 0;
+    return 0;
 }

@@ -9,6 +9,7 @@
 // UNSUPPORTED: clang-5, clang-6
 // UNSUPPORTED: apple-clang-6, apple-clang-7, apple-clang-8, apple-clang-9, apple-clang-10
 
+
 // <chrono>
 // class day;
 
@@ -20,10 +21,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using day = cuda::std::chrono::day;
-  day d1 =
-      4d; // expected-error-re {{no matching literal operator for call to 'operator""d' {{.*}}}}
+int main(int, char**)
+{
+    using day = cuda::std::chrono::day;
+    day d1 = 4d; // expected-error-re {{no matching literal operator for call to 'operator""d' {{.*}}}}
 
   return 0;
 }

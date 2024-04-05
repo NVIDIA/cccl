@@ -28,3 +28,4 @@
 
 // this system inherits assign_value
 #include <thrust/system/detail/sequential/assign_value.h>
+

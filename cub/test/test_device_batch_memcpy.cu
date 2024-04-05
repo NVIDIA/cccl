@@ -43,21 +43,22 @@
 #include <type_traits>
 #include <vector>
 
-#include "test_util.h"
 #include <c2h/device_policy.cuh>
 #include <c2h/vector.cuh>
+
+#include "test_util.h"
 
 /**
  * @brief Host-side random data generation
  */
 template <typename T>
 void GenerateRandomData(
-  T* rand_out,
+  T *rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val          = std::numeric_limits<T>::min(),
+  const T max_rand_val          = std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed = 320981U,
+  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type * = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -70,12 +71,14 @@ void GenerateRandomData(
   }
 }
 
-template <typename InputBufferIt, typename OutputBufferIt, typename BufferSizeIteratorT, typename BufferOffsetT>
-void __global__ BaselineBatchMemCpyKernel(
-  InputBufferIt input_buffer_it,
-  OutputBufferIt output_buffer_it,
-  BufferSizeIteratorT buffer_sizes,
-  BufferOffsetT num_buffers)
+template <typename InputBufferIt,
+          typename OutputBufferIt,
+          typename BufferSizeIteratorT,
+          typename BufferOffsetT>
+void __global__ BaselineBatchMemCpyKernel(InputBufferIt input_buffer_it,
+                                          OutputBufferIt output_buffer_it,
+                                          BufferSizeIteratorT buffer_sizes,
+                                          BufferOffsetT num_buffers)
 {
   BufferOffsetT gtid = blockDim.x * blockIdx.x + threadIdx.x;
   if (gtid >= num_buffers)
@@ -84,25 +87,33 @@ void __global__ BaselineBatchMemCpyKernel(
   }
   for (BufferOffsetT i = 0; i < buffer_sizes[gtid]; i++)
   {
-    reinterpret_cast<uint8_t*>(output_buffer_it[gtid])[i] = reinterpret_cast<uint8_t*>(input_buffer_it[gtid])[i];
+    reinterpret_cast<uint8_t *>(output_buffer_it[gtid])[i] =
+      reinterpret_cast<uint8_t *>(input_buffer_it[gtid])[i];
   }
 }
 
 template <typename InputBufferIt, typename OutputBufferIt, typename BufferSizeIteratorT>
-void InvokeBaselineBatchMemcpy(
-  InputBufferIt input_buffer_it, OutputBufferIt output_buffer_it, BufferSizeIteratorT buffer_sizes, uint32_t num_buffers)
+void InvokeBaselineBatchMemcpy(InputBufferIt input_buffer_it,
+                               OutputBufferIt output_buffer_it,
+                               BufferSizeIteratorT buffer_sizes,
+                               uint32_t num_buffers)
 {
   constexpr uint32_t block_threads = 128U;
   uint32_t num_blocks              = (num_buffers + block_threads - 1) / block_threads;
-  BaselineBatchMemCpyKernel<<<num_blocks, block_threads>>>(input_buffer_it, output_buffer_it, buffer_sizes, num_buffers);
+  BaselineBatchMemCpyKernel<<<num_blocks, block_threads>>>(input_buffer_it,
+                                                           output_buffer_it,
+                                                           buffer_sizes,
+                                                           num_buffers);
 }
 
-template <typename InputBufferIt, typename OutputBufferIt, typename BufferSizeIteratorT, typename BufferOffsetT>
-void __global__ BaselineBatchMemCpyPerBlockKernel(
-  InputBufferIt input_buffer_it,
-  OutputBufferIt output_buffer_it,
-  BufferSizeIteratorT buffer_sizes,
-  BufferOffsetT num_buffers)
+template <typename InputBufferIt,
+          typename OutputBufferIt,
+          typename BufferSizeIteratorT,
+          typename BufferOffsetT>
+void __global__ BaselineBatchMemCpyPerBlockKernel(InputBufferIt input_buffer_it,
+                                                  OutputBufferIt output_buffer_it,
+                                                  BufferSizeIteratorT buffer_sizes,
+                                                  BufferOffsetT num_buffers)
 {
   BufferOffsetT gbid = blockIdx.x;
   if (gbid >= num_buffers)
@@ -111,7 +122,8 @@ void __global__ BaselineBatchMemCpyPerBlockKernel(
   }
   for (BufferOffsetT i = threadIdx.x; i < buffer_sizes[gbid] / 8; i += blockDim.x)
   {
-    reinterpret_cast<uint64_t*>(output_buffer_it[gbid])[i] = reinterpret_cast<uint64_t*>(input_buffer_it[gbid])[i];
+    reinterpret_cast<uint64_t *>(output_buffer_it[gbid])[i] =
+      reinterpret_cast<uint64_t *>(input_buffer_it[gbid])[i];
   }
 }
 
@@ -120,8 +132,8 @@ void __global__ BaselineBatchMemCpyPerBlockKernel(
  * sequence of input-buffers.
  */
 template <typename BufferOffsetT, typename ByteOffsetT, typename BufferSizeT>
-c2h::host_vector<ByteOffsetT>
-GetShuffledBufferOffsets(const c2h::host_vector<BufferSizeT>& buffer_sizes, const std::uint_fast32_t seed = 320981U)
+c2h::host_vector<ByteOffsetT> GetShuffledBufferOffsets(const c2h::host_vector<BufferSizeT> &buffer_sizes,
+                                                       const std::uint_fast32_t seed = 320981U)
 {
   BufferOffsetT num_buffers = static_cast<BufferOffsetT>(buffer_sizes.size());
 
@@ -330,7 +342,7 @@ void RunTest(BufferOffsetT num_buffers,
   }
   catch (std::bad_alloc& e)
   {
-    (void) e;
+    (void)e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
     std::cout
       << "Skipping test 'RunTest(" //
@@ -345,7 +357,7 @@ void RunTest(BufferOffsetT num_buffers,
 }
 
 template <int LOGICAL_WARP_SIZE, typename VectorT, typename ByteOffsetT>
-__global__ void TestVectorizedCopyKernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
+__global__ void TestVectorizedCopyKernel(const void *d_in, void *d_out, ByteOffsetT copy_size)
 {
   cub::detail::VectorizedCopy<LOGICAL_WARP_SIZE, VectorT>(threadIdx.x, d_out, copy_size, d_in);
 }
@@ -366,17 +378,24 @@ struct TupleMemberEqualityOp
 template <typename VectorT>
 void TestVectorizedCopy()
 {
+
   constexpr uint32_t threads_per_block = 8;
 
   c2h::host_vector<std::size_t> in_offsets{0, 1, sizeof(uint32_t) - 1};
   c2h::host_vector<std::size_t> out_offsets{0, 1, sizeof(VectorT) - 1};
-  c2h::host_vector<std::size_t> copy_sizes{
-    0, 1, sizeof(uint32_t), sizeof(VectorT), 2 * threads_per_block * sizeof(VectorT)};
-  for (auto copy_sizes_it = std::begin(copy_sizes); copy_sizes_it < std::end(copy_sizes); copy_sizes_it++)
+  c2h::host_vector<std::size_t> copy_sizes{0,
+                                           1,
+                                           sizeof(uint32_t),
+                                           sizeof(VectorT),
+                                           2 * threads_per_block * sizeof(VectorT)};
+  for (auto copy_sizes_it = std::begin(copy_sizes); copy_sizes_it < std::end(copy_sizes);
+       copy_sizes_it++)
   {
-    for (auto in_offsets_it = std::begin(in_offsets); in_offsets_it < std::end(in_offsets); in_offsets_it++)
+    for (auto in_offsets_it = std::begin(in_offsets); in_offsets_it < std::end(in_offsets);
+         in_offsets_it++)
     {
-      for (auto out_offsets_it = std::begin(out_offsets); out_offsets_it < std::end(out_offsets); out_offsets_it++)
+      for (auto out_offsets_it = std::begin(out_offsets); out_offsets_it < std::end(out_offsets);
+           out_offsets_it++)
       {
         std::size_t in_offset  = *in_offsets_it;
         std::size_t out_offset = *out_offsets_it;
@@ -394,8 +413,11 @@ void TestVectorizedCopy()
         auto d_out = thrust::raw_pointer_cast(data_out.data());
 
         TestVectorizedCopyKernel<threads_per_block, VectorT>
-          <<<1, threads_per_block>>>(d_in + in_offset, d_out + out_offset, static_cast<int>(copy_size));
-        auto zip_it = thrust::make_zip_iterator(data_in.begin() + in_offset, data_out.begin() + out_offset);
+          <<<1, threads_per_block>>>(d_in + in_offset,
+                                     d_out + out_offset,
+                                     static_cast<int>(copy_size));
+        auto zip_it = thrust::make_zip_iterator(data_in.begin() + in_offset,
+                                                data_out.begin() + out_offset);
 
         bool success = thrust::all_of(c2h::device_policy, zip_it, zip_it + copy_size, TupleMemberEqualityOp{});
         AssertTrue(success);
@@ -405,10 +427,13 @@ void TestVectorizedCopy()
 }
 
 template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE, bool PREFER_POW2_BITS>
-__global__ void
-TestBitPackedCounterKernel(uint32_t* bins, uint32_t* increments, uint32_t* counts_out, uint32_t num_items)
+__global__ void TestBitPackedCounterKernel(uint32_t *bins,
+                                           uint32_t *increments,
+                                           uint32_t *counts_out,
+                                           uint32_t num_items)
 {
-  using BitPackedCounterT = cub::detail::BitPackedCounter<NUM_ITEMS, MAX_ITEM_VALUE, PREFER_POW2_BITS>;
+  using BitPackedCounterT =
+    cub::detail::BitPackedCounter<NUM_ITEMS, MAX_ITEM_VALUE, PREFER_POW2_BITS>;
   BitPackedCounterT counter{};
   for (uint32_t i = 0; i < num_items; i++)
   {
@@ -428,11 +453,13 @@ TestBitPackedCounterKernel(uint32_t* bins, uint32_t* increments, uint32_t* count
 template <uint32_t NUM_ITEMS, uint32_t MAX_ITEM_VALUE>
 void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
 {
+
   constexpr uint32_t min_increment = 0;
   constexpr uint32_t max_increment = 4;
-  constexpr double avg_increment =
-    static_cast<double>(min_increment) + (static_cast<double>(max_increment - min_increment) / 2.0);
-  std::uint32_t num_increments = static_cast<uint32_t>(static_cast<double>(MAX_ITEM_VALUE * NUM_ITEMS) / avg_increment);
+  constexpr double avg_increment   = static_cast<double>(min_increment) +
+                                   (static_cast<double>(max_increment - min_increment) / 2.0);
+  std::uint32_t num_increments =
+      static_cast<uint32_t>(static_cast<double>(MAX_ITEM_VALUE * NUM_ITEMS) / avg_increment);
 
   // Test input data
   std::array<uint64_t, NUM_ITEMS> reference_counters{};
@@ -440,9 +467,16 @@ void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
   c2h::host_vector<uint32_t> h_increments(num_increments);
 
   // Generate random test input data
-  GenerateRandomData(thrust::raw_pointer_cast(h_bins.data()), num_increments, 0U, NUM_ITEMS - 1U, seed);
-  GenerateRandomData(
-    thrust::raw_pointer_cast(h_increments.data()), num_increments, min_increment, max_increment, (seed + 17));
+  GenerateRandomData(thrust::raw_pointer_cast(h_bins.data()),
+                     num_increments,
+                     0U,
+                     NUM_ITEMS - 1U,
+                     seed);
+  GenerateRandomData(thrust::raw_pointer_cast(h_increments.data()),
+                     num_increments,
+                     min_increment,
+                     max_increment,
+                     (seed + 17));
 
   // Make sure test data does not overflow any of the counters
   for (std::size_t i = 0; i < num_increments; i++)
@@ -474,11 +508,11 @@ void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
   thrust::fill(counts_out.begin(), counts_out.end(), 814920U);
 
   // Run tests with densely bit-packed counters
-  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, false><<<1, 1>>>(
-    thrust::raw_pointer_cast(bins_in.data()),
-    thrust::raw_pointer_cast(increments_in.data()),
-    thrust::raw_pointer_cast(counts_out.data()),
-    num_increments);
+  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, false>
+    <<<1, 1>>>(thrust::raw_pointer_cast(bins_in.data()),
+               thrust::raw_pointer_cast(increments_in.data()),
+               thrust::raw_pointer_cast(counts_out.data()),
+               num_increments);
 
   // Result verification
   host_counts = counts_out;
@@ -491,11 +525,11 @@ void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
   thrust::fill(counts_out.begin(), counts_out.end(), 814920U);
 
   // Run tests with bit-packed counters, where bit-count is a power-of-two
-  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, true><<<1, 1>>>(
-    thrust::raw_pointer_cast(bins_in.data()),
-    thrust::raw_pointer_cast(increments_in.data()),
-    thrust::raw_pointer_cast(counts_out.data()),
-    num_increments);
+  TestBitPackedCounterKernel<NUM_ITEMS, MAX_ITEM_VALUE, true>
+    <<<1, 1>>>(thrust::raw_pointer_cast(bins_in.data()),
+               thrust::raw_pointer_cast(increments_in.data()),
+               thrust::raw_pointer_cast(counts_out.data()),
+               num_increments);
 
   // Result verification
   host_counts = counts_out;
@@ -505,7 +539,7 @@ void TestBitPackedCounter(const std::uint_fast32_t seed = 320981U)
   }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   CommandLineArgs args(argc, argv);
 
@@ -554,15 +588,15 @@ int main(int argc, char** argv)
   constexpr std::size_t num_rnd_buffer_range_tests = 32;
 
   // Each buffer's size will be random within this interval
-  c2h::host_vector<std::pair<std::size_t, std::size_t>> buffer_size_ranges = {
-    {0, 1},
-    {1, 2},
-    {0, 16},
-    {1, 32},
-    {1, 1024},
-    {1, 32 * 1024},
-    {128 * 1024, 256 * 1024},
-    {target_copy_size, target_copy_size}};
+  c2h::host_vector<std::pair<std::size_t, std::size_t>> buffer_size_ranges = {{0, 1},
+                                                                              {1, 2},
+                                                                              {0, 16},
+                                                                              {1, 32},
+                                                                              {1, 1024},
+                                                                              {1, 32 * 1024},
+                                                                              {128 * 1024, 256 * 1024},
+                                                                              {target_copy_size,
+                                                                               target_copy_size}};
 
   std::mt19937 rng(0);
   std::uniform_int_distribution<std::size_t> size_dist(1, 1000000);
@@ -577,23 +611,31 @@ int main(int argc, char** argv)
     buffer_size_ranges.push_back({range_begin, range_end});
   }
 
-  for (const auto& buffer_size_range : buffer_size_ranges)
+  for (const auto &buffer_size_range : buffer_size_ranges)
   {
     BufferSizeT min_buffer_size =
       static_cast<BufferSizeT>(CUB_ROUND_UP_NEAREST(buffer_size_range.first, sizeof(AtomicCopyT)));
-    BufferSizeT max_buffer_size = static_cast<BufferSizeT>(
-      CUB_ROUND_UP_NEAREST(buffer_size_range.second, static_cast<BufferSizeT>(sizeof(AtomicCopyT))));
-    double average_buffer_size       = (min_buffer_size + max_buffer_size) / 2.0;
-    BufferOffsetT target_num_buffers = static_cast<BufferOffsetT>(target_copy_size / average_buffer_size);
+    BufferSizeT max_buffer_size =
+      static_cast<BufferSizeT>(CUB_ROUND_UP_NEAREST(buffer_size_range.second,
+                                                    static_cast<BufferSizeT>(sizeof(AtomicCopyT))));
+    double average_buffer_size = (min_buffer_size + max_buffer_size) / 2.0;
+    BufferOffsetT target_num_buffers =
+      static_cast<BufferOffsetT>(target_copy_size / average_buffer_size);
 
     // Run tests with input buffer being consecutive and output buffers being consecutive
-    RunTest<AtomicCopyT, BufferOffsetT, BufferSizeT, ByteOffsetT>(
-      target_num_buffers, min_buffer_size, max_buffer_size, TestDataGen::CONSECUTIVE, TestDataGen::CONSECUTIVE);
+    RunTest<AtomicCopyT, BufferOffsetT, BufferSizeT, ByteOffsetT>(target_num_buffers,
+                                                                  min_buffer_size,
+                                                                  max_buffer_size,
+                                                                  TestDataGen::CONSECUTIVE,
+                                                                  TestDataGen::CONSECUTIVE);
 
     // Run tests with input buffer being randomly shuffled and output buffers being randomly
     // shuffled
-    RunTest<AtomicCopyT, BufferOffsetT, BufferSizeT, ByteOffsetT>(
-      target_num_buffers, min_buffer_size, max_buffer_size, TestDataGen::RANDOM, TestDataGen::RANDOM);
+    RunTest<AtomicCopyT, BufferOffsetT, BufferSizeT, ByteOffsetT>(target_num_buffers,
+                                                                  min_buffer_size,
+                                                                  max_buffer_size,
+                                                                  TestDataGen::RANDOM,
+                                                                  TestDataGen::RANDOM);
   }
 
   //---------------------------------------------------------------------
@@ -607,6 +649,9 @@ int main(int argc, char** argv)
   constexpr BufferOffsetT single_buffer = 1;
 
   // Run tests with input buffer being consecutive and output buffers being consecutive
-  RunTest<AtomicCopyT, BufferOffsetT, BufferSize64T, ByteOffset64T>(
-    single_buffer, large_target_copy_size, large_target_copy_size, TestDataGen::CONSECUTIVE, TestDataGen::CONSECUTIVE);
+  RunTest<AtomicCopyT, BufferOffsetT, BufferSize64T, ByteOffset64T>(single_buffer,
+                                                                    large_target_copy_size,
+                                                                    large_target_copy_size,
+                                                                    TestDataGen::CONSECUTIVE,
+                                                                    TestDataGen::CONSECUTIVE);
 }

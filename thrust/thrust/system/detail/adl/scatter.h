@@ -36,10 +36,10 @@
 // includes, so we fake it out by specifying all possible files we might end up
 // including inside an #if 0.
 #if 0
-#  include <thrust/system/cpp/detail/scatter.h>
-#  include <thrust/system/cuda/detail/scatter.h>
-#  include <thrust/system/omp/detail/scatter.h>
-#  include <thrust/system/tbb/detail/scatter.h>
+#include <thrust/system/cpp/detail/scatter.h>
+#include <thrust/system/cuda/detail/scatter.h>
+#include <thrust/system/omp/detail/scatter.h>
+#include <thrust/system/tbb/detail/scatter.h>
 #endif
 
 #define __THRUST_HOST_SYSTEM_SCATTER_HEADER <__THRUST_HOST_SYSTEM_ROOT/detail/scatter.h>
@@ -49,3 +49,4 @@
 #define __THRUST_DEVICE_SYSTEM_SCATTER_HEADER <__THRUST_DEVICE_SYSTEM_ROOT/detail/scatter.h>
 #include __THRUST_DEVICE_SYSTEM_SCATTER_HEADER
 #undef __THRUST_DEVICE_SYSTEM_SCATTER_HEADER
+

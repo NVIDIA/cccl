@@ -51,8 +51,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
-{
+namespace detail {
 
 template <typename Invokable, typename... Args>
 using invoke_result_t =
@@ -64,7 +63,8 @@ using invoke_result_t =
 
 /// The type of intermediate accumulator (according to P2322R6)
 template <typename Invokable, typename InitT, typename InputT>
-using accumulator_t = typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
+using accumulator_t =
+  typename ::cuda::std::decay<invoke_result_t<Invokable, InitT, InputT>>::type;
 
 } // namespace detail
 CUB_NAMESPACE_END

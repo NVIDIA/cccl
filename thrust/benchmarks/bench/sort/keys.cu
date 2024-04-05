@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void basic(nvbench::state &state, nvbench::type_list<T>)
 {
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
@@ -48,12 +48,13 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   thrust::sort(policy(alloc), vec.begin(), vec.end());
 
-  state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync, [&](nvbench::launch& launch, auto& timer) {
-    vec = input;
-    timer.start();
-    thrust::sort(policy(alloc, launch), vec.begin(), vec.end());
-    timer.stop();
-  });
+  state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch, auto &timer) {
+               vec = input;
+               timer.start();
+               thrust::sort(policy(alloc, launch), vec.begin(), vec.end());
+               timer.stop();
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

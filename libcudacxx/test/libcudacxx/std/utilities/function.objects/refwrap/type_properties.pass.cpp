@@ -23,41 +23,42 @@
 
 #include "test_macros.h"
 
-class MoveOnly {
-  __host__ __device__ MoveOnly(const MoveOnly&);
-  __host__ __device__ MoveOnly& operator=(const MoveOnly&);
+class MoveOnly
+{
+    __host__ __device__ MoveOnly(const MoveOnly&);
+    __host__ __device__ MoveOnly& operator=(const MoveOnly&);
 
-  int data_;
-
+    int data_;
 public:
-  __host__ __device__ MoveOnly(int data = 1) : data_(data) {}
-  __host__ __device__ MoveOnly(MoveOnly&& x) : data_(x.data_) { x.data_ = 0; }
-  __host__ __device__ MoveOnly& operator=(MoveOnly&& x) {
-    data_ = x.data_;
-    x.data_ = 0;
-    return *this;
-  }
+    __host__ __device__ MoveOnly(int data = 1) : data_(data) {}
+    __host__ __device__ MoveOnly(MoveOnly&& x)
+        : data_(x.data_) {x.data_ = 0;}
+    __host__ __device__ MoveOnly& operator=(MoveOnly&& x)
+        {data_ = x.data_; x.data_ = 0; return *this;}
 
-  __host__ __device__ int get() const { return data_; }
+    __host__ __device__ int get() const {return data_;}
 };
 
+
 template <class T>
-__host__ __device__ void test() {
-  typedef cuda::std::reference_wrapper<T> Wrap;
-  static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
-  static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
+__host__ __device__ void test()
+{
+    typedef cuda::std::reference_wrapper<T> Wrap;
+    static_assert(cuda::std::is_copy_constructible<Wrap>::value, "");
+    static_assert(cuda::std::is_copy_assignable<Wrap>::value, "");
 #if TEST_STD_VER >= 2014
-  static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
+    static_assert(cuda::std::is_trivially_copyable<Wrap>::value, "");
 #endif
 }
 
-int main(int, char**) {
-  test<int>();
-  test<double>();
+int main(int, char**)
+{
+    test<int>();
+    test<double>();
 #ifdef _LIBCUDACXX_HAS_
-  test<cuda::std::string>();
+    test<cuda::std::string>();
 #endif
-  test<MoveOnly>();
+    test<MoveOnly>();
 
   return 0;
 }

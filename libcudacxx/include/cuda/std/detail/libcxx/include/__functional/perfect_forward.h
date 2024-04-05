@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_PERFECT_FORWARD_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -43,80 +43,71 @@ template <class _Op, class _Indices, class... _BoundArgs>
 struct __perfect_forward_impl;
 
 template <class _Op, size_t... _Idx, class... _BoundArgs>
-struct __perfect_forward_impl<_Op, index_sequence<_Idx...>, _BoundArgs...>
-{
+struct __perfect_forward_impl<_Op, index_sequence<_Idx...>, _BoundArgs...> {
 private:
   tuple<_BoundArgs...> __bound_args_;
 
 public:
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr __perfect_forward_impl(
-    _Args&&... __bound_args) noexcept(is_nothrow_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
-      : __bound_args_(_CUDA_VSTD::forward<_Args>(__bound_args)...)
-  {}
+    _LIBCUDACXX_REQUIRES( is_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  explicit constexpr __perfect_forward_impl(_Args&&... __bound_args)
+    noexcept(is_nothrow_constructible_v<tuple<_BoundArgs...>, _Args&&...>)
+    : __bound_args_(_CUDA_VSTD::forward<_Args>(__bound_args)...) {}
 
   __perfect_forward_impl(__perfect_forward_impl const&) = default;
-  __perfect_forward_impl(__perfect_forward_impl&&)      = default;
+  __perfect_forward_impl(__perfect_forward_impl&&) = default;
 
   __perfect_forward_impl& operator=(__perfect_forward_impl const&) = default;
-  __perfect_forward_impl& operator=(__perfect_forward_impl&&)      = default;
+  __perfect_forward_impl& operator=(__perfect_forward_impl&&) = default;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(is_invocable_v<_Op, _BoundArgs&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) & noexcept(
-    noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
-    -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
-  {
-    return _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...);
-  }
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs&..., _Args...>)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &
+    noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
+    -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
+    { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES((!is_invocable_v<_Op, _BoundArgs&..., _Args...>) )
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs&..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) & = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const& noexcept(
-    noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
-    -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
-  {
-    return _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...);
-  }
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const&..., _Args...>)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&
+    noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...)))
+    -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...))
+    { return          _Op()(_CUDA_VSTD::get<_Idx>(__bound_args_)..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES((!is_invocable_v<_Op, _BoundArgs const&..., _Args...>) )
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const&..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const& = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(is_invocable_v<_Op, _BoundArgs..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) && noexcept(
-    noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
-    -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
-  {
-    return _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...);
-  }
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs..., _Args...>)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) &&
+    noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
+    -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
+    { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES((!is_invocable_v<_Op, _BoundArgs..., _Args...>) )
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) && = delete;
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(is_invocable_v<_Op, _BoundArgs const..., _Args...>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&& noexcept(
-    noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
-    -> decltype(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
-  {
-    return _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...);
-  }
+    _LIBCUDACXX_REQUIRES( is_invocable_v<_Op, _BoundArgs const..., _Args...>)
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto operator()(_Args&&... __args) const&&
+    noexcept(noexcept(_Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...)))
+    -> decltype(      _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...))
+    { return          _Op()(_CUDA_VSTD::get<_Idx>(_CUDA_VSTD::move(__bound_args_))..., _CUDA_VSTD::forward<_Args>(__args)...); }
 
   _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES((!is_invocable_v<_Op, _BoundArgs const..., _Args...>) )
+    _LIBCUDACXX_REQUIRES( (!is_invocable_v<_Op, _BoundArgs const..., _Args...>))
   _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Args&&...) const&& = delete;
 };
 
 // __perfect_forward implements a perfect-forwarding call wrapper as explained in [func.require].
-template <class _Op, class... _Args>
+template <class _Op, class ..._Args>
 using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
 #endif // _CCCL_STD_VER > 2014

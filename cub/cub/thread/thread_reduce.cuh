@@ -49,8 +49,7 @@
 CUB_NAMESPACE_BEGIN
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
-{
+namespace internal {
 
 /**
  * @brief Sequential reduction over statically-sized array types
@@ -70,17 +69,15 @@ template <int LENGTH,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
 _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
+ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix, Int2Type<LENGTH> /*length*/)
 {
-  AccumT retval = prefix;
+    AccumT retval = prefix;
 
-#pragma unroll
-  for (int i = 0; i < LENGTH; ++i)
-  {
-    retval = reduction_op(retval, input[i]);
-  }
+    #pragma unroll
+    for (int i = 0; i < LENGTH; ++i)
+        retval = reduction_op(retval, input[i]);
 
-  return retval;
+    return retval;
 }
 
 /**
@@ -111,9 +108,9 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T* input, ReductionOp reduction_op, PrefixT prefix)
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T *input, ReductionOp reduction_op, PrefixT prefix)
 {
-  return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
+    return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
 
 /**
@@ -137,10 +134,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T* input, ReductionOp reducti
  *   Binary reduction operator
  */
 template <int LENGTH, typename T, typename ReductionOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T* input, ReductionOp reduction_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T *input, ReductionOp reduction_op)
 {
-  T prefix = input[0];
-  return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
+    T prefix = input[0];
+    return ThreadReduce<LENGTH - 1>(input + 1, reduction_op, prefix);
 }
 
 /**
@@ -171,9 +168,11 @@ template <int LENGTH,
           typename ReductionOp,
           typename PrefixT,
           typename AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op, PrefixT prefix)
+_CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH],
+                                               ReductionOp reduction_op,
+                                               PrefixT prefix)
 {
-  return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
+    return ThreadReduce(input, reduction_op, prefix, Int2Type<LENGTH>());
 }
 
 /**
@@ -198,8 +197,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(T (&input)[LENGTH], Reduction
 template <int LENGTH, typename T, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(T (&input)[LENGTH], ReductionOp reduction_op)
 {
-  return ThreadReduce<LENGTH>((T*) input, reduction_op);
+    return ThreadReduce<LENGTH>((T*) input, reduction_op);
 }
 
-} // namespace internal
+
+}               // internal namespace
 CUB_NAMESPACE_END

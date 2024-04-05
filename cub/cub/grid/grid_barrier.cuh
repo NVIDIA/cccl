@@ -48,86 +48,88 @@
 
 CUB_NAMESPACE_BEGIN
 
+
 /**
  * \brief GridBarrier implements a software global barrier among thread blocks within a CUDA grid
  */
 class GridBarrier
 {
-protected:
-  typedef unsigned int SyncFlag;
+protected :
 
-  // Counters in global device memory
-  SyncFlag* d_sync;
+    typedef unsigned int SyncFlag;
+
+    // Counters in global device memory
+    SyncFlag* d_sync;
 
 public:
-  /**
-   * Constructor
-   */
-  GridBarrier()
-      : d_sync(NULL)
-  {}
 
-  /**
-   * Synchronize
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
-  {
-    volatile SyncFlag* d_vol_sync = d_sync;
+    /**
+     * Constructor
+     */
+    GridBarrier() : d_sync(NULL) {}
 
-    // Threadfence and syncthreads to make sure global writes are visible before
-    // thread-0 reports in with its sync counter
-    __threadfence();
-    CTA_SYNC();
 
-    if (blockIdx.x == 0)
+    /**
+     * Synchronize
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE void Sync() const
     {
-      // Report in ourselves
-      if (threadIdx.x == 0)
-      {
-        d_vol_sync[blockIdx.x] = 1;
-      }
+        volatile SyncFlag *d_vol_sync = d_sync;
 
-      CTA_SYNC();
+        // Threadfence and syncthreads to make sure global writes are visible before
+        // thread-0 reports in with its sync counter
+        __threadfence();
+        CTA_SYNC();
 
-      // Wait for everyone else to report in
-      for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
-      {
-        while (ThreadLoad<LOAD_CG>(d_sync + peer_block) == 0)
+        if (blockIdx.x == 0)
         {
-          __threadfence_block();
+            // Report in ourselves
+            if (threadIdx.x == 0)
+            {
+                d_vol_sync[blockIdx.x] = 1;
+            }
+
+            CTA_SYNC();
+
+            // Wait for everyone else to report in
+            for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
+            {
+                while (ThreadLoad<LOAD_CG>(d_sync + peer_block) == 0)
+                {
+                    __threadfence_block();
+                }
+            }
+
+            CTA_SYNC();
+
+            // Let everyone know it's safe to proceed
+            for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
+            {
+                d_vol_sync[peer_block] = 0;
+            }
         }
-      }
-
-      CTA_SYNC();
-
-      // Let everyone know it's safe to proceed
-      for (int peer_block = threadIdx.x; peer_block < gridDim.x; peer_block += blockDim.x)
-      {
-        d_vol_sync[peer_block] = 0;
-      }
-    }
-    else
-    {
-      if (threadIdx.x == 0)
-      {
-        // Report in
-        d_vol_sync[blockIdx.x] = 1;
-
-        // Wait for acknowledgment
-        while (ThreadLoad<LOAD_CG>(d_sync + blockIdx.x) == 1)
+        else
         {
-          __threadfence_block();
-        }
-      }
+            if (threadIdx.x == 0)
+            {
+                // Report in
+                d_vol_sync[blockIdx.x] = 1;
 
-      CTA_SYNC();
+                // Wait for acknowledgment
+                while (ThreadLoad<LOAD_CG>(d_sync + blockIdx.x) == 1)
+                {
+                    __threadfence_block();
+                }
+            }
+
+            CTA_SYNC();
+        }
     }
-  }
 };
 
+
 /**
- * \brief GridBarrierLifetime extends GridBarrier to provide lifetime management of the temporary device storage needed
- * for cooperation.
+ * \brief GridBarrierLifetime extends GridBarrier to provide lifetime management of the temporary device storage needed for cooperation.
  *
  * Uses RAII for lifetime, i.e., device resources are reclaimed when
  * the destructor is called.
@@ -135,81 +137,83 @@ public:
 class GridBarrierLifetime : public GridBarrier
 {
 protected:
-  // Number of bytes backed by d_sync
-  size_t sync_bytes;
+
+    // Number of bytes backed by d_sync
+    size_t sync_bytes;
 
 public:
-  /**
-   * Constructor
-   */
-  GridBarrierLifetime()
-      : GridBarrier()
-      , sync_bytes(0)
-  {}
 
-  /**
-   * DeviceFrees and resets the progress counters
-   */
-  cudaError_t HostReset()
-  {
-    cudaError_t retval = cudaSuccess;
-    if (d_sync)
+    /**
+     * Constructor
+     */
+    GridBarrierLifetime() : GridBarrier(), sync_bytes(0) {}
+
+
+    /**
+     * DeviceFrees and resets the progress counters
+     */
+    cudaError_t HostReset()
     {
-      retval = CubDebug(cudaFree(d_sync));
-      d_sync = NULL;
-    }
-    sync_bytes = 0;
-    return retval;
-  }
-
-  /**
-   * Destructor
-   */
-  virtual ~GridBarrierLifetime()
-  {
-    HostReset();
-  }
-
-  /**
-   * Sets up the progress counters for the next kernel launch (lazily
-   * allocating and initializing them if necessary)
-   */
-  cudaError_t Setup(int sweep_grid_size)
-  {
-    cudaError_t retval = cudaSuccess;
-    do
-    {
-      size_t new_sync_bytes = sweep_grid_size * sizeof(SyncFlag);
-      if (new_sync_bytes > sync_bytes)
-      {
+        cudaError_t retval = cudaSuccess;
         if (d_sync)
         {
-          retval = CubDebug(cudaFree(d_sync));
-          if (cudaSuccess != retval)
-          {
-            break;
-          }
+            retval = CubDebug(cudaFree(d_sync));
+            d_sync = NULL;
         }
+        sync_bytes = 0;
+        return retval;
+    }
 
-        sync_bytes = new_sync_bytes;
 
-        // Allocate and initialize to zero
-        retval = CubDebug(cudaMalloc((void**) &d_sync, sync_bytes));
-        if (cudaSuccess != retval)
-        {
-          break;
-        }
+    /**
+     * Destructor
+     */
+    virtual ~GridBarrierLifetime()
+    {
+        HostReset();
+    }
 
-        retval = CubDebug(cudaMemset(d_sync, 0, new_sync_bytes));
-        if (cudaSuccess != retval)
-        {
-          break;
-        }
-      }
-    } while (0);
 
-    return retval;
-  }
+    /**
+     * Sets up the progress counters for the next kernel launch (lazily
+     * allocating and initializing them if necessary)
+     */
+    cudaError_t Setup(int sweep_grid_size)
+    {
+        cudaError_t retval = cudaSuccess;
+        do {
+            size_t new_sync_bytes = sweep_grid_size * sizeof(SyncFlag);
+            if (new_sync_bytes > sync_bytes)
+            {
+                if (d_sync)
+                {
+                    retval = CubDebug(cudaFree(d_sync));
+                    if (cudaSuccess != retval)
+                    {
+                      break;
+                    }
+                }
+
+                sync_bytes = new_sync_bytes;
+
+                // Allocate and initialize to zero
+                retval = CubDebug(cudaMalloc((void**) &d_sync, sync_bytes));
+                if (cudaSuccess != retval)
+                {
+                    break;
+                }
+
+                retval = CubDebug(cudaMemset(d_sync, 0, new_sync_bytes));
+                if (cudaSuccess != retval)
+                {
+                    break;
+                }
+            }
+        } while (0);
+
+        return retval;
+    }
 };
 
 CUB_NAMESPACE_END
+

@@ -13,40 +13,39 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
-  cuda::std::array<int, 1> storage{1};
+int main(int, char**)
+{
+    cuda::std::array<int,1> storage{1};
 
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<int, 1> > m;
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<int,1>> m;
 
-    assert(m.empty() == true);
-  }
+        assert( m.empty() == true );
+    }
 
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<int, 1> > m{storage.data(), 0};
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<int,1>> m{ storage.data(), 0 };
 
-    assert(m.empty() == true);
-  }
+        assert( m.empty() == true );
+    }
 
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<int, 1> > m{storage.data(), 2};
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<int,1>> m{ storage.data(), 2 };
 
-    assert(m.empty() == false);
-  }
+        assert( m.empty() == false );
+    }
 
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<int, 2> > m{storage.data(), 2,
-                                                           0};
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<int,2>> m{ storage.data(), 2, 0 };
 
-    assert(m.empty() == true);
-  }
+        assert( m.empty() == true );
+    }
 
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<int, 2> > m{storage.data(), 2,
-                                                           2};
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<int,2>> m{ storage.data(), 2, 2 };
 
-    assert(m.empty() == false);
-  }
+        assert( m.empty() == false );
+    }
 
-  return 0;
+    return 0;
 }

@@ -70,7 +70,7 @@ __host__ __device__ void testException() {
   {
     const cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
     try {
-      (void)e.value();
+      (void) e.value();
       assert(false);
     } catch (const cuda::std::bad_expected_access<int>& ex) {
       assert(ex.error() == 5);
@@ -81,7 +81,7 @@ __host__ __device__ void testException() {
   {
     cuda::std::expected<int, MoveOnly> e(cuda::std::unexpect, 5);
     try {
-      (void)cuda::std::move(e).value();
+      (void) cuda::std::move(e).value();
       assert(false);
     } catch (const cuda::std::bad_expected_access<MoveOnly>& ex) {
       assert(ex.error() == 5);

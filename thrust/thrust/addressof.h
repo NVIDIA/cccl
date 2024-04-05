@@ -24,9 +24,12 @@ THRUST_NAMESPACE_BEGIN
 /*! Obtains the actual address of the object or function arg, even in presence of overloaded operator&.
  */
 template <typename T>
-_CCCL_HOST_DEVICE T* addressof(T& arg)
+_CCCL_HOST_DEVICE
+T* addressof(T& arg)
 {
-  return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char&>(arg)));
+  return reinterpret_cast<T*>(
+    &const_cast<char&>(reinterpret_cast<const volatile char&>(arg))
+  );
 }
 
 ///////////////////////////////////////////////////////////////////////////////

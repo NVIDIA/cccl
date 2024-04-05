@@ -17,20 +17,20 @@
 #include <cuda/std/cassert>
 #include "../mdspan.mdspan.util/mdspan_util.hpp"
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
-  constexpr auto dyn = cuda::std::dynamic_extent;
+    constexpr auto dyn = cuda::std::dynamic_extent;
 
-  // copy constructor
-  {
-    cuda::std::array<int, 1> d{42};
-    cuda::std::mdspan<int, cuda::std::extents<size_t, dyn, dyn> > m0{
-        d.data(), cuda::std::extents{64, 128}};
-    cuda::std::mdspan m{m0};
+    // copy constructor
+    {
+        cuda::std::array<int, 1> d{42};
+        cuda::std::mdspan<int, cuda::std::extents<size_t,dyn,dyn>> m0{ d.data(), cuda::std::extents{64, 128} };
+        cuda::std::mdspan m{ m0 };
 
-    CHECK_MDSPAN_EXTENT(m, d, 64, 128);
-  }
+        CHECK_MDSPAN_EXTENT(m,d,64,128);
+    }
 #endif
 
-  return 0;
+    return 0;
 }

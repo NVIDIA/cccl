@@ -73,19 +73,20 @@ enum class offset_size
 template <class InputT>
 constexpr input_size classify_input_size()
 {
-  return sizeof(InputT) == 1 ? input_size::_1
-       : sizeof(InputT) == 2 ? input_size::_2
-       : sizeof(InputT) == 4 ? input_size::_4
-       : sizeof(InputT) == 8 ? input_size::_8
-       : sizeof(InputT) == 16
-         ? input_size::_16
-         : input_size::unknown;
+  return sizeof(InputT) == 1    ? input_size::_1
+         : sizeof(InputT) == 2  ? input_size::_2
+         : sizeof(InputT) == 4  ? input_size::_4
+         : sizeof(InputT) == 8  ? input_size::_8
+         : sizeof(InputT) == 16 ? input_size::_16
+                                : input_size::unknown;
 }
 
 template <class OffsetT>
 constexpr offset_size classify_offset_size()
 {
-  return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
+  return sizeof(OffsetT) == 4   ? offset_size::_4
+         : sizeof(OffsetT) == 8 ? offset_size::_8
+                                : offset_size::unknown;
 }
 
 template <class InputT,
@@ -95,12 +96,12 @@ template <class InputT,
 struct sm90_tuning
 {
   static constexpr int threads = 256;
-  static constexpr int items   = Nominal4BItemsToItems<InputT>(9);
+  static constexpr int items = Nominal4BItemsToItems<InputT>(9);
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  using AccumPackHelperT  = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT        = typename AccumPackHelperT::pack_t;
+  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackT = typename AccumPackHelperT::pack_t;
   using delay_constructor = detail::default_delay_constructor_t<AccumPackT>;
 };
 
@@ -221,12 +222,12 @@ template <class InputT,
 struct sm80_tuning
 {
   static constexpr int threads = 256;
-  static constexpr int items   = Nominal4BItemsToItems<InputT>(9);
+  static constexpr int items = Nominal4BItemsToItems<InputT>(9);
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-  using AccumPackHelperT  = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT        = typename AccumPackHelperT::pack_t;
+  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackT = typename AccumPackHelperT::pack_t;
   using delay_constructor = detail::default_delay_constructor_t<AccumPackT>;
 };
 
@@ -283,12 +284,11 @@ struct device_three_way_partition_policy_hub
   {
     static constexpr int ITEMS_PER_THREAD = Nominal4BItemsToItems<InputT>(9);
 
-    using ThreeWayPartitionPolicy =
-      cub::AgentThreeWayPartitionPolicy<256,
-                                        ITEMS_PER_THREAD,
-                                        cub::BLOCK_LOAD_DIRECT,
-                                        cub::LOAD_DEFAULT,
-                                        cub::BLOCK_SCAN_WARP_SCANS>;
+    using ThreeWayPartitionPolicy = cub::AgentThreeWayPartitionPolicy<256,
+                                                                      ITEMS_PER_THREAD,
+                                                                      cub::BLOCK_LOAD_DIRECT,
+                                                                      cub::LOAD_DEFAULT,
+                                                                      cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
   /// SM35

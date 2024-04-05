@@ -20,40 +20,42 @@
 //     constexpr chrono::weekday_last weekday_last()  const noexcept;
 //     constexpr bool                 ok()    const noexcept;
 
+
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using month = cuda::std::chrono::month;
-  using weekday = cuda::std::chrono::weekday;
-  using weekday_last = cuda::std::chrono::weekday_last;
-  using month_weekday_last = cuda::std::chrono::month_weekday_last;
+int main(int, char**)
+{
+    using month              = cuda::std::chrono::month;
+    using weekday            = cuda::std::chrono::weekday;
+    using weekday_last       = cuda::std::chrono::weekday_last;
+    using month_weekday_last = cuda::std::chrono::month_weekday_last;
 
-  constexpr month January = cuda::std::chrono::January;
-  constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
+    constexpr month January = cuda::std::chrono::January;
+    constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
 
-  ASSERT_NOEXCEPT(month_weekday_last{January, weekday_last{Tuesday}});
+    ASSERT_NOEXCEPT(month_weekday_last{January, weekday_last{Tuesday}});
 
-  //  bad month
-  constexpr month_weekday_last mwdl1{month{}, weekday_last{Tuesday}};
-  static_assert(mwdl1.month() == month{}, "");
-  static_assert(mwdl1.weekday_last() == weekday_last{Tuesday}, "");
-  static_assert(!mwdl1.ok(), "");
+//  bad month
+    constexpr month_weekday_last mwdl1{month{}, weekday_last{Tuesday}};
+    static_assert( mwdl1.month() == month{},                      "");
+    static_assert( mwdl1.weekday_last() == weekday_last{Tuesday}, "");
+    static_assert(!mwdl1.ok(),                                    "");
 
-  //  bad weekday_last
-  constexpr month_weekday_last mwdl2{January, weekday_last{weekday{16}}};
-  static_assert(mwdl2.month() == January, "");
-  static_assert(mwdl2.weekday_last() == weekday_last{weekday{16}}, "");
-  static_assert(!mwdl2.ok(), "");
+//  bad weekday_last
+    constexpr month_weekday_last mwdl2{January, weekday_last{weekday{16}}};
+    static_assert( mwdl2.month() == January,                          "");
+    static_assert( mwdl2.weekday_last() == weekday_last{weekday{16}}, "");
+    static_assert(!mwdl2.ok(),                                        "");
 
-  //  Good month and weekday_last
-  constexpr month_weekday_last mwdl3{January, weekday_last{weekday{4}}};
-  static_assert(mwdl3.month() == January, "");
-  static_assert(mwdl3.weekday_last() == weekday_last{weekday{4}}, "");
-  static_assert(mwdl3.ok(), "");
+//  Good month and weekday_last
+    constexpr month_weekday_last mwdl3{January, weekday_last{weekday{4}}};
+    static_assert( mwdl3.month() == January,                         "");
+    static_assert( mwdl3.weekday_last() == weekday_last{weekday{4}}, "");
+    static_assert( mwdl3.ok(),                                       "");
 
   return 0;
 }

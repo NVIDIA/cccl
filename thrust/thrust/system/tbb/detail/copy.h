@@ -35,12 +35,25 @@ namespace tbb
 namespace detail
 {
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-OutputIterator
-copy(execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result);
 
-template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
-OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+OutputIterator copy(execution_policy<DerivedPolicy> &exec,
+                    InputIterator first,
+                    InputIterator last,
+                    OutputIterator result);
+
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename Size,
+         typename OutputIterator>
+OutputIterator copy_n(execution_policy<DerivedPolicy> &exec,
+                      InputIterator first,
+                      Size n,
+                      OutputIterator result);
+
 
 } // end namespace detail
 } // end namespace tbb
@@ -48,3 +61,4 @@ OutputIterator copy_n(execution_policy<DerivedPolicy>& exec, InputIterator first
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/copy.inl>
+

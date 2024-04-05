@@ -41,8 +41,7 @@ template <typename Signature, typename Enable = void>
 struct result_of_adaptable_function
 {
 private:
-  template <typename Sig>
-  struct impl;
+  template <typename Sig> struct impl;
 
   template <typename F, typename... Args>
   struct impl<F(Args...)>
@@ -58,7 +57,8 @@ public:
 template <typename Functor, typename... ArgTypes>
 struct result_of_adaptable_function<
   Functor(ArgTypes...),
-  typename thrust::detail::enable_if< thrust::detail::has_result_type<Functor>::value>::type>
+  typename thrust::detail::enable_if<
+    thrust::detail::has_result_type<Functor>::value>::type>
 {
   using type = typename Functor::result_type;
 };

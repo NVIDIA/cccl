@@ -15,8 +15,8 @@
 #include "test_macros.h"
 #include "test_workarounds.h"
 
-template <class... Args>
-struct TypeList;
+
+template <class ...Args> struct TypeList;
 
 // Test that the specified Hash meets the requirements of an enabled hash
 template <class Hash, class Key, class InputKey = Key>
@@ -37,81 +37,90 @@ void test_hash_disabled_for_type() {
 }
 
 namespace PoisonedHashDetail {
-enum Enum {};
-enum EnumClass : bool {};
-struct Class {};
-} // namespace PoisonedHashDetail
+  enum Enum {};
+  enum EnumClass : bool {};
+  struct Class {};
+}
 
 // Each header that declares the template hash provides enabled
 // specializations of hash for nullptr t and all cv-unqualified
 // arithmetic, enumeration, and pointer types.
 using LibraryHashTypes = TypeList<
 #if TEST_STD_VER > 2014
-    decltype(nullptr),
+      decltype(nullptr),
 #endif
-    bool, char, signed char, unsigned char, wchar_t,
+      bool,
+      char,
+      signed char,
+      unsigned char,
+      wchar_t,
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-    char16_t, char32_t,
+      char16_t,
+      char32_t,
 #endif
-    short, unsigned short, int, unsigned int, long, unsigned long, long long,
-    unsigned long long,
+      short,
+      unsigned short,
+      int,
+      unsigned int,
+      long,
+      unsigned long,
+      long long,
+      unsigned long long,
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-    __int128_t, __uint128_t,
+      __int128_t,
+      __uint128_t,
 #endif
-    float, double, long double,
+      float,
+      double,
+      long double,
 #if TEST_STD_VER >= 2014
-    // Enum types
-    PoisonedHashDetail::Enum, PoisonedHashDetail::EnumClass,
+      // Enum types
+      PoisonedHashDetail::Enum,
+      PoisonedHashDetail::EnumClass,
 #endif
-    // pointer types
-    void*, void const*, PoisonedHashDetail::Class*>;
+      // pointer types
+      void*,
+      void const*,
+      PoisonedHashDetail::Class*
+    >;
+
 
 // Test that each of the library hash specializations for  arithmetic types,
 // enum types, and pointer types are available and enabled.
 template <class Types = LibraryHashTypes>
 void test_library_hash_specializations_available(Types = Types{});
 
+
 namespace PoisonedHashDetail {
 
 template <class T, class = typename T::foo_bar_baz>
-constexpr bool instantiate(int) {
-  return true;
-}
-template <class>
-constexpr bool instantiate(long) {
-  return true;
-}
-template <class T>
-constexpr bool instantiate() {
-  return instantiate<T>(0);
-}
+constexpr bool instantiate(int) { return true; }
+template <class> constexpr bool instantiate(long) { return true; }
+template <class T> constexpr bool instantiate() { return instantiate<T>(0); }
 
 template <class To>
 struct ConvertibleToSimple {
-  operator To() const { return To{}; }
+  operator To() const {
+    return To{};
+  }
 };
 
 template <class To>
 struct ConvertibleTo {
   To to{};
   operator To&() & { return to; }
-  operator To const&() const& { return to; }
+  operator To const&() const & { return to; }
   operator To&&() && { return std::move(to); }
-  operator To const&&() const&& { return std::move(to); }
+  operator To const&&() const && { return std::move(to); }
 };
 
-template <class HashExpr, class Res = typename std::result_of<HashExpr>::type>
+template <class HashExpr,
+         class Res = typename std::result_of<HashExpr>::type>
 constexpr bool can_hash(int) {
   return std::is_same<Res, size_t>::value;
 }
-template <class>
-constexpr bool can_hash(long) {
-  return false;
-}
-template <class T>
-constexpr bool can_hash() {
-  return can_hash<T>(0);
-}
+template <class> constexpr bool can_hash(long) { return false; }
+template <class T> constexpr bool can_hash() { return can_hash<T>(0); }
 
 } // namespace PoisonedHashDetail
 
@@ -147,11 +156,12 @@ void test_hash_enabled(InputKey const& key) {
 
   static_assert(can_hash<Hash(ConvertibleTo<Key>&)>(), "");
   static_assert(can_hash<Hash(ConvertibleTo<Key> const&)>(), "");
-  static_assert(can_hash<Hash(ConvertibleTo<Key>&&)>(), "");
+  static_assert(can_hash<Hash(ConvertibleTo<Key> &&)>(), "");
   static_assert(can_hash<Hash(ConvertibleTo<Key> const&&)>(), "");
 
   const Hash h{};
   assert(h(key) == h(key));
+
 }
 
 template <class Hash, class Key>
@@ -165,9 +175,11 @@ void test_hash_disabled() {
   static_assert(!std::is_copy_assignable<Hash>::value, "");
   static_assert(!std::is_move_assignable<Hash>::value, "");
 
-  static_assert(!std::is_function<typename std::remove_pointer<
-                    typename std::remove_reference<Hash>::type>::type>::value,
-                "");
+  static_assert(!std::is_function<
+      typename std::remove_pointer<
+          typename std::remove_reference<Hash>::type
+      >::type
+    >::value, "");
 
   // Hashable requirements
   static_assert(!can_hash<Hash(Key&)>(), "");
@@ -183,11 +195,12 @@ void test_hash_disabled() {
 
   static_assert(!can_hash<Hash(ConvertibleTo<Key>&)>(), "");
   static_assert(!can_hash<Hash(ConvertibleTo<Key> const&)>(), "");
-  static_assert(!can_hash<Hash(ConvertibleTo<Key>&&)>(), "");
+  static_assert(!can_hash<Hash(ConvertibleTo<Key> &&)>(), "");
   static_assert(!can_hash<Hash(ConvertibleTo<Key> const&&)>(), "");
 }
 
-template <class First, class... Rest>
+
+template <class First, class ...Rest>
 struct TypeList<First, Rest...> {
   template <template <class> class Trait, bool Expect = true>
   static constexpr bool assertTrait() {
@@ -212,16 +225,15 @@ struct TypeList<> {
   static void applyTrait() {}
 };
 
+
 struct TestLibraryTrait {
-  template <class Type>
-  static void apply() {
-    test_hash_enabled<std::hash<Type>, Type>();
-  }
+    template <class Type>
+    static void apply() { test_hash_enabled<std::hash<Type>, Type>(); }
 };
 
 template <class Types>
 void test_library_hash_specializations_available(Types) {
-  Types::template applyTrait<TestLibraryTrait>();
+  Types::template applyTrait<TestLibraryTrait >();
 }
 
 #endif // SUPPORT_POISONED_HASH_HELPER_H

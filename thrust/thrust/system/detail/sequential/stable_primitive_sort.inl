@@ -25,12 +25,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/zip_iterator.h>
-#include <thrust/system/detail/sequential/partition.h>
 #include <thrust/system/detail/sequential/stable_primitive_sort.h>
 #include <thrust/system/detail/sequential/stable_radix_sort.h>
+#include <thrust/functional.h>
+#include <thrust/system/detail/sequential/partition.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -42,90 +42,127 @@ namespace sequential
 namespace stable_primitive_sort_detail
 {
 
-template <typename Iterator>
-struct enable_if_bool_sort
-    : thrust::detail::enable_if< thrust::detail::is_same< bool, typename thrust::iterator_value<Iterator>::type >::value >
+
+template<typename Iterator>
+  struct enable_if_bool_sort
+    : thrust::detail::enable_if<
+        thrust::detail::is_same<
+          bool,
+          typename thrust::iterator_value<Iterator>::type
+        >::value
+      >
 {};
 
-template <typename Iterator>
-struct disable_if_bool_sort
+
+template<typename Iterator>
+  struct disable_if_bool_sort
     : thrust::detail::disable_if<
-        thrust::detail::is_same< bool, typename thrust::iterator_value<Iterator>::type >::value >
+        thrust::detail::is_same<
+          bool,
+          typename thrust::iterator_value<Iterator>::type
+        >::value
+      >
 {};
 
-template <typename DerivedPolicy, typename RandomAccessIterator>
-typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
-  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator>
+  typename enable_if_bool_sort<RandomAccessIterator>::type
+_CCCL_HOST_DEVICE
+    stable_primitive_sort(sequential::execution_policy<DerivedPolicy> &exec,
+                          RandomAccessIterator first, RandomAccessIterator last)
 {
   // use stable_partition if we're sorting bool
   // stable_partition puts true values first, so we need to logical_not
   sequential::stable_partition(exec, first, last, thrust::logical_not<bool>());
 }
 
-template <typename DerivedPolicy, typename RandomAccessIterator>
-typename disable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stable_primitive_sort(
-  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator>
+  typename disable_if_bool_sort<RandomAccessIterator>::type
+_CCCL_HOST_DEVICE
+    stable_primitive_sort(sequential::execution_policy<DerivedPolicy> &exec,
+                          RandomAccessIterator first, RandomAccessIterator last)
 {
   // call stable_radix_sort
-  sequential::stable_radix_sort(exec, first, last);
+  sequential::stable_radix_sort(exec,first,last);
 }
+
 
 struct logical_not_first
 {
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE bool operator()(Tuple t)
+  template<typename Tuple>
+  _CCCL_HOST_DEVICE
+  bool operator()(Tuple t)
   {
     return !thrust::get<0>(t);
   }
 };
 
-template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
-  sequential::execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 keys_first,
-  RandomAccessIterator1 keys_last,
-  RandomAccessIterator2 values_first)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+  typename enable_if_bool_sort<RandomAccessIterator1>::type
+_CCCL_HOST_DEVICE
+    stable_primitive_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
+                                 RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last,
+                                 RandomAccessIterator2 values_first)
 {
   // use stable_partition if we're sorting bool
   // stable_partition puts true values first, so we need to logical_not
-  sequential::stable_partition(
-    exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_last, values_first)),
-    logical_not_first());
+  sequential::stable_partition(exec,
+                               thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
+                               thrust::make_zip_iterator(thrust::make_tuple(keys_last, values_first)),
+                               logical_not_first());
 }
 
-template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-typename disable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stable_primitive_sort_by_key(
-  sequential::execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 keys_first,
-  RandomAccessIterator1 keys_last,
-  RandomAccessIterator2 values_first)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+  typename disable_if_bool_sort<RandomAccessIterator1>::type
+_CCCL_HOST_DEVICE
+    stable_primitive_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
+                                 RandomAccessIterator1 keys_first, RandomAccessIterator1 keys_last,
+                                 RandomAccessIterator2 values_first)
 {
   // call stable_radix_sort_by_key
   sequential::stable_radix_sort_by_key(exec, keys_first, keys_last, values_first);
 }
 
-} // namespace stable_primitive_sort_detail
 
-template <typename DerivedPolicy, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void stable_primitive_sort(
-  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
+} // end stable_primitive_sort_detail
+
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator>
+_CCCL_HOST_DEVICE
+void stable_primitive_sort(sequential::execution_policy<DerivedPolicy> &exec,
+                           RandomAccessIterator first,
+                           RandomAccessIterator last)
 {
-  stable_primitive_sort_detail::stable_primitive_sort(exec, first, last);
+  stable_primitive_sort_detail::stable_primitive_sort(exec, first,last);
 }
 
-template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE void stable_primitive_sort_by_key(
-  sequential::execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 keys_first,
-  RandomAccessIterator1 keys_last,
-  RandomAccessIterator2 values_first)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+_CCCL_HOST_DEVICE
+void stable_primitive_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
+                                  RandomAccessIterator1 keys_first,
+                                  RandomAccessIterator1 keys_last,
+                                  RandomAccessIterator2 values_first)
 {
   stable_primitive_sort_detail::stable_primitive_sort_by_key(exec, keys_first, keys_last, values_first);
 }
+
 
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

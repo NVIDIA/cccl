@@ -28,3 +28,4 @@
 
 // this system inherits this algorithm
 #include <thrust/system/cpp/detail/scatter.h>
+

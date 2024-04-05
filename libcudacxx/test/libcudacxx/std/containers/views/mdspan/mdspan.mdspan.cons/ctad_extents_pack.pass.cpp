@@ -16,22 +16,23 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
-  // TEST(TestMdspanCTAD, extents_pack)
-  {
-    cuda::std::array<int, 1> d{42};
-    cuda::std::mdspan m(d.data(), 64, 128);
+    // TEST(TestMdspanCTAD, extents_pack)
+    {
+        cuda::std::array<int, 1> d{42};
+        cuda::std::mdspan m(d.data(), 64, 128);
 
-    static_assert(m.is_exhaustive() == true, "");
+        static_assert(m.is_exhaustive() == true, "");
 
-    assert(m.data_handle() == d.data());
-    assert(m.rank() == 2);
-    assert(m.rank_dynamic() == 2);
-    assert(m.extent(0) == 64);
-    assert(m.extent(1) == 128);
-  }
+        assert(m.data_handle()  == d.data());
+        assert(m.rank()         == 2       );
+        assert(m.rank_dynamic() == 2       );
+        assert(m.extent(0)      == 64      );
+        assert(m.extent(1)      == 128     );
+    }
 #endif
 
-  return 0;
+    return 0;
 }

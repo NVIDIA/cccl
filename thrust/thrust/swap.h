@@ -50,8 +50,7 @@ THRUST_NAMESPACE_BEGIN
  *  \param b The second value of interest. After completion,
  *           the value of a will be returned here.
  *
- *  \tparam Assignable is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>.
+ *  \tparam Assignable is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>.
  *
  *  The following code snippet demonstrates how to use \p swap to
  *  swap the contents of two variables.
@@ -66,8 +65,9 @@ THRUST_NAMESPACE_BEGIN
  *  // x == 2, y == 1
  *  \endcode
  */
-template <typename Assignable1, typename Assignable2>
-_CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b);
+template<typename Assignable1, typename Assignable2>
+_CCCL_HOST_DEVICE
+inline void swap(Assignable1 &a, Assignable2 &b);
 
 /*! \} // swap
  */
@@ -75,9 +75,11 @@ _CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b);
 /*! \} // utility
  */
 
+
 /*! \addtogroup copying
  *  \{
  */
+
 
 /*! \p swap_ranges swaps each of the elements in the range <tt>[first1, last1)</tt>
  *  with the corresponding element in the range <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -95,13 +97,12 @@ _CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b);
  *          sequence to swap.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam ForwardIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator1's \c value_type must be convertible to \p ForwardIterator2's \c value_type.
- *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator2's \c value_type must be convertible to \p ForwardIterator1's \c value_type.
+ *  \tparam ForwardIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator1's \c value_type must be convertible to \p ForwardIterator2's \c value_type.
+ *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator2's \c value_type must be convertible to \p ForwardIterator1's \c value_type.
  *
- *  \pre \p first1 may equal \p first2, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[first2,
- * first2 + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p first2, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[first2, first2 + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p swap_ranges to
  *  swap the contents of two \c thrust::device_vectors using the \p thrust::device execution
@@ -126,12 +127,15 @@ _CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b);
  *  \see https://en.cppreference.com/w/cpp/algorithm/swap_ranges
  *  \see \c swap
  */
-template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  ForwardIterator1 first1,
-  ForwardIterator1 last1,
-  ForwardIterator2 first2);
+template<typename DerivedPolicy,
+         typename ForwardIterator1,
+         typename ForwardIterator2>
+_CCCL_HOST_DEVICE
+  ForwardIterator2 swap_ranges(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                               ForwardIterator1 first1,
+                               ForwardIterator1 last1,
+                               ForwardIterator2 first2);
+
 
 /*! \p swap_ranges swaps each of the elements in the range <tt>[first1, last1)</tt>
  *  with the corresponding element in the range <tt>[first2, first2 + (last1 - first1))</tt>.
@@ -145,13 +149,12 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
  *  \return An iterator pointing to one position past the last element of the second
  *          sequence to swap.
  *
- *  \tparam ForwardIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator1's \c value_type must be convertible to \p ForwardIterator2's \c value_type.
- *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>, and \p ForwardIterator2's \c value_type must be convertible to \p ForwardIterator1's \c value_type.
+ *  \tparam ForwardIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator1's \c value_type must be convertible to \p ForwardIterator2's \c value_type.
+ *  \tparam ForwardIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
+ *          and \p ForwardIterator2's \c value_type must be convertible to \p ForwardIterator1's \c value_type.
  *
- *  \pre \p first1 may equal \p first2, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[first2,
- * first2 + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p first2, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[first2, first2 + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p swap_ranges to
  *  swap the contents of two \c thrust::device_vectors.
@@ -174,8 +177,12 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
  *  \see https://en.cppreference.com/w/cpp/algorithm/swap_ranges
  *  \see \c swap
  */
-template <typename ForwardIterator1, typename ForwardIterator2>
-ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2);
+template<typename ForwardIterator1,
+         typename ForwardIterator2>
+  ForwardIterator2 swap_ranges(ForwardIterator1 first1,
+                               ForwardIterator1 last1,
+                               ForwardIterator2 first2);
+
 
 /*! \} // copying
  */

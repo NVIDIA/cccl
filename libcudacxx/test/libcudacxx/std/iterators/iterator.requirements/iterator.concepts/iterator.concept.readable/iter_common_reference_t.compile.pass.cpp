@@ -15,7 +15,7 @@
 
 #include <cuda/std/concepts>
 
-struct X {};
+struct X { };
 
 // value_type and dereferencing are the same
 struct T1 {
@@ -32,8 +32,8 @@ struct T2 {
 static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>);
 
 // There's a custom common reference between value_type and the type of dereferencing
-struct A {};
-struct B {};
+struct A { };
+struct B { };
 struct Common {
   __host__ __device__ Common(A);
   __host__ __device__ Common(B);
@@ -44,14 +44,14 @@ struct cuda::std::basic_common_reference<A, B, TQual, QQual> {
 };
 template <template <class> class TQual, template <class> class QQual>
 struct cuda::std::basic_common_reference<B, A, TQual, QQual>
-    : cuda::std::basic_common_reference<A, B, TQual, QQual> {};
+  : cuda::std::basic_common_reference<A, B, TQual, QQual>
+{ };
 
 struct T3 {
   using value_type = A;
   __host__ __device__ B&& operator*() const;
 };
-static_assert(
-    cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
 
 // Make sure we're SFINAE-friendly
 #if TEST_STD_VER > 2017
@@ -61,15 +61,18 @@ constexpr bool has_common_reference = requires {
 };
 #else
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(has_common_reference_,
-                             requires() //
-                             (typename(cuda::std::iter_common_reference_t<T>)));
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  has_common_reference_,
+  requires() //
+  (typename(cuda::std::iter_common_reference_t<T>)));
 
 template <class T>
-_LIBCUDACXX_CONCEPT has_common_reference =
-    _LIBCUDACXX_FRAGMENT(has_common_reference_, T);
+_LIBCUDACXX_CONCEPT has_common_reference = _LIBCUDACXX_FRAGMENT(has_common_reference_, T);
 #endif
-struct NotIndirectlyReadable {};
+struct NotIndirectlyReadable { };
 static_assert(!has_common_reference<NotIndirectlyReadable>);
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

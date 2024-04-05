@@ -51,15 +51,17 @@ CUB_NAMESPACE_BEGIN
 template <>
 __host__ __device__ __forceinline__ //
   __half
-  Min::operator()(__half& a, __half& b) const
+  Min::operator()(__half &a, __half &b) const
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MIN(a, b);), (return CUB_MIN(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(NV_PROVIDES_SM_53,
+               (return CUB_MIN(a, b);),
+               (return CUB_MIN(__half2float(a), __half2float(b));));
 }
 
 template <>
 __host__ __device__ __forceinline__ //
   KeyValuePair<int, __half>
-  ArgMin::operator()(const KeyValuePair<int, __half>& a, const KeyValuePair<int, __half>& b) const
+  ArgMin::operator()(const KeyValuePair<int, __half> &a, const KeyValuePair<int, __half> &b) const
 {
   const float av = __half2float(a.value);
   const float bv = __half2float(b.value);
@@ -75,15 +77,17 @@ __host__ __device__ __forceinline__ //
 template <>
 __host__ __device__ __forceinline__ //
   __half
-  Max::operator()(__half& a, __half& b) const
+  Max::operator()(__half &a, __half &b) const
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
+  NV_IF_TARGET(NV_PROVIDES_SM_53,
+               (return CUB_MAX(a, b);),
+               (return CUB_MAX(__half2float(a), __half2float(b));));
 }
 
 template <>
 __host__ __device__ __forceinline__ //
   KeyValuePair<int, __half>
-  ArgMax::operator()(const KeyValuePair<int, __half>& a, const KeyValuePair<int, __half>& b) const
+  ArgMax::operator()(const KeyValuePair<int, __half> &a, const KeyValuePair<int, __half> &b) const
 {
   const float av = __half2float(a.value);
   const float bv = __half2float(b.value);
@@ -103,7 +107,7 @@ __host__ __device__ __forceinline__ //
 template <template <typename> class... Policies>
 struct NumericTraits<c2h::custom_type_t<Policies...>>
 {
-  using custom_t                     = c2h::custom_type_t<Policies...>;
+  using custom_t                 = c2h::custom_type_t<Policies...>;
   static constexpr Category CATEGORY = NOT_A_NUMBER;
   enum
   {
@@ -128,15 +132,15 @@ struct NumericTraits<c2h::custom_type_t<Policies...>>
 };
 
 template <typename Key, typename Value>
-static std::ostream& operator<<(std::ostream& os, const KeyValuePair<Key, Value>& val)
+static std::ostream &operator<<(std::ostream &os, const KeyValuePair<Key, Value> &val)
 {
   os << '(' << val.key << ',' << val.value << ')';
   return os;
 }
 
 template <typename Key, typename Value>
-__host__ __device__ __forceinline__ bool
-operator==(const KeyValuePair<Key, Value>& lhs, const KeyValuePair<Key, Value>& rhs)
+__host__ __device__ __forceinline__ bool operator==(const KeyValuePair<Key, Value> &lhs,
+                                                    const KeyValuePair<Key, Value> &rhs)
 {
   return lhs.key == rhs.key && lhs.value == rhs.value;
 }
@@ -165,7 +169,7 @@ struct ExtendedFloatSum
   __host__ __device__ __half operator()(__half a, __half b) const
   {
     uint16_t result = this->operator()(half_t{a}, half_t(b)).raw();
-    return reinterpret_cast<__half&>(result);
+    return reinterpret_cast<__half &>(result);
   }
 #endif
 
@@ -173,7 +177,7 @@ struct ExtendedFloatSum
   __device__ __nv_bfloat16 operator()(__nv_bfloat16 a, __nv_bfloat16 b) const
   {
     uint16_t result = this->operator()(bfloat16_t{a}, bfloat16_t(b)).raw();
-    return reinterpret_cast<__nv_bfloat16&>(result);
+    return reinterpret_cast<__nv_bfloat16 &>(result);
   }
 #endif
 };
@@ -185,13 +189,11 @@ inline It unwrap_it(It it)
 }
 
 #if TEST_HALF_T
-inline __half* unwrap_it(half_t* it)
-{
-  return reinterpret_cast<__half*>(it);
-}
+inline __half *unwrap_it(half_t *it) { return reinterpret_cast<__half *>(it); }
 
 template <class OffsetT>
-inline cub::ConstantInputIterator<__half, OffsetT> unwrap_it(cub::ConstantInputIterator<half_t, OffsetT> it)
+inline cub::ConstantInputIterator<__half, OffsetT>
+unwrap_it(cub::ConstantInputIterator<half_t, OffsetT> it)
 {
   half_t wrapped_val = *it;
   __half val         = wrapped_val.operator __half();
@@ -200,13 +202,11 @@ inline cub::ConstantInputIterator<__half, OffsetT> unwrap_it(cub::ConstantInputI
 #endif
 
 #if TEST_BF_T
-inline __nv_bfloat16* unwrap_it(bfloat16_t* it)
-{
-  return reinterpret_cast<__nv_bfloat16*>(it);
-}
+inline __nv_bfloat16 *unwrap_it(bfloat16_t *it) { return reinterpret_cast<__nv_bfloat16 *>(it); }
 
 template <class OffsetT>
-cub::ConstantInputIterator<__nv_bfloat16, OffsetT> inline unwrap_it(cub::ConstantInputIterator<bfloat16_t, OffsetT> it)
+cub::ConstantInputIterator<__nv_bfloat16, OffsetT> inline unwrap_it(
+  cub::ConstantInputIterator<bfloat16_t, OffsetT> it)
 {
   bfloat16_t wrapped_val = *it;
   __nv_bfloat16 val      = wrapped_val.operator __nv_bfloat16();
@@ -240,27 +240,21 @@ inline OpT unwrap_op(std::integral_constant<bool, V> /* base case */, OpT op)
  * @brief Initializes the given item type with a constant non-zero value.
  */
 template <typename T>
-inline void init_default_constant(T& val)
+inline void init_default_constant(T &val)
 {
   val = T{2};
 }
 
 template <template <typename> class... Policies>
-inline void init_default_constant(c2h::custom_type_t<Policies...>& val)
+inline void init_default_constant(c2h::custom_type_t<Policies...> &val)
 {
   val.key = 2;
   val.val = 2;
 }
 
-inline void init_default_constant(uchar3& val)
-{
-  val = uchar3{2, 2, 2};
-}
+inline void init_default_constant(uchar3 &val) { val = uchar3{2, 2, 2}; }
 
-inline void init_default_constant(ulonglong4& val)
-{
-  val = ulonglong4{2, 2, 2, 2};
-}
+inline void init_default_constant(ulonglong4 &val) { val = ulonglong4{2, 2, 2, 2}; }
 
 template <typename InputItT,
           typename OffsetItT,
@@ -268,22 +262,21 @@ template <typename InputItT,
           typename ReductionOpT,
           typename InitT,
           typename ResultOutItT>
-inline void compute_host_reference(
-  InputItT h_in,
-  OffsetItT h_offsets,
-  SizeItT h_sizes_begin,
-  std::size_t num_segments,
-  ReductionOpT reduction_op,
-  InitT init,
-  ResultOutItT h_data_out)
+inline void compute_host_reference(InputItT h_in,
+                                   OffsetItT h_offsets,
+                                   SizeItT h_sizes_begin,
+                                   std::size_t num_segments,
+                                   ReductionOpT reduction_op,
+                                   InitT init,
+                                   ResultOutItT h_data_out)
 {
   for (std::size_t segment = 0; segment < num_segments; segment++)
   {
-    auto seg_begin = h_in + h_offsets[segment];
-    auto seg_end   = seg_begin + h_sizes_begin[segment];
+    auto seg_begin      = h_in + h_offsets[segment];
+    auto seg_end        = seg_begin + h_sizes_begin[segment];
     // TODO Should this be using cub accumulator t?
-    h_data_out[segment] =
-      static_cast<cub::detail::value_t<ResultOutItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+    h_data_out[segment] = static_cast<cub::detail::value_t<ResultOutItT>>(
+      std::accumulate(seg_begin, seg_end, init, reduction_op));
   }
 }
 
@@ -292,20 +285,21 @@ inline void compute_host_reference(
  * arbitrary host-accessible input iterator.
  */
 template <typename InputItT, typename ReductionOpT, typename AccumulatorT>
-inline AccumulatorT
-compute_single_problem_reference(InputItT h_in_begin, InputItT h_in_end, ReductionOpT reduction_op, AccumulatorT init)
+inline AccumulatorT compute_single_problem_reference(InputItT h_in_begin,
+                                                     InputItT h_in_end,
+                                                     ReductionOpT reduction_op,
+                                                     AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
   c2h::host_vector<AccumulatorT> h_results(num_segments);
 
-  compute_host_reference(
-    h_in_begin,
-    thrust::make_constant_iterator(0),
-    thrust::make_constant_iterator(thrust::distance(h_in_begin, h_in_end)),
-    num_segments,
-    reduction_op,
-    init,
-    h_results.begin());
+  compute_host_reference(h_in_begin,
+                         thrust::make_constant_iterator(0),
+                         thrust::make_constant_iterator(thrust::distance(h_in_begin, h_in_end)),
+                         num_segments,
+                         reduction_op,
+                         init,
+                         h_results.begin());
 
   return *h_results.begin();
 }
@@ -315,8 +309,9 @@ compute_single_problem_reference(InputItT h_in_begin, InputItT h_in_end, Reducti
  * c2h::device_vector.
  */
 template <typename ItemT, typename ReductionOpT, typename AccumulatorT>
-inline AccumulatorT
-compute_single_problem_reference(const c2h::device_vector<ItemT>& d_in, ReductionOpT reduction_op, AccumulatorT init)
+inline AccumulatorT compute_single_problem_reference(const c2h::device_vector<ItemT> &d_in,
+                                                     ReductionOpT reduction_op,
+                                                     AccumulatorT init)
 {
   constexpr std::size_t num_segments = 1;
   c2h::host_vector<ItemT> h_items(d_in);
@@ -329,48 +324,63 @@ compute_single_problem_reference(const c2h::device_vector<ItemT>& d_in, Reductio
  * @brief Helper function to compute the reference solution for result verification, taking a
  * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
-template <typename ItemT, typename OffsetT, typename ReductionOpT, typename AccumulatorT, typename ResultItT>
-void compute_segmented_problem_reference(
-  const c2h::device_vector<ItemT>& d_in,
-  const c2h::device_vector<OffsetT>& d_offsets,
-  ReductionOpT reduction_op,
-  AccumulatorT init,
-  ResultItT h_results)
+template <typename ItemT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename AccumulatorT,
+          typename ResultItT>
+void compute_segmented_problem_reference(const c2h::device_vector<ItemT> &d_in,
+                                         const c2h::device_vector<OffsetT> &d_offsets,
+                                         ReductionOpT reduction_op,
+                                         AccumulatorT init,
+                                         ResultItT h_results)
 {
   c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
-  auto offsets_it = h_offsets.cbegin();
-  auto seg_sizes_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
-      return offsets_it[i + 1] - offsets_it[i];
-    });
+  auto offsets_it   = h_offsets.cbegin();
+  auto seg_sizes_it = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(std::size_t{0}),
+    [offsets_it](std::size_t i) { return offsets_it[i + 1] - offsets_it[i]; });
   std::size_t num_segments = h_offsets.size() - 1;
 
-  compute_host_reference(
-    h_items.cbegin(), h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
+  compute_host_reference(h_items.cbegin(),
+                         h_offsets.cbegin(),
+                         seg_sizes_it,
+                         num_segments,
+                         reduction_op,
+                         init,
+                         h_results);
 }
 
 /**
  * @brief Helper function to compute the reference solution for result verification, taking a
  * host-accessible input iterator and a c2h::device_vector of offsets into the segments.
  */
-template <typename InputItT, typename OffsetT, typename ReductionOpT, typename AccumulatorT, typename ResultItT>
-void compute_segmented_problem_reference(
-  InputItT in_it,
-  const c2h::device_vector<OffsetT>& d_offsets,
-  ReductionOpT reduction_op,
-  AccumulatorT init,
-  ResultItT h_results)
+template <typename InputItT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename AccumulatorT,
+          typename ResultItT>
+void compute_segmented_problem_reference(InputItT in_it,
+                                         const c2h::device_vector<OffsetT> &d_offsets,
+                                         ReductionOpT reduction_op,
+                                         AccumulatorT init,
+                                         ResultItT h_results)
 {
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
-  auto offsets_it = h_offsets.cbegin();
-  auto seg_sizes_it =
-    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), [offsets_it](std::size_t i) {
-      return offsets_it[i + 1] - offsets_it[i];
-    });
+  auto offsets_it   = h_offsets.cbegin();
+  auto seg_sizes_it = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(std::size_t{0}),
+    [offsets_it](std::size_t i) { return offsets_it[i + 1] - offsets_it[i]; });
   std::size_t num_segments = h_offsets.size() - 1;
 
-  compute_host_reference(in_it, h_offsets.cbegin(), seg_sizes_it, num_segments, reduction_op, init, h_results);
+  compute_host_reference(in_it,
+                         h_offsets.cbegin(),
+                         seg_sizes_it,
+                         num_segments,
+                         reduction_op,
+                         init,
+                         h_results);
 }
 
 /**
@@ -378,8 +388,9 @@ void compute_segmented_problem_reference(
  * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
 template <typename ItemT, typename OffsetT, typename ResultItT>
-void compute_segmented_argmin_reference(
-  const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
+void compute_segmented_argmin_reference(const c2h::device_vector<ItemT> &d_in,
+                                        const c2h::device_vector<OffsetT> &d_offsets,
+                                        ResultItT h_results)
 {
   c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
@@ -392,10 +403,11 @@ void compute_segmented_argmin_reference(
     }
     else
     {
-      auto expected_result_it =
-        std::min_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset = static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-      h_results[seg]    = {result_offset, *expected_result_it};
+      auto expected_result_it = std::min_element(h_items.cbegin() + h_offsets[seg],
+                                                 h_items.cbegin() + h_offsets[seg + 1]);
+      int result_offset =
+        static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
     }
   }
 }
@@ -405,8 +417,9 @@ void compute_segmented_argmin_reference(
  * c2h::device_vector of input items and a c2h::device_vector of offsets into the segments.
  */
 template <typename ItemT, typename OffsetT, typename ResultItT>
-void compute_segmented_argmax_reference(
-  const c2h::device_vector<ItemT>& d_in, const c2h::device_vector<OffsetT>& d_offsets, ResultItT h_results)
+void compute_segmented_argmax_reference(const c2h::device_vector<ItemT> &d_in,
+                                        const c2h::device_vector<OffsetT> &d_offsets,
+                                        ResultItT h_results)
 {
   c2h::host_vector<ItemT> h_items(d_in);
   c2h::host_vector<OffsetT> h_offsets(d_offsets);
@@ -419,10 +432,11 @@ void compute_segmented_argmax_reference(
     }
     else
     {
-      auto expected_result_it =
-        std::max_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset = static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-      h_results[seg]    = {result_offset, *expected_result_it};
+      auto expected_result_it = std::max_element(h_items.cbegin() + h_offsets[seg],
+                                                 h_items.cbegin() + h_offsets[seg + 1]);
+      int result_offset =
+        static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
     }
   }
 }
@@ -432,7 +446,9 @@ void compute_segmented_argmax_reference(
  * run of equal keys into a single key).
  */
 template <typename InputItT, typename OutputItT>
-inline OutputItT compute_unique_keys_reference(InputItT h_in_begin, std::size_t num_keys, OutputItT h_out_it)
+inline OutputItT compute_unique_keys_reference(InputItT h_in_begin,
+                                               std::size_t num_keys,
+                                               OutputItT h_out_it)
 {
   if (num_keys == 0)
   {
@@ -455,12 +471,14 @@ inline OutputItT compute_unique_keys_reference(InputItT h_in_begin, std::size_t 
  * run of equal keys into a single key).
  */
 template <typename ItemT>
-inline c2h::host_vector<ItemT> compute_unique_keys_reference(const c2h::device_vector<ItemT>& d_keys)
+inline c2h::host_vector<ItemT>
+compute_unique_keys_reference(const c2h::device_vector<ItemT> &d_keys)
 {
   c2h::host_vector<ItemT> h_keys(d_keys);
   c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
-  auto end_it = compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());
+  auto end_it =
+    compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());
   h_unique_keys_out.resize(thrust::distance(h_unique_keys_out.begin(), end_it));
   return h_unique_keys_out;
 }

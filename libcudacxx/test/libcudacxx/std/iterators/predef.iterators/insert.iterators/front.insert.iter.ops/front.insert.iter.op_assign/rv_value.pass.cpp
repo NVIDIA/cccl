@@ -26,15 +26,19 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__ void test(C c) {
-  cuda::std::front_insert_iterator<C> i(c);
-  i = typename C::value_type();
-  assert(c.front() == typename C::value_type());
+__host__ __device__
+void
+test(C c)
+{
+    cuda::std::front_insert_iterator<C> i(c);
+    i = typename C::value_type();
+    assert(c.front() == typename C::value_type());
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
 #if defined(_LIBCUDACXX_HAS_LIST)
-  test(cuda::std::list<cuda::std::unique_ptr<int> >());
+    test(cuda::std::list<cuda::std::unique_ptr<int> >());
 #endif
 
   return 0;

@@ -14,88 +14,78 @@
 #include <cuda/std/cassert>
 #include "../my_int.hpp"
 
-__host__ __device__ void check(cuda::std::dextents<size_t, 2> e) {
-  static_assert(e.rank() == 2, "");
-  static_assert(e.rank_dynamic() == 2, "");
+__host__ __device__ void check( cuda::std::dextents<size_t,2> e )
+{
+    static_assert( e.rank        () == 2, "" );
+    static_assert( e.rank_dynamic() == 2, "" );
 
-  assert(e.extent(0) == 2);
-  assert(e.extent(1) == 2);
+    assert( e.extent(0) == 2 );
+    assert( e.extent(1) == 2 );
 }
 
-template <class, class T, class... IndexTypes>
+template< class, class T, class... IndexTypes >
 struct is_param_pack_cons_avail : cuda::std::false_type {};
 
-template <class T, class... IndexTypes>
-struct is_param_pack_cons_avail<
-    cuda::std::enable_if_t<cuda::std::is_same<
-        decltype(T{cuda::std::declval<IndexTypes>()...}), T>::value>,
-    T, IndexTypes...> : cuda::std::true_type {};
+template< class T, class... IndexTypes >
+struct is_param_pack_cons_avail< cuda::std::enable_if_t< cuda::std::is_same< decltype( T{ cuda::std::declval<IndexTypes>()... } )
+                                                                           , T
+                                                                           >::value
+                                                       >
+                               , T
+                               , IndexTypes...
+                               > : cuda::std::true_type {};
 
-template <class T, class... IndexTypes>
-constexpr bool is_param_pack_cons_avail_v =
-    is_param_pack_cons_avail<void, T, IndexTypes...>::value;
+template< class T, class... IndexTypes >
+constexpr bool is_param_pack_cons_avail_v = is_param_pack_cons_avail< void, T, IndexTypes... >::value;
 
-int main(int, char**) {
-  {
-    cuda::std::dextents<int, 2> e{2, 2};
+int main(int, char**)
+{
+    {
+        cuda::std::dextents<int,2> e{2, 2};
 
-    check(e);
-  }
+        check( e );
+    }
 
-  {
-    cuda::std::dextents<int, 2> e(2, 2);
+    {
+        cuda::std::dextents<int,2> e(2, 2);
 
-    check(e);
-  }
+        check( e );
+    }
 
-#if defined(__cpp_deduction_guides) &&                                         \
-    defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
-  {
-    cuda::std::extents e{2, 2};
+#if defined (__cpp_deduction_guides) && defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
+    {
+        cuda::std::extents e{2, 2};
 
-    check(e);
-  }
+        check( e );
+    }
 
-  {
-    cuda::std::extents e(2, 2);
+    {
+        cuda::std::extents e(2, 2);
 
-    check(e);
-  }
+        check( e );
+    }
 #endif
 
-  {
-    cuda::std::dextents<size_t, 2> e{2, 2};
+    {
+        cuda::std::dextents<size_t,2> e{2, 2};
 
-    check(e);
-  }
+        check( e );
+    }
 
-  static_assert(
-      is_param_pack_cons_avail_v<cuda::std::dextents<int, 2>, int, int> == true,
-      "");
+    static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,2>, int   , int    > == true , "" );
 
-  static_assert(
-      is_param_pack_cons_avail_v<cuda::std::dextents<int, 2>, my_int, my_int> ==
-          true,
-      "");
+    static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,2>, my_int, my_int > == true , "" );
 
-  // Constraint: rank consistency
-  static_assert(
-      is_param_pack_cons_avail_v<cuda::std::dextents<int, 1>, int, int> ==
-          false,
-      "");
+    // Constraint: rank consistency
+    static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,1>, int   , int    > == false, "" );
 
-  // Constraint: convertibility
-  static_assert(is_param_pack_cons_avail_v<cuda::std::dextents<int, 1>,
-                                           my_int_non_convertible> == false,
-                "");
+    // Constraint: convertibility
+    static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,1>, my_int_non_convertible           > == false, "" );
 
-  // Constraint: nonthrow-constructibility
+    // Constraint: nonthrow-constructibility
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-  static_assert(is_param_pack_cons_avail_v<cuda::std::dextents<int, 1>,
-                                           my_int_non_nothrow_constructible> ==
-                    false,
-                "");
+    static_assert( is_param_pack_cons_avail_v< cuda::std::dextents<int,1>, my_int_non_nothrow_constructible > == false, "" );
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
-  return 0;
+    return 0;
 }

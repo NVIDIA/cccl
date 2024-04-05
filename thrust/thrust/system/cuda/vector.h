@@ -30,9 +30,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/vector_base.h>
 #include <thrust/system/cuda/memory.h>
-
+#include <thrust/detail/vector_base.h>
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
@@ -82,19 +81,17 @@ using universal_vector = thrust::detail::vector_base<T, Allocator>;
 
 } // namespace cuda_cub
 
-namespace system
+namespace system { namespace cuda
 {
-namespace cuda
-{
-using thrust::cuda_cub::universal_vector;
 using thrust::cuda_cub::vector;
-} // namespace cuda
-} // namespace system
+using thrust::cuda_cub::universal_vector;
+}}
 
 namespace cuda
 {
-using thrust::cuda_cub::universal_vector;
 using thrust::cuda_cub::vector;
-} // namespace cuda
+using thrust::cuda_cub::universal_vector;
+}
 
 THRUST_NAMESPACE_END
+

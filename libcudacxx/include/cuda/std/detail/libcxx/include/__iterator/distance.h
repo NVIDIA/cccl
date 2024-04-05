@@ -35,8 +35,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
-__distance(_InputIter __first, _InputIter __last, input_iterator_tag)
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  typename iterator_traits<_InputIter>::difference_type
+  __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 {
   typename iterator_traits<_InputIter>::difference_type __r(0);
   for (; __first != __last; ++__first)
@@ -47,21 +48,23 @@ __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
 }
 
 template <class _RandIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_RandIter>::difference_type
-__distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  typename iterator_traits<_RandIter>::difference_type
+  __distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
 {
   return __last - __first;
 }
 
 template <class _InputIter>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 typename iterator_traits<_InputIter>::difference_type
-distance(_InputIter __first, _InputIter __last)
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
+  typename iterator_traits<_InputIter>::difference_type
+  distance(_InputIter __first, _InputIter __last)
 {
   return _CUDA_VSTD::__distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 // [range.iter.op.distance]
 
@@ -122,6 +125,6 @@ _LIBCUDACXX_CPO_ACCESSIBILITY auto distance = __distance::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER > 2014  && !defined(_CCCL_COMPILER_MSVC_2017)
+#  endif // _CCCL_STD_VER > 2014  && !defined(_CCCL_COMPILER_MSVC_2017)
 
 #endif // _LIBCUDACXX___ITERATOR_DISTANCE_H

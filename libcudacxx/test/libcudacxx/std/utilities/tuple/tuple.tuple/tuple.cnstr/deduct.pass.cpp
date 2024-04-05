@@ -17,6 +17,8 @@
 // against libstdc++.
 // XFAIL: gcc-5, gcc-6, gcc-7, gcc-10
 
+
+
 // Currently broken with Clang + NVCC.
 // XFAIL: clang-6, clang-7
 
@@ -46,7 +48,8 @@
 // (8)  tuple(tuple&& t) -> decltype(t)
 // (9)  tuple(AT, A const&, tuple const& t) -> decltype(t)
 // (10) tuple(AT, A const&, tuple&& t) -> decltype(t)
-__host__ __device__ void test_primary_template() {
+__host__ __device__ void test_primary_template()
+{
   // cuda::std::allocator not supported
   // const cuda::std::allocator<int> A;
   const auto AT = cuda::std::allocator_arg;
@@ -56,8 +59,7 @@ __host__ __device__ void test_primary_template() {
     cuda::std::tuple t1(42);
     ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int>);
     cuda::std::tuple t2(x, 0.0, nullptr);
-    ASSERT_SAME_TYPE(decltype(t2),
-                     cuda::std::tuple<int, double, decltype(nullptr)>);
+    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, double, decltype(nullptr)>);
     unused(t1);
     unused(t2);
   }
@@ -66,19 +68,14 @@ __host__ __device__ void test_primary_template() {
     cuda::std::tuple t1(p1);
     ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int, char>);
 
-    cuda::std::pair<int, cuda::std::tuple<char, long, void*> > p2(
-        1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
+    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
     cuda::std::tuple t2(p2);
-    ASSERT_SAME_TYPE(
-        decltype(t2),
-        cuda::std::tuple<int, cuda::std::tuple<char, long, void*> >);
+    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>);
 
     int i = 3;
-    cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(
-        cuda::std::ref(i), 'c');
+    cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
     cuda::std::tuple t3(p3);
-    ASSERT_SAME_TYPE(decltype(t3),
-                     cuda::std::tuple<cuda::std::reference_wrapper<int>, char>);
+    ASSERT_SAME_TYPE(decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>);
 
     cuda::std::pair<int&, char> p4(i, 'c');
     cuda::std::tuple t4(p4);
@@ -187,7 +184,8 @@ __host__ __device__ void test_primary_template() {
 // (4)  tuple(tuple&&) -> tuple<>
 // (5)  tuple(AT, A const&, tuple const&) -> tuple<>
 // (6)  tuple(AT, A const&, tuple&&) -> tuple<>
-__host__ __device__ void test_empty_specialization() {
+__host__ __device__ void test_empty_specialization()
+{
   // cuda::std::allocator not supported
   // cuda::std::allocator<int> A;
   const auto AT = cuda::std::allocator_arg;

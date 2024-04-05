@@ -21,35 +21,33 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 template <typename T>
-__host__ __device__ void check_aggregate() {
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 0> >::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 1> >::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 2> >::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 3> >::value, "");
-  static_assert(cuda::std::is_aggregate<cuda::std::array<T, 4> >::value, "");
+__host__ __device__ void check_aggregate()
+{
+    static_assert(cuda::std::is_aggregate<cuda::std::array<T, 0> >::value, "");
+    static_assert(cuda::std::is_aggregate<cuda::std::array<T, 1> >::value, "");
+    static_assert(cuda::std::is_aggregate<cuda::std::array<T, 2> >::value, "");
+    static_assert(cuda::std::is_aggregate<cuda::std::array<T, 3> >::value, "");
+    static_assert(cuda::std::is_aggregate<cuda::std::array<T, 4> >::value, "");
 }
 
-struct Empty {};
-struct Trivial {
-  int i;
-  int j;
-};
+struct Empty { };
+struct Trivial { int i; int j; };
 struct NonTrivial {
-  int i;
-  int j;
-  __host__ __device__ NonTrivial(NonTrivial const&) {}
+    int i; int j;
+    __host__ __device__ NonTrivial(NonTrivial const&) { }
 };
 
-int main(int, char**) {
-  check_aggregate<char>();
-  check_aggregate<int>();
-  check_aggregate<long>();
-  check_aggregate<float>();
-  check_aggregate<double>();
-  check_aggregate<long double>();
-  check_aggregate<Empty>();
-  check_aggregate<Trivial>();
-  check_aggregate<NonTrivial>();
+int main(int, char**)
+{
+    check_aggregate<char>();
+    check_aggregate<int>();
+    check_aggregate<long>();
+    check_aggregate<float>();
+    check_aggregate<double>();
+    check_aggregate<long double>();
+    check_aggregate<Empty>();
+    check_aggregate<Trivial>();
+    check_aggregate<NonTrivial>();
 
-  return 0;
+    return 0;
 }

@@ -33,24 +33,18 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
-template <class T, class FlagT>
-static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
-{
-  struct selector
-  {
+template<class T, class FlagT>
+static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags) {
+  struct selector {
     const T* ref_begin      = nullptr;
     const FlagT* flag_begin = nullptr;
 
-    constexpr selector(const T* ref, const FlagT* flag) noexcept
-        : ref_begin(ref)
-        , flag_begin(flag)
-    {}
+    constexpr selector(const T* ref, const FlagT* flag) noexcept : ref_begin(ref), flag_begin(flag) {}
 
-    bool operator()(const T& val) const
-    {
+    bool operator()(const T& val) const {
       const auto pos = &val - ref_begin;
       return static_cast<bool>(flag_begin[pos]);
     }
@@ -59,7 +53,8 @@ static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const 
   c2h::host_vector<T> reference   = in;
   c2h::host_vector<FlagT> h_flags = flags;
 
-  const selector pred{thrust::raw_pointer_cast(reference.data()), thrust::raw_pointer_cast(h_flags.data())};
+  const selector pred{thrust::raw_pointer_cast(reference.data()),
+                      thrust::raw_pointer_cast(h_flags.data())};
   const auto boundary = std::stable_partition(reference.begin(), reference.end(), pred);
   reference.erase(boundary, reference.end());
   return reference;
@@ -69,18 +64,20 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::Flagged, select_flagged);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using all_types =
-  c2h::type_list<std::uint8_t,
-                 std::uint16_t,
-                 std::uint32_t,
-                 std::uint64_t,
-                 ulonglong2,
-                 ulonglong4,
-                 int,
-                 long2,
-                 c2h::custom_type_t<c2h::equal_comparable_t>>;
+using all_types = c2h::type_list<std::uint8_t,
+                                 std::uint16_t,
+                                 std::uint32_t,
+                                 std::uint64_t,
+                                 ulonglong2,
+                                 ulonglong4,
+                                 int,
+                                 long2,
+                                 c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::equal_comparable_t>>;
+using types = c2h::type_list<std::uint8_t,
+                             std::uint32_t,
+                             ulonglong4,
+                             c2h::custom_type_t<c2h::equal_comparable_t>>;
 
 CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", types)
 {
@@ -93,9 +90,13 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -113,9 +114,13 @@ CUB_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]"
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -134,9 +139,13 @@ CUB_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]",
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -156,19 +165,22 @@ CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
   c2h::device_vector<type> reference = in;
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   REQUIRE(num_selected == num_selected_out[0]);
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DeviceSelect::Flagged is stable",
-         "[device][select_flagged]",
+CUB_TEST("DeviceSelect::Flagged is stable", "[device][select_flagged]",
          c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t>>)
 {
   using type = typename c2h::get<0, TestType>;
@@ -185,9 +197,13 @@ CUB_TEST("DeviceSelect::Flagged is stable",
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
@@ -210,9 +226,13 @@ CUB_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.data(), flags.begin(), out.data(), d_num_selected_out, num_items);
+  select_flagged(in.data(),
+                 flags.begin(),
+                 out.data(),
+                 d_num_selected_out,
+                 num_items);
 
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
@@ -236,7 +256,7 @@ CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]"
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(thrust::raw_pointer_cast(in.data()),
                  thrust::raw_pointer_cast(flags.data()),
@@ -249,27 +269,15 @@ CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]"
   REQUIRE(reference == out);
 }
 
-struct convertible_to_bool
-{
+struct convertible_to_bool {
   int val_;
 
   convertible_to_bool() = default;
-  __host__ __device__ convertible_to_bool(const int val) noexcept
-      : val_(val)
-  {}
+  __host__ __device__ convertible_to_bool(const int val) noexcept : val_(val) {}
 
-  __host__ __device__ operator bool() const noexcept
-  {
-    return static_cast<bool>(val_);
-  }
-  __host__ __device__ friend bool operator==(const convertible_to_bool& lhs, const int& rhs) noexcept
-  {
-    return lhs.val_ == rhs;
-  }
-  __host__ __device__ friend bool operator==(const int& lhs, const convertible_to_bool& rhs) noexcept
-  {
-    return lhs == rhs.val_;
-  }
+  __host__ __device__ operator bool() const noexcept { return static_cast<bool>(val_); }
+  __host__ __device__ friend bool operator==(const convertible_to_bool& lhs, const int& rhs) noexcept { return lhs.val_ == rhs; }
+  __host__ __device__ friend bool operator==(const int& lhs, const convertible_to_bool& rhs) noexcept { return lhs == rhs.val_; }
 };
 
 CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]")
@@ -290,9 +298,13 @@ CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", 
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
@@ -313,9 +325,13 @@ CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(flags.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
+  select_flagged(flags.begin(),
+                 flags.begin(),
+                 out.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
@@ -337,9 +353,12 @@ CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.begin(), flags.begin(), d_num_selected_out, num_items);
+  select_flagged(in.begin(),
+                 flags.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   in.resize(num_selected_out[0]);
   REQUIRE(reference == in);
@@ -359,33 +378,29 @@ CUB_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[d
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(flags.begin(), flags.begin(), d_num_selected_out, num_items);
+  select_flagged(flags.begin(),
+                 flags.begin(),
+                 d_num_selected_out,
+                 num_items);
 
   flags.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
   REQUIRE(reference == flags);
 }
 
-template <class T>
-struct convertible_from_T
-{
+template<class T>
+struct convertible_from_T {
   T val_;
 
   convertible_from_T() = default;
-  __host__ __device__ convertible_from_T(const T& val) noexcept
-      : val_(val)
-  {}
-  __host__ __device__ convertible_from_T& operator=(const T& val) noexcept
-  {
+  __host__ __device__ convertible_from_T(const T& val) noexcept : val_(val) {}
+  __host__ __device__ convertible_from_T& operator=(const T& val) noexcept {
     val_ = val;
   }
   // Converting back to T helps satisfy all the machinery that T supports
-  __host__ __device__ operator T() const noexcept
-  {
-    return val_;
-  }
+  __host__ __device__ operator T() const noexcept { return val_; }
 };
 
 CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]")
@@ -405,9 +420,13 @@ CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_flagged(in.data(), flags.begin(), out.data(), d_num_selected_out, num_items);
+  select_flagged(in.data(),
+                 flags.begin(),
+                 out.data(),
+                 d_num_selected_out,
+                 num_items);
 
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);

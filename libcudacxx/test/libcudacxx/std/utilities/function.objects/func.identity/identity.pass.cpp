@@ -24,12 +24,11 @@ static_assert(cuda::std::semiregular<cuda::std::identity>);
 #if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::identity::is_transparent; });
 #else
-template <class, class = void>
+template<class, class = void>
 constexpr bool is_transparent = false;
 
-template <class T>
-constexpr bool
-    is_transparent<T, cuda::std::void_t<typename T::is_transparent> > = true;
+template<class T>
+constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transparent>> = true;
 
 static_assert(is_transparent<cuda::std::identity>);
 #endif
@@ -54,26 +53,21 @@ __host__ __device__ constexpr bool test() {
 
   id = idc; // run-time checks assignment
   static_assert(cuda::std::is_same_v<decltype(id(i)), int&>);
+  static_assert(cuda::std::is_same_v<decltype(id(cuda::std::declval<int&&>())), int&&>);
   static_assert(
-      cuda::std::is_same_v<decltype(id(cuda::std::declval<int&&>())), int&&>);
+      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const&>())), int const&>);
   static_assert(
-      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const&>())),
-                           int const&>);
+      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const&&>())), int const&&>);
+  static_assert(cuda::std::is_same_v<decltype(id(cuda::std::declval<int volatile&>())),
+                               int volatile&>);
+  static_assert(cuda::std::is_same_v<decltype(id(cuda::std::declval<int volatile&&>())),
+                               int volatile&&>);
   static_assert(
-      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const&&>())),
-                           int const&&>);
+      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const volatile&>())),
+                     int const volatile&>);
   static_assert(
-      cuda::std::is_same_v<decltype(id(cuda::std::declval<int volatile&>())),
-                           int volatile&>);
-  static_assert(
-      cuda::std::is_same_v<decltype(id(cuda::std::declval<int volatile&&>())),
-                           int volatile&&>);
-  static_assert(cuda::std::is_same_v<
-                decltype(id(cuda::std::declval<int const volatile&>())),
-                int const volatile&>);
-  static_assert(cuda::std::is_same_v<
-                decltype(id(cuda::std::declval<int const volatile&&>())),
-                int const volatile&&>);
+      cuda::std::is_same_v<decltype(id(cuda::std::declval<int const volatile&&>())),
+                     int const volatile&&>);
 
   struct S {
     constexpr S() = default;

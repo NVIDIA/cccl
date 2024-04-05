@@ -20,19 +20,19 @@
 #include "test_iterators.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  typedef bidirectional_iterator<int*> Iter;
-  int i = 0;
-  Iter iter(&i);
-  cuda::std::reverse_iterator<Iter> const reverse(iter);
-  cuda::std::reverse_iterator<Iter>::iterator_type base = reverse.base();
-  assert(base == Iter(&i));
-  return true;
+    typedef bidirectional_iterator<int*> Iter;
+    int i = 0;
+    Iter iter(&i);
+    cuda::std::reverse_iterator<Iter> const reverse(iter);
+    cuda::std::reverse_iterator<Iter>::iterator_type base = reverse.base();
+    assert(base == Iter(&i));
+    return true;
 }
 
 int main(int, char**) {
-  test();
+    test();
 #if TEST_STD_VER > 2011
-  static_assert(test(), "");
+    static_assert(test(), "");
 #endif
-  return 0;
+    return 0;
 }

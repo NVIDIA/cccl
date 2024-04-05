@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___CONCEPTS_RELATION_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -31,41 +31,44 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.relation]
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 concept relation =
-  predicate<_Rp, _Tp, _Tp> && predicate<_Rp, _Up, _Up> && predicate<_Rp, _Tp, _Up> && predicate<_Rp, _Up, _Tp>;
+  predicate<_Rp, _Tp, _Tp> && predicate<_Rp, _Up, _Up> &&
+  predicate<_Rp, _Tp, _Up> && predicate<_Rp, _Up, _Tp>;
 
 // [concept.equiv]
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 
 // [concept.strictweakorder]
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
 #elif _CCCL_STD_VER > 2011
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __relation_,
-  requires()(requires(predicate<_Rp, _Tp, _Tp>),
-             requires(predicate<_Rp, _Up, _Up>),
-             requires(predicate<_Rp, _Tp, _Up>),
-             requires(predicate<_Rp, _Up, _Tp>)));
+  requires()(
+    requires(predicate<_Rp, _Tp, _Tp>),
+    requires(predicate<_Rp, _Up, _Up>),
+    requires(predicate<_Rp, _Tp, _Up>),
+    requires(predicate<_Rp, _Up, _Tp>)
+  ));
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT relation = _LIBCUDACXX_FRAGMENT(__relation_, _Rp, _Tp, _Up);
 
 // [concept.equiv]
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 
 // [concept.strictweakorder]
 
-template <class _Rp, class _Tp, class _Up>
+template<class _Rp, class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
 #endif // _CCCL_STD_VER > 2011

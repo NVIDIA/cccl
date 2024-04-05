@@ -52,36 +52,11 @@ namespace detail
 namespace scan
 {
 
-enum class keep_rejects
-{
-  no,
-  yes
-};
-enum class primitive_accum
-{
-  no,
-  yes
-};
-enum class primitive_op
-{
-  no,
-  yes
-};
-enum class offset_size
-{
-  _4,
-  _8,
-  unknown
-};
-enum class accum_size
-{
-  _1,
-  _2,
-  _4,
-  _8,
-  _16,
-  unknown
-};
+enum class keep_rejects { no, yes };
+enum class primitive_accum { no, yes };
+enum class primitive_op { no, yes };
+enum class offset_size { _4, _8, unknown };
+enum class accum_size { _1, _2, _4, _8, _16, unknown };
 
 template <class AccumT>
 constexpr primitive_accum is_primitive_accum()
@@ -98,13 +73,12 @@ constexpr primitive_op is_primitive_op()
 template <class AccumT>
 constexpr accum_size classify_accum_size()
 {
-  return sizeof(AccumT) == 1 ? accum_size::_1
-       : sizeof(AccumT) == 2 ? accum_size::_2
-       : sizeof(AccumT) == 4 ? accum_size::_4
-       : sizeof(AccumT) == 8 ? accum_size::_8
-       : sizeof(AccumT) == 16
-         ? accum_size::_16
-         : accum_size::unknown;
+  return   sizeof(AccumT) == 1  ? accum_size::_1
+         : sizeof(AccumT) == 2  ? accum_size::_2
+         : sizeof(AccumT) == 4  ? accum_size::_4
+         : sizeof(AccumT) == 8  ? accum_size::_8
+         : sizeof(AccumT) == 16 ? accum_size::_16
+                                : accum_size::unknown;
 }
 
 template <int Threads, int Items, int L2B, int L2W>
@@ -263,15 +237,18 @@ struct sm80_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 } // namespace scan
 } // namespace detail
 
+
 template <typename AccumT, typename ScanOpT = Sum>
 struct DeviceScanPolicy
 {
   // For large values, use timesliced loads/stores to fit shared memory.
   static constexpr bool LargeValues = sizeof(AccumT) > 128;
   static constexpr BlockLoadAlgorithm ScanTransposedLoad =
-    LargeValues ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+    LargeValues ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED
+                : BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm ScanTransposedStore =
-    LargeValues ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
+    LargeValues ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED
+                : BLOCK_STORE_WARP_TRANSPOSE;
 
   template <int NOMINAL_BLOCK_THREADS_4B,
             int NOMINAL_ITEMS_PER_THREAD_4B,
@@ -296,44 +273,41 @@ struct DeviceScanPolicy
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
-    using ScanPolicyT =
-      policy_t<128,
-               12, ///< Threads per block, items per thread
-               AccumT,
-               BLOCK_LOAD_DIRECT,
-               LOAD_CA,
-               BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
-               BLOCK_SCAN_RAKING,
-               detail::default_delay_constructor_t<AccumT>>;
+    using ScanPolicyT = policy_t<128,
+                                 12, ///< Threads per block, items per thread
+                                 AccumT,
+                                 BLOCK_LOAD_DIRECT,
+                                 LOAD_CA,
+                                 BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
+                                 BLOCK_SCAN_RAKING,
+                                 detail::default_delay_constructor_t<AccumT>>;
   };
 
   /// SM520
   struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
-    using ScanPolicyT =
-      policy_t<128,
-               12, ///< Threads per block, items per thread
-               AccumT,
-               BLOCK_LOAD_DIRECT,
-               LOAD_CA,
-               ScanTransposedStore,
-               BLOCK_SCAN_WARP_SCANS,
-               detail::default_delay_constructor_t<AccumT>>;
+    using ScanPolicyT = policy_t<128,
+                                 12, ///< Threads per block, items per thread
+                                 AccumT,
+                                 BLOCK_LOAD_DIRECT,
+                                 LOAD_CA,
+                                 ScanTransposedStore,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 detail::default_delay_constructor_t<AccumT>>;
   };
 
   /// SM600
   struct DefaultTuning
   {
-    using ScanPolicyT =
-      policy_t<128,
-               15, ///< Threads per block, items per thread
-               AccumT,
-               ScanTransposedLoad,
-               LOAD_DEFAULT,
-               ScanTransposedStore,
-               BLOCK_SCAN_WARP_SCANS,
-               detail::default_delay_constructor_t<AccumT>>;
+    using ScanPolicyT = policy_t<128,
+                                 15, ///< Threads per block, items per thread
+                                 AccumT,
+                                 ScanTransposedLoad,
+                                 LOAD_DEFAULT,
+                                 ScanTransposedStore,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 detail::default_delay_constructor_t<AccumT>>;
   };
 
   /// SM600
@@ -347,15 +321,14 @@ struct DeviceScanPolicy
   {
     using tuning = detail::scan::sm80_tuning<AccumT, detail::scan::is_primitive_op<ScanOpT>()>;
 
-    using ScanPolicyT =
-      policy_t<tuning::threads,
-               tuning::items,
-               AccumT,
-               tuning::load_algorithm,
-               LOAD_DEFAULT,
-               tuning::store_algorithm,
-               BLOCK_SCAN_WARP_SCANS,
-               typename tuning::delay_constructor>;
+    using ScanPolicyT = policy_t<tuning::threads,
+                                 tuning::items,
+                                 AccumT,
+                                 tuning::load_algorithm,
+                                 LOAD_DEFAULT,
+                                 tuning::store_algorithm,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 typename tuning::delay_constructor>;
   };
 
   /// SM860
@@ -369,18 +342,18 @@ struct DeviceScanPolicy
   {
     using tuning = detail::scan::sm90_tuning<AccumT, detail::scan::is_primitive_op<ScanOpT>()>;
 
-    using ScanPolicyT =
-      policy_t<tuning::threads,
-               tuning::items,
-               AccumT,
-               ScanTransposedLoad,
-               LOAD_DEFAULT,
-               ScanTransposedStore,
-               BLOCK_SCAN_WARP_SCANS,
-               typename tuning::delay_constructor>;
+    using ScanPolicyT = policy_t<tuning::threads,
+                                 tuning::items,
+                                 AccumT,
+                                 ScanTransposedLoad,
+                                 LOAD_DEFAULT,
+                                 ScanTransposedStore,
+                                 BLOCK_SCAN_WARP_SCANS,
+                                 typename tuning::delay_constructor>;
   };
 
   using MaxPolicy = Policy900;
 };
+
 
 CUB_NAMESPACE_END

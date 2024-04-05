@@ -35,26 +35,32 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  Predicate pred);
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  OutputIterator result,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
+                         InputIterator first,
+                         InputIterator last,
+                         OutputIterator result,
+                         Predicate pred);
+
+
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+   OutputIterator copy_if(thrust::execution_policy<DerivedPolicy> &exec,
+                          InputIterator1 first,
+                          InputIterator1 last,
+                          InputIterator2 stencil,
+                          OutputIterator result,
+                          Predicate pred);
+
 
 } // end namespace generic
 } // end namespace detail
@@ -62,3 +68,4 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/copy_if.inl>
+

@@ -23,9 +23,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  // cuda/std/memory not supported
-  /*
+int main(int, char**)
+{
+    // cuda/std/memory not supported
+    /*
     {
         typedef cuda::std::pair<cuda::std::unique_ptr<int>, short> P;
         P p(cuda::std::unique_ptr<int>(new int(3)), static_cast<short>(4));

@@ -25,21 +25,19 @@
  *
  ******************************************************************************/
 
-#include <cub/device/device_radix_sort.cuh>
-
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-
 #include <cuda/std/tuple>
+#include <cub/device/device_radix_sort.cuh>
 
 #include <bitset>
 #include <cstdint>
 #include <functional>
 #include <limits>
 #include <type_traits>
-
 #include "cub/block/radix_rank_sort_operations.cuh"
+
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 
 struct custom_t
 {
@@ -50,8 +48,7 @@ struct custom_t
 struct decomposer_t
 {
   __host__ __device__ //
-    ::cuda::std::tuple<std::uint16_t&, float&>
-    operator()(custom_t& key) const
+  ::cuda::std::tuple<std::uint16_t&, float&> operator()(custom_t &key) const
   {
     return {key.i, key.f};
   }
@@ -135,8 +132,8 @@ int main()
   std::cout << "the `custom_t` into the bit-lexicographicl order:\n\n";
 
   using conversion_policy = cub::detail::radix::traits_t<custom_t>::bit_ordered_conversion_policy;
-  l                       = conversion_policy::to_bit_ordered(decomposer_t{}, l);
-  g                       = conversion_policy::to_bit_ordered(decomposer_t{}, g);
+  l = conversion_policy::to_bit_ordered(decomposer_t{}, l);
+  g = conversion_policy::to_bit_ordered(decomposer_t{}, g);
 
   std::cout << "\n\t";
   print_segment(" `.f` ", 32);
@@ -205,32 +202,48 @@ int main()
 
   std::cout << "All of these operations are used behind the scenes by CUB to sort custom types:\n\n";
 
-  constexpr int num_items            = 6;
-  thrust::device_vector<custom_t> in = {{4, +2.5f}, {0, -2.5f}, {3, +1.1f}, {1, +0.0f}, {2, -0.0f}, {5, +3.7f}};
+  constexpr int num_items = 6;
+  thrust::device_vector<custom_t> in = {
+    {4, +2.5f},
+    {0, -2.5f},
+    {3, +1.1f},
+    {1, +0.0f},
+    {2, -0.0f},
+    {5, +3.7f}
+  };
 
   std::cout << "in:\n";
-  for (custom_t key : in)
-  {
+  for (custom_t key: in) {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }
 
   thrust::device_vector<custom_t> out(num_items);
 
-  const custom_t* d_in = thrust::raw_pointer_cast(in.data());
-  custom_t* d_out      = thrust::raw_pointer_cast(out.data());
+  const custom_t *d_in = thrust::raw_pointer_cast(in.data());
+  custom_t *d_out      = thrust::raw_pointer_cast(out.data());
 
   // 1) Get temp storage size
-  std::uint8_t* d_temp_storage{};
+  std::uint8_t *d_temp_storage{};
   std::size_t temp_storage_bytes{};
 
-  cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
+  cub::DeviceRadixSort::SortKeys(d_temp_storage,
+                                 temp_storage_bytes,
+                                 d_in,
+                                 d_out,
+                                 num_items,
+                                 decomposer_t{});
 
   // 2) Allocate temp storage
   thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // 3) Sort keys
-  cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
+  cub::DeviceRadixSort::SortKeys(d_temp_storage,
+                                 temp_storage_bytes,
+                                 d_in,
+                                 d_out,
+                                 num_items,
+                                 decomposer_t{});
   cudaDeviceSynchronize();
 
   std::cout << "\n";
@@ -245,8 +258,7 @@ int main()
   std::cout << "\t                               decomposer_t{});\n\n";
 
   std::cout << "out:\n";
-  for (custom_t key : out)
-  {
+  for (custom_t key: out) {
     std::cout << "\t{.i = " << key.i << ", .f = " << key.f << "},\n";
   }
 

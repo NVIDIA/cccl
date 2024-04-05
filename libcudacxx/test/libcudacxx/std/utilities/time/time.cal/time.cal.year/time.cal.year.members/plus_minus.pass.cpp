@@ -20,31 +20,33 @@
 #include "test_macros.h"
 
 template <typename Y>
-__host__ __device__ constexpr bool testConstexpr() {
-  Y y1{1};
-  if (static_cast<int>(+y1) != 1)
-    return false;
-  if (static_cast<int>(-y1) != -1)
-    return false;
-  return true;
+__host__ __device__
+constexpr bool testConstexpr()
+{
+    Y y1{1};
+    if (static_cast<int>(+y1) !=  1) return false;
+    if (static_cast<int>(-y1) != -1) return false;
+    return true;
 }
 
-int main(int, char**) {
-  using year = cuda::std::chrono::year;
+int main(int, char**)
+{
+    using year  = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(+cuda::std::declval<year>());
-  ASSERT_NOEXCEPT(-cuda::std::declval<year>());
+    ASSERT_NOEXCEPT(+cuda::std::declval<year>());
+    ASSERT_NOEXCEPT(-cuda::std::declval<year>());
 
-  ASSERT_SAME_TYPE(year, decltype(+cuda::std::declval<year>()));
-  ASSERT_SAME_TYPE(year, decltype(-cuda::std::declval<year>()));
+    ASSERT_SAME_TYPE(year, decltype(+cuda::std::declval<year>()));
+    ASSERT_SAME_TYPE(year, decltype(-cuda::std::declval<year>()));
 
-  static_assert(testConstexpr<year>(), "");
+    static_assert(testConstexpr<year>(), "");
 
-  for (int i = 10000; i <= 10020; ++i) {
-    year year(i);
-    assert(static_cast<int>(+year) == i);
-    assert(static_cast<int>(-year) == -i);
-  }
+    for (int i = 10000; i <= 10020; ++i)
+    {
+        year year(i);
+        assert(static_cast<int>(+year) ==  i);
+        assert(static_cast<int>(-year) == -i);
+    }
 
   return 0;
 }

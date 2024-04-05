@@ -28,21 +28,21 @@
 #pragma once
 
 #ifndef TEST_HALF_T
-#  define TEST_HALF_T !_NVHPC_CUDA
+#define TEST_HALF_T !_NVHPC_CUDA
 #endif
 
 #ifndef TEST_BF_T
-#  define TEST_BF_T !_NVHPC_CUDA
+#define TEST_BF_T !_NVHPC_CUDA
 #endif
 
 #ifdef TEST_HALF_T
-#  include <cuda_fp16.h>
+#include <cuda_fp16.h>
 
-#  include "../half.h"
+#include "../half.h"
 #endif
 
 #ifdef TEST_BF_T
-#  include <cuda_bf16.h>
+#include <cuda_bf16.h>
 
-#  include "../bfloat16.h"
+#include "../bfloat16.h"
 #endif

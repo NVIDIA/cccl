@@ -36,144 +36,295 @@ namespace detail
 namespace functional
 {
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::equal_to<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator==(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::equal_to<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator==(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator==()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::equal_to<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator==(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::equal_to<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator==(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator==()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::equal_to<>>, actor<T1>, actor<T2> > >
-operator==(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::equal_to<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator==(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator==()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::not_equal_to<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator!=(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::not_equal_to<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator!=(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::not_equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::not_equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator!=()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::not_equal_to<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator!=(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::not_equal_to<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator!=(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::not_equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::not_equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator!=()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::not_equal_to<>>, actor<T1>, actor<T2> > >
-operator!=(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::not_equal_to<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator!=(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::not_equal_to<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::not_equal_to<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator!=()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::greater<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator>(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator>(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::greater<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator>(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator>(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::greater<>>, actor<T1>, actor<T2> > >
-operator>(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator>(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::less<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator<(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::less<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator<(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::less<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::less<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator<(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::less<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator<(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::less<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::less<>>, actor<T1>, actor<T2> > >
-operator<(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::less<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator<(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::less<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::greater_equal<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator>=(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater_equal<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator>=(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>=()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::greater_equal<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator>=(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater_equal<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator>=(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>=()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::greater_equal<>>, actor<T1>, actor<T2> > >
-operator>=(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::greater_equal<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator>=(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::greater_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::greater_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator>=()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::less_equal<>>, actor<T1>, typename as_actor<T2>::type > >
-  operator<=(const actor<T1>& _1, const T2& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::less_equal<>>,
+    actor<T1>,
+    typename as_actor<T2>::type
+  >
+>
+operator<=(const actor<T1> &_1, const T2 &_2)
 {
-  return compose(transparent_binary_operator<thrust::less_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<=()
 
-template <typename T1, typename T2>
+template<typename T1, typename T2>
 _CCCL_HOST_DEVICE
-  actor< composite< transparent_binary_operator<thrust::less_equal<>>, typename as_actor<T1>::type, actor<T2> > >
-  operator<=(const T1& _1, const actor<T2>& _2)
+actor<
+  composite<
+    transparent_binary_operator<thrust::less_equal<>>,
+    typename as_actor<T1>::type,
+    actor<T2>
+  >
+>
+operator<=(const T1 &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::less_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<=()
 
-template <typename T1, typename T2>
-_CCCL_HOST_DEVICE actor< composite< transparent_binary_operator<thrust::less_equal<>>, actor<T1>, actor<T2> > >
-operator<=(const actor<T1>& _1, const actor<T2>& _2)
+template<typename T1, typename T2>
+_CCCL_HOST_DEVICE
+actor<
+  composite<
+    transparent_binary_operator<thrust::less_equal<>>,
+    actor<T1>,
+    actor<T2>
+  >
+>
+operator<=(const actor<T1> &_1, const actor<T2> &_2)
 {
-  return compose(transparent_binary_operator<thrust::less_equal<>>(), make_actor(_1), make_actor(_2));
+  return compose(transparent_binary_operator<thrust::less_equal<>>(),
+                 make_actor(_1),
+                 make_actor(_2));
 } // end operator<=()
 
-} // namespace functional
-} // namespace detail
+} // end functional
+} // end detail
 THRUST_NAMESPACE_END
+

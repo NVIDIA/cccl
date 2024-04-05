@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___CONCEPTS_SAME_AS_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -31,10 +31,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.same]
 
-template <class _Tp, class _Up>
+template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __same_as_impl = _IsSame<_Tp, _Up>::value;
 
-template <class _Tp, class _Up>
+template<class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT same_as = __same_as_impl<_Tp, _Up> && __same_as_impl<_Up, _Tp>;
 
 #endif // _CCCL_STD_VER > 2011

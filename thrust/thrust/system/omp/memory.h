@@ -29,17 +29,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits.h>
-#include <thrust/memory.h>
-#include <thrust/mr/allocator.h>
 #include <thrust/system/omp/memory_resource.h>
-
+#include <thrust/memory.h>
+#include <thrust/detail/type_traits.h>
+#include <thrust/mr/allocator.h>
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace omp
+namespace system { namespace omp
 {
 
 /*! Allocates an area of memory available to Thrust's <tt>omp</tt> system.
@@ -64,7 +61,7 @@ inline pointer<void> malloc(std::size_t n);
  *  \see omp::free
  *  \see std::malloc
  */
-template <typename T>
+template<typename T>
 inline pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>omp::malloc</tt>.
@@ -80,30 +77,33 @@ inline void free(pointer<void> ptr);
  *  provided. \p omp::allocator allocates (deallocates) storage with \p
  *  omp::malloc (\p omp::free).
  */
-template <typename T>
-using allocator = thrust::mr::stateless_resource_allocator< T, thrust::system::omp::memory_resource >;
+template<typename T>
+using allocator = thrust::mr::stateless_resource_allocator<
+  T, thrust::system::omp::memory_resource
+>;
 
 /*! \p omp::universal_allocator allocates memory that can be used by the \p omp
  *  system and host systems.
  */
-template <typename T>
-using universal_allocator =
-  thrust::mr::stateless_resource_allocator< T, thrust::system::omp::universal_memory_resource >;
+template<typename T>
+using universal_allocator = thrust::mr::stateless_resource_allocator<
+  T, thrust::system::omp::universal_memory_resource
+>;
 
-} // namespace omp
-} // namespace system
+}} // namespace system::omp
 
 /*! \namespace thrust::omp
  *  \brief \p thrust::omp is a top-level alias for thrust::system::omp.
  */
 namespace omp
 {
-using thrust::system::omp::allocator;
-using thrust::system::omp::free;
 using thrust::system::omp::malloc;
+using thrust::system::omp::free;
+using thrust::system::omp::allocator;
 using thrust::system::omp::universal_allocator;
 } // namespace omp
 
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/memory.inl>
+

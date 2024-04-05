@@ -18,38 +18,39 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  using index_t = size_t;
-  using ext0d_t = cuda::std::extents<index_t>;
-  using ext2d_t = cuda::std::extents<index_t, dyn, dyn>;
+int main(int, char**)
+{
+    using index_t = size_t;
+    using ext0d_t = cuda::std::extents<index_t>;
+    using ext2d_t = cuda::std::extents<index_t,dyn,dyn>;
 
-  {
-    ext2d_t e{64, 128};
-    cuda::std::layout_right::mapping<ext2d_t> m{e};
+    {
+        ext2d_t e{64, 128};
+        cuda::std::layout_right::mapping<ext2d_t> m{ e };
 
-    assert(m.stride(0) == 128);
-    assert(m.stride(1) == 1);
+        assert( m.stride(0) == 128 );
+        assert( m.stride(1) ==   1 );
 
-    static_assert(is_stride_avail_v<decltype(m), index_t> == true, "");
-  }
+        static_assert( is_stride_avail_v< decltype(m), index_t > == true , "" );
+    }
 
-  {
-    ext2d_t e{64, 1};
-    cuda::std::layout_right::mapping<ext2d_t> m{e};
+    {
+        ext2d_t e{64, 1};
+        cuda::std::layout_right::mapping<ext2d_t> m{ e };
 
-    assert(m.stride(0) == 1);
-    assert(m.stride(1) == 1);
-  }
+        assert( m.stride(0) == 1 );
+        assert( m.stride(1) == 1 );
+    }
 
-  // constraint: extents_type::rank() > 0
-  {
-    ext0d_t e{};
-    cuda::std::layout_right::mapping<ext0d_t> m{e};
+    // constraint: extents_type::rank() > 0
+    {
+        ext0d_t e{};
+        cuda::std::layout_right::mapping<ext0d_t> m{ e };
 
-    unused(m);
+        unused( m );
 
-    static_assert(is_stride_avail_v<decltype(m), index_t> == false, "");
-  }
+        static_assert( is_stride_avail_v< decltype(m), index_t > == false, "" );
+    }
 
-  return 0;
+    return 0;
 }

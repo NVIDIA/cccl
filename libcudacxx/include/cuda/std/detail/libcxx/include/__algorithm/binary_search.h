@@ -31,17 +31,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Tp, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
-{
-  __first =
-    _CUDA_VSTD::lower_bound<_ForwardIterator, _Tp, __comp_ref_type<_Compare> >(__first, __last, __value, __comp);
+binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp) {
+  __first = _CUDA_VSTD::lower_bound<_ForwardIterator, _Tp, __comp_ref_type<_Compare> >(__first, __last, __value, __comp);
   return __first != __last && !__comp(__value, *__first);
 }
 
 template <class _ForwardIterator, class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
-binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
-{
+binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value) {
   return _CUDA_VSTD::binary_search(__first, __last, __value, __less{});
 }
 

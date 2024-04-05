@@ -32,18 +32,15 @@ struct MayThrowSwap {
   __host__ __device__ friend void swap(MayThrowSwap&, MayThrowSwap&);
 };
 
-template <class T, class = void>
+template<class T, class = void>
 constexpr bool ADLSwapNoexcept = false;
 
-template <class T>
-constexpr bool ADLSwapNoexcept<
-    T, cuda::std::void_t<decltype(
-           swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()))> > =
-    noexcept(swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()));
+template<class T>
+constexpr bool ADLSwapNoexcept<T, cuda::std::void_t<decltype(swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()))>> = noexcept(swap(cuda::std::declval<T&>(), cuda::std::declval<T&>()));
 
-static_assert(ADLSwapNoexcept<cuda::std::unexpected<NoexceptSwap> >, "");
+static_assert(ADLSwapNoexcept<cuda::std::unexpected<NoexceptSwap>>, "");
 #ifndef TEST_COMPILER_ICC
-static_assert(!ADLSwapNoexcept<cuda::std::unexpected<MayThrowSwap> >, "");
+static_assert(!ADLSwapNoexcept<cuda::std::unexpected<MayThrowSwap>>, "");
 #endif // TEST_COMPILER_ICC
 
 // test constraint
@@ -51,19 +48,15 @@ struct NonSwappable {
   NonSwappable& operator=(const NonSwappable&) = delete;
 };
 
-static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<int> >, "");
-static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<MayThrowSwap> >,
-              "");
-static_assert(!cuda::std::is_swappable_v<cuda::std::unexpected<NonSwappable> >,
-              "");
+static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<int>>, "");
+static_assert(cuda::std::is_swappable_v<cuda::std::unexpected<MayThrowSwap>>, "");
+static_assert(!cuda::std::is_swappable_v<cuda::std::unexpected<NonSwappable>>, "");
 
 struct ADLSwap {
   __host__ __device__ constexpr ADLSwap(int ii) : i(ii) {}
   ADLSwap& operator=(const ADLSwap&) = delete;
   int i;
-  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) {
-    cuda::std::swap(x.i, y.i);
-  }
+  __host__ __device__ constexpr friend void swap(ADLSwap& x, ADLSwap& y) { cuda::std::swap(x.i, y.i); }
 };
 
 __host__ __device__ constexpr bool test() {

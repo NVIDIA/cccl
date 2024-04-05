@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file adjacent_difference.h
  *  \brief Sequential implementation of adjacent_difference.
  */
@@ -40,37 +41,41 @@ namespace detail
 namespace sequential
 {
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator adjacent_difference(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+OutputIterator adjacent_difference(sequential::execution_policy<DerivedPolicy> &,
+                                   InputIterator first,
+                                   InputIterator last,
+                                   OutputIterator result,
+                                   BinaryFunction binary_op)
 {
   typedef typename thrust::iterator_traits<InputIterator>::value_type InputType;
 
-  if (first == last)
-  {
+  if(first == last)
     return result;
-  }
 
   InputType curr = *first;
 
   *result = curr;
 
-  while (++first != last)
+  while(++first != last)
   {
     InputType next = *first;
-    *(++result)    = binary_op(next, curr);
-    curr           = next;
+    *(++result) = binary_op(next, curr);
+    curr = next;
   }
 
   return ++result;
 }
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

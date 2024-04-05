@@ -43,7 +43,9 @@
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
 
+
 CUB_NAMESPACE_BEGIN
+
 
 /**
  * This agent will be implementing the `DeviceSegmentedRadixSort` when the
@@ -80,13 +82,14 @@ struct AgentSegmentedRadixSort
   static constexpr int RADIX_DIGITS     = 1 << RADIX_BITS;
   static constexpr int KEYS_ONLY        = std::is_same<ValueT, NullType>::value;
 
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits = detail::radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   // Huge segment handlers
-  using BlockUpsweepT   = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
-  using DigitScanT      = BlockScan<OffsetT, BLOCK_THREADS>;
-  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
+  using BlockUpsweepT = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
+  using DigitScanT    = BlockScan<OffsetT, BLOCK_THREADS>;
+  using BlockDownsweepT =
+    AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
 
   /// Number of bin-starting offsets tracked per thread
   static constexpr int BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD;
@@ -101,9 +104,15 @@ struct AgentSegmentedRadixSort
                    (SegmentedPolicyT::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
                    SegmentedPolicyT::SCAN_ALGORITHM>;
 
-  using BlockKeyLoadT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
+  using BlockKeyLoadT = BlockLoad<KeyT,
+                                  BLOCK_THREADS,
+                                  ITEMS_PER_THREAD,
+                                  SegmentedPolicyT::LOAD_ALGORITHM>;
 
-  using BlockValueLoadT = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, SegmentedPolicyT::LOAD_ALGORITHM>;
+  using BlockValueLoadT = BlockLoad<ValueT,
+                                    BLOCK_THREADS,
+                                    ITEMS_PER_THREAD,
+                                    SegmentedPolicyT::LOAD_ALGORITHM>;
 
   union _TempStorage
   {
@@ -125,19 +134,25 @@ struct AgentSegmentedRadixSort
   };
 
   using TempStorage = Uninitialized<_TempStorage>;
-  _TempStorage& temp_storage;
+  _TempStorage &temp_storage;
 
   DecomposerT decomposer;
 
   _CCCL_DEVICE _CCCL_FORCEINLINE
-  AgentSegmentedRadixSort(OffsetT num_items, TempStorage& temp_storage, DecomposerT decomposer = {})
+  AgentSegmentedRadixSort(OffsetT num_items,
+                          TempStorage &temp_storage,
+                          DecomposerT decomposer = {})
       : num_items(num_items)
       , temp_storage(temp_storage.Alias())
       , decomposer(decomposer)
   {}
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSinglePass(
-    int begin_bit, int end_bit, const KeyT* d_keys_in, const ValueT* d_values_in, KeyT* d_keys_out, ValueT* d_values_out)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessSinglePass(int begin_bit,
+                                                    int end_bit,
+                                                    const KeyT *d_keys_in,
+                                                    const ValueT *d_values_in,
+                                                    KeyT *d_keys_out,
+                                                    ValueT *d_values_out)
   {
     KeyT thread_keys[ITEMS_PER_THREAD];
     ValueT thread_values[ITEMS_PER_THREAD];
@@ -146,45 +161,58 @@ struct AgentSegmentedRadixSort
     // Lowest() -> -1.79769e+308 = 00...00b -> TwiddleIn -> -0 = 10...00b
     // LOWEST   -> -nan          = 11...11b -> TwiddleIn ->  0 = 00...00b
 
-    bit_ordered_type default_key_bits =
-      IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
-    KeyT oob_default = reinterpret_cast<KeyT&>(default_key_bits);
+    bit_ordered_type default_key_bits = IS_DESCENDING
+                                      ? traits::min_raw_binary_key(decomposer)
+                                      : traits::max_raw_binary_key(decomposer);
+    KeyT oob_default = reinterpret_cast<KeyT &>(default_key_bits);
 
     if (!KEYS_ONLY)
     {
-      BlockValueLoadT(temp_storage.values_load).Load(d_values_in, thread_values, num_items);
+      BlockValueLoadT(temp_storage.values_load)
+        .Load(d_values_in, thread_values, num_items);
 
       CTA_SYNC();
     }
 
     {
-      BlockKeyLoadT(temp_storage.keys_load).Load(d_keys_in, thread_keys, num_items, oob_default);
+      BlockKeyLoadT(temp_storage.keys_load)
+        .Load(d_keys_in, thread_keys, num_items, oob_default);
 
       CTA_SYNC();
     }
 
-    BlockRadixSortT(temp_storage.sort)
-      .SortBlockedToStriped(
-        thread_keys, thread_values, begin_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
+    BlockRadixSortT(temp_storage.sort).SortBlockedToStriped(
+      thread_keys,
+      thread_values,
+      begin_bit,
+      end_bit,
+      Int2Type<IS_DESCENDING>(),
+      Int2Type<KEYS_ONLY>(),
+      decomposer);
 
-    cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_keys_out, thread_keys, num_items);
+    cub::StoreDirectStriped<BLOCK_THREADS>(
+      threadIdx.x, d_keys_out, thread_keys, num_items);
 
     if (!KEYS_ONLY)
     {
-      cub::StoreDirectStriped<BLOCK_THREADS>(threadIdx.x, d_values_out, thread_values, num_items);
+      cub::StoreDirectStriped<BLOCK_THREADS>(
+        threadIdx.x, d_values_out, thread_values, num_items);
     }
   }
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessIterative(
-    int current_bit,
-    int pass_bits,
-    const KeyT* d_keys_in,
-    const ValueT* d_values_in,
-    KeyT* d_keys_out,
-    ValueT* d_values_out)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ProcessIterative(int current_bit,
+                                                   int pass_bits,
+                                                   const KeyT *d_keys_in,
+                                                   const ValueT *d_values_in,
+                                                   KeyT *d_keys_out,
+                                                   ValueT *d_values_out)
   {
     // Upsweep
-    BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
+    BlockUpsweepT upsweep(temp_storage.upsweep,
+                          d_keys_in,
+                          current_bit,
+                          pass_bits,
+                          decomposer);
     upsweep.ProcessRegion(OffsetT{}, num_items);
 
     CTA_SYNC();
@@ -197,8 +225,8 @@ struct AgentSegmentedRadixSort
 
     if (IS_DESCENDING)
     {
-// Reverse bin counts
-#pragma unroll
+      // Reverse bin counts
+      #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -211,7 +239,7 @@ struct AgentSegmentedRadixSort
 
       CTA_SYNC();
 
-#pragma unroll
+      #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -231,8 +259,8 @@ struct AgentSegmentedRadixSort
 
     if (IS_DESCENDING)
     {
-// Reverse bin offsets
-#pragma unroll
+      // Reverse bin offsets
+      #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -245,7 +273,7 @@ struct AgentSegmentedRadixSort
 
       CTA_SYNC();
 
-#pragma unroll
+      #pragma unroll
       for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
       {
         int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -260,19 +288,19 @@ struct AgentSegmentedRadixSort
     CTA_SYNC();
 
     // Downsweep
-    BlockDownsweepT downsweep(
-      temp_storage.downsweep,
-      bin_offset,
-      num_items,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      current_bit,
-      pass_bits,
-      decomposer);
+    BlockDownsweepT downsweep(temp_storage.downsweep,
+                              bin_offset,
+                              num_items,
+                              d_keys_in,
+                              d_keys_out,
+                              d_values_in,
+                              d_values_out,
+                              current_bit,
+                              pass_bits,
+                              decomposer);
     downsweep.ProcessRegion(OffsetT{}, num_items);
   }
 };
+
 
 CUB_NAMESPACE_END

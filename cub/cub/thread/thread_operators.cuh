@@ -72,25 +72,25 @@ struct InequalityWrapper
 
   /// Boolean inequality operator, returns `t != u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u)
   {
     return !op(::cuda::std::forward<T>(t), ::cuda::std::forward<U>(u));
   }
 };
 
 #if _CCCL_STD_VER > 2011
-using Equality   = ::cuda::std::equal_to<>;
+using Equality = ::cuda::std::equal_to<>;
 using Inequality = ::cuda::std::not_equal_to<>;
-using Sum        = ::cuda::std::plus<>;
+using Sum = ::cuda::std::plus<>;
 using Difference = ::cuda::std::minus<>;
-using Division   = ::cuda::std::divides<>;
+using Division = ::cuda::std::divides<>;
 #else
 /// @brief Default equality functor
 struct Equality
 {
   /// Boolean equality operator, returns `t == u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
   {
     return ::cuda::std::forward<T>(t) == ::cuda::std::forward<U>(u);
   }
@@ -101,7 +101,7 @@ struct Inequality
 {
   /// Boolean inequality operator, returns `t != u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T &&t, U &&u) const
   {
     return ::cuda::std::forward<T>(t) != ::cuda::std::forward<U>(u);
   }
@@ -112,7 +112,7 @@ struct Sum
 {
   /// Binary sum operator, returns `t + u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u);
@@ -124,7 +124,7 @@ struct Difference
 {
   /// Binary difference operator, returns `t - u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u);
@@ -136,7 +136,7 @@ struct Division
 {
   /// Binary division operator, returns `t / u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(T &&t, U &&u) const
     -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
   {
     return ::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u);
@@ -149,7 +149,9 @@ struct Max
 {
   /// Boolean max operator, returns `(t > u) ? t : u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+    typename ::cuda::std::common_type<T, U>::type
+    operator()(T &&t, U &&u) const
   {
     return CUB_MAX(t, u);
   }
@@ -163,7 +165,8 @@ struct ArgMax
   /// case of ties
   template <typename T, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
-  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  operator()(const KeyValuePair<OffsetT, T> &a,
+             const KeyValuePair<OffsetT, T> &b) const
   {
     // Mooch BUG (device reduce argmax gk110 3.2 million random fp32)
     // return ((b.value > a.value) ||
@@ -184,7 +187,9 @@ struct Min
 {
   /// Boolean min operator, returns `(t < u) ? t : u`
   template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+    typename ::cuda::std::common_type<T, U>::type
+    operator()(T &&t, U &&u) const
   {
     return CUB_MIN(t, u);
   }
@@ -198,7 +203,8 @@ struct ArgMin
   /// case of ties
   template <typename T, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
-  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  operator()(const KeyValuePair<OffsetT, T> &a,
+             const KeyValuePair<OffsetT, T> &b) const
   {
     // Mooch BUG (device reduce argmax gk110 3.2 million random fp32)
     // return ((b.value < a.value) ||
@@ -247,9 +253,9 @@ struct CastOp
 {
   /// Cast operator, returns `(B) a`
   template <typename A>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A&& a) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE B operator()(A &&a) const
   {
-    return (B) a;
+    return (B)a;
   }
 };
 
@@ -269,7 +275,7 @@ public:
 
   /// Switch the scan arguments
   template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T& a, const T& b)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T operator()(const T &a, const T &b)
   {
     T _a(a);
     T _b(b);
@@ -322,7 +328,8 @@ struct ReduceBySegmentOp
    *   Second partial reduction
    */
   template <typename KeyValuePairT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT
+  operator()(const KeyValuePairT &first, const KeyValuePairT &second)
   {
     KeyValuePairT retval;
     retval.key = first.key + second.key;
@@ -377,7 +384,8 @@ struct ReduceByKeyOp
    * @param[in] second Second partial reduction
    */
   template <typename KeyValuePairT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT
+  operator()(const KeyValuePairT &first, const KeyValuePairT &second)
   {
     KeyValuePairT retval = second;
 
@@ -400,8 +408,9 @@ struct BinaryFlip
   {}
 
   template <typename T, typename U>
-  _CCCL_DEVICE auto operator()(T&& t, U&& u)
-    -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
+  _CCCL_DEVICE auto
+  operator()(T &&t, U &&u) -> decltype(binary_op(::cuda::std::forward<U>(u),
+                                                 ::cuda::std::forward<T>(t)))
   {
     return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }

@@ -21,16 +21,20 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  cuda::std::ostringstream os;
-  cuda::std::ostream_iterator<int> i(os);
-  cuda::std::ostream_iterator<int>& iref1 = ++i;
-  assert(&iref1 == &i);
-  cuda::std::ostream_iterator<int>& iref2 = i++;
-  assert(&iref2 == &i);
+int main(int, char**)
+{
+    cuda::std::ostringstream os;
+    cuda::std::ostream_iterator<int> i(os);
+    cuda::std::ostream_iterator<int>& iref1 = ++i;
+    assert(&iref1 == &i);
+    cuda::std::ostream_iterator<int>& iref2 = i++;
+    assert(&iref2 == &i);
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

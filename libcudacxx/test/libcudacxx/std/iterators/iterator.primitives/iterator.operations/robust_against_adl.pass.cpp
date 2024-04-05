@@ -14,27 +14,25 @@
 #include "test_macros.h"
 
 struct Incomplete;
-template <class T>
-struct Holder {
-  T t;
-};
+template<class T> struct Holder { T t; };
 
-template <class>
+template<class>
 struct Intable {
-  __host__ __device__ operator int() const { return 1; }
+    __host__ __device__
+    operator int() const { return 1; }
 };
 
 int main(int, char**) {
-  Holder<Incomplete>* a[2] = {};
-  Holder<Incomplete>** p = a;
+    Holder<Incomplete> *a[2] = {};
+    Holder<Incomplete> **p = a;
 #if TEST_STD_VER > 2011
-  p = cuda::std::next(p);
-  p = cuda::std::prev(p);
-  p = cuda::std::next(p, 2);
-  p = cuda::std::prev(p, 2);
+    p = cuda::std::next(p);
+    p = cuda::std::prev(p);
+    p = cuda::std::next(p, 2);
+    p = cuda::std::prev(p, 2);
 #endif
-  cuda::std::advance(p, Intable<Holder<Incomplete> >());
-  (void)cuda::std::distance(p, p);
+    cuda::std::advance(p, Intable<Holder<Incomplete> >());
+    (void)cuda::std::distance(p, p);
 
-  return 0;
+    return 0;
 }

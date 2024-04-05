@@ -9,6 +9,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 // Some early versions (cl.exe 14.16 / VC141) do not identify correct constructors
 // UNSUPPORTED: msvc
 
@@ -34,75 +35,61 @@ struct Implicit {
   __host__ __device__ Implicit(int) {}
 };
 
-template <class T>
+template<class T>
 struct Derived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
-  template <class U>
-  __host__ __device__ operator cuda::std::tuple<U>() && {
-    ++count;
-    return {};
-  }
+  template<class U>
+  __host__ __device__ operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
-template <class T>
+
+template<class T>
 struct ExplicitDerived : cuda::std::tuple<T> {
   using cuda::std::tuple<T>::tuple;
-  template <class U>
-  __host__ __device__ explicit operator cuda::std::tuple<U>() && {
-    ++count;
-    return {};
-  }
+  template<class U>
+  __host__ __device__ explicit operator cuda::std::tuple<U>() && { ++count; return {}; }
 };
 
 int main(int, char**) {
   {
-    cuda::std::tuple<Explicit> foo = Derived<int>{42};
-    ((void)foo);
+    cuda::std::tuple<Explicit> foo = Derived<int>{42}; ((void)foo);
     assert(count == 1);
-    cuda::std::tuple<Explicit> bar(Derived<int>{42});
-    ((void)bar);
+    cuda::std::tuple<Explicit> bar(Derived<int>{42}); ((void)bar);
     assert(count == 2);
   }
   count = 0;
   {
-    cuda::std::tuple<Implicit> foo = Derived<int>{42};
-    ((void)foo);
+    cuda::std::tuple<Implicit> foo = Derived<int>{42}; ((void)foo);
     assert(count == 1);
-    cuda::std::tuple<Implicit> bar(Derived<int>{42});
-    ((void)bar);
+    cuda::std::tuple<Implicit> bar(Derived<int>{42}); ((void)bar);
     assert(count == 2);
   }
   count = 0;
   {
-    static_assert(
-        !cuda::std::is_convertible<ExplicitDerived<int>,
-                                   cuda::std::tuple<Explicit> >::value,
-        "");
-    cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
-    ((void)bar);
+    static_assert(!cuda::std::is_convertible<
+        ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value, "");
+    cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42}); ((void)bar);
     assert(count == 1);
   }
   count = 0;
   {
     // FIXME: Libc++ incorrectly rejects this code.
 #ifndef _LIBCUDACXX_VERSION
-    cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42};
-    ((void)foo);
-    static_assert(cuda::std::is_convertible<ExplicitDerived<int>,
-                                            cuda::std::tuple<Implicit> >::value,
-                  "correct STLs accept this");
+    cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42}; ((void)foo);
+    static_assert(cuda::std::is_convertible<
+        ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
+        "correct STLs accept this");
 #else
-    static_assert(
-        !cuda::std::is_convertible<ExplicitDerived<int>,
-                                   cuda::std::tuple<Implicit> >::value,
+    static_assert(!cuda::std::is_convertible<
+        ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
         "libc++ incorrectly rejects this");
 #endif
     assert(count == 0);
-    cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42});
-    ((void)bar);
+    cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42}); ((void)bar);
     assert(count == 1);
   }
   count = 0;
+
 
   return 0;
 }

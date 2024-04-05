@@ -8,6 +8,7 @@
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
 
+
 // <cuda/std/tuple>
 
 // template <class T> constexpr size_t tuple_size_v = tuple_size<T>::value;
@@ -16,13 +17,12 @@
 
 #include <cuda/std/tuple>
 
-int main(int, char**) {
-  (void)cuda::std::tuple_size_v<
-      cuda::std::tuple<>&>;           // expected-note {{requested here}}
-  (void)cuda::std::tuple_size_v<int>; // expected-note {{requested here}}
-  (void)cuda::std::tuple_size_v<
-      cuda::std::tuple<>*>; // expected-note {{requested here}}
-  // expected-error@tuple:* 3 {{implicit instantiation of undefined template}}
+int main(int, char**)
+{
+    (void)cuda::std::tuple_size_v<cuda::std::tuple<> &>; // expected-note {{requested here}}
+    (void)cuda::std::tuple_size_v<int>; // expected-note {{requested here}}
+    (void)cuda::std::tuple_size_v<cuda::std::tuple<>*>; // expected-note {{requested here}}
+    // expected-error@tuple:* 3 {{implicit instantiation of undefined template}}
 
   return 0;
 }

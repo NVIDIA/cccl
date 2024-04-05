@@ -25,9 +25,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/allocator/destroy_range.h>
 #include <thrust/device_delete.h>
 #include <thrust/device_free.h>
+#include <thrust/detail/allocator/destroy_range.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -35,13 +35,13 @@ namespace detail
 {
 
 // define an empty allocator class to use below
-struct device_delete_allocator
-{};
+struct device_delete_allocator {};
 
-} // namespace detail
+}
 
-template <typename T>
-void device_delete(device_ptr<T> ptr, const size_t n)
+template<typename T>
+  void device_delete(device_ptr<T> ptr,
+                     const size_t n)
 {
   // we can use device_allocator to destroy the range
   thrust::detail::device_delete_allocator a;

@@ -1,30 +1,33 @@
-#include <thrust/execution_policy.h>
-#include <thrust/reverse.h>
-
 #include <unittest/unittest.h>
+#include <thrust/reverse.h>
+#include <thrust/execution_policy.h>
+
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template <typename ExecutionPolicy, typename Iterator>
-__global__ void reverse_kernel(ExecutionPolicy exec, Iterator first, Iterator last)
+template<typename ExecutionPolicy, typename Iterator>
+__global__
+void reverse_kernel(ExecutionPolicy exec, Iterator first, Iterator last)
 {
   thrust::reverse(exec, first, last);
 }
 
-template <typename ExecutionPolicy>
+
+template<typename ExecutionPolicy>
 void TestReverseDevice(ExecutionPolicy exec)
 {
-  size_t n                          = 1000;
-  thrust::host_vector<int> h_data   = unittest::random_integers<int>(n);
+  size_t n = 1000;
+  thrust::host_vector<int> h_data = unittest::random_integers<int>(n);
   thrust::device_vector<int> d_data = h_data;
-
+  
   thrust::reverse(h_data.begin(), h_data.end());
 
-  reverse_kernel<<<1, 1>>>(exec, raw_pointer_cast(d_data.data()), raw_pointer_cast(d_data.data() + d_data.size()));
+  reverse_kernel<<<1,1>>>(exec, raw_pointer_cast(d_data.data()), raw_pointer_cast(d_data.data() + d_data.size()));
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
-
+  
   ASSERT_EQUAL(h_data, d_data);
 };
+
 
 void TestReverseDeviceSeq()
 {
@@ -32,23 +35,27 @@ void TestReverseDeviceSeq()
 }
 DECLARE_UNITTEST(TestReverseDeviceSeq);
 
+
 void TestReverseDeviceDevice()
 {
   TestReverseDevice(thrust::device);
 }
 DECLARE_UNITTEST(TestReverseDeviceDevice);
 
-template <typename ExecutionPolicy, typename Iterator1, typename Iterator2>
-__global__ void reverse_copy_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result)
+
+template<typename ExecutionPolicy, typename Iterator1, typename Iterator2>
+__global__
+void reverse_copy_kernel(ExecutionPolicy exec, Iterator1 first, Iterator1 last, Iterator2 result)
 {
   thrust::reverse_copy(exec, first, last, result);
 }
 
-template <typename ExecutionPolicy>
+
+template<typename ExecutionPolicy>
 void TestReverseCopyDevice(ExecutionPolicy exec)
 {
-  size_t n                          = 1000;
-  thrust::host_vector<int> h_data   = unittest::random_integers<int>(n);
+  size_t n = 1000;
+  thrust::host_vector<int> h_data = unittest::random_integers<int>(n);
   thrust::device_vector<int> d_data = h_data;
 
   thrust::host_vector<int> h_result(n);
@@ -56,12 +63,13 @@ void TestReverseCopyDevice(ExecutionPolicy exec)
 
   thrust::reverse_copy(h_data.begin(), h_data.end(), h_result.begin());
 
-  reverse_copy_kernel<<<1, 1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
+  reverse_copy_kernel<<<1,1>>>(exec, d_data.begin(), d_data.end(), d_result.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
   ASSERT_EQUAL(h_result, d_result);
 };
+
 
 void TestReverseCopyDeviceSeq()
 {
@@ -69,12 +77,14 @@ void TestReverseCopyDeviceSeq()
 }
 DECLARE_UNITTEST(TestReverseCopyDeviceSeq);
 
+
 void TestReverseCopyDeviceDevice()
 {
   TestReverseCopyDevice(thrust::device);
 }
 DECLARE_UNITTEST(TestReverseCopyDeviceDevice);
 #endif
+
 
 void TestReverseCudaStreams()
 {
@@ -105,6 +115,7 @@ void TestReverseCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestReverseCudaStreams);
+
 
 void TestReverseCopyCudaStreams()
 {
@@ -137,3 +148,4 @@ void TestReverseCopyCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestReverseCopyCudaStreams);
+

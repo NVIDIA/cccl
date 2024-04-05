@@ -43,21 +43,21 @@ int toupper(int c);
 
 #ifdef __cplusplus
 
-#  undef isalnum
-#  undef isalpha
-#  undef isblank
-#  undef iscntrl
-#  undef isdigit
-#  undef isgraph
-#  undef islower
-#  undef isprint
-#  undef ispunct
-#  undef isspace
-#  undef isupper
-#  undef isxdigit
-#  undef tolower
-#  undef toupper
+#undef isalnum
+#undef isalpha
+#undef isblank
+#undef iscntrl
+#undef isdigit
+#undef isgraph
+#undef islower
+#undef isprint
+#undef ispunct
+#undef isspace
+#undef isupper
+#undef isxdigit
+#undef tolower
+#undef toupper
 
 #endif
 
-#endif // _LIBCUDACXX_CTYPE_H
+#endif  // _LIBCUDACXX_CTYPE_H

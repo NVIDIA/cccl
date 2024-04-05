@@ -19,42 +19,56 @@
 #include <cuda/std/cassert>
 
 struct pod {
-  int val;
+    int val;
 
-  __host__ __device__ friend bool operator==(pod lhs, pod rhs) {
-    return lhs.val == rhs.val;
-  }
+    __host__ __device__
+    friend bool operator==(pod lhs, pod rhs)
+    {
+        return lhs.val == rhs.val;
+    }
 };
 
 using variant_t = cuda::std::variant<int, pod, double>;
 
-template <typename T, int Val>
-struct tester {
-  template <typename Variant>
-  __host__ __device__ static void initialize(Variant&& v) {
-    v = T{Val};
-  }
+template<typename T, int Val>
+struct tester
+{
+    template<typename Variant>
+    __host__ __device__
+    static void initialize(Variant && v)
+    {
+        v = T{Val};
+    }
 
-  template <typename Variant>
-  __host__ __device__ static void validate(Variant&& v) {
-    assert(cuda::std::holds_alternative<T>(v));
-    assert(cuda::std::get<T>(v) == T{Val});
-  }
+    template<typename Variant>
+    __host__ __device__
+    static void validate(Variant && v)
+    {
+        assert(cuda::std::holds_alternative<T>(v));
+        assert(cuda::std::get<T>(v) == T{Val});
+    }
 };
 
-using testers =
-    tester_list<tester<int, 10>, tester<int, 20>, tester<pod, 30>,
-                tester<pod, 40>, tester<double, 50>, tester<double, 60> >;
+using testers = tester_list<
+    tester<int, 10>,
+    tester<int, 20>,
+    tester<pod, 30>,
+    tester<pod, 40>,
+    tester<double, 50>,
+    tester<double, 60>
+>;
 
-void kernel_invoker() {
-  variant_t v;
-  validate_not_movable<variant_t, testers>(v);
+void kernel_invoker()
+{
+    variant_t v;
+    validate_not_movable<variant_t, testers>(v);
 }
 
-int main(int arg, char** argv) {
+int main(int arg, char ** argv)
+{
 #ifndef __CUDA_ARCH__
-  kernel_invoker();
+    kernel_invoker();
 #endif
 
-  return 0;
+    return 0;
 }

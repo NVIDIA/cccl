@@ -82,120 +82,161 @@ template <typename OffsetT>
 class GridQueue
 {
 private:
-  /// Counter indices
-  enum
-  {
-    FILL  = 0,
-    DRAIN = 1,
-  };
 
-  /// Pair of counters
-  OffsetT* d_counters;
+    /// Counter indices
+    enum
+    {
+        FILL    = 0,
+        DRAIN   = 1,
+    };
+
+    /// Pair of counters
+    OffsetT *d_counters;
 
 public:
-  /// Returns the device allocation size in bytes needed to construct a GridQueue instance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static size_t AllocationSize()
-  {
-    return sizeof(OffsetT) * 2;
-  }
 
-  /// Constructs an invalid GridQueue descriptor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue()
-      : d_counters(NULL)
-  {}
+    /// Returns the device allocation size in bytes needed to construct a GridQueue instance
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+    static size_t AllocationSize()
+    {
+        return sizeof(OffsetT) * 2;
+    }
 
-  /**
-   * @brief Constructs a GridQueue descriptor around the device storage allocation
-   *
-   * @param d_storage
-   *   Device allocation to back the GridQueue.  Must be at least as big as
-   *   <tt>AllocationSize()</tt>.
-   */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue(void* d_storage)
-      : d_counters((OffsetT*) d_storage)
-  {}
 
-  /// This operation sets the fill-size and resets the drain counter, preparing the GridQueue for
-  /// draining in the next kernel instance. To be called by the host or by a kernel prior to that
-  /// which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillAndResetDrain(OffsetT fill_size, cudaStream_t stream = 0)
-  {
-    cudaError_t result = cudaErrorUnknown;
+    /// Constructs an invalid GridQueue descriptor
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue()
+    :
+        d_counters(NULL)
+    {}
 
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      ((void) stream; d_counters[FILL] = fill_size; d_counters[DRAIN] = 0; result = cudaSuccess;),
-      (OffsetT counters[2]; counters[FILL] = fill_size; counters[DRAIN] = 0;
-       result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));));
+    /**
+     * @brief Constructs a GridQueue descriptor around the device storage allocation
+     *
+     * @param d_storage
+     *   Device allocation to back the GridQueue.  Must be at least as big as
+     *   <tt>AllocationSize()</tt>.
+     */
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridQueue(void *d_storage)
+        : d_counters((OffsetT *)d_storage)
+    {}
 
-    return result;
-  }
+    /// This operation sets the fill-size and resets the drain counter, preparing the GridQueue for
+    /// draining in the next kernel instance. To be called by the host or by a kernel prior to that
+    /// which will be draining.
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillAndResetDrain(
+        OffsetT fill_size,
+        cudaStream_t stream = 0)
+    {
+        cudaError_t result = cudaErrorUnknown;
 
-  /// This operation resets the drain so that it may advance to meet the existing fill-size.
-  /// To be called by the host or by a kernel prior to that which will be draining.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain(cudaStream_t stream = 0)
-  {
-    cudaError_t result = cudaErrorUnknown;
+        NV_IF_TARGET(NV_IS_DEVICE,
+        (
+            (void)stream;
+            d_counters[FILL] = fill_size;
+            d_counters[DRAIN] = 0;
+            result = cudaSuccess;
+        ), (
+            OffsetT counters[2];
+            counters[FILL] = fill_size;
+            counters[DRAIN] = 0;
+            result = CubDebug(cudaMemcpyAsync(d_counters, counters, sizeof(OffsetT) * 2, cudaMemcpyHostToDevice, stream));
+        ));
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 ((void) stream; d_counters[DRAIN] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream));));
+        return result;
+    }
 
-    return result;
-  }
+    /// This operation resets the drain so that it may advance to meet the existing fill-size.
+    /// To be called by the host or by a kernel prior to that which will be draining.
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetDrain(cudaStream_t stream = 0)
+    {
+        cudaError_t result = cudaErrorUnknown;
 
-  /// This operation resets the fill counter.
-  /// To be called by the host or by a kernel prior to that which will be filling.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill(cudaStream_t stream = 0)
-  {
-    cudaError_t result = cudaErrorUnknown;
+        NV_IF_TARGET(NV_IS_DEVICE,
+        (
+            (void)stream;
+            d_counters[DRAIN] = 0;
+            result = cudaSuccess;
+        ), (
+            result = CubDebug(cudaMemsetAsync(d_counters + DRAIN, 0, sizeof(OffsetT), stream));
+        ));
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 ((void) stream; d_counters[FILL] = 0; result = cudaSuccess;),
-                 (result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream));));
+        return result;
+    }
 
-    return result;
-  }
 
-  /// Returns the fill-size established by the parent or by the previous kernel.
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillSize(OffsetT& fill_size, cudaStream_t stream = 0)
-  {
-    cudaError_t result = cudaErrorUnknown;
+    /// This operation resets the fill counter.
+    /// To be called by the host or by a kernel prior to that which will be filling.
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t ResetFill(cudaStream_t stream = 0)
+    {
+        cudaError_t result = cudaErrorUnknown;
 
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 ((void) stream; fill_size = d_counters[FILL]; result = cudaSuccess;),
-                 (result = CubDebug(
-                    cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));));
+        NV_IF_TARGET(NV_IS_DEVICE,
+        (
+            (void)stream;
+            d_counters[FILL] = 0;
+            result = cudaSuccess;
+        ), (
+            result = CubDebug(cudaMemsetAsync(d_counters + FILL, 0, sizeof(OffsetT), stream));
+        ));
 
-    return result;
-  }
+        return result;
+    }
 
-  /// Drain @p num_items from the queue. Returns offset from which to read items.
-  /// To be called from CUDA kernel.
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Drain(OffsetT num_items)
-  {
-    return atomicAdd(d_counters + DRAIN, num_items);
-  }
 
-  /// Fill @p num_items into the queue. Returns offset from which to write items.
-  /// To be called from CUDA kernel.
-  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Fill(OffsetT num_items)
-  {
-    return atomicAdd(d_counters + FILL, num_items);
-  }
+    /// Returns the fill-size established by the parent or by the previous kernel.
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t FillSize(
+        OffsetT &fill_size,
+        cudaStream_t stream = 0)
+    {
+        cudaError_t result = cudaErrorUnknown;
+
+        NV_IF_TARGET(NV_IS_DEVICE,
+        (
+            (void)stream;
+            fill_size = d_counters[FILL];
+            result = cudaSuccess;
+        ), (
+            result = CubDebug(cudaMemcpyAsync(&fill_size, d_counters + FILL, sizeof(OffsetT), cudaMemcpyDeviceToHost, stream));
+        ));
+
+        return result;
+    }
+
+
+    /// Drain @p num_items from the queue. Returns offset from which to read items.
+    /// To be called from CUDA kernel.
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Drain(OffsetT num_items)
+    {
+        return atomicAdd(d_counters + DRAIN, num_items);
+    }
+
+
+    /// Fill @p num_items into the queue. Returns offset from which to write items.
+    /// To be called from CUDA kernel.
+    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT Fill(OffsetT num_items)
+    {
+        return atomicAdd(d_counters + FILL, num_items);
+    }
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+
 
 /**
  * Reset grid queue (call with 1 block of 1 thread)
  */
 template <typename OffsetT>
-__global__ void FillAndResetDrainKernel(GridQueue<OffsetT> grid_queue, OffsetT num_items)
+__global__ void FillAndResetDrainKernel(
+    GridQueue<OffsetT>   grid_queue,
+    OffsetT              num_items)
 {
-  grid_queue.FillAndResetDrain(num_items);
+    grid_queue.FillAndResetDrain(num_items);
 }
+
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END
+
+

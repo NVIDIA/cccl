@@ -28,8 +28,8 @@
 
 #include "test_macros.h"
 #include "template_cost_testing.h"
-using cuda::std::false_type;
 using cuda::std::true_type;
+using cuda::std::false_type;
 
 #define FALSE_T() cuda::std::false_type,
 #define TRUE_T() cuda::std::true_type,
@@ -47,29 +47,21 @@ using cuda::std::true_type;
 
 void sink(...);
 
-void Foo1(TEST_AND<REPEAT_1000(TRUE_T) true_type> t1) { sink(&t1); }
-void Foo2(TEST_AND<REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type> t2) {
-  sink(&t2);
-}
-void Foo3(TEST_AND<REPEAT_1000(TRUE_T) true_type, false_type> t3) { sink(&t3); }
-void Foo4(
-    TEST_AND<REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type, false_type>
-        t4) {
-  sink(&t4);
-}
-void Foo5(TEST_AND<false_type, REPEAT_1000(TRUE_T) true_type> t5) { sink(&t5); }
-void Foo6(
-    TEST_AND<false_type, REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type>
-        t6) {
-  sink(&t6);
-}
+void Foo1(TEST_AND < REPEAT_1000(TRUE_T) true_type > t1) { sink(&t1); }
+void Foo2(TEST_AND < REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type > t2) { sink(&t2); }
+void Foo3(TEST_AND < REPEAT_1000(TRUE_T) true_type, false_type > t3) { sink(&t3); }
+void Foo4(TEST_AND < REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type, false_type > t4) { sink(&t4); }
+void Foo5(TEST_AND < false_type, REPEAT_1000(TRUE_T) true_type > t5) { sink(&t5); }
+void Foo6(TEST_AND < false_type, REPEAT_1000(TRUE_T) REPEAT_1000(TRUE_T) true_type > t6) { sink(&t6); }
 
 void escape() {
 
-  sink(&Foo1);
-  sink(&Foo2);
-  sink(&Foo3);
-  sink(&Foo4);
-  sink(&Foo5);
-  sink(&Foo6);
+sink(&Foo1);
+sink(&Foo2);
+sink(&Foo3);
+sink(&Foo4);
+sink(&Foo5);
+sink(&Foo6);
 }
+
+

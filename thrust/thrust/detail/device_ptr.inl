@@ -26,41 +26,47 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
+#include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
-template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(T* ptr)
+template<typename T>
+  _CCCL_HOST_DEVICE
+  device_ptr<T> device_pointer_cast(T *ptr)
 {
   return device_ptr<T>(ptr);
 } // end device_pointer_cast()
 
-template <typename T>
-_CCCL_HOST_DEVICE device_ptr<T> device_pointer_cast(const device_ptr<T>& ptr)
+template<typename T>
+  _CCCL_HOST_DEVICE
+  device_ptr<T> device_pointer_cast(const device_ptr<T> &ptr)
 {
   return ptr;
 } // end device_pointer_cast()
 
+
 namespace detail
 {
 
-template <typename T>
-struct is_device_ptr< thrust::device_ptr<T> > : public true_type
-{}; // end is_device_ptr
+template<typename T>
+  struct is_device_ptr< thrust::device_ptr<T> >
+    : public true_type
+{
+}; // end is_device_ptr
 
 #if defined(_CCCL_COMPILER_MSVC) && (_MSC_VER <= 1400)
 // XXX WAR MSVC 2005 problem with correctly implementing
 //     pointer_raw_pointer for device_ptr by specializing it here
-template <typename T>
-struct pointer_raw_pointer< thrust::device_ptr<T> >
+template<typename T>
+  struct pointer_raw_pointer< thrust::device_ptr<T> >
 {
   typedef typename device_ptr<T>::raw_pointer type;
 }; // end pointer_raw_pointer
 #endif
+
 
 } // end namespace detail
 

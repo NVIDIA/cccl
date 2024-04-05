@@ -56,23 +56,12 @@ struct cuda::std::incrementable_traits<FooIter> {
 };
 
 // Not using `FooIter::value_type`.
-static_assert(cuda::std::is_same_v<
-                  typename cuda::std::move_iterator<FooIter>::value_type, int>,
-              "");
+static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::value_type, int>, "");
 // Not using `FooIter::difference_type`.
-static_assert(
-    cuda::std::is_same_v<
-        typename cuda::std::move_iterator<FooIter>::difference_type, char>,
-    "");
-static_assert(
-    cuda::std::is_same_v<
-        typename cuda::std::reverse_iterator<FooIter>::reference, bool&>,
-    "");
+static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<FooIter>::difference_type, char>, "");
+static_assert(cuda::std::is_same_v<typename cuda::std::reverse_iterator<FooIter>::reference, bool&>, "");
 #else
-static_assert(
-    cuda::std::is_same<typename cuda::std::reverse_iterator<FooIter>::reference,
-                       char&>::value,
-    "");
+static_assert(cuda::std::is_same<typename cuda::std::reverse_iterator<FooIter>::reference, char&>::value, "");
 #endif
 
 template <class ValueType, class Reference>
@@ -91,52 +80,32 @@ __host__ __device__ void test() {
   typedef cuda::std::move_iterator<It> R;
   typedef cuda::std::iterator_traits<It> T;
   static_assert((cuda::std::is_same<typename R::iterator_type, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::difference_type,
-                                    typename T::difference_type>::value),
-                "");
+  static_assert((cuda::std::is_same<typename R::difference_type, typename T::difference_type>::value), "");
   static_assert((cuda::std::is_same<typename R::pointer, It>::value), "");
-  static_assert((cuda::std::is_same<typename R::value_type,
-                                    typename T::value_type>::value),
-                "");
+  static_assert((cuda::std::is_same<typename R::value_type, typename T::value_type>::value), "");
 
 #if TEST_STD_VER > 2014
-  static_assert((cuda::std::is_same_v<typename R::reference,
-                                      cuda::std::iter_rvalue_reference_t<It> >),
-                "");
+  static_assert((cuda::std::is_same_v<typename R::reference, cuda::std::iter_rvalue_reference_t<It>>), "");
 #else
-  static_assert((cuda::std::is_same<typename R::reference,
-                                    typename R::value_type&&>::value),
-                "");
+  static_assert((cuda::std::is_same<typename R::reference, typename R::value_type&&>::value), "");
 #endif
 
 #if TEST_STD_VER > 2014
-  if constexpr (cuda::std::is_same_v<typename T::iterator_category,
-                                     cuda::std::contiguous_iterator_tag>) {
-    static_assert(
-        (cuda::std::is_same<typename R::iterator_category,
-                            cuda::std::random_access_iterator_tag>::value),
-        "");
+  if constexpr (cuda::std::is_same_v<typename T::iterator_category, cuda::std::contiguous_iterator_tag>) {
+    static_assert((cuda::std::is_same<typename R::iterator_category, cuda::std::random_access_iterator_tag>::value), "");
   } else {
-    static_assert((cuda::std::is_same<typename R::iterator_category,
-                                      typename T::iterator_category>::value),
-                  "");
+    static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
   }
 #else
-  static_assert((cuda::std::is_same<typename R::iterator_category,
-                                    typename T::iterator_category>::value),
-                "");
+  static_assert((cuda::std::is_same<typename R::iterator_category, typename T::iterator_category>::value), "");
 #endif
 
 #if TEST_STD_VER > 2014
   static_assert(
-      cuda::std::is_same_v<
-          typename R::iterator_concept,
-          cuda::std::conditional_t<
-              cuda::std::is_same_v<typename R::iterator_concept,
-                                   cuda::std::contiguous_iterator_tag>,
-              cuda::std::random_access_iterator_tag,
-              typename R::iterator_concept> >,
-      "");
+      cuda::std::is_same_v<typename R::iterator_concept,
+                     cuda::std::conditional_t<cuda::std::is_same_v<typename R::iterator_concept, cuda::std::contiguous_iterator_tag>,
+                                        cuda::std::random_access_iterator_tag,
+                                        typename R::iterator_concept>>, "");
 #endif
 }
 
@@ -148,62 +117,41 @@ int main(int, char**) {
   test<char*>();
 
   {
-    typedef DummyIt<int, int> T;
-    typedef cuda::std::move_iterator<T> It;
-    static_assert(cuda::std::is_same<It::reference, int>::value, "");
+      typedef DummyIt<int, int> T;
+      typedef cuda::std::move_iterator<T> It;
+      static_assert(cuda::std::is_same<It::reference, int>::value, "");
   }
   {
-    typedef DummyIt<int, cuda::std::reference_wrapper<int> > T;
-    typedef cuda::std::move_iterator<T> It;
+      typedef DummyIt<int, cuda::std::reference_wrapper<int> > T;
+      typedef cuda::std::move_iterator<T> It;
 
-    static_assert(cuda::std::is_same<It::reference,
-                                     cuda::std::reference_wrapper<int> >::value,
-                  "");
+      static_assert(cuda::std::is_same<It::reference, cuda::std::reference_wrapper<int> >::value, "");
   }
   {
-    // Check that move_iterator uses whatever reference type it's given
-    // when it's not a reference.
-    typedef DummyIt<int, long> T;
-    typedef cuda::std::move_iterator<T> It;
-    static_assert(cuda::std::is_same<It::reference, long>::value, "");
+      // Check that move_iterator uses whatever reference type it's given
+      // when it's not a reference.
+      typedef DummyIt<int, long > T;
+      typedef cuda::std::move_iterator<T> It;
+      static_assert(cuda::std::is_same<It::reference, long>::value, "");
   }
   {
-    typedef DummyIt<int, int&> T;
-    typedef cuda::std::move_iterator<T> It;
-    static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
+      typedef DummyIt<int, int&> T;
+      typedef cuda::std::move_iterator<T> It;
+      static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
   }
   {
-    typedef DummyIt<int, int&&> T;
-    typedef cuda::std::move_iterator<T> It;
-    static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
+      typedef DummyIt<int, int&&> T;
+      typedef cuda::std::move_iterator<T> It;
+      static_assert(cuda::std::is_same<It::reference, int&&>::value, "");
   }
 
 #if TEST_STD_VER > 2014
-  test<contiguous_iterator<char*> >();
-  static_assert(
-      cuda::std::is_same_v<typename cuda::std::move_iterator<
-                               forward_iterator<char*> >::iterator_concept,
-                           cuda::std::forward_iterator_tag>,
-      "");
-  static_assert(cuda::std::is_same_v<
-                    typename cuda::std::move_iterator<
-                        bidirectional_iterator<char*> >::iterator_concept,
-                    cuda::std::bidirectional_iterator_tag>,
-                "");
-  static_assert(cuda::std::is_same_v<
-                    typename cuda::std::move_iterator<
-                        random_access_iterator<char*> >::iterator_concept,
-                    cuda::std::random_access_iterator_tag>,
-                "");
-  static_assert(
-      cuda::std::is_same_v<typename cuda::std::move_iterator<
-                               contiguous_iterator<char*> >::iterator_concept,
-                           cuda::std::random_access_iterator_tag>,
-      "");
-  static_assert(cuda::std::is_same_v<
-                    typename cuda::std::move_iterator<char*>::iterator_concept,
-                    cuda::std::random_access_iterator_tag>,
-                "");
+  test<contiguous_iterator<char*>>();
+  static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<forward_iterator<char*>>::iterator_concept, cuda::std::forward_iterator_tag>, "");
+  static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<bidirectional_iterator<char*>>::iterator_concept, cuda::std::bidirectional_iterator_tag>, "");
+  static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<random_access_iterator<char*>>::iterator_concept, cuda::std::random_access_iterator_tag>, "");
+  static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<contiguous_iterator<char*>>::iterator_concept, cuda::std::random_access_iterator_tag>, "");
+  static_assert(cuda::std::is_same_v<typename cuda::std::move_iterator<char*>::iterator_concept, cuda::std::random_access_iterator_tag>, "");
 #endif
 
   return 0;

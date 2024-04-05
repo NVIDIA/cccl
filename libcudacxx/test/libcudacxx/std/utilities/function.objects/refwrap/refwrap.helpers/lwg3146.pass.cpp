@@ -20,26 +20,22 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> > rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(
-        decltype(rrj),
-        cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> >);
     assert(&rrj.get() == &ri);
   }
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(
-        ri);
+    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(
-        decltype(rrj),
-        cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
     assert(&rrj.get() == &ri);
   }
   {
@@ -47,26 +43,22 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::reference_wrapper<int> ri(i);
     cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> > rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(
-        decltype(rrj),
-        cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
     assert(&rrj.get() == &ri);
   }
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(
-        ri);
+    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(
-        decltype(rrj),
-        cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
     assert(&rrj.get() == &ri);
   }
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && !defined(__CUDACC_RTC__)
   static_assert(test());

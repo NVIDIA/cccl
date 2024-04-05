@@ -17,14 +17,18 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  int ia[] = {1, 2, 3};
-  const cuda::std::vector<int> v(ia, ia + sizeof(ia) / sizeof(ia[0]));
-  cuda::std::vector<int>::const_iterator i = begin(v);
-  assert(*i == 1);
+int main(int, char**)
+{
+    int ia[] = {1, 2, 3};
+    const cuda::std::vector<int> v(ia, ia + sizeof(ia)/sizeof(ia[0]));
+    cuda::std::vector<int>::const_iterator i = begin(v);
+    assert(*i == 1);
 
   return 0;
 }
 #else
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}
 #endif

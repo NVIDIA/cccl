@@ -21,9 +21,7 @@
 #include "test_iterators.h"
 
 template <typename It>
-__host__ __device__ constexpr void check(int* first, int* last,
-                                         cuda::std::iter_difference_t<It> n,
-                                         int* expected) {
+__host__ __device__ constexpr void check(int* first, int* last, cuda::std::iter_difference_t<It> n, int* expected) {
   It it(first);
   auto sent = sentinel_wrapper(It(last));
 
@@ -38,13 +36,13 @@ __host__ __device__ constexpr bool test() {
   for (int size = 0; size != 10; ++size) {
     for (int n = 0; n != 20; ++n) {
       int* expected = n > size ? range + size : range + n;
-      check<cpp17_input_iterator<int*> >(range, range + size, n, expected);
-      check<cpp20_input_iterator<int*> >(range, range + size, n, expected);
-      check<forward_iterator<int*> >(range, range + size, n, expected);
-      check<bidirectional_iterator<int*> >(range, range + size, n, expected);
-      check<random_access_iterator<int*> >(range, range + size, n, expected);
-      check<contiguous_iterator<int*> >(range, range + size, n, expected);
-      check<int*>(range, range + size, n, expected);
+      check<cpp17_input_iterator<int*>>(  range, range+size, n, expected);
+      check<cpp20_input_iterator<int*>>(  range, range+size, n, expected);
+      check<forward_iterator<int*>>(      range, range+size, n, expected);
+      check<bidirectional_iterator<int*>>(range, range+size, n, expected);
+      check<random_access_iterator<int*>>(range, range+size, n, expected);
+      check<contiguous_iterator<int*>>(   range, range+size, n, expected);
+      check<int*>(                        range, range+size, n, expected);
     }
   }
 

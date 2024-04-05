@@ -12,6 +12,7 @@
 // template<class F, class... Args>
 // concept predicate;
 
+
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -53,13 +54,10 @@ static_assert(predicate<Predicate&, int, double, char>, "");
 static_assert(!predicate<const Predicate, int, double, char>, "");
 static_assert(!predicate<const Predicate&, int, double, char>, "");
 
-#if TEST_STD_VER > 2014 &&                                                     \
-    !defined(                                                                  \
-        TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
-template <class Fun>
-__host__ __device__ constexpr bool check_lambda(Fun) {
-  return predicate<Fun>;
-}
+#if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
+template<class Fun>
+__host__ __device__
+constexpr bool check_lambda(Fun) { return predicate<Fun>; }
 
 static_assert(check_lambda([] { return cuda::std::true_type(); }), "");
 static_assert(check_lambda([]() -> int* { return nullptr; }), "");

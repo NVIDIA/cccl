@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_MOVE_ASSIGNABLE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,8 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_move_assignable
-    : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>>
-{};
+    : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>> {};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

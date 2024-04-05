@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file universal_allocator.h
  *  \brief An allocator which creates new elements in memory accessible to both
  *         hosts and devices.
@@ -75,7 +76,8 @@ using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_allocator;
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_ptr = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_pointer<T>;
+using universal_ptr =
+  thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_pointer<T>;
 
 /*! \}
  */

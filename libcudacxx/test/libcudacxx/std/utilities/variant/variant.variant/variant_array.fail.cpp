@@ -14,6 +14,7 @@
 
 // template <class ...Types> class variant;
 
+
 #include <cuda/std/variant>
 #include <cuda/std/type_traits>
 #include <cuda/std/string>
@@ -23,11 +24,12 @@
 #include "variant_test_helpers.h"
 #include "test_convertible.h"
 
-int main(int, char**) {
-  // expected-error-re@variant:* 3 {{{{(static_assert|static assertion)}} failed}}
-  cuda::std::variant<int, int[]> v;      // expected-note {{requested here}}
-  cuda::std::variant<int, int[42]> v2;   // expected-note {{requested here}}
-  cuda::std::variant<int, int[][42]> v3; // expected-note {{requested here}}
+int main(int, char**)
+{
+    // expected-error-re@variant:* 3 {{{{(static_assert|static assertion)}} failed}}
+    cuda::std::variant<int, int[]> v; // expected-note {{requested here}}
+    cuda::std::variant<int, int[42]> v2; // expected-note {{requested here}}
+    cuda::std::variant<int, int[][42]> v3; // expected-note {{requested here}}
 
   return 0;
 }

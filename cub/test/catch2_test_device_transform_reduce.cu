@@ -29,11 +29,12 @@
 
 #include <cstdint>
 
+#include "catch2_test_device_reduce.cuh"
+
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
@@ -58,8 +59,8 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   using reduction_op_t = cub::Sum;
   using transform_op_t = square_t<item_t>;
 
-  constexpr int max_items = 5000000;
-  constexpr int min_items = 1;
+  constexpr int max_items    = 5000000;
+  constexpr int min_items    = 1;
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
@@ -105,8 +106,8 @@ CUB_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   using reduction_op_t = cub::Sum;
   using transform_op_t = square_t<item_t>;
 
-  constexpr int max_items = 5000000;
-  constexpr int min_items = 1;
+  constexpr int max_items    = 5000000;
+  constexpr int min_items    = 1;
 
   const int num_items = GENERATE_COPY(take(3, random(min_items, max_items)));
 
@@ -222,8 +223,8 @@ CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[r
   c2h::device_vector<input_t> in(num_items, magic_val);
   c2h::device_vector<output_t> out(1);
 
-  input_t* d_in   = thrust::raw_pointer_cast(in.data());
-  output_t* d_out = thrust::raw_pointer_cast(out.data());
+  input_t *d_in = thrust::raw_pointer_cast(in.data());
+  output_t *d_out = thrust::raw_pointer_cast(out.data());
 
   device_transform_reduce(d_in, d_out, num_items, reduction_op_t{}, transform_op_t{}, init);
 

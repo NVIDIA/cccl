@@ -2,8 +2,9 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  include <async/exclusive_scan/mixin.h>
-#  include <async/test_policy_overloads.h>
+#include <async/test_policy_overloads.h>
+
+#include <async/exclusive_scan/mixin.h>
 
 template <typename input_value_type,
           typename output_value_type   = input_value_type,
@@ -12,8 +13,10 @@ template <typename input_value_type,
 struct simple_invoker
     : testing::async::mixin::input::device_vector<input_value_type>
     , testing::async::mixin::output::device_vector<output_value_type>
-    , testing::async::exclusive_scan::mixin::postfix_args::all_overloads<initial_value_type, alternate_binary_op>
-    , testing::async::exclusive_scan::mixin::invoke_reference::host_synchronous<input_value_type, output_value_type>
+    , testing::async::exclusive_scan::mixin::postfix_args::
+        all_overloads<initial_value_type, alternate_binary_op>
+    , testing::async::exclusive_scan::mixin::invoke_reference::
+        host_synchronous<input_value_type, output_value_type>
     , testing::async::exclusive_scan::mixin::invoke_async::simple
     , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet
 {
@@ -42,8 +45,10 @@ template <typename input_value_type,
 struct simple_inplace_invoker
     : testing::async::mixin::input::device_vector<input_value_type>
     , testing::async::mixin::output::device_vector_reuse_input<input_value_type>
-    , testing::async::exclusive_scan::mixin::postfix_args::all_overloads<initial_value_type, alternate_binary_op>
-    , testing::async::exclusive_scan::mixin::invoke_reference::host_synchronous< input_value_type>
+    , testing::async::exclusive_scan::mixin::postfix_args::
+        all_overloads<initial_value_type, alternate_binary_op>
+    , testing::async::exclusive_scan::mixin::invoke_reference::host_synchronous<
+        input_value_type>
     , testing::async::exclusive_scan::mixin::invoke_async::simple
     , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet
 {

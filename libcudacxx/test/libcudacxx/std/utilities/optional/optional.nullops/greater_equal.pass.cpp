@@ -18,26 +18,27 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
-  using cuda::std::nullopt;
-  using cuda::std::nullopt_t;
-  using cuda::std::optional;
+__host__ __device__
+constexpr bool test() {
+    using cuda::std::optional;
+    using cuda::std::nullopt_t;
+    using cuda::std::nullopt;
 
-  {
+    {
     typedef int T;
     typedef optional<T> O;
 
-    O o1;    // disengaged
-    O o2{1}; // engaged
+    O o1;     // disengaged
+    O o2{1};  // engaged
 
-    assert((nullopt >= o1));
+    assert( (nullopt >= o1));
     assert(!(nullopt >= o2));
-    assert((o1 >= nullopt));
-    assert((o2 >= nullopt));
+    assert( (o1 >= nullopt));
+    assert( (o2 >= nullopt));
 
     static_assert(noexcept(nullopt >= o1), "");
     static_assert(noexcept(o1 >= nullopt), "");
-  }
+    }
 
   return true;
 }

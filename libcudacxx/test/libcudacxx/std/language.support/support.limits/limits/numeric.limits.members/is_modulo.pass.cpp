@@ -15,48 +15,47 @@
 #include "test_macros.h"
 
 template <class T, bool expected>
-__host__ __device__ void test() {
-  static_assert(cuda::std::numeric_limits<T>::is_modulo == expected,
-                "is_modulo test 1");
-  static_assert(cuda::std::numeric_limits<const T>::is_modulo == expected,
-                "is_modulo test 2");
-  static_assert(cuda::std::numeric_limits<volatile T>::is_modulo == expected,
-                "is_modulo test 3");
-  static_assert(cuda::std::numeric_limits<const volatile T>::is_modulo ==
-                    expected,
-                "is_modulo test 4");
+__host__ __device__
+void
+test()
+{
+    static_assert(cuda::std::numeric_limits<T>::is_modulo == expected, "is_modulo test 1");
+    static_assert(cuda::std::numeric_limits<const T>::is_modulo == expected, "is_modulo test 2");
+    static_assert(cuda::std::numeric_limits<volatile T>::is_modulo == expected, "is_modulo test 3");
+    static_assert(cuda::std::numeric_limits<const volatile T>::is_modulo == expected, "is_modulo test 4");
 }
 
-int main(int, char**) {
-  test<bool, false>();
-  //    test<char, false>(); // don't know
-  test<signed char, false>();
-  test<unsigned char, true>();
+int main(int, char**)
+{
+    test<bool, false>();
+//    test<char, false>(); // don't know
+    test<signed char, false>();
+    test<unsigned char, true>();
 //    test<wchar_t, false>(); // don't know
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
-  test<char8_t, true>();
+    test<char8_t, true>();
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-  test<char16_t, true>();
-  test<char32_t, true>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-  test<short, false>();
-  test<unsigned short, true>();
-  test<int, false>();
-  test<unsigned int, true>();
-  test<long, false>();
-  test<unsigned long, true>();
-  test<long long, false>();
-  test<unsigned long long, true>();
+    test<char16_t, true>();
+    test<char32_t, true>();
+#endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+    test<short, false>();
+    test<unsigned short, true>();
+    test<int, false>();
+    test<unsigned int, true>();
+    test<long, false>();
+    test<unsigned long, true>();
+    test<long long, false>();
+    test<unsigned long long, true>();
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-  test<__int128_t, false>();
-  test<__uint128_t, true>();
+    test<__int128_t, false>();
+    test<__uint128_t, true>();
 #endif
-  test<float, false>();
-  test<double, false>();
+    test<float, false>();
+    test<double, false>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-  test<long double, false>();
+    test<long double, false>();
 #endif
 
-  return 0;
+    return 0;
 }

@@ -46,7 +46,7 @@ THRUST_NAMESPACE_BEGIN
  */
 namespace system
 {
-} // namespace system
+} // end system
 
 /*! \} // end system
  */

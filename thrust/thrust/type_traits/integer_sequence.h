@@ -33,8 +33,10 @@
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
 
-#include <cuda/std/cstdint>
+
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
+#include <cuda/std/cstdint>
 #include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
@@ -48,15 +50,18 @@ THRUST_NAMESPACE_BEGIN
  */
 
 /*! \brief A compile-time sequence of
- *  <a href="https://en.cppreference.com/w/cpp/language/constant_expression#Integral_constant_expression"><i>integral
- * constants</i></a> of type \c T with values <tt>Is...</tt>.
+ *  <a href="https://en.cppreference.com/w/cpp/language/constant_expression#Integral_constant_expression"><i>integral constants</i></a>
+ *  of type \c T with values <tt>Is...</tt>.
  *
- *  \see <a
- * href="https://en.cppreference.com/w/cpp/language/constant_expression#Integral_constant_expression"><i>integral
- * constants</i></a> \see index_sequence \see make_integer_sequence \see make_reversed_integer_sequence \see
- * make_index_sequence \see make_reversed_index_sequence \see integer_sequence_push_front \see
- * integer_sequence_push_back \see <a
- * href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::integer_sequence</tt></a>
+ *  \see <a href="https://en.cppreference.com/w/cpp/language/constant_expression#Integral_constant_expression"><i>integral constants</i></a>
+ *  \see index_sequence
+ *  \see make_integer_sequence
+ *  \see make_reversed_integer_sequence
+ *  \see make_index_sequence
+ *  \see make_reversed_index_sequence
+ *  \see integer_sequence_push_front
+ *  \see integer_sequence_push_back
+ *  \see <a href="https://en.cppreference.com/w/cpp/utility/integer_sequence"><tt>std::integer_sequence</tt></a>
  */
 #if _CCCL_STD_VER >= 2014
 template <typename T, T... Is>
@@ -65,11 +70,12 @@ using integer_sequence = ::cuda::std::integer_sequence<T, Is...>;
 template <typename T, T... Is>
 struct integer_sequence
 {
-  using type       = integer_sequence;
+  using type = integer_sequence;
   using value_type = T;
-  using size_type  = ::cuda::std::size_t;
+  using size_type = ::cuda::std::size_t;
 
-  _CCCL_HOST_DEVICE static constexpr size_type size() noexcept
+  _CCCL_HOST_DEVICE
+  static constexpr size_type size() noexcept
   {
     return sizeof...(Is);
   }
@@ -118,13 +124,15 @@ namespace detail
  *  \see merge_and_renumber_reversed_integer_sequences_impl
  */
 template <typename Sequence0, typename Sequence1>
-struct merge_and_renumber_integer_sequences_impl;
+  struct merge_and_renumber_integer_sequences_impl;
 template <typename Sequence0, typename Sequence1>
-using merge_and_renumber_integer_sequences =
-  typename merge_and_renumber_integer_sequences_impl< Sequence0, Sequence1 >::type;
+  using merge_and_renumber_integer_sequences =
+      typename merge_and_renumber_integer_sequences_impl<
+          Sequence0, Sequence1
+      >::type;
 
 template <typename T, ::cuda::std::size_t N>
-struct make_integer_sequence_impl;
+  struct make_integer_sequence_impl;
 
 } // namespace detail
 
@@ -147,7 +155,8 @@ template <typename T, ::cuda::std::size_t N>
 using make_integer_sequence = ::cuda::std::make_integer_sequence<T, N>;
 #else
 template <typename T, ::cuda::std::size_t N>
-using make_integer_sequence = typename detail::make_integer_sequence_impl<T, N>::type;
+using make_integer_sequence =
+  typename detail::make_integer_sequence_impl<T, N>::type;
 
 /*! \cond
  */
@@ -156,7 +165,9 @@ namespace detail
 {
 
 template <typename T, T... Is0, T... Is1>
-struct merge_and_renumber_integer_sequences_impl< integer_sequence<T, Is0...>, integer_sequence<T, Is1...> >
+struct merge_and_renumber_integer_sequences_impl<
+  integer_sequence<T, Is0...>, integer_sequence<T, Is1...>
+>
 {
   using type = integer_sequence<T, Is0..., (sizeof...(Is0) + Is1)...>;
 };
@@ -164,8 +175,10 @@ struct merge_and_renumber_integer_sequences_impl< integer_sequence<T, Is0...>, i
 template <typename T, ::cuda::std::size_t N>
 struct make_integer_sequence_impl
 {
-  using type =
-    merge_and_renumber_integer_sequences< make_integer_sequence<T, N / 2>, make_integer_sequence<T, N - N / 2> >;
+  using type = merge_and_renumber_integer_sequences<
+    make_integer_sequence<T, N / 2>
+  , make_integer_sequence<T, N - N / 2>
+  >;
 };
 
 template <typename T>
@@ -204,7 +217,8 @@ template <::cuda::std::size_t N>
 using make_index_sequence = ::cuda::std::make_index_sequence<N>;
 #else
 template <::cuda::std::size_t N>
-using make_index_sequence = make_integer_sequence<::cuda::std::size_t, N>;
+using make_index_sequence =
+  make_integer_sequence<::cuda::std::size_t, N>;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -229,10 +243,12 @@ namespace detail
  *  \see merge_and_renumber_integer_sequences_impl
  */
 template <typename Sequence0, typename Sequence1>
-struct merge_and_renumber_reversed_integer_sequences_impl;
+  struct merge_and_renumber_reversed_integer_sequences_impl;
 template <typename Sequence0, typename Sequence1>
-using merge_and_renumber_reversed_integer_sequences =
-  typename merge_and_renumber_reversed_integer_sequences_impl< Sequence0, Sequence1 >::type;
+  using merge_and_renumber_reversed_integer_sequences =
+      typename merge_and_renumber_reversed_integer_sequences_impl<
+          Sequence0, Sequence1
+      >::type;
 
 template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl;
@@ -244,7 +260,9 @@ template <typename T, T Value, typename Sequence>
 struct integer_sequence_push_back_impl;
 
 template <typename T, T... Is0, T... Is1>
-struct merge_and_renumber_reversed_integer_sequences_impl< integer_sequence<T, Is0...>, integer_sequence<T, Is1...> >
+struct merge_and_renumber_reversed_integer_sequences_impl<
+  integer_sequence<T, Is0...>, integer_sequence<T, Is1...>
+>
 {
   using type = integer_sequence<T, (sizeof...(Is1) + Is0)..., Is1...>;
 };
@@ -266,7 +284,8 @@ struct merge_and_renumber_reversed_integer_sequences_impl< integer_sequence<T, I
  *  \see make_reversed_index_sequence
  */
 template <typename T, ::cuda::std::size_t N>
-using make_reversed_integer_sequence = typename detail::make_reversed_integer_sequence_impl<T, N>::type;
+using make_reversed_integer_sequence =
+  typename detail::make_reversed_integer_sequence_impl<T, N>::type;
 
 /*! \brief Create a new \c index_sequence with elements
  *  <tt>N - 1, N - 2, N - 3, ..., 0</tt>.
@@ -278,7 +297,8 @@ using make_reversed_integer_sequence = typename detail::make_reversed_integer_se
  *  \see make_reversed_index_sequence
  */
 template <::cuda::std::size_t N>
-using make_reversed_index_sequence = make_reversed_integer_sequence<::cuda::std::size_t, N>;
+using make_reversed_index_sequence =
+  make_reversed_integer_sequence<::cuda::std::size_t, N>;
 
 /*! \brief Add a new element to the front of an \c integer_sequence.
  *
@@ -288,7 +308,8 @@ using make_reversed_index_sequence = make_reversed_integer_sequence<::cuda::std:
  *  \see make_index_sequence
  */
 template <typename T, T Value, typename Sequence>
-using integer_sequence_push_front = typename detail::integer_sequence_push_front_impl<T, Value, Sequence>::type;
+using integer_sequence_push_front =
+  typename detail::integer_sequence_push_front_impl<T, Value, Sequence>::type;
 
 /*! \brief Add a new element to the back of an \c integer_sequence.
  *
@@ -298,7 +319,8 @@ using integer_sequence_push_front = typename detail::integer_sequence_push_front
  *  \see make_index_sequence
  */
 template <typename T, T Value, typename Sequence>
-using integer_sequence_push_back = typename detail::integer_sequence_push_back_impl<T, Value, Sequence>::type;
+using integer_sequence_push_back =
+  typename detail::integer_sequence_push_back_impl<T, Value, Sequence>::type;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -311,8 +333,10 @@ namespace detail
 template <typename T, ::cuda::std::size_t N>
 struct make_reversed_integer_sequence_impl
 {
-  using type = merge_and_renumber_reversed_integer_sequences< make_reversed_integer_sequence<T, N / 2>,
-                                                              make_reversed_integer_sequence<T, N - N / 2> >;
+  using type = merge_and_renumber_reversed_integer_sequences<
+      make_reversed_integer_sequence<T, N / 2>
+    , make_reversed_integer_sequence<T, N - N / 2>
+  >;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -359,3 +383,5 @@ struct integer_sequence_push_back_impl<T, I0, integer_sequence<T, Is...> >
  */
 
 THRUST_NAMESPACE_END
+
+

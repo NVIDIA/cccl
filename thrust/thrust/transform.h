@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file thrust/transform.h
  *  \brief Transforms input ranges using a function object
  */
@@ -41,6 +42,7 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
+
 /*! This version of \p transform applies a unary function to each element
  *  of an input sequence and stores the result in the corresponding
  *  position in an output sequence.  Specifically, for each iterator
@@ -60,15 +62,13 @@ THRUST_NAMESPACE_BEGIN
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam
- * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
- * Iterator</a>. \tparam UnaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                              and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform to negate a range in-place
  *  using the \p thrust::host execution policy for parallelization:
@@ -90,13 +90,16 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/transform
  */
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  UnaryFunction op);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename UnaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator transform(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                           InputIterator first, InputIterator last,
+                           OutputIterator result,
+                           UnaryFunction op);
+
 
 /*! This version of \p transform applies a unary function to each element
  *  of an input sequence and stores the result in the corresponding
@@ -113,15 +116,13 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  *  \param op The tranformation operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam
- * OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
- * Iterator</a>. \tparam UnaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                              and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform
  *
@@ -140,8 +141,13 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/transform
  */
-template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op);
+template<typename InputIterator,
+         typename OutputIterator,
+         typename UnaryFunction>
+  OutputIterator transform(InputIterator first, InputIterator last,
+                           OutputIterator result,
+                           UnaryFunction op);
+
 
 /*! This version of \p transform applies a binary function to each pair
  *  of elements from two input sequences and stores the result in the
@@ -165,18 +171,16 @@ OutputIterator transform(InputIterator first, InputIterator last, OutputIterator
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
- * Iterator</a>. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *                              and \c BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result,
- * result + (last1 - first1))</tt> otherwise. \pre \p first2 may equal \p result, but the range <tt>[first2, first2 +
- * (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first2 may equal \p result, but the range <tt>[first2, first2 + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform to compute the sum of two
  *  ranges using the \p thrust::host execution policy for parallelization:
@@ -200,18 +204,18 @@ OutputIterator transform(InputIterator first, InputIterator last, OutputIterator
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/transform
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputIterator result,
-  BinaryFunction op);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator transform(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                           InputIterator1 first1, InputIterator1 last1,
+                           InputIterator2 first2,
+                           OutputIterator result,
+                           BinaryFunction op);
+
 
 /*! This version of \p transform applies a binary function to each pair
  *  of elements from two input sequences and stores the result in the
@@ -231,18 +235,16 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  *  \param op The tranformation operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
- * Iterator</a>. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                        and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *                              and \c BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
  *
- *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result,
- * result + (last1 - first1))</tt> otherwise. \pre \p first2 may equal \p result, but the range <tt>[first2, first2 +
- * (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first2 may equal \p result, but the range <tt>[first2, first2 + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform
  *
@@ -263,9 +265,15 @@ _CCCL_HOST_DEVICE OutputIterator transform(
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/transform
  */
-template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator
-transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator,
+         typename BinaryFunction>
+  OutputIterator transform(InputIterator1 first1, InputIterator1 last1,
+                           InputIterator2 first2,
+                           OutputIterator result,
+                           BinaryFunction op);
+
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -292,16 +300,15 @@ transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Ou
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \c InputIterator's \c value_type is convertible to \c Predicate's \c argument_type, and \c
- * InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam ForwardIterator is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type. \tparam
- * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *                        and \c InputIterator's \c value_type is convertible to \c Predicate's \c argument_type,
+ *                        and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                        and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if to negate the odd-valued
  *  elements of a range using the \p thrust::host execution policy for parallelization:
@@ -334,18 +341,18 @@ transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Ou
  *
  *  \see thrust::transform
  */
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename ForwardIterator,
-          typename UnaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  ForwardIterator result,
-  UnaryFunction op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                               InputIterator first, InputIterator last,
+                               ForwardIterator result,
+                               UnaryFunction op,
+                               Predicate pred);
+
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -368,16 +375,15 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param pred The predicate operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \c InputIterator's \c value_type is convertible to \c Predicate's \c argument_type, and \c
- * InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam ForwardIterator is a
- * model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a> and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type. \tparam
- * Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
+ *                        and \c InputIterator's \c value_type is convertible to \c Predicate's \c argument_type,
+ *                        and \c InputIterator's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                        and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if:
  *
@@ -407,9 +413,15 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *
  *  \see thrust::transform
  */
-template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator
-transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction op, Predicate pred);
+template<typename InputIterator,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+  ForwardIterator transform_if(InputIterator first, InputIterator last,
+                               ForwardIterator result,
+                               UnaryFunction op,
+                               Predicate pred);
+
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -438,19 +450,17 @@ transform_if(InputIterator first, InputIterator last, ForwardIterator result, Un
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam
- * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator1's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
  *                         and \c InputIterator2's \c value_type is convertible to \c Predicate's \c argument_type.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>. \tparam UnaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type. \tparam Predicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                        and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise. \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil +
- * (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
+ *  \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if using the \p thrust::host
  *  execution policy for parallelization:
@@ -474,20 +484,20 @@ transform_if(InputIterator first, InputIterator last, ForwardIterator result, Un
  *
  *  \see thrust::transform
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename ForwardIterator,
-          typename UnaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  ForwardIterator result,
-  UnaryFunction op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                               InputIterator1 first, InputIterator1 last,
+                               InputIterator2 stencil,
+                               ForwardIterator result,
+                               UnaryFunction op,
+                               Predicate pred);
+
 
 /*! This version of \p transform_if conditionally applies a unary function
  *  to each element of an input sequence and stores the result in the corresponding
@@ -512,19 +522,17 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param pred The predicate operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c UnaryFunction's \c argument_type. \tparam
- * InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator1's \c value_type is convertible to \c UnaryFunction's \c argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
  *                         and \c InputIterator2's \c value_type is convertible to \c Predicate's \c argument_type.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>. \tparam UnaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a> and \c UnaryFunction's
- * \c result_type is convertible to \c OutputIterator's \c value_type. \tparam Predicate is a model of <a
- * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>
+ *                        and \c UnaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result,
- * result + (last - first))</tt> otherwise. \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil +
- * (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
+ *  \pre \p first may equal \p result, but the range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
+ *  \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if:
  *
@@ -545,18 +553,17 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *
  *  \see thrust::transform
  */
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename ForwardIterator,
-          typename UnaryFunction,
-          typename Predicate>
-ForwardIterator transform_if(
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  ForwardIterator result,
-  UnaryFunction op,
-  Predicate pred);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename ForwardIterator,
+         typename UnaryFunction,
+         typename Predicate>
+  ForwardIterator transform_if(InputIterator1 first, InputIterator1 last,
+                               InputIterator2 stencil,
+                               ForwardIterator result,
+                               UnaryFunction op,
+                               Predicate pred);
+
 
 /*! This version of \p transform_if conditionally applies a binary function
  *  to each pair of elements from two input sequences and stores the result in the corresponding
@@ -587,21 +594,18 @@ ForwardIterator transform_if(
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type. \tparam Predicate is a model of
- * <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *                         and \c BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result,
- * result + (last1 - first1))</tt> otherwise. \pre \p first2 may equal \p result, but the range <tt>[first2, first2 +
- * (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise. \pre \p
- * stencil may equal \p result, but the range <tt>[stencil, stencil + (last1 - first1))</tt> shall not overlap the range
- * <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first2 may equal \p result, but the range <tt>[first2, first2 + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if using the \p thrust::host
  *  execution policy for parallelization:
@@ -627,22 +631,22 @@ ForwardIterator transform_if(
  *
  *  \see thrust::transform
  */
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename ForwardIterator,
-          typename BinaryFunction,
-          typename Predicate>
-_CCCL_HOST_DEVICE ForwardIterator transform_if(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  InputIterator3 stencil,
-  ForwardIterator result,
-  BinaryFunction binary_op,
-  Predicate pred);
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename ForwardIterator,
+         typename BinaryFunction,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator transform_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
+                               InputIterator1 first1, InputIterator1 last1,
+                               InputIterator2 first2,
+                               InputIterator3 stencil,
+                               ForwardIterator result,
+                               BinaryFunction binary_op,
+                               Predicate pred);
+
 
 /*! This version of \p transform_if conditionally applies a binary function
  *  to each pair of elements from two input sequences and stores the result in the corresponding
@@ -669,21 +673,18 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param pred The predicate operation.
  *  \return The end of the output sequence.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a> and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
- * Iterator</a>. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a> and \c
- * BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type. \tparam Predicate is a model of
- * <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator1's \c value_type is convertible to \c BinaryFunction's \c first_argument_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
+ *                         and \c InputIterator2's \c value_type is convertible to \c BinaryFunction's \c second_argument_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>.
+ *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>
+ *                         and \c BinaryFunction's \c result_type is convertible to \c OutputIterator's \c value_type.
+ *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result,
- * result + (last1 - first1))</tt> otherwise. \pre \p first2 may equal \p result, but the range <tt>[first2, first2 +
- * (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise. \pre \p
- * stencil may equal \p result, but the range <tt>[stencil, stencil + (last1 - first1))</tt> shall not overlap the range
- * <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first1 may equal \p result, but the range <tt>[first1, last1)</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p first2 may equal \p result, but the range <tt>[first2, first2 + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
+ *  \pre \p stencil may equal \p result, but the range <tt>[stencil, stencil + (last1 - first1))</tt> shall not overlap the range <tt>[result, result + (last1 - first1))</tt> otherwise.
  *
  *  The following code snippet demonstrates how to use \p transform_if:
  *
@@ -706,20 +707,19 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *
  *  \see thrust::transform
  */
-template <typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename ForwardIterator,
-          typename BinaryFunction,
-          typename Predicate>
-ForwardIterator transform_if(
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  InputIterator3 stencil,
-  ForwardIterator result,
-  BinaryFunction binary_op,
-  Predicate pred);
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename ForwardIterator,
+         typename BinaryFunction,
+         typename Predicate>
+  ForwardIterator transform_if(InputIterator1 first1, InputIterator1 last1,
+                               InputIterator2 first2,
+                               InputIterator3 stencil,
+                               ForwardIterator result,
+                               BinaryFunction binary_op,
+                               Predicate pred);
+
 
 /*! \} // end transformations
  */

@@ -28,3 +28,4 @@
 
 // this system inherits adjacent_difference
 #include <thrust/system/detail/sequential/adjacent_difference.h>
+

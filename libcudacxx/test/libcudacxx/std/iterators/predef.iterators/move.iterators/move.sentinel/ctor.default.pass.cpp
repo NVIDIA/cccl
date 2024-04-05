@@ -18,7 +18,8 @@
 #include <cuda/std/iterator>
 #include <cuda/std/cassert>
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
 
   // The underlying sentinel is an integer.
   {
@@ -45,7 +46,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

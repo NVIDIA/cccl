@@ -26,17 +26,22 @@
 
 // See https://bugs.llvm.org/show_bug.cgi?id=31916
 struct A {};
-template <class ReturnType>
+template<class ReturnType>
 struct Visitor {
-  __host__ __device__ auto operator()(A&) { return ReturnType{}; }
+  __host__ __device__
+  auto operator()(A&) {
+      return ReturnType{};
+  }
 };
-template <>
+template<>
 struct Visitor<void> {
-  __host__ __device__ void operator()(A&) {}
+  __host__ __device__
+  void operator()(A&) {}
 };
 
 template <typename ReturnType>
-__host__ __device__ void test_caller_accepts_nonconst() {
+__host__ __device__
+void test_caller_accepts_nonconst() {
   cuda::std::variant<A> v;
   cuda::std::visit<ReturnType>(Visitor<ReturnType>{}, v);
 }

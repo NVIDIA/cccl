@@ -17,6 +17,7 @@
 // constexpr bool operator<=(const month& x, const month& y) noexcept;
 // constexpr bool operator>=(const month& x, const month& y) noexcept;
 
+
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -24,22 +25,24 @@
 #include "test_macros.h"
 #include "test_comparisons.h"
 
-int main(int, char**) {
-  using month = cuda::std::chrono::month;
 
-  AssertComparisonsAreNoexcept<month>();
-  AssertComparisonsReturnBool<month>();
+int main(int, char**)
+{
+    using month = cuda::std::chrono::month;
 
-  static_assert(testComparisonsValues<month>(0U, 0U), "");
-  static_assert(testComparisonsValues<month>(0U, 1U), "");
+    AssertComparisonsAreNoexcept<month>();
+    AssertComparisonsReturnBool<month>();
 
-  //  Some 'ok' values as well
-  static_assert(testComparisonsValues<month>(5U, 5U), "");
-  static_assert(testComparisonsValues<month>(5U, 10U), "");
+    static_assert(testComparisonsValues<month>(0U ,0U), "");
+    static_assert(testComparisonsValues<month>(0U, 1U), "");
 
-  for (unsigned i = 1; i < 10; ++i)
-    for (unsigned j = 10; j < 10; ++j)
-      assert(testComparisonsValues<month>(i, j));
+//  Some 'ok' values as well
+    static_assert(testComparisonsValues<month>( 5U,  5U), "");
+    static_assert(testComparisonsValues<month>( 5U, 10U), "");
+
+    for (unsigned i = 1; i < 10; ++i)
+        for (unsigned j = 10; j < 10; ++j)
+            assert(testComparisonsValues<month>(i, j));
 
   return 0;
 }

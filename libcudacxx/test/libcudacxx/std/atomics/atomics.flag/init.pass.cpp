@@ -21,13 +21,17 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  NV_DISPATCH_TARGET(NV_IS_HOST,
-                     (cuda::std::atomic_flag f = ATOMIC_FLAG_INIT;
-                      assert(f.test_and_set() == 0);),
-                     NV_PROVIDES_SM_70,
-                     (cuda::std::atomic_flag f = ATOMIC_FLAG_INIT;
-                      assert(f.test_and_set() == 0);))
+int main(int, char**)
+{
+    NV_DISPATCH_TARGET(
+    NV_IS_HOST,(
+      cuda::std::atomic_flag f = ATOMIC_FLAG_INIT;
+      assert(f.test_and_set() == 0);
+    ),
+    NV_PROVIDES_SM_70,(
+      cuda::std::atomic_flag f = ATOMIC_FLAG_INIT;
+      assert(f.test_and_set() == 0);
+    ))
 
-  return 0;
+    return 0;
 }

@@ -25,11 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/scatter.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/functional.h>
 #include <thrust/transform.h>
+#include <thrust/iterator/permutation_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -39,61 +39,67 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void
-scatter(thrust::execution_policy<DerivedPolicy>& exec,
-        InputIterator1 first,
-        InputIterator1 last,
-        InputIterator2 map,
-        RandomAccessIterator output)
+
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename RandomAccessIterator>
+_CCCL_HOST_DEVICE
+  void scatter(thrust::execution_policy<DerivedPolicy> &exec,
+               InputIterator1 first,
+               InputIterator1 last,
+               InputIterator2 map,
+               RandomAccessIterator output)
 {
-  thrust::transform(
-    exec,
-    first,
-    last,
-    thrust::make_permutation_iterator(output, map),
-    thrust::identity<typename thrust::iterator_value<InputIterator1>::type>());
+  thrust::transform(exec,
+                    first,
+                    last,
+                    thrust::make_permutation_iterator(output, map),
+                    thrust::identity<typename thrust::iterator_value<InputIterator1>::type>());
 } // end scatter()
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename RandomAccessIterator>
-_CCCL_HOST_DEVICE void scatter_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 map,
-  InputIterator3 stencil,
-  RandomAccessIterator output)
+
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator>
+_CCCL_HOST_DEVICE
+  void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
+                  InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output)
 {
   // default predicate is identity
   typedef typename thrust::iterator_value<InputIterator3>::type StencilType;
   thrust::scatter_if(exec, first, last, map, stencil, output, thrust::identity<StencilType>());
 } // end scatter_if()
 
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename InputIterator3,
-          typename RandomAccessIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE void scatter_if(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 map,
-  InputIterator3 stencil,
-  RandomAccessIterator output,
-  Predicate pred)
+
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename RandomAccessIterator,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  void scatter_if(thrust::execution_policy<DerivedPolicy> &exec,
+                  InputIterator1 first,
+                  InputIterator1 last,
+                  InputIterator2 map,
+                  InputIterator3 stencil,
+                  RandomAccessIterator output,
+                  Predicate pred)
 {
   typedef typename thrust::iterator_value<InputIterator1>::type InputType;
-  thrust::transform_if(
-    exec, first, last, stencil, thrust::make_permutation_iterator(output, map), thrust::identity<InputType>(), pred);
+  thrust::transform_if(exec, first, last, stencil, thrust::make_permutation_iterator(output, map), thrust::identity<InputType>(), pred);
 } // end scatter_if()
+
 
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

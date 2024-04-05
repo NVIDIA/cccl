@@ -25,17 +25,17 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/copy_if.h>
-#include <thrust/detail/count.h>
-#include <thrust/detail/internal_functional.h>
-#include <thrust/detail/range/head_flags.h>
-#include <thrust/detail/temporary_array.h>
-#include <thrust/distance.h>
-#include <thrust/functional.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/unique.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/transform.h>
 #include <thrust/unique.h>
+#include <thrust/detail/temporary_array.h>
+#include <thrust/detail/internal_functional.h>
+#include <thrust/detail/copy_if.h>
+#include <thrust/detail/count.h>
+#include <thrust/distance.h>
+#include <thrust/functional.h>
+#include <thrust/detail/range/head_flags.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -45,44 +45,61 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
-unique(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
+
+template<typename DerivedPolicy,
+         typename ForwardIterator>
+_CCCL_HOST_DEVICE
+  ForwardIterator unique(thrust::execution_policy<DerivedPolicy> &exec,
+                         ForwardIterator first,
+                         ForwardIterator last)
 {
   typedef typename thrust::iterator_traits<ForwardIterator>::value_type InputType;
 
   return thrust::unique(exec, first, last, thrust::equal_to<InputType>());
 } // end unique()
 
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator first,
-  ForwardIterator last,
-  BinaryPredicate binary_pred)
+
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+  ForwardIterator unique(thrust::execution_policy<DerivedPolicy> &exec,
+                         ForwardIterator first,
+                         ForwardIterator last,
+                         BinaryPredicate binary_pred)
 {
   typedef typename thrust::iterator_traits<ForwardIterator>::value_type InputType;
 
-  thrust::detail::temporary_array<InputType, DerivedPolicy> input(exec, first, last);
+  thrust::detail::temporary_array<InputType,DerivedPolicy> input(exec, first, last);
 
   return thrust::unique_copy(exec, input.begin(), input.end(), first, binary_pred);
 } // end unique()
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
-  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output)
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+  OutputIterator unique_copy(thrust::execution_policy<DerivedPolicy> &exec,
+                             InputIterator first,
+                             InputIterator last,
+                             OutputIterator output)
 {
   typedef typename thrust::iterator_value<InputIterator>::type value_type;
-  return thrust::unique_copy(exec, first, last, output, thrust::equal_to<value_type>());
+  return thrust::unique_copy(exec, first,last,output,thrust::equal_to<value_type>());
 } // end unique_copy()
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator output,
-  BinaryPredicate binary_pred)
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+  OutputIterator unique_copy(thrust::execution_policy<DerivedPolicy> &exec,
+                             InputIterator first,
+                             InputIterator last,
+                             OutputIterator output,
+                             BinaryPredicate binary_pred)
 {
   thrust::detail::head_flags<InputIterator, BinaryPredicate> stencil(first, last, binary_pred);
 
@@ -91,12 +108,16 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   return thrust::copy_if(exec, first, last, stencil.begin(), output, _1);
 } // end unique_copy()
 
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator first,
-  ForwardIterator last,
-  BinaryPredicate binary_pred)
+
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+  typename thrust::iterator_traits<ForwardIterator>::difference_type
+    unique_count(thrust::execution_policy<DerivedPolicy> &exec,
+                 ForwardIterator first,
+                 ForwardIterator last,
+                 BinaryPredicate binary_pred)
 {
   thrust::detail::head_flags<ForwardIterator, BinaryPredicate> stencil(first, last, binary_pred);
 
@@ -105,15 +126,22 @@ _CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_
   return thrust::count_if(exec, stencil.begin(), stencil.end(), _1);
 } // end unique_copy()
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
-unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
+
+template<typename DerivedPolicy,
+         typename ForwardIterator>
+_CCCL_HOST_DEVICE
+  typename thrust::iterator_traits<ForwardIterator>::difference_type
+    unique_count(thrust::execution_policy<DerivedPolicy> &exec,
+                 ForwardIterator first,
+                 ForwardIterator last)
 {
   typedef typename thrust::iterator_value<ForwardIterator>::type value_type;
   return thrust::unique_count(exec, first, last, thrust::equal_to<value_type>());
 } // end unique_copy()
 
+
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

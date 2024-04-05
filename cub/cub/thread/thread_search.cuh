@@ -43,45 +43,54 @@
 #  pragma system_header
 #endif // no system header
 
+#include <iterator>
 #include <cub/util_namespace.cuh>
 #include <cub/util_type.cuh>
-
-#include <iterator>
 
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
+
 /**
  * Computes the begin offsets into A and B for the specific diagonal
  */
-template < typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
+template <
+    typename AIteratorT,
+    typename BIteratorT,
+    typename OffsetT,
+    typename CoordinateT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
-  OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
+    OffsetT         diagonal,
+    AIteratorT      a,
+    BIteratorT      b,
+    OffsetT         a_len,
+    OffsetT         b_len,
+    CoordinateT&    path_coordinate)
 {
-  /// The value type of the input iterator
-  using T = cub::detail::value_t<AIteratorT>;
+    /// The value type of the input iterator
+    using T = cub::detail::value_t<AIteratorT>;
 
-  OffsetT split_min = CUB_MAX(diagonal - b_len, 0);
-  OffsetT split_max = CUB_MIN(diagonal, a_len);
+    OffsetT split_min = CUB_MAX(diagonal - b_len, 0);
+    OffsetT split_max = CUB_MIN(diagonal, a_len);
 
-  while (split_min < split_max)
-  {
-    OffsetT split_pivot = (split_min + split_max) >> 1;
-    if (a[split_pivot] <= b[diagonal - split_pivot - 1])
+    while (split_min < split_max)
     {
-      // Move candidate split range up A, down B
-      split_min = split_pivot + 1;
+        OffsetT split_pivot = (split_min + split_max) >> 1;
+        if (a[split_pivot] <= b[diagonal - split_pivot - 1])
+        {
+            // Move candidate split range up A, down B
+            split_min = split_pivot + 1;
+        }
+        else
+        {
+            // Move candidate split range up B, down A
+            split_max = split_pivot;
+        }
     }
-    else
-    {
-      // Move candidate split range up B, down A
-      split_max = split_pivot;
-    }
-  }
 
-  path_coordinate.x = CUB_MIN(split_min, a_len);
-  path_coordinate.y = diagonal - split_min;
+    path_coordinate.x = CUB_MIN(split_min, a_len);
+    path_coordinate.y = diagonal - split_min;
 }
 
 /**
@@ -100,22 +109,22 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT num_items, T val)
 {
-  OffsetT retval = 0;
-  while (num_items > 0)
-  {
-    OffsetT half = num_items >> 1;
-    if (input[retval + half] < val)
+    OffsetT retval = 0;
+    while (num_items > 0)
     {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
+        OffsetT half = num_items >> 1;
+        if (input[retval + half] < val)
+        {
+            retval = retval + (half + 1);
+            num_items = num_items - (half + 1);
+        }
+        else
+        {
+            num_items = half;
+        }
     }
-    else
-    {
-      num_items = half;
-    }
-  }
 
-  return retval;
+    return retval;
 }
 
 /**
@@ -134,23 +143,24 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT LowerBound(InputIteratorT input, OffsetT 
 template <typename InputIteratorT, typename OffsetT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, T val)
 {
-  OffsetT retval = 0;
-  while (num_items > 0)
-  {
-    OffsetT half = num_items >> 1;
-    if (val < input[retval + half])
+    OffsetT retval = 0;
+    while (num_items > 0)
     {
-      num_items = half;
+        OffsetT half = num_items >> 1;
+        if (val < input[retval + half])
+        {
+            num_items = half;
+        }
+        else
+        {
+            retval = retval + (half + 1);
+            num_items = num_items - (half + 1);
+        }
     }
-    else
-    {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
-    }
-  }
 
-  return retval;
+    return retval;
 }
+
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
 /**
@@ -166,28 +176,28 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT 
 template <typename InputIteratorT, typename OffsetT>
 _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT UpperBound(InputIteratorT input, OffsetT num_items, __half val)
 {
-  OffsetT retval = 0;
-  while (num_items > 0)
-  {
-    OffsetT half = num_items >> 1;
-
-    bool lt;
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (lt = val < input[retval + half];),
-                 (lt = __half2float(val) < __half2float(input[retval + half]);));
-
-    if (lt)
+    OffsetT retval = 0;
+    while (num_items > 0)
     {
-      num_items = half;
-    }
-    else
-    {
-      retval    = retval + (half + 1);
-      num_items = num_items - (half + 1);
-    }
-  }
+        OffsetT half = num_items >> 1;
 
-  return retval;
+        bool lt;
+        NV_IF_TARGET(NV_PROVIDES_SM_53,
+                     (lt = val < input[retval + half];),
+                     (lt = __half2float(val) < __half2float(input[retval + half]);));
+
+        if (lt)
+        {
+            num_items = half;
+        }
+        else
+        {
+            retval = retval + (half + 1);
+            num_items = num_items - (half + 1);
+        }
+    }
+
+    return retval;
 }
 #endif
 

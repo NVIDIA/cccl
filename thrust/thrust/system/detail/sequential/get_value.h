@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+#include <thrust/detail/raw_pointer_cast.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -36,14 +36,18 @@ namespace detail
 namespace sequential
 {
 
-template <typename DerivedPolicy, typename Pointer>
-_CCCL_HOST_DEVICE typename thrust::iterator_value<Pointer>::type
-get_value(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
+
+template<typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE
+  typename thrust::iterator_value<Pointer>::type
+    get_value(sequential::execution_policy<DerivedPolicy> &, Pointer ptr)
 {
   return *thrust::raw_pointer_cast(ptr);
 } // end get_value()
 
-} // namespace sequential
-} // namespace detail
-} // namespace system
+
+} // end sequential
+} // end detail
+} // end system
 THRUST_NAMESPACE_END
+

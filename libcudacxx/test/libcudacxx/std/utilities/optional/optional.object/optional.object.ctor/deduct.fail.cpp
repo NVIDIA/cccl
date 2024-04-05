@@ -19,22 +19,20 @@
 
 struct A {};
 
-int main(int, char**) {
-  //  Test the explicit deduction guides
+int main(int, char**)
+{
+//  Test the explicit deduction guides
 
-  //  Test the implicit deduction guides
-  {
-    //  optional()
-    cuda::std::optional
-        opt; // expected-error {{no viable constructor or deduction guide for deduction of template arguments of 'optional'}}
-  }
+//  Test the implicit deduction guides
+    {
+//  optional()
+    cuda::std::optional opt;   // expected-error {{no viable constructor or deduction guide for deduction of template arguments of 'optional'}}
+    }
 
-  {
-    //  optional(nullopt_t)
-    cuda::std::optional opt(
-        cuda::std::
-            nullopt); // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-  }
+    {
+//  optional(nullopt_t)
+    cuda::std::optional opt(cuda::std::nullopt);   // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+    }
 
   return 0;
 }

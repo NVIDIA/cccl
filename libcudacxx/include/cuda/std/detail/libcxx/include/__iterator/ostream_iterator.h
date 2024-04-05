@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___ITERATOR_OSTREAM_ITERATOR_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -38,57 +38,40 @@ class _LIBCUDACXX_TEMPLATE_VIS ostream_iterator
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
 {
-  _CCCL_SUPPRESS_DEPRECATED_POP
-
+_CCCL_SUPPRESS_DEPRECATED_POP
 public:
-  typedef output_iterator_tag iterator_category;
-  typedef void value_type;
+    typedef output_iterator_tag             iterator_category;
+    typedef void                            value_type;
 #if _CCCL_STD_VER > 2017
-  typedef ptrdiff_t difference_type;
+    typedef ptrdiff_t                       difference_type;
 #else
-  typedef void difference_type;
+    typedef void                            difference_type;
 #endif
-  typedef void pointer;
-  typedef void reference;
-  typedef _CharT char_type;
-  typedef _Traits traits_type;
-  typedef basic_ostream<_CharT, _Traits> ostream_type;
+    typedef void                            pointer;
+    typedef void                            reference;
+    typedef _CharT                          char_type;
+    typedef _Traits                         traits_type;
+    typedef basic_ostream<_CharT, _Traits>  ostream_type;
 
 private:
-  ostream_type* __out_stream_;
-  const char_type* __delim_;
-
+    ostream_type* __out_stream_;
+    const char_type* __delim_;
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
-      , __delim_(nullptr)
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
-      : __out_stream_(_CUDA_VSTD::addressof(__s))
-      , __delim_(__delimiter)
-  {}
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator=(const _Tp& __value)
-  {
-    *__out_stream_ << __value;
-    if (__delim_)
-    {
-      *__out_stream_ << __delim_;
-    }
-    return *this;
-  }
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s) noexcept
+        : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(nullptr) {}
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator(ostream_type& __s, const _CharT* __delimiter) noexcept
+        : __out_stream_(_CUDA_VSTD::addressof(__s)), __delim_(__delimiter) {}
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator=(const _Tp& __value)
+        {
+            *__out_stream_ << __value;
+            if (__delim_)
+                *__out_stream_ << __delim_;
+            return *this;
+        }
 
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator*()
-  {
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++()
-  {
-    return *this;
-  }
-  _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++(int)
-  {
-    return *this;
-  }
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator*()     {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++()    {return *this;}
+    _LIBCUDACXX_INLINE_VISIBILITY ostream_iterator& operator++(int) {return *this;}
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

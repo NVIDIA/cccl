@@ -7,21 +7,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-#if defined(__need_ptrdiff_t) || defined(__need_size_t) || defined(__need_wchar_t) || defined(__need_NULL) \
-  || defined(__need_wint_t)
+#if defined(__need_ptrdiff_t) || defined(__need_size_t) || \
+    defined(__need_wchar_t) || defined(__need_NULL) || defined(__need_wint_t)
 
-#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#    pragma GCC system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#    pragma clang system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#    pragma system_header
-#  endif // no system header
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#  include_next <stddef.h>
+#include_next <stddef.h>
 
 #elif !defined(_LIBCUDACXX_STDDEF_H)
-#  define _LIBCUDACXX_STDDEF_H
+#define _LIBCUDACXX_STDDEF_H
 
 /*
     stddef.h synopsis
@@ -40,35 +40,35 @@ Types:
 
 */
 
-#  include <__config>
+#include <__config>
 
-#  include <__pragma_push>
+#include <__pragma_push>
 
-#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#    pragma GCC system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#    pragma clang system_header
-#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#    pragma system_header
-#  endif // no system header
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
-#  include_next <stddef.h>
+#include_next <stddef.h>
 
-#  ifdef __cplusplus
+#ifdef __cplusplus
 
 extern "C++" {
-#    include <__nullptr>
+#include <__nullptr>
 using std::nullptr_t;
 }
 
 // Re-use the compiler's <stddef.h> max_align_t where possible.
-#    if !defined(__CLANG_MAX_ALIGN_T_DEFINED) && !defined(_GCC_MAX_ALIGN_T) && !defined(__DEFINED_max_align_t) \
-      && !defined(__NetBSD__)
+#if !defined(__CLANG_MAX_ALIGN_T_DEFINED) && !defined(_GCC_MAX_ALIGN_T) && \
+    !defined(__DEFINED_max_align_t) && !defined(__NetBSD__)
 typedef long double max_align_t;
-#    endif
+#endif
 
-#  endif
+#endif
 
-#  include <__pragma_pop>
+#include <__pragma_pop>
 
-#endif // _LIBCUDACXX_STDDEF_H
+#endif  // _LIBCUDACXX_STDDEF_H

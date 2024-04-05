@@ -34,8 +34,8 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include "catch2_test_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -50,52 +50,41 @@ struct less_than_t
       : compare(compare)
   {}
 
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
+  __host__ __device__ bool operator()(const T &a) const { return a < compare; }
 };
 
 struct equal_to_default_t
 {
   template <typename T>
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a == T{};
-  }
+  __host__ __device__ bool operator()(const T &a) const { return a == T{}; }
 };
 
 struct always_false_t
 {
   template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return false;
-  }
+  __device__ bool operator()(const T&) const { return false; }
 };
 
 struct always_true_t
 {
   template <typename T>
-  __device__ bool operator()(const T&) const
-  {
-    return true;
-  }
+  __device__ bool operator()(const T&) const { return true; }
 };
 
-using all_types =
-  c2h::type_list<std::uint8_t,
-                 std::uint16_t,
-                 std::uint32_t,
-                 std::uint64_t,
-                 ulonglong2,
-                 ulonglong4,
-                 int,
-                 long2,
-                 c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
+using all_types = c2h::type_list<std::uint8_t,
+                                 std::uint16_t,
+                                 std::uint32_t,
+                                 std::uint64_t,
+                                 ulonglong2,
+                                 ulonglong4,
+                                 int,
+                                 long2,
+                                 c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-using types = c2h::
-  type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
+using types = c2h::type_list<std::uint8_t,
+                             std::uint32_t,
+                             ulonglong4,
+                             c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
 CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
 {
@@ -107,9 +96,13 @@ CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_num_selected_out, num_items, always_true_t{});
+  select_if(in.begin(),
+            out.begin(),
+            d_num_selected_out,
+            num_items,
+            always_true_t{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -125,9 +118,13 @@ CUB_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, always_true_t{});
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            always_true_t{});
 
   REQUIRE(num_selected_out[0] == num_items);
   REQUIRE(out == in);
@@ -144,9 +141,13 @@ CUB_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, always_false_t{});
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            always_false_t{});
 
   REQUIRE(num_selected_out[0] == 0);
 }
@@ -165,12 +166,16 @@ CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // copy input first
   c2h::device_vector<type> reference = in;
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   REQUIRE(reference == in);
 }
@@ -189,9 +194,13 @@ CUB_TEST("DeviceSelect::If is stable", "[device][select_if]")
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   // Ensure that we create the same output as std
   c2h::host_vector<type> reference = in;
@@ -220,9 +229,13 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
@@ -243,10 +256,13 @@ CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), d_first_num_selected_out, num_items, le);
+  select_if(thrust::raw_pointer_cast(in.data()),
+            thrust::raw_pointer_cast(out.data()),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));
@@ -266,37 +282,33 @@ CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Ensure that we create the same output as std
   c2h::host_vector<type> reference = in;
   std::stable_partition(reference.begin(), reference.end(), le);
 
-  select_if(in.begin(), d_first_num_selected_out, num_items, le);
+  select_if(in.begin(),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   in.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
   REQUIRE(reference == in);
 }
 
-template <class T>
-struct convertible_from_T
-{
+template<class T>
+struct convertible_from_T {
   T val_;
 
   convertible_from_T() = default;
-  __host__ __device__ convertible_from_T(const T& val) noexcept
-      : val_(val)
-  {}
-  __host__ __device__ convertible_from_T& operator=(const T& val) noexcept
-  {
+  __host__ __device__ convertible_from_T(const T& val) noexcept : val_(val) {}
+  __host__ __device__ convertible_from_T& operator=(const T& val) noexcept {
     val_ = val;
   }
   // Converting back to T helps satisfy all the machinery that T supports
-  __host__ __device__ operator T() const noexcept
-  {
-    return val_;
-  }
+  __host__ __device__ operator T() const noexcept { return val_; }
 };
 
 CUB_TEST("DeviceSelect::If works with a different output type", "[device][select_if]")
@@ -313,9 +325,13 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
-  select_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
+  select_if(in.begin(),
+            out.begin(),
+            d_first_num_selected_out,
+            num_items,
+            le);
 
   const auto boundary = out.begin() + num_selected_out[0];
   REQUIRE(thrust::all_of(c2h::device_policy, out.begin(), boundary, le));

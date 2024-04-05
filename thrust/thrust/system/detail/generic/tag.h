@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file generic/tag.h
  *  \brief Implementation of the generic backend's tag.
  */
@@ -42,12 +43,13 @@ namespace generic
 // during ADL. tag should not be derived from and is constructible from anything
 struct tag
 {
-  template <typename T>
-  _CCCL_HOST_DEVICE inline tag(const T&)
-  {}
+  template<typename T>
+  _CCCL_HOST_DEVICE inline
+  tag(const T &) {}
 };
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // end generic
+} // end detail
+} // end system
 THRUST_NAMESPACE_END
+

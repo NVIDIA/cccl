@@ -29,9 +29,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/sequential/general_copy.h>
-
 #include <cstring>
+#include <thrust/system/detail/sequential/general_copy.h>
 
 #include <nv/target>
 
@@ -43,27 +42,35 @@ namespace detail
 namespace sequential
 {
 
-template <typename T>
-_CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
+
+template<typename T>
+_CCCL_HOST_DEVICE
+  T *trivial_copy_n(const T *first,
+                    std::ptrdiff_t n,
+                    T *result)
 {
   if (n == 0)
   {
-    // If `first` or `result` is an invalid pointer,
-    // the behavior of `std::memmove` is undefined, even if `n` is zero.
+    // If `first` or `result` is an invalid pointer, 
+    // the behavior of `std::memmove` is undefined, even if `n` is zero. 
     return result;
   }
 
   T* return_value = NULL;
 
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::memmove(result, first, n * sizeof(T)); return_value = result + n;),
-               ( // NV_IS_DEVICE:
-                 return_value = thrust::system::detail::sequential::general_copy_n(first, n, result);));
+  NV_IF_TARGET(NV_IS_HOST, (
+    std::memmove(result, first, n * sizeof(T));
+    return_value = result + n;
+  ), ( // NV_IS_DEVICE:
+    return_value = thrust::system::detail::sequential::general_copy_n(first, n, result);
+  ));
 
   return return_value;
 } // end trivial_copy_n()
+
 
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

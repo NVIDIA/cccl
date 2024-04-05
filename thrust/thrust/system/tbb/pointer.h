@@ -29,16 +29,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <type_traits>
+#include <thrust/system/tbb/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
-#include <thrust/system/tbb/detail/execution_policy.h>
-
-#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace tbb
+namespace system { namespace tbb
 {
 
 /*! \p tbb::pointer stores a pointer to an object allocated in memory accessible
@@ -64,7 +61,11 @@ namespace tbb
  *  \see raw_pointer_cast
  */
 template <typename T>
-using pointer = thrust::pointer< T, thrust::system::tbb::tag, thrust::tagged_reference<T, thrust::system::tbb::tag> >;
+using pointer = thrust::pointer<
+  T,
+  thrust::system::tbb::tag,
+  thrust::tagged_reference<T, thrust::system::tbb::tag>
+>;
 
 /*! \p tbb::universal_pointer stores a pointer to an object allocated in memory
  * accessible by the \p tbb system and host systems.
@@ -89,7 +90,11 @@ using pointer = thrust::pointer< T, thrust::system::tbb::tag, thrust::tagged_ref
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer< T, thrust::system::tbb::tag, typename std::add_lvalue_reference<T>::type >;
+using universal_pointer = thrust::pointer<
+  T,
+  thrust::system::tbb::tag,
+  typename std::add_lvalue_reference<T>::type
+>;
 
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p tbb system. \p reference is the type of the result of
@@ -100,8 +105,7 @@ using universal_pointer = thrust::pointer< T, thrust::system::tbb::tag, typename
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::system::tbb::tag>;
 
-} // namespace tbb
-} // namespace system
+}} // namespace system::tbb
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system
@@ -113,8 +117,9 @@ using reference = thrust::tagged_reference<T, thrust::system::tbb::tag>;
 namespace tbb
 {
 using thrust::system::tbb::pointer;
-using thrust::system::tbb::reference;
 using thrust::system::tbb::universal_pointer;
+using thrust::system::tbb::reference;
 } // namespace tbb
 
 THRUST_NAMESPACE_END
+

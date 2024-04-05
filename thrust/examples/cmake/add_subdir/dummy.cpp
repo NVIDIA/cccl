@@ -4,30 +4,29 @@
 
 int main()
 {
-  std::cout
-    << "Hello from Thrust version " << THRUST_VERSION << ":\n"
+  std::cout << "Hello from Thrust version " << THRUST_VERSION << ":\n"
 
-    << "Host system: "
+            << "Host system: "
 #if THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP
-    << "CPP\n"
+            << "CPP\n"
 #elif THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_OMP
-    << "OMP\n"
+            << "OMP\n"
 #elif THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_TBB
-    << "TBB\n"
+            << "TBB\n"
 #else
-    << "Unknown\n"
+            << "Unknown\n"
 #endif
 
-    << "Device system: "
+            << "Device system: "
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP
-    << "CPP\n";
+            << "CPP\n";
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-    << "CUDA\n";
+            << "CUDA\n";
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_OMP
-    << "OMP\n";
+            << "OMP\n";
 #elif THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_TBB
-    << "TBB\n";
+            << "TBB\n";
 #else
-    << "Unknown\n";
+            << "Unknown\n";
 #endif
 }

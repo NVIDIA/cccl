@@ -28,12 +28,10 @@ struct WithADL {
 
 int main(int, char**) {
   int* noADL = nullptr;
-  cuda::std::ranges::iter_move(
-      noADL); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+  cuda::std::ranges::iter_move(noADL); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
 
   WithADL adl;
-  cuda::std::ranges::iter_move(
-      adl); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+  cuda::std::ranges::iter_move(adl); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
 
   return 0;
 }

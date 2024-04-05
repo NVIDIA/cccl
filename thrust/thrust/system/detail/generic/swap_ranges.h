@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -35,12 +36,14 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2>
-_CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator1 first1,
-  ForwardIterator1 last1,
-  ForwardIterator2 first2);
+template<typename DerivedPolicy,
+         typename ForwardIterator1,
+         typename ForwardIterator2>
+_CCCL_HOST_DEVICE
+  ForwardIterator2 swap_ranges(thrust::execution_policy<DerivedPolicy> &exec,
+                               ForwardIterator1 first1,
+                               ForwardIterator1 last1,
+                               ForwardIterator2 first2);
 
 } // end namespace generic
 } // end namespace detail
@@ -48,3 +51,4 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/swap_ranges.inl>
+

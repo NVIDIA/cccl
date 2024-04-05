@@ -26,8 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/function.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/detail/function.h>
 #include <thrust/system/detail/sequential/copy_backward.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -38,25 +38,30 @@ namespace detail
 namespace sequential
 {
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename RandomAccessIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIterator last, StrictWeakOrdering comp)
+template<typename RandomAccessIterator,
+         typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE
+void insertion_sort(RandomAccessIterator first,
+                    RandomAccessIterator last,
+                    StrictWeakOrdering comp)
 {
   typedef typename thrust::iterator_value<RandomAccessIterator>::type value_type;
 
-  if (first == last)
-  {
-    return;
-  }
+  if(first == last) return;
 
   // wrap comp
-  thrust::detail::wrapped_function< StrictWeakOrdering, bool > wrapped_comp(comp);
+  thrust::detail::wrapped_function<
+    StrictWeakOrdering,
+    bool
+  > wrapped_comp(comp);
 
-  for (RandomAccessIterator i = first + 1; i != last; ++i)
+  for(RandomAccessIterator i = first + 1; i != last; ++i)
   {
     value_type tmp = *i;
 
-    if (wrapped_comp(tmp, *first))
+    if(wrapped_comp(tmp, *first))
     {
       // tmp is the smallest value encountered so far
       sequential::copy_backward(first, i, i + 1);
@@ -69,10 +74,10 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
       RandomAccessIterator j = i;
       RandomAccessIterator k = i - 1;
 
-      while (wrapped_comp(tmp, *k))
+      while(wrapped_comp(tmp, *k))
       {
         *j = *k;
-        j  = k;
+        j = k;
         --k;
       }
 
@@ -81,31 +86,37 @@ _CCCL_HOST_DEVICE void insertion_sort(RandomAccessIterator first, RandomAccessIt
   }
 }
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename RandomAccessIterator1, typename RandomAccessIterator2, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE void insertion_sort_by_key(
-  RandomAccessIterator1 first1, RandomAccessIterator1 last1, RandomAccessIterator2 first2, StrictWeakOrdering comp)
+template<typename RandomAccessIterator1,
+         typename RandomAccessIterator2,
+         typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE
+void insertion_sort_by_key(RandomAccessIterator1 first1,
+                           RandomAccessIterator1 last1,
+                           RandomAccessIterator2 first2,
+                           StrictWeakOrdering comp)
 {
   typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type1;
   typedef typename thrust::iterator_value<RandomAccessIterator2>::type value_type2;
 
-  if (first1 == last1)
-  {
-    return;
-  }
+  if(first1 == last1) return;
 
   // wrap comp
-  thrust::detail::wrapped_function< StrictWeakOrdering, bool > wrapped_comp(comp);
+  thrust::detail::wrapped_function<
+    StrictWeakOrdering,
+    bool
+  > wrapped_comp(comp);
 
   RandomAccessIterator1 i1 = first1 + 1;
   RandomAccessIterator2 i2 = first2 + 1;
 
-  for (; i1 != last1; ++i1, ++i2)
+  for(; i1 != last1; ++i1, ++i2)
   {
     value_type1 tmp1 = *i1;
     value_type2 tmp2 = *i2;
 
-    if (wrapped_comp(tmp1, *first1))
+    if(wrapped_comp(tmp1, *first1))
     {
       // tmp is the smallest value encountered so far
       sequential::copy_backward(first1, i1, i1 + 1);
@@ -123,7 +134,7 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
       RandomAccessIterator2 j2 = i2;
       RandomAccessIterator2 k2 = i2 - 1;
 
-      while (wrapped_comp(tmp1, *k1))
+      while(wrapped_comp(tmp1, *k1))
       {
         *j1 = *k1;
         *j2 = *k2;
@@ -141,7 +152,9 @@ _CCCL_HOST_DEVICE void insertion_sort_by_key(
   }
 }
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

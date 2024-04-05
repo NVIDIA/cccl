@@ -20,13 +20,11 @@
 #include <cuda/std/expected>
 #include <cuda/std/utility>
 
-template <class T, class = void>
+template<class T, class = void>
 constexpr bool WhatNoexcept = false;
 
-template <class T>
-constexpr bool WhatNoexcept<
-    T, cuda::std::void_t<decltype(cuda::std::declval<T&&>().error())> > =
-    noexcept(cuda::std::declval<T&&>().error());
+template<class T>
+constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&&>().error())>> = noexcept(cuda::std::declval<T&&>().error());
 
 static_assert(!ErrorNoexcept<int>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int>&>);

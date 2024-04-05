@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -41,23 +42,24 @@ namespace detail
 namespace generic
 {
 
-template <typename ExecutionPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename UnaryFunction,
-          typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  UnaryFunction unary_op,
-  BinaryFunction binary_op)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename UnaryFunction,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputIterator transform_inclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
+                                          InputIterator first,
+                                          InputIterator last,
+                                          OutputIterator result,
+                                          UnaryFunction unary_op,
+                                          BinaryFunction binary_op)
 {
   // Use the input iterator's value type per https://wg21.link/P0571
-  using InputType  = typename thrust::iterator_value<InputIterator>::type;
+  using InputType = typename thrust::iterator_value<InputIterator>::type;
   using ResultType = thrust::detail::invoke_result_t<UnaryFunction, InputType>;
-  using ValueType  = thrust::remove_cvref_t<ResultType>;
+  using ValueType = thrust::remove_cvref_t<ResultType>;
 
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _first(first, unary_op);
   thrust::transform_iterator<UnaryFunction, InputIterator, ValueType> _last(last, unary_op);
@@ -65,20 +67,21 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
   return thrust::inclusive_scan(exec, _first, _last, result, binary_op);
 } // end transform_inclusive_scan()
 
-template <typename ExecutionPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename UnaryFunction,
-          typename InitialValueType,
-          typename AssociativeOperator>
-_CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
-  thrust::execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator result,
-  UnaryFunction unary_op,
-  InitialValueType init,
-  AssociativeOperator binary_op)
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename UnaryFunction,
+         typename InitialValueType,
+         typename AssociativeOperator>
+_CCCL_HOST_DEVICE
+  OutputIterator transform_exclusive_scan(thrust::execution_policy<ExecutionPolicy> &exec,
+                                          InputIterator first,
+                                          InputIterator last,
+                                          OutputIterator result,
+                                          UnaryFunction unary_op,
+                                          InitialValueType init,
+                                          AssociativeOperator binary_op)
 {
   // Use the initial value type per https://wg21.link/P0571
   using ValueType = thrust::remove_cvref_t<InitialValueType>;
@@ -89,7 +92,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   return thrust::exclusive_scan(exec, _first, _last, result, init, binary_op);
 } // end transform_exclusive_scan()
 
+
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

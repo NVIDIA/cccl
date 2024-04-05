@@ -56,6 +56,7 @@
 
 CUB_NAMESPACE_BEGIN
 
+
 /******************************************************************************
  * Tuning policy
  ******************************************************************************/
@@ -116,7 +117,8 @@ struct AgentSpmvPolicy
   };
 
   /// Cache load modifier for reading CSR row-offsets
-  static constexpr CacheLoadModifier ROW_OFFSETS_SEARCH_LOAD_MODIFIER = _ROW_OFFSETS_SEARCH_LOAD_MODIFIER;
+  static constexpr CacheLoadModifier ROW_OFFSETS_SEARCH_LOAD_MODIFIER =
+    _ROW_OFFSETS_SEARCH_LOAD_MODIFIER;
 
   /// Cache load modifier for reading CSR row-offsets
   static constexpr CacheLoadModifier ROW_OFFSETS_LOAD_MODIFIER = _ROW_OFFSETS_LOAD_MODIFIER;
@@ -150,21 +152,21 @@ struct SpmvParams
 {
   /// Pointer to the array of \p num_nonzeros values of the corresponding nonzero elements of matrix
   /// <b>A</b>.
-  const ValueT* d_values;
+  const ValueT *d_values;
 
   /// Pointer to the array of \p m offsets demarcating the end of every row in \p d_column_indices
   /// and \p d_values
-  const OffsetT* d_row_end_offsets;
+  const OffsetT *d_row_end_offsets;
 
   /// Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero elements
   /// of matrix <b>A</b>.  (Indices are zero-valued.)
-  const OffsetT* d_column_indices;
+  const OffsetT *d_column_indices;
 
   /// Pointer to the array of \p num_cols values corresponding to the dense input vector <em>x</em>
-  const ValueT* d_vector_x;
+  const ValueT *d_vector_x;
 
   /// Pointer to the array of \p num_rows values corresponding to the dense output vector <em>y</em>
-  ValueT* d_vector_y;
+  ValueT *d_vector_y;
 
   /// Number of rows of matrix <b>A</b>.
   int num_rows;
@@ -211,535 +213,590 @@ template <typename AgentSpmvPolicyT,
           int LEGACY_PTX_ARCH = 0>
 struct AgentSpmv
 {
-  //---------------------------------------------------------------------
-  // Types and constants
-  //---------------------------------------------------------------------
+    //---------------------------------------------------------------------
+    // Types and constants
+    //---------------------------------------------------------------------
 
-  /// Constants
-  enum
-  {
-    BLOCK_THREADS    = AgentSpmvPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = AgentSpmvPolicyT::ITEMS_PER_THREAD,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-  };
-
-  /// 2D merge path coordinate type
-  typedef typename CubVector<OffsetT, 2>::Type CoordinateT;
-
-  /// Input iterator wrapper types (for applying cache modifiers)
-
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
-    RowOffsetsSearchIteratorT;
-
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER, OffsetT, OffsetT> RowOffsetsIteratorT;
-
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER, OffsetT, OffsetT>
-    ColumnIndicesIteratorT;
-
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::VALUES_LOAD_MODIFIER, ValueT, OffsetT> ValueIteratorT;
-
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
-    VectorValueIteratorT;
-
-  // Tuple type for scanning (pairs accumulated segment-value with segment-index)
-  typedef KeyValuePair<OffsetT, ValueT> KeyValuePairT;
-
-  // Reduce-value-by-segment scan operator
-  typedef ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
-
-  // BlockReduce specialization
-  typedef BlockReduce< ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS> BlockReduceT;
-
-  // BlockScan specialization
-  typedef BlockScan< KeyValuePairT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockScanT;
-
-  // BlockScan specialization
-  typedef BlockScan< ValueT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockPrefixSumT;
-
-  // BlockExchange specialization
-  typedef BlockExchange< ValueT, BLOCK_THREADS, ITEMS_PER_THREAD> BlockExchangeT;
-
-  /// Merge item type (either a non-zero value or a row-end offset)
-  union MergeItem
-  {
-    // Value type to pair with index type OffsetT
-    // (NullType if loading values directly during merge)
-    using MergeValueT = cub::detail::conditional_t< AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
-
-    OffsetT row_end_offset;
-    MergeValueT nonzero;
-  };
-
-  /// Shared memory type required by this thread block
-  struct _TempStorage
-  {
-    CoordinateT tile_coords[2];
-
-    union Aliasable
+    /// Constants
+    enum
     {
-      // Smem needed for tile of merge items
-      MergeItem merge_items[ITEMS_PER_THREAD + TILE_ITEMS + 1];
+        BLOCK_THREADS           = AgentSpmvPolicyT::BLOCK_THREADS,
+        ITEMS_PER_THREAD        = AgentSpmvPolicyT::ITEMS_PER_THREAD,
+        TILE_ITEMS              = BLOCK_THREADS * ITEMS_PER_THREAD,
+    };
 
-      // Smem needed for block exchange
-      typename BlockExchangeT::TempStorage exchange;
+    /// 2D merge path coordinate type
+    typedef typename CubVector<OffsetT, 2>::Type CoordinateT;
 
-      // Smem needed for block-wide reduction
-      typename BlockReduceT::TempStorage reduce;
+    /// Input iterator wrapper types (for applying cache modifiers)
 
-      // Smem needed for tile scanning
-      typename BlockScanT::TempStorage scan;
+    typedef CacheModifiedInputIterator<
+            AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER,
+            OffsetT,
+            OffsetT>
+        RowOffsetsSearchIteratorT;
 
-      // Smem needed for tile prefix sum
-      typename BlockPrefixSumT::TempStorage prefix_sum;
+    typedef CacheModifiedInputIterator<
+            AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER,
+            OffsetT,
+            OffsetT>
+        RowOffsetsIteratorT;
 
-    } aliasable;
-  };
+    typedef CacheModifiedInputIterator<
+            AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER,
+            OffsetT,
+            OffsetT>
+        ColumnIndicesIteratorT;
 
-  /// Temporary storage type (unionable)
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
+    typedef CacheModifiedInputIterator<
+            AgentSpmvPolicyT::VALUES_LOAD_MODIFIER,
+            ValueT,
+            OffsetT>
+        ValueIteratorT;
 
-  //---------------------------------------------------------------------
-  // Per-thread fields
-  //---------------------------------------------------------------------
+    typedef CacheModifiedInputIterator<
+            AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER,
+            ValueT,
+            OffsetT>
+        VectorValueIteratorT;
 
-  /// Reference to temp_storage
-  _TempStorage& temp_storage;
+    // Tuple type for scanning (pairs accumulated segment-value with segment-index)
+    typedef KeyValuePair<OffsetT, ValueT> KeyValuePairT;
 
-  SpmvParams<ValueT, OffsetT>& spmv_params;
+    // Reduce-value-by-segment scan operator
+    typedef ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
 
-  /// Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements
-  /// of matrix <b>A</b>.
-  ValueIteratorT wd_values;
+    // BlockReduce specialization
+    typedef BlockReduce<
+            ValueT,
+            BLOCK_THREADS,
+            BLOCK_REDUCE_WARP_REDUCTIONS>
+        BlockReduceT;
 
-  /// Wrapped Pointer to the array of \p m offsets demarcating the end of every row in \p
-  /// d_column_indices and \p d_values
-  RowOffsetsIteratorT wd_row_end_offsets;
+    // BlockScan specialization
+    typedef BlockScan<
+            KeyValuePairT,
+            BLOCK_THREADS,
+            AgentSpmvPolicyT::SCAN_ALGORITHM>
+        BlockScanT;
 
-  /// Wrapped Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero
-  /// elements of matrix <b>A</b>.  (Indices are zero-valued.)
-  ColumnIndicesIteratorT wd_column_indices;
+    // BlockScan specialization
+    typedef BlockScan<
+            ValueT,
+            BLOCK_THREADS,
+            AgentSpmvPolicyT::SCAN_ALGORITHM>
+        BlockPrefixSumT;
 
-  /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
-  /// <em>x</em>
-  VectorValueIteratorT wd_vector_x;
+    // BlockExchange specialization
+    typedef BlockExchange<
+            ValueT,
+            BLOCK_THREADS,
+            ITEMS_PER_THREAD>
+        BlockExchangeT;
 
-  /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
-  /// <em>x</em>
-  VectorValueIteratorT wd_vector_y;
-
-  //---------------------------------------------------------------------
-  // Interface
-  //---------------------------------------------------------------------
-
-  /**
-   * @param temp_storage
-   *   Reference to temp_storage
-   *
-   * @param spmv_params
-   *   SpMV input parameter bundle
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage& temp_storage, SpmvParams<ValueT, OffsetT>& spmv_params)
-      : temp_storage(temp_storage.Alias())
-      , spmv_params(spmv_params)
-      , wd_values(spmv_params.d_values)
-      , wd_row_end_offsets(spmv_params.d_row_end_offsets)
-      , wd_column_indices(spmv_params.d_column_indices)
-      , wd_vector_x(spmv_params.d_vector_x)
-      , wd_vector_y(spmv_params.d_vector_y)
-  {}
-
-  /**
-   * @brief Consume a merge tile, specialized for direct-load of nonzeros
-   *
-   * @param is_direct_load
-   *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT
-  ConsumeTile(int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, Int2Type<true> is_direct_load)
-  {
-    int tile_num_rows               = tile_end_coord.x - tile_start_coord.x;
-    int tile_num_nonzeros           = tile_end_coord.y - tile_start_coord.y;
-    OffsetT* s_tile_row_end_offsets = &temp_storage.aliasable.merge_items[0].row_end_offset;
-
-    // Gather the row end-offsets for the merge tile into shared memory
-    for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
+    /// Merge item type (either a non-zero value or a row-end offset)
+    union MergeItem
     {
-      const OffsetT offset =
-        (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
-      s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
-    }
+      // Value type to pair with index type OffsetT
+      // (NullType if loading values directly during merge)
+      using MergeValueT =
+        cub::detail::conditional_t<
+          AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
 
-    CTA_SYNC();
+      OffsetT row_end_offset;
+      MergeValueT nonzero;
+    };
 
-    // Search for the thread's starting coordinate within the merge tile
-    CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
-    CoordinateT thread_start_coord;
-
-    MergePathSearch(
-      OffsetT(threadIdx.x * ITEMS_PER_THREAD), // Diagonal
-      s_tile_row_end_offsets, // List A
-      tile_nonzero_indices, // List B
-      tile_num_rows,
-      tile_num_nonzeros,
-      thread_start_coord);
-
-    CTA_SYNC(); // Perf-sync
-
-    // Compute the thread's merge path segment
-    CoordinateT thread_current_coord = thread_start_coord;
-    KeyValuePairT scan_segment[ITEMS_PER_THREAD];
-
-    ValueT running_total = 0.0;
-
-#pragma unroll
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    /// Shared memory type required by this thread block
+    struct _TempStorage
     {
-      OffsetT nonzero_idx = CUB_MIN(tile_nonzero_indices[thread_current_coord.y], spmv_params.num_nonzeros - 1);
-      OffsetT column_idx  = wd_column_indices[nonzero_idx];
-      ValueT value        = wd_values[nonzero_idx];
+        CoordinateT tile_coords[2];
 
-      ValueT vector_value = wd_vector_x[column_idx];
-
-      ValueT nonzero = value * vector_value;
-
-      OffsetT row_end_offset = s_tile_row_end_offsets[thread_current_coord.x];
-
-      if (tile_nonzero_indices[thread_current_coord.y] < row_end_offset)
-      {
-        // Move down (accumulate)
-        running_total += nonzero;
-        scan_segment[ITEM].value = running_total;
-        scan_segment[ITEM].key   = tile_num_rows;
-        ++thread_current_coord.y;
-      }
-      else
-      {
-        // Move right (reset)
-        scan_segment[ITEM].value = running_total;
-        scan_segment[ITEM].key   = thread_current_coord.x;
-        running_total            = 0.0;
-        ++thread_current_coord.x;
-      }
-    }
-
-    CTA_SYNC();
-
-    // Block-wide reduce-value-by-segment
-    KeyValuePairT tile_carry;
-    ReduceBySegmentOpT scan_op;
-    KeyValuePairT scan_item;
-
-    scan_item.value = running_total;
-    scan_item.key   = thread_current_coord.x;
-
-    BlockScanT(temp_storage.aliasable.scan).ExclusiveScan(scan_item, scan_item, scan_op, tile_carry);
-
-    if (tile_num_rows > 0)
-    {
-      if (threadIdx.x == 0)
-      {
-        scan_item.key = -1;
-      }
-
-// Direct scatter
-#pragma unroll
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-      {
-        if (scan_segment[ITEM].key < tile_num_rows)
+        union Aliasable
         {
-          if (scan_item.key == scan_segment[ITEM].key)
-          {
-            scan_segment[ITEM].value = scan_item.value + scan_segment[ITEM].value;
-          }
+            // Smem needed for tile of merge items
+            MergeItem merge_items[ITEMS_PER_THREAD + TILE_ITEMS + 1];
 
-          if (HAS_ALPHA)
-          {
-            scan_segment[ITEM].value *= spmv_params.alpha;
-          }
+            // Smem needed for block exchange
+            typename BlockExchangeT::TempStorage exchange;
 
-          if (HAS_BETA)
-          {
-            // Update the output vector element
-            ValueT addend = spmv_params.beta * wd_vector_y[tile_start_coord.x + scan_segment[ITEM].key];
-            scan_segment[ITEM].value += addend;
-          }
+            // Smem needed for block-wide reduction
+            typename BlockReduceT::TempStorage reduce;
 
-          // Set the output vector element
-          spmv_params.d_vector_y[tile_start_coord.x + scan_segment[ITEM].key] = scan_segment[ITEM].value;
+            // Smem needed for tile scanning
+            typename BlockScanT::TempStorage scan;
+
+            // Smem needed for tile prefix sum
+            typename BlockPrefixSumT::TempStorage prefix_sum;
+
+        } aliasable;
+    };
+
+    /// Temporary storage type (unionable)
+    struct TempStorage : Uninitialized<_TempStorage> {};
+
+
+    //---------------------------------------------------------------------
+    // Per-thread fields
+    //---------------------------------------------------------------------
+
+    /// Reference to temp_storage
+    _TempStorage &temp_storage;
+
+    SpmvParams<ValueT, OffsetT> &spmv_params;
+
+    /// Wrapped pointer to the array of \p num_nonzeros values of the corresponding nonzero elements
+    /// of matrix <b>A</b>.
+    ValueIteratorT wd_values;
+
+    /// Wrapped Pointer to the array of \p m offsets demarcating the end of every row in \p
+    /// d_column_indices and \p d_values
+    RowOffsetsIteratorT wd_row_end_offsets;
+
+    /// Wrapped Pointer to the array of \p num_nonzeros column-indices of the corresponding nonzero
+    /// elements of matrix <b>A</b>.  (Indices are zero-valued.)
+    ColumnIndicesIteratorT wd_column_indices;
+
+    /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
+    /// <em>x</em>
+    VectorValueIteratorT wd_vector_x;
+
+    /// Wrapped Pointer to the array of \p num_cols values corresponding to the dense input vector
+    /// <em>x</em>
+    VectorValueIteratorT wd_vector_y;
+
+    //---------------------------------------------------------------------
+    // Interface
+    //---------------------------------------------------------------------
+
+    /**
+     * @param temp_storage
+     *   Reference to temp_storage
+     *
+     * @param spmv_params
+     *   SpMV input parameter bundle
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSpmv(TempStorage &temp_storage,
+                                         SpmvParams<ValueT, OffsetT> &spmv_params)
+        : temp_storage(temp_storage.Alias())
+        , spmv_params(spmv_params)
+        , wd_values(spmv_params.d_values)
+        , wd_row_end_offsets(spmv_params.d_row_end_offsets)
+        , wd_column_indices(spmv_params.d_column_indices)
+        , wd_vector_x(spmv_params.d_vector_x)
+        , wd_vector_y(spmv_params.d_vector_y)
+    {}
+
+
+
+
+    /**
+     * @brief Consume a merge tile, specialized for direct-load of nonzeros
+     *
+     * @param is_direct_load
+     *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
+                                                         CoordinateT tile_start_coord,
+                                                         CoordinateT tile_end_coord,
+                                                         Int2Type<true> is_direct_load)
+    {
+        int         tile_num_rows           = tile_end_coord.x - tile_start_coord.x;
+        int         tile_num_nonzeros       = tile_end_coord.y - tile_start_coord.y;
+        OffsetT*    s_tile_row_end_offsets  = &temp_storage.aliasable.merge_items[0].row_end_offset;
+
+        // Gather the row end-offsets for the merge tile into shared memory
+        for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
+        {
+            const OffsetT offset =
+              (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item),
+                         static_cast<OffsetT>(spmv_params.num_rows - 1));
+            s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
         }
-      }
+
+        CTA_SYNC();
+
+        // Search for the thread's starting coordinate within the merge tile
+        CountingInputIterator<OffsetT>  tile_nonzero_indices(tile_start_coord.y);
+        CoordinateT                     thread_start_coord;
+
+        MergePathSearch(
+            OffsetT(threadIdx.x * ITEMS_PER_THREAD),    // Diagonal
+            s_tile_row_end_offsets,                     // List A
+            tile_nonzero_indices,                       // List B
+            tile_num_rows,
+            tile_num_nonzeros,
+            thread_start_coord);
+
+        CTA_SYNC();            // Perf-sync
+
+        // Compute the thread's merge path segment
+        CoordinateT     thread_current_coord = thread_start_coord;
+        KeyValuePairT   scan_segment[ITEMS_PER_THREAD];
+
+        ValueT          running_total = 0.0;
+
+        #pragma unroll
+        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        {
+            OffsetT nonzero_idx         = CUB_MIN(tile_nonzero_indices[thread_current_coord.y], spmv_params.num_nonzeros - 1);
+            OffsetT column_idx          = wd_column_indices[nonzero_idx];
+            ValueT  value               = wd_values[nonzero_idx];
+
+            ValueT  vector_value        = wd_vector_x[column_idx];
+
+            ValueT  nonzero             = value * vector_value;
+
+            OffsetT row_end_offset      = s_tile_row_end_offsets[thread_current_coord.x];
+
+            if (tile_nonzero_indices[thread_current_coord.y] < row_end_offset)
+            {
+                // Move down (accumulate)
+                running_total += nonzero;
+                scan_segment[ITEM].value    = running_total;
+                scan_segment[ITEM].key      = tile_num_rows;
+                ++thread_current_coord.y;
+            }
+            else
+            {
+                // Move right (reset)
+                scan_segment[ITEM].value    = running_total;
+                scan_segment[ITEM].key      = thread_current_coord.x;
+                running_total               = 0.0;
+                ++thread_current_coord.x;
+            }
+        }
+
+        CTA_SYNC();
+
+        // Block-wide reduce-value-by-segment
+        KeyValuePairT       tile_carry;
+        ReduceBySegmentOpT  scan_op;
+        KeyValuePairT       scan_item;
+
+        scan_item.value = running_total;
+        scan_item.key   = thread_current_coord.x;
+
+        BlockScanT(temp_storage.aliasable.scan).ExclusiveScan(scan_item, scan_item, scan_op, tile_carry);
+
+        if (tile_num_rows > 0)
+        {
+            if (threadIdx.x == 0)
+                scan_item.key = -1;
+
+            // Direct scatter
+            #pragma unroll
+            for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+            {
+                if (scan_segment[ITEM].key < tile_num_rows)
+                {
+                    if (scan_item.key == scan_segment[ITEM].key)
+                        scan_segment[ITEM].value = scan_item.value + scan_segment[ITEM].value;
+
+                    if (HAS_ALPHA)
+                    {
+                        scan_segment[ITEM].value *= spmv_params.alpha;
+                    }
+
+                    if (HAS_BETA)
+                    {
+                        // Update the output vector element
+                        ValueT addend = spmv_params.beta * wd_vector_y[tile_start_coord.x + scan_segment[ITEM].key];
+                        scan_segment[ITEM].value += addend;
+                    }
+
+                    // Set the output vector element
+                    spmv_params.d_vector_y[tile_start_coord.x + scan_segment[ITEM].key] = scan_segment[ITEM].value;
+                }
+            }
+        }
+
+        // Return the tile's running carry-out
+        return tile_carry;
     }
 
-    // Return the tile's running carry-out
-    return tile_carry;
-  }
 
-  /**
-   * @brief Consume a merge tile, specialized for indirect load of nonzeros
-   *
-   * @param is_direct_load
-   *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT
-  ConsumeTile(int tile_idx, CoordinateT tile_start_coord, CoordinateT tile_end_coord, Int2Type<false> is_direct_load)
-  {
-    int tile_num_rows     = tile_end_coord.x - tile_start_coord.x;
-    int tile_num_nonzeros = tile_end_coord.y - tile_start_coord.y;
+
+    /**
+     * @brief Consume a merge tile, specialized for indirect load of nonzeros
+     *
+     * @param is_direct_load
+     *   Marker type indicating whether to load nonzeros directly during path-discovery or beforehand in batch
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePairT ConsumeTile(int tile_idx,
+                                                         CoordinateT tile_start_coord,
+                                                         CoordinateT tile_end_coord,
+                                                         Int2Type<false> is_direct_load)
+    {
+        int         tile_num_rows           = tile_end_coord.x - tile_start_coord.x;
+        int         tile_num_nonzeros       = tile_end_coord.y - tile_start_coord.y;
 
 #if (CUB_PTX_ARCH >= 520)
 
-    OffsetT* s_tile_row_end_offsets = &temp_storage.aliasable.merge_items[0].row_end_offset;
-    ValueT* s_tile_nonzeros         = &temp_storage.aliasable.merge_items[tile_num_rows + ITEMS_PER_THREAD].nonzero;
+        OffsetT*    s_tile_row_end_offsets  = &temp_storage.aliasable.merge_items[0].row_end_offset;
+        ValueT*     s_tile_nonzeros         = &temp_storage.aliasable.merge_items[tile_num_rows + ITEMS_PER_THREAD].nonzero;
 
-// Gather the nonzeros for the merge tile into shared memory
-#  pragma unroll
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-    {
-      int nonzero_idx = threadIdx.x + (ITEM * BLOCK_THREADS);
+        // Gather the nonzeros for the merge tile into shared memory
+        #pragma unroll
+        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        {
+            int nonzero_idx = threadIdx.x + (ITEM * BLOCK_THREADS);
 
-      ValueIteratorT a          = wd_values + tile_start_coord.y + nonzero_idx;
-      ColumnIndicesIteratorT ci = wd_column_indices + tile_start_coord.y + nonzero_idx;
-      ValueT* s                 = s_tile_nonzeros + nonzero_idx;
+            ValueIteratorT a                = wd_values + tile_start_coord.y + nonzero_idx;
+            ColumnIndicesIteratorT ci       = wd_column_indices + tile_start_coord.y + nonzero_idx;
+            ValueT* s                       = s_tile_nonzeros + nonzero_idx;
 
-      if (nonzero_idx < tile_num_nonzeros)
-      {
-        OffsetT column_idx = *ci;
-        ValueT value       = *a;
+            if (nonzero_idx < tile_num_nonzeros)
+            {
 
-        ValueT vector_value = wd_vector_x[column_idx];
+                OffsetT column_idx              = *ci;
+                ValueT  value                   = *a;
 
-        ValueT nonzero = value * vector_value;
+                ValueT  vector_value            = wd_vector_x[column_idx];
 
-        *s = nonzero;
-      }
-    }
+                ValueT  nonzero                 = value * vector_value;
+
+                *s    = nonzero;
+            }
+        }
+
 
 #else
 
-    OffsetT* s_tile_row_end_offsets = &temp_storage.aliasable.merge_items[0].row_end_offset;
-    ValueT* s_tile_nonzeros         = &temp_storage.aliasable.merge_items[tile_num_rows + ITEMS_PER_THREAD].nonzero;
+        OffsetT*    s_tile_row_end_offsets  = &temp_storage.aliasable.merge_items[0].row_end_offset;
+        ValueT*     s_tile_nonzeros         = &temp_storage.aliasable.merge_items[tile_num_rows + ITEMS_PER_THREAD].nonzero;
 
-    // Gather the nonzeros for the merge tile into shared memory
-    if (tile_num_nonzeros > 0)
-    {
-#  pragma unroll
-      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-      {
-        int nonzero_idx = threadIdx.x + (ITEM * BLOCK_THREADS);
-        nonzero_idx     = CUB_MIN(nonzero_idx, tile_num_nonzeros - 1);
+        // Gather the nonzeros for the merge tile into shared memory
+        if (tile_num_nonzeros > 0)
+        {
+            #pragma unroll
+            for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+            {
+                int     nonzero_idx             = threadIdx.x + (ITEM * BLOCK_THREADS);
+                nonzero_idx                     = CUB_MIN(nonzero_idx, tile_num_nonzeros - 1);
 
-        OffsetT column_idx = wd_column_indices[tile_start_coord.y + nonzero_idx];
-        ValueT value       = wd_values[tile_start_coord.y + nonzero_idx];
+                OffsetT column_idx              = wd_column_indices[tile_start_coord.y + nonzero_idx];
+                ValueT  value                   = wd_values[tile_start_coord.y + nonzero_idx];
 
-        ValueT vector_value = wd_vector_x[column_idx];
+                ValueT  vector_value            = wd_vector_x[column_idx];
 
-        ValueT nonzero = value * vector_value;
+                ValueT  nonzero                 = value * vector_value;
 
-        s_tile_nonzeros[nonzero_idx] = nonzero;
-      }
-    }
+                s_tile_nonzeros[nonzero_idx]    = nonzero;
+            }
+        }
 
 #endif
 
-// Gather the row end-offsets for the merge tile into shared memory
-#pragma unroll 1
-    for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
-    {
-      const OffsetT offset =
-        (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item), static_cast<OffsetT>(spmv_params.num_rows - 1));
-      s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
-    }
-
-    CTA_SYNC();
-
-    // Search for the thread's starting coordinate within the merge tile
-    CountingInputIterator<OffsetT> tile_nonzero_indices(tile_start_coord.y);
-    CoordinateT thread_start_coord;
-
-    MergePathSearch(
-      OffsetT(threadIdx.x * ITEMS_PER_THREAD), // Diagonal
-      s_tile_row_end_offsets, // List A
-      tile_nonzero_indices, // List B
-      tile_num_rows,
-      tile_num_nonzeros,
-      thread_start_coord);
-
-    CTA_SYNC(); // Perf-sync
-
-    // Compute the thread's merge path segment
-    CoordinateT thread_current_coord = thread_start_coord;
-    KeyValuePairT scan_segment[ITEMS_PER_THREAD];
-    ValueT running_total = 0.0;
-
-    OffsetT row_end_offset = s_tile_row_end_offsets[thread_current_coord.x];
-    ValueT nonzero         = s_tile_nonzeros[thread_current_coord.y];
-
-#pragma unroll
-    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-    {
-      if (tile_nonzero_indices[thread_current_coord.y] < row_end_offset)
-      {
-        // Move down (accumulate)
-        scan_segment[ITEM].value = nonzero;
-        running_total += nonzero;
-        ++thread_current_coord.y;
-        nonzero = s_tile_nonzeros[thread_current_coord.y];
-      }
-      else
-      {
-        // Move right (reset)
-        scan_segment[ITEM].value = 0.0;
-        running_total            = 0.0;
-        ++thread_current_coord.x;
-        row_end_offset = s_tile_row_end_offsets[thread_current_coord.x];
-      }
-
-      scan_segment[ITEM].key = thread_current_coord.x;
-    }
-
-    CTA_SYNC();
-
-    // Block-wide reduce-value-by-segment
-    KeyValuePairT tile_carry;
-    ReduceBySegmentOpT scan_op;
-    KeyValuePairT scan_item;
-
-    scan_item.value = running_total;
-    scan_item.key   = thread_current_coord.x;
-
-    BlockScanT(temp_storage.aliasable.scan).ExclusiveScan(scan_item, scan_item, scan_op, tile_carry);
-
-    if (threadIdx.x == 0)
-    {
-      scan_item.key   = thread_start_coord.x;
-      scan_item.value = 0.0;
-    }
-
-    if (tile_num_rows > 0)
-    {
-      CTA_SYNC();
-
-      // Scan downsweep and scatter
-      ValueT* s_partials = &temp_storage.aliasable.merge_items[0].nonzero;
-
-      if (scan_item.key != scan_segment[0].key)
-      {
-        s_partials[scan_item.key] = scan_item.value;
-      }
-      else
-      {
-        scan_segment[0].value += scan_item.value;
-      }
-
-#pragma unroll
-      for (int ITEM = 1; ITEM < ITEMS_PER_THREAD; ++ITEM)
-      {
-        if (scan_segment[ITEM - 1].key != scan_segment[ITEM].key)
+        // Gather the row end-offsets for the merge tile into shared memory
+        #pragma unroll 1
+        for (int item = threadIdx.x; item < tile_num_rows + ITEMS_PER_THREAD; item += BLOCK_THREADS)
         {
-          s_partials[scan_segment[ITEM - 1].key] = scan_segment[ITEM - 1].value;
+            const OffsetT offset =
+              (cub::min)(static_cast<OffsetT>(tile_start_coord.x + item),
+                         static_cast<OffsetT>(spmv_params.num_rows - 1));
+            s_tile_row_end_offsets[item] = wd_row_end_offsets[offset];
         }
-        else
-        {
-          scan_segment[ITEM].value += scan_segment[ITEM - 1].value;
-        }
-      }
 
-      CTA_SYNC();
+        CTA_SYNC();
 
-#pragma unroll 1
-      for (int item = threadIdx.x; item < tile_num_rows; item += BLOCK_THREADS)
-      {
-        spmv_params.d_vector_y[tile_start_coord.x + item] = s_partials[item];
-      }
-    }
+        // Search for the thread's starting coordinate within the merge tile
+        CountingInputIterator<OffsetT>  tile_nonzero_indices(tile_start_coord.y);
+        CoordinateT                     thread_start_coord;
 
-    // Return the tile's running carry-out
-    return tile_carry;
-  }
-
-  /**
-   * @brief Consume input tile
-   *
-   * @param[in] d_tile_coordinates
-   *   Pointer to the temporary array of tile starting coordinates
-   *
-   * @param[out] d_tile_carry_pairs
-   *   Pointer to the temporary array carry-out dot product row-ids, one per block
-   *
-   * @param[in] num_merge_tiles
-   *   Number of merge tiles
-   */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeTile(CoordinateT* d_tile_coordinates, KeyValuePairT* d_tile_carry_pairs, int num_merge_tiles)
-  {
-    int tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
-
-    if (tile_idx >= num_merge_tiles)
-    {
-      return;
-    }
-
-    // Read our starting coordinates
-    if (threadIdx.x < 2)
-    {
-      if (d_tile_coordinates == NULL)
-      {
-        // Search our starting coordinates
-        OffsetT diagonal = (tile_idx + threadIdx.x) * TILE_ITEMS;
-        CoordinateT tile_coord;
-        CountingInputIterator<OffsetT> nonzero_indices(0);
-
-        // Search the merge path
         MergePathSearch(
-          diagonal,
-          RowOffsetsSearchIteratorT(spmv_params.d_row_end_offsets),
-          nonzero_indices,
-          spmv_params.num_rows,
-          spmv_params.num_nonzeros,
-          tile_coord);
+            OffsetT(threadIdx.x * ITEMS_PER_THREAD),    // Diagonal
+            s_tile_row_end_offsets,                     // List A
+            tile_nonzero_indices,                       // List B
+            tile_num_rows,
+            tile_num_nonzeros,
+            thread_start_coord);
 
-        temp_storage.tile_coords[threadIdx.x] = tile_coord;
-      }
-      else
-      {
-        temp_storage.tile_coords[threadIdx.x] = d_tile_coordinates[tile_idx + threadIdx.x];
-      }
+        CTA_SYNC();            // Perf-sync
+
+        // Compute the thread's merge path segment
+        CoordinateT     thread_current_coord = thread_start_coord;
+        KeyValuePairT   scan_segment[ITEMS_PER_THREAD];
+        ValueT          running_total = 0.0;
+
+        OffsetT row_end_offset  = s_tile_row_end_offsets[thread_current_coord.x];
+        ValueT  nonzero         = s_tile_nonzeros[thread_current_coord.y];
+
+        #pragma unroll
+        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+        {
+            if (tile_nonzero_indices[thread_current_coord.y] < row_end_offset)
+            {
+                // Move down (accumulate)
+                scan_segment[ITEM].value    = nonzero;
+                running_total               += nonzero;
+                ++thread_current_coord.y;
+                nonzero                     = s_tile_nonzeros[thread_current_coord.y];
+            }
+            else
+            {
+                // Move right (reset)
+                scan_segment[ITEM].value    = 0.0;
+                running_total               = 0.0;
+                ++thread_current_coord.x;
+                row_end_offset              = s_tile_row_end_offsets[thread_current_coord.x];
+            }
+
+            scan_segment[ITEM].key = thread_current_coord.x;
+        }
+
+        CTA_SYNC();
+
+        // Block-wide reduce-value-by-segment
+        KeyValuePairT       tile_carry;
+        ReduceBySegmentOpT  scan_op;
+        KeyValuePairT       scan_item;
+
+        scan_item.value = running_total;
+        scan_item.key = thread_current_coord.x;
+
+        BlockScanT(temp_storage.aliasable.scan).ExclusiveScan(scan_item, scan_item, scan_op, tile_carry);
+
+        if (threadIdx.x == 0)
+        {
+            scan_item.key = thread_start_coord.x;
+            scan_item.value = 0.0;
+        }
+
+        if (tile_num_rows > 0)
+        {
+
+            CTA_SYNC();
+
+            // Scan downsweep and scatter
+            ValueT* s_partials = &temp_storage.aliasable.merge_items[0].nonzero;
+
+            if (scan_item.key != scan_segment[0].key)
+            {
+                s_partials[scan_item.key] = scan_item.value;
+            }
+            else
+            {
+                scan_segment[0].value += scan_item.value;
+            }
+
+            #pragma unroll
+            for (int ITEM = 1; ITEM < ITEMS_PER_THREAD; ++ITEM)
+            {
+                if (scan_segment[ITEM - 1].key != scan_segment[ITEM].key)
+                {
+                    s_partials[scan_segment[ITEM - 1].key] = scan_segment[ITEM - 1].value;
+                }
+                else
+                {
+                    scan_segment[ITEM].value += scan_segment[ITEM - 1].value;
+                }
+            }
+
+            CTA_SYNC();
+
+            #pragma unroll 1
+            for (int item = threadIdx.x; item < tile_num_rows; item += BLOCK_THREADS)
+            {
+                spmv_params.d_vector_y[tile_start_coord.x + item] = s_partials[item];
+            }
+        }
+
+        // Return the tile's running carry-out
+        return tile_carry;
     }
 
-    CTA_SYNC();
 
-    CoordinateT tile_start_coord = temp_storage.tile_coords[0];
-    CoordinateT tile_end_coord   = temp_storage.tile_coords[1];
-
-    // Consume multi-segment tile
-    KeyValuePairT tile_carry =
-      ConsumeTile(tile_idx, tile_start_coord, tile_end_coord, Int2Type<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS>());
-
-    // Output the tile's carry-out
-    if (threadIdx.x == 0)
+    /**
+     * @brief Consume input tile
+     *
+     * @param[in] d_tile_coordinates
+     *   Pointer to the temporary array of tile starting coordinates
+     *
+     * @param[out] d_tile_carry_pairs
+     *   Pointer to the temporary array carry-out dot product row-ids, one per block
+     *
+     * @param[in] num_merge_tiles
+     *   Number of merge tiles
+     */
+    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(CoordinateT *d_tile_coordinates,
+                                                KeyValuePairT *d_tile_carry_pairs,
+                                                int num_merge_tiles)
     {
-      if (HAS_ALPHA)
-      {
-        tile_carry.value *= spmv_params.alpha;
-      }
+        int tile_idx = (blockIdx.x * gridDim.y) + blockIdx.y;    // Current tile index
 
-      tile_carry.key += tile_start_coord.x;
-      if (tile_carry.key >= spmv_params.num_rows)
-      {
-        // FIXME: This works around an invalid memory access in the
-        // fixup kernel. The underlying issue needs to be debugged and
-        // properly fixed, but this hack prevents writes to
-        // out-of-bounds addresses. It doesn't appear to have an effect
-        // on the validity of the results, since this only affects the
-        // carry-over from last tile in the input.
-        tile_carry.key   = spmv_params.num_rows - 1;
-        tile_carry.value = ValueT{};
-      };
+        if (tile_idx >= num_merge_tiles)
+            return;
 
-      d_tile_carry_pairs[tile_idx] = tile_carry;
+        // Read our starting coordinates
+        if (threadIdx.x < 2)
+        {
+            if (d_tile_coordinates == NULL)
+            {
+                // Search our starting coordinates
+                OffsetT                         diagonal = (tile_idx + threadIdx.x) * TILE_ITEMS;
+                CoordinateT                     tile_coord;
+                CountingInputIterator<OffsetT>  nonzero_indices(0);
+
+                // Search the merge path
+                MergePathSearch(
+                    diagonal,
+                    RowOffsetsSearchIteratorT(spmv_params.d_row_end_offsets),
+                    nonzero_indices,
+                    spmv_params.num_rows,
+                    spmv_params.num_nonzeros,
+                    tile_coord);
+
+                temp_storage.tile_coords[threadIdx.x] = tile_coord;
+            }
+            else
+            {
+                temp_storage.tile_coords[threadIdx.x] = d_tile_coordinates[tile_idx + threadIdx.x];
+            }
+        }
+
+        CTA_SYNC();
+
+        CoordinateT tile_start_coord     = temp_storage.tile_coords[0];
+        CoordinateT tile_end_coord       = temp_storage.tile_coords[1];
+
+        // Consume multi-segment tile
+        KeyValuePairT tile_carry = ConsumeTile(
+            tile_idx,
+            tile_start_coord,
+            tile_end_coord,
+            Int2Type<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS>());
+
+        // Output the tile's carry-out
+        if (threadIdx.x == 0)
+        {
+            if (HAS_ALPHA)
+            {
+                tile_carry.value *= spmv_params.alpha;
+            }
+
+            tile_carry.key += tile_start_coord.x;
+            if (tile_carry.key >= spmv_params.num_rows)
+            {
+                // FIXME: This works around an invalid memory access in the
+                // fixup kernel. The underlying issue needs to be debugged and
+                // properly fixed, but this hack prevents writes to
+                // out-of-bounds addresses. It doesn't appear to have an effect
+                // on the validity of the results, since this only affects the
+                // carry-over from last tile in the input.
+                tile_carry.key = spmv_params.num_rows - 1;
+                tile_carry.value = ValueT{};
+            };
+
+            d_tile_carry_pairs[tile_idx]    = tile_carry;
+        }
     }
-  }
+
+
 };
 
+
+
+
 CUB_NAMESPACE_END
+

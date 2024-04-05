@@ -16,11 +16,12 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using month_weekday_last = cuda::std::chrono::month_weekday_last;
+int main(int, char**)
+{
+    using month_weekday_last = cuda::std::chrono::month_weekday_last;
 
-  static_assert(cuda::std::is_trivially_copyable_v<month_weekday_last>, "");
-  static_assert(cuda::std::is_standard_layout_v<month_weekday_last>, "");
+    static_assert(cuda::std::is_trivially_copyable_v<month_weekday_last>, "");
+    static_assert(cuda::std::is_standard_layout_v<month_weekday_last>, "");
 
   return 0;
 }

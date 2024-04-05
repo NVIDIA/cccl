@@ -20,9 +20,7 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ int plusOne(const int v) noexcept {
-  return v + 1;
-}
+TEST_CONSTEXPR_CXX14 __host__ __device__ int plusOne(const int v) noexcept { return v + 1; }
 
 template <class InIter, class OutIter>
 TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
@@ -32,8 +30,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
     constexpr int expected[N] = {2, 4, 7, 8};
     int ib[N + 1] = {0, 0, 0, 0, 0};
 
-    OutIter r =
-        cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne);
+    OutIter r = cuda::std::transform(InIter(ia), InIter(ia + N), OutIter(ib), plusOne);
     assert(base(r) == ib + N);
     for (int i = 0; i < N; ++i) {
       assert(ib[i] == expected[i]);

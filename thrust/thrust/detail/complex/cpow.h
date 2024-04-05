@@ -17,14 +17,16 @@
 
 #pragma once
 
-#include <thrust/complex.h>
 #include <thrust/detail/config.h>
+
+#include <thrust/complex.h>
 #include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
 pow(const complex<T0>& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -32,7 +34,8 @@ pow(const complex<T0>& x, const complex<T1>& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
 pow(const complex<T0>& x, const T1& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -40,7 +43,8 @@ pow(const complex<T0>& x, const T1& y)
 }
 
 template <typename T0, typename T1>
-__host__ __device__ complex<typename detail::promoted_numerical_type<T0, T1>::type>
+__host__ __device__
+complex<typename detail::promoted_numerical_type<T0, T1>::type>
 pow(const T0& x, const complex<T1>& y)
 {
   typedef typename detail::promoted_numerical_type<T0, T1>::type T;
@@ -50,3 +54,4 @@ pow(const T0& x, const complex<T1>& y)
 }
 
 THRUST_NAMESPACE_END
+

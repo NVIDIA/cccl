@@ -26,9 +26,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
+
+
 #include <thrust/detail/type_deduction.h>
-#include <thrust/system/detail/generic/select_system.h>
 #include <thrust/type_traits/remove_cvref.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -52,21 +54,37 @@ struct select_system_fn final
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0>
-  _CCCL_HOST_DEVICE auto operator()(thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0) const
-    THRUST_DECLTYPE_RETURNS(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec0))))
+  _CCCL_HOST_DEVICE
+  auto operator()(
+    thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
+  ) const
+  THRUST_DECLTYPE_RETURNS(
+    select_system(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec0))
+    )
+  )
 
-      _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename DerivedPolicy0, typename DerivedPolicy1>
-  _CCCL_HOST_DEVICE auto operator()(thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0,
-                                    thrust::detail::execution_policy_base<DerivedPolicy1> const& exec1) const
-    THRUST_DECLTYPE_RETURNS(select_system(thrust::detail::derived_cast(thrust::detail::strip_const(exec0)),
-                                          thrust::detail::derived_cast(thrust::detail::strip_const(exec1))))
+  _CCCL_HOST_DEVICE
+  auto operator()(
+    thrust::detail::execution_policy_base<DerivedPolicy0> const& exec0
+  , thrust::detail::execution_policy_base<DerivedPolicy1> const& exec1
+  ) const
+  THRUST_DECLTYPE_RETURNS(
+    select_system(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec0))
+    , thrust::detail::derived_cast(thrust::detail::strip_const(exec1))
+    )
+  )
 };
 
 } // namespace select_system_detail
 
 THRUST_INLINE_CONSTANT select_system_detail::select_system_fn select_system{};
 
-} // namespace detail
+} // detail
 
 THRUST_NAMESPACE_END
+
+

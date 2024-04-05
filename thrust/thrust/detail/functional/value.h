@@ -42,39 +42,46 @@ namespace detail
 namespace functional
 {
 
-template <typename Eval>
-struct actor;
 
-template <typename T>
-class value
+template<typename Eval> struct actor;
+
+
+template<typename T>
+  class value
 {
-public:
-  template <typename Env>
-  struct result
-  {
-    typedef T type;
-  };
+  public:
 
-  _CCCL_HOST_DEVICE value(const T& arg)
+    template<typename Env>
+      struct result
+    {
+      typedef T type;
+    };
+
+    _CCCL_HOST_DEVICE
+    value(const T &arg)
       : m_val(arg)
-  {}
+    {}
 
-  template <typename Env>
-  _CCCL_HOST_DEVICE T eval(const Env&) const
-  {
-    return m_val;
-  }
+    template<typename Env>
+    _CCCL_HOST_DEVICE
+      T eval(const Env &) const
+    {
+      return m_val;
+    }
 
-private:
-  T m_val;
+  private:
+    T m_val;
 }; // end value
 
-template <typename T>
-_CCCL_HOST_DEVICE actor<value<T> > val(const T& x)
+template<typename T>
+_CCCL_HOST_DEVICE
+actor<value<T> > val(const T &x)
 {
   return value<T>(x);
 } // end val()
 
-} // namespace functional
-} // namespace detail
+
+} // end functional
+} // end detail
 THRUST_NAMESPACE_END
+

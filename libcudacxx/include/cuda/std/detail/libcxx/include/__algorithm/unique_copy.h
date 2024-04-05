@@ -98,12 +98,12 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_ForwardIterator, _Outp
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _InputAndOutputIterator>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
-  _InputIterator __first,
-  _Sent __last,
-  _InputAndOutputIterator __result,
-  _BinaryPredicate&& __pred,
-  __unique_copy_tags::__reread_from_output_tag)
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator>
+__unique_copy(_InputIterator __first,
+              _Sent __last,
+              _InputAndOutputIterator __result,
+              _BinaryPredicate&& __pred,
+              __unique_copy_tags::__reread_from_output_tag)
 {
   if (__first != __last)
   {

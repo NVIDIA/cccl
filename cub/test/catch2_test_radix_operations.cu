@@ -42,7 +42,8 @@ struct fundamental_extractor_t
   std::uint32_t bit_start;
   std::uint32_t mask;
 
-  __host__ __device__ fundamental_extractor_t(std::uint32_t bit_start = 0, std::uint32_t num_bits = 0)
+  __host__ __device__ fundamental_extractor_t(std::uint32_t bit_start = 0,
+                                              std::uint32_t num_bits  = 0)
       : bit_start(bit_start)
       , mask((1 << num_bits) - 1)
   {}
@@ -64,7 +65,7 @@ c2h::host_vector<std::uint8_t> get_random_buffer()
 constexpr int max_digit_bits = sizeof(std::uint32_t) * CHAR_BIT;
 using digit_bits_t           = std::bitset<max_digit_bits>;
 
-digit_bits_t buffer_to_digit_bits(const char* buffer, int current_bit, int num_bits)
+digit_bits_t buffer_to_digit_bits(const char *buffer, int current_bit, int num_bits)
 {
   digit_bits_t dst; // all bits set to zero
 
@@ -81,7 +82,7 @@ digit_bits_t buffer_to_digit_bits(const char* buffer, int current_bit, int num_b
   return dst;
 }
 
-using fundamental_types       = c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>;
+using fundamental_types = c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>;
 using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
 
 /**
@@ -95,7 +96,9 @@ using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
  *    dst: 0 0 0 0 0 0 1 0 0 1
  *
  */
-CUB_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST("Radix operations extract digits from fundamental types",
+         "[radix][operations]",
+         fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -110,8 +113,8 @@ CUB_TEST("Radix operations extract digits from fundamental types", "[radix][oper
   c2h::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
   const c2h::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
 
-  char* output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
-  const char* input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
+  char *output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
+  const char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
   std::memcpy(&val, input_buffer, sizeof(key_t));
 
   for (int current_bit = 0; current_bit < max_key_bits; current_bit++)
@@ -120,7 +123,8 @@ CUB_TEST("Radix operations extract digits from fundamental types", "[radix][oper
 
     for (int num_bits = 1; num_bits < max_bits; num_bits++)
     {
-      auto extractor = traits::template digit_extractor<extractor_t>(current_bit, num_bits, decomposer);
+      auto extractor =
+        traits::template digit_extractor<extractor_t>(current_bit, num_bits, decomposer);
 
       std::uint32_t digit = extractor.Digit(val);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
@@ -140,13 +144,13 @@ template <class... Ts>
 struct tuple_decomposer_t<::cuda::std::tuple<Ts...>>
 {
   template <std::size_t... Is>
-  __host__ __device__ ::cuda::std::tuple<Ts&...>
-  extract(::cuda::std::tuple<Ts...>& key, thrust::index_sequence<Is...>) const
+  __host__ __device__ ::cuda::std::tuple<Ts &...> extract(::cuda::std::tuple<Ts...> &key,
+                                                          thrust::index_sequence<Is...>) const
   {
     return ::cuda::std::tie(::cuda::std::get<Is>(key)...);
   }
 
-  __host__ __device__ ::cuda::std::tuple<Ts&...> operator()(::cuda::std::tuple<Ts...>& key) const
+  __host__ __device__ ::cuda::std::tuple<Ts &...> operator()(::cuda::std::tuple<Ts...> &key) const
   {
     return extract(key, thrust::make_index_sequence<sizeof...(Ts)>{});
   }
@@ -277,8 +281,8 @@ void test_tuple()
   c2h::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
   const c2h::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
 
-  char* output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
-  const char* input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
+  char *output_buffer      = thrust::raw_pointer_cast(output_buffer_mem.data());
+  const char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
   buffer_to_tpl(input_buffer, tpl);
 
   auto decomposer        = decomposer_t{};
@@ -291,7 +295,8 @@ void test_tuple()
 
     for (int num_bits = 1; num_bits < max_bits; num_bits++)
     {
-      auto extractor = traits::template digit_extractor<extractor_t>(current_bit, num_bits, decomposer);
+      auto extractor =
+        traits::template digit_extractor<extractor_t>(current_bit, num_bits, decomposer);
 
       std::uint32_t digit = extractor.Digit(tpl);
       std::memcpy(output_buffer, &digit, sizeof(std::uint32_t));
@@ -308,7 +313,10 @@ void test_tuple()
   }
 }
 
-CUB_TEST("Radix operations extract digits from pairs", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations extract digits from pairs",
+         "[radix][operations]",
+         fundamental_types,
+         fundamental_types)
 {
   test_tuple<typename c2h::get<0, TestType>, //
              typename c2h::get<1, TestType>>();
@@ -352,14 +360,14 @@ CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
   using extractor_t  = fundamental_extractor_t<key_t>;
   using decomposer_t = cub::detail::identity_decomposer_t;
 
-  auto decomposer = decomposer_t{};
+  auto decomposer            = decomposer_t{};
 
   key_t val{};
   c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
   c2h::host_vector<char> input_buffer_mem = get_random_buffer<key_t>();
 
-  char* output_buffer = thrust::raw_pointer_cast(output_buffer_mem.data());
-  char* input_buffer  = thrust::raw_pointer_cast(input_buffer_mem.data());
+  char *output_buffer = thrust::raw_pointer_cast(output_buffer_mem.data());
+  char *input_buffer  = thrust::raw_pointer_cast(input_buffer_mem.data());
   std::memcpy(&val, input_buffer, sizeof(key_t));
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
@@ -385,7 +393,10 @@ CUB_TEST("Radix operations inverse fundamental types", "[radix][operations]", fu
  *      <           <----  higher bits  /  lower bits  ---->           >
  *
  */
-CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations inverse pairs",
+         "[radix][operations]",
+         fundamental_types,
+         fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
@@ -399,7 +410,7 @@ CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
   tpl_t tpl{};
   c2h::host_vector<char> input_buffer_mem = get_random_buffer<tpl_t>();
 
-  char* input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
+  char *input_buffer = thrust::raw_pointer_cast(input_buffer_mem.data());
   buffer_to_tpl(input_buffer, tpl);
 
   for (std::size_t i = 0; i < input_buffer_mem.size(); i++)
@@ -408,7 +419,7 @@ CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
   }
 
   c2h::host_vector<char> output_buffer_mem = input_buffer_mem;
-  char* output_buffer                      = thrust::raw_pointer_cast(output_buffer_mem.data());
+  char *output_buffer                         = thrust::raw_pointer_cast(output_buffer_mem.data());
 
   tpl_t inv = traits::bit_ordered_inversion_policy::inverse(decomposer, tpl);
   tpl_to_buffer(output_buffer, inv);
@@ -420,7 +431,9 @@ CUB_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields smallest possible value.
  */
-CUB_TEST("Radix operations infere minimal value for fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST("Radix operations infere minimal value for fundamental types",
+         "[radix][operations]",
+         fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -435,8 +448,10 @@ CUB_TEST("Radix operations infere minimal value for fundamental types", "[radix]
   REQUIRE(ref == val);
 }
 
-CUB_TEST(
-  "Radix operations infere minimal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations infere minimal value for pair types",
+         "[radix][operations]",
+         fundamental_types,
+         fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
@@ -456,7 +471,9 @@ CUB_TEST(
  * This tests checks that radix operations can get a value that when converted
  * to binary-comparable representation, yields largest possible value.
  */
-CUB_TEST("Radix operations infere maximal value for fundamental types", "[radix][operations]", fundamental_types)
+CUB_TEST("Radix operations infere maximal value for fundamental types",
+         "[radix][operations]",
+         fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
   using traits       = cub::detail::radix::traits_t<key_t>;
@@ -468,8 +485,10 @@ CUB_TEST("Radix operations infere maximal value for fundamental types", "[radix]
   REQUIRE(ref == val);
 }
 
-CUB_TEST(
-  "Radix operations infere maximal value for pair types", "[radix][operations]", fundamental_types, fundamental_types)
+CUB_TEST("Radix operations infere maximal value for pair types",
+         "[radix][operations]",
+         fundamental_types,
+         fundamental_types)
 {
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
@@ -485,7 +504,8 @@ CUB_TEST(
   REQUIRE(ref == val);
 }
 
-using fundamental_signed_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
+using fundamental_signed_types =
+  c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t>;
 
 /**
  * This tests checks that radix operations can convert a value to a binary-comparable
@@ -522,8 +542,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   UT1 ul_1 = static_cast<UT1>(bs_1.to_ullong());
   UT2 ul_2 = static_cast<UT2>(bs_2.to_ullong());
 
-  T1 l_1 = reinterpret_cast<T1&>(ul_1);
-  T2 l_2 = reinterpret_cast<T2&>(ul_2);
+  T1 l_1 = reinterpret_cast<T1 &>(ul_1);
+  T2 l_2 = reinterpret_cast<T2 &>(ul_2);
 
   REQUIRE(l_1 == std::numeric_limits<T1>::lowest());
   REQUIRE(l_2 == std::numeric_limits<T2>::lowest());
@@ -542,8 +562,8 @@ CUB_TEST("Radix operations reorder values for pair types",
   ul_1 = static_cast<UT1>(std::numeric_limits<T1>::max());
   ul_2 = static_cast<UT2>(std::numeric_limits<T2>::max());
 
-  l_1 = reinterpret_cast<T1&>(ul_1);
-  l_2 = reinterpret_cast<T2&>(ul_2);
+  l_1 = reinterpret_cast<T1 &>(ul_1);
+  l_2 = reinterpret_cast<T2 &>(ul_2);
 
   bs_1 = ul_1;
   bs_2 = ul_2;
@@ -555,8 +575,8 @@ CUB_TEST("Radix operations reorder values for pair types",
     const tpl_t unordered_val = tpl_t{l_1, l_2};
     const tpl_t ordered_val   = conversion_policy::to_bit_ordered(decomposer_t{}, unordered_val);
 
-    ul_1 = reinterpret_cast<const UT1&>(::cuda::std::get<0>(ordered_val));
-    ul_2 = reinterpret_cast<const UT2&>(::cuda::std::get<1>(ordered_val));
+    ul_1 = reinterpret_cast<const UT1 &>(::cuda::std::get<0>(ordered_val));
+    ul_2 = reinterpret_cast<const UT2 &>(::cuda::std::get<1>(ordered_val));
 
     REQUIRE(ul_1 == std::numeric_limits<UT1>::max());
     REQUIRE(ul_2 == std::numeric_limits<UT2>::max());
@@ -574,7 +594,7 @@ struct fp_aggregate_t
 
 struct fp_aggregate_decomposer_t
 {
-  __host__ __device__ ::cuda::std::tuple<double&, float&> operator()(fp_aggregate_t& val) const
+  __host__ __device__ ::cuda::std::tuple<double &, float &> operator()(fp_aggregate_t &val) const
   {
     return {val.fp64, val.fp32};
   }
@@ -582,7 +602,7 @@ struct fp_aggregate_decomposer_t
 
 struct flipped_fp_aggregate_decomposer_t
 {
-  __host__ __device__ ::cuda::std::tuple<float&, double&> operator()(fp_aggregate_t& val) const
+  __host__ __device__ ::cuda::std::tuple<float &, double &> operator()(fp_aggregate_t &val) const
   {
     return {val.fp32, val.fp64};
   }

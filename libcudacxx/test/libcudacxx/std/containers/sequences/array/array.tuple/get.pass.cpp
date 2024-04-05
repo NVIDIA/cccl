@@ -16,58 +16,58 @@
 
 #include "test_macros.h"
 
-template <typename... T>
-__host__ __device__ TEST_CONSTEXPR cuda::std::array<int, sizeof...(T)>
-tempArray(T... args) {
-  return {args...};
+template <typename ...T>
+__host__ __device__ TEST_CONSTEXPR cuda::std::array<int, sizeof...(T)> tempArray(T ...args)
+{
+    return {args...};
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-  {
-    cuda::std::array<double, 1> array = {3.3};
-    assert(cuda::std::get<0>(array) == 3.3);
-    cuda::std::get<0>(array) = 99.1;
-    assert(cuda::std::get<0>(array) == 99.1);
-  }
-  {
-    cuda::std::array<double, 2> array = {3.3, 4.4};
-    assert(cuda::std::get<0>(array) == 3.3);
-    assert(cuda::std::get<1>(array) == 4.4);
-    cuda::std::get<0>(array) = 99.1;
-    cuda::std::get<1>(array) = 99.2;
-    assert(cuda::std::get<0>(array) == 99.1);
-    assert(cuda::std::get<1>(array) == 99.2);
-  }
-  {
-    cuda::std::array<double, 3> array = {3.3, 4.4, 5.5};
-    assert(cuda::std::get<0>(array) == 3.3);
-    assert(cuda::std::get<1>(array) == 4.4);
-    assert(cuda::std::get<2>(array) == 5.5);
-    cuda::std::get<1>(array) = 99.2;
-    assert(cuda::std::get<0>(array) == 3.3);
-    assert(cuda::std::get<1>(array) == 99.2);
-    assert(cuda::std::get<2>(array) == 5.5);
-  }
-  {
-    cuda::std::array<double, 1> array = {3.3};
-    static_assert(
-        cuda::std::is_same<double&, decltype(cuda::std::get<0>(array))>::value,
-        "");
-    unused(array);
-  }
-  {
-    assert(cuda::std::get<0>(tempArray(1, 2, 3)) == 1);
-    assert(cuda::std::get<1>(tempArray(1, 2, 3)) == 2);
-    assert(cuda::std::get<2>(tempArray(1, 2, 3)) == 3);
-  }
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+    {
+        cuda::std::array<double, 1> array = {3.3};
+        assert(cuda::std::get<0>(array) == 3.3);
+        cuda::std::get<0>(array) = 99.1;
+        assert(cuda::std::get<0>(array) == 99.1);
+    }
+    {
+        cuda::std::array<double, 2> array = {3.3, 4.4};
+        assert(cuda::std::get<0>(array) == 3.3);
+        assert(cuda::std::get<1>(array) == 4.4);
+        cuda::std::get<0>(array) = 99.1;
+        cuda::std::get<1>(array) = 99.2;
+        assert(cuda::std::get<0>(array) == 99.1);
+        assert(cuda::std::get<1>(array) == 99.2);
+    }
+    {
+        cuda::std::array<double, 3> array = {3.3, 4.4, 5.5};
+        assert(cuda::std::get<0>(array) == 3.3);
+        assert(cuda::std::get<1>(array) == 4.4);
+        assert(cuda::std::get<2>(array) == 5.5);
+        cuda::std::get<1>(array) = 99.2;
+        assert(cuda::std::get<0>(array) == 3.3);
+        assert(cuda::std::get<1>(array) == 99.2);
+        assert(cuda::std::get<2>(array) == 5.5);
+    }
+    {
+        cuda::std::array<double, 1> array = {3.3};
+        static_assert(cuda::std::is_same<double&, decltype(cuda::std::get<0>(array))>::value, "");
+        unused(array);
+    }
+    {
+        assert(cuda::std::get<0>(tempArray(1, 2, 3)) == 1);
+        assert(cuda::std::get<1>(tempArray(1, 2, 3)) == 2);
+        assert(cuda::std::get<2>(tempArray(1, 2, 3)) == 3);
+    }
 
-  return true;
+    return true;
 }
 
-int main(int, char**) {
-  tests();
+int main(int, char**)
+{
+    tests();
 #if TEST_STD_VER >= 2014
-  static_assert(tests(), "");
+    static_assert(tests(), "");
 #endif
-  return 0;
+    return 0;
 }

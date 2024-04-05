@@ -25,21 +25,21 @@
 #include "variant_test_helpers.h"
 
 struct visitor_42 {
-  template <class T>
+  template<class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == 42);
     return true;
   }
 };
 struct visitor_42_3 {
-  template <class T>
+  template<class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == 42.3);
     return true;
   }
 };
 struct visitor_float {
-  template <class T>
+  template<class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == -1.3f);
     return true;
@@ -47,7 +47,7 @@ struct visitor_float {
 };
 
 struct MyVariant : cuda::std::variant<short, long, float> {
-  using cuda::std::variant<short, long, float>::variant;
+    using cuda::std::variant<short, long, float>::variant;
 };
 
 // Check that visit does not take index nor valueless_by_exception members from the base class.
@@ -65,20 +65,19 @@ struct EvilVariant1 : cuda::std::variant<int, long, double>,
 // Check that visit unambiguously picks the variant, even if the other base has __impl member.
 struct ImplVariantBase {
   struct Callable {
-    __host__ __device__ bool operator()() const {
-      assert(false);
-      return false;
-    }
+    __host__ __device__
+    bool operator()() const { assert(false); return false; }
   };
 
   Callable __impl;
 };
 
-struct EvilVariant2 : cuda::std::variant<int, long, double>, ImplVariantBase {
-  using cuda::std::variant<int, long, double>::variant;
-};
+  struct EvilVariant2 : cuda::std::variant<int, long, double>, ImplVariantBase {
+    using cuda::std::variant<int, long, double>::variant;
+  };
 
-__host__ __device__ void test_derived_from_variant() {
+__host__ __device__
+void test_derived_from_variant() {
   cuda::std::visit<bool>(visitor_42{}, MyVariant{42});
   cuda::std::visit<bool>(visitor_float{}, MyVariant{-1.3f});
 

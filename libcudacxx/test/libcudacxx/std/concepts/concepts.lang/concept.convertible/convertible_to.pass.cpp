@@ -56,8 +56,7 @@ __host__ __device__ void CheckIsConvertibleButNotConvertibleTo() {
 template <class T>
 #else
 _LIBCUDACXX_TEMPLATE(class T)
-_LIBCUDACXX_REQUIRES((!(cuda::std::same_as<T, bool> ||
-                        cuda::std::same_as<T, nullptr_t>)))
+  _LIBCUDACXX_REQUIRES( (!(cuda::std::same_as<T, bool> || cuda::std::same_as<T, nullptr_t>)))
 #endif
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<T, void>();
@@ -68,11 +67,11 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<T, T[sizeof(T)]>();
   CheckNotConvertibleTo<T, T (*)()>();
   CheckNotConvertibleTo<T, T (&)()>();
-  CheckNotConvertibleTo<T, T (&&)()>();
+  CheckNotConvertibleTo<T, T(&&)()>();
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-_LIBCUDACXX_REQUIRES(cuda::std::same_as<T, bool>)
+  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, bool>)
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<bool, void>();
   CheckNotConvertibleTo<bool, nullptr_t>();
@@ -81,11 +80,11 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckConvertibleTo<bool[2], bool>();
   CheckConvertibleTo<bool (*)(), bool>();
   CheckConvertibleTo<bool (&)(), bool>();
-  CheckConvertibleTo<bool (&&)(), bool>();
+  CheckConvertibleTo<bool(&&)(), bool>();
 }
 
 _LIBCUDACXX_TEMPLATE(class T)
-_LIBCUDACXX_REQUIRES(cuda::std::same_as<T, nullptr_t>)
+  _LIBCUDACXX_REQUIRES( cuda::std::same_as<T, nullptr_t>)
 __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<nullptr_t, void>();
   CheckConvertibleTo<nullptr_t, nullptr_t>();
@@ -95,7 +94,7 @@ __host__ __device__ constexpr void CommonlyNotConvertibleTo() {
   CheckNotConvertibleTo<nullptr_t, int[2]>();
   CheckConvertibleTo<nullptr_t, void (*)()>();
   CheckNotConvertibleTo<nullptr_t, void (&)()>();
-  CheckNotConvertibleTo<nullptr_t, void (&&)()>();
+  CheckNotConvertibleTo<nullptr_t, void(&&)()>();
 }
 } // namespace
 
@@ -300,8 +299,7 @@ int main(int, char**) {
 
   static_assert(!convertible_to<const Array, Array&>, "");
   static_assert(convertible_to<const Array, const Array&>, "");
-#if !defined(TEST_COMPILER_MSVC) ||                                            \
-    TEST_STD_VER > 2017 // MSVC has a bug where lets the conversion happen
+#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC has a bug where lets the conversion happen
   static_assert(!convertible_to<Array, volatile Array&>, "");
   static_assert(!convertible_to<Array, const volatile Array&>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
@@ -427,13 +425,12 @@ int main(int, char**) {
   static_assert(convertible_to<NonCopyable&, const volatile NonCopyable&>, "");
   static_assert(convertible_to<NonCopyable&, volatile NonCopyable&>, "");
   static_assert(convertible_to<const NonCopyable&, const NonCopyable&>, "");
-  static_assert(convertible_to<const NonCopyable&, const volatile NonCopyable&>,
-                "");
+  static_assert(
+      convertible_to<const NonCopyable&, const volatile NonCopyable&>, "");
   static_assert(
       convertible_to<volatile NonCopyable&, const volatile NonCopyable&>, "");
-  static_assert(
-      convertible_to<const volatile NonCopyable&, const volatile NonCopyable&>,
-      "");
+  static_assert(convertible_to<const volatile NonCopyable&,
+                                    const volatile NonCopyable&>, "");
   static_assert(!convertible_to<const NonCopyable&, NonCopyable&>, "");
 
   // This test requires Access control SFINAE which we only have in C++11 or when

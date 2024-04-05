@@ -27,57 +27,60 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/detail/raw_pointer_cast.h>
-#  include <thrust/system/cuda/config.h>
-#  include <thrust/system/cuda/detail/copy.h>
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/config.h>
+#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/system/cuda/detail/copy.h>
 
-#  include <nv/target>
+#include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void
-assign_value(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+
+template<typename DerivedPolicy, typename Pointer1, typename Pointer2>
+inline _CCCL_HOST_DEVICE
+  void assign_value(thrust::cuda::execution_policy<DerivedPolicy> &exec, Pointer1 dst, Pointer2 src)
 {
   // XXX war nvbugs/881631
   struct war_nvbugs_881631
   {
-    _CCCL_HOST inline static void
-    host_path(thrust::cuda::execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST inline static void host_path(thrust::cuda::execution_policy<DerivedPolicy> &exec, Pointer1 dst, Pointer2 src)
     {
       cuda_cub::copy(exec, src, src + 1, dst);
     }
 
-    _CCCL_DEVICE inline static void
-    device_path(thrust::cuda::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
+    _CCCL_DEVICE inline static void device_path(thrust::cuda::execution_policy<DerivedPolicy> &, Pointer1 dst, Pointer2 src)
     {
       *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
     }
   };
 
-  NV_IF_TARGET(
-    NV_IS_HOST, (war_nvbugs_881631::host_path(exec, dst, src);), (war_nvbugs_881631::device_path(exec, dst, src);));
+  NV_IF_TARGET(NV_IS_HOST, (
+    war_nvbugs_881631::host_path(exec,dst,src);
+  ), (
+    war_nvbugs_881631::device_path(exec,dst,src);
+  ));
 
 } // end assign_value()
 
-template <typename System1, typename System2, typename Pointer1, typename Pointer2>
-inline _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+
+template<typename System1, typename System2, typename Pointer1, typename Pointer2>
+inline _CCCL_HOST_DEVICE
+  void assign_value(cross_system<System1,System2> &systems, Pointer1 dst, Pointer2 src)
 {
   // XXX war nvbugs/881631
   struct war_nvbugs_881631
   {
-    _CCCL_HOST inline static void host_path(cross_system<System1, System2>& systems, Pointer1 dst, Pointer2 src)
+    _CCCL_HOST inline static void host_path(cross_system<System1,System2> &systems, Pointer1 dst, Pointer2 src)
     {
       // rotate the systems so that they are ordered the same as (src, dst)
       // for the call to thrust::copy
-      cross_system<System2, System1> rotated_systems = systems.rotate();
+      cross_system<System2,System1> rotated_systems = systems.rotate();
       cuda_cub::copy(rotated_systems, src, src + 1, dst);
     }
 
-    _CCCL_DEVICE inline static void device_path(cross_system<System1, System2>&, Pointer1 dst, Pointer2 src)
+    _CCCL_DEVICE inline static void device_path(cross_system<System1,System2> &, Pointer1 dst, Pointer2 src)
     {
       // XXX forward the true cuda::execution_policy inside systems here
       //     instead of materializing a tag
@@ -86,11 +89,14 @@ inline _CCCL_HOST_DEVICE void assign_value(cross_system<System1, System2>& syste
     }
   };
 
-  NV_IF_TARGET(NV_IS_HOST,
-               (war_nvbugs_881631::host_path(systems, dst, src);),
-               (war_nvbugs_881631::device_path(systems, dst, src);));
+  NV_IF_TARGET(NV_IS_HOST, (
+    war_nvbugs_881631::host_path(systems,dst,src);
+  ), (
+    war_nvbugs_881631::device_path(systems,dst,src);
+  ));
 } // end assign_value()
 
-} // namespace cuda_cub
+
+} // end cuda_cub
 THRUST_NAMESPACE_END
 #endif

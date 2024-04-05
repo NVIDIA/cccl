@@ -24,20 +24,24 @@
 #include "variant_test_helpers.h"
 
 struct NonDefaultConstructible {
-  __host__ __device__ constexpr NonDefaultConstructible(int) {}
+  __host__ __device__
+  constexpr NonDefaultConstructible(int) {}
 };
 
 struct NotNoexcept {
-  __host__ __device__ NotNoexcept() noexcept(false) {}
+  __host__ __device__
+  NotNoexcept() noexcept(false) {}
 };
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 struct DefaultCtorThrows {
-  __host__ __device__ DefaultCtorThrows() { throw 42; }
+  __host__ __device__
+  DefaultCtorThrows() { throw 42; }
 };
 #endif
 
-__host__ __device__ void test_default_ctor_sfinae() {
+__host__ __device__
+void test_default_ctor_sfinae() {
   {
     using V = cuda::std::variant<cuda::std::monostate, int>;
     static_assert(cuda::std::is_default_constructible<V>::value, "");
@@ -48,13 +52,14 @@ __host__ __device__ void test_default_ctor_sfinae() {
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int&, int>;
+    using V = cuda::std::variant<int &, int>;
     static_assert(!cuda::std::is_default_constructible<V>::value, "");
   }
 #endif
 }
 
-__host__ __device__ void test_default_ctor_noexcept() {
+__host__ __device__
+void test_default_ctor_noexcept() {
   {
     using V = cuda::std::variant<int>;
     static_assert(cuda::std::is_nothrow_default_constructible<V>::value, "");
@@ -67,13 +72,14 @@ __host__ __device__ void test_default_ctor_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__ void test_default_ctor_throws() {
+__host__ __device__
+void test_default_ctor_throws() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
   using V = cuda::std::variant<DefaultCtorThrows, int>;
   try {
     V v;
     assert(false);
-  } catch (const int& ex) {
+  } catch (const int &ex) {
     assert(ex == 42);
   } catch (...) {
     assert(false);
@@ -81,7 +87,8 @@ __host__ __device__ void test_default_ctor_throws() {
 #endif
 }
 
-__host__ __device__ void test_default_ctor_basic() {
+__host__ __device__
+void test_default_ctor_basic() {
   {
     cuda::std::variant<int> v;
     assert(v.index() == 0);

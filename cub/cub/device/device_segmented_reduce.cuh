@@ -126,15 +126,15 @@ private:
       OffsetT,
       ReductionOpT,
       Ts...>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_out,
-                       num_segments,
-                       d_begin_offsets,
-                       d_end_offsets,
-                       reduction_op,
-                       initial_value,
-                       stream);
+                              temp_storage_bytes,
+                              d_in,
+                              d_out,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              reduction_op,
+                              initial_value,
+                              stream);
   }
 
 public:
@@ -250,7 +250,7 @@ public:
     cudaStream_t stream = 0)
   {
     // Integer type for global offsets
-    using OffsetT               = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -275,32 +275,36 @@ public:
             typename EndOffsetIteratorT,
             typename ReductionOpT,
             typename T>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    ReductionOpT reduction_op,
-    T initial_value,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  Reduce(void *d_temp_storage,
+         size_t &temp_storage_bytes,
+         InputIteratorT d_in,
+         OutputIteratorT d_out,
+         int num_segments,
+         BeginOffsetIteratorT d_begin_offsets,
+         EndOffsetIteratorT d_end_offsets,
+         ReductionOpT reduction_op,
+         T initial_value,
+         cudaStream_t stream,
+         bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, ReductionOpT, T>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      reduction_op,
-      initial_value,
-      stream);
+    return Reduce<InputIteratorT,
+                  OutputIteratorT,
+                  BeginOffsetIteratorT,
+                  EndOffsetIteratorT,
+                  ReductionOpT,
+                  T>(d_temp_storage,
+                     temp_storage_bytes,
+                     d_in,
+                     d_out,
+                     num_segments,
+                     d_begin_offsets,
+                     d_end_offsets,
+                     reduction_op,
+                     initial_value,
+                     stream);
   }
 
   //! @rst
@@ -414,10 +418,13 @@ public:
       stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Sum(void* d_temp_storage,
-      size_t& temp_storage_bytes,
+  Sum(void *d_temp_storage,
+      size_t &temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       int num_segments,
@@ -429,7 +436,14 @@ public:
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Sum<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
@@ -529,7 +543,7 @@ public:
     using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT                = cub::detail::value_t<InputIteratorT>;
+    using InputT = cub::detail::value_t<InputIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -551,10 +565,13 @@ public:
       stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Min(void* d_temp_storage,
-      size_t& temp_storage_bytes,
+  Min(void *d_temp_storage,
+      size_t &temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       int num_segments,
@@ -566,7 +583,14 @@ public:
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Min<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
@@ -675,7 +699,8 @@ public:
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT =
+      cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     // The output value type
     using OutputValueT = typename OutputTupleT::Value;
@@ -717,22 +742,32 @@ public:
       stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  ArgMin(void *d_temp_storage,
+         size_t &temp_storage_bytes,
+         InputIteratorT d_in,
+         OutputIteratorT d_out,
+         int num_segments,
+         BeginOffsetIteratorT d_begin_offsets,
+         EndOffsetIteratorT d_end_offsets,
+         cudaStream_t stream,
+         bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return ArgMin<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
@@ -848,10 +883,13 @@ public:
       stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
-  Max(void* d_temp_storage,
-      size_t& temp_storage_bytes,
+  Max(void *d_temp_storage,
+      size_t &temp_storage_bytes,
       InputIteratorT d_in,
       OutputIteratorT d_out,
       int num_segments,
@@ -863,7 +901,14 @@ public:
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Max<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
@@ -975,7 +1020,8 @@ public:
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT =
+      cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
@@ -1017,22 +1063,32 @@ public:
       stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename BeginOffsetIteratorT,
+            typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  ArgMax(void *d_temp_storage,
+         size_t &temp_storage_bytes,
+         InputIteratorT d_in,
+         OutputIteratorT d_out,
+         int num_segments,
+         BeginOffsetIteratorT d_begin_offsets,
+         EndOffsetIteratorT d_end_offsets,
+         cudaStream_t stream,
+         bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return ArgMax<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 };
 

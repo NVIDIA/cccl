@@ -19,26 +19,25 @@
 
 using range = cuda::std::span<int>;
 
-static_assert(
-    cuda::std::same_as<cuda::std::ranges::iterator_t<range>, range::iterator>);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<range>, range::iterator>);
 static_assert(cuda::std::ranges::common_range<range>);
 static_assert(cuda::std::ranges::random_access_range<range>);
 static_assert(cuda::std::ranges::contiguous_range<range>);
-static_assert(
-    cuda::std::ranges::view<range>&& cuda::std::ranges::enable_view<range>);
+static_assert(cuda::std::ranges::view<range> && cuda::std::ranges::enable_view<range>);
 static_assert(cuda::std::ranges::sized_range<range>);
 static_assert(cuda::std::ranges::borrowed_range<range>);
 static_assert(cuda::std::ranges::viewable_range<range>);
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<range const>,
-                                 range::iterator>);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<range const>, range::iterator>);
 static_assert(cuda::std::ranges::common_range<range const>);
 static_assert(cuda::std::ranges::random_access_range<range const>);
 static_assert(cuda::std::ranges::contiguous_range<range const>);
-static_assert(!cuda::std::ranges::view<range const> &&
-              !cuda::std::ranges::enable_view<range const>);
+static_assert(!cuda::std::ranges::view<range const> && !cuda::std::ranges::enable_view<range const>);
 static_assert(cuda::std::ranges::sized_range<range const>);
 static_assert(cuda::std::ranges::borrowed_range<range const>);
 static_assert(cuda::std::ranges::viewable_range<range const>);
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+    return 0;
+}

@@ -19,39 +19,35 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using year = cuda::std::chrono::year;
-  using month = cuda::std::chrono::month;
-  using month_day_last = cuda::std::chrono::month_day_last;
-  using year_month_day_last = cuda::std::chrono::year_month_day_last;
+int main(int, char**)
+{
+    using year                = cuda::std::chrono::year;
+    using month               = cuda::std::chrono::month;
+    using month_day_last      = cuda::std::chrono::month_day_last;
+    using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
-  constexpr month January = cuda::std::chrono::January;
+    constexpr month January = cuda::std::chrono::January;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_day_last>().ok());
-  ASSERT_SAME_TYPE(
-      bool, decltype(cuda::std::declval<const year_month_day_last>().ok()));
+    ASSERT_NOEXCEPT(                cuda::std::declval<const year_month_day_last>().ok());
+    ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const year_month_day_last>().ok()));
 
-  static_assert(
-      !year_month_day_last{year{-32768}, month_day_last{month{}}}.ok(),
-      ""); // both bad
-  static_assert(
-      !year_month_day_last{year{-32768}, month_day_last{January}}.ok(),
-      ""); // Bad year
-  static_assert(!year_month_day_last{year{2019}, month_day_last{month{}}}.ok(),
-                ""); // Bad month
-  static_assert(year_month_day_last{year{2019}, month_day_last{January}}.ok(),
-                ""); // All OK
+    static_assert(!year_month_day_last{year{-32768}, month_day_last{month{}}}.ok(), ""); // both bad
+    static_assert(!year_month_day_last{year{-32768}, month_day_last{January}}.ok(), ""); // Bad year
+    static_assert(!year_month_day_last{year{2019},   month_day_last{month{}}}.ok(), ""); // Bad month
+    static_assert( year_month_day_last{year{2019},   month_day_last{January}}.ok(), ""); // All OK
 
-  for (unsigned i = 0; i <= 50; ++i) {
-    year_month_day_last ym{year{2019}, month_day_last{month{i}}};
-    assert(ym.ok() == month{i}.ok());
-  }
+    for (unsigned i = 0; i <= 50; ++i)
+    {
+        year_month_day_last ym{year{2019}, month_day_last{month{i}}};
+        assert( ym.ok() == month{i}.ok());
+    }
 
-  const int ymax = static_cast<int>(year::max());
-  for (int i = ymax - 100; i <= ymax + 100; ++i) {
-    year_month_day_last ym{year{i}, month_day_last{January}};
-    assert(ym.ok() == year{i}.ok());
-  }
+    const int ymax = static_cast<int>(year::max());
+    for (int i = ymax - 100; i <= ymax + 100; ++i)
+    {
+        year_month_day_last ym{year{i}, month_day_last{January}};
+        assert( ym.ok() == year{i}.ok());
+    }
 
   return 0;
 }

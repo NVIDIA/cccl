@@ -34,6 +34,7 @@
 //   operator/(const month_day& md, int y) noexcept;
 // Returns: year(y) / md.
 
+
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -41,147 +42,151 @@
 #include "test_macros.h"
 #include "test_comparisons.h"
 
-int main(int, char**) {
-  using year = cuda::std::chrono::year;
-  using month = cuda::std::chrono::month;
-  using day = cuda::std::chrono::day;
-  using year_month = cuda::std::chrono::year_month;
-  using month_day = cuda::std::chrono::month_day;
-  using year_month_day = cuda::std::chrono::year_month_day;
+int main(int, char**)
+{
+    using year           = cuda::std::chrono::year;
+    using month          = cuda::std::chrono::month;
+    using day            = cuda::std::chrono::day;
+    using year_month     = cuda::std::chrono::year_month;
+    using month_day      = cuda::std::chrono::month_day;
+    using year_month_day = cuda::std::chrono::year_month_day;
 
-  constexpr month February = cuda::std::chrono::February;
-  constexpr year_month Feb2018{year{2018}, February};
+    constexpr month February = cuda::std::chrono::February;
+    constexpr year_month Feb2018{year{2018}, February};
 
-  { // operator/(const year_month& ym, const day& d)
-    ASSERT_NOEXCEPT(Feb2018 / day{2});
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / day{2}));
+    { // operator/(const year_month& ym, const day& d)
+        ASSERT_NOEXCEPT (                         Feb2018/day{2});
+        ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018/day{2}));
 
-    static_assert((Feb2018 / day{2}).month() == February, "");
-    static_assert((Feb2018 / day{2}).day() == day{2}, "");
+        static_assert((Feb2018/day{2}).month() == February, "");
+        static_assert((Feb2018/day{2}).day()   == day{2},   "");
 
-    for (int i = 1000; i < 1010; ++i)
-      for (int j = 1; j <= 12; ++j)
-        for (unsigned k = 0; k <= 28; ++k) {
-          year y(i);
-          month m(j);
-          day d(k);
-          year_month ym(y, m);
-          year_month_day ymd = ym / d;
-          assert(ymd.year() == y);
-          assert(ymd.month() == m);
-          assert(ymd.day() == d);
-        }
-  }
+        for (int i = 1000; i < 1010; ++i)
+            for (int j = 1; j <= 12; ++j)
+                for (unsigned k = 0; k <= 28; ++k)
+                {
+                    year y(i);
+                    month m(j);
+                    day d(k);
+                    year_month ym(y, m);
+                    year_month_day ymd = ym/d;
+                    assert(ymd.year()  == y);
+                    assert(ymd.month() == m);
+                    assert(ymd.day()   == d);
+                }
+    }
 
-  { // operator/(const year_month& ym, int d)
-    ASSERT_NOEXCEPT(Feb2018 / 2);
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
 
-    static_assert((Feb2018 / 2).month() == February, "");
-    static_assert((Feb2018 / 2).day() == day{2}, "");
+    { // operator/(const year_month& ym, int d)
+        ASSERT_NOEXCEPT (                         Feb2018/2);
+        ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018/2));
 
-    for (int i = 1000; i < 1010; ++i)
-      for (int j = 1; j <= 12; ++j)
-        for (unsigned k = 0; k <= 28; ++k) {
-          year y(i);
-          month m(j);
-          day d(k);
-          year_month ym(y, m);
-          year_month_day ymd = ym / k;
-          assert(ymd.year() == y);
-          assert(ymd.month() == m);
-          assert(ymd.day() == d);
-        }
-  }
+        static_assert((Feb2018/2).month() == February, "");
+        static_assert((Feb2018/2).day()   == day{2},   "");
 
-  { // operator/(const year_month& ym, int d)
-    ASSERT_NOEXCEPT(Feb2018 / 2);
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
+        for (int i = 1000; i < 1010; ++i)
+            for (int j = 1; j <= 12; ++j)
+                for (unsigned k = 0; k <= 28; ++k)
+                {
+                    year y(i);
+                    month m(j);
+                    day d(k);
+                    year_month ym(y, m);
+                    year_month_day ymd = ym/k;
+                    assert(ymd.year()  == y);
+                    assert(ymd.month() == m);
+                    assert(ymd.day()   == d);
+                }
+    }
 
-    static_assert((Feb2018 / 2).month() == February, "");
-    static_assert((Feb2018 / 2).day() == day{2}, "");
 
-    for (int i = 1000; i < 1010; ++i)
-      for (int j = 1; j <= 12; ++j)
-        for (unsigned k = 0; k <= 28; ++k) {
-          year y(i);
-          month m(j);
-          day d(k);
-          year_month ym(y, m);
-          year_month_day ymd = ym / k;
-          assert(ymd.year() == y);
-          assert(ymd.month() == m);
-          assert(ymd.day() == d);
-        }
-  }
+    { // operator/(const year_month& ym, int d)
+        ASSERT_NOEXCEPT (                         Feb2018/2);
+        ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018/2));
 
-  { // operator/(const year& y, const month_day& md) (and switched)
-    ASSERT_NOEXCEPT(year{2018} / month_day{February, day{2}});
-    ASSERT_SAME_TYPE(year_month_day,
-                     decltype(year{2018} / month_day{February, day{2}}));
-    ASSERT_NOEXCEPT(month_day{February, day{2}} / year{2018});
-    ASSERT_SAME_TYPE(year_month_day,
-                     decltype(month_day{February, day{2}} / year{2018}));
+        static_assert((Feb2018/2).month() == February, "");
+        static_assert((Feb2018/2).day()   == day{2},   "");
 
-    static_assert(
-        (year{2018} / month_day{February, day{2}}).month() == February, "");
-    static_assert((year{2018} / month_day{February, day{2}}).day() == day{2},
-                  "");
-    static_assert(
-        (month_day{February, day{2}} / year{2018}).month() == February, "");
-    static_assert((month_day{February, day{2}} / year{2018}).day() == day{2},
-                  "");
+        for (int i = 1000; i < 1010; ++i)
+            for (int j = 1; j <= 12; ++j)
+                for (unsigned k = 0; k <= 28; ++k)
+                {
+                    year y(i);
+                    month m(j);
+                    day d(k);
+                    year_month ym(y, m);
+                    year_month_day ymd = ym/k;
+                    assert(ymd.year()  == y);
+                    assert(ymd.month() == m);
+                    assert(ymd.day()   == d);
+                }
+    }
 
-    for (int i = 1000; i < 1010; ++i)
-      for (int j = 1; j <= 12; ++j)
-        for (unsigned k = 0; k <= 28; ++k) {
-          year y(i);
-          month m(j);
-          day d(k);
-          month_day md(m, d);
-          year_month_day ymd1 = y / md;
-          year_month_day ymd2 = md / y;
-          assert(ymd1.year() == y);
-          assert(ymd2.year() == y);
-          assert(ymd1.month() == m);
-          assert(ymd2.month() == m);
-          assert(ymd1.day() == d);
-          assert(ymd2.day() == d);
-          assert(ymd1 == ymd2);
-        }
-  }
 
-  { // operator/(const month_day& md, int y) (and switched)
-    ASSERT_NOEXCEPT(2018 / month_day{February, day{2}});
-    ASSERT_SAME_TYPE(year_month_day,
-                     decltype(2018 / month_day{February, day{2}}));
-    ASSERT_NOEXCEPT(month_day{February, day{2}} / 2018);
-    ASSERT_SAME_TYPE(year_month_day,
-                     decltype(month_day{February, day{2}} / 2018));
 
-    static_assert((2018 / month_day{February, day{2}}).month() == February, "");
-    static_assert((2018 / month_day{February, day{2}}).day() == day{2}, "");
-    static_assert((month_day{February, day{2}} / 2018).month() == February, "");
-    static_assert((month_day{February, day{2}} / 2018).day() == day{2}, "");
 
-    for (int i = 1000; i < 1010; ++i)
-      for (int j = 1; j <= 12; ++j)
-        for (unsigned k = 0; k <= 28; ++k) {
-          year y(i);
-          month m(j);
-          day d(k);
-          month_day md(m, d);
-          year_month_day ymd1 = i / md;
-          year_month_day ymd2 = md / i;
-          assert(ymd1.year() == y);
-          assert(ymd2.year() == y);
-          assert(ymd1.month() == m);
-          assert(ymd2.month() == m);
-          assert(ymd1.day() == d);
-          assert(ymd2.day() == d);
-          assert(ymd1 == ymd2);
-        }
-  }
+    { // operator/(const year& y, const month_day& md) (and switched)
+        ASSERT_NOEXCEPT (                         year{2018}/month_day{February, day{2}});
+        ASSERT_SAME_TYPE(year_month_day, decltype(year{2018}/month_day{February, day{2}}));
+        ASSERT_NOEXCEPT (                         month_day{February, day{2}}/year{2018});
+        ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}}/year{2018}));
+
+        static_assert((year{2018}/month_day{February, day{2}}).month() == February, "" );
+        static_assert((year{2018}/month_day{February, day{2}}).day()   == day{2},   "" );
+        static_assert((month_day{February, day{2}}/year{2018}).month() == February, "" );
+        static_assert((month_day{February, day{2}}/year{2018}).day()   == day{2},   "" );
+
+        for (int i = 1000; i < 1010; ++i)
+            for (int j = 1; j <= 12; ++j)
+                for (unsigned k = 0; k <= 28; ++k)
+                {
+                    year y(i);
+                    month m(j);
+                    day d(k);
+                    month_day md(m, d);
+                    year_month_day ymd1 = y/md;
+                    year_month_day ymd2 = md/y;
+                    assert(ymd1.year()  == y);
+                    assert(ymd2.year()  == y);
+                    assert(ymd1.month() == m);
+                    assert(ymd2.month() == m);
+                    assert(ymd1.day()   == d);
+                    assert(ymd2.day()   == d);
+                    assert(ymd1 == ymd2);
+                }
+    }
+
+    { // operator/(const month_day& md, int y) (and switched)
+        ASSERT_NOEXCEPT (                         2018/month_day{February, day{2}});
+        ASSERT_SAME_TYPE(year_month_day, decltype(2018/month_day{February, day{2}}));
+        ASSERT_NOEXCEPT (                         month_day{February, day{2}}/2018);
+        ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}}/2018));
+
+        static_assert((2018/month_day{February, day{2}}).month() == February, "" );
+        static_assert((2018/month_day{February, day{2}}).day()   == day{2},   "" );
+        static_assert((month_day{February, day{2}}/2018).month() == February, "" );
+        static_assert((month_day{February, day{2}}/2018).day()   == day{2},   "" );
+
+        for (int i = 1000; i < 1010; ++i)
+            for (int j = 1; j <= 12; ++j)
+                for (unsigned k = 0; k <= 28; ++k)
+                {
+                    year y(i);
+                    month m(j);
+                    day d(k);
+                    month_day md(m, d);
+                    year_month_day ymd1 = i/md;
+                    year_month_day ymd2 = md/i;
+                    assert(ymd1.year()  == y);
+                    assert(ymd2.year()  == y);
+                    assert(ymd1.month() == m);
+                    assert(ymd2.month() == m);
+                    assert(ymd1.day()   == d);
+                    assert(ymd2.day()   == d);
+                    assert(ymd1 == ymd2);
+                }
+    }
+
 
   return 0;
 }

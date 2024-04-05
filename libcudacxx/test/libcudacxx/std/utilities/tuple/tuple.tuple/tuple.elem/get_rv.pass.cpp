@@ -16,6 +16,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 // cuda::std::unique_ptr not supported
@@ -25,9 +26,10 @@
 #include "test_macros.h"
 #include "MoveOnly.h"
 
-int main(int, char**) {
-  // cuda::std::unique_ptr not supported
-  /*
+int main(int, char**)
+{
+    // cuda::std::unique_ptr not supported
+    /*
     {
         typedef cuda::std::tuple<cuda::std::unique_ptr<int> > T;
         T t(cuda::std::unique_ptr<int>(new int(3)));
@@ -35,10 +37,10 @@ int main(int, char**) {
         assert(*p == 3);
     }
     */
-  {
-    cuda::std::tuple<MoveOnly> t(3);
-    MoveOnly _m = cuda::std::get<0>(cuda::std::move(t));
-    assert(_m.get() == 3);
-  }
+    {
+        cuda::std::tuple<MoveOnly> t(3);
+        MoveOnly _m = cuda::std::get<0>(cuda::std::move(t));
+        assert(_m.get() == 3);
+    }
   return 0;
 }

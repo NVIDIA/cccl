@@ -28,3 +28,4 @@
 
 // this system inherits scan
 #include <thrust/system/cpp/detail/scan.h>
+

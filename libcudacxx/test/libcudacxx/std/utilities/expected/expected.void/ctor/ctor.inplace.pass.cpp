@@ -19,17 +19,11 @@
 #include "test_macros.h"
 
 // test explicit
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>,
-                                            cuda::std::in_place_t>,
-              "");
-static_assert(!cuda::std::is_convertible_v<cuda::std::in_place_t,
-                                           cuda::std::expected<void, int> >,
-              "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, int>, cuda::std::in_place_t>, "");
+static_assert(!cuda::std::is_convertible_v<cuda::std::in_place_t, cuda::std::expected<void, int>>, "");
 
 // test noexcept
-static_assert(cuda::std::is_nothrow_constructible_v<
-                  cuda::std::expected<void, int>, cuda::std::in_place_t>,
-              "");
+static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::expected<void, int>, cuda::std::in_place_t>, "");
 
 __host__ __device__ constexpr bool test() {
   cuda::std::expected<void, int> e(cuda::std::in_place);

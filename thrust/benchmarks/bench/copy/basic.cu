@@ -25,15 +25,16 @@
  *
  ******************************************************************************/
 
-#include <thrust/copy.h>
+#include <nvbench_helper.cuh>
+
 #include <thrust/count.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-
-#include <nvbench_helper.cuh>
+#include <thrust/copy.h>
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void basic(nvbench::state &state,
+                  nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -47,12 +48,17 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   thrust::copy(policy(alloc), input.cbegin(), input.cend(), output.begin());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::copy(policy(alloc, launch), input.cbegin(), input.cend(), output.begin());
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::copy(policy(alloc, launch), input.cbegin(), input.cend(),
+                            output.begin());
+             });
 }
 
-using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint16_t, nvbench::uint32_t, nvbench::uint64_t>;
+using types = nvbench::type_list<nvbench::uint8_t,
+                                 nvbench::uint16_t,
+                                 nvbench::uint32_t,
+                                 nvbench::uint64_t>;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")

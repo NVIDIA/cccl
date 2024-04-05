@@ -67,19 +67,19 @@
  *  \brief The preprocessor macro \p THRUST_MAJOR_VERSION encodes the
  *         major version number of the Thrust library.
  */
-#define THRUST_MAJOR_VERSION (THRUST_VERSION / 100000)
+#define THRUST_MAJOR_VERSION     (THRUST_VERSION / 100000)
 
 /*! \def THRUST_MINOR_VERSION
  *  \brief The preprocessor macro \p THRUST_MINOR_VERSION encodes the
  *         minor version number of the Thrust library.
  */
-#define THRUST_MINOR_VERSION (THRUST_VERSION / 100 % 1000)
+#define THRUST_MINOR_VERSION     (THRUST_VERSION / 100 % 1000)
 
 /*! \def THRUST_SUBMINOR_VERSION
  *  \brief The preprocessor macro \p THRUST_SUBMINOR_VERSION encodes the
  *         sub-minor version number of the Thrust library.
  */
-#define THRUST_SUBMINOR_VERSION (THRUST_VERSION % 100)
+#define THRUST_SUBMINOR_VERSION  (THRUST_VERSION % 100)
 
 /*! \def THRUST_PATCH_NUMBER
  *  \brief The preprocessor macro \p THRUST_PATCH_NUMBER encodes the

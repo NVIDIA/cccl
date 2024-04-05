@@ -27,59 +27,60 @@
 
 struct A {};
 
-int main(int, char**) {
-  //  Test the explicit deduction guides
-  {
-    //  optional(T)
+int main(int, char**)
+{
+//  Test the explicit deduction guides
+    {
+//  optional(T)
     cuda::std::optional opt(5);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int>);
     assert(static_cast<bool>(opt));
     assert(*opt == 5);
-  }
+    }
 
-  {
-    //  optional(T)
+    {
+//  optional(T)
     cuda::std::optional opt(A{});
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<A>);
     assert(static_cast<bool>(opt));
-  }
+    }
 
-  {
-    //  optional(const T&);
+    {
+//  optional(const T&);
     const int& source = 5;
     cuda::std::optional opt(source);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int>);
     assert(static_cast<bool>(opt));
     assert(*opt == 5);
-  }
+    }
 
-  {
-    //  optional(T*);
+    {
+//  optional(T*);
     const int* source = nullptr;
     cuda::std::optional opt(source);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<const int*>);
     assert(static_cast<bool>(opt));
     assert(*opt == nullptr);
-  }
+    }
 
-  {
-    //  optional(T[]);
+    {
+//  optional(T[]);
     int source[] = {1, 2, 3};
     cuda::std::optional opt(source);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int*>);
     assert(static_cast<bool>(opt));
     assert((*opt)[0] == 1);
-  }
+    }
 
-  //  Test the implicit deduction guides
-  {
-    //  optional(optional);
+//  Test the implicit deduction guides
+    {
+//  optional(optional);
     cuda::std::optional<char> source('A');
     cuda::std::optional opt(source);
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<char>);
     assert(static_cast<bool>(opt) == static_cast<bool>(source));
     assert(*opt == *source);
-  }
+    }
 
   return 0;
 }

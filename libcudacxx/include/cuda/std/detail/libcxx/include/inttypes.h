@@ -12,7 +12,7 @@
 // is defined until an inclusion of it without _STD_TYPES_T occurs, in which
 // case the header guard macro is defined.
 #if !defined(_AIX) || !defined(_STD_TYPES_T)
-#  define _LIBCUDACXX_INTTYPES_H
+#define _LIBCUDACXX_INTTYPES_H
 #endif // _STD_TYPES_T
 
 /*
@@ -249,18 +249,18 @@ uintmax_t wcstoumax(const wchar_t* restrict nptr, wchar_t** restrict endptr, int
    for C++11 unless __STDC_FORMAT_MACROS is defined
 */
 #if defined(__cplusplus) && !defined(__STDC_FORMAT_MACROS)
-#  define __STDC_FORMAT_MACROS
+#   define __STDC_FORMAT_MACROS
 #endif
 
 #include_next <inttypes.h>
 
 #ifdef __cplusplus
 
-#  include <stdint.h>
+#include <stdint.h>
 
-#  undef imaxabs
-#  undef imaxdiv
+#undef imaxabs
+#undef imaxdiv
 
 #endif // __cplusplus
 
-#endif // _LIBCUDACXX_INTTYPES_H
+#endif  // _LIBCUDACXX_INTTYPES_H

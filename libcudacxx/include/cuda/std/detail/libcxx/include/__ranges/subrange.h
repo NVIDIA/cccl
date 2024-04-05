@@ -405,7 +405,7 @@ public:
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-    (void) __d;
+    (void)__d;
     return *this;
   }
 };

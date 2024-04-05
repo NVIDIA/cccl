@@ -10,12 +10,14 @@
 
 // <cuda/std/type_traits>
 
+
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifndef _LIBCUDACXX_IS_CONSTANT_EVALUATED
   // expected-error@+1 {{no member named 'is_constant_evaluated' in namespace 'std'}}
   bool b = cuda::std::is_constant_evaluated();

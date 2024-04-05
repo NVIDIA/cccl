@@ -21,51 +21,58 @@
 #include "concurrent_agents.h"
 #include "cuda_space_selector.h"
 
-template <class T, template <typename, typename> typename Selector,
-          cuda::thread_scope Scope>
+template <class T, template<typename, typename> typename Selector, cuda::thread_scope Scope>
 struct TestFn {
-  __host__ __device__ void operator()() const {
+  __host__ __device__
+  void operator()() const {
     typedef cuda::std::atomic<T> A;
 
-    SHARED A* t;
-    execute_on_main_thread([&] {
-      t = (A*)malloc(sizeof(A));
+    SHARED A * t;
+    execute_on_main_thread([&]{
+      t = (A *)malloc(sizeof(A));
       cuda::std::atomic_init(t, T(1));
       assert(cuda::std::atomic_load(t) == T(1));
       cuda::std::atomic_wait(t, T(0));
     });
 
-    auto agent_notify = LAMBDA() {
+    auto agent_notify = LAMBDA (){
       cuda::std::atomic_store(t, T(3));
       cuda::std::atomic_notify_one(t);
     };
 
-    auto agent_wait = LAMBDA() { cuda::std::atomic_wait(t, T(1)); };
+    auto agent_wait = LAMBDA (){
+      cuda::std::atomic_wait(t, T(1));
+    };
 
     concurrent_agents_launch(agent_notify, agent_wait);
 
-    SHARED volatile A* vt;
-    execute_on_main_thread([&] {
-      vt = (volatile A*)malloc(sizeof(A));
+    SHARED volatile A * vt;
+    execute_on_main_thread([&]{
+      vt = (volatile A *)malloc(sizeof(A));
       cuda::std::atomic_init(vt, T(2));
       assert(cuda::std::atomic_load(vt) == T(2));
       cuda::std::atomic_wait(vt, T(1));
     });
 
-    auto agent_notify_v = LAMBDA() {
+    auto agent_notify_v = LAMBDA (){
       cuda::std::atomic_store(vt, T(4));
       cuda::std::atomic_notify_one(vt);
     };
-    auto agent_wait_v = LAMBDA() { cuda::std::atomic_wait(vt, T(2)); };
+    auto agent_wait_v = LAMBDA (){
+      cuda::std::atomic_wait(vt, T(2));
+    };
 
     concurrent_agents_launch(agent_notify_v, agent_wait_v);
   }
 };
 
-int main(int, char**) {
-  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 2;)
+int main(int, char**)
+{
+    NV_IF_TARGET(NV_IS_HOST,
+        cuda_thread_count = 2;
+    )
 
-  TestEachAtomicType<TestFn, shared_memory_selector>()();
+    TestEachAtomicType<TestFn, shared_memory_selector>()();
 
   return 0;
 }

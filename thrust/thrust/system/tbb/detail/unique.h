@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/pair.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+#include <thrust/pair.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -36,21 +36,36 @@ namespace tbb
 namespace detail
 {
 
-template <typename ExecutionPolicy, typename ForwardIterator, typename BinaryPredicate>
-ForwardIterator unique(
-  execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
 
-template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-OutputIterator unique_copy(
-  execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator output,
-  BinaryPredicate binary_pred);
+template<typename ExecutionPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+  ForwardIterator unique(execution_policy<ExecutionPolicy> &exec,
+                         ForwardIterator first,
+                         ForwardIterator last,
+                         BinaryPredicate binary_pred);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
-  execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred);
+
+template<typename ExecutionPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryPredicate>
+  OutputIterator unique_copy(execution_policy<ExecutionPolicy> &exec,
+                             InputIterator first,
+                             InputIterator last,
+                             OutputIterator output,
+                             BinaryPredicate binary_pred);
+
+
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+  typename thrust::iterator_traits<ForwardIterator>::difference_type
+    unique_count(execution_policy<DerivedPolicy> &exec,
+                 ForwardIterator first,
+                 ForwardIterator last,
+                 BinaryPredicate binary_pred);
+
 
 } // end namespace detail
 } // end namespace tbb
@@ -58,3 +73,4 @@ typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/unique.inl>
+

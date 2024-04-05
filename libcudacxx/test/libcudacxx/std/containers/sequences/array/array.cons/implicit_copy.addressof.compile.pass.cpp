@@ -25,4 +25,7 @@ __host__ __device__ void test() {
   unused(a);
 }
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

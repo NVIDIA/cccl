@@ -37,72 +37,91 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#  include <thrust/detail/minmax.h>
-#  include <thrust/distance.h>
-#  include <thrust/system/cuda/config.h>
-#  include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/system/cuda/config.h>
+
+#include <thrust/system/cuda/detail/execution_policy.h>
+#include <thrust/detail/minmax.h>
+#include <thrust/distance.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
 // XXX forward declare to circumvent circular depedency
-template <class Derived, class InputIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate);
-
-template <class Derived, class InputIt, class Predicate>
+template <class Derived,
+          class InputIt,
+          class Predicate>
 InputIt _CCCL_HOST_DEVICE
-find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate);
+find_if(execution_policy<Derived>& policy,
+        InputIt                    first,
+        InputIt                    last,
+        Predicate                  predicate);
 
-template <class Derived, class InputIt, class T>
-InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first, InputIt last, T const& value);
+template <class Derived,
+          class InputIt,
+          class Predicate>
+InputIt _CCCL_HOST_DEVICE
+find_if_not(execution_policy<Derived>& policy,
+            InputIt                    first,
+            InputIt                    last,
+            Predicate                  predicate);
+
+template <class Derived,
+          class InputIt,
+          class T>
+InputIt _CCCL_HOST_DEVICE
+find(execution_policy<Derived> &policy,
+     InputIt                    first,
+     InputIt                    last,
+     T const& value);
 
 }; // namespace cuda_cub
 THRUST_NAMESPACE_END
 
-#  include <thrust/iterator/zip_iterator.h>
-#  include <thrust/system/cuda/detail/reduce.h>
+#include <thrust/system/cuda/detail/reduce.h>
+#include <thrust/iterator/zip_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub
-{
+namespace cuda_cub {
 
-namespace __find_if
-{
+namespace __find_if {
 
-template <typename TupleType>
-struct functor
-{
-  THRUST_DEVICE_FUNCTION TupleType operator()(const TupleType& lhs, const TupleType& rhs) const
+  template <typename TupleType>
+  struct functor
   {
-    // select the smallest index among true results
-    if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
+    THRUST_DEVICE_FUNCTION TupleType
+    operator()(const TupleType& lhs, const TupleType& rhs) const
     {
-      return TupleType(true, (thrust::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      // select the smallest index among true results
+      if (thrust::get<0>(lhs) && thrust::get<0>(rhs))
+      {
+        return TupleType(true, (thrust::min)(thrust::get<1>(lhs), thrust::get<1>(rhs)));
+      }
+      else if (thrust::get<0>(lhs))
+      {
+        return lhs;
+      }
+      else
+      {
+        return rhs;
+      }
     }
-    else if (thrust::get<0>(lhs))
-    {
-      return lhs;
-    }
-    else
-    {
-      return rhs;
-    }
-  }
-};
-} // namespace __find_if
+  };
+}    // namespace __find_if
 
-template <class Derived, class InputIt, class Size, class Predicate>
+template <class Derived,
+          class InputIt,
+          class Size,
+          class Predicate>
 InputIt _CCCL_HOST_DEVICE
-find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Predicate predicate)
+find_if_n(execution_policy<Derived>& policy,
+          InputIt                    first,
+          Size                       num_items,
+          Predicate                  predicate)
 {
-  typedef typename thrust::tuple<bool, Size> result_type;
+  typedef typename thrust::tuple<bool,Size> result_type;
 
   // empty sequence
-  if (num_items == 0)
-  {
-    return first;
-  }
+  if(num_items == 0) return first;
 
   // this implementation breaks up the sequence into separate intervals
   // in an attempt to early-out as soon as a value is found
@@ -110,62 +129,97 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   // XXX compose find_if from a look-back prefix scan algorithm
   //     and abort kernel when the first element is found
 
+
   // TODO incorporate sizeof(InputType) into interval_threshold and round to multiple of 32
   const Size interval_threshold = 1 << 20;
-  const Size interval_size      = (thrust::min)(interval_threshold, num_items);
+  const Size interval_size = (thrust::min)(interval_threshold, num_items);
 
   // force transform_iterator output to bool
-  typedef transform_input_iterator_t<bool, InputIt, Predicate> XfrmIterator;
-  typedef thrust::tuple<XfrmIterator, counting_iterator_t<Size> > IteratorTuple;
+  typedef transform_input_iterator_t<bool,
+                                     InputIt,
+                                     Predicate>
+      XfrmIterator;
+  typedef thrust::tuple<XfrmIterator,
+                        counting_iterator_t<Size> >
+      IteratorTuple;
   typedef thrust::zip_iterator<IteratorTuple> ZipIterator;
 
-  IteratorTuple iter_tuple = thrust::make_tuple(XfrmIterator(first, predicate), counting_iterator_t<Size>(0));
+  IteratorTuple iter_tuple =
+      thrust::make_tuple(XfrmIterator(first, predicate),
+                         counting_iterator_t<Size>(0));
 
   ZipIterator begin = thrust::make_zip_iterator(iter_tuple);
   ZipIterator end   = begin + num_items;
 
-  for (ZipIterator interval_begin = begin; interval_begin < end; interval_begin += interval_size)
+  for (ZipIterator interval_begin = begin;
+       interval_begin < end;
+       interval_begin += interval_size)
   {
     ZipIterator interval_end = interval_begin + interval_size;
-    if (end < interval_end)
+    if(end < interval_end)
     {
       interval_end = end;
     } // end if
 
-    result_type result = reduce(
-      policy, interval_begin, interval_end, result_type(false, interval_end - begin), __find_if::functor<result_type>());
+    result_type result = reduce(policy,
+                                interval_begin,
+                                interval_end,
+                                result_type(false, interval_end - begin),
+                                __find_if::functor<result_type>());
 
     // see if we found something
-    if (thrust::get<0>(result))
+    if(thrust::get<0>(result))
     {
       return first + thrust::get<1>(result);
     }
   }
 
-  // nothing was found if we reach here...
+  //nothing was found if we reach here...
   return first + num_items;
 }
 
-template <class Derived, class InputIt, class Predicate>
-InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
+template <class Derived,
+          class InputIt,
+          class Predicate>
+InputIt _CCCL_HOST_DEVICE
+find_if(execution_policy<Derived>& policy,
+        InputIt                    first,
+        InputIt                    last,
+        Predicate                  predicate)
 {
-  return cuda_cub::find_if_n(policy, first, thrust::distance(first, last), predicate);
+  return cuda_cub::find_if_n(policy, first, thrust::distance(first,last), predicate);
 }
 
-template <class Derived, class InputIt, class Predicate>
+template <class Derived,
+          class InputIt,
+          class Predicate>
 InputIt _CCCL_HOST_DEVICE
-find_if_not(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate)
+find_if_not(execution_policy<Derived>& policy,
+            InputIt                    first,
+            InputIt                    last,
+            Predicate                  predicate)
 {
   return cuda_cub::find_if(policy, first, last, thrust::detail::not1(predicate));
 }
 
-template <class Derived, class InputIt, class T>
-InputIt _CCCL_HOST_DEVICE find(execution_policy<Derived>& policy, InputIt first, InputIt last, T const& value)
+
+template <class Derived,
+          class InputIt,
+          class T>
+InputIt _CCCL_HOST_DEVICE
+find(execution_policy<Derived> &policy,
+     InputIt                    first,
+     InputIt                    last,
+     T const& value)
 {
   using thrust::placeholders::_1;
 
-  return cuda_cub::find_if(policy, first, last, _1 == value);
+  return cuda_cub::find_if(policy,
+                        first,
+                        last,
+                        _1 == value);
 }
+
 
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

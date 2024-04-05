@@ -28,7 +28,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-struct use_default
-{};
+struct use_default {};
 
 THRUST_NAMESPACE_END
+

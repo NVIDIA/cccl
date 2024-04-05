@@ -19,21 +19,22 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
-  using weekday = cuda::std::chrono::weekday;
+int main(int, char**)
+{
+    using weekday = cuda::std::chrono::weekday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const weekday>().ok());
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const weekday>().ok()));
+    ASSERT_NOEXCEPT(                cuda::std::declval<const weekday>().ok());
+    ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const weekday>().ok()));
 
-  static_assert(weekday{0}.ok(), "");
-  static_assert(weekday{1}.ok(), "");
-  static_assert(weekday{7}.ok(), ""); // 7 is transmorgified into 0 in the ctor
-  static_assert(!weekday{8}.ok(), "");
+    static_assert( weekday{0}.ok(), "");
+    static_assert( weekday{1}.ok(), "");
+    static_assert( weekday{7}.ok(), "");  // 7 is transmorgified into 0 in the ctor
+    static_assert(!weekday{8}.ok(), "");
 
-  for (unsigned i = 0; i <= 7; ++i)
-    assert(weekday{i}.ok());
-  for (unsigned i = 8; i <= 255; ++i)
-    assert(!weekday{i}.ok());
+    for (unsigned i = 0; i <= 7; ++i)
+        assert(weekday{i}.ok());
+    for (unsigned i = 8; i <= 255; ++i)
+        assert(!weekday{i}.ok());
 
   return 0;
 }

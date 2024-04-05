@@ -36,27 +36,34 @@ namespace tbb
 namespace detail
 {
 
-struct par_t
-    : thrust::system::tbb::detail::execution_policy<par_t>
-    , thrust::detail::allocator_aware_execution_policy< thrust::system::tbb::detail::execution_policy>
+
+struct par_t : thrust::system::tbb::detail::execution_policy<par_t>,
+  thrust::detail::allocator_aware_execution_policy<
+    thrust::system::tbb::detail::execution_policy>
 {
-  _CCCL_HOST_DEVICE constexpr par_t()
-      : thrust::system::tbb::detail::execution_policy<par_t>()
-  {}
+  _CCCL_HOST_DEVICE
+  constexpr par_t() : thrust::system::tbb::detail::execution_policy<par_t>() {}
 };
 
-} // namespace detail
+
+} // end detail
+
 
 static const detail::par_t par;
 
-} // namespace tbb
-} // namespace system
+
+} // end tbb
+} // end system
+
 
 // alias par here
 namespace tbb
 {
 
+
 using thrust::system::tbb::par;
 
-} // namespace tbb
+
+} // end tbb
 THRUST_NAMESPACE_END
+

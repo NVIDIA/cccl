@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+
 /*! \file reduce.h
  *  \brief Sequential implementation of reduce algorithm.
  */
@@ -40,22 +41,29 @@ namespace detail
 namespace sequential
 {
 
+
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator begin,
-  InputIterator end,
-  OutputType init,
-  BinaryFunction binary_op)
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputType,
+         typename BinaryFunction>
+_CCCL_HOST_DEVICE
+  OutputType reduce(sequential::execution_policy<DerivedPolicy> &,
+                    InputIterator begin,
+                    InputIterator end,
+                    OutputType init,
+                    BinaryFunction binary_op)
 {
   // wrap binary_op
-  thrust::detail::wrapped_function< BinaryFunction, OutputType > wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<
+    BinaryFunction,
+    OutputType
+  > wrapped_binary_op(binary_op);
 
   // initialize the result
   OutputType result = init;
 
-  while (begin != end)
+  while(begin != end)
   {
     result = wrapped_binary_op(result, *begin);
     ++begin;
@@ -64,7 +72,9 @@ _CCCL_HOST_DEVICE OutputType reduce(
   return result;
 }
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

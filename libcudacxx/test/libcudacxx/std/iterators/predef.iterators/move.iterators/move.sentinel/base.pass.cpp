@@ -22,7 +22,8 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // The sentinel type is a value.
   {
     auto m = cuda::std::move_sentinel<int>(42);
@@ -54,7 +55,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

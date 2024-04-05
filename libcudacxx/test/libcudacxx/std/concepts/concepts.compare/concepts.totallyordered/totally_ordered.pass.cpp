@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool models_totally_ordered() noexcept {
 #else
 
 _LIBCUDACXX_TEMPLATE(class T)
-_LIBCUDACXX_REQUIRES(cuda::std::totally_ordered<T>)
+  _LIBCUDACXX_REQUIRES( cuda::std::totally_ordered<T>)
 __host__ __device__ constexpr bool models_totally_ordered() noexcept {
   return true;
 }
@@ -86,25 +86,25 @@ static_assert(!totally_ordered<int (S::*)() noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &>, "");
 static_assert(!totally_ordered<int (S::*)() & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() &&>, "");
-static_assert(!totally_ordered < int(S::*)() && noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() && noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const>, "");
 static_assert(!totally_ordered<int (S::*)() const noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&>, "");
 static_assert(!totally_ordered<int (S::*)() const & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const&&>, "");
-static_assert(!totally_ordered < int(S::*)() const&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const&& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() volatile>, "");
 static_assert(!totally_ordered<int (S::*)() volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&>, "");
 static_assert(!totally_ordered<int (S::*)() volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() volatile&&>, "");
-static_assert(!totally_ordered < int(S::*)() volatile && noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() volatile&& noexcept >, "");
 static_assert(!totally_ordered<int (S::*)() const volatile>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile & noexcept>, "");
 static_assert(!totally_ordered<int (S::*)() const volatile&&>, "");
-static_assert(!totally_ordered < int(S::*)() const volatile&& noexcept >, "");
+static_assert(!totally_ordered < int (S::*)() const volatile&& noexcept >, "");
 
 static_assert(!totally_ordered<void>, "");
 } // namespace fundamentals
@@ -117,7 +117,7 @@ namespace types_fit_for_purpose {
 #if TEST_STD_VER > 2017
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
 static_assert(models_totally_ordered<member_three_way_comparable>(), "");
-#ifndef __NVCC__ // nvbug3908399
+#ifndef __NVCC__  // nvbug3908399
 static_assert(models_totally_ordered<friend_three_way_comparable>(), "");
 #endif // !__NVCC__
 #endif // TEST_HAS_NO_SPACESHIP_OPERATOR
@@ -149,15 +149,15 @@ static_assert(!totally_ordered<wrong_return_type>, "");
 static_assert(!totally_ordered<cxx20_member_eq_operator_with_deleted_ne>, "");
 static_assert(!totally_ordered<cxx20_friend_eq_operator_with_deleted_ne>, "");
 #ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
-static_assert(!totally_ordered<member_three_way_comparable_with_deleted_eq>,
-              "");
-static_assert(!totally_ordered<member_three_way_comparable_with_deleted_ne>,
-              "");
-static_assert(!totally_ordered<friend_three_way_comparable_with_deleted_eq>,
-              "");
-#ifndef __NVCC__ // nvbug3908399
-static_assert(!totally_ordered<friend_three_way_comparable_with_deleted_ne>,
-              "");
+static_assert(
+    !totally_ordered<member_three_way_comparable_with_deleted_eq>, "");
+static_assert(
+    !totally_ordered<member_three_way_comparable_with_deleted_ne>, "");
+static_assert(
+    !totally_ordered<friend_three_way_comparable_with_deleted_eq>, "");
+#ifndef __NVCC__  // nvbug3908399
+static_assert(
+    !totally_ordered<friend_three_way_comparable_with_deleted_ne>, "");
 #endif // !__NVCC__
 
 static_assert(!totally_ordered<eq_returns_explicit_bool>, "");

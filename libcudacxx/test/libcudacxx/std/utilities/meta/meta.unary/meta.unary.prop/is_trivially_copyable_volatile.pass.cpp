@@ -29,49 +29,59 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable_volatile() {
-  static_assert(cuda::std::is_trivially_copyable<volatile T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<const volatile T>::value, "");
+__host__ __device__
+void test_is_trivially_copyable_volatile()
+{
+    static_assert( cuda::std::is_trivially_copyable<volatile T>::value, "");
+    static_assert( cuda::std::is_trivially_copyable<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(cuda::std::is_trivially_copyable_v<volatile T>, "");
-  static_assert(cuda::std::is_trivially_copyable_v<const volatile T>, "");
+    static_assert( cuda::std::is_trivially_copyable_v<volatile T>, "");
+    static_assert( cuda::std::is_trivially_copyable_v<const volatile T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivially_copyable_volatile() {
-  static_assert(!cuda::std::is_trivially_copyable<volatile T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value, "");
+__host__ __device__
+void test_is_not_trivially_copyable_volatile()
+{
+    static_assert(!cuda::std::is_trivially_copyable<volatile T>::value, "");
+    static_assert(!cuda::std::is_trivially_copyable<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(!cuda::std::is_trivially_copyable_v<volatile T>, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<const volatile T>, "");
+    static_assert(!cuda::std::is_trivially_copyable_v<volatile T>, "");
+    static_assert(!cuda::std::is_trivially_copyable_v<const volatile T>, "");
 #endif
 }
 
-struct A {
-  int i_;
+struct A
+{
+    int i_;
 };
 
-struct B {
-  int i_;
-  __host__ __device__ ~B() { assert(i_ == 0); }
+struct B
+{
+    int i_;
+    __host__ __device__
+    ~B() {assert(i_ == 0);}
 };
 
-class C {
+class C
+{
 public:
-  __host__ __device__ C();
+    __host__ __device__
+    C();
 };
 
-int main(int, char**) {
-  test_is_trivially_copyable_volatile<int>();
-  test_is_trivially_copyable_volatile<const int>();
-  test_is_trivially_copyable_volatile<A>();
-  test_is_trivially_copyable_volatile<const A>();
-  test_is_trivially_copyable_volatile<C>();
+int main(int, char**)
+{
+    test_is_trivially_copyable_volatile<int> ();
+    test_is_trivially_copyable_volatile<const int> ();
+    test_is_trivially_copyable_volatile<A> ();
+    test_is_trivially_copyable_volatile<const A> ();
+    test_is_trivially_copyable_volatile<C> ();
 
-  test_is_not_trivially_copyable_volatile<int&>();
-  test_is_not_trivially_copyable_volatile<const A&>();
-  test_is_not_trivially_copyable_volatile<B>();
+    test_is_not_trivially_copyable_volatile<int&> ();
+    test_is_not_trivially_copyable_volatile<const A&> ();
+    test_is_not_trivially_copyable_volatile<B> ();
 
-  return 0;
+    return 0;
 }

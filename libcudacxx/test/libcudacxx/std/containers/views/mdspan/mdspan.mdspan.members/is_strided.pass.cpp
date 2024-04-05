@@ -15,37 +15,36 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  {
-    cuda::std::mdspan<int, cuda::std::dextents<size_t, 1> > m;
+int main(int, char**)
+{
+    {
+        cuda::std::mdspan<int, cuda::std::dextents<size_t,1>> m;
 
-    static_assert(m.is_always_strided() == true, "");
-    assert(m.is_strided() == true);
-  }
+        static_assert( m.is_always_strided() == true, "" );
+        assert       ( m.is_strided       () == true );
+    }
 
-  cuda::std::array<int, 1> d{42};
-  cuda::std::extents<int, dyn, dyn> e{64, 128};
+    cuda::std::array<int, 1> d{42};
+    cuda::std::extents<int,dyn,dyn> e{64, 128};
 
-  {
-    cuda::std::mdspan<int, cuda::std::extents<size_t, dyn, dyn>,
-                      cuda::std::layout_left>
-        m{d.data(), e};
+    {
+        cuda::std::mdspan<int, cuda::std::extents<size_t,dyn, dyn>, cuda::std::layout_left> m{ d.data(), e };
 
-    static_assert(m.is_always_strided() == true, "");
-    assert(m.is_strided() == true);
-  }
+        static_assert( m.is_always_strided() == true, "" );
+        assert       ( m.is_strided       () == true );
+    }
 
-  {
-    using dexts = cuda::std::dextents<size_t, 2>;
+    {
+        using dexts = cuda::std::dextents<size_t,2>;
 
-    cuda::std::mdspan<int, cuda::std::extents<size_t, dyn, dyn>,
-                      cuda::std::layout_stride>
-        m{d.data(), cuda::std::layout_stride::template mapping<dexts>{
-                        dexts{16, 32}, cuda::std::array<size_t, 2>{1, 128}}};
+        cuda::std::mdspan< int, cuda::std::extents<size_t, dyn, dyn>, cuda::std::layout_stride >
+            m { d.data()
+              , cuda::std::layout_stride::template mapping<dexts>{dexts{16, 32}, cuda::std::array<size_t, 2>{1, 128}}
+              };
 
-    static_assert(m.is_always_strided() == true, "");
-    assert(m.is_strided() == true);
-  }
+        static_assert( m.is_always_strided() == true, "" );
+        assert       ( m.is_strided       () == true );
+    }
 
-  return 0;
+    return 0;
 }

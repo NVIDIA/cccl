@@ -18,23 +18,18 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 template <class T, class = decltype(cuda::std::tuple_size<T>::value)>
-__host__ __device__ constexpr bool has_value(int) {
-  return true;
-}
+__host__ __device__ constexpr bool has_value(int) { return true; }
 template <class>
-__host__ __device__ constexpr bool has_value(long) {
-  return false;
-}
+__host__ __device__ constexpr bool has_value(long) { return false; }
 template <class T>
-__host__ __device__ constexpr bool has_value() {
-  return has_value<T>(0);
-}
+__host__ __device__ constexpr bool has_value() { return has_value<T>(0); }
 
 struct Dummy {};
 

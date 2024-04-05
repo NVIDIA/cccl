@@ -42,15 +42,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/device/dispatch/dispatch_histogram.cuh>
-#include <cub/util_deprecated.cuh>
-
+#include <stdio.h>
 #include <iterator>
 #include <limits>
 
-#include <stdio.h>
+#include <cub/device/dispatch/dispatch_histogram.cuh>
+#include <cub/util_deprecated.cuh>
+
 
 CUB_NAMESPACE_BEGIN
+
 
 //! @rst
 //! DeviceHistogram provides device-wide parallel operations for constructing histogram(s) from a sequence of
@@ -177,65 +178,70 @@ struct DeviceHistogram
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_samples,
-    cudaStream_t stream = 0)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramEven(void *d_temp_storage,
+                size_t &temp_storage_bytes,
+                SampleIteratorT d_samples,
+                CounterT *d_histogram,
+                int num_levels,
+                LevelT lower_level,
+                LevelT upper_level,
+                OffsetT num_samples,
+                cudaStream_t stream    = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
 
-    CounterT* d_histogram1[1] = {d_histogram};
+    CounterT *d_histogram1[1] = {d_histogram};
     int num_levels1[1]        = {num_levels};
     LevelT lower_level1[1]    = {lower_level};
     LevelT upper_level1[1]    = {upper_level};
 
-    return MultiHistogramEven<1, 1>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
-      num_samples,
-      static_cast<OffsetT>(1),
-      sizeof(SampleT) * num_samples,
-      stream);
+    return MultiHistogramEven<1, 1>(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_samples,
+                                    d_histogram1,
+                                    num_levels1,
+                                    lower_level1,
+                                    upper_level1,
+                                    num_samples,
+                                    static_cast<OffsetT>(1),
+                                    sizeof(SampleT) * num_samples,
+                                    stream);
   }
 
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_samples,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramEven(void *d_temp_storage,
+                size_t &temp_storage_bytes,
+                SampleIteratorT d_samples,
+                CounterT *d_histogram,
+                int num_levels,
+                LevelT lower_level,
+                LevelT upper_level,
+                OffsetT num_samples,
+                cudaStream_t stream,
+                bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return HistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_samples,
-      stream);
+    return HistogramEven(d_temp_storage,
+                         temp_storage_bytes,
+                         d_samples,
+                         d_histogram,
+                         num_levels,
+                         lower_level,
+                         upper_level,
+                         num_samples,
+                         stream);
   }
 
   //! @rst
@@ -361,68 +367,73 @@ struct DeviceHistogram
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramEven(void *d_temp_storage,
+                size_t &temp_storage_bytes,
+                SampleIteratorT d_samples,
+                CounterT *d_histogram,
+                int num_levels,
+                LevelT lower_level,
+                LevelT upper_level,
+                OffsetT num_row_samples,
+                OffsetT num_rows,
+                size_t row_stride_bytes,
+                cudaStream_t stream    = 0)
   {
-    CounterT* d_histogram1[1] = {d_histogram};
+    CounterT *d_histogram1[1] = {d_histogram};
     int num_levels1[1]        = {num_levels};
     LevelT lower_level1[1]    = {lower_level};
     LevelT upper_level1[1]    = {upper_level};
 
-    return MultiHistogramEven<1, 1>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram1,
-      num_levels1,
-      lower_level1,
-      upper_level1,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return MultiHistogramEven<1, 1>(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_samples,
+                                    d_histogram1,
+                                    num_levels1,
+                                    lower_level1,
+                                    upper_level1,
+                                    num_row_samples,
+                                    num_rows,
+                                    row_stride_bytes,
+                                    stream);
   }
 
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT lower_level,
-    LevelT upper_level,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramEven(void *d_temp_storage,
+                size_t &temp_storage_bytes,
+                SampleIteratorT d_samples,
+                CounterT *d_histogram,
+                int num_levels,
+                LevelT lower_level,
+                LevelT upper_level,
+                OffsetT num_row_samples,
+                OffsetT num_rows,
+                size_t row_stride_bytes,
+                cudaStream_t stream,
+                bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return HistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return HistogramEven(d_temp_storage,
+                         temp_storage_bytes,
+                         d_samples,
+                         d_histogram,
+                         num_levels,
+                         lower_level,
+                         upper_level,
+                         num_row_samples,
+                         num_rows,
+                         row_stride_bytes,
+                         stream);
   }
 
   //! @rst
@@ -565,16 +576,16 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(void *d_temp_storage,
+                     size_t &temp_storage_bytes,
+                     SampleIteratorT d_samples,
+                     CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                     int num_levels[NUM_ACTIVE_CHANNELS],
+                     LevelT lower_level[NUM_ACTIVE_CHANNELS],
+                     LevelT upper_level[NUM_ACTIVE_CHANNELS],
+                     OffsetT num_pixels,
+                     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
@@ -599,30 +610,30 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(void *d_temp_storage,
+                     size_t &temp_storage_bytes,
+                     SampleIteratorT d_samples,
+                     CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                     int num_levels[NUM_ACTIVE_CHANNELS],
+                     LevelT lower_level[NUM_ACTIVE_CHANNELS],
+                     LevelT upper_level[NUM_ACTIVE_CHANNELS],
+                     OffsetT num_pixels,
+                     cudaStream_t stream,
+                     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return MultiHistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_pixels,
-      stream);
+    return MultiHistogramEven(d_temp_storage,
+                              temp_storage_bytes,
+                              d_samples,
+                              d_histogram,
+                              num_levels,
+                              lower_level,
+                              upper_level,
+                              num_pixels,
+                              stream);
   }
 
   //! @rst
@@ -783,57 +794,67 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(void *d_temp_storage,
+                     size_t &temp_storage_bytes,
+                     SampleIteratorT d_samples,
+                     CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                     int num_levels[NUM_ACTIVE_CHANNELS],
+                     LevelT lower_level[NUM_ACTIVE_CHANNELS],
+                     LevelT upper_level[NUM_ACTIVE_CHANNELS],
+                     OffsetT num_row_pixels,
+                     OffsetT num_rows,
+                     size_t row_stride_bytes,
+                     cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    _CCCL_IF_CONSTEXPR(sizeof(OffsetT) > sizeof(int))
     {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+      if ((unsigned long long)(num_rows * row_stride_bytes) < (unsigned long long)INT_MAX)
       {
         // Down-convert OffsetT data type
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::DispatchEven(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_histogram,
-          num_levels,
-          lower_level,
-          upper_level,
-          (int) num_row_pixels,
-          (int) num_rows,
-          (int) (row_stride_bytes / sizeof(SampleT)),
-          stream,
-          is_byte_sample);
+        return DispatchHistogram<NUM_CHANNELS,
+                                NUM_ACTIVE_CHANNELS,
+                                SampleIteratorT,
+                                CounterT,
+                                LevelT,
+                                int>::DispatchEven(d_temp_storage,
+                                                    temp_storage_bytes,
+                                                    d_samples,
+                                                    d_histogram,
+                                                    num_levels,
+                                                    lower_level,
+                                                    upper_level,
+                                                    (int)num_row_pixels,
+                                                    (int)num_rows,
+                                                    (int)(row_stride_bytes /
+                                                          sizeof(SampleT)),
+                                                    stream,
+                                                    is_byte_sample);
       }
     }
 
-    return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::DispatchEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-      stream,
-      is_byte_sample);
+    return DispatchHistogram<NUM_CHANNELS,
+                             NUM_ACTIVE_CHANNELS,
+                             SampleIteratorT,
+                             CounterT,
+                             LevelT,
+                             OffsetT>::DispatchEven(d_temp_storage,
+                                                    temp_storage_bytes,
+                                                    d_samples,
+                                                    d_histogram,
+                                                    num_levels,
+                                                    lower_level,
+                                                    upper_level,
+                                                    num_row_pixels,
+                                                    num_rows,
+                                                    (OffsetT)(row_stride_bytes /
+                                                              sizeof(SampleT)),
+                                                    stream,
+                                                    is_byte_sample);
   }
 
   template <int NUM_CHANNELS,
@@ -842,34 +863,34 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramEven(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT lower_level[NUM_ACTIVE_CHANNELS],
-    LevelT upper_level[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramEven(void *d_temp_storage,
+                     size_t &temp_storage_bytes,
+                     SampleIteratorT d_samples,
+                     CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                     int num_levels[NUM_ACTIVE_CHANNELS],
+                     LevelT lower_level[NUM_ACTIVE_CHANNELS],
+                     LevelT upper_level[NUM_ACTIVE_CHANNELS],
+                     OffsetT num_row_pixels,
+                     OffsetT num_rows,
+                     size_t row_stride_bytes,
+                     cudaStream_t stream,
+                     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return MultiHistogramEven(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
-      num_row_pixels,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return MultiHistogramEven(d_temp_storage,
+                              temp_storage_bytes,
+                              d_samples,
+                              d_histogram,
+                              num_levels,
+                              lower_level,
+                              upper_level,
+                              num_row_pixels,
+                              num_rows,
+                              row_stride_bytes,
+                              stream);
   }
 
   //! @}  end member group
@@ -971,53 +992,65 @@ struct DeviceHistogram
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT* d_levels,
-    OffsetT num_samples,
-    cudaStream_t stream = 0)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramRange(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 SampleIteratorT d_samples,
+                 CounterT *d_histogram,
+                 int num_levels,
+                 LevelT *d_levels,
+                 OffsetT num_samples,
+                 cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
 
-    CounterT* d_histogram1[1] = {d_histogram};
+    CounterT *d_histogram1[1] = {d_histogram};
     int num_levels1[1]        = {num_levels};
-    LevelT* d_levels1[1]      = {d_levels};
+    LevelT *d_levels1[1]      = {d_levels};
 
-    return MultiHistogramRange<1, 1>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
-      num_samples,
-      (OffsetT) 1,
-      (size_t) (sizeof(SampleT) * num_samples),
-      stream);
+    return MultiHistogramRange<1, 1>(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_samples,
+                                     d_histogram1,
+                                     num_levels1,
+                                     d_levels1,
+                                     num_samples,
+                                     (OffsetT)1,
+                                     (size_t)(sizeof(SampleT) * num_samples),
+                                     stream);
   }
 
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT* d_levels,
-    OffsetT num_samples,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramRange(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 SampleIteratorT d_samples,
+                 CounterT *d_histogram,
+                 int num_levels,
+                 LevelT *d_levels,
+                 OffsetT num_samples,
+                 cudaStream_t stream,
+                 bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return HistogramRange(
-      d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_samples, stream);
+    return HistogramRange(d_temp_storage,
+                          temp_storage_bytes,
+                          d_samples,
+                          d_histogram,
+                          num_levels,
+                          d_levels,
+                          num_samples,
+                          stream);
   }
 
   //! @rst
@@ -1132,63 +1165,68 @@ struct DeviceHistogram
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT* d_levels,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramRange(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 SampleIteratorT d_samples,
+                 CounterT *d_histogram,
+                 int num_levels,
+                 LevelT *d_levels,
+                 OffsetT num_row_samples,
+                 OffsetT num_rows,
+                 size_t row_stride_bytes,
+                 cudaStream_t stream = 0)
   {
-    CounterT* d_histogram1[1] = {d_histogram};
+    CounterT *d_histogram1[1] = {d_histogram};
     int num_levels1[1]        = {num_levels};
-    LevelT* d_levels1[1]      = {d_levels};
+    LevelT *d_levels1[1]      = {d_levels};
 
-    return MultiHistogramRange<1, 1>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return MultiHistogramRange<1, 1>(d_temp_storage,
+                                     temp_storage_bytes,
+                                     d_samples,
+                                     d_histogram1,
+                                     num_levels1,
+                                     d_levels1,
+                                     num_row_samples,
+                                     num_rows,
+                                     row_stride_bytes,
+                                     stream);
   }
 
-  template <typename SampleIteratorT, typename CounterT, typename LevelT, typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t HistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram,
-    int num_levels,
-    LevelT* d_levels,
-    OffsetT num_row_samples,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  template <typename SampleIteratorT,
+            typename CounterT,
+            typename LevelT,
+            typename OffsetT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  HistogramRange(void *d_temp_storage,
+                 size_t &temp_storage_bytes,
+                 SampleIteratorT d_samples,
+                 CounterT *d_histogram,
+                 int num_levels,
+                 LevelT *d_levels,
+                 OffsetT num_row_samples,
+                 OffsetT num_rows,
+                 size_t row_stride_bytes,
+                 cudaStream_t stream,
+                 bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return HistogramRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_samples,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return HistogramRange(d_temp_storage,
+                          temp_storage_bytes,
+                          d_samples,
+                          d_histogram,
+                          num_levels,
+                          d_levels,
+                          num_row_samples,
+                          num_rows,
+                          row_stride_bytes,
+                          stream);
   }
 
   //! @rst
@@ -1322,15 +1360,15 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(void *d_temp_storage,
+                      size_t &temp_storage_bytes,
+                      SampleIteratorT d_samples,
+                      CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                      int num_levels[NUM_ACTIVE_CHANNELS],
+                      LevelT *d_levels[NUM_ACTIVE_CHANNELS],
+                      OffsetT num_pixels,
+                      cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
@@ -1343,8 +1381,8 @@ struct DeviceHistogram
       num_levels,
       d_levels,
       num_pixels,
-      (OffsetT) 1,
-      (size_t) (sizeof(SampleT) * NUM_CHANNELS * num_pixels),
+      (OffsetT)1,
+      (size_t)(sizeof(SampleT) * NUM_CHANNELS * num_pixels),
       stream);
   }
 
@@ -1354,21 +1392,28 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_pixels,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(void *d_temp_storage,
+                      size_t &temp_storage_bytes,
+                      SampleIteratorT d_samples,
+                      CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                      int num_levels[NUM_ACTIVE_CHANNELS],
+                      LevelT *d_levels[NUM_ACTIVE_CHANNELS],
+                      OffsetT num_pixels,
+                      cudaStream_t stream,
+                      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return MultiHistogramRange(
-      d_temp_storage, temp_storage_bytes, d_samples, d_histogram, num_levels, d_levels, num_pixels, stream);
+    return MultiHistogramRange(d_temp_storage,
+                               temp_storage_bytes,
+                               d_samples,
+                               d_histogram,
+                               num_levels,
+                               d_levels,
+                               num_pixels,
+                               stream);
   }
 
   //! @rst
@@ -1521,54 +1566,64 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(void *d_temp_storage,
+                      size_t &temp_storage_bytes,
+                      SampleIteratorT d_samples,
+                      CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                      int num_levels[NUM_ACTIVE_CHANNELS],
+                      LevelT *d_levels[NUM_ACTIVE_CHANNELS],
+                      OffsetT num_row_pixels,
+                      OffsetT num_rows,
+                      size_t row_stride_bytes,
+                      cudaStream_t stream = 0)
   {
     /// The sample value type of the input iterator
     using SampleT = cub::detail::value_t<SampleIteratorT>;
     Int2Type<sizeof(SampleT) == 1> is_byte_sample;
 
-    _CCCL_IF_CONSTEXPR (sizeof(OffsetT) > sizeof(int))
+    _CCCL_IF_CONSTEXPR(sizeof(OffsetT) > sizeof(int))
     {
-      if ((unsigned long long) (num_rows * row_stride_bytes) < (unsigned long long) INT_MAX)
+      if ((unsigned long long)(num_rows * row_stride_bytes) < (unsigned long long)INT_MAX)
       {
         // Down-convert OffsetT data type
-        return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, int>::DispatchRange(
-          d_temp_storage,
-          temp_storage_bytes,
-          d_samples,
-          d_histogram,
-          num_levels,
-          d_levels,
-          (int) num_row_pixels,
-          (int) num_rows,
-          (int) (row_stride_bytes / sizeof(SampleT)),
-          stream,
-          is_byte_sample);
+        return DispatchHistogram<NUM_CHANNELS,
+                                NUM_ACTIVE_CHANNELS,
+                                SampleIteratorT,
+                                CounterT,
+                                LevelT,
+                                int>::DispatchRange(d_temp_storage,
+                                                    temp_storage_bytes,
+                                                    d_samples,
+                                                    d_histogram,
+                                                    num_levels,
+                                                    d_levels,
+                                                    (int)num_row_pixels,
+                                                    (int)num_rows,
+                                                    (int)(row_stride_bytes /
+                                                          sizeof(SampleT)),
+                                                    stream,
+                                                    is_byte_sample);
       }
     }
 
-    return DispatchHistogram<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT>::DispatchRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      (OffsetT) (row_stride_bytes / sizeof(SampleT)),
-      stream,
-      is_byte_sample);
+    return DispatchHistogram<NUM_CHANNELS,
+                             NUM_ACTIVE_CHANNELS,
+                             SampleIteratorT,
+                             CounterT,
+                             LevelT,
+                             OffsetT>::DispatchRange(d_temp_storage,
+                                                     temp_storage_bytes,
+                                                     d_samples,
+                                                     d_histogram,
+                                                     num_levels,
+                                                     d_levels,
+                                                     num_row_pixels,
+                                                     num_rows,
+                                                     (OffsetT)(row_stride_bytes /
+                                                               sizeof(SampleT)),
+                                                     stream,
+                                                     is_byte_sample);
   }
 
   template <int NUM_CHANNELS,
@@ -1577,35 +1632,37 @@ struct DeviceHistogram
             typename CounterT,
             typename LevelT,
             typename OffsetT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t MultiHistogramRange(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    SampleIteratorT d_samples,
-    CounterT* d_histogram[NUM_ACTIVE_CHANNELS],
-    int num_levels[NUM_ACTIVE_CHANNELS],
-    LevelT* d_levels[NUM_ACTIVE_CHANNELS],
-    OffsetT num_row_pixels,
-    OffsetT num_rows,
-    size_t row_stride_bytes,
-    cudaStream_t stream,
-    bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  MultiHistogramRange(void *d_temp_storage,
+                      size_t &temp_storage_bytes,
+                      SampleIteratorT d_samples,
+                      CounterT *d_histogram[NUM_ACTIVE_CHANNELS],
+                      int num_levels[NUM_ACTIVE_CHANNELS],
+                      LevelT *d_levels[NUM_ACTIVE_CHANNELS],
+                      OffsetT num_row_pixels,
+                      OffsetT num_rows,
+                      size_t row_stride_bytes,
+                      cudaStream_t stream,
+                      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return MultiHistogramRange(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_samples,
-      d_histogram,
-      num_levels,
-      d_levels,
-      num_row_pixels,
-      num_rows,
-      row_stride_bytes,
-      stream);
+    return MultiHistogramRange(d_temp_storage,
+                               temp_storage_bytes,
+                               d_samples,
+                               d_histogram,
+                               num_levels,
+                               d_levels,
+                               num_row_pixels,
+                               num_rows,
+                               row_stride_bytes,
+                               stream);
   }
 
   //@}  end member group
 };
 
 CUB_NAMESPACE_END
+
+

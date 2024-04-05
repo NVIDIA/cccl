@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___UTILITY_IN_PLACE_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,44 +30,33 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-struct _LIBCUDACXX_TYPE_VIS in_place_t
-{
-  explicit in_place_t() = default;
+struct _LIBCUDACXX_TYPE_VIS in_place_t {
+    explicit in_place_t() = default;
 };
 _LIBCUDACXX_CPO_ACCESSIBILITY in_place_t in_place{};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t
-{
-  explicit in_place_type_t() = default;
+struct _LIBCUDACXX_TEMPLATE_VIS in_place_type_t {
+    explicit in_place_type_t() = default;
 };
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
-struct _LIBCUDACXX_TEMPLATE_VIS in_place_index_t
-{
-  explicit in_place_index_t() = default;
+struct _LIBCUDACXX_TEMPLATE_VIS in_place_index_t {
+    explicit in_place_index_t() = default;
 };
 template <size_t _Idx>
 _LIBCUDACXX_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
 
-template <class _Tp>
-struct __is_inplace_type_imp : false_type
-{};
-template <class _Tp>
-struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type
-{};
+template <class _Tp> struct __is_inplace_type_imp : false_type {};
+template <class _Tp> struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type {};
 
 template <class _Tp>
 using __is_inplace_type = __is_inplace_type_imp<__remove_cvref_t<_Tp>>;
 
-template <class _Tp>
-struct __is_inplace_index_imp : false_type
-{};
-template <size_t _Idx>
-struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
-{};
+template <class _Tp> struct __is_inplace_index_imp : false_type {};
+template <size_t _Idx> struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type {};
 
 template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<__remove_cvref_t<_Tp>>;

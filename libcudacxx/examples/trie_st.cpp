@@ -25,56 +25,37 @@ THE SOFTWARE.
 #include <cstddef>
 #include <cstdint>
 
-template <class T>
-static constexpr T min(T a, T b)
-{
-  return a < b ? a : b;
-}
+template<class T> static constexpr T min(T a, T b) { return a < b ? a : b; }
 
-struct trie
-{
-  struct ref
-  {
-    trie* ptr = nullptr;
-  } next[26];
-  int count = 0;
+struct trie {
+    struct ref {
+        trie* ptr = nullptr;
+    } next[26];
+    int count = 0;
 };
-int index_of(char c)
-{
-  if (c >= 'a' && c <= 'z')
-  {
-    return c - 'a';
-  }
-  if (c >= 'A' && c <= 'Z')
-  {
-    return c - 'A';
-  }
-  return -1;
+int index_of(char c) {
+    if(c >= 'a' && c <= 'z') return c - 'a';
+    if(c >= 'A' && c <= 'Z') return c - 'A';
+    return -1;
 };
 void make_trie(/* trie to insert word counts into */ trie& root,
                /* bump allocator to get new nodes*/ trie*& bump,
-               /* input */ const char* begin,
-               const char* end)
-{
-  auto n = &root;
-  for (auto pc = begin; pc != end; ++pc)
-  {
-    auto const index = index_of(*pc);
-    if (index == -1)
-    {
-      if (n != &root)
-      {
-        n->count++;
-        n = &root;
-      }
-      continue;
+               /* input */ const char* begin, const char* end) {
+
+    auto n = &root;
+    for(auto pc = begin; pc != end; ++pc) {
+        auto const index = index_of(*pc);
+        if(index == -1) {
+            if(n != &root) {
+                n->count++;
+                n = &root;
+            }
+            continue;
+        }
+        if( n->next[index].ptr == nullptr )
+            n->next[index].ptr = bump++;
+        n = n->next[index].ptr;
     }
-    if (n->next[index].ptr == nullptr)
-    {
-      n->next[index].ptr = bump++;
-    }
-    n = n->next[index].ptr;
-  }
 }
 
 #include <iostream>
@@ -88,58 +69,49 @@ void make_trie(/* trie to insert word counts into */ trie& root,
 #include <string>
 #include <atomic>
 
-void do_trie(std::string const& input)
-{
-  std::vector<trie> nodes(1 << 17);
+void do_trie(std::string const& input) {
+    
+    std::vector<trie> nodes(1<<17);
+ 
+    auto t = nodes.data();
+    trie* b(nodes.data()+1);
 
-  auto t = nodes.data();
-  trie* b(nodes.data() + 1);
-
-  auto const begin = std::chrono::steady_clock::now();
-  std::atomic_signal_fence(std::memory_order_seq_cst);
-  make_trie(*t, b, input.data(), input.data() + input.size());
-  std::atomic_signal_fence(std::memory_order_seq_cst);
-  auto const end   = std::chrono::steady_clock::now();
-  auto const time  = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-  auto const count = b - nodes.data();
-  std::cout << "Assembled " << count << " nodes on 1 cpu thread in " << time << "ms." << std::endl;
+    auto const begin = std::chrono::steady_clock::now();
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    make_trie(*t, b, input.data(), input.data() + input.size());
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    auto const end = std::chrono::steady_clock::now();
+    auto const time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    auto const count = b - nodes.data();
+    std::cout << "Assembled " << count << " nodes on 1 cpu thread in " << time << "ms." << std::endl;
 }
 
-int main()
-{
-  std::string input;
+int main() {
 
-  char const* files[] = {
-    "books/2600-0.txt",
-    "books/2701-0.txt",
-    "books/35-0.txt",
-    "books/84-0.txt",
-    "books/8800.txt",
-    "books/pg1727.txt",
-    "books/pg55.txt",
-    "books/pg6130.txt",
-    "books/pg996.txt",
-    "books/1342-0.txt"};
+    std::string input;
 
-  for (auto* ptr : files)
-  {
-    std::cout << ptr << std::endl;
-    auto const cur = input.size();
-    std::ifstream in(ptr);
-    if (in.fail())
-    {
-      std::cerr << "Failed to open file: " << ptr << std::endl;
-      return -1;
+    char const* files[] = {
+        "books/2600-0.txt", "books/2701-0.txt", "books/35-0.txt", "books/84-0.txt", "books/8800.txt",
+      	"books/pg1727.txt", "books/pg55.txt", "books/pg6130.txt", "books/pg996.txt", "books/1342-0.txt"
+    };
+
+    for(auto* ptr : files) {
+        std::cout << ptr << std::endl;
+        auto const cur = input.size();
+        std::ifstream in(ptr);
+        if(in.fail()) {
+            std::cerr << "Failed to open file: " << ptr << std::endl;
+            return -1;
+        }
+        in.seekg(0, std::ios_base::end);
+        auto const pos = in.tellg();
+        input.resize(cur + pos);
+        in.seekg(0, std::ios_base::beg);
+        in.read((char*)input.data() + cur, pos);
     }
-    in.seekg(0, std::ios_base::end);
-    auto const pos = in.tellg();
-    input.resize(cur + pos);
-    in.seekg(0, std::ios_base::beg);
-    in.read((char*) input.data() + cur, pos);
-  }
 
-  do_trie(input);
-  do_trie(input);
+    do_trie(input);
+    do_trie(input);
 
-  return 0;
+    return 0;
 }

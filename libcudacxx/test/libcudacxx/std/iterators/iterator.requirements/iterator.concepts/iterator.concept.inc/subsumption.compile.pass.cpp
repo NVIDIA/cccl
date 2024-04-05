@@ -33,4 +33,7 @@ __host__ __device__ constexpr bool check_subsumption() {
 
 static_assert(check_subsumption<int*>());
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

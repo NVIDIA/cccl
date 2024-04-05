@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FWD_SPAN_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,11 +30,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t dynamic_extent = static_cast<size_t>(-1);
-template <typename _Tp, size_t _Extent = dynamic_extent>
-class span;
+template <typename _Tp, size_t _Extent = dynamic_extent> class span;
 
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
 
 #endif // _LIBCUDACXX___FWD_SPAN_H

@@ -15,24 +15,25 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**) {
-  using index_t = size_t;
+int main(int, char**)
+{
+    using index_t = size_t;
 
-  {
-    cuda::std::layout_left::mapping<cuda::std::dextents<index_t, 1> > m;
+    {
+        cuda::std::layout_left::mapping<cuda::std::dextents<index_t,1>> m;
 
-    static_assert(m.is_always_unique() == true, "");
-    assert(m.is_unique() == true);
-  }
+        static_assert( m.is_always_unique() == true, "" );
+        assert       ( m.is_unique       () == true );
+    }
 
-  {
-    cuda::std::extents<index_t, dyn, dyn> e{16, 32};
-    cuda::std::layout_left::mapping<cuda::std::extents<index_t, dyn, dyn> > m{
-        e};
 
-    static_assert(m.is_always_unique() == true, "");
-    assert(m.is_unique() == true);
-  }
+    {
+        cuda::std::extents<index_t,dyn,dyn> e{16, 32};
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t,dyn,dyn>> m{ e };
 
-  return 0;
+        static_assert( m.is_always_unique() == true, "" );
+        assert       ( m.is_unique       () == true );
+    }
+
+    return 0;
 }

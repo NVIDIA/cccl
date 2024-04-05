@@ -40,64 +40,33 @@ struct NonCopyable {
 struct CopyableNonTrivial {
   int i;
   __host__ __device__ constexpr CopyableNonTrivial(int ii) : i(ii) {}
-  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o)
-      : i(o.i) {}
+  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o) : i(o.i) {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool
-  operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
+  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool
-  operator==(const CopyableNonTrivial& lhs,
-             const CopyableNonTrivial& rhs) noexcept {
-    return lhs.i == rhs.i;
-  }
-  __host__ __device__ friend constexpr bool
-  operator!=(const CopyableNonTrivial& lhs,
-             const CopyableNonTrivial& rhs) noexcept {
-    return lhs.i != rhs.i;
-  }
+  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
+  __host__ __device__ friend constexpr bool operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i != rhs.i; }
 #endif
 };
 
 // Test: This constructor is defined as deleted unless
 // - is_copy_constructible_v<T> is true and
 // - is_copy_constructible_v<E> is true.
-static_assert(
-    cuda::std::is_copy_constructible_v<cuda::std::expected<int, int> >, "");
-static_assert(cuda::std::is_copy_constructible_v<
-                  cuda::std::expected<CopyableNonTrivial, int> >,
-              "");
-static_assert(cuda::std::is_copy_constructible_v<
-                  cuda::std::expected<int, CopyableNonTrivial> >,
-              "");
-static_assert(cuda::std::is_copy_constructible_v<
-                  cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial> >,
-              "");
-static_assert(
-    !cuda::std::is_copy_constructible_v<cuda::std::expected<NonCopyable, int> >,
-    "");
-static_assert(
-    !cuda::std::is_copy_constructible_v<cuda::std::expected<int, NonCopyable> >,
-    "");
-static_assert(!cuda::std::is_copy_constructible_v<
-                  cuda::std::expected<NonCopyable, NonCopyable> >,
-              "");
+static_assert(cuda::std::is_copy_constructible_v<cuda::std::expected<int, int>>, "");
+static_assert(cuda::std::is_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, int>>, "");
+static_assert(cuda::std::is_copy_constructible_v<cuda::std::expected<int, CopyableNonTrivial>>, "");
+static_assert(cuda::std::is_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial>>, "");
+static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<NonCopyable, int>>, "");
+static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<int, NonCopyable>>, "");
+static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<NonCopyable, NonCopyable>>, "");
 
 // Test: This constructor is trivial if
 // - is_trivially_copy_constructible_v<T> is true and
 // - is_trivially_copy_constructible_v<E> is true.
-static_assert(cuda::std::is_trivially_copy_constructible_v<
-                  cuda::std::expected<int, int> >,
-              "");
-static_assert(!cuda::std::is_trivially_copy_constructible_v<
-                  cuda::std::expected<CopyableNonTrivial, int> >,
-              "");
-static_assert(!cuda::std::is_trivially_copy_constructible_v<
-                  cuda::std::expected<int, CopyableNonTrivial> >,
-              "");
-static_assert(!cuda::std::is_trivially_copy_constructible_v<
-                  cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial> >,
-              "");
+static_assert(cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<int, int>>, "");
+static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, int>>, "");
+static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<int, CopyableNonTrivial>>, "");
+static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<CopyableNonTrivial, CopyableNonTrivial>>, "");
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // copy the value non-trivial
@@ -110,8 +79,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
   // copy the error non-trivial
   {
-    const cuda::std::expected<int, CopyableNonTrivial> e1(cuda::std::unexpect,
-                                                          5);
+    const cuda::std::expected<int, CopyableNonTrivial> e1(cuda::std::unexpect, 5);
     auto e2 = e1;
     assert(!e2.has_value());
     assert(e2.error().i == 5);

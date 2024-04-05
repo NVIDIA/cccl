@@ -41,59 +41,63 @@
 #include "test_macros.h"
 #include "test_comparisons.h"
 
-int main(int, char**) {
-  using month = cuda::std::chrono::month;
-  using month_day_last = cuda::std::chrono::month_day_last;
+int main(int, char**)
+{
+    using month          = cuda::std::chrono::month;
+    using month_day_last = cuda::std::chrono::month_day_last;
 
-  constexpr month February = cuda::std::chrono::February;
-  constexpr cuda::std::chrono::last_spec last = cuda::std::chrono::last;
+    constexpr month February = cuda::std::chrono::February;
+    constexpr cuda::std::chrono::last_spec last = cuda::std::chrono::last;
 
-  ASSERT_SAME_TYPE(month_day_last, decltype(last / February));
-  ASSERT_SAME_TYPE(month_day_last, decltype(February / last));
+    ASSERT_SAME_TYPE(month_day_last, decltype(last/February));
+    ASSERT_SAME_TYPE(month_day_last, decltype(February/last));
 
-  //  Run the example
-  {
-    constexpr auto mdl = February / cuda::std::chrono::last;
+//  Run the example
+    {
+    constexpr auto mdl = February/cuda::std::chrono::last;
     static_assert(mdl.month() == February, "");
-  }
-
-  { // operator/(const month& m, last_spec) and switched
-    ASSERT_NOEXCEPT(last / February);
-    ASSERT_SAME_TYPE(month_day_last, decltype(last / February));
-    ASSERT_NOEXCEPT(February / last);
-    ASSERT_SAME_TYPE(month_day_last, decltype(February / last));
-
-    static_assert((last / February).month() == February, "");
-    static_assert((February / last).month() == February, "");
-
-    for (unsigned i = 1; i < 12; ++i) {
-      month m{i};
-      month_day_last mdl1 = last / m;
-      month_day_last mdl2 = m / last;
-      assert(mdl1.month() == m);
-      assert(mdl2.month() == m);
-      assert(mdl1 == mdl2);
     }
-  }
 
-  { // operator/(int, last_spec) and switched
-    ASSERT_NOEXCEPT(last / 2);
-    ASSERT_SAME_TYPE(month_day_last, decltype(last / 2));
-    ASSERT_NOEXCEPT(2 / last);
-    ASSERT_SAME_TYPE(month_day_last, decltype(2 / last));
+    { // operator/(const month& m, last_spec) and switched
+        ASSERT_NOEXCEPT (                         last/February);
+        ASSERT_SAME_TYPE(month_day_last, decltype(last/February));
+        ASSERT_NOEXCEPT (                         February/last);
+        ASSERT_SAME_TYPE(month_day_last, decltype(February/last));
 
-    static_assert((last / 2).month() == February, "");
-    static_assert((2 / last).month() == February, "");
+        static_assert((last/February).month() == February, "");
+        static_assert((February/last).month() == February, "");
 
-    for (unsigned i = 1; i < 12; ++i) {
-      month m{i};
-      month_day_last mdl1 = last / i;
-      month_day_last mdl2 = i / last;
-      assert(mdl1.month() == m);
-      assert(mdl2.month() == m);
-      assert(mdl1 == mdl2);
+        for (unsigned i = 1; i < 12; ++i)
+        {
+            month m{i};
+            month_day_last mdl1 = last/m;
+            month_day_last mdl2 = m/last;
+            assert(mdl1.month() == m);
+            assert(mdl2.month() == m);
+            assert(mdl1 == mdl2);
+        }
     }
-  }
+
+    { // operator/(int, last_spec) and switched
+        ASSERT_NOEXCEPT (                         last/2);
+        ASSERT_SAME_TYPE(month_day_last, decltype(last/2));
+        ASSERT_NOEXCEPT (                         2/last);
+        ASSERT_SAME_TYPE(month_day_last, decltype(2/last));
+
+        static_assert((last/2).month() == February, "");
+        static_assert((2/last).month() == February, "");
+
+        for (unsigned i = 1; i < 12; ++i)
+        {
+            month m{i};
+            month_day_last mdl1 = last/i;
+            month_day_last mdl2 = i/last;
+            assert(mdl1.month() == m);
+            assert(mdl2.month() == m);
+            assert(mdl1 == mdl2);
+        }
+    }
+
 
   return 0;
 }

@@ -40,25 +40,26 @@ namespace detail
 namespace sequential
 {
 
-_CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy,
-          typename InputIterator1,
-          typename InputIterator2,
-          typename OutputIterator,
-          typename Predicate>
-_CCCL_HOST_DEVICE OutputIterator copy_if(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator1 first,
-  InputIterator1 last,
-  InputIterator2 stencil,
-  OutputIterator result,
-  Predicate pred)
-{
-  thrust::detail::wrapped_function<Predicate, bool> wrapped_pred(pred);
 
-  while (first != last)
+_CCCL_EXEC_CHECK_DISABLE
+template<typename DerivedPolicy,
+         typename InputIterator1,
+         typename InputIterator2,
+         typename OutputIterator,
+         typename Predicate>
+_CCCL_HOST_DEVICE
+  OutputIterator copy_if(sequential::execution_policy<DerivedPolicy> &,
+                         InputIterator1 first,
+                         InputIterator1 last,
+                         InputIterator2 stencil,
+                         OutputIterator result,
+                         Predicate pred)
+{
+  thrust::detail::wrapped_function<Predicate,bool> wrapped_pred(pred);
+
+  while(first != last)
   {
-    if (wrapped_pred(*stencil))
+    if(wrapped_pred(*stencil))
     {
       *result = *first;
       ++result;
@@ -71,7 +72,9 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   return result;
 } // end copy_if()
 
+
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
+

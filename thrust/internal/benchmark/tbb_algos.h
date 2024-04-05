@@ -1,19 +1,20 @@
 #pragma once
 
-#include <cassert>
-#include <cstdef> // For std::size_t.
-
-#include <tbb/parallel_for.h>
 #include <tbb/parallel_reduce.h>
+#include <tbb/parallel_for.h>
 #include <tbb/parallel_scan.h>
 #include <tbb/parallel_sort.h>
 #include <tbb/task_scheduler_init.h>
-#include <tbb/tbb_thread.h>
 #include <tbb/tick_count.h>
+#include <tbb/tbb_thread.h>
+
+#include <cstdef> // For std::size_t.
+
+#include <cassert>
 
 template <typename T>
 struct NegateBody
-{
+{ 
   void operator()(T& x) const
   {
     x = -x;
@@ -22,134 +23,97 @@ struct NegateBody
 
 template <typename Vector>
 struct ForBody
-{
+{ 
   typedef typename Vector::value_type T;
 
 private:
   Vector& v;
 
-public:
-  ForBody(Vector& x)
-      : v(x)
-  {}
+public: 
+  ForBody(Vector& x) : v(x) {}    
 
   void operator()(tbb::blocked_range<std::size_t> const& r) const
-  {
-    for (std::size_t i = r.begin(); i != r.end(); ++i)
-    {
+  { 
+    for (std::size_t i = r.begin(); i != r.end(); ++i)  
       v[i] = -v[i];
-    }
   }
 };
 
 template <typename Vector>
 struct ReduceBody
-{
+{ 
   typedef typename Vector::value_type T;
 
 private:
   Vector& v;
 
-public:
-  T sum;
+public: 
+  T sum;  
 
-  ReduceBody(Vector& x)
-      : v(x)
-      , sum(0)
-  {}
+  ReduceBody(Vector& x) : v(x), sum(0) {}    
 
-  ReduceBody(ReduceBody& x, tbb::split)
-      : v(x.v)
-      , sum(0)
-  {}
+  ReduceBody(ReduceBody& x, tbb::split) : v(x.v), sum(0) {}
 
   void operator()(tbb::blocked_range<std::size_t> const& r)
-  {
-    for (std::size_t i = r.begin(); i != r.end(); ++i)
-    {
+  { 
+    for (std::size_t i = r.begin(); i != r.end(); ++i)  
       sum += v[i];
-    }
   }
-
-  void join(ReduceBody const& x)
-  {
-    sum += x.sum;
-  }
+  
+  void join(ReduceBody const& x) { sum += x.sum; } 
 };
 
 template <typename Vector>
 struct ScanBody
-{
+{ 
   typedef typename Vector::value_type T;
 
 private:
-  Vector& v;
+  Vector& v; 
 
-public:
-  T sum;
+public: 
+  T sum; 
 
-  ScanBody(Vector& x)
-      : sum(0)
-      , v(x)
-  {}
+  ScanBody(Vector& x) : sum(0), v(x) {} 
 
-  ScanBody(ScanBody& x, tbb::split)
-      : v(x.v)
-      , sum(0)
-  {}
+  ScanBody(ScanBody& x, tbb::split) : v(x.v), sum(0) {} 
 
-  template <typename Tag>
+  template <typename Tag> 
   void operator()(tbb::blocked_range<std::size_t> const& r, Tag)
   {
-    T temp = sum;
+    T temp = sum; 
     for (std::size_t i = r.begin(); i < r.end(); ++i)
-    {
-      temp = temp + x[i];
-      if (Tag::is_final_scan())
-      {
-        x[i] = temp;
-      }
-    }
-    sum = temp;
+    { 
+      temp = temp + x[i]; 
+      if (Tag::is_final_scan()) 
+        x[i] = temp; 
+    }        
+    sum = temp; 
   }
 
-  void assign(ScanBody const& x)
-  {
-    sum = x.sum;
-  }
+  void assign(ScanBody const& x) { sum = x.sum; } 
 
-  T get_sum() const
-  {
-    return sum;
-  }
+  T get_sum() const { return sum; } 
 
-  void reverse_join(ScanBody const& x)
-  {
-    sum = x.sum + sum;
-  }
+  void reverse_join(ScanBody const& x) { sum = x.sum + sum;} 
 };
 
 template <typename Vector>
 struct CopyBody
-{
+{ 
   typedef typename Vector::value_type T;
 
 private:
-  Vector& v;
-  Vector& u;
+  Vector &v;
+  Vector &u;
 
-public:
-  CopyBody(Vector& x, Vector& y)
-      : v(x)
-      , u(y)
-  {}
+public: 
+  CopyBody(Vector& x, Vector& y) : v(x), u(y) {}    
 
   void operator()(tbb::blocked_range<size_t> const& r) const
-  {
-    for (std::size_t i = r.begin(); i != r.end(); ++i)
-    {
+  { 
+    for (std::size_t i = r.begin(); i != r.end(); ++i)  
       v[i] = u[i];
-    }
   }
 };
 
@@ -200,13 +164,13 @@ void test_tbb()
   randomize(A);
   randomize(B);
   assert(std::accumulate(A.begin(), A.end(), 0) == tbb_reduce(A));
-
+  
   randomize(A);
   randomize(B);
   std::transform(A.begin(), A.end(), A.begin(), thrust::negate<int>());
   tbb_transform(B);
   assert(A == B);
-
+ 
   randomize(A);
   randomize(B);
   std::partial_sum(A.begin(), A.end(), A.begin());
@@ -228,3 +192,4 @@ void test_tbb()
   assert(A == B);
   assert(C == D);
 }
+

@@ -38,37 +38,31 @@
 
 // Test Constraints:
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(cuda::std::is_constructible_v<
-                  cuda::std::expected<int, cuda::std::vector<int> >,
-                  cuda::std::unexpect_t, cuda::std::initializer_list<int> >,
-              "");
+static_assert(
+    cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::vector<int>>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
 #endif
 
 // !is_constructible_v<T, initializer_list<U>&, Args...>
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>,
-                                             cuda::std::unexpect_t,
-                                             cuda::std::initializer_list<int> >,
-              "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
 
 // test explicit
 template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>(
-                                 {cuda::std::forward<Args>(args)...}))));
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  ImplicitlyConstructible_,
+  requires(Args&&... args)(
+    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
+  ));
 
 template <class T, class... Args>
-constexpr bool ImplicitlyConstructible =
-    _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(!ImplicitlyConstructible<
-                  cuda::std::expected<int, cuda::std::vector<int> >,
-                  cuda::std::unexpect_t, cuda::std::initializer_list<int> >,
-              "");
+static_assert(
+    !ImplicitlyConstructible<cuda::std::expected<int, cuda::std::vector<int>>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
 #endif
 
 template <size_t N, class... Ts>
@@ -77,11 +71,8 @@ struct Data {
   cuda::std::tuple<Ts...> tuple_;
 
   _LIBCUDACXX_TEMPLATE(class... Us)
-  _LIBCUDACXX_REQUIRES(
-      cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
-  __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il,
-                                     Us&&... us)
-      : tuple_(cuda::std::forward<Us>(us)...) {
+    _LIBCUDACXX_REQUIRES( cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+  __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us) : tuple_(cuda::std::forward<Us>(us)...) {
     auto ibegin = il.begin();
     for (cuda::std::size_t i = 0; ibegin != il.end(); ++ibegin, ++i) {
       vec_[i] = *ibegin;
@@ -89,7 +80,7 @@ struct Data {
   }
 };
 
-template <class Range1, class Range2>
+template<class Range1, class Range2>
 __host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs) {
   auto* left = lhs + 0;
   auto* right = rhs.begin();
@@ -104,7 +95,7 @@ __host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs) {
 __host__ __device__ constexpr bool test() {
   // no arg
   {
-    cuda::std::expected<int, Data<3> > e(cuda::std::unexpect, {1, 2, 3});
+    cuda::std::expected<int, Data<3>> e(cuda::std::unexpect, {1, 2, 3});
     assert(!e.has_value());
     auto expectedList = {1, 2, 3};
     assert(equal(e.error().vec_, expectedList));
@@ -112,8 +103,7 @@ __host__ __device__ constexpr bool test() {
 
   // one arg
   {
-    cuda::std::expected<int, Data<3, MoveOnly> > e(cuda::std::unexpect,
-                                                   {4, 5, 6}, MoveOnly(5));
+    cuda::std::expected<int, Data<3, MoveOnly>> e(cuda::std::unexpect, {4, 5, 6}, MoveOnly(5));
     assert(!e.has_value());
     auto expectedList = {4, 5, 6};
     assert((equal(e.error().vec_, expectedList)));
@@ -125,8 +115,7 @@ __host__ __device__ constexpr bool test() {
     int i = 5;
     int j = 6;
     MoveOnly m(7);
-    cuda::std::expected<int, Data<2, int&, int&&, MoveOnly> > e(
-        cuda::std::unexpect, {1, 2}, i, cuda::std::move(j), cuda::std::move(m));
+    cuda::std::expected<int, Data<2, int&, int&&, MoveOnly>> e(cuda::std::unexpect, {1, 2}, i, cuda::std::move(j), cuda::std::move(m));
     assert(!e.has_value());
     auto expectedList = {1, 2};
     assert((equal(e.error().vec_, expectedList)));

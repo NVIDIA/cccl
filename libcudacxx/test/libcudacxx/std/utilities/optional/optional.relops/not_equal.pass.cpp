@@ -23,14 +23,17 @@ using cuda::std::optional;
 struct X {
   int i_;
 
-  __host__ __device__ constexpr X(int i) : i_(i) {}
+  __host__ __device__
+  constexpr X(int i) : i_(i) {}
 };
 
-__host__ __device__ constexpr bool operator!=(const X& lhs, const X& rhs) {
+__host__ __device__
+constexpr bool operator!=(const X& lhs, const X& rhs) {
   return lhs.i_ != rhs.i_;
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__
+constexpr bool test() {
   {
     typedef X T;
     typedef optional<T> O;
@@ -85,6 +88,7 @@ __host__ __device__ constexpr bool test() {
     assert(o1 != O2(101));
     assert(!(O2(42) != o1));
   }
+
 
   return true;
 }

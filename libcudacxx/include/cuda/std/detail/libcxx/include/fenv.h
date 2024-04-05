@@ -10,6 +10,7 @@
 #ifndef _LIBCUDACXX_FENV_H
 #define _LIBCUDACXX_FENV_H
 
+
 /*
     fenv.h synopsis
 
@@ -65,49 +66,52 @@ int feupdateenv(const fenv_t* envp);
 
 extern "C++" {
 
-#  ifdef feclearexcept
-#    undef feclearexcept
-#  endif
+#ifdef feclearexcept
+#undef feclearexcept
+#endif
 
-#  ifdef fegetexceptflag
-#    undef fegetexceptflag
-#  endif
+#ifdef fegetexceptflag
+#undef fegetexceptflag
+#endif
 
-#  ifdef feraiseexcept
-#    undef feraiseexcept
-#  endif
 
-#  ifdef fesetexceptflag
-#    undef fesetexceptflag
-#  endif
+#ifdef feraiseexcept
+#undef feraiseexcept
+#endif
 
-#  ifdef fetestexcept
-#    undef fetestexcept
-#  endif
+#ifdef fesetexceptflag
+#undef fesetexceptflag
+#endif
 
-#  ifdef fegetround
-#    undef fegetround
-#  endif
 
-#  ifdef fesetround
-#    undef fesetround
-#  endif
+#ifdef fetestexcept
+#undef fetestexcept
+#endif
 
-#  ifdef fegetenv
-#    undef fegetenv
-#  endif
+#ifdef fegetround
+#undef fegetround
+#endif
 
-#  ifdef feholdexcept
-#    undef feholdexcept
-#  endif
+#ifdef fesetround
+#undef fesetround
+#endif
 
-#  ifdef fesetenv
-#    undef fesetenv
-#  endif
+#ifdef fegetenv
+#undef fegetenv
+#endif
 
-#  ifdef feupdateenv
-#    undef feupdateenv
-#  endif
+#ifdef feholdexcept
+#undef feholdexcept
+#endif
+
+
+#ifdef fesetenv
+#undef fesetenv
+#endif
+
+#ifdef feupdateenv
+#undef feupdateenv
+#endif
 
 } // extern "C++"
 

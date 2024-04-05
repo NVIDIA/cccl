@@ -23,49 +23,59 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test_is_trivially_copyable() {
-  static_assert(cuda::std::is_trivially_copyable<T>::value, "");
-  static_assert(cuda::std::is_trivially_copyable<const T>::value, "");
+__host__ __device__
+void test_is_trivially_copyable()
+{
+    static_assert( cuda::std::is_trivially_copyable<T>::value, "");
+    static_assert( cuda::std::is_trivially_copyable<const T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(cuda::std::is_trivially_copyable_v<T>, "");
-  static_assert(cuda::std::is_trivially_copyable_v<const T>, "");
+    static_assert( cuda::std::is_trivially_copyable_v<T>, "");
+    static_assert( cuda::std::is_trivially_copyable_v<const T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__ void test_is_not_trivially_copyable() {
-  static_assert(!cuda::std::is_trivially_copyable<T>::value, "");
-  static_assert(!cuda::std::is_trivially_copyable<const T>::value, "");
+__host__ __device__
+void test_is_not_trivially_copyable()
+{
+    static_assert(!cuda::std::is_trivially_copyable<T>::value, "");
+    static_assert(!cuda::std::is_trivially_copyable<const T>::value, "");
 #if TEST_STD_VER > 2011
-  static_assert(!cuda::std::is_trivially_copyable_v<T>, "");
-  static_assert(!cuda::std::is_trivially_copyable_v<const T>, "");
+    static_assert(!cuda::std::is_trivially_copyable_v<T>, "");
+    static_assert(!cuda::std::is_trivially_copyable_v<const T>, "");
 #endif
 }
 
-struct A {
-  int i_;
+struct A
+{
+    int i_;
 };
 
-struct B {
-  int i_;
-  __host__ __device__ ~B() { assert(i_ == 0); }
+struct B
+{
+    int i_;
+    __host__ __device__
+    ~B() {assert(i_ == 0);}
 };
 
-class C {
+class C
+{
 public:
-  __host__ __device__ C();
+    __host__ __device__
+    C();
 };
 
-int main(int, char**) {
-  test_is_trivially_copyable<int>();
-  test_is_trivially_copyable<const int>();
-  test_is_trivially_copyable<A>();
-  test_is_trivially_copyable<const A>();
-  test_is_trivially_copyable<C>();
+int main(int, char**)
+{
+    test_is_trivially_copyable<int> ();
+    test_is_trivially_copyable<const int> ();
+    test_is_trivially_copyable<A> ();
+    test_is_trivially_copyable<const A> ();
+    test_is_trivially_copyable<C> ();
 
-  test_is_not_trivially_copyable<int&>();
-  test_is_not_trivially_copyable<const A&>();
-  test_is_not_trivially_copyable<B>();
+    test_is_not_trivially_copyable<int&> ();
+    test_is_not_trivially_copyable<const A&> ();
+    test_is_not_trivially_copyable<B> ();
 
   return 0;
 }

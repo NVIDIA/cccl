@@ -270,7 +270,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
-  int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+  int *d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged_if(
     thrust::raw_pointer_cast(in.data()),

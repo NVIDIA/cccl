@@ -12,6 +12,7 @@
 // template<class T>
 // concept swappable = // see below
 
+
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 
@@ -20,7 +21,7 @@
 #include "type_classification/swappable.h"
 
 #ifdef TEST_COMPILER_MSVC_2017
-#pragma warning(disable : 4239)
+#pragma warning(disable: 4239)
 #endif // TEST_COMPILER_MSVC_2017
 
 using cuda::std::swappable;
@@ -80,8 +81,7 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable() {
 }
 
 __host__ __device__ constexpr bool check_rvalue_adl_swappable() {
-  ASSERT_NOEXCEPT(cuda::std::ranges::swap(rvalue_adl_swappable(0),
-                                          rvalue_adl_swappable(1)));
+  ASSERT_NOEXCEPT(cuda::std::ranges::swap(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
 #if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10)
   assert(check_swap_21(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
 #endif
@@ -105,16 +105,15 @@ __host__ __device__ constexpr bool check_rvalue_lvalue_adl_swappable() {
 __host__ __device__ constexpr bool check_throwable_swappable() {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) &&                             \
-    !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) \
+ && !defined(TEST_COMPILER_MSVC_2017)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
 #endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT && !TEST_COMPILER_MSVC_2017
   assert(check_swap_21(x, y));
   return true;
 }
 
-__host__ __device__ constexpr bool
-check_non_move_constructible_adl_swappable() {
+__host__ __device__ constexpr bool check_non_move_constructible_adl_swappable() {
   auto x = non_move_constructible_adl_swappable{0};
   auto y = non_move_constructible_adl_swappable{1};
   ASSERT_NOEXCEPT(cuda::std::ranges::swap(x, y));
@@ -139,7 +138,8 @@ enum unscoped { hello, world };
 __host__ __device__ void swap(unscoped&, unscoped&);
 
 enum class scoped { hello, world };
-__host__ __device__ void swap(scoped&, scoped&);
+__host__ __device__
+void swap(scoped&, scoped&);
 } // namespace swappable_namespace
 
 static_assert(swappable<swappable_namespace::unscoped>, "");
@@ -164,8 +164,8 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable_arrays() {
 __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays() {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) &&                             \
-    !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_BROKEN_SMF_NOEXCEPT) \
+ && !defined(TEST_COMPILER_MSVC_2017)
   ASSERT_NOT_NOEXCEPT(cuda::std::ranges::swap(x, y));
 #endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT && !TEST_COMPILER_MSVC_2017
   assert(check_swap_22(x, y));

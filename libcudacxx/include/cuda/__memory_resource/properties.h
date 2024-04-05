@@ -23,7 +23,7 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -39,7 +39,7 @@ struct host_accessible
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#  endif // _CCCL_STD_VER >= 2014
+#endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER_MSVC_2017
 

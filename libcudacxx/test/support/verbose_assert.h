@@ -12,20 +12,15 @@ namespace verbose_assert {
 typedef std::basic_ostream<char>&(EndLType)(std::basic_ostream<char>&);
 
 template <class Stream, class Tp,
-          class = decltype(std::declval<Stream&>()
-                           << std::declval<Tp const&>())>
+    class = decltype(std::declval<Stream&>() << std::declval<Tp const&>())>
 std::true_type IsStreamableImp(int);
-template <class Stream, class Tp>
-std::false_type IsStreamableImp(long);
+template <class Stream, class Tp> std::false_type IsStreamableImp(long);
 
 template <class Stream, class Tp>
 struct IsStreamable : decltype(IsStreamableImp<Stream, Tp>(0)) {};
 
-template <class Tp,
-          int ST =
-              (IsStreamable<decltype(std::cerr), Tp>::value
-                   ? 1
-                   : (IsStreamable<decltype(std::wcerr), Tp>::value ? 2 : -1))>
+template <class Tp, int ST = (IsStreamable<decltype(std::cerr), Tp>::value ? 1
+        : (IsStreamable<decltype(std::wcerr), Tp>::value ? 2 : -1))>
 struct SelectStream {
   static_assert(ST == -1, "specialization required for ST != -1");
   static void Print(Tp const&) { std::clog << "Value Not Streamable!\n"; }
@@ -72,7 +67,8 @@ struct AssertData {
 // will log information about the failures and abort when it is destructed.
 class AssertHandler {
 public:
-  AssertHandler(AssertData const& Data) : passed(Data.passed) {
+  AssertHandler(AssertData const& Data)
+      : passed(Data.passed) {
     if (!passed)
       Data.PrintFailed();
   }
@@ -200,14 +196,14 @@ AssertData CheckCollectionsEqual(It1 F1, It1 E1, It2 F2, It2 E2,
 #define DISPLAY(...) "    " #__VA_ARGS__ " = " << (__VA_ARGS__) << "\n"
 
 #define ASSERT(...)                                                            \
-  ::verbose_assert::AssertHandler(                                             \
-      ::verbose_assert::AssertData(#__VA_ARGS__, __FILE__, ASSERT_FN_NAME(),   \
-                                   __LINE__, (__VA_ARGS__)))                   \
-      .GetLog()
+  ::verbose_assert::AssertHandler(::verbose_assert::AssertData(                \
+    #__VA_ARGS__, __FILE__, ASSERT_FN_NAME(), __LINE__,(__VA_ARGS__))).GetLog()
 
-#define ASSERT_EQ(LHS, RHS) ASSERT(LHS == RHS) << DISPLAY(LHS) << DISPLAY(RHS)
-#define ASSERT_NEQ(LHS, RHS) ASSERT(LHS != RHS) << DISPLAY(LHS) << DISPLAY(RHS)
-#define ASSERT_PRED(PRED, LHS, RHS)                                            \
+#define ASSERT_EQ(LHS, RHS) \
+  ASSERT(LHS == RHS) << DISPLAY(LHS) << DISPLAY(RHS)
+#define ASSERT_NEQ(LHS, RHS) \
+  ASSERT(LHS != RHS) << DISPLAY(LHS) << DISPLAY(RHS)
+#define ASSERT_PRED(PRED, LHS, RHS) \
   ASSERT(PRED(LHS, RHS)) << DISPLAY(LHS) << DISPLAY(RHS)
 
 #define ASSERT_COLLECTION_EQ_COMP(F1, E1, F2, E2, Comp)                        \

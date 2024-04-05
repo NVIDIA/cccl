@@ -47,33 +47,33 @@
 // Disable the missing braces warning for this reason.
 #include "disable_missing_braces_warning.h"
 
-template <typename C>
-__host__ __device__ void test_const_container(const C& c,
-                                              typename C::value_type val) {
-  assert(cuda::std::begin(c) == c.begin());
-  assert(*cuda::std::begin(c) == val);
-  assert(cuda::std::begin(c) != c.end());
-  assert(cuda::std::end(c) == c.end());
+template<typename C>
+__host__ __device__
+void test_const_container( const C & c, typename C::value_type val ) {
+    assert ( cuda::std::begin(c)   == c.begin());
+    assert (*cuda::std::begin(c)   ==  val );
+    assert ( cuda::std::begin(c)   != c.end());
+    assert ( cuda::std::end(c)     == c.end());
 #if TEST_STD_VER > 2011
-  assert(cuda::std::cbegin(c) == c.cbegin());
-  assert(cuda::std::cbegin(c) != c.cend());
-  assert(cuda::std::cend(c) == c.cend());
-  assert(cuda::std::rbegin(c) == c.rbegin());
-  assert(cuda::std::rbegin(c) != c.rend());
-  assert(cuda::std::rend(c) == c.rend());
-  assert(cuda::std::crbegin(c) == c.crbegin());
-  assert(cuda::std::crbegin(c) != c.crend());
-  assert(cuda::std::crend(c) == c.crend());
+    assert ( cuda::std::cbegin(c)  == c.cbegin());
+    assert ( cuda::std::cbegin(c)  != c.cend());
+    assert ( cuda::std::cend(c)    == c.cend());
+    assert ( cuda::std::rbegin(c)  == c.rbegin());
+    assert ( cuda::std::rbegin(c)  != c.rend());
+    assert ( cuda::std::rend(c)    == c.rend());
+    assert ( cuda::std::crbegin(c) == c.crbegin());
+    assert ( cuda::std::crbegin(c) != c.crend());
+    assert ( cuda::std::crend(c)   == c.crend());
 #endif
-}
+    }
 
-template <typename T>
-__host__ __device__ void
-test_const_container(const cuda::std::initializer_list<T>& c, T val) {
-  assert(cuda::std::begin(c) == c.begin());
-  assert(*cuda::std::begin(c) == val);
-  assert(cuda::std::begin(c) != c.end());
-  assert(cuda::std::end(c) == c.end());
+template<typename T>
+__host__ __device__
+void test_const_container( const cuda::std::initializer_list<T> & c, T val ) {
+    assert ( cuda::std::begin(c)   == c.begin());
+    assert (*cuda::std::begin(c)   ==  val );
+    assert ( cuda::std::begin(c)   != c.end());
+    assert ( cuda::std::end(c)     == c.end());
 #if TEST_STD_VER > 2011
 //  initializer_list doesn't have cbegin/cend/rbegin/rend
 //  but cuda::std::cbegin(),etc work (b/c they're general fn templates)
@@ -87,34 +87,35 @@ test_const_container(const cuda::std::initializer_list<T>& c, T val) {
 //     assert ( cuda::std::crbegin(c) != c.crend());
 //     assert ( cuda::std::crend(c)   == c.crend());
 #endif
-}
+    }
 
-template <typename C>
-__host__ __device__ void test_container(C& c, typename C::value_type val) {
-  assert(cuda::std::begin(c) == c.begin());
-  assert(*cuda::std::begin(c) == val);
-  assert(cuda::std::begin(c) != c.end());
-  assert(cuda::std::end(c) == c.end());
+template<typename C>
+__host__ __device__
+void test_container( C & c, typename C::value_type val ) {
+    assert ( cuda::std::begin(c)   == c.begin());
+    assert (*cuda::std::begin(c)   ==  val );
+    assert ( cuda::std::begin(c)   != c.end());
+    assert ( cuda::std::end(c)     == c.end());
 #if TEST_STD_VER > 2011
-  assert(cuda::std::cbegin(c) == c.cbegin());
-  assert(cuda::std::cbegin(c) != c.cend());
-  assert(cuda::std::cend(c) == c.cend());
-  assert(cuda::std::rbegin(c) == c.rbegin());
-  assert(cuda::std::rbegin(c) != c.rend());
-  assert(cuda::std::rend(c) == c.rend());
-  assert(cuda::std::crbegin(c) == c.crbegin());
-  assert(cuda::std::crbegin(c) != c.crend());
-  assert(cuda::std::crend(c) == c.crend());
+    assert ( cuda::std::cbegin(c)  == c.cbegin());
+    assert ( cuda::std::cbegin(c)  != c.cend());
+    assert ( cuda::std::cend(c)    == c.cend());
+    assert ( cuda::std::rbegin(c)  == c.rbegin());
+    assert ( cuda::std::rbegin(c)  != c.rend());
+    assert ( cuda::std::rend(c)    == c.rend());
+    assert ( cuda::std::crbegin(c) == c.crbegin());
+    assert ( cuda::std::crbegin(c) != c.crend());
+    assert ( cuda::std::crend(c)   == c.crend());
 #endif
-}
+    }
 
-template <typename T>
-__host__ __device__ void test_container(cuda::std::initializer_list<T>& c,
-                                        T val) {
-  assert(cuda::std::begin(c) == c.begin());
-  assert(*cuda::std::begin(c) == val);
-  assert(cuda::std::begin(c) != c.end());
-  assert(cuda::std::end(c) == c.end());
+template<typename T>
+__host__ __device__
+void test_container( cuda::std::initializer_list<T> & c, T val ) {
+    assert ( cuda::std::begin(c)   == c.begin());
+    assert (*cuda::std::begin(c)   ==  val );
+    assert ( cuda::std::begin(c)   != c.end());
+    assert ( cuda::std::end(c)     == c.end());
 #if TEST_STD_VER > 2011
 //  initializer_list doesn't have cbegin/cend/rbegin/rend
 //     assert ( cuda::std::cbegin(c)  == c.cbegin());
@@ -127,122 +128,102 @@ __host__ __device__ void test_container(cuda::std::initializer_list<T>& c,
 //     assert ( cuda::std::crbegin(c) != c.crend());
 //     assert ( cuda::std::crend(c)   == c.crend());
 #endif
-}
+    }
 
-template <typename T, size_t Sz>
-__host__ __device__ void test_const_array(const T (&array)[Sz]) {
-  assert(cuda::std::begin(array) == array);
-  assert(*cuda::std::begin(array) == array[0]);
-  assert(cuda::std::begin(array) != cuda::std::end(array));
-  assert(cuda::std::end(array) == array + Sz);
+template<typename T, size_t Sz>
+__host__ __device__
+void test_const_array( const T (&array)[Sz] ) {
+    assert ( cuda::std::begin(array)  == array );
+    assert (*cuda::std::begin(array)  ==  array[0] );
+    assert ( cuda::std::begin(array)  != cuda::std::end(array));
+    assert ( cuda::std::end(array)    == array + Sz);
 #if TEST_STD_VER > 2011
-  assert(cuda::std::cbegin(array) == array);
-  assert(*cuda::std::cbegin(array) == array[0]);
-  assert(cuda::std::cbegin(array) != cuda::std::cend(array));
-  assert(cuda::std::cend(array) == array + Sz);
+    assert ( cuda::std::cbegin(array) == array );
+    assert (*cuda::std::cbegin(array) == array[0] );
+    assert ( cuda::std::cbegin(array) != cuda::std::cend(array));
+    assert ( cuda::std::cend(array)   == array + Sz);
 #endif
-}
+    }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array[]{1, 2, 3};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_array [] { 1, 2, 3 };
 #if TEST_STD_VER > 2014
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {
-    0, 1, 2, 3, 4};
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int global_const_array[] = {0,1,2,3,4};
 #endif // nvcc > 11.2
 #endif // TEST_STD_VER > 2014
 
 int main(int, char**) {
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-  cuda::std::vector<int> v;
-  v.push_back(1);
+    cuda::std::vector<int> v; v.push_back(1);
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-  cuda::std::list<int> l;
-  l.push_back(2);
+    cuda::std::list<int> l;   l.push_back(2);
 #endif
-  cuda::std::array<int, 1> a;
-  a[0] = 3;
-  cuda::std::initializer_list<int> il = {4};
+    cuda::std::array<int, 1> a; a[0] = 3;
+    cuda::std::initializer_list<int> il = { 4 };
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-  test_container(v, 1);
+    test_container ( v, 1 );
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-  test_container(l, 2);
+    test_container ( l, 2 );
 #endif
-  test_container(a, 3);
-  test_container(il, 4);
+    test_container ( a, 3 );
+    test_container ( il, 4 );
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-  test_const_container(v, 1);
+    test_const_container ( v, 1 );
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-  test_const_container(l, 2);
+    test_const_container ( l, 2 );
 #endif
-  test_const_container(a, 3);
-  test_const_container(il, 4);
+    test_const_container ( a, 3 );
+    test_const_container ( il, 4 );
 
-  test_const_array(global_array);
+    test_const_array ( global_array );
 #if TEST_STD_VER > 2011
-  constexpr const int* b = cuda::std::cbegin(global_array);
-  constexpr const int* e = cuda::std::cend(global_array);
-  static_assert(e - b == 3, "");
+    constexpr const int *b = cuda::std::cbegin(global_array);
+    constexpr const int *e = cuda::std::cend(global_array);
+    static_assert(e - b == 3, "");
 #endif
 
 #if TEST_STD_VER > 2014
-  {
-    typedef cuda::std::array<int, 5> C;
-    constexpr const C local_const_array{0, 1, 2, 3, 4};
+    {
+        typedef cuda::std::array<int, 5> C;
+        constexpr const C local_const_array{0,1,2,3,4};
 
-    static_assert(
-        local_const_array.begin() == cuda::std::begin(local_const_array), "");
-    static_assert(
-        local_const_array.cbegin() == cuda::std::cbegin(local_const_array), "");
-    static_assert(local_const_array.end() == cuda::std::end(local_const_array),
-                  "");
-    static_assert(
-        local_const_array.cend() == cuda::std::cend(local_const_array), "");
+        static_assert ( local_const_array.begin()   == cuda::std::begin(local_const_array), "");
+        static_assert ( local_const_array.cbegin()  == cuda::std::cbegin(local_const_array), "");
+        static_assert ( local_const_array.end()     == cuda::std::end(local_const_array), "");
+        static_assert ( local_const_array.cend()    == cuda::std::cend(local_const_array), "");
 
-    static_assert(
-        local_const_array.rbegin() == cuda::std::rbegin(local_const_array), "");
-    static_assert(local_const_array.crbegin() ==
-                      cuda::std::crbegin(local_const_array),
-                  "");
-    static_assert(
-        local_const_array.rend() == cuda::std::rend(local_const_array), "");
-    static_assert(
-        local_const_array.crend() == cuda::std::crend(local_const_array), "");
+        static_assert ( local_const_array.rbegin()  == cuda::std::rbegin(local_const_array), "");
+        static_assert ( local_const_array.crbegin() == cuda::std::crbegin(local_const_array), "");
+        static_assert ( local_const_array.rend()    == cuda::std::rend(local_const_array), "");
+        static_assert ( local_const_array.crend()   == cuda::std::crend(local_const_array), "");
 
-    static_assert(cuda::std::begin(local_const_array) !=
-                      cuda::std::end(local_const_array),
-                  "");
-    static_assert(cuda::std::rbegin(local_const_array) !=
-                      cuda::std::rend(local_const_array),
-                  "");
-    static_assert(cuda::std::cbegin(local_const_array) !=
-                      cuda::std::cend(local_const_array),
-                  "");
-    static_assert(cuda::std::crbegin(local_const_array) !=
-                      cuda::std::crend(local_const_array),
-                  "");
+        static_assert ( cuda::std::begin(local_const_array)   != cuda::std::end(local_const_array), "");
+        static_assert ( cuda::std::rbegin(local_const_array)  != cuda::std::rend(local_const_array), "");
+        static_assert ( cuda::std::cbegin(local_const_array)  != cuda::std::cend(local_const_array), "");
+        static_assert ( cuda::std::crbegin(local_const_array) != cuda::std::crend(local_const_array), "");
 
-    static_assert(*local_const_array.begin() == 0, "");
-    static_assert(*local_const_array.rbegin() == 4, "");
+        static_assert ( *local_const_array.begin()  == 0, "");
+        static_assert ( *local_const_array.rbegin()  == 4, "");
 
-    static_assert(*cuda::std::begin(local_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(local_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(local_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(local_const_array) == 4, "");
-  }
+        static_assert ( *cuda::std::begin(local_const_array)   == 0, "" );
+        static_assert ( *cuda::std::cbegin(local_const_array)  == 0, "" );
+        static_assert ( *cuda::std::rbegin(local_const_array)  == 4, "" );
+        static_assert ( *cuda::std::crbegin(local_const_array) == 4, "" );
+    }
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3)
-  {
+    {
 
-    static_assert(*cuda::std::begin(global_const_array) == 0, "");
-    static_assert(*cuda::std::cbegin(global_const_array) == 0, "");
-    static_assert(*cuda::std::rbegin(global_const_array) == 4, "");
-    static_assert(*cuda::std::crbegin(global_const_array) == 4, "");
-  }
+        static_assert ( *cuda::std::begin(global_const_array)   == 0, "" );
+        static_assert ( *cuda::std::cbegin(global_const_array)  == 0, "" );
+        static_assert ( *cuda::std::rbegin(global_const_array)  == 4, "" );
+        static_assert ( *cuda::std::crbegin(global_const_array) == 4, "" );
+    }
 #endif // nvcc > 11.2
 #endif // TEST_STD_VER > 2014
 

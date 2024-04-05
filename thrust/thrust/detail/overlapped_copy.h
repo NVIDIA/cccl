@@ -25,10 +25,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/detail/copy.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/iterator/detail/minimum_system.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -36,10 +36,14 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename InputIterator, typename OutputIterator>
-OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIterator result)
+
+template<typename InputIterator,
+         typename OutputIterator>
+  OutputIterator sequential_copy(InputIterator first,
+                                 InputIterator last,
+                                 OutputIterator result)
 {
-  for (; first != last; ++first, ++result)
+  for(; first != last; ++first, ++result)
   {
     *result = *first;
   } // end for
@@ -47,13 +51,16 @@ OutputIterator sequential_copy(InputIterator first, InputIterator last, OutputIt
   return result;
 } // end sequential_copy()
 
-template <typename BidirectionalIterator1, typename BidirectionalIterator2>
-BidirectionalIterator2
-sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
+
+template<typename BidirectionalIterator1,
+         typename BidirectionalIterator2>
+  BidirectionalIterator2 sequential_copy_backward(BidirectionalIterator1 first,
+                                                  BidirectionalIterator1 last,
+                                                  BidirectionalIterator2 result)
 {
   // yes, we preincrement
   // the ranges are open on the right, i.e. [first, last)
-  while (first != last)
+  while(first != last)
   {
     *--result = *--last;
   } // end while
@@ -61,17 +68,20 @@ sequential_copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 la
   return result;
 } // end sequential_copy_backward()
 
+
 namespace dispatch
 {
 
-template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2 overlapped_copy(
-  thrust::system::cpp::detail::execution_policy<DerivedPolicy>&,
-  RandomAccessIterator1 first,
-  RandomAccessIterator1 last,
-  RandomAccessIterator2 result)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+  RandomAccessIterator2 overlapped_copy(thrust::system::cpp::detail::execution_policy<DerivedPolicy> &,
+                                        RandomAccessIterator1 first,
+                                        RandomAccessIterator1 last,
+                                        RandomAccessIterator2 result)
 {
-  if (first < last && first <= result && result < last)
+  if(first < last && first <= result && result < last)
   {
     // result lies in [first, last)
     // it's safe to use std::copy_backward here
@@ -88,12 +98,14 @@ RandomAccessIterator2 overlapped_copy(
   return result;
 } // end overlapped_copy()
 
-template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2 overlapped_copy(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  RandomAccessIterator1 first,
-  RandomAccessIterator1 last,
-  RandomAccessIterator2 result)
+
+template<typename DerivedPolicy,
+         typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+  RandomAccessIterator2 overlapped_copy(thrust::execution_policy<DerivedPolicy> &exec,
+                                        RandomAccessIterator1 first,
+                                        RandomAccessIterator1 last,
+                                        RandomAccessIterator2 result)
 {
   typedef typename thrust::iterator_value<RandomAccessIterator1>::type value_type;
 
@@ -102,11 +114,14 @@ RandomAccessIterator2 overlapped_copy(
   return thrust::copy(exec, temp.begin(), temp.end(), result);
 } // end overlapped_copy()
 
-} // namespace dispatch
+} // end dispatch
 
-template <typename RandomAccessIterator1, typename RandomAccessIterator2>
-RandomAccessIterator2
-overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomAccessIterator2 result)
+
+template<typename RandomAccessIterator1,
+         typename RandomAccessIterator2>
+  RandomAccessIterator2 overlapped_copy(RandomAccessIterator1 first,
+                                        RandomAccessIterator1 last,
+                                        RandomAccessIterator2 result)
 {
   typedef typename thrust::iterator_system<RandomAccessIterator2>::type System1;
   typedef typename thrust::iterator_system<RandomAccessIterator2>::type System2;
@@ -119,6 +134,6 @@ overlapped_copy(RandomAccessIterator1 first, RandomAccessIterator1 last, RandomA
   return thrust::detail::dispatch::overlapped_copy(system, first, last, result);
 } // end overlapped_copy()
 
-} // namespace detail
+} // end detail
 
 THRUST_NAMESPACE_END

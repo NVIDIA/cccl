@@ -10,8 +10,10 @@
 
 #include <cuda/version>
 
-static_assert(CCCL_MAJOR_VERSION == (CCCL_VERSION / 1000000), "");
-static_assert(CCCL_MINOR_VERSION == (CCCL_VERSION / 1000 % 1000), "");
-static_assert(CCCL_PATCH_VERSION == (CCCL_VERSION % 1000), "");
+static_assert(CCCL_MAJOR_VERSION == (CCCL_VERSION/1000000),"");
+static_assert(CCCL_MINOR_VERSION == (CCCL_VERSION/1000 % 1000),"");
+static_assert(CCCL_PATCH_VERSION == (CCCL_VERSION % 1000),"");
 
-int main(int argc, char** argv) { return 0; }
+int main(int argc, char** argv){
+    return 0;
+}

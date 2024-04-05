@@ -35,39 +35,66 @@ namespace detail
 namespace generic
 {
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE ForwardIterator
-unique(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator unique(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator first,
-  ForwardIterator last,
-  BinaryPredicate binary_pred);
+template<typename DerivedPolicy,
+         typename ForwardIterator>
+_CCCL_HOST_DEVICE
+ForwardIterator unique(thrust::execution_policy<DerivedPolicy> &exec,
+                       ForwardIterator first,
+                       ForwardIterator last);
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
-  thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator output);
 
-template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator unique_copy(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  OutputIterator output,
-  BinaryPredicate binary_pred);
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+ForwardIterator unique(thrust::execution_policy<DerivedPolicy> &exec,
+                       ForwardIterator first,
+                       ForwardIterator last,
+                       BinaryPredicate binary_pred);
 
-template <typename DerivedPolicy, typename ForwardIterator>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
-unique_count(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  ForwardIterator first,
-  ForwardIterator last,
-  BinaryPredicate binary_pred);
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator>
+_CCCL_HOST_DEVICE
+OutputIterator unique_copy(thrust::execution_policy<DerivedPolicy> &exec,
+                           InputIterator first,
+                           InputIterator last,
+                           OutputIterator output);
+
+
+template<typename DerivedPolicy,
+         typename InputIterator,
+         typename OutputIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+OutputIterator unique_copy(thrust::execution_policy<DerivedPolicy> &exec,
+                           InputIterator first,
+                           InputIterator last,
+                           OutputIterator output,
+                           BinaryPredicate binary_pred);
+
+
+template<typename DerivedPolicy,
+         typename ForwardIterator>
+_CCCL_HOST_DEVICE
+typename thrust::iterator_traits<ForwardIterator>::difference_type
+    unique_count(thrust::execution_policy<DerivedPolicy> &exec,
+                 ForwardIterator first,
+                 ForwardIterator last);
+
+
+template<typename DerivedPolicy,
+         typename ForwardIterator,
+         typename BinaryPredicate>
+_CCCL_HOST_DEVICE
+typename thrust::iterator_traits<ForwardIterator>::difference_type
+    unique_count(thrust::execution_policy<DerivedPolicy> &exec,
+                 ForwardIterator first,
+                 ForwardIterator last,
+                 BinaryPredicate binary_pred);
+
 
 } // end namespace generic
 } // end namespace detail
@@ -75,3 +102,4 @@ _CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/unique.inl>
+

@@ -51,6 +51,7 @@
 
 CUB_NAMESPACE_BEGIN
 
+
 /**
  * @brief GridEvenShare is a descriptor utility for distributing input among
  * CUDA thread blocks in an "even-share" fashion.  Each thread block gets roughly
@@ -74,139 +75,149 @@ template <typename OffsetT>
 struct GridEvenShare
 {
 private:
-  int total_tiles;
-  int big_shares;
-  OffsetT big_share_items;
-  OffsetT normal_share_items;
-  OffsetT normal_base_offset;
+
+    int         total_tiles;
+    int         big_shares;
+    OffsetT     big_share_items;
+    OffsetT     normal_share_items;
+    OffsetT     normal_base_offset;
 
 public:
-  /// Total number of input items
-  OffsetT num_items;
 
-  /// Grid size in thread blocks
-  int grid_size;
+    /// Total number of input items
+    OffsetT     num_items;
 
-  /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
-  OffsetT block_offset;
+    /// Grid size in thread blocks
+    int         grid_size;
 
-  /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
-  OffsetT block_end;
+    /// OffsetT into input marking the beginning of the owning thread block's segment of input tiles
+    OffsetT     block_offset;
 
-  /// Stride between input tiles
-  OffsetT block_stride;
+    /// OffsetT into input of marking the end (one-past) of the owning thread block's segment of input tiles
+    OffsetT     block_end;
 
-  /**
-   * \brief Constructor.
-   */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare()
-      : total_tiles(0)
-      , big_shares(0)
-      , big_share_items(0)
-      , normal_share_items(0)
-      , normal_base_offset(0)
-      , num_items(0)
-      , grid_size(0)
-      , block_offset(0)
-      , block_end(0)
-      , block_stride(0)
-  {}
+    /// Stride between input tiles
+    OffsetT     block_stride;
 
-  /**
-   * @brief Dispatch initializer. To be called prior prior to kernel launch.
-   *
-   * @param num_items_
-   *   Total number of input items
-   *
-   * @param max_grid_size
-   *   Maximum grid size allowable (actual grid size may be less if not warranted by the the
-   *   number of input items)
-   *
-   * @param tile_items
-   *   Number of data items per input tile
-   */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_, int max_grid_size, int tile_items)
-  {
-    this->block_offset      = num_items_; // Initialize past-the-end
-    this->block_end         = num_items_; // Initialize past-the-end
-    this->num_items         = num_items_;
-    this->total_tiles       = static_cast<int>(cub::DivideAndRoundUp(num_items_, tile_items));
-    this->grid_size         = CUB_MIN(total_tiles, max_grid_size);
-    int avg_tiles_per_block = total_tiles / grid_size;
-    // leftover grains go to big blocks:
-    this->big_shares         = total_tiles - (avg_tiles_per_block * grid_size);
-    this->normal_share_items = avg_tiles_per_block * tile_items;
-    this->normal_base_offset = big_shares * tile_items;
-    this->big_share_items    = normal_share_items + tile_items;
-  }
 
-  /**
-   * @brief Initializes ranges for the specified thread block index. Specialized
-   *        for a "raking" access pattern in which each thread block is assigned a
-   *        consecutive sequence of input tiles.
-   */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
-  {
-    block_stride = TILE_ITEMS;
-    if (block_id < big_shares)
+    /**
+     * \brief Constructor.
+     */
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GridEvenShare() :
+        total_tiles(0),
+        big_shares(0),
+        big_share_items(0),
+        normal_share_items(0),
+        normal_base_offset(0),
+        num_items(0),
+        grid_size(0),
+        block_offset(0),
+        block_end(0),
+        block_stride(0)
+    {}
+
+    /**
+     * @brief Dispatch initializer. To be called prior prior to kernel launch.
+     *
+     * @param num_items_
+     *   Total number of input items
+     *
+     * @param max_grid_size
+     *   Maximum grid size allowable (actual grid size may be less if not warranted by the the
+     *   number of input items)
+     *
+     * @param tile_items
+     *   Number of data items per input tile
+     */
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void DispatchInit(OffsetT num_items_,
+                                                          int max_grid_size,
+                                                          int tile_items)
     {
-      // This thread block gets a big share of grains (avg_tiles_per_block + 1)
-      block_offset = (block_id * big_share_items);
-      block_end    = block_offset + big_share_items;
+        this->block_offset          = num_items_;    // Initialize past-the-end
+        this->block_end             = num_items_;    // Initialize past-the-end
+        this->num_items             = num_items_;
+        this->total_tiles           = static_cast<int>(cub::DivideAndRoundUp(num_items_, tile_items));
+        this->grid_size             = CUB_MIN(total_tiles, max_grid_size);
+        int avg_tiles_per_block     = total_tiles / grid_size;
+        // leftover grains go to big blocks:
+        this->big_shares            = total_tiles - (avg_tiles_per_block * grid_size);
+        this->normal_share_items    = avg_tiles_per_block * tile_items;
+        this->normal_base_offset    = big_shares * tile_items;
+        this->big_share_items       = normal_share_items + tile_items;
     }
-    else if (block_id < total_tiles)
+
+    /**
+     * @brief Initializes ranges for the specified thread block index. Specialized
+     *        for a "raking" access pattern in which each thread block is assigned a
+     *        consecutive sequence of input tiles.
+     */
+    template <int TILE_ITEMS>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id,
+                                              Int2Type<GRID_MAPPING_RAKE> /*strategy_tag*/)
     {
-      // This thread block gets a normal share of grains (avg_tiles_per_block)
-      block_offset = normal_base_offset + (block_id * normal_share_items);
-      // Avoid generating values greater than num_items, as it may cause overflow
-      block_end = block_offset + CUB_MIN(num_items - block_offset, normal_share_items);
+        block_stride = TILE_ITEMS;
+        if (block_id < big_shares)
+        {
+            // This thread block gets a big share of grains (avg_tiles_per_block + 1)
+            block_offset = (block_id * big_share_items);
+            block_end = block_offset + big_share_items;
+        }
+        else if (block_id < total_tiles)
+        {
+            // This thread block gets a normal share of grains (avg_tiles_per_block)
+            block_offset = normal_base_offset + (block_id * normal_share_items);
+            // Avoid generating values greater than num_items, as it may cause overflow
+            block_end = block_offset + CUB_MIN(num_items - block_offset, normal_share_items);
+        }
+        // Else default past-the-end
     }
-    // Else default past-the-end
-  }
 
-  /**
-   * @brief Block-initialization, specialized for a "raking" access
-   *        pattern in which each thread block is assigned a consecutive sequence
-   *        of input tiles.
-   */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id, Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
-  {
-    block_stride = grid_size * TILE_ITEMS;
-    block_offset = (block_id * TILE_ITEMS);
-    block_end    = num_items;
-  }
+    /**
+     * @brief Block-initialization, specialized for a "raking" access
+     *        pattern in which each thread block is assigned a consecutive sequence
+     *        of input tiles.
+     */
+    template <int TILE_ITEMS>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(int block_id,
+                                              Int2Type<GRID_MAPPING_STRIP_MINE> /*strategy_tag*/)
+    {
+        block_stride = grid_size * TILE_ITEMS;
+        block_offset = (block_id * TILE_ITEMS);
+        block_end = num_items;
+    }
 
-  /**
-   * @brief Block-initialization, specialized for "strip mining" access
-   *        pattern in which the input tiles assigned to each thread block are
-   *        separated by a stride equal to the the extent of the grid.
-   */
-  template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
-  {
-    BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
-  }
+    /**
+     * @brief Block-initialization, specialized for "strip mining" access
+     *        pattern in which the input tiles assigned to each thread block are
+     *        separated by a stride equal to the the extent of the grid.
+     */
+    template <int TILE_ITEMS, GridMappingStrategy STRATEGY>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit()
+    {
+        BlockInit<TILE_ITEMS>(blockIdx.x, Int2Type<STRATEGY>());
+    }
 
-  /**
-   * @brief Block-initialization, specialized for a "raking" access
-   *        pattern in which each thread block is assigned a consecutive sequence
-   *        of input tiles.
-   *
-   * @param[in] block_offset
-   *   Threadblock begin offset (inclusive)
-   *
-   * @param[in] block_end
-   *   Threadblock end offset (exclusive)
-   */
-  template <int TILE_ITEMS>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT block_offset, OffsetT block_end)
-  {
-    this->block_offset = block_offset;
-    this->block_end    = block_end;
-    this->block_stride = TILE_ITEMS;
-  }
+    /**
+     * @brief Block-initialization, specialized for a "raking" access
+     *        pattern in which each thread block is assigned a consecutive sequence
+     *        of input tiles.
+     *
+     * @param[in] block_offset
+     *   Threadblock begin offset (inclusive)
+     *
+     * @param[in] block_end
+     *   Threadblock end offset (exclusive)
+     */
+    template <int TILE_ITEMS>
+    _CCCL_DEVICE _CCCL_FORCEINLINE void BlockInit(OffsetT block_offset, OffsetT block_end)
+    {
+        this->block_offset = block_offset;
+        this->block_end = block_end;
+        this->block_stride = TILE_ITEMS;
+    }
+
+
 };
+
 
 CUB_NAMESPACE_END

@@ -27,15 +27,16 @@
 #endif // no system header
 
 #include <thrust/advance.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/distance.h>
+#include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename InputIterator>
-inline _CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::difference_type
-distance(InputIterator first, InputIterator last)
+template<typename InputIterator>
+inline _CCCL_HOST_DEVICE
+  typename thrust::iterator_traits<InputIterator>::difference_type
+    distance(InputIterator first, InputIterator last)
 {
   return thrust::system::detail::generic::distance(first, last);
 } // end distance()

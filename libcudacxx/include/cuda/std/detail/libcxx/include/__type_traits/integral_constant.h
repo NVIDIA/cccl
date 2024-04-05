@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -27,25 +27,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, _Tp __v>
 struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
 {
-  static constexpr const _Tp value = __v;
-  typedef _Tp value_type;
+  static constexpr const _Tp      value = __v;
+  typedef _Tp               value_type;
   typedef integral_constant type;
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator value_type() const noexcept
-  {
-    return value;
-  }
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr operator value_type() const noexcept {return value;}
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type operator()() const noexcept
-  {
-    return value;
-  }
+  _LIBCUDACXX_INLINE_VISIBILITY
+  constexpr value_type operator ()() const noexcept {return value;}
 #endif
 };
 
 template <class _Tp, _Tp __v>
 constexpr const _Tp integral_constant<_Tp, __v>::value;
 
-typedef integral_constant<bool, true> true_type;
+typedef integral_constant<bool, true>  true_type;
 typedef integral_constant<bool, false> false_type;
 
 template <bool _Val>
@@ -57,9 +53,9 @@ using bool_constant = integral_constant<bool, __b>;
 #endif
 
 #if _CCCL_STD_VER > 2011
-#  define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
+#define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 #else
-#  define _LIBCUDACXX_BOOL_CONSTANT(__b) integral_constant<bool, (__b)>
+#define _LIBCUDACXX_BOOL_CONSTANT(__b) integral_constant<bool,(__b)>
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

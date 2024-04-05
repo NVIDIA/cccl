@@ -14,17 +14,17 @@
 
 #include <cuda/std/iterator>
 
-static_assert(
-    cuda::std::same_as<cuda::std::iter_rvalue_reference_t<int*>, int&&>);
-static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<const int*>,
-                                 const int&&>);
+static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<int*>, int&&>);
+static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<const int*>, const int&&>);
 
 __host__ __device__ void test_undefined_internal() {
   struct A {
     __host__ __device__ int& operator*() const;
   };
-  static_assert(
-      cuda::std::same_as<cuda::std::iter_rvalue_reference_t<A>, int&&>);
+  static_assert(cuda::std::same_as<cuda::std::iter_rvalue_reference_t<A>, int&&>);
 }
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

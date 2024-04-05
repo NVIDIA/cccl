@@ -12,14 +12,14 @@
 #define _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
 
 #ifndef __cuda_std__
-#  error "<__cuda/cstddef_prelude> should only be included in from <cuda/std/cstddef>"
+#error "<__cuda/cstddef_prelude> should only be included in from <cuda/std/cstddef>"
 #endif // __cuda_std__
 
 #ifndef _CCCL_COMPILER_NVRTC
-#  include <cstddef>
-#  include <stddef.h>
+#include <cstddef>
+#include <stddef.h>
 #else
-#  define offsetof(type, member) (_CUDA_VSTD::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
+#define offsetof(type, member) (_CUDA_VSTD::size_t)((char*)&(((type *)0)->member) - (char*)0)
 #endif // _CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

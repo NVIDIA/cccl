@@ -33,7 +33,7 @@
 #include <iostream>
 #include <string>
 
-// #define C2H_DEBUG_TIMING
+//#define C2H_DEBUG_TIMING
 
 #ifdef C2H_DEBUG_TIMING
 #  define C2H_TIME_SECTION_INIT() \

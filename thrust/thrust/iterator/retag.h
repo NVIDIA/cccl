@@ -33,6 +33,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
+
 /*! \ingroup iterator_tags
  *  \{
  */
@@ -71,4 +72,6 @@ unspecified_iterator_type retag(Iterator iter);
 /*! \} // iterator_tags
  */
 
+
 THRUST_NAMESPACE_END
+

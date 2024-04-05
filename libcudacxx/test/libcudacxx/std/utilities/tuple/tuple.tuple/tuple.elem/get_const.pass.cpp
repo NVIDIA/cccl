@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+
+
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;
@@ -16,6 +18,7 @@
 
 // UNSUPPORTED: c++98, c++03
 
+
 #include <cuda/std/tuple>
 // cuda::std::string not supported
 //#include <cuda/std/string>
@@ -25,14 +28,15 @@
 
 struct Empty {};
 
-int main(int, char**) {
-  {
-    typedef cuda::std::tuple<int> T;
-    const T t(3);
-    assert(cuda::std::get<0>(t) == 3);
-  }
-  // cuda::std::string not supported
-  /*
+int main(int, char**)
+{
+    {
+        typedef cuda::std::tuple<int> T;
+        const T t(3);
+        assert(cuda::std::get<0>(t) == 3);
+    }
+    // cuda::std::string not supported
+    /*
     {
         typedef cuda::std::tuple<cuda::std::string, int> T;
         const T t("high", 5);
@@ -41,21 +45,21 @@ int main(int, char**) {
     }
     */
 #if TEST_STD_VER > 2011
-  {
-    typedef cuda::std::tuple<double, int> T;
-    constexpr T t(2.718, 5);
-    static_assert(cuda::std::get<0>(t) == 2.718, "");
-    static_assert(cuda::std::get<1>(t) == 5, "");
-  }
-  {
-    typedef cuda::std::tuple<Empty> T;
-    constexpr T t{Empty()};
-    constexpr Empty e = cuda::std::get<0>(t);
-    ((void)e); // Prevent unused warning
-  }
+    {
+        typedef cuda::std::tuple<double, int> T;
+        constexpr T t(2.718, 5);
+        static_assert(cuda::std::get<0>(t) == 2.718, "");
+        static_assert(cuda::std::get<1>(t) == 5, "");
+    }
+    {
+        typedef cuda::std::tuple<Empty> T;
+        constexpr T t{Empty()};
+        constexpr Empty e = cuda::std::get<0>(t);
+        ((void)e); // Prevent unused warning
+    }
 #endif
-  // cuda::std::string not supported
-  /*
+    // cuda::std::string not supported
+    /*
     {
         typedef cuda::std::tuple<double&, cuda::std::string, int> T;
         double d = 1.5;
@@ -70,16 +74,16 @@ int main(int, char**) {
         assert(d == 2.5);
     }
     */
-  {
-    typedef cuda::std::tuple<double&, int> T;
-    double d = 1.5;
-    const T t(d, 5);
-    assert(cuda::std::get<0>(t) == 1.5);
-    assert(cuda::std::get<1>(t) == 5);
-    cuda::std::get<0>(t) = 2.5;
-    assert(cuda::std::get<0>(t) == 2.5);
-    assert(cuda::std::get<1>(t) == 5);
-    assert(d == 2.5);
-  }
+    {
+        typedef cuda::std::tuple<double&, int> T;
+        double d = 1.5;
+        const T t(d, 5);
+        assert(cuda::std::get<0>(t) == 1.5);
+        assert(cuda::std::get<1>(t) == 5);
+        cuda::std::get<0>(t) = 2.5;
+        assert(cuda::std::get<0>(t) == 2.5);
+        assert(cuda::std::get<1>(t) == 5);
+        assert(d == 2.5);
+    }
   return 0;
 }

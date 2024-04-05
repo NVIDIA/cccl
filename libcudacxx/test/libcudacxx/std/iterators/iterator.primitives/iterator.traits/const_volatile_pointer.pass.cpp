@@ -19,20 +19,14 @@
 
 struct A {};
 
-int main(int, char**) {
-  typedef cuda::std::iterator_traits<const volatile A*> It;
-  static_assert(
-      (cuda::std::is_same<It::difference_type, cuda::std::ptrdiff_t>::value),
-      "");
-  static_assert((cuda::std::is_same<It::value_type, A>::value), "");
-  static_assert((cuda::std::is_same<It::pointer, const volatile A*>::value),
-                "");
-  static_assert((cuda::std::is_same<It::reference, const volatile A&>::value),
-                "");
-  static_assert(
-      (cuda::std::is_same<It::iterator_category,
-                          cuda::std::random_access_iterator_tag>::value),
-      "");
+int main(int, char**)
+{
+    typedef cuda::std::iterator_traits<const volatile A*> It;
+    static_assert((cuda::std::is_same<It::difference_type, cuda::std::ptrdiff_t>::value), "");
+    static_assert((cuda::std::is_same<It::value_type, A>::value), "");
+    static_assert((cuda::std::is_same<It::pointer, const volatile A*>::value), "");
+    static_assert((cuda::std::is_same<It::reference, const volatile A&>::value), "");
+    static_assert((cuda::std::is_same<It::iterator_category, cuda::std::random_access_iterator_tag>::value), "");
 
   return 0;
 }

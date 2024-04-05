@@ -17,51 +17,53 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-  {
-    typedef double T;
-    typedef cuda::std::array<T, 3> C;
-    C const c = {1, 2, 3.5};
-    C::const_reference r1 = c.front();
-    assert(r1 == 1);
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+    {
+        typedef double T;
+        typedef cuda::std::array<T, 3> C;
+        C const c = {1, 2, 3.5};
+        C::const_reference r1 = c.front();
+        assert(r1 == 1);
 
-    C::const_reference r2 = c.back();
-    assert(r2 == 3.5);
-  }
-  {
-    typedef double T;
-    typedef cuda::std::array<T, 0> C;
-    C const c = {};
-    ASSERT_SAME_TYPE(decltype(c.back()), C::const_reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
-    ASSERT_SAME_TYPE(decltype(c.front()), C::const_reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
-    if (c.size() > (0)) { // always false
-      TEST_IGNORE_NODISCARD c.front();
-      TEST_IGNORE_NODISCARD c.back();
+        C::const_reference r2 = c.back();
+        assert(r2 == 3.5);
     }
-  }
-  {
-    typedef double T;
-    typedef cuda::std::array<const T, 0> C;
-    C const c = {};
-    ASSERT_SAME_TYPE(decltype(c.back()), C::const_reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.back());
-    ASSERT_SAME_TYPE(decltype(c.front()), C::const_reference);
-    LIBCPP_ASSERT_NOEXCEPT(c.front());
-    if (c.size() > (0)) {
-      TEST_IGNORE_NODISCARD c.front();
-      TEST_IGNORE_NODISCARD c.back();
+    {
+        typedef double T;
+        typedef cuda::std::array<T, 0> C;
+        C const c = {};
+        ASSERT_SAME_TYPE(decltype(c.back()), C::const_reference);
+        LIBCPP_ASSERT_NOEXCEPT(c.back());
+        ASSERT_SAME_TYPE(decltype(c.front()), C::const_reference);
+        LIBCPP_ASSERT_NOEXCEPT(c.front());
+        if (c.size() > (0)) { // always false
+            TEST_IGNORE_NODISCARD c.front();
+            TEST_IGNORE_NODISCARD c.back();
+        }
     }
-  }
+    {
+        typedef double T;
+        typedef cuda::std::array<const T, 0> C;
+        C const c = {};
+        ASSERT_SAME_TYPE(decltype(c.back()), C::const_reference);
+        LIBCPP_ASSERT_NOEXCEPT(c.back());
+        ASSERT_SAME_TYPE(decltype(c.front()), C::const_reference);
+        LIBCPP_ASSERT_NOEXCEPT(c.front());
+        if (c.size() > (0)) {
+            TEST_IGNORE_NODISCARD c.front();
+            TEST_IGNORE_NODISCARD c.back();
+        }
+    }
 
-  return true;
+    return true;
 }
 
-int main(int, char**) {
-  tests();
+int main(int, char**)
+{
+    tests();
 #if TEST_STD_VER >= 2014
-  static_assert(tests(), "");
+    static_assert(tests(), "");
 #endif
-  return 0;
+    return 0;
 }

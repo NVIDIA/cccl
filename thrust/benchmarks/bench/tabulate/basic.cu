@@ -25,12 +25,12 @@
  *
  ******************************************************************************/
 
-#include <thrust/device_vector.h>
-#include <thrust/execution_policy.h>
-#include <thrust/tabulate.h>
-
 #include "thrust/detail/raw_pointer_cast.h"
 #include <nvbench_helper.cuh>
+
+#include <thrust/tabulate.h>
+#include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 
 template <class T>
 struct seg_size_t
@@ -45,7 +45,8 @@ struct seg_size_t
 };
 
 template <typename T>
-static void basic(nvbench::state& state, nvbench::type_list<T>)
+static void basic(nvbench::state &state,
+                  nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -60,12 +61,14 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   seg_size_t<T> op{thrust::raw_pointer_cast(input.data())};
   thrust::tabulate(policy(alloc), output.begin(), output.end(), op);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
-  });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch &launch) {
+               thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
+             });
 }
 
-using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
+using types = nvbench::type_list<nvbench::uint32_t,
+                                 nvbench::uint64_t>;
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(types))
   .set_name("base")

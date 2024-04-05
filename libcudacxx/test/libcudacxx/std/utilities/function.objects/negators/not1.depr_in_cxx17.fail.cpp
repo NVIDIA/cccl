@@ -20,13 +20,12 @@
 #include "test_macros.h"
 
 struct Predicate {
-  typedef int argument_type;
-  bool operator()(argument_type) const { return true; }
+    typedef int argument_type;
+    bool operator()(argument_type) const { return true; }
 };
 
 int main(int, char**) {
-  cuda::std::not1(
-      Predicate()); // expected-error{{'not1<Predicate>' is deprecated}}
+    cuda::std::not1(Predicate()); // expected-error{{'not1<Predicate>' is deprecated}}
 
   return 0;
 }
