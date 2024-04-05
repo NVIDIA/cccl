@@ -100,8 +100,12 @@ set(files
   __cccl/system_header.h
   __cccl/version.h
   __cccl/visibility.h
+  __complex/nvbf16.h
+  __complex/nvfp16.h
+  __complex/vector_support.h
   __concepts/__concept_macros.h
   __concepts/_One_of.h
+  __concepts/all_of.h
   __concepts/arithmetic.h
   __concepts/assignable.h
   __concepts/boolean_testable.h
@@ -131,8 +135,6 @@ set(files
   __cuda/climits_prelude.h
   __cuda/cmath_nvbf16.h
   __cuda/cmath_nvfp16.h
-  __cuda/complex_nvbf16.h
-  __cuda/complex_nvfp16.h
   __cuda/cstddef_prelude.h
   __cuda/cstdint_prelude.h
   __cuda/latch.h
