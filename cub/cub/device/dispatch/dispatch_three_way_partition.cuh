@@ -69,43 +69,44 @@ template <typename ChainedPolicyT,
           typename SelectSecondPartOp,
           typename OffsetT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES
-  void DeviceThreeWayPartitionKernel(InputIteratorT d_in,
-                                     FirstOutputIteratorT d_first_part_out,
-                                     SecondOutputIteratorT d_second_part_out,
-                                     UnselectedOutputIteratorT d_unselected_out,
-                                     NumSelectedIteratorT d_num_selected_out,
-                                     ScanTileStateT tile_status,
-                                     SelectFirstPartOp select_first_part_op,
-                                     SelectSecondPartOp select_second_part_op,
-                                     OffsetT num_items,
-                                     int num_tiles)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceThreeWayPartitionKernel(
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    ScanTileStateT tile_status,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    OffsetT num_items,
+    int num_tiles)
 {
-  using AgentThreeWayPartitionPolicyT =
-    typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
+  using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
 
   // Thread block type for selecting data from input tiles
-  using AgentThreeWayPartitionT = AgentThreeWayPartition<AgentThreeWayPartitionPolicyT,
-                                                         InputIteratorT,
-                                                         FirstOutputIteratorT,
-                                                         SecondOutputIteratorT,
-                                                         UnselectedOutputIteratorT,
-                                                         SelectFirstPartOp,
-                                                         SelectSecondPartOp,
-                                                         OffsetT>;
+  using AgentThreeWayPartitionT = AgentThreeWayPartition<
+    AgentThreeWayPartitionPolicyT,
+    InputIteratorT,
+    FirstOutputIteratorT,
+    SecondOutputIteratorT,
+    UnselectedOutputIteratorT,
+    SelectFirstPartOp,
+    SelectSecondPartOp,
+    OffsetT>;
 
   // Shared memory for AgentThreeWayPartition
   __shared__ typename AgentThreeWayPartitionT::TempStorage temp_storage;
 
   // Process tiles
-  AgentThreeWayPartitionT(temp_storage,
-                          d_in,
-                          d_first_part_out,
-                          d_second_part_out,
-                          d_unselected_out,
-                          select_first_part_op,
-                          select_second_part_op,
-                          num_items)
+  AgentThreeWayPartitionT(
+    temp_storage,
+    d_in,
+    d_first_part_out,
+    d_second_part_out,
+    d_unselected_out,
+    select_first_part_op,
+    select_second_part_op,
+    num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_selected_out);
 }
 
@@ -133,9 +134,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
  */
 template <typename ScanTileStateT, typename NumSelectedIteratorT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void
-DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state,
-                                  int num_tiles,
-                                  NumSelectedIteratorT d_num_selected_out)
+DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIteratorT d_num_selected_out)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
@@ -154,17 +153,16 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state,
  * Dispatch
  ******************************************************************************/
 
-template <
-  typename InputIteratorT,
-  typename FirstOutputIteratorT,
-  typename SecondOutputIteratorT,
-  typename UnselectedOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename SelectFirstPartOp,
-  typename SelectSecondPartOp,
-  typename OffsetT,
-  typename SelectedPolicy =
-    detail::device_three_way_partition_policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
+template < typename InputIteratorT,
+           typename FirstOutputIteratorT,
+           typename SecondOutputIteratorT,
+           typename UnselectedOutputIteratorT,
+           typename NumSelectedIteratorT,
+           typename SelectFirstPartOp,
+           typename SelectSecondPartOp,
+           typename OffsetT,
+           typename SelectedPolicy =
+             detail::device_three_way_partition_policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
@@ -172,13 +170,13 @@ struct DispatchThreeWayPartitionIf
    ****************************************************************************/
 
   using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT = typename AccumPackHelperT::pack_t;
-  using ScanTileStateT = cub::ScanTileState<AccumPackT>;
+  using AccumPackT       = typename AccumPackHelperT::pack_t;
+  using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
   static constexpr int INIT_KERNEL_THREADS = 256;
 
-  void *d_temp_storage;
-  std::size_t &temp_storage_bytes;
+  void* d_temp_storage;
+  std::size_t& temp_storage_bytes;
   InputIteratorT d_in;
   FirstOutputIteratorT d_first_part_out;
   SecondOutputIteratorT d_second_part_out;
@@ -189,18 +187,18 @@ struct DispatchThreeWayPartitionIf
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
-  DispatchThreeWayPartitionIf(void *d_temp_storage,
-                              std::size_t &temp_storage_bytes,
-                              InputIteratorT d_in,
-                              FirstOutputIteratorT d_first_part_out,
-                              SecondOutputIteratorT d_second_part_out,
-                              UnselectedOutputIteratorT d_unselected_out,
-                              NumSelectedIteratorT d_num_selected_out,
-                              SelectFirstPartOp select_first_part_op,
-                              SelectSecondPartOp select_second_part_op,
-                              OffsetT num_items,
-                              cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchThreeWayPartitionIf(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    OffsetT num_items,
+    cudaStream_t stream)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -220,12 +218,11 @@ struct DispatchThreeWayPartitionIf
 
   template <typename ActivePolicyT, typename ScanInitKernelPtrT, typename SelectIfKernelPtrT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke(ScanInitKernelPtrT three_way_partition_init_kernel,
-         SelectIfKernelPtrT three_way_partition_kernel)
+  Invoke(ScanInitKernelPtrT three_way_partition_init_kernel, SelectIfKernelPtrT three_way_partition_kernel)
   {
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
+    constexpr int block_threads    = ActivePolicyT::ThreeWayPartitionPolicy::BLOCK_THREADS;
     constexpr int items_per_thread = ActivePolicyT::ThreeWayPartitionPolicy::ITEMS_PER_THREAD;
 
     do
@@ -253,10 +250,9 @@ struct DispatchThreeWayPartitionIf
 
       // Compute allocation pointers into the single storage blob (or compute
       // the necessary size of the blob)
-      void *allocations[1] = {};
+      void* allocations[1] = {};
 
-      error = CubDebug(
-        cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -295,14 +291,8 @@ struct DispatchThreeWayPartitionIf
 #endif
 
       // Invoke three_way_partition_init_kernel to initialize tile descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
-                                                              INIT_KERNEL_THREADS,
-                                                              0,
-                                                              stream)
-        .doit(three_way_partition_init_kernel,
-              tile_status,
-              num_tiles,
-              d_num_selected_out);
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
+        .doit(three_way_partition_init_kernel, tile_status, num_tiles, d_num_selected_out);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -358,11 +348,7 @@ struct DispatchThreeWayPartitionIf
 #endif
 
       // Invoke select_if_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        scan_grid_size,
-        block_threads,
-        0,
-        stream)
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(three_way_partition_kernel,
               d_in,
               d_first_part_out,
@@ -394,39 +380,39 @@ struct DispatchThreeWayPartitionIf
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(
       DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      DeviceThreeWayPartitionKernel<MaxPolicyT,
-                                    InputIteratorT,
-                                    FirstOutputIteratorT,
-                                    SecondOutputIteratorT,
-                                    UnselectedOutputIteratorT,
-                                    NumSelectedIteratorT,
-                                    ScanTileStateT,
-                                    SelectFirstPartOp,
-                                    SelectSecondPartOp,
-                                    OffsetT>);
+      DeviceThreeWayPartitionKernel<
+        MaxPolicyT,
+        InputIteratorT,
+        FirstOutputIteratorT,
+        SecondOutputIteratorT,
+        UnselectedOutputIteratorT,
+        NumSelectedIteratorT,
+        ScanTileStateT,
+        SelectFirstPartOp,
+        SelectSecondPartOp,
+        OffsetT>);
   }
 
   /**
    * Internal dispatch routine
    */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           FirstOutputIteratorT d_first_part_out,
-           SecondOutputIteratorT d_second_part_out,
-           UnselectedOutputIteratorT d_unselected_out,
-           NumSelectedIteratorT d_num_selected_out,
-           SelectFirstPartOp select_first_part_op,
-           SelectSecondPartOp select_second_part_op,
-           OffsetT num_items,
-           cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    OffsetT num_items,
+    cudaStream_t stream)
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
@@ -436,23 +422,24 @@ struct DispatchThreeWayPartitionIf
     {
       // Get PTX version
       int ptx_version = 0;
-      error = CubDebug(cub::PtxVersion(ptx_version));
+      error           = CubDebug(cub::PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
-      DispatchThreeWayPartitionIf dispatch(d_temp_storage,
-                                           temp_storage_bytes,
-                                           d_in,
-                                           d_first_part_out,
-                                           d_second_part_out,
-                                           d_unselected_out,
-                                           d_num_selected_out,
-                                           select_first_part_op,
-                                           select_second_part_op,
-                                           num_items,
-                                           stream);
+      DispatchThreeWayPartitionIf dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_first_part_out,
+        d_second_part_out,
+        d_unselected_out,
+        d_num_selected_out,
+        select_first_part_op,
+        select_second_part_op,
+        num_items,
+        stream);
 
       // Dispatch
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
@@ -466,33 +453,34 @@ struct DispatchThreeWayPartitionIf
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           FirstOutputIteratorT d_first_part_out,
-           SecondOutputIteratorT d_second_part_out,
-           UnselectedOutputIteratorT d_unselected_out,
-           NumSelectedIteratorT d_num_selected_out,
-           SelectFirstPartOp select_first_part_op,
-           SelectSecondPartOp select_second_part_op,
-           OffsetT num_items,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    NumSelectedIteratorT d_num_selected_out,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    OffsetT num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Dispatch(d_temp_storage,
-                    temp_storage_bytes,
-                    d_in,
-                    d_first_part_out,
-                    d_second_part_out,
-                    d_unselected_out,
-                    d_num_selected_out,
-                    select_first_part_op,
-                    select_second_part_op,
-                    num_items,
-                    stream);
+    return Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_first_part_out,
+      d_second_part_out,
+      d_unselected_out,
+      d_num_selected_out,
+      select_first_part_op,
+      select_second_part_op,
+      num_items,
+      stream);
   }
 };
 

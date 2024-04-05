@@ -28,14 +28,14 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
+#include <cub/device/device_spmv.cuh>
+#include <cub/util_debug.cuh>
+
 #include <thrust/device_vector.h>
 #include <thrust/distance.h>
 #include <thrust/host_vector.h>
 #include <thrust/mismatch.h>
 #include <thrust/scan.h>
-
-#include <cub/device/device_spmv.cuh>
-#include <cub/util_debug.cuh>
 
 #include <iostream>
 #include <type_traits>
@@ -53,11 +53,20 @@ T print_cast(T val)
   return val;
 }
 
-int print_cast(char val) { return static_cast<int>(val); }
+int print_cast(char val)
+{
+  return static_cast<int>(val);
+}
 
-int print_cast(signed char val) { return static_cast<int>(val); }
+int print_cast(signed char val)
+{
+  return static_cast<int>(val);
+}
 
-int print_cast(unsigned char val) { return static_cast<int>(val); }
+int print_cast(unsigned char val)
+{
+  return static_cast<int>(val);
+}
 
 //==============================================================================
 // Print a vector to out
@@ -112,9 +121,7 @@ struct csr_matrix
 
   void finalize()
   {
-    thrust::exclusive_scan(m_row_offsets.cbegin(),
-                           m_row_offsets.cend(),
-                           m_row_offsets.begin());
+    thrust::exclusive_scan(m_row_offsets.cbegin(), m_row_offsets.cend(), m_row_offsets.begin());
     AssertEquals(m_row_offsets.back(), m_num_nonzeros);
   }
 
@@ -128,7 +135,10 @@ struct csr_matrix
     return thrust::raw_pointer_cast(m_row_offsets.data());
   }
 
-  int get_row_offset(int row) const { return m_row_offsets[row]; }
+  int get_row_offset(int row) const
+  {
+    return m_row_offsets[row];
+  }
 
   int get_row_num_nonzero(int row) const
   {
@@ -140,11 +150,20 @@ struct csr_matrix
     return thrust::raw_pointer_cast(m_column_indices.data());
   }
 
-  int get_num_rows() const { return m_num_rows; }
+  int get_num_rows() const
+  {
+    return m_num_rows;
+  }
 
-  int get_num_columns() const { return m_num_columns; }
+  int get_num_columns() const
+  {
+    return m_num_columns;
+  }
 
-  int get_num_nonzeros() const { return m_num_nonzeros; }
+  int get_num_nonzeros() const
+  {
+    return m_num_nonzeros;
+  }
 
   void print_internals(std::ostream& out) const
   {
@@ -167,21 +186,18 @@ struct csr_matrix
   {
     const int num_elems = m_num_rows * m_num_columns;
     const float fill_ratio =
-      num_elems == 0
-        ? 0.f
-        : (static_cast<float>(m_num_nonzeros) / static_cast<float>(num_elems));
+      num_elems == 0 ? 0.f : (static_cast<float>(m_num_nonzeros) / static_cast<float>(num_elems));
 
-    out << m_num_rows << "x" << m_num_columns << ", " << m_num_nonzeros << "/"
-        << num_elems << " (" << fill_ratio << ")\n";
+    out << m_num_rows << "x" << m_num_columns << ", " << m_num_nonzeros << "/" << num_elems << " (" << fill_ratio
+        << ")\n";
   }
 
   friend class csr_matrix<ValueT, !HostStorage>;
 
 private:
   template <typename VecValueT>
-  using vector_t = cub::detail::conditional_t<HostStorage,
-                                              thrust::host_vector<VecValueT>,
-                                              thrust::device_vector<VecValueT>>;
+  using vector_t =
+    cub::detail::conditional_t<HostStorage, thrust::host_vector<VecValueT>, thrust::device_vector<VecValueT>>;
 
   vector_t<ValueT> m_values;
   vector_t<int> m_row_offsets;
@@ -219,15 +235,11 @@ struct fp_almost_equal_functor
 // Compare the reference and cub output vectors.
 // Use fuzzy check for floating point values.
 template <typename ValueT>
-bool compare_results(std::true_type /* is_fp */,
-                     const thrust::host_vector<ValueT>& h_vec1,
-                     const thrust::device_vector<ValueT>& d_vec2)
+bool compare_results(
+  std::true_type /* is_fp */, const thrust::host_vector<ValueT>& h_vec1, const thrust::device_vector<ValueT>& d_vec2)
 {
   thrust::device_vector<ValueT> d_vec1(h_vec1);
-  auto err = thrust::mismatch(d_vec1.cbegin(),
-                              d_vec1.cend(),
-                              d_vec2.cbegin(),
-                              fp_almost_equal_functor<ValueT>{});
+  auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin(), fp_almost_equal_functor<ValueT>{});
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
   {
     return true;
@@ -236,19 +248,16 @@ bool compare_results(std::true_type /* is_fp */,
   {
     thrust::host_vector<ValueT> h_vec2(d_vec2);
     const auto idx = thrust::distance(d_vec1.cbegin(), err.first);
-    std::cerr << "Mismatch at position " << idx << ": "
-              << print_cast(ValueT{h_vec1[idx]}) << " vs "
+    std::cerr << "Mismatch at position " << idx << ": " << print_cast(ValueT{h_vec1[idx]}) << " vs "
               << print_cast(ValueT{h_vec2[idx]}) << std::endl;
     return false;
   }
 };
 
 template <typename ValueT>
-bool compare_results(std::false_type /* is_fp */,
-                     const thrust::host_vector<ValueT>& h_vec1,
-                     const thrust::device_vector<ValueT>& d_vec2)
+bool compare_results(
+  std::false_type /* is_fp */, const thrust::host_vector<ValueT>& h_vec1, const thrust::device_vector<ValueT>& d_vec2)
 {
-
   thrust::device_vector<ValueT> d_vec1(h_vec1);
   auto err = thrust::mismatch(d_vec1.cbegin(), d_vec1.cend(), d_vec2.cbegin());
   if (err.first == d_vec1.cend() || err.second == d_vec2.cend())
@@ -259,8 +268,7 @@ bool compare_results(std::false_type /* is_fp */,
   {
     thrust::host_vector<ValueT> h_vec2(d_vec2);
     const auto idx = thrust::distance(d_vec1.cbegin(), err.first);
-    std::cerr << "Mismatch at position " << idx << ": "
-              << print_cast(ValueT{h_vec1[idx]}) << " vs "
+    std::cerr << "Mismatch at position " << idx << ": " << print_cast(ValueT{h_vec1[idx]}) << " vs "
               << print_cast(ValueT{h_vec2[idx]}) << std::endl;
     return false;
   }
@@ -271,9 +279,7 @@ bool compare_results(std::false_type /* is_fp */,
 // target_fill_ratio is the target fraction of non-zero elements (may be more
 // or less in the output).
 template <typename ValueT>
-host_csr_matrix<ValueT> make_random_csr_matrix(int num_rows,
-                                               int num_cols,
-                                               float target_fill_ratio)
+host_csr_matrix<ValueT> make_random_csr_matrix(int num_rows, int num_cols, float target_fill_ratio)
 {
   host_csr_matrix<ValueT> mat{num_rows, num_cols};
 
@@ -291,8 +297,7 @@ host_csr_matrix<ValueT> make_random_csr_matrix(int num_rows,
       {
         // Keep fp numbers somewhat small, from -50 -> 50; otherwise we run
         // into issues with nans/infs
-        ValueT value =
-          (RandomValue(static_cast<ValueT>(100)) - static_cast<ValueT>(50));
+        ValueT value = (RandomValue(static_cast<ValueT>(100)) - static_cast<ValueT>(50));
         mat.append_value(row, col, value);
       }
       else
@@ -307,23 +312,23 @@ host_csr_matrix<ValueT> make_random_csr_matrix(int num_rows,
   mat.finalize();
 
   const int num_elements        = num_rows * num_cols;
-  const float actual_fill_ratio = static_cast<float>(mat.get_num_nonzeros()) /
-                                  static_cast<float>(num_elements);
+  const float actual_fill_ratio = static_cast<float>(mat.get_num_nonzeros()) / static_cast<float>(num_elements);
 
   if (g_verbose)
   {
-    printf("Created host_csr_matrix<%s>(%d, %d)\n"
-           " - NumElements: %d\n"
-           " - NumNonZero:  %d\n"
-           " - Target fill: %0.2f%%\n"
-           " - Actual fill: %0.2f%%\n",
-           typeid(ValueT).name(),
-           num_rows,
-           num_cols,
-           num_elements,
-           mat.get_num_nonzeros(),
-           target_fill_ratio,
-           actual_fill_ratio);
+    printf(
+      "Created host_csr_matrix<%s>(%d, %d)\n"
+      " - NumElements: %d\n"
+      " - NumNonZero:  %d\n"
+      " - Target fill: %0.2f%%\n"
+      " - Actual fill: %0.2f%%\n",
+      typeid(ValueT).name(),
+      num_rows,
+      num_cols,
+      num_elements,
+      mat.get_num_nonzeros(),
+      target_fill_ratio,
+      actual_fill_ratio);
   }
 
   return mat;
@@ -353,9 +358,8 @@ thrust::host_vector<ValueT> make_random_vector(int len)
 //==============================================================================
 // Serial y = Ax computation
 template <typename ValueT>
-void compute_reference_solution(const host_csr_matrix<ValueT>& a,
-                                const thrust::host_vector<ValueT>& x,
-                                thrust::host_vector<ValueT>& y)
+void compute_reference_solution(
+  const host_csr_matrix<ValueT>& a, const thrust::host_vector<ValueT>& x, thrust::host_vector<ValueT>& y)
 {
   if (a.get_num_rows() == 0 || a.get_num_columns() == 0)
   {
@@ -382,36 +386,37 @@ void compute_reference_solution(const host_csr_matrix<ValueT>& a,
 //==============================================================================
 // cub::DeviceSpmv::CsrMV y = Ax computation
 template <typename ValueT>
-void compute_cub_solution(const device_csr_matrix<ValueT>& a,
-                          const thrust::device_vector<ValueT>& x,
-                          thrust::device_vector<ValueT>& y)
+void compute_cub_solution(
+  const device_csr_matrix<ValueT>& a, const thrust::device_vector<ValueT>& x, thrust::device_vector<ValueT>& y)
 {
   thrust::device_vector<char> temp_storage;
   std::size_t temp_storage_bytes{};
-  auto err = cub::DeviceSpmv::CsrMV(nullptr,
-                                    temp_storage_bytes,
-                                    a.get_values(),
-                                    a.get_row_offsets(),
-                                    a.get_column_indices(),
-                                    thrust::raw_pointer_cast(x.data()),
-                                    thrust::raw_pointer_cast(y.data()),
-                                    a.get_num_rows(),
-                                    a.get_num_columns(),
-                                    a.get_num_nonzeros());
+  auto err = cub::DeviceSpmv::CsrMV(
+    nullptr,
+    temp_storage_bytes,
+    a.get_values(),
+    a.get_row_offsets(),
+    a.get_column_indices(),
+    thrust::raw_pointer_cast(x.data()),
+    thrust::raw_pointer_cast(y.data()),
+    a.get_num_rows(),
+    a.get_num_columns(),
+    a.get_num_nonzeros());
   CubDebugExit(err);
 
   temp_storage.resize(temp_storage_bytes);
 
-  err = cub::DeviceSpmv::CsrMV(thrust::raw_pointer_cast(temp_storage.data()),
-                               temp_storage_bytes,
-                               a.get_values(),
-                               a.get_row_offsets(),
-                               a.get_column_indices(),
-                               thrust::raw_pointer_cast(x.data()),
-                               thrust::raw_pointer_cast(y.data()),
-                               a.get_num_rows(),
-                               a.get_num_columns(),
-                               a.get_num_nonzeros());
+  err = cub::DeviceSpmv::CsrMV(
+    thrust::raw_pointer_cast(temp_storage.data()),
+    temp_storage_bytes,
+    a.get_values(),
+    a.get_row_offsets(),
+    a.get_column_indices(),
+    thrust::raw_pointer_cast(x.data()),
+    thrust::raw_pointer_cast(y.data()),
+    a.get_num_rows(),
+    a.get_num_columns(),
+    a.get_num_nonzeros());
   CubDebugExit(err);
 }
 
@@ -419,8 +424,7 @@ void compute_cub_solution(const device_csr_matrix<ValueT>& a,
 // Compute y = Ax twice, one reference and one cub::DeviceSpmv, and compare the
 // results.
 template <typename ValueT>
-void test_spmv(const host_csr_matrix<ValueT>& h_a,
-               const thrust::host_vector<ValueT>& h_x)
+void test_spmv(const host_csr_matrix<ValueT>& h_a, const thrust::host_vector<ValueT>& h_x)
 {
   if (g_verbose)
   {
@@ -464,8 +468,7 @@ void test_spmv(const host_csr_matrix<ValueT>& h_a,
 template <typename ValueT>
 void test_doc_example()
 {
-  std::cout << "\n\ntest_doc_example<" << typeid(ValueT).name() << ">()"
-            << std::endl;
+  std::cout << "\n\ntest_doc_example<" << typeid(ValueT).name() << ">()" << std::endl;
 
   host_csr_matrix<ValueT> h_a(9, 9);
   h_a.append_value(0, 1, ValueT{1});
@@ -504,11 +507,10 @@ void test_doc_example()
 template <typename ValueT>
 void test_random(int rows, int cols, float target_fill_ratio)
 {
-  std::cout << "\n\ntest_random<" << typeid(ValueT).name() << ">(" << rows
-            << ", " << cols << ", " << target_fill_ratio << ")" << std::endl;
+  std::cout << "\n\ntest_random<" << typeid(ValueT).name() << ">(" << rows << ", " << cols << ", " << target_fill_ratio
+            << ")" << std::endl;
 
-  host_csr_matrix<ValueT> h_a =
-    make_random_csr_matrix<ValueT>(rows, cols, target_fill_ratio);
+  host_csr_matrix<ValueT> h_a     = make_random_csr_matrix<ValueT>(rows, cols, target_fill_ratio);
   thrust::host_vector<ValueT> h_x = make_random_vector<ValueT>(cols);
 
   test_spmv(h_a, h_x);

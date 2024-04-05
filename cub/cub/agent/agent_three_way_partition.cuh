@@ -37,9 +37,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <iterator>
-#include <type_traits>
-
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/block/block_discontinuity.cuh>
 #include <cub/block/block_exchange.cuh>
@@ -50,8 +47,10 @@
 
 #include <cuda/std/type_traits>
 
-CUB_NAMESPACE_BEGIN
+#include <iterator>
+#include <type_traits>
 
+CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
  * Tuning policy types
@@ -68,7 +67,7 @@ struct pair_pack_t
 {
   OffsetT x, y;
 
-  _CCCL_DEVICE pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT> &other) const
+  _CCCL_DEVICE pair_pack_t<OffsetT> operator+(const pair_pack_t<OffsetT>& other) const
   {
     return {x + other.x, y + other.y};
   }
@@ -79,9 +78,18 @@ struct accumulator_pack_base_t
 {
   using pack_t = pair_pack_t<OffsetT>;
 
-  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s) { return {f, s}; }
-  _CCCL_DEVICE static OffsetT first(pack_t packed) { return packed.x; }
-  _CCCL_DEVICE static OffsetT second(pack_t packed) { return packed.y; }
+  _CCCL_DEVICE static pack_t pack(OffsetT f, OffsetT s)
+  {
+    return {f, s};
+  }
+  _CCCL_DEVICE static OffsetT first(pack_t packed)
+  {
+    return packed.x;
+  }
+  _CCCL_DEVICE static OffsetT second(pack_t packed)
+  {
+    return packed.y;
+  }
 };
 
 template <class OffsetT>
@@ -94,7 +102,10 @@ struct accumulator_pack_base_t<OffsetT, typename cuda::std::enable_if<sizeof(Off
     return (static_cast<pack_t>(f) << 32) | static_cast<pack_t>(s);
   }
 
-  _CCCL_DEVICE static OffsetT first(pack_t packed) { return static_cast<OffsetT>(packed >> 32); }
+  _CCCL_DEVICE static OffsetT first(pack_t packed)
+  {
+    return static_cast<OffsetT>(packed >> 32);
+  }
 
   _CCCL_DEVICE static OffsetT second(pack_t packed)
   {
@@ -108,14 +119,14 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   using base = accumulator_pack_base_t<OffsetT>;
   using typename base::pack_t;
 
-  _CCCL_DEVICE static void subtract(pack_t &packed, OffsetT val)
+  _CCCL_DEVICE static void subtract(pack_t& packed, OffsetT val)
   {
-    packed =  base::pack( base::first(packed) - val,  base::second(packed) - val);
+    packed = base::pack(base::first(packed) - val, base::second(packed) - val);
   }
 
-  _CCCL_DEVICE static OffsetT sum(pack_t &packed)
+  _CCCL_DEVICE static OffsetT sum(pack_t& packed)
   {
-    return  base::first(packed) +  base::second(packed);
+    return base::first(packed) + base::second(packed);
   }
 
   _CCCL_DEVICE static pack_t zero()
@@ -124,9 +135,9 @@ struct accumulator_pack_t : accumulator_pack_base_t<OffsetT>
   }
 };
 
-}
+} // namespace three_way_partition
 
-}
+} // namespace detail
 
 template <int _BLOCK_THREADS,
           int _ITEMS_PER_THREAD,
@@ -147,7 +158,6 @@ struct AgentThreeWayPartitionPolicy
     using delay_constructor_t = DelayConstructorT;
   };
 };
-
 
 /**
  * \brief Implements a device-wide three-way partitioning
@@ -176,35 +186,30 @@ struct AgentThreeWayPartition
   using InputT = cub::detail::value_t<InputIteratorT>;
 
   using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT = typename AccumPackHelperT::pack_t;
+  using AccumPackT       = typename AccumPackHelperT::pack_t;
 
   // Tile status descriptor interface type
   using ScanTileStateT = cub::ScanTileState<AccumPackT>;
 
   // Constants
-  static constexpr int BLOCK_THREADS = PolicyT::BLOCK_THREADS;
+  static constexpr int BLOCK_THREADS    = PolicyT::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD = PolicyT::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  using WrappedInputIteratorT = cub::detail::conditional_t<
-    std::is_pointer<InputIteratorT>::value,
-    cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-    InputIteratorT>;
+  using WrappedInputIteratorT =
+    cub::detail::conditional_t< std::is_pointer<InputIteratorT>::value,
+                                cub::CacheModifiedInputIterator<PolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                InputIteratorT>;
 
   // Parameterized BlockLoad type for input data
-  using BlockLoadT = cub::BlockLoad<InputT,
-                                    BLOCK_THREADS,
-                                    ITEMS_PER_THREAD,
-                                    PolicyT::LOAD_ALGORITHM>;
+  using BlockLoadT = cub::BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, PolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockScan type
-  using BlockScanT =
-    cub::BlockScan<AccumPackT, BLOCK_THREADS, PolicyT::SCAN_ALGORITHM>;
+  using BlockScanT = cub::BlockScan<AccumPackT, BLOCK_THREADS, PolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT =
-    cub::TilePrefixCallbackOp<AccumPackT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT     = typename PolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT = cub::TilePrefixCallbackOp<AccumPackT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -229,37 +234,36 @@ struct AgentThreeWayPartition
   };
 
   // Alias wrapper allowing storage to be unioned
-  struct TempStorage : cub::Uninitialized<_TempStorage> {};
-
+  struct TempStorage : cub::Uninitialized<_TempStorage>
+  {};
 
   //---------------------------------------------------------------------
   // Per-thread fields
   //---------------------------------------------------------------------
 
-  _TempStorage&                        temp_storage;       ///< Reference to temp_storage
-  WrappedInputIteratorT                d_in;               ///< Input items
-  FirstOutputIteratorT                 d_first_part_out;
-  SecondOutputIteratorT                d_second_part_out;
-  UnselectedOutputIteratorT            d_unselected_out;
-  SelectFirstPartOp                    select_first_part_op;
-  SelectSecondPartOp                   select_second_part_op;
-  OffsetT                              num_items;          ///< Total number of input items
-
+  _TempStorage& temp_storage; ///< Reference to temp_storage
+  WrappedInputIteratorT d_in; ///< Input items
+  FirstOutputIteratorT d_first_part_out;
+  SecondOutputIteratorT d_second_part_out;
+  UnselectedOutputIteratorT d_unselected_out;
+  SelectFirstPartOp select_first_part_op;
+  SelectSecondPartOp select_second_part_op;
+  OffsetT num_items; ///< Total number of input items
 
   //---------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------
 
   // Constructor
-  _CCCL_DEVICE _CCCL_FORCEINLINE
-  AgentThreeWayPartition(TempStorage &temp_storage,
-                         InputIteratorT d_in,
-                         FirstOutputIteratorT d_first_part_out,
-                         SecondOutputIteratorT d_second_part_out,
-                         UnselectedOutputIteratorT d_unselected_out,
-                         SelectFirstPartOp select_first_part_op,
-                         SelectSecondPartOp select_second_part_op,
-                         OffsetT num_items)
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentThreeWayPartition(
+    TempStorage& temp_storage,
+    InputIteratorT d_in,
+    FirstOutputIteratorT d_first_part_out,
+    SecondOutputIteratorT d_second_part_out,
+    UnselectedOutputIteratorT d_unselected_out,
+    SelectFirstPartOp select_first_part_op,
+    SelectSecondPartOp select_second_part_op,
+    OffsetT num_items)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_first_part_out(d_first_part_out)
@@ -275,10 +279,8 @@ struct AgentThreeWayPartition
   //---------------------------------------------------------------------
 
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Initialize(OffsetT num_tile_items,
-             InputT (&items)[ITEMS_PER_THREAD],
-             AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Initialize(
+    OffsetT num_tile_items, InputT (&items)[ITEMS_PER_THREAD], AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD])
   {
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
@@ -289,28 +291,27 @@ struct AgentThreeWayPartition
       {
         OffsetT first_item_selected = select_first_part_op(items[ITEM]);
         items_selection_flags[ITEM] =
-          AccumPackHelperT::pack(first_item_selected,
-                                 first_item_selected ? 0 : select_second_part_op(items[ITEM]));
+          AccumPackHelperT::pack(first_item_selected, first_item_selected ? 0 : select_second_part_op(items[ITEM]));
       }
     }
   }
 
   template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
-    InputT          (&items)[ITEMS_PER_THREAD],
-    AccumPackT      (&items_selection_flags)[ITEMS_PER_THREAD],
-    AccumPackT      (&items_selection_indices)[ITEMS_PER_THREAD],
-    int             num_tile_items,
-    AccumPackT      num_tile_selected,
-    AccumPackT      num_tile_selected_prefix,
-    OffsetT         num_rejected_prefix)
+    InputT (&items)[ITEMS_PER_THREAD],
+    AccumPackT (&items_selection_flags)[ITEMS_PER_THREAD],
+    AccumPackT (&items_selection_indices)[ITEMS_PER_THREAD],
+    int num_tile_items,
+    AccumPackT num_tile_selected,
+    AccumPackT num_tile_selected_prefix,
+    OffsetT num_rejected_prefix)
   {
     CTA_SYNC();
 
-    const OffsetT num_first_selections_prefix = AccumPackHelperT::first(num_tile_selected_prefix);
+    const OffsetT num_first_selections_prefix  = AccumPackHelperT::first(num_tile_selected_prefix);
     const OffsetT num_second_selections_prefix = AccumPackHelperT::second(num_tile_selected_prefix);
 
-    const int first_item_end = AccumPackHelperT::first(num_tile_selected);
+    const int first_item_end  = AccumPackHelperT::first(num_tile_selected);
     const int second_item_end = first_item_end + AccumPackHelperT::second(num_tile_selected);
 
     // Scatter items to shared memory (rejections first)
@@ -318,7 +319,7 @@ struct AgentThreeWayPartition
     {
       int item_idx = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
 
-      const OffsetT first_items_selection_indices = AccumPackHelperT::first(items_selection_indices[ITEM]);
+      const OffsetT first_items_selection_indices  = AccumPackHelperT::first(items_selection_indices[ITEM]);
       const OffsetT second_items_selection_indices = AccumPackHelperT::second(items_selection_indices[ITEM]);
 
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
@@ -327,21 +328,17 @@ struct AgentThreeWayPartition
 
         if (AccumPackHelperT::first(items_selection_flags[ITEM]))
         {
-          local_scatter_offset = first_items_selection_indices
-                               - num_first_selections_prefix;
+          local_scatter_offset = first_items_selection_indices - num_first_selections_prefix;
         }
         else if (AccumPackHelperT::second(items_selection_flags[ITEM]))
         {
-          local_scatter_offset = first_item_end +
-                                 second_items_selection_indices -
-                                 num_second_selections_prefix;
+          local_scatter_offset = first_item_end + second_items_selection_indices - num_second_selections_prefix;
         }
         else
         {
           // Medium item
-          int local_selection_idx =
-           (first_items_selection_indices - num_first_selections_prefix)
-         + (second_items_selection_indices - num_second_selections_prefix);
+          int local_selection_idx = (first_items_selection_indices - num_first_selections_prefix)
+                                  + (second_items_selection_indices - num_second_selections_prefix);
           local_scatter_offset = second_item_end + item_idx - local_selection_idx;
         }
 
@@ -370,18 +367,16 @@ struct AgentThreeWayPartition
         }
         else
         {
-          int rejection_idx = item_idx - second_item_end;
+          int rejection_idx                                     = item_idx - second_item_end;
           d_unselected_out[num_rejected_prefix + rejection_idx] = item;
         }
       }
     }
   }
 
-
   //---------------------------------------------------------------------
   // Cooperatively scan a device-wide sequence of tiles with other CTAs
   //---------------------------------------------------------------------
-
 
   /**
    * Process first tile of input (dynamic chained scan).
@@ -394,10 +389,7 @@ struct AgentThreeWayPartition
    */
   template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeFirstTile(int num_tile_items,
-                   OffsetT tile_offset,
-                   ScanTileStateT &tile_state,
-                   AccumPackT &num_items_selected)
+  ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
     InputT items[ITEMS_PER_THREAD];
 
@@ -407,8 +399,7 @@ struct AgentThreeWayPartition
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items)
-        .Load(d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
     }
     else
     {
@@ -421,9 +412,7 @@ struct AgentThreeWayPartition
 
     // Exclusive scan of selection_flags
     BlockScanT(temp_storage.scan_storage.scan)
-      .ExclusiveSum(items_selection_flags,
-                    items_selection_indices,
-                    num_items_selected);
+      .ExclusiveSum(items_selection_flags, items_selection_indices, num_items_selected);
 
     if (threadIdx.x == 0)
     {
@@ -452,7 +441,6 @@ struct AgentThreeWayPartition
       0);
   }
 
-
   /**
    * Process subsequent tile of input (dynamic chained scan).
    * Returns the running count of selections (including this tile)
@@ -464,12 +452,8 @@ struct AgentThreeWayPartition
    * @param second_tile_state Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeSubsequentTile(int num_tile_items,
-                        int tile_idx,
-                        OffsetT tile_offset,
-                        ScanTileStateT &tile_state,
-                        AccumPackT &num_items_selected)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeSubsequentTile(
+    int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& num_items_selected)
   {
     InputT items[ITEMS_PER_THREAD];
 
@@ -479,8 +463,7 @@ struct AgentThreeWayPartition
     // Load items
     if (IS_LAST_TILE)
     {
-      BlockLoadT(temp_storage.load_items).Load(
-        d_in + tile_offset, items, num_tile_items);
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
     }
     else
     {
@@ -492,15 +475,9 @@ struct AgentThreeWayPartition
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
-    TilePrefixCallbackOpT prefix_op(tile_state,
-                                    temp_storage.scan_storage.prefix,
-                                    cub::Sum(),
-                                    tile_idx);
+    TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
 
-    BlockScanT(temp_storage.scan_storage.scan)
-      .ExclusiveSum(items_selected_flags,
-                    items_selected_indices,
-                    prefix_op);
+    BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(items_selected_flags, items_selected_indices, prefix_op);
 
     num_items_selected                    = prefix_op.GetInclusivePrefix();
     AccumPackT num_items_in_tile_selected = prefix_op.GetBlockAggregate();
@@ -508,8 +485,7 @@ struct AgentThreeWayPartition
 
     CTA_SYNC();
 
-    OffsetT num_rejected_prefix = (tile_idx * TILE_ITEMS) -
-                                  AccumPackHelperT::sum(num_items_selected_prefix);
+    OffsetT num_rejected_prefix = (tile_idx * TILE_ITEMS) - AccumPackHelperT::sum(num_items_selected_prefix);
 
     // Discount any out-of-bounds selections. There are exactly
     // TILE_ITEMS - num_tile_items elements like that because we
@@ -533,35 +509,22 @@ struct AgentThreeWayPartition
       num_rejected_prefix);
   }
 
-
   /**
    * Process a tile of input
    */
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(
-    int                 num_tile_items,
-    int                 tile_idx,
-    OffsetT             tile_offset,
-    ScanTileStateT&     tile_state,
-    AccumPackT&         accum)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state, AccumPackT& accum)
   {
     if (tile_idx == 0)
     {
-      ConsumeFirstTile<IS_LAST_TILE>(num_tile_items,
-                                     tile_offset,
-                                     tile_state,
-                                     accum);
+      ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state, accum);
     }
     else
     {
-      ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items,
-                                          tile_idx,
-                                          tile_offset,
-                                          tile_state,
-                                          accum);
+      ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state, accum);
     }
   }
-
 
   /**
    * Scan tiles of items as part of a dynamic chained scan
@@ -583,7 +546,7 @@ struct AgentThreeWayPartition
    */
   template <typename NumSelectedIteratorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ConsumeRange(int num_tiles, ScanTileStateT &tile_state, NumSelectedIteratorT d_num_selected_out)
+  ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
   {
     // Blocks are launched in increasing order, so just assign one tile per block
     // Current tile index
@@ -597,22 +560,14 @@ struct AgentThreeWayPartition
     if (tile_idx < num_tiles - 1)
     {
       // Not the last tile (full)
-      ConsumeTile<false>(TILE_ITEMS,
-                         tile_idx,
-                         tile_offset,
-                         tile_state,
-                         accum);
+      ConsumeTile<false>(TILE_ITEMS, tile_idx, tile_offset, tile_state, accum);
     }
     else
     {
       // The last tile (possibly partially-full)
       const OffsetT num_remaining = num_items - tile_offset;
 
-      ConsumeTile<true>(num_remaining,
-                        tile_idx,
-                        tile_offset,
-                        tile_state,
-                        accum);
+      ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state, accum);
 
       if (threadIdx.x == 0)
       {
@@ -622,8 +577,6 @@ struct AgentThreeWayPartition
       }
     }
   }
-
 };
-
 
 CUB_NAMESPACE_END

@@ -59,7 +59,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 /******************************************************************************
  * Tuning policy types
  ******************************************************************************/
@@ -180,786 +179,773 @@ template <typename AgentSelectIfPolicyT,
           bool KEEP_REJECTS>
 struct AgentSelectIf
 {
-    //---------------------------------------------------------------------
-    // Types and constants
-    //---------------------------------------------------------------------
+  //---------------------------------------------------------------------
+  // Types and constants
+  //---------------------------------------------------------------------
 
-    // The input value type
-    using InputT = cub::detail::value_t<InputIteratorT>;
+  // The input value type
+  using InputT = cub::detail::value_t<InputIteratorT>;
 
-    // The flag value type
-    using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
+  // The flag value type
+  using FlagT = cub::detail::value_t<FlagsInputIteratorT>;
 
-    // Tile status descriptor interface type
-    using ScanTileStateT = ScanTileState<OffsetT>;
+  // Tile status descriptor interface type
+  using ScanTileStateT = ScanTileState<OffsetT>;
 
-    // Constants
-    enum
+  // Constants
+  enum
+  {
+    USE_SELECT_OP,
+    USE_SELECT_FLAGS,
+    USE_DISCONTINUITY,
+    USE_STENCIL_WITH_OP
+  };
+
+  static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
+  static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
+  static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
+
+  static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
+  static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
+  static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
+  static constexpr auto SELECT_METHOD =
+    use_stencil_with_op ? USE_STENCIL_WITH_OP
+    : has_select_op     ? USE_SELECT_OP
+    : has_flags_it      ? USE_SELECT_FLAGS
+                        : USE_DISCONTINUITY;
+
+  // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
+  // Wrap the native input pointer with CacheModifiedValuesInputIterator
+  // or directly use the supplied input iterator type
+  using WrappedInputIteratorT =
+    cub::detail::conditional_t< ::cuda::std::is_pointer<InputIteratorT>::value,
+                                CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                InputIteratorT>;
+
+  // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
+  // Wrap the native input pointer with CacheModifiedValuesInputIterator
+  // or directly use the supplied input iterator type
+  using WrappedFlagsInputIteratorT =
+    cub::detail::conditional_t< ::cuda::std::is_pointer<FlagsInputIteratorT>::value,
+                                CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
+                                FlagsInputIteratorT>;
+
+  // Parameterized BlockLoad type for input data
+  using BlockLoadT = BlockLoad<InputT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+
+  // Parameterized BlockLoad type for flags
+  using BlockLoadFlags = BlockLoad<FlagT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+
+  // Parameterized BlockDiscontinuity type for items
+  using BlockDiscontinuityT = BlockDiscontinuity<InputT, BLOCK_THREADS>;
+
+  // Parameterized BlockScan type
+  using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
+
+  // Callback type for obtaining tile prefix during block scan
+  using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+
+  // Item exchange type
+  typedef InputT ItemExchangeT[TILE_ITEMS];
+
+  // Shared memory type for this thread block
+  union _TempStorage
+  {
+    struct ScanStorage
     {
-      USE_SELECT_OP,
-      USE_SELECT_FLAGS,
-      USE_DISCONTINUITY,
-      USE_STENCIL_WITH_OP
-    };
+      // Smem needed for tile scanning
+      typename BlockScanT::TempStorage scan;
 
-    static constexpr ::cuda::std::int32_t BLOCK_THREADS    = AgentSelectIfPolicyT::BLOCK_THREADS;
-    static constexpr ::cuda::std::int32_t ITEMS_PER_THREAD = AgentSelectIfPolicyT::ITEMS_PER_THREAD;
-    static constexpr ::cuda::std::int32_t TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD;
-    static constexpr bool TWO_PHASE_SCATTER                = (ITEMS_PER_THREAD > 1);
+      // Smem needed for cooperative prefix callback
+      typename TilePrefixCallbackOpT::TempStorage prefix;
 
-    static constexpr bool has_select_op       = (!::cuda::std::is_same<SelectOpT, NullType>::value);
-    static constexpr bool has_flags_it        = (!::cuda::std::is_same<FlagT, NullType>::value);
-    static constexpr bool use_stencil_with_op = has_select_op && has_flags_it;
-    static constexpr auto SELECT_METHOD =
-      use_stencil_with_op ? USE_STENCIL_WITH_OP
-      : has_select_op     ? USE_SELECT_OP
-      : has_flags_it      ? USE_SELECT_FLAGS
-                          : USE_DISCONTINUITY;
+      // Smem needed for discontinuity detection
+      typename BlockDiscontinuityT::TempStorage discontinuity;
+    } scan_storage;
 
-    // Cache-modified Input iterator wrapper type (for applying cache modifier) for items
-    // Wrap the native input pointer with CacheModifiedValuesInputIterator
-    // or directly use the supplied input iterator type
-    using WrappedInputIteratorT =
-      cub::detail::conditional_t< ::cuda::std::is_pointer<InputIteratorT>::value,
-                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                                  InputIteratorT>;
+    // Smem needed for loading items
+    typename BlockLoadT::TempStorage load_items;
 
-    // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-    // Wrap the native input pointer with CacheModifiedValuesInputIterator
-    // or directly use the supplied input iterator type
-    using WrappedFlagsInputIteratorT =
-      cub::detail::conditional_t< ::cuda::std::is_pointer<FlagsInputIteratorT>::value,
-                                  CacheModifiedInputIterator<AgentSelectIfPolicyT::LOAD_MODIFIER, FlagT, OffsetT>,
-                                  FlagsInputIteratorT>;
+    // Smem needed for loading values
+    typename BlockLoadFlags::TempStorage load_flags;
 
-    // Parameterized BlockLoad type for input data
-    using BlockLoadT = BlockLoad<InputT,
-                                 BLOCK_THREADS,
-                                 ITEMS_PER_THREAD,
-                                 AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+    // Smem needed for compacting items (allows non POD items in this union)
+    Uninitialized<ItemExchangeT> raw_exchange;
+  };
 
-    // Parameterized BlockLoad type for flags
-    using BlockLoadFlags = BlockLoad<FlagT,
-                                     BLOCK_THREADS,
-                                     ITEMS_PER_THREAD,
-                                     AgentSelectIfPolicyT::LOAD_ALGORITHM>;
+  // Alias wrapper allowing storage to be unioned
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
-    // Parameterized BlockDiscontinuity type for items
-    using BlockDiscontinuityT = BlockDiscontinuity<InputT, BLOCK_THREADS>;
+  //---------------------------------------------------------------------
+  // Per-thread fields
+  //---------------------------------------------------------------------
 
-    // Parameterized BlockScan type
-    using BlockScanT =
-      BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
+  _TempStorage& temp_storage; ///< Reference to temp_storage
+  WrappedInputIteratorT d_in; ///< Input items
+  OutputIteratorWrapperT d_selected_out; ///< Unique output items
+  WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
+  InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
+  SelectOpT select_op; ///< Selection operator
+  OffsetT num_items; ///< Total number of input items
 
+  //---------------------------------------------------------------------
+  // Constructor
+  //---------------------------------------------------------------------
 
-    // Callback type for obtaining tile prefix during block scan
-    using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-    using TilePrefixCallbackOpT =
-      TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  /**
+   * @param temp_storage
+   *   Reference to temp_storage
+   *
+   * @param d_in
+   *   Input data
+   *
+   * @param d_flags_in
+   *   Input selection flags (if applicable)
+   *
+   * @param d_selected_out
+   *   Output data
+   *
+   * @param select_op
+   *   Selection operator
+   *
+   * @param equality_op
+   *   Equality operator
+   *
+   * @param num_items
+   *   Total number of input items
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentSelectIf(
+    TempStorage& temp_storage,
+    InputIteratorT d_in,
+    FlagsInputIteratorT d_flags_in,
+    OutputIteratorWrapperT d_selected_out,
+    SelectOpT select_op,
+    EqualityOpT equality_op,
+    OffsetT num_items)
+      : temp_storage(temp_storage.Alias())
+      , d_in(d_in)
+      , d_selected_out(d_selected_out)
+      , d_flags_in(d_flags_in)
+      , inequality_op(equality_op)
+      , select_op(select_op)
+      , num_items(num_items)
+  {}
 
-    // Item exchange type
-    typedef InputT ItemExchangeT[TILE_ITEMS];
+  //---------------------------------------------------------------------
+  // Utility methods for initializing the selections
+  //---------------------------------------------------------------------
 
-    // Shared memory type for this thread block
-    union _TempStorage
-    {
-        struct ScanStorage
-        {
-          // Smem needed for tile scanning
-          typename BlockScanT::TempStorage scan;
-
-          // Smem needed for cooperative prefix callback
-          typename TilePrefixCallbackOpT::TempStorage prefix;
-
-          // Smem needed for discontinuity detection
-          typename BlockDiscontinuityT::TempStorage discontinuity;
-        } scan_storage;
-
-        // Smem needed for loading items
-        typename BlockLoadT::TempStorage load_items;
-
-        // Smem needed for loading values
-        typename BlockLoadFlags::TempStorage load_flags;
-
-        // Smem needed for compacting items (allows non POD items in this union)
-        Uninitialized<ItemExchangeT> raw_exchange;
-    };
-
-    // Alias wrapper allowing storage to be unioned
-    struct TempStorage : Uninitialized<_TempStorage> {};
-
-
-    //---------------------------------------------------------------------
-    // Per-thread fields
-    //---------------------------------------------------------------------
-
-    _TempStorage& temp_storage; ///< Reference to temp_storage
-    WrappedInputIteratorT d_in; ///< Input items
-    OutputIteratorWrapperT d_selected_out; ///< Unique output items
-    WrappedFlagsInputIteratorT d_flags_in; ///< Input selection flags (if applicable)
-    InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
-    SelectOpT select_op; ///< Selection operator
-    OffsetT num_items; ///< Total number of input items
-
-    //---------------------------------------------------------------------
-    // Constructor
-    //---------------------------------------------------------------------
-
-    /**
-     * @param temp_storage
-     *   Reference to temp_storage
-     *
-     * @param d_in
-     *   Input data
-     *
-     * @param d_flags_in
-     *   Input selection flags (if applicable)
-     *
-     * @param d_selected_out
-     *   Output data
-     *
-     * @param select_op
-     *   Selection operator
-     *
-     * @param equality_op
-     *   Equality operator
-     *
-     * @param num_items
-     *   Total number of input items
-     */
-    _CCCL_DEVICE _CCCL_FORCEINLINE AgentSelectIf(TempStorage &temp_storage,
-                                             InputIteratorT d_in,
-                                             FlagsInputIteratorT d_flags_in,
-                                             OutputIteratorWrapperT d_selected_out,
-                                             SelectOpT select_op,
-                                             EqualityOpT equality_op,
-                                             OffsetT num_items)
-        : temp_storage(temp_storage.Alias())
-        , d_in(d_in)
-        , d_selected_out(d_selected_out)
-        , d_flags_in(d_flags_in)
-        , inequality_op(equality_op)
-        , select_op(select_op)
-        , num_items(num_items)
-    {}
-
-    //---------------------------------------------------------------------
-    // Utility methods for initializing the selections
-    //---------------------------------------------------------------------
-
-    /**
-     * Initialize selections (specialized for selection operator)
-     */
-    template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
-        OffsetT                     /*tile_offset*/,
-        OffsetT                     num_tile_items,
-        InputT                      (&items)[ITEMS_PER_THREAD],
-        OffsetT                     (&selection_flags)[ITEMS_PER_THREAD],
-        Int2Type<USE_SELECT_OP>     /*select_method*/)
-    {
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            // Out-of-bounds items are selection_flags
-            selection_flags[ITEM] = 1;
-
-            if (!IS_LAST_TILE || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
-            {
-              selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
-            }
-        }
-    }
-
-    /**
-     * Initialize selections (specialized for selection_op applied to d_flags_in)
-     */
-    template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
-      OffsetT tile_offset,
-      OffsetT num_tile_items,
-      InputT (& /*items*/)[ITEMS_PER_THREAD],
-      OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-      Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
-    {
-        CTA_SYNC();
-
-        FlagT flags[ITEMS_PER_THREAD];
-        if (IS_LAST_TILE)
-        {
-            // Initialize the out-of-bounds flags
+  /**
+   * Initialize selections (specialized for selection operator)
+   */
+  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+    OffsetT /*tile_offset*/,
+    OffsetT num_tile_items,
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    Int2Type<USE_SELECT_OP> /*select_method*/)
+  {
 #pragma unroll
-            for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-            {
-              selection_flags[ITEM] = true;
-            }
-            // Guarded loads
-            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items);
-        }
-        else
-        {
-            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
-        }
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    {
+      // Out-of-bounds items are selection_flags
+      selection_flags[ITEM] = 1;
+
+      if (!IS_LAST_TILE || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      {
+        selection_flags[ITEM] = static_cast<bool>(select_op(items[ITEM]));
+      }
+    }
+  }
+
+  /**
+   * Initialize selections (specialized for selection_op applied to d_flags_in)
+   */
+  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+    OffsetT tile_offset,
+    OffsetT num_tile_items,
+    InputT (& /*items*/)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    Int2Type<USE_STENCIL_WITH_OP> /*select_method*/)
+  {
+    CTA_SYNC();
+
+    FlagT flags[ITEMS_PER_THREAD];
+    if (IS_LAST_TILE)
+    {
+      // Initialize the out-of-bounds flags
+#pragma unroll
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      {
+        selection_flags[ITEM] = true;
+      }
+      // Guarded loads
+      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items);
+    }
+    else
+    {
+      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
+    }
 
 #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            // Set selection_flags for out-of-bounds items
-            if ((!IS_LAST_TILE) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
-            {
-              selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
-            }
-        }
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    {
+      // Set selection_flags for out-of-bounds items
+      if ((!IS_LAST_TILE) || (static_cast<OffsetT>(threadIdx.x * ITEMS_PER_THREAD + ITEM) < num_tile_items))
+      {
+        selection_flags[ITEM] = static_cast<bool>(select_op(flags[ITEM]));
+      }
+    }
+  }
+
+  /**
+   * Initialize selections (specialized for valid flags)
+   */
+  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+    OffsetT tile_offset,
+    OffsetT num_tile_items,
+    InputT (& /*items*/)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    Int2Type<USE_SELECT_FLAGS> /*select_method*/)
+  {
+    CTA_SYNC();
+
+    FlagT flags[ITEMS_PER_THREAD];
+
+    if (IS_LAST_TILE)
+    {
+      // Out-of-bounds items are selection_flags
+      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items, 1);
+    }
+    else
+    {
+      BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
     }
 
-    /**
-     * Initialize selections (specialized for valid flags)
-     */
-    template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
-        OffsetT                     tile_offset,
-        OffsetT                     num_tile_items,
-        InputT                      (&/*items*/)[ITEMS_PER_THREAD],
-        OffsetT                     (&selection_flags)[ITEMS_PER_THREAD],
-        Int2Type<USE_SELECT_FLAGS>  /*select_method*/)
+// Convert flag type to selection_flags type
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-        CTA_SYNC();
+      selection_flags[ITEM] = static_cast<bool>(flags[ITEM]);
+    }
+  }
 
-        FlagT flags[ITEMS_PER_THREAD];
+  /**
+   * Initialize selections (specialized for discontinuity detection)
+   */
+  template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
+    OffsetT tile_offset,
+    OffsetT num_tile_items,
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    Int2Type<USE_DISCONTINUITY> /*select_method*/)
+  {
+    if (IS_FIRST_TILE)
+    {
+      CTA_SYNC();
 
-        if (IS_LAST_TILE)
-        {
-            // Out-of-bounds items are selection_flags
-            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags, num_tile_items, 1);
-        }
-        else
-        {
-            BlockLoadFlags(temp_storage.load_flags).Load(d_flags_in + tile_offset, flags);
-        }
+      // Set head selection_flags.  First tile sets the first flag for the first item
+      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op);
+    }
+    else
+    {
+      InputT tile_predecessor;
+      if (threadIdx.x == 0)
+      {
+        tile_predecessor = d_in[tile_offset - 1];
+      }
 
-        // Convert flag type to selection_flags type
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            selection_flags[ITEM] = static_cast<bool>(flags[ITEM]);
-        }
+      CTA_SYNC();
+
+      BlockDiscontinuityT(temp_storage.scan_storage.discontinuity)
+        .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
     }
 
-
-    /**
-     * Initialize selections (specialized for discontinuity detection)
-     */
-    template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void InitializeSelections(
-        OffsetT                     tile_offset,
-        OffsetT                     num_tile_items,
-        InputT                      (&items)[ITEMS_PER_THREAD],
-        OffsetT                     (&selection_flags)[ITEMS_PER_THREAD],
-        Int2Type<USE_DISCONTINUITY> /*select_method*/)
+// Set selection flags for out-of-bounds items
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-        if (IS_FIRST_TILE)
-        {
-            CTA_SYNC();
-
-            // Set head selection_flags.  First tile sets the first flag for the first item
-            BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op);
-        }
-        else
-        {
-            InputT tile_predecessor;
-            if (threadIdx.x == 0)
-                tile_predecessor = d_in[tile_offset - 1];
-
-            CTA_SYNC();
-
-            BlockDiscontinuityT(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
-        }
-
-        // Set selection flags for out-of-bounds items
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            // Set selection_flags for out-of-bounds items
-            if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
-                selection_flags[ITEM] = 1;
-        }
+      // Set selection_flags for out-of-bounds items
+      if ((IS_LAST_TILE) && (OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
+      {
+        selection_flags[ITEM] = 1;
+      }
     }
+  }
 
+  //---------------------------------------------------------------------
+  // Scatter utility methods
+  //---------------------------------------------------------------------
 
-    //---------------------------------------------------------------------
-    // Scatter utility methods
-    //---------------------------------------------------------------------
-
-    /**
-     * Scatter flagged items to output offsets (specialized for direct scattering).
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedDirect(
-        InputT  (&items)[ITEMS_PER_THREAD],
-        OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-        OffsetT (&selection_indices)[ITEMS_PER_THREAD],
-        OffsetT num_selections)
+  /**
+   * Scatter flagged items to output offsets (specialized for direct scattering).
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedDirect(
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    OffsetT (&selection_indices)[ITEMS_PER_THREAD],
+    OffsetT num_selections)
+  {
+// Scatter flagged items
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-        // Scatter flagged items
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      if (selection_flags[ITEM])
+      {
+        if ((!IS_LAST_TILE) || selection_indices[ITEM] < num_selections)
         {
-            if (selection_flags[ITEM])
-            {
-                if ((!IS_LAST_TILE) || selection_indices[ITEM] < num_selections)
-                {
-                    d_selected_out[selection_indices[ITEM]] = items[ITEM];
-                }
-            }
+          d_selected_out[selection_indices[ITEM]] = items[ITEM];
         }
+      }
     }
+  }
 
-    /**
-     * @brief Scatter flagged items to output offsets (specialized for two-phase scattering)
-     *
-     * @param num_tile_items
-     *   Number of valid items in this tile
-     *
-     * @param num_tile_selections
-     *   Number of selections in this tile
-     *
-     * @param num_selections_prefix
-     *   Total number of selections prior to this tile
-     *
-     * @param num_rejected_prefix
-     *   Total number of rejections prior to this tile
-     *
-     * @param is_keep_rejects
-     *   Marker type indicating whether to keep rejected items in the second partition
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedTwoPhase(
-      InputT (&items)[ITEMS_PER_THREAD],
-      OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-      OffsetT (&selection_indices)[ITEMS_PER_THREAD],
-      int num_tile_selections,
-      OffsetT num_selections_prefix)
-    {
-        CTA_SYNC();
+  /**
+   * @brief Scatter flagged items to output offsets (specialized for two-phase scattering)
+   *
+   * @param num_tile_items
+   *   Number of valid items in this tile
+   *
+   * @param num_tile_selections
+   *   Number of selections in this tile
+   *
+   * @param num_selections_prefix
+   *   Total number of selections prior to this tile
+   *
+   * @param num_rejected_prefix
+   *   Total number of rejections prior to this tile
+   *
+   * @param is_keep_rejects
+   *   Marker type indicating whether to keep rejected items in the second partition
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedTwoPhase(
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    OffsetT (&selection_indices)[ITEMS_PER_THREAD],
+    int num_tile_selections,
+    OffsetT num_selections_prefix)
+  {
+    CTA_SYNC();
 
 // Compact and scatter items
 #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
-            if (selection_flags[ITEM])
-            {
-                temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
-            }
-        }
-
-        CTA_SYNC();
-
-        for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
-        {
-            d_selected_out[num_selections_prefix + item] = temp_storage.raw_exchange.Alias()[item];
-        }
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    {
+      int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
+      if (selection_flags[ITEM])
+      {
+        temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
+      }
     }
 
-    /**
-     * @brief Scatter flagged items. Specialized for selection algorithm that simply discards rejected items
-     *
-     * @param num_tile_items
-     *   Number of valid items in this tile
-     *
-     * @param num_tile_selections
-     *   Number of selections in this tile
-     *
-     * @param num_selections_prefix
-     *   Total number of selections prior to this tile
-     *
-     * @param num_rejected_prefix
-     *   Total number of rejections prior to this tile
-     *
-     * @param num_selections
-     *   Total number of selections including this tile
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
-      InputT (&items)[ITEMS_PER_THREAD],
-      OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-      OffsetT (&selection_indices)[ITEMS_PER_THREAD],
-      int num_tile_items,
-      int num_tile_selections,
-      OffsetT num_selections_prefix,
-      OffsetT num_rejected_prefix,
-      OffsetT num_selections,
-      Int2Type<false> /*is_keep_rejects*/)
+    CTA_SYNC();
+
+    for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
-        // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
-        // greater than one
-        if (TWO_PHASE_SCATTER && (num_tile_selections > BLOCK_THREADS))
+      d_selected_out[num_selections_prefix + item] = temp_storage.raw_exchange.Alias()[item];
+    }
+  }
+
+  /**
+   * @brief Scatter flagged items. Specialized for selection algorithm that simply discards rejected items
+   *
+   * @param num_tile_items
+   *   Number of valid items in this tile
+   *
+   * @param num_tile_selections
+   *   Number of selections in this tile
+   *
+   * @param num_selections_prefix
+   *   Total number of selections prior to this tile
+   *
+   * @param num_rejected_prefix
+   *   Total number of rejections prior to this tile
+   *
+   * @param num_selections
+   *   Total number of selections including this tile
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    OffsetT (&selection_indices)[ITEMS_PER_THREAD],
+    int num_tile_items,
+    int num_tile_selections,
+    OffsetT num_selections_prefix,
+    OffsetT num_rejected_prefix,
+    OffsetT num_selections,
+    Int2Type<false> /*is_keep_rejects*/)
+  {
+    // Do a two-phase scatter if two-phase is enabled and the average number of selection_flags items per thread is
+    // greater than one
+    if (TWO_PHASE_SCATTER && (num_tile_selections > BLOCK_THREADS))
+    {
+      ScatterSelectedTwoPhase<IS_LAST_TILE, IS_FIRST_TILE>(
+        items, selection_flags, selection_indices, num_tile_selections, num_selections_prefix);
+    }
+    else
+    {
+      ScatterSelectedDirect<IS_LAST_TILE, IS_FIRST_TILE>(items, selection_flags, selection_indices, num_selections);
+    }
+  }
+
+  /**
+   * @brief Scatter flagged items. Specialized for partitioning algorithm that writes rejected items to a second
+   * partition.
+   *
+   * @param num_tile_items
+   *   Number of valid items in this tile
+   *
+   * @param num_tile_selections
+   *   Number of selections in this tile
+   *
+   * @param num_selections_prefix
+   *   Total number of selections prior to this tile
+   *
+   * @param num_rejected_prefix
+   *   Total number of rejections prior to this tile
+   *
+   * @param is_keep_rejects
+   *   Marker type indicating whether to keep rejected items in the second partition
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
+    InputT (&items)[ITEMS_PER_THREAD],
+    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
+    OffsetT (&selection_indices)[ITEMS_PER_THREAD],
+    int num_tile_items,
+    int num_tile_selections,
+    OffsetT num_selections_prefix,
+    OffsetT num_rejected_prefix,
+    OffsetT num_selections,
+    Int2Type<true> /*is_keep_rejects*/)
+  {
+    CTA_SYNC();
+
+    int tile_num_rejections = num_tile_items - num_tile_selections;
+
+// Scatter items to shared memory (rejections first)
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    {
+      int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
+      int local_selection_idx = selection_indices[ITEM] - num_selections_prefix;
+      int local_rejection_idx = item_idx - local_selection_idx;
+      int local_scatter_offset =
+        (selection_flags[ITEM]) ? tile_num_rejections + local_selection_idx : local_rejection_idx;
+
+      temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
+    }
+
+    // Ensure all threads finished scattering to shared memory
+    CTA_SYNC();
+
+    // Gather items from shared memory and scatter to global
+    ScatterPartitionsToGlobal<IS_LAST_TILE, IS_FIRST_TILE>(
+      num_tile_items, tile_num_rejections, num_selections_prefix, num_rejected_prefix, d_selected_out);
+  }
+
+  /**
+   * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to two
+   * distinct partitions.
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename SelectedItT, typename RejectedItT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
+    int num_tile_items,
+    int tile_num_rejections,
+    OffsetT num_selections_prefix,
+    OffsetT num_rejected_prefix,
+    detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_it_wrapper)
+  {
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+    {
+      int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      int rejection_idx = item_idx;
+      int selection_idx = item_idx - tile_num_rejections;
+      OffsetT scatter_offset =
+        (item_idx < tile_num_rejections) ? num_rejected_prefix + rejection_idx : num_selections_prefix + selection_idx;
+
+      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
+
+      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      {
+        if (item_idx >= tile_num_rejections)
         {
-            ScatterSelectedTwoPhase<IS_LAST_TILE, IS_FIRST_TILE>(
-              items, selection_flags, selection_indices, num_tile_selections, num_selections_prefix);
+          partitioned_out_it_wrapper.selected_it[scatter_offset] = item;
         }
         else
         {
-            ScatterSelectedDirect<IS_LAST_TILE, IS_FIRST_TILE>(
-              items, selection_flags, selection_indices, num_selections);
+          partitioned_out_it_wrapper.rejected_it[scatter_offset] = item;
         }
+      }
     }
+  }
 
-    /**
-     * @brief Scatter flagged items. Specialized for partitioning algorithm that writes rejected items to a second
-     * partition.
-     *
-     * @param num_tile_items
-     *   Number of valid items in this tile
-     *
-     * @param num_tile_selections
-     *   Number of selections in this tile
-     *
-     * @param num_selections_prefix
-     *   Total number of selections prior to this tile
-     *
-     * @param num_rejected_prefix
-     *   Total number of rejections prior to this tile
-     *
-     * @param is_keep_rejects
-     *   Marker type indicating whether to keep rejected items in the second partition
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(InputT (&items)[ITEMS_PER_THREAD],
-                                                    OffsetT (&selection_flags)[ITEMS_PER_THREAD],
-                                                    OffsetT (&selection_indices)[ITEMS_PER_THREAD],
-                                                    int num_tile_items,
-                                                    int num_tile_selections,
-                                                    OffsetT num_selections_prefix,
-                                                    OffsetT num_rejected_prefix,
-                                                    OffsetT num_selections,
-                                                    Int2Type<true> /*is_keep_rejects*/)
+  /**
+   * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to a single
+   * iterator, where selected items are written in order from the beginning of the itereator and rejected items are
+   * writtem from the iterators end backwards.
+   */
+  template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename PartitionedOutputItT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
+    int num_tile_items,
+    int tile_num_rejections,
+    OffsetT num_selections_prefix,
+    OffsetT num_rejected_prefix,
+    PartitionedOutputItT partitioned_out_it)
+  {
+#pragma unroll
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-        CTA_SYNC();
+      int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      int rejection_idx = item_idx;
+      int selection_idx = item_idx - tile_num_rejections;
+      OffsetT scatter_offset =
+        (item_idx < tile_num_rejections)
+          ? num_items - num_rejected_prefix - rejection_idx - 1
+          : num_selections_prefix + selection_idx;
 
-        int tile_num_rejections = num_tile_items - num_tile_selections;
+      InputT item = temp_storage.raw_exchange.Alias()[item_idx];
 
-        // Scatter items to shared memory (rejections first)
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            int item_idx                = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
-            int local_selection_idx     = selection_indices[ITEM] - num_selections_prefix;
-            int local_rejection_idx     = item_idx - local_selection_idx;
-            int local_scatter_offset    = (selection_flags[ITEM]) ?
-                                            tile_num_rejections + local_selection_idx :
-                                            local_rejection_idx;
-
-            temp_storage.raw_exchange.Alias()[local_scatter_offset] = items[ITEM];
-        }
-
-        // Ensure all threads finished scattering to shared memory 
-        CTA_SYNC();
-
-        // Gather items from shared memory and scatter to global
-        ScatterPartitionsToGlobal<IS_LAST_TILE, IS_FIRST_TILE>(
-          num_tile_items, tile_num_rejections, num_selections_prefix, num_rejected_prefix, d_selected_out);
+      if (!IS_LAST_TILE || (item_idx < num_tile_items))
+      {
+        partitioned_out_it[scatter_offset] = item;
+      }
     }
+  }
 
-    /**
-     * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to two
-     * distinct partitions.
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename SelectedItT, typename RejectedItT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
-      int num_tile_items,
-      int tile_num_rejections,
-      OffsetT num_selections_prefix,
-      OffsetT num_rejected_prefix,
-      detail::partition_distinct_output_t<SelectedItT, RejectedItT> partitioned_out_it_wrapper)
+  //---------------------------------------------------------------------
+  // Cooperatively scan a device-wide sequence of tiles with other CTAs
+  //---------------------------------------------------------------------
+
+  /**
+   * @brief Process first tile of input (dynamic chained scan).
+   *
+   * @param num_tile_items
+   *   Number of input items comprising this tile
+   *
+   * @param tile_offset
+   *   Tile offset
+   *
+   * @param tile_state
+   *   Global tile state descriptor
+   *
+   * @return The running count of selections (including this tile)
+   */
+  template <bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  ConsumeFirstTile(int num_tile_items, OffsetT tile_offset, ScanTileStateT& tile_state)
+  {
+    InputT items[ITEMS_PER_THREAD];
+    OffsetT selection_flags[ITEMS_PER_THREAD];
+    OffsetT selection_indices[ITEMS_PER_THREAD];
+
+    // Load items
+    if (IS_LAST_TILE)
     {
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
-            int rejection_idx = item_idx;
-            int selection_idx = item_idx - tile_num_rejections;
-            OffsetT scatter_offset =
-              (item_idx < tile_num_rejections)
-                ? num_rejected_prefix + rejection_idx
-                : num_selections_prefix + selection_idx;
-
-            InputT item = temp_storage.raw_exchange.Alias()[item_idx];
-
-            if (!IS_LAST_TILE || (item_idx < num_tile_items))
-            {
-                if (item_idx >= tile_num_rejections)
-                {
-                    partitioned_out_it_wrapper.selected_it[scatter_offset] = item;
-                }
-                else
-                {
-                    partitioned_out_it_wrapper.rejected_it[scatter_offset] = item;
-                }
-            }
-        }
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
     }
-
-    /**
-     * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to a single
-     * iterator, where selected items are written in order from the beginning of the itereator and rejected items are
-     * writtem from the iterators end backwards.
-     */
-    template <bool IS_LAST_TILE, bool IS_FIRST_TILE, typename PartitionedOutputItT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
-      int num_tile_items,
-      int tile_num_rejections,
-      OffsetT num_selections_prefix,
-      OffsetT num_rejected_prefix,
-      PartitionedOutputItT partitioned_out_it)
+    else
     {
-        #pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-            int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
-            int rejection_idx = item_idx;
-            int selection_idx = item_idx - tile_num_rejections;
-            OffsetT scatter_offset =
-              (item_idx < tile_num_rejections)
-                ? num_items - num_rejected_prefix - rejection_idx - 1
-                : num_selections_prefix + selection_idx;
-
-            InputT item = temp_storage.raw_exchange.Alias()[item_idx];
-
-            if (!IS_LAST_TILE || (item_idx < num_tile_items))
-            {
-                partitioned_out_it[scatter_offset] = item;
-            }
-        }
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
     }
 
-    //---------------------------------------------------------------------
-    // Cooperatively scan a device-wide sequence of tiles with other CTAs
-    //---------------------------------------------------------------------
+    // Initialize selection_flags
+    InitializeSelections<true, IS_LAST_TILE>(
+      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
 
+    CTA_SYNC();
 
-    /**
-     * @brief Process first tile of input (dynamic chained scan).
-     *
-     * @param num_tile_items
-     *   Number of input items comprising this tile
-     *
-     * @param tile_offset
-     *   Tile offset
-     *
-     * @param tile_state
-     *   Global tile state descriptor
-     *
-     * @return The running count of selections (including this tile)
-     */
-    template <bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeFirstTile(int num_tile_items,
-                                                        OffsetT tile_offset,
-                                                        ScanTileStateT &tile_state)
+    // Exclusive scan of selection_flags
+    OffsetT num_tile_selections;
+    BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, num_tile_selections);
+
+    if (threadIdx.x == 0)
     {
-        InputT      items[ITEMS_PER_THREAD];
-        OffsetT     selection_flags[ITEMS_PER_THREAD];
-        OffsetT     selection_indices[ITEMS_PER_THREAD];
-
-        // Load items
-        if (IS_LAST_TILE)
-            BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
-        else
-            BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
-
-        // Initialize selection_flags
-        InitializeSelections<true, IS_LAST_TILE>(
-            tile_offset,
-            num_tile_items,
-            items,
-            selection_flags,
-            Int2Type<SELECT_METHOD>());
-
-        CTA_SYNC();
-
-        // Exclusive scan of selection_flags
-        OffsetT num_tile_selections;
-        BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, num_tile_selections);
-
-        if (threadIdx.x == 0)
-        {
-            // Update tile status if this is not the last tile
-            if (!IS_LAST_TILE)
-                tile_state.SetInclusive(0, num_tile_selections);
-        }
-
-        // Discount any out-of-bounds selections
-        if (IS_LAST_TILE)
-            num_tile_selections -= (TILE_ITEMS - num_tile_items);
-
-        // Scatter flagged items
-        Scatter<IS_LAST_TILE, true>(
-            items,
-            selection_flags,
-            selection_indices,
-            num_tile_items,
-            num_tile_selections,
-            0,
-            0,
-            num_tile_selections,
-            cub::Int2Type<KEEP_REJECTS>{});
-
-        return num_tile_selections;
+      // Update tile status if this is not the last tile
+      if (!IS_LAST_TILE)
+      {
+        tile_state.SetInclusive(0, num_tile_selections);
+      }
     }
 
-    /**
-     * @brief Process subsequent tile of input (dynamic chained scan).
-     *
-     * @param num_tile_items
-     *   Number of input items comprising this tile
-     *
-     * @param tile_idx
-     *   Tile index
-     *
-     * @param tile_offset
-     *   Tile offset
-     *
-     * @param tile_state
-     *   Global tile state descriptor
-     *
-     * @return The running count of selections (including this tile)
-     */
-    template <bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT ConsumeSubsequentTile(int num_tile_items,
-                                                             int tile_idx,
-                                                             OffsetT tile_offset,
-                                                             ScanTileStateT &tile_state)
+    // Discount any out-of-bounds selections
+    if (IS_LAST_TILE)
     {
-        InputT      items[ITEMS_PER_THREAD];
-        OffsetT     selection_flags[ITEMS_PER_THREAD];
-        OffsetT     selection_indices[ITEMS_PER_THREAD];
-
-        // Load items
-        if (IS_LAST_TILE)
-            BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
-        else
-            BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
-
-        // Initialize selection_flags
-        InitializeSelections<false, IS_LAST_TILE>(
-            tile_offset,
-            num_tile_items,
-            items,
-            selection_flags,
-            Int2Type<SELECT_METHOD>());
-
-        CTA_SYNC();
-
-        // Exclusive scan of values and selection_flags
-        TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
-        BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
-
-        OffsetT num_tile_selections     = prefix_op.GetBlockAggregate();
-        OffsetT num_selections          = prefix_op.GetInclusivePrefix();
-        OffsetT num_selections_prefix   = prefix_op.GetExclusivePrefix();
-        OffsetT num_rejected_prefix     = tile_offset - num_selections_prefix;
-
-        // Discount any out-of-bounds selections
-        if (IS_LAST_TILE)
-        {
-            int num_discount    = TILE_ITEMS - num_tile_items;
-            num_selections      -= num_discount;
-            num_tile_selections -= num_discount;
-        }
-
-        // Scatter flagged items
-        Scatter<IS_LAST_TILE, false>(
-            items,
-            selection_flags,
-            selection_indices,
-            num_tile_items,
-            num_tile_selections,
-            num_selections_prefix,
-            num_rejected_prefix,
-            num_selections,
-            cub::Int2Type<KEEP_REJECTS>{});
-
-        return num_selections;
+      num_tile_selections -= (TILE_ITEMS - num_tile_items);
     }
 
+    // Scatter flagged items
+    Scatter<IS_LAST_TILE, true>(
+      items,
+      selection_flags,
+      selection_indices,
+      num_tile_items,
+      num_tile_selections,
+      0,
+      0,
+      num_tile_selections,
+      cub::Int2Type<KEEP_REJECTS>{});
 
-    /**
-     * @brief Process a tile of input
-     *
-     * @param num_tile_items
-     *   Number of input items comprising this tile
-     *
-     * @param tile_idx
-     *   Tile index
-     *
-     * @param tile_offset
-     *   Tile offset
-     *
-     * @param tile_state
-     *   Global tile state descriptor
-     */
-    template <bool IS_LAST_TILE>
-    _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
-    ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT &tile_state)
+    return num_tile_selections;
+  }
+
+  /**
+   * @brief Process subsequent tile of input (dynamic chained scan).
+   *
+   * @param num_tile_items
+   *   Number of input items comprising this tile
+   *
+   * @param tile_idx
+   *   Tile index
+   *
+   * @param tile_offset
+   *   Tile offset
+   *
+   * @param tile_state
+   *   Global tile state descriptor
+   *
+   * @return The running count of selections (including this tile)
+   */
+  template <bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  ConsumeSubsequentTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
+  {
+    InputT items[ITEMS_PER_THREAD];
+    OffsetT selection_flags[ITEMS_PER_THREAD];
+    OffsetT selection_indices[ITEMS_PER_THREAD];
+
+    // Load items
+    if (IS_LAST_TILE)
     {
-        OffsetT num_selections;
-        if (tile_idx == 0)
-        {
-            num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state);
-        }
-        else
-        {
-            num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state);
-        }
-
-        return num_selections;
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items, num_tile_items);
     }
-
-    /**
-     * @brief Scan tiles of items as part of a dynamic chained scan
-     *
-     * @param num_tiles
-     *   Total number of input tiles
-     *
-     * @param tile_state
-     *   Global tile state descriptor
-     *
-     * @param d_num_selected_out
-     *   Output total number selection_flags
-     *
-     * @tparam NumSelectedIteratorT
-     *   Output iterator type for recording number of items selection_flags
-     */
-    template <typename NumSelectedIteratorT>
-    _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(int num_tiles,
-                                                 ScanTileStateT &tile_state,
-                                                 NumSelectedIteratorT d_num_selected_out)
+    else
     {
-        // Blocks are launched in increasing order, so just assign one tile per block
-        int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
-        OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
-
-        if (tile_idx < num_tiles - 1)
-        {
-            // Not the last tile (full)
-            ConsumeTile<false>(TILE_ITEMS, tile_idx, tile_offset, tile_state);
-        }
-        else
-        {
-            // The last tile (possibly partially-full)
-            OffsetT num_remaining   = num_items - tile_offset;
-            OffsetT num_selections  = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
-
-            if (threadIdx.x == 0)
-            {
-                // Output the total number of items selection_flags
-                *d_num_selected_out = num_selections;
-            }
-        }
+      BlockLoadT(temp_storage.load_items).Load(d_in + tile_offset, items);
     }
 
+    // Initialize selection_flags
+    InitializeSelections<false, IS_LAST_TILE>(
+      tile_offset, num_tile_items, items, selection_flags, Int2Type<SELECT_METHOD>());
+
+    CTA_SYNC();
+
+    // Exclusive scan of values and selection_flags
+    TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
+
+    OffsetT num_tile_selections   = prefix_op.GetBlockAggregate();
+    OffsetT num_selections        = prefix_op.GetInclusivePrefix();
+    OffsetT num_selections_prefix = prefix_op.GetExclusivePrefix();
+    OffsetT num_rejected_prefix   = tile_offset - num_selections_prefix;
+
+    // Discount any out-of-bounds selections
+    if (IS_LAST_TILE)
+    {
+      int num_discount = TILE_ITEMS - num_tile_items;
+      num_selections -= num_discount;
+      num_tile_selections -= num_discount;
+    }
+
+    // Scatter flagged items
+    Scatter<IS_LAST_TILE, false>(
+      items,
+      selection_flags,
+      selection_indices,
+      num_tile_items,
+      num_tile_selections,
+      num_selections_prefix,
+      num_rejected_prefix,
+      num_selections,
+      cub::Int2Type<KEEP_REJECTS>{});
+
+    return num_selections;
+  }
+
+  /**
+   * @brief Process a tile of input
+   *
+   * @param num_tile_items
+   *   Number of input items comprising this tile
+   *
+   * @param tile_idx
+   *   Tile index
+   *
+   * @param tile_offset
+   *   Tile offset
+   *
+   * @param tile_state
+   *   Global tile state descriptor
+   */
+  template <bool IS_LAST_TILE>
+  _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
+  ConsumeTile(int num_tile_items, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
+  {
+    OffsetT num_selections;
+    if (tile_idx == 0)
+    {
+      num_selections = ConsumeFirstTile<IS_LAST_TILE>(num_tile_items, tile_offset, tile_state);
+    }
+    else
+    {
+      num_selections = ConsumeSubsequentTile<IS_LAST_TILE>(num_tile_items, tile_idx, tile_offset, tile_state);
+    }
+
+    return num_selections;
+  }
+
+  /**
+   * @brief Scan tiles of items as part of a dynamic chained scan
+   *
+   * @param num_tiles
+   *   Total number of input tiles
+   *
+   * @param tile_state
+   *   Global tile state descriptor
+   *
+   * @param d_num_selected_out
+   *   Output total number selection_flags
+   *
+   * @tparam NumSelectedIteratorT
+   *   Output iterator type for recording number of items selection_flags
+   */
+  template <typename NumSelectedIteratorT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ConsumeRange(int num_tiles, ScanTileStateT& tile_state, NumSelectedIteratorT d_num_selected_out)
+  {
+    // Blocks are launched in increasing order, so just assign one tile per block
+    int tile_idx        = (blockIdx.x * gridDim.y) + blockIdx.y; // Current tile index
+    OffsetT tile_offset = static_cast<OffsetT>(tile_idx) * static_cast<OffsetT>(TILE_ITEMS);
+
+    if (tile_idx < num_tiles - 1)
+    {
+      // Not the last tile (full)
+      ConsumeTile<false>(TILE_ITEMS, tile_idx, tile_offset, tile_state);
+    }
+    else
+    {
+      // The last tile (possibly partially-full)
+      OffsetT num_remaining  = num_items - tile_offset;
+      OffsetT num_selections = ConsumeTile<true>(num_remaining, tile_idx, tile_offset, tile_state);
+
+      if (threadIdx.x == 0)
+      {
+        // Output the total number of items selection_flags
+        *d_num_selected_out = num_selections;
+      }
+    }
+  }
 };
-
-
 
 CUB_NAMESPACE_END

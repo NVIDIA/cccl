@@ -129,24 +129,21 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename OffsetT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(InputIteratorT d_in,
-                                                         OffsetsOutputIteratorT d_offsets_out,
-                                                         LengthsOutputIteratorT d_lengths_out,
-                                                         NumRunsOutputIteratorT d_num_runs_out,
-                                                         ScanTileStateT tile_status,
-                                                         EqualityOpT equality_op,
-                                                         OffsetT num_items,
-                                                         int num_tiles)
+  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRleSweepKernel(
+    InputIteratorT d_in,
+    OffsetsOutputIteratorT d_offsets_out,
+    LengthsOutputIteratorT d_lengths_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ScanTileStateT tile_status,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    int num_tiles)
 {
   using AgentRlePolicyT = typename ChainedPolicyT::ActivePolicy::RleSweepPolicyT;
 
   // Thread block type for selecting data from input tiles
-  using AgentRleT = AgentRle<AgentRlePolicyT,
-                             InputIteratorT,
-                             OffsetsOutputIteratorT,
-                             LengthsOutputIteratorT,
-                             EqualityOpT,
-                             OffsetT>;
+  using AgentRleT =
+    AgentRle<AgentRlePolicyT, InputIteratorT, OffsetsOutputIteratorT, LengthsOutputIteratorT, EqualityOpT, OffsetT>;
 
   // Shared memory for AgentRle
   __shared__ typename AgentRleT::TempStorage temp_storage;
@@ -191,9 +188,9 @@ template <typename InputIteratorT,
           typename NumRunsOutputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename SelectedPolicy = detail::device_non_trivial_runs_policy_hub<
-            cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-            cub::detail::value_t<InputIteratorT>>>
+          typename SelectedPolicy =
+            detail::device_non_trivial_runs_policy_hub< cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                        cub::detail::value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -211,8 +208,8 @@ struct DeviceRleDispatch
   // Tile status descriptor interface type
   using ScanTileStateT = ReduceByKeyScanTileState<LengthT, OffsetT>;
 
-  void *d_temp_storage;
-  size_t &temp_storage_bytes;
+  void* d_temp_storage;
+  size_t& temp_storage_bytes;
   InputIteratorT d_in;
   OffsetsOutputIteratorT d_offsets_out;
   LengthsOutputIteratorT d_lengths_out;
@@ -221,15 +218,16 @@ struct DeviceRleDispatch
   OffsetT num_items;
   cudaStream_t stream;
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeviceRleDispatch(void *d_temp_storage,
-                                                         size_t &temp_storage_bytes,
-                                                         InputIteratorT d_in,
-                                                         OffsetsOutputIteratorT d_offsets_out,
-                                                         LengthsOutputIteratorT d_lengths_out,
-                                                         NumRunsOutputIteratorT d_num_runs_out,
-                                                         EqualityOpT equality_op,
-                                                         OffsetT num_items,
-                                                         cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeviceRleDispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OffsetsOutputIteratorT d_offsets_out,
+    LengthsOutputIteratorT d_lengths_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    cudaStream_t stream)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -295,12 +293,11 @@ struct DeviceRleDispatch
    */
   template <typename ActivePolicyT, typename DeviceScanInitKernelPtr, typename DeviceRleSweepKernelPtr>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  Invoke(DeviceScanInitKernelPtr device_scan_init_kernel,
-         DeviceRleSweepKernelPtr device_rle_sweep_kernel)
+  Invoke(DeviceScanInitKernelPtr device_scan_init_kernel, DeviceRleSweepKernelPtr device_rle_sweep_kernel)
   {
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
+    constexpr int block_threads    = ActivePolicyT::RleSweepPolicyT::BLOCK_THREADS;
     constexpr int items_per_thread = ActivePolicyT::RleSweepPolicyT::ITEMS_PER_THREAD;
 
     do
@@ -327,10 +324,9 @@ struct DeviceRleDispatch
 
       // Compute allocation pointers into the single storage blob (or compute the necessary size of
       // the blob)
-      void *allocations[1] = {};
+      void* allocations[1] = {};
 
-      error = CubDebug(
-        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (error != cudaSuccess)
       {
         break;
@@ -357,14 +353,11 @@ struct DeviceRleDispatch
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
               init_grid_size,
               INIT_KERNEL_THREADS,
-              (long long)stream);
+              (long long) stream);
 #endif
 
       // Invoke device_scan_init_kernel to initialize tile descriptors and queue descriptors
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size,
-                                                              INIT_KERNEL_THREADS,
-                                                              0,
-                                                              stream)
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
         .doit(device_scan_init_kernel, tile_status, num_tiles, d_num_runs_out);
 
       // Check for failure to launch
@@ -419,16 +412,13 @@ struct DeviceRleDispatch
               scan_grid_size.y,
               scan_grid_size.z,
               block_threads,
-              (long long)stream,
+              (long long) stream,
               items_per_thread,
               device_rle_kernel_sm_occupancy);
 #endif
 
       // Invoke device_rle_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size,
-                                                              block_threads,
-                                                              0,
-                                                              stream)
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(scan_grid_size, block_threads, 0, stream)
         .doit(device_rle_sweep_kernel,
               d_in,
               d_offsets_out,
@@ -461,15 +451,16 @@ struct DeviceRleDispatch
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-    return Invoke<ActivePolicyT>(DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-                                 DeviceRleSweepKernel<MaxPolicyT,
-                                                      InputIteratorT,
-                                                      OffsetsOutputIteratorT,
-                                                      LengthsOutputIteratorT,
-                                                      NumRunsOutputIteratorT,
-                                                      ScanTileStateT,
-                                                      EqualityOpT,
-                                                      OffsetT>);
+    return Invoke<ActivePolicyT>(
+      DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      DeviceRleSweepKernel<MaxPolicyT,
+                           InputIteratorT,
+                           OffsetsOutputIteratorT,
+                           LengthsOutputIteratorT,
+                           NumRunsOutputIteratorT,
+                           ScanTileStateT,
+                           EqualityOpT,
+                           OffsetT>);
   }
 
   /**
@@ -505,16 +496,16 @@ struct DeviceRleDispatch
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           OffsetsOutputIteratorT d_offsets_out,
-           LengthsOutputIteratorT d_lengths_out,
-           NumRunsOutputIteratorT d_num_runs_out,
-           EqualityOpT equality_op,
-           OffsetT num_items,
-           cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OffsetsOutputIteratorT d_offsets_out,
+    LengthsOutputIteratorT d_lengths_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    cudaStream_t stream)
   {
     using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
 
@@ -524,21 +515,22 @@ struct DeviceRleDispatch
     {
       // Get PTX version
       int ptx_version = 0;
-      error = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
-      DeviceRleDispatch dispatch(d_temp_storage,
-                                 temp_storage_bytes,
-                                 d_in,
-                                 d_offsets_out,
-                                 d_lengths_out,
-                                 d_num_runs_out,
-                                 equality_op,
-                                 num_items,
-                                 stream);
+      DeviceRleDispatch dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_offsets_out,
+        d_lengths_out,
+        d_num_runs_out,
+        equality_op,
+        num_items,
+        stream);
 
       // Dispatch
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
@@ -551,29 +543,30 @@ struct DeviceRleDispatch
     return error;
   }
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           OffsetsOutputIteratorT d_offsets_out,
-           LengthsOutputIteratorT d_lengths_out,
-           NumRunsOutputIteratorT d_num_runs_out,
-           EqualityOpT equality_op,
-           OffsetT num_items,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OffsetsOutputIteratorT d_offsets_out,
+    LengthsOutputIteratorT d_lengths_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    EqualityOpT equality_op,
+    OffsetT num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Dispatch(d_temp_storage,
-                    temp_storage_bytes,
-                    d_in,
-                    d_offsets_out,
-                    d_lengths_out,
-                    d_num_runs_out,
-                    equality_op,
-                    num_items,
-                    stream);
+    return Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_offsets_out,
+      d_lengths_out,
+      d_num_runs_out,
+      equality_op,
+      num_items,
+      stream);
   }
 };
 

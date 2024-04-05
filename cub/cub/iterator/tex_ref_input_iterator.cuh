@@ -106,10 +106,7 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template <
-    typename    T,
-    int         /*UNIQUE_ID*/,
-    typename    OffsetT = std::ptrdiff_t>
+template < typename T, int /*UNIQUE_ID*/, typename OffsetT = std::ptrdiff_t>
 using TexRefInputIterator CUB_DEPRECATED = cub::TexObjInputIterator<T, OffsetT>;
 
 CUB_NAMESPACE_END
