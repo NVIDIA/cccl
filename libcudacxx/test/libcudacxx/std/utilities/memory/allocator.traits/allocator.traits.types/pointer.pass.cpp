@@ -46,11 +46,9 @@ private:
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::pointer, Ptr<char> >::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::pointer, char*>::value), "");
-#if TEST_STD_VER >= 11
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::pointer, char*>::value), "");
-#endif
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::pointer, Ptr<char> >::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::pointer, char*>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::pointer, char*>::value), "");
 
   return 0;
 }

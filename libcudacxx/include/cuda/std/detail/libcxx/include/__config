@@ -1624,24 +1624,24 @@ typedef unsigned int   char32_t;
 #  endif
 #endif // defined(__APPLE__)
 
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && \
-    (defined(_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION) || \
-    (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)) \
-  || defined(__cuda_std__) // FIXME: Properly handle aligned allocations
-#  define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
-#endif
+#  if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION)                     \
+      && (defined(_LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION)          \
+          || (!defined(__cpp_aligned_new) || __cpp_aligned_new < 201606)) \
+    || defined(__cuda_std__) // FIXME: Properly handle aligned allocations
+#    define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
+#  endif
 
-#if defined(__APPLE__) || defined(__FreeBSD__)
-#define _LIBCUDACXX_HAS_DEFAULTRUNELOCALE
-#endif
+#  if defined(__APPLE__) || defined(__FreeBSD__)
+#    define _LIBCUDACXX_HAS_DEFAULTRUNELOCALE
+#  endif
 
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__sun__)
-#define _LIBCUDACXX_WCTYPE_IS_MASK
-#endif
+#  if defined(__APPLE__) || defined(__FreeBSD__) || defined(__sun__)
+#    define _LIBCUDACXX_WCTYPE_IS_MASK
+#  endif
 
-#if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
-#define _LIBCUDACXX_NO_HAS_CHAR8_T
-#endif
+#  if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#    define _LIBCUDACXX_NO_HAS_CHAR8_T
+#  endif
 
 // Deprecation macros.
 //

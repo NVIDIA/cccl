@@ -68,12 +68,10 @@ struct pointer_traits<C<char>::pointer>
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::difference_type, short>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::difference_type, cuda::std::ptrdiff_t>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::difference_type, signed char>::value), "");
-#if TEST_STD_VER >= 11
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::difference_type, cuda::std::ptrdiff_t>::value), "");
-#endif
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::difference_type, short>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::difference_type, cuda::std::ptrdiff_t>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::difference_type, signed char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::difference_type, cuda::std::ptrdiff_t>::value), "");
 
   return 0;
 }

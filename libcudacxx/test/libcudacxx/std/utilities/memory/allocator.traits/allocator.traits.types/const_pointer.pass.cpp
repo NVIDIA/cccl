@@ -58,12 +58,10 @@ private:
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::const_pointer, Ptr<const char> >::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::const_pointer, const char*>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::const_pointer, CPtr<const char> >::value), "");
-#if TEST_STD_VER >= 11
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::const_pointer, const char*>::value), "");
-#endif
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::const_pointer, Ptr<const char> >::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::const_pointer, const char*>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::const_pointer, CPtr<const char> >::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::const_pointer, const char*>::value), "");
 
   return 0;
 }

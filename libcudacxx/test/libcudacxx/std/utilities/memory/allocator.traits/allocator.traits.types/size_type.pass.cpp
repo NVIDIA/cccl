@@ -64,14 +64,12 @@ struct pointer_traits<C<char>::pointer>
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::size_type, unsigned short>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::size_type,
-                   cuda::std::make_unsigned<cuda::std::ptrdiff_t>::type>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::size_type,
-                   unsigned char>::value), "");
-#if TEST_STD_VER >= 11
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::size_type, unsigned short>::value), "");
-#endif
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::size_type, unsigned short>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::size_type,
+                 cuda::std::make_unsigned<cuda::std::ptrdiff_t>::type>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::size_type,
+                 unsigned char>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::size_type, unsigned short>::value), "");
 
   return 0;
 }

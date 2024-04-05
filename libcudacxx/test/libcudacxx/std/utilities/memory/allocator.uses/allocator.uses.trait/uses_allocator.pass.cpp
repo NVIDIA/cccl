@@ -72,17 +72,18 @@ int main(int, char**)
     test<false, E, int>();
 #endif
 
-
-//     static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int> >::value), "");
-//     static_assert(( cuda::std::uses_allocator<cuda::std::vector<int>, cuda::std::allocator<int> >::value), "");
-//     static_assert((!cuda::std::uses_allocator<A, cuda::std::allocator<int> >::value), "");
-//     static_assert((!cuda::std::uses_allocator<B, cuda::std::allocator<int> >::value), "");
-//     static_assert(( cuda::std::uses_allocator<B, double>::value), "");
-//     static_assert((!cuda::std::uses_allocator<C, decltype(C::allocator_type)>::value), "");
-//     static_assert((!cuda::std::uses_allocator<D, decltype(D::allocator_type)>::value), "");
-// #if TEST_STD_VER >= 11
-//     static_assert((!cuda::std::uses_allocator<E, int>::value), "");
-// #endif
+  static_assert((!cuda::std::uses_allocator<int, cuda::std::allocator<int> >::value), "");
+#if defined(_LIBCUDACXX_HAS_VECTOR)
+  static_assert(( cuda::std::uses_allocator<cuda::std::vector<int>, cuda::std::allocator<int> >::value), "");
+#endif // _LIBCUDACXX_HAS_VECTOR
+  static_assert((!cuda::std::uses_allocator<A, cuda::std::allocator<int> >::value), "");
+  static_assert((!cuda::std::uses_allocator<B, cuda::std::allocator<int> >::value), "");
+  static_assert(( cuda::std::uses_allocator<B, double>::value), "");
+  static_assert((!cuda::std::uses_allocator<C, decltype(C::allocator_type)>::value), "");
+  static_assert((!cuda::std::uses_allocator<D, decltype(D::allocator_type)>::value), "");
+#if !defined(TEST_COMPILER_GCC) // E::allocator_type is private
+  static_assert((!cuda::std::uses_allocator<E, int>::value), "");
+#endif // !TEST_COMPILER_GCC
 
   return 0;
 }

@@ -56,7 +56,6 @@ struct B
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-#if TEST_STD_VER >= 11
     {
         A<int> a;
         assert(cuda::std::allocator_traits<A<int> >::allocate(a, 10, nullptr) == &a.storage);
@@ -66,7 +65,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         Alloc a;
         assert(cuda::std::allocator_traits<Alloc>::allocate(a, 10, nullptr) == &a.storage);
     }
-#endif
     {
         B<int> b;
         assert(cuda::std::allocator_traits<B<int> >::allocate(b, 11, nullptr) == &b.storage);

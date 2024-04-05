@@ -50,13 +50,13 @@ __host__ __device__ void test() {
     static_assert((cuda::std::is_same<typename Alloc::propagate_on_container_move_assignment, cuda::std::true_type>::value), "");
     static_assert((cuda::std::is_same<typename Alloc::is_always_equal, cuda::std::true_type>::value), "");
 
-#if TEST_STD_VER <= 17
+#if TEST_STD_VER <= 2017
     static_assert((cuda::std::is_same<typename Alloc::pointer, T*>::value), "");
     static_assert((cuda::std::is_same<typename Alloc::const_pointer, T const*>::value), "");
     static_assert((cuda::std::is_same<typename Alloc::reference, T&>::value), "");
     static_assert((cuda::std::is_same<typename Alloc::const_reference, T const&>::value), "");
     static_assert((cuda::std::is_same<typename Alloc::template rebind<U>::other, cuda::std::allocator<U> >::value), "");
-#endif
+#endif // TEST_STD_VER <= 2017
 }
 
 int main(int, char**) {

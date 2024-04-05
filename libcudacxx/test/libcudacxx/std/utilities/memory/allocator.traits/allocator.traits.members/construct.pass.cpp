@@ -40,7 +40,6 @@ struct B
 
     __host__ __device__ TEST_CONSTEXPR_CXX20 B(int& count) : count_(count) {}
 
-#if TEST_STD_VER >= 11
     template <class U, class ...Args>
     __host__ __device__ TEST_CONSTEXPR_CXX20 void construct(U* p, Args&& ...args)
     {
@@ -51,7 +50,6 @@ struct B
         ::new ((void*)p) U(cuda::std::forward<Args>(args)...);
 #endif // TEST_STD_VER >= 2020
     }
-#endif
 
     int& count_;
 };
@@ -122,7 +120,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       alloc.deallocate(vt, 1);
     }
 
-#if TEST_STD_VER >= 11
     {
         int A0_count = 0;
         int b_construct = 0;
@@ -162,7 +159,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         assert(b_construct == 1);
         alloc.deallocate(a2, 1);
     }
-#endif
 
     return true;
 }

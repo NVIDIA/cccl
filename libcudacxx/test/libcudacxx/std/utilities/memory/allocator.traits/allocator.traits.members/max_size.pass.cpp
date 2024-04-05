@@ -58,7 +58,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         Alloc a;
         assert(cuda::std::allocator_traits<Alloc >::max_size(a) == 100);
     }
-#if TEST_STD_VER >= 11
     {
         A<int> a;
         assert(cuda::std::allocator_traits<A<int> >::max_size(a) ==
@@ -69,13 +68,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         assert(cuda::std::allocator_traits<A<int> >::max_size(a) ==
                cuda::std::numeric_limits<cuda::std::size_t>::max() / sizeof(int));
     }
-#ifdef _LIBCUDACXX_HAS_ALLOCATOR
     {
         cuda::std::allocator<int> a;
         static_assert(noexcept(cuda::std::allocator_traits<cuda::std::allocator<int>>::max_size(a)) == true, "");
+        unused(a);
     }
-#endif // 0
-#endif // TEST_STD_VER >= 11
 
     return true;
 }

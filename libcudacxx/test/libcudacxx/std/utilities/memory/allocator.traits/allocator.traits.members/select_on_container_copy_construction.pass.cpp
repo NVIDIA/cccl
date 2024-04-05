@@ -63,7 +63,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         Alloc a;
         assert(cuda::std::allocator_traits<Alloc>::select_on_container_copy_construction(a).id == 0);
     }
-#if TEST_STD_VER >= 11
     {
         B<int> b;
         assert(cuda::std::allocator_traits<B<int> >::select_on_container_copy_construction(b).id == 100);
@@ -72,7 +71,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
         const B<int> b(0);
         assert(cuda::std::allocator_traits<B<int> >::select_on_container_copy_construction(b).id == 100);
     }
-#endif
 
     return true;
 }
