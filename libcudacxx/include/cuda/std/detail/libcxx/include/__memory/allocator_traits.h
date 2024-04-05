@@ -38,6 +38,8 @@
 
 #include <cuda/std/detail/__pragma_push>
 
+_CCCL_NV_DIAG_SUPPRESS(1215)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2014
@@ -598,6 +600,8 @@ struct __asan_annotate_container_with_allocator<allocator<_Tp> > : true_type
 #undef _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_NV_DIAG_DEFAULT(1215)
 
 #include <cuda/std/detail/__pragma_pop>
 

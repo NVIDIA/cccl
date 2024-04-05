@@ -130,16 +130,12 @@ public:
     {
       __throw_bad_array_new_length();
     }
-#if _CCCL_STD_VER >= 2020 && !defined(_CCCL_COMPILER_NVRTC)
-    if (_CUDA_VSTD::is_constant_evaluated())
+#if _CCCL_STD_VER >= 2020
+    if (__libcpp_is_constant_evaluated())
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (
-        return ::std::allocator<_Tp>{}.allocate(__n);
-      ),(
-        return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
-      ))
+      return ::std::allocator<_Tp>{}.allocate(__n);
     }
-#endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER_NVRTC
+#endif // _CCCL_STD_VER >= 2020
     {
       return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
@@ -157,17 +153,13 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(_Tp* __p, size_t __n) noexcept
   {
-#if _CCCL_STD_VER >= 2020 && !defined(_CCCL_COMPILER_NVRTC)
-    if (_CUDA_VSTD::is_constant_evaluated())
+#if _CCCL_STD_VER >= 2020
+    if (__libcpp_is_constant_evaluated())
     {
-      NV_IF_ELSE_TARGET(NV_IS_HOST, (
-        return ::std::allocator<_Tp>{}.deallocate(__p, __n);
-      ),(
-        _CUDA_VSTD::__libcpp_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
-      ))
+      return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
     else
-#endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER_NVRTC
+#endif // _CCCL_STD_VER >= 2020
     {
       _CUDA_VSTD::__libcpp_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }

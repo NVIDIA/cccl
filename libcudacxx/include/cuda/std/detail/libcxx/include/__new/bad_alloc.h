@@ -43,8 +43,9 @@ public:
 _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc() {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_alloc();
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#else
   _CUDA_VSTD_NOVERSION::terminate();
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
 class _LIBCUDACXX_TYPE_VIS bad_array_new_length : public bad_alloc
