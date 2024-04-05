@@ -1,0 +1,18 @@
+# Copyright (c) 2023, NVIDIA CORPORATION.
+
+repos:
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v17.0.6
+    hooks:
+      - id: clang-format
+        types_or: [c, c++, cuda]
+        args: ["-fallback-style=none", "-style=file", "-i"]
+        exclude: |
+          (?x)^(
+            ^cub/.*|
+            ^libcudacxx/.*|
+            ^thrust/.*
+          )
+
+default_language_version:
+  python: python3
