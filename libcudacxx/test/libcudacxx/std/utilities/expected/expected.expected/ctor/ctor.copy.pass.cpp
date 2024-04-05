@@ -109,7 +109,7 @@ __host__ __device__ void testException() {
 
   struct Throwing {
     Throwing() = default;
-    __host__ __device__Throwing(const Throwing&) { throw Except{}; }
+    __host__ __device__ Throwing(const Throwing&) { throw Except{}; }
   };
 
   // throw on copying value

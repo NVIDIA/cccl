@@ -17,7 +17,7 @@
 #include "test_macros.h"
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#include <cuda/std/stdexcept>
+#include <cuda/std/detail/libcxx/include/stdexcept>
 #endif // TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()

@@ -23,31 +23,33 @@ using cuda::std::optional;
 
 template <class T, class U>
 __host__ __device__
-TEST_CONSTEXPR_CXX14 void
-test(const optional<U>& rhs, bool is_going_to_throw = false)
+TEST_CONSTEXPR_CXX14 void test(const optional<U>& rhs)
 {
     bool rhs_engaged = static_cast<bool>(rhs);
+    optional<T> lhs = rhs;
+    assert(static_cast<bool>(lhs) == rhs_engaged);
+    if (rhs_engaged) {
+        assert(*lhs == *rhs);
+    }
+}
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
+template <class T, class U>
+__host__ __device__
+void test_exception(const optional<U>& rhs)
+{
     try
     {
         optional<T> lhs = rhs;
-        assert(is_going_to_throw == false);
-        assert(static_cast<bool>(lhs) == rhs_engaged);
-        if (rhs_engaged)
-            assert(*lhs == *rhs);
+        unused(lhs);
+        assert(false);
     }
     catch (int i)
     {
         assert(i == 6);
     }
-#else
-    if (is_going_to_throw) return;
-    optional<T> lhs = rhs;
-    assert(static_cast<bool>(lhs) == rhs_engaged);
-    if (rhs_engaged)
-        assert(*lhs == *rhs);
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 class X
 {
@@ -116,12 +118,14 @@ int main(int, char**)
         optional<U> rhs;
         test<T>(rhs);
     }
+#ifndef TEST_HAS_NO_EXCEPTIONS
     {
         typedef Z T;
         typedef int U;
         optional<U> rhs(U{3});
-        test<T>(rhs, true);
+        test_exception<T>(rhs);
     }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
     static_assert(!(cuda::std::is_constructible<optional<X>, const optional<Y>&>::value), "");
 

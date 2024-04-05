@@ -141,7 +141,7 @@ int main(int, char**)
         try
         {
             assert(static_cast<bool>(opt) == true);
-            assert(Z::dtor_called == false);
+            assert(Z::dtor_called() == false);
             auto &v = opt.emplace({1, 2});
             static_assert( cuda::std::is_same_v<Z&, decltype(v)>, "" );
             assert(false);
@@ -150,7 +150,7 @@ int main(int, char**)
         {
             assert(i == 6);
             assert(static_cast<bool>(opt) == false);
-            assert(Z::dtor_called == true);
+            assert(Z::dtor_called() == true);
         }
     }
 #endif

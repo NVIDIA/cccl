@@ -102,8 +102,8 @@ struct MakeEmptyT {
 };
 
 int MakeEmptyT::alive = 0;
-__host__ __device__
-template <class Variant> void makeEmpty(Variant &v) {
+template <class Variant>
+__host__ __device__ void makeEmpty(Variant &v) {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try {
     v = cuda::std::move(v2);

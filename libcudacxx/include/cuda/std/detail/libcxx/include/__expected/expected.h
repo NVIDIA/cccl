@@ -23,9 +23,7 @@
 
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
 #include <cuda/std/detail/libcxx/include/__expected/bad_expected_access.h>
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
 #include <cuda/std/detail/libcxx/include/__expected/expected_base.h>
 #include <cuda/std/detail/libcxx/include/__expected/unexpect.h>
 #include <cuda/std/detail/libcxx/include/__expected/unexpected.h>
@@ -76,18 +74,6 @@ template <class _Tp, class _Err>
 class expected;
 
 namespace __expected {
-
-  template <class _Err, class _Arg>
-  _LIBCUDACXX_INLINE_VISIBILITY
-  void __throw_bad_expected_access(_Arg&& __arg) {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
-#else
-    (void)__arg;
-    _LIBCUDACXX_UNREACHABLE();
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
-  }
-
   template <class _Tp, class _Err>
   _LIBCUDACXX_INLINE_VAR constexpr bool __valid_expected =
     !_LIBCUDACXX_TRAIT(is_reference, _Tp) &&
@@ -520,7 +506,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr const _Tp& value() const& {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
     return this->__union_.__val_;
   }
@@ -528,7 +514,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   _Tp& value() & {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
     return this->__union_.__val_;
   }
@@ -536,7 +522,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   const _Tp&& value() const&& {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
     }
     return _CUDA_VSTD::move(this->__union_.__val_);
   }
@@ -544,7 +530,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr
   _Tp&& value() && {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
     }
     return _CUDA_VSTD::move(this->__union_.__val_);
   }
@@ -1323,14 +1309,14 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
   constexpr void value() const& {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(this->__union_.__unex_);
+      __throw_bad_expected_access<_Err>(this->__union_.__unex_);
     }
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
   constexpr void value() && {
     if (!this->__has_val_) {
-      __expected::__throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
+      __throw_bad_expected_access<_Err>(_CUDA_VSTD::move(this->__union_.__unex_));
     }
   }
 

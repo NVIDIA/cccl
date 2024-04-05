@@ -366,9 +366,9 @@ void test_swap_different_alternatives() {
     assert(T1::move_assign_called() == 0);
     // FIXME: libc++ shouldn't move from T2 here.
     LIBCPP_ASSERT(T2::move_called() == 1);
-    assert(T2::move_called <= 1);
+    assert(T2::move_called() <= 1);
     assert(cuda::std::get<0>(v1).value == 42);
-    if (T2::move_called != 0)
+    if (T2::move_called() != 0)
       assert(v2.valueless_by_exception());
     else
       assert(cuda::std::get<1>(v2).value == 100);
@@ -387,11 +387,11 @@ void test_swap_different_alternatives() {
     } catch (int) {
     }
     LIBCPP_ASSERT(T1::move_called() == 0);
-    assert(T1::move_called <= 1);
+    assert(T1::move_called() <= 1);
     assert(T2::swap_called() == 0);
     assert(T2::move_called() == 1); // throws
     assert(T2::move_assign_called() == 0);
-    if (T1::move_called != 0)
+    if (T1::move_called() != 0)
       assert(v1.valueless_by_exception());
     else
       assert(cuda::std::get<0>(v1).value == 42);
