@@ -63,12 +63,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void Swap(T& lhs, T& rhs)
 namespace detail
 {
 
-template <typename IntT>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr IntT NetworkDegree(IntT n, IntT m = IntT{1})
-{
-  return (m < n) ? NetworkDegree(n, m * 2) + 1 : 0;
-}
-
 template <typename KeyT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void CompareSwapMinMaxAsc(KeyT& key_lhs, KeyT& key_rhs)
 {
@@ -214,7 +208,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void
 PairwiseSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THREAD], CompareOp compare_op)
 {
   constexpr int N = ITEMS_PER_THREAD;
-  constexpr int D = detail::NetworkDegree(N);
+  constexpr int D = cub::Log2<N>::VALUE;
   constexpr int M = 1 << D; // Smallest power of two greater than N
 
 #pragma unroll
