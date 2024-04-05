@@ -2,9 +2,8 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <async/test_policy_overloads.h>
-
-#include <async/inclusive_scan/mixin.h>
+#  include <async/inclusive_scan/mixin.h>
+#  include <async/test_policy_overloads.h>
 
 namespace
 {
@@ -15,21 +14,23 @@ struct stateful_operator
 {
   T offset;
 
-  __host__ __device__ T operator()(T v1, T v2) { return v1 + v2 + offset; }
+  __host__ __device__ T operator()(T v1, T v2)
+  {
+    return v1 + v2 + offset;
+  }
 };
 
 // Postfix args overload definition that uses a stateful custom binary operator
 template <typename value_type>
 struct use_stateful_operator
 {
-  using postfix_args_type = std::tuple<       // Single overload:
+  using postfix_args_type = std::tuple< // Single overload:
     std::tuple<stateful_operator<value_type>> // bin_op
     >;
 
   static postfix_args_type generate_postfix_args()
   {
-    return postfix_args_type{
-      std::make_tuple(stateful_operator<value_type>{value_type{2}})};
+    return postfix_args_type{std::make_tuple(stateful_operator<value_type>{value_type{2}})};
   }
 };
 
@@ -38,12 +39,14 @@ struct invoker
     : testing::async::mixin::input::device_vector<value_type>
     , testing::async::mixin::output::device_vector<value_type>
     , use_stateful_operator<value_type>
-    , testing::async::inclusive_scan::mixin::invoke_reference::host_synchronous<
-        value_type>
+    , testing::async::inclusive_scan::mixin::invoke_reference::host_synchronous< value_type>
     , testing::async::inclusive_scan::mixin::invoke_async::simple
     , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet
 {
-  static std::string description() { return "scan with stateful operator"; }
+  static std::string description()
+  {
+    return "scan with stateful operator";
+  }
 };
 
 } // namespace

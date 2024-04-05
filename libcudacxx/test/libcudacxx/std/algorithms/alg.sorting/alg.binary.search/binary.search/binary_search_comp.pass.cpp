@@ -27,8 +27,8 @@ template <class Iter, class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last,
                                                    const T& value, bool x) {
 
-  assert(cuda::std::binary_search(first, last, value,
-                                  cuda::std::less<int>()) == x);
+  assert(cuda::std::binary_search(first, last, value, cuda::std::less<int>()) ==
+         x);
 }
 
 template <class Iter>

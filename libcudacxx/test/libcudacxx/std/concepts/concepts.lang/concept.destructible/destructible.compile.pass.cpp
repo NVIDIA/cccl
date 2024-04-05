@@ -12,7 +12,6 @@
 // template<class T>
 // concept destructible = is_nothrow_destructible_v<T>;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -46,12 +45,15 @@ private:
 
 template <class T>
 struct NoexceptDependant {
-  __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
+  __host__ __device__ ~NoexceptDependant()
+      noexcept(cuda::std::is_same_v<T, int>);
 };
 
 template <class T>
 __host__ __device__ void test() {
-  static_assert(cuda::std::destructible<T> == cuda::std::is_nothrow_destructible_v<T>, "");
+  static_assert(cuda::std::destructible<T> ==
+                    cuda::std::is_nothrow_destructible_v<T>,
+                "");
 }
 
 __host__ __device__ void test() {

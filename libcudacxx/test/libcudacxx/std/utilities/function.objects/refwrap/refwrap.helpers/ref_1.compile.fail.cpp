@@ -20,12 +20,11 @@
 
 struct A {};
 
-__host__ __device__ const A source() {return A();}
+__host__ __device__ const A source() { return A(); }
 
-int main(int, char**)
-{
-    cuda::std::reference_wrapper<const A> r = cuda::std::ref(source());
-    (void)r;
+int main(int, char**) {
+  cuda::std::reference_wrapper<const A> r = cuda::std::ref(source());
+  (void)r;
 
-    return 0;
+  return 0;
 }

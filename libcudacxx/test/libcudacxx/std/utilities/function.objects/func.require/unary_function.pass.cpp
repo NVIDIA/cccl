@@ -17,11 +17,10 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-int main(int, char**)
-{
-    typedef cuda::std::unary_function<int, bool> uf;
-    static_assert((cuda::std::is_same<uf::argument_type, int>::value), "");
-    static_assert((cuda::std::is_same<uf::result_type, bool>::value), "");
+int main(int, char**) {
+  typedef cuda::std::unary_function<int, bool> uf;
+  static_assert((cuda::std::is_same<uf::argument_type, int>::value), "");
+  static_assert((cuda::std::is_same<uf::result_type, bool>::value), "");
 
   return 0;
 }

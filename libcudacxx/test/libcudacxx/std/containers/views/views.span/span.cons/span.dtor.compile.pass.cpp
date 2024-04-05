@@ -16,20 +16,15 @@
 #include <cuda/std/type_traits>
 
 template <class T>
-__host__ __device__
-constexpr bool testDestructor() {
+__host__ __device__ constexpr bool testDestructor() {
   static_assert(cuda::std::is_nothrow_destructible<T>::value, "");
   static_assert(cuda::std::is_trivially_destructible<T>::value, "");
   return true;
 }
 
-__host__ __device__
-void test() {
-  testDestructor<cuda::std::span<int, 1>>();
-  testDestructor<cuda::std::span<int>>();
+__host__ __device__ void test() {
+  testDestructor<cuda::std::span<int, 1> >();
+  testDestructor<cuda::std::span<int> >();
 }
 
-int main(int, char**)
-{
-    return 0;
-}
+int main(int, char**) { return 0; }

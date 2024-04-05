@@ -18,10 +18,12 @@
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 
-int main(int, char**)
-{
-    static_assert((cuda::std::is_same<cuda::std::chrono::system_clock::duration,
-                   cuda::std::chrono::time_point<cuda::std::chrono::system_clock>::duration>::value), "");
+int main(int, char**) {
+  static_assert((cuda::std::is_same<
+                    cuda::std::chrono::system_clock::duration,
+                    cuda::std::chrono::time_point<
+                        cuda::std::chrono::system_clock>::duration>::value),
+                "");
 
   return 0;
 }

@@ -14,14 +14,24 @@
 #include <cuda/std/iterator>
 #include <cuda/std/concepts>
 
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int (*)(int), int*>, int>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<double (*)(int const&, float), int const*, float*>, double>);
+static_assert(
+    cuda::std::same_as<cuda::std::indirect_result_t<int (*)(int), int*>, int>);
+static_assert(
+    cuda::std::same_as<cuda::std::indirect_result_t<
+                           double (*)(int const&, float), int const*, float*>,
+                       double>);
 
-struct S { };
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S (&)(int), int*>, S>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<long S::*, S*>, long&>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*)(), S*>, S&&>);
-static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int S::* (S::*)(int) const, S*, int*>, int S::*>);
+struct S {};
+static_assert(
+    cuda::std::same_as<cuda::std::indirect_result_t<S (&)(int), int*>, S>);
+static_assert(
+    cuda::std::same_as<cuda::std::indirect_result_t<long S::*, S*>, long&>);
+static_assert(
+    cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*)(), S*>, S&&>);
+static_assert(
+    cuda::std::same_as<
+        cuda::std::indirect_result_t<int S::* (S::*)(int) const, S*, int*>,
+        int S::*>);
 
 #if TEST_STD_VER > 2017
 template <class F, class... Is>
@@ -31,18 +41,17 @@ constexpr bool has_indirect_result = requires {
 #else
 template <class F, class... Is>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-  has_indirect_result_,
-  requires() //
-  (typename(cuda::std::indirect_result_t<F, Is...>)));
+    has_indirect_result_,
+    requires() //
+    (typename(cuda::std::indirect_result_t<F, Is...>)));
 
 template <class F, class... Is>
-_LIBCUDACXX_CONCEPT has_indirect_result = _LIBCUDACXX_FRAGMENT(has_indirect_result_, F, Is...);
+_LIBCUDACXX_CONCEPT has_indirect_result =
+    _LIBCUDACXX_FRAGMENT(has_indirect_result_, F, Is...);
 #endif
 
-static_assert(!has_indirect_result<int (*)(int), int>); // int isn't indirectly_readable
-static_assert(!has_indirect_result<int, int*>);         // int isn't invocable
+static_assert(
+    !has_indirect_result<int (*)(int), int>);   // int isn't indirectly_readable
+static_assert(!has_indirect_result<int, int*>); // int isn't invocable
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

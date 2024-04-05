@@ -23,25 +23,23 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using month = cuda::std::chrono::month;
+int main(int, char**) {
+  using month = cuda::std::chrono::month;
 
-    ASSERT_NOEXCEPT(month{});
-    ASSERT_NOEXCEPT(month(1));
-    ASSERT_NOEXCEPT(static_cast<unsigned>(month(1)));
+  ASSERT_NOEXCEPT(month{});
+  ASSERT_NOEXCEPT(month(1));
+  ASSERT_NOEXCEPT(static_cast<unsigned>(month(1)));
 
-    constexpr month m0{};
-    static_assert(static_cast<unsigned>(m0) == 0, "");
+  constexpr month m0{};
+  static_assert(static_cast<unsigned>(m0) == 0, "");
 
-    constexpr month m1{1};
-    static_assert(static_cast<unsigned>(m1) == 1, "");
+  constexpr month m1{1};
+  static_assert(static_cast<unsigned>(m1) == 1, "");
 
-    for (unsigned i = 0; i <= 255; ++i)
-    {
-        month m(i);
-        assert(static_cast<unsigned>(m) == i);
-    }
+  for (unsigned i = 0; i <= 255; ++i) {
+    month m(i);
+    assert(static_cast<unsigned>(m) == i);
+  }
 
   return 0;
 }

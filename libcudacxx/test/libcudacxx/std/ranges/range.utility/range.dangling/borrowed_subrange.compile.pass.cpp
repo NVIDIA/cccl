@@ -27,23 +27,32 @@
 #endif
 
 #if defined(_LIBCUDACXX_HAS_STRING)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string>, cuda::std::ranges::dangling>);
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string&&>, cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::string>,
+              cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::string&&>,
+              cuda::std::ranges::dangling>);
 #endif
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::vector<int> >, cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::vector<int> >,
+              cuda::std::ranges::dangling>);
 #endif
 
 #if defined(_LIBCUDACXX_HAS_STRING)
-static_assert(
-    cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string&>, cuda::std::ranges::subrange<cuda::std::string::iterator> >);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::string&>,
+              cuda::std::ranges::subrange<cuda::std::string::iterator> >);
 #endif
-static_assert(
-    cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::span<int> >, cuda::std::ranges::subrange<cuda::std::span<int>::iterator> >);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::span<int> >,
+              cuda::std::ranges::subrange<cuda::std::span<int>::iterator> >);
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_subrange_t<cuda::std::string_view>,
-                           cuda::std::ranges::subrange<cuda::std::string_view::iterator> >);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_subrange_t<cuda::std::string_view>,
+              cuda::std::ranges::subrange<cuda::std::string_view::iterator> >);
 #endif
 
 #if TEST_STD_VER > 2017
@@ -56,7 +65,8 @@ template <class T, class = void>
 constexpr bool has_type = false;
 
 template <class T>
-constexpr bool has_type<T, cuda::std::void_t<cuda::std::ranges::borrowed_subrange_t<T>>> = false;
+constexpr bool has_type<
+    T, cuda::std::void_t<cuda::std::ranges::borrowed_subrange_t<T> > > = false;
 #endif
 
 static_assert(!has_type<int>);
@@ -64,6 +74,4 @@ static_assert(!has_type<int>);
 struct S {};
 static_assert(!has_type<S>);
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

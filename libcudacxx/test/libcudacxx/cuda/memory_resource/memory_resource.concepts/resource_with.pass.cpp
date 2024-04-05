@@ -35,7 +35,9 @@ struct valid_resource_without_property {
   void* allocate(std::size_t, std::size_t) { return nullptr; }
   void deallocate(void*, std::size_t, std::size_t) {}
   bool operator==(const valid_resource_without_property&) const { return true; }
-  bool operator!=(const valid_resource_without_property&) const { return false; }
+  bool operator!=(const valid_resource_without_property&) const {
+    return false;
+  }
 };
 static_assert(
     !cuda::mr::resource_with<valid_resource_without_property, prop_with_value>,

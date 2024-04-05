@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,16 +35,9 @@ namespace detail
 namespace generic
 {
 
-
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename UnaryOperation>
-_CCCL_HOST_DEVICE
-  void tabulate(thrust::execution_policy<DerivedPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                UnaryOperation unary_op);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
+_CCCL_HOST_DEVICE void tabulate(
+  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, UnaryOperation unary_op);
 
 } // end namespace generic
 } // end namespace detail
@@ -53,4 +45,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/tabulate.inl>
-

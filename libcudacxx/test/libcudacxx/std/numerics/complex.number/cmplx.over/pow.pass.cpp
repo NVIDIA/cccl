@@ -22,7 +22,8 @@
 //   pow(const complex<T>& x, const complex<U>& y);
 
 #if defined(_MSC_VER)
-#pragma warning(disable: 4244) // conversion from 'const double' to 'int', possible loss of data
+#pragma warning(                                                               \
+    disable : 4244) // conversion from 'const double' to 'int', possible loss of data
 #endif
 
 #include <cuda/std/complex>
@@ -33,8 +34,9 @@
 #include "../cases.h"
 
 template <class T>
-__host__ __device__ double
-promote(T, typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0);
+__host__ __device__ double promote(
+    T,
+    typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0);
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
 __host__ __device__ __half promote(__half);
@@ -62,85 +64,90 @@ __host__ __device__ double operator+(__nv_bfloat16, double);
 #endif
 
 template <class T, class U>
-__host__ __device__ void
-test(T x, const cuda::std::complex<U>& y)
-{
-    typedef decltype(promote(x)+promote(real(y))) V;
-    static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V> >::value), "");
-    assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x, 0), cuda::std::complex<V>(y)));
+__host__ __device__ void test(T x, const cuda::std::complex<U>& y) {
+  typedef decltype(promote(x) + promote(real(y))) V;
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)),
+                                    cuda::std::complex<V> >::value),
+                "");
+  assert(cuda::std::pow(x, y) ==
+         pow(cuda::std::complex<V>(x, 0), cuda::std::complex<V>(y)));
+}
+
+template <class T, class U>
+__host__ __device__ void test(const cuda::std::complex<T>& x, U y) {
+  typedef decltype(promote(real(x)) + promote(y)) V;
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)),
+                                    cuda::std::complex<V> >::value),
+                "");
+  assert(cuda::std::pow(x, y) ==
+         pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y, 0)));
+}
+
+template <class T, class U>
+__host__ __device__ void test(const cuda::std::complex<T>& x,
+                              const cuda::std::complex<U>& y) {
+  typedef decltype(promote(real(x)) + promote(real(y))) V;
+  static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)),
+                                    cuda::std::complex<V> >::value),
+                "");
+  assert(cuda::std::pow(x, y) ==
+         pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y)));
 }
 
 template <class T, class U>
 __host__ __device__ void
-test(const cuda::std::complex<T>& x, U y)
-{
-    typedef decltype(promote(real(x))+promote(y)) V;
-    static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V> >::value), "");
-    assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y, 0)));
+test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0,
+     typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* =
+         0) {
+  test(T(3), cuda::std::complex<U>(4, 5));
+  test(cuda::std::complex<U>(3, 4), T(5));
 }
 
 template <class T, class U>
-__host__ __device__ void
-test(const cuda::std::complex<T>& x, const cuda::std::complex<U>& y)
-{
-    typedef decltype(promote(real(x))+promote(real(y))) V;
-    static_assert((cuda::std::is_same<decltype(cuda::std::pow(x, y)), cuda::std::complex<V> >::value), "");
-    assert(cuda::std::pow(x, y) == pow(cuda::std::complex<V>(x), cuda::std::complex<V>(y)));
+__host__ __device__ void test(
+    typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0,
+    typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* =
+        0) {
+  test(T(3), cuda::std::complex<U>(4, 5));
+  test(cuda::std::complex<T>(3, 4), U(5));
+  test(cuda::std::complex<T>(3, 4), cuda::std::complex<U>(5, 6));
 }
 
-template <class T, class U>
-__host__ __device__ void
-test(typename cuda::std::enable_if<cuda::std::is_integral<T>::value>::type* = 0, typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
-{
-    test(T(3), cuda::std::complex<U>(4, 5));
-    test(cuda::std::complex<U>(3, 4), T(5));
-}
+int main(int, char**) {
+  test<int, float>();
+  test<int, double>();
 
-template <class T, class U>
-__host__ __device__ void
-test(typename cuda::std::enable_if<!cuda::std::is_integral<T>::value>::type* = 0, typename cuda::std::enable_if<!cuda::std::is_integral<U>::value>::type* = 0)
-{
-    test(T(3), cuda::std::complex<U>(4, 5));
-    test(cuda::std::complex<T>(3, 4), U(5));
-    test(cuda::std::complex<T>(3, 4), cuda::std::complex<U>(5, 6));
-}
+  test<unsigned, float>();
+  test<unsigned, double>();
 
-int main(int, char**)
-{
-    test<int, float>();
-    test<int, double>();
+  test<long long, float>();
+  test<long long, double>();
 
-    test<unsigned, float>();
-    test<unsigned, double>();
+  test<float, double>();
 
-    test<long long, float>();
-    test<long long, double>();
+  test<double, float>();
 
-    test<float, double>();
-
-    test<double, float>();
-
-// CUDA treats long double as double
-//  test<int, long double>();
-//  test<unsigned, long double>();
-//  test<long long, long double>();
-//  test<float, long double>();
-//  test<double, long double>();
-//  test<long double, float>();
-//  test<long double, double>();
+  // CUDA treats long double as double
+  //  test<int, long double>();
+  //  test<unsigned, long double>();
+  //  test<long long, long double>();
+  //  test<float, long double>();
+  //  test<double, long double>();
+  //  test<long double, float>();
+  //  test<long double, double>();
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test<__half, float>();
-    test<__half, double>();
-    test<int, __half>();
-    test<unsigned, __half>();
-    test<long long, __half>();
+  test<__half, float>();
+  test<__half, double>();
+  test<int, __half>();
+  test<unsigned, __half>();
+  test<long long, __half>();
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test<__nv_bfloat16, float>();
-    test<__nv_bfloat16, double>();
-    test<int, __nv_bfloat16>();
-    test<unsigned, __nv_bfloat16>();
-    test<long long, __nv_bfloat16>();
+  test<__nv_bfloat16, float>();
+  test<__nv_bfloat16, double>();
+  test<int, __nv_bfloat16>();
+  test<unsigned, __nv_bfloat16>();
+  test<long long, __nv_bfloat16>();
 #endif
 #endif
 

@@ -18,67 +18,58 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void
-test_imp(cuda::std::true_type)
-{
-    assert(cuda::std::isnan(cuda::std::numeric_limits<T>::signaling_NaN()));
-    assert(cuda::std::isnan(cuda::std::numeric_limits<const T>::signaling_NaN()));
-    assert(cuda::std::isnan(cuda::std::numeric_limits<volatile T>::signaling_NaN()));
-    assert(cuda::std::isnan(cuda::std::numeric_limits<const volatile T>::signaling_NaN()));
+__host__ __device__ void test_imp(cuda::std::true_type) {
+  assert(cuda::std::isnan(cuda::std::numeric_limits<T>::signaling_NaN()));
+  assert(cuda::std::isnan(cuda::std::numeric_limits<const T>::signaling_NaN()));
+  assert(
+      cuda::std::isnan(cuda::std::numeric_limits<volatile T>::signaling_NaN()));
+  assert(cuda::std::isnan(
+      cuda::std::numeric_limits<const volatile T>::signaling_NaN()));
 }
 
 template <class T>
-__host__ __device__
-void
-test_imp(cuda::std::false_type)
-{
-    assert(cuda::std::numeric_limits<T>::signaling_NaN() == T());
-    assert(cuda::std::numeric_limits<const T>::signaling_NaN() == T());
-    assert(cuda::std::numeric_limits<volatile T>::signaling_NaN() == T());
-    assert(cuda::std::numeric_limits<const volatile T>::signaling_NaN() == T());
+__host__ __device__ void test_imp(cuda::std::false_type) {
+  assert(cuda::std::numeric_limits<T>::signaling_NaN() == T());
+  assert(cuda::std::numeric_limits<const T>::signaling_NaN() == T());
+  assert(cuda::std::numeric_limits<volatile T>::signaling_NaN() == T());
+  assert(cuda::std::numeric_limits<const volatile T>::signaling_NaN() == T());
 }
 
 template <class T>
-__host__ __device__
-inline
-void
-test()
-{
-    test_imp<T>(cuda::std::is_floating_point<T>());
+__host__ __device__ inline void test() {
+  test_imp<T>(cuda::std::is_floating_point<T>());
 }
 
-int main(int, char**)
-{
-    test<bool>();
-    test<char>();
-    test<signed char>();
-    test<unsigned char>();
-    test<wchar_t>();
+int main(int, char**) {
+  test<bool>();
+  test<char>();
+  test<signed char>();
+  test<unsigned char>();
+  test<wchar_t>();
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
-    test<char8_t>();
+  test<char8_t>();
 #endif
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-    test<char16_t>();
-    test<char32_t>();
-#endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-    test<short>();
-    test<unsigned short>();
-    test<int>();
-    test<unsigned int>();
-    test<long>();
-    test<unsigned long>();
-    test<long long>();
-    test<unsigned long long>();
+  test<char16_t>();
+  test<char32_t>();
+#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+  test<short>();
+  test<unsigned short>();
+  test<int>();
+  test<unsigned int>();
+  test<long>();
+  test<unsigned long>();
+  test<long long>();
+  test<unsigned long long>();
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-    test<__int128_t>();
-    test<__uint128_t>();
+  test<__int128_t>();
+  test<__uint128_t>();
 #endif
-    test<float>();
-    test<double>();
+  test<float>();
+  test<double>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-    test<long double>();
+  test<long double>();
 #endif
 
-    return 0;
+  return 0;
 }

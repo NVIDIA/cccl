@@ -12,7 +12,6 @@
 // template<class From, class To>
 // concept common_reference_with;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -21,8 +20,8 @@
 using cuda::std::common_reference_with;
 
 template <class T, class U>
-__host__ __device__
-__host__ __device__ constexpr bool CheckCommonReferenceWith() noexcept {
+__host__ __device__ __host__ __device__ constexpr bool
+CheckCommonReferenceWith() noexcept {
   static_assert(common_reference_with<T, U&>, "");
   static_assert(common_reference_with<T, const U&>, "");
   static_assert(common_reference_with<T, volatile U&>, "");
@@ -46,8 +45,8 @@ __host__ __device__ constexpr bool CheckCommonReferenceWith() noexcept {
   static_assert(common_reference_with<const volatile T&, U&&>, "");
   static_assert(common_reference_with<const volatile T&, const U&&>, "");
   static_assert(common_reference_with<const volatile T&, volatile U&&>, "");
-  static_assert(
-      common_reference_with<const volatile T&, const volatile U&&>, "");
+  static_assert(common_reference_with<const volatile T&, const volatile U&&>,
+                "");
 
   return common_reference_with<T, U>;
 }
@@ -78,10 +77,12 @@ static_assert(CheckCommonReferenceWith<const int*, const volatile void*>(), "");
 static_assert(CheckCommonReferenceWith<volatile int*, void*>(), "");
 static_assert(CheckCommonReferenceWith<volatile int*, const void*>(), "");
 static_assert(CheckCommonReferenceWith<volatile int*, volatile void*>(), "");
-static_assert(CheckCommonReferenceWith<volatile int*, const volatile void*>(), "");
+static_assert(CheckCommonReferenceWith<volatile int*, const volatile void*>(),
+              "");
 static_assert(CheckCommonReferenceWith<const volatile int*, void*>(), "");
 static_assert(CheckCommonReferenceWith<const volatile int*, const void*>(), "");
-static_assert(CheckCommonReferenceWith<const volatile int*, volatile void*>(), "");
+static_assert(CheckCommonReferenceWith<const volatile int*, volatile void*>(),
+              "");
 static_assert(
     CheckCommonReferenceWith<const volatile int*, const volatile void*>(), "");
 
@@ -94,25 +95,31 @@ static_assert(CheckCommonReferenceWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)()>(), "");
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)() noexcept>(), "");
+static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)() noexcept>(),
+              "");
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
     CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const>(), "");
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-static_assert(CheckCommonReferenceWith<int (S::*)() const,
-                                       int (S::*)() const noexcept>(), "");
+static_assert(
+    CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const noexcept>(),
+    "");
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(
-    CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
+    CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile>(),
+    "");
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonReferenceWith<int (S::*)() volatile,
-                                       int (S::*)() volatile noexcept>(), "");
+                                       int (S::*)() volatile noexcept>(),
+              "");
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile,
-                                       int (S::*)() const volatile>(), "");
+                                       int (S::*)() const volatile>(),
+              "");
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile,
-                                       int (S::*)() const volatile noexcept>(), "");
+                                       int (S::*)() const volatile noexcept>(),
+              "");
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
 
 // nonsense
@@ -124,14 +131,16 @@ static_assert(!common_reference_with<int (*)(), int (*)(int)>, "");
 static_assert(!common_reference_with<int S::*, float S::*>, "");
 static_assert(!common_reference_with<int (S::*)(), int (S::*)() const>, "");
 static_assert(!common_reference_with<int (S::*)(), int (S::*)() volatile>, "");
+static_assert(!common_reference_with<int (S::*)(), int (S::*)() const volatile>,
+              "");
+static_assert(!common_reference_with<int (S::*)() const, int (S::*)() volatile>,
+              "");
 static_assert(
-    !common_reference_with<int (S::*)(), int (S::*)() const volatile>, "");
+    !common_reference_with<int (S::*)() const, int (S::*)() const volatile>,
+    "");
 static_assert(
-    !common_reference_with<int (S::*)() const, int (S::*)() volatile>, "");
-static_assert(!common_reference_with<int (S::*)() const,
-                                          int (S::*)() const volatile>, "");
-static_assert(!common_reference_with<int (S::*)() volatile,
-                                          int (S::*)() const volatile>, "");
+    !common_reference_with<int (S::*)() volatile, int (S::*)() const volatile>,
+    "");
 } // namespace BuiltinTypes
 
 namespace NoDefaultCommonReference {
@@ -162,12 +171,12 @@ static_assert(!common_reference_with<volatile T*, volatile int*>, "");
 static_assert(!common_reference_with<const volatile T*, volatile int*>, "");
 static_assert(!common_reference_with<const volatile T*, const int*>, "");
 static_assert(!common_reference_with<const volatile T*, volatile int*>, "");
-static_assert(
-    !common_reference_with<const volatile T*, const volatile int*>, "");
+static_assert(!common_reference_with<const volatile T*, const volatile int*>,
+              "");
 static_assert(!common_reference_with<const T*, const volatile int*>, "");
 static_assert(!common_reference_with<volatile T*, const volatile int*>, "");
-static_assert(
-    !common_reference_with<const volatile T*, const volatile int*>, "");
+static_assert(!common_reference_with<const volatile T*, const volatile int*>,
+              "");
 static_assert(!common_reference_with<T&, int&>, "");
 static_assert(!common_reference_with<T&, const int&>, "");
 static_assert(!common_reference_with<T&, volatile int&>, "");
@@ -189,12 +198,12 @@ static_assert(!common_reference_with<volatile T&, volatile int&>, "");
 static_assert(!common_reference_with<const volatile T&, volatile int&>, "");
 static_assert(!common_reference_with<const volatile T&, const int&>, "");
 static_assert(!common_reference_with<const volatile T&, volatile int&>, "");
-static_assert(
-    !common_reference_with<const volatile T&, const volatile int&>, "");
+static_assert(!common_reference_with<const volatile T&, const volatile int&>,
+              "");
 static_assert(!common_reference_with<const T&, const volatile int&>, "");
 static_assert(!common_reference_with<volatile T&, const volatile int&>, "");
-static_assert(
-    !common_reference_with<const volatile T&, const volatile int&>, "");
+static_assert(!common_reference_with<const volatile T&, const volatile int&>,
+              "");
 static_assert(!common_reference_with<T&, int&&>, "");
 static_assert(!common_reference_with<T&, const int&&>, "");
 static_assert(!common_reference_with<T&, volatile int&&>, "");
@@ -216,12 +225,12 @@ static_assert(!common_reference_with<volatile T&, volatile int&&>, "");
 static_assert(!common_reference_with<const volatile T&, volatile int&&>, "");
 static_assert(!common_reference_with<const volatile T&, const int&&>, "");
 static_assert(!common_reference_with<const volatile T&, volatile int&&>, "");
-static_assert(
-    !common_reference_with<const volatile T&, const volatile int&&>, "");
+static_assert(!common_reference_with<const volatile T&, const volatile int&&>,
+              "");
 static_assert(!common_reference_with<const T&, const volatile int&&>, "");
 static_assert(!common_reference_with<volatile T&, const volatile int&&>, "");
-static_assert(
-    !common_reference_with<const volatile T&, const volatile int&&>, "");
+static_assert(!common_reference_with<const volatile T&, const volatile int&&>,
+              "");
 static_assert(!common_reference_with<T&&, int&>, "");
 static_assert(!common_reference_with<T&&, const int&>, "");
 static_assert(!common_reference_with<T&&, volatile int&>, "");
@@ -243,12 +252,12 @@ static_assert(!common_reference_with<volatile T&&, volatile int&>, "");
 static_assert(!common_reference_with<const volatile T&&, volatile int&>, "");
 static_assert(!common_reference_with<const volatile T&&, const int&>, "");
 static_assert(!common_reference_with<const volatile T&&, volatile int&>, "");
-static_assert(
-    !common_reference_with<const volatile T&&, const volatile int&>, "");
+static_assert(!common_reference_with<const volatile T&&, const volatile int&>,
+              "");
 static_assert(!common_reference_with<const T&&, const volatile int&>, "");
 static_assert(!common_reference_with<volatile T&&, const volatile int&>, "");
-static_assert(
-    !common_reference_with<const volatile T&&, const volatile int&>, "");
+static_assert(!common_reference_with<const volatile T&&, const volatile int&>,
+              "");
 static_assert(!common_reference_with<T&&, int&&>, "");
 static_assert(!common_reference_with<T&&, const int&&>, "");
 static_assert(!common_reference_with<T&&, volatile int&&>, "");
@@ -270,26 +279,28 @@ static_assert(!common_reference_with<volatile T&&, volatile int&&>, "");
 static_assert(!common_reference_with<const volatile T&&, volatile int&&>, "");
 static_assert(!common_reference_with<const volatile T&&, const int&&>, "");
 static_assert(!common_reference_with<const volatile T&&, volatile int&&>, "");
-static_assert(
-    !common_reference_with<const volatile T&&, const volatile int&&>, "");
+static_assert(!common_reference_with<const volatile T&&, const volatile int&&>,
+              "");
 static_assert(!common_reference_with<const T&&, const volatile int&&>, "");
 static_assert(!common_reference_with<volatile T&&, const volatile int&&>, "");
-static_assert(
-    !common_reference_with<const volatile T&&, const volatile int&&>, "");
+static_assert(!common_reference_with<const volatile T&&, const volatile int&&>,
+              "");
 } // namespace NoDefaultCommonReference
-
 
 struct s2 {};
 struct convertible_with_const_s2 {
-  __host__ __device__ __host__ __device__ operator s2 const &() const;
+  __host__ __device__ __host__ __device__ operator s2 const&() const;
 };
-static_assert(common_reference_with<convertible_with_const_s2 const&, s2 const&>, "");
+static_assert(
+    common_reference_with<convertible_with_const_s2 const&, s2 const&>, "");
 
 #ifndef TEST_COMPILER_MSVC_2017
 struct convertible_with_volatile_s2 {
-  __host__ __device__ operator s2 volatile &() volatile;
+  __host__ __device__ operator s2 volatile&() volatile;
 };
-static_assert(common_reference_with<convertible_with_volatile_s2 volatile&, s2 volatile&>, "");
+static_assert(
+    common_reference_with<convertible_with_volatile_s2 volatile&, s2 volatile&>,
+    "");
 #endif // !TEST_COMPILER_MSVC_2017
 
 struct BadBasicCommonReference {
@@ -319,11 +330,13 @@ static_assert(!common_reference_with<BadBasicCommonReference, int>, "");
 
 #if TEST_STD_VER > 2017
 struct StructNotConvertibleToCommonReference {
-  __host__ __device__ explicit(false) StructNotConvertibleToCommonReference(int);
+  __host__ __device__ explicit(false)
+      StructNotConvertibleToCommonReference(int);
 };
-static_assert(cuda::std::convertible_to<int, StructNotConvertibleToCommonReference>, "");
+static_assert(
+    cuda::std::convertible_to<int, StructNotConvertibleToCommonReference>, "");
 
-namespace cuda{
+namespace cuda {
 namespace std {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<StructNotConvertibleToCommonReference, int, X,
@@ -346,7 +359,7 @@ struct IntNotConvertibleToCommonReference {
   __host__ __device__ operator int&() const;
 };
 
-namespace cuda{
+namespace cuda {
 namespace std {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<IntNotConvertibleToCommonReference, int, X, Y> {
@@ -359,8 +372,8 @@ struct basic_common_reference<int, IntNotConvertibleToCommonReference, X, Y> {
 };
 } // namespace std
 } // namespace cuda
-static_assert(
-    !common_reference_with<IntNotConvertibleToCommonReference, int>, "");
+static_assert(!common_reference_with<IntNotConvertibleToCommonReference, int>,
+              "");
 
 #if TEST_STD_VER > 2017
 struct HasCommonReference {
@@ -368,7 +381,7 @@ struct HasCommonReference {
   __host__ __device__ operator int&() const;
 };
 
-namespace cuda{
+namespace cuda {
 namespace std {
 template <template <class> class X, template <class> class Y>
 struct basic_common_reference<HasCommonReference, int, X, Y> {

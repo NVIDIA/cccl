@@ -25,32 +25,28 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/tabulate.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/adl/tabulate.h>
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/tabulate.h>
-#include <thrust/system/detail/adl/tabulate.h>
+#include <thrust/tabulate.h>
 
 THRUST_NAMESPACE_BEGIN
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
-_CCCL_HOST_DEVICE
-  void tabulate(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                UnaryOperation unary_op)
+template <typename DerivedPolicy, typename ForwardIterator, typename UnaryOperation>
+_CCCL_HOST_DEVICE void
+tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+         ForwardIterator first,
+         ForwardIterator last,
+         UnaryOperation unary_op)
 {
   using thrust::system::detail::generic::tabulate;
   return tabulate(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, unary_op);
 } // end tabulate()
 
-
-template<typename ForwardIterator, typename UnaryOperation>
-  void tabulate(ForwardIterator first,
-                ForwardIterator last,
-                UnaryOperation unary_op)
+template <typename ForwardIterator, typename UnaryOperation>
+void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -61,6 +57,4 @@ template<typename ForwardIterator, typename UnaryOperation>
   return thrust::tabulate(select_system(system), first, last, unary_op);
 } // end tabulate()
 
-
 THRUST_NAMESPACE_END
-

@@ -14,96 +14,84 @@
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/type_traits>
-#include <cuda/std/cstddef>       // for cuda::std::nullptr_t
+#include <cuda/std/cstddef> // for cuda::std::nullptr_t
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_is_literal_type()
-{
-    static_assert( cuda::std::is_literal_type<T>::value, "");
-    static_assert( cuda::std::is_literal_type<const T>::value, "");
-    static_assert( cuda::std::is_literal_type<volatile T>::value, "");
-    static_assert( cuda::std::is_literal_type<const volatile T>::value, "");
+__host__ __device__ void test_is_literal_type() {
+  static_assert(cuda::std::is_literal_type<T>::value, "");
+  static_assert(cuda::std::is_literal_type<const T>::value, "");
+  static_assert(cuda::std::is_literal_type<volatile T>::value, "");
+  static_assert(cuda::std::is_literal_type<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert( cuda::std::is_literal_type_v<T>, "");
-    static_assert( cuda::std::is_literal_type_v<const T>, "");
-    static_assert( cuda::std::is_literal_type_v<volatile T>, "");
-    static_assert( cuda::std::is_literal_type_v<const volatile T>, "");
+  static_assert(cuda::std::is_literal_type_v<T>, "");
+  static_assert(cuda::std::is_literal_type_v<const T>, "");
+  static_assert(cuda::std::is_literal_type_v<volatile T>, "");
+  static_assert(cuda::std::is_literal_type_v<const volatile T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__
-void test_is_not_literal_type()
-{
-    static_assert(!cuda::std::is_literal_type<T>::value, "");
-    static_assert(!cuda::std::is_literal_type<const T>::value, "");
-    static_assert(!cuda::std::is_literal_type<volatile T>::value, "");
-    static_assert(!cuda::std::is_literal_type<const volatile T>::value, "");
+__host__ __device__ void test_is_not_literal_type() {
+  static_assert(!cuda::std::is_literal_type<T>::value, "");
+  static_assert(!cuda::std::is_literal_type<const T>::value, "");
+  static_assert(!cuda::std::is_literal_type<volatile T>::value, "");
+  static_assert(!cuda::std::is_literal_type<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert(!cuda::std::is_literal_type_v<T>, "");
-    static_assert(!cuda::std::is_literal_type_v<const T>, "");
-    static_assert(!cuda::std::is_literal_type_v<volatile T>, "");
-    static_assert(!cuda::std::is_literal_type_v<const volatile T>, "");
+  static_assert(!cuda::std::is_literal_type_v<T>, "");
+  static_assert(!cuda::std::is_literal_type_v<const T>, "");
+  static_assert(!cuda::std::is_literal_type_v<volatile T>, "");
+  static_assert(!cuda::std::is_literal_type_v<const volatile T>, "");
 #endif
 }
 
-class Empty
-{
-};
+class Empty {};
 
-class NotEmpty
-{
-    __host__ __device__
-    virtual ~NotEmpty();
+class NotEmpty {
+  __host__ __device__ virtual ~NotEmpty();
 };
 
 union Union {};
 
-struct bit_zero
-{
-    int :  0;
+struct bit_zero {
+  int : 0;
 };
 
-class Abstract
-{
-    __host__ __device__
-    virtual ~Abstract() = 0;
+class Abstract {
+  __host__ __device__ virtual ~Abstract() = 0;
 };
 
-enum Enum {zero, one};
+enum Enum { zero, one };
 
 typedef void (*FunctionPtr)();
 
-int main(int, char**)
-{
-    test_is_literal_type<cuda::std::nullptr_t>();
+int main(int, char**) {
+  test_is_literal_type<cuda::std::nullptr_t>();
 
 // Before C++14, void was not a literal type
 // In C++14, cv-void is a literal type
 #if TEST_STD_VER < 2014
-    test_is_not_literal_type<void>();
+  test_is_not_literal_type<void>();
 #else
-    test_is_literal_type<void>();
+  test_is_literal_type<void>();
 #endif
 
-    test_is_literal_type<int>();
-    test_is_literal_type<int*>();
-    test_is_literal_type<const int*>();
-    test_is_literal_type<int&>();
-    test_is_literal_type<int&&>();
-    test_is_literal_type<double>();
-    test_is_literal_type<char[3]>();
-    test_is_literal_type<char[]>();
-    test_is_literal_type<Empty>();
-    test_is_literal_type<bit_zero>();
-    test_is_literal_type<Union>();
-    test_is_literal_type<Enum>();
-    test_is_literal_type<FunctionPtr>();
+  test_is_literal_type<int>();
+  test_is_literal_type<int*>();
+  test_is_literal_type<const int*>();
+  test_is_literal_type<int&>();
+  test_is_literal_type<int&&>();
+  test_is_literal_type<double>();
+  test_is_literal_type<char[3]>();
+  test_is_literal_type<char[]>();
+  test_is_literal_type<Empty>();
+  test_is_literal_type<bit_zero>();
+  test_is_literal_type<Union>();
+  test_is_literal_type<Enum>();
+  test_is_literal_type<FunctionPtr>();
 
-    test_is_not_literal_type<NotEmpty>();
-    test_is_not_literal_type<Abstract>();
+  test_is_not_literal_type<NotEmpty>();
+  test_is_not_literal_type<Abstract>();
 
   return 0;
 }

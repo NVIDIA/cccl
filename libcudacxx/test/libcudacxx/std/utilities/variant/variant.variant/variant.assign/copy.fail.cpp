@@ -17,18 +17,18 @@
 #include <cuda/std/variant>
 #include <cuda/std/type_traits>
 
-struct NotCopyConstructible
-{
-    NotCopyConstructible() = default;
-    NotCopyConstructible(NotCopyConstructible const&) = delete;
+struct NotCopyConstructible {
+  NotCopyConstructible() = default;
+  NotCopyConstructible(NotCopyConstructible const&) = delete;
 };
 
-int main(int, char**)
-{
-    static_assert(!cuda::std::is_copy_constructible_v<NotCopyConstructible>);
+int main(int, char**) {
+  static_assert(!cuda::std::is_copy_constructible_v<NotCopyConstructible>);
 
-    cuda::std::variant<NotCopyConstructible> v;
-    cuda::std::variant<NotCopyConstructible> v1;
-    cuda::std::variant<NotCopyConstructible> v2(v); // expected-error {{call to implicitly-deleted copy constructor of 'cuda::std::variant<NotCopyConstructible>'}}
-    v1 = v; // expected-error-re {{object of type 'std:{{.*}}:variant<NotCopyConstructible>' cannot be assigned because its copy assignment operator is implicitly deleted}}
+  cuda::std::variant<NotCopyConstructible> v;
+  cuda::std::variant<NotCopyConstructible> v1;
+  cuda::std::variant<NotCopyConstructible> v2(
+      v); // expected-error {{call to implicitly-deleted copy constructor of 'cuda::std::variant<NotCopyConstructible>'}}
+  v1 =
+      v; // expected-error-re {{object of type 'std:{{.*}}:variant<NotCopyConstructible>' cannot be assigned because its copy assignment operator is implicitly deleted}}
 }

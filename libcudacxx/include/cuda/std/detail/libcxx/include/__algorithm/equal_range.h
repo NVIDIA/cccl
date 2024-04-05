@@ -72,9 +72,8 @@ __equal_range(_Iter __first, _Sent __last, const _Tp& __value, _Compare&& __comp
 }
 
 template <class _ForwardIterator, class _Tp, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<_ForwardIterator, _ForwardIterator>
-  equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
   static_assert(is_copy_constructible<_ForwardIterator>::value, "Iterator has to be copy constructible");
@@ -87,9 +86,8 @@ _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
 }
 
 template <class _ForwardIterator, class _Tp>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<_ForwardIterator, _ForwardIterator>
-  equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+equal_range(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return _CUDA_VSTD::equal_range(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __value, __less{});
 }

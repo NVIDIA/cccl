@@ -28,50 +28,49 @@ UDT<double> dt;
 UDT<int> it;
 UDT<unsigned long> uit;
 
-int main(int, char**)
-{
-    {
-        cuda::std::real(ft); // expected-error {{no matching function}}
-        cuda::std::real(dt); // expected-error {{no matching function}}
-        // cuda::std::real(ldt); // expected-error {{no matching function}}
-        cuda::std::real(it); // expected-error {{no matching function}}
-        cuda::std::real(uit); // expected-error {{no matching function}}
-    }
-    {
-        cuda::std::imag(ft); // expected-error {{no matching function}}
-        cuda::std::imag(dt); // expected-error {{no matching function}}
-        // cuda::std::imag(ldt); // expected-error {{no matching function}}
-        cuda::std::imag(it); // expected-error {{no matching function}}
-        cuda::std::imag(uit); // expected-error {{no matching function}}
-    }
-    {
-        cuda::std::arg(ft); // expected-error {{no matching function}}
-        cuda::std::arg(dt); // expected-error {{no matching function}}
-        // cuda::std::arg(ldt); // expected-error {{no matching function}}
-        cuda::std::arg(it); // expected-error {{no matching function}}
-        cuda::std::arg(uit); // expected-error {{no matching function}}
-    }
-    {
-        cuda::std::norm(ft); // expected-error {{no matching function}}
-        cuda::std::norm(dt); // expected-error {{no matching function}}
-        // cuda::std::norm(ldt); // expected-error {{no matching function}}
-        cuda::std::norm(it); // expected-error {{no matching function}}
-        cuda::std::norm(uit); // expected-error {{no matching function}}
-    }
-    {
-        cuda::std::conj(ft); // expected-error {{no matching function}}
-        cuda::std::conj(dt); // expected-error {{no matching function}}
-        // cuda::std::conj(ldt); // expected-error {{no matching function}}
-        cuda::std::conj(it); // expected-error {{no matching function}}
-        cuda::std::conj(uit); // expected-error {{no matching function}}
-    }
-    {
-        cuda::std::proj(ft); // expected-error {{no matching function}}
-        cuda::std::proj(dt); // expected-error {{no matching function}}
-        // cuda::std::proj(ldt); // expected-error {{no matching function}}
-        cuda::std::proj(it); // expected-error {{no matching function}}
-        cuda::std::proj(uit); // expected-error {{no matching function}}
-    }
+int main(int, char**) {
+  {
+    cuda::std::real(ft); // expected-error {{no matching function}}
+    cuda::std::real(dt); // expected-error {{no matching function}}
+    // cuda::std::real(ldt); // expected-error {{no matching function}}
+    cuda::std::real(it);  // expected-error {{no matching function}}
+    cuda::std::real(uit); // expected-error {{no matching function}}
+  }
+  {
+    cuda::std::imag(ft); // expected-error {{no matching function}}
+    cuda::std::imag(dt); // expected-error {{no matching function}}
+    // cuda::std::imag(ldt); // expected-error {{no matching function}}
+    cuda::std::imag(it);  // expected-error {{no matching function}}
+    cuda::std::imag(uit); // expected-error {{no matching function}}
+  }
+  {
+    cuda::std::arg(ft); // expected-error {{no matching function}}
+    cuda::std::arg(dt); // expected-error {{no matching function}}
+    // cuda::std::arg(ldt); // expected-error {{no matching function}}
+    cuda::std::arg(it);  // expected-error {{no matching function}}
+    cuda::std::arg(uit); // expected-error {{no matching function}}
+  }
+  {
+    cuda::std::norm(ft); // expected-error {{no matching function}}
+    cuda::std::norm(dt); // expected-error {{no matching function}}
+    // cuda::std::norm(ldt); // expected-error {{no matching function}}
+    cuda::std::norm(it);  // expected-error {{no matching function}}
+    cuda::std::norm(uit); // expected-error {{no matching function}}
+  }
+  {
+    cuda::std::conj(ft); // expected-error {{no matching function}}
+    cuda::std::conj(dt); // expected-error {{no matching function}}
+    // cuda::std::conj(ldt); // expected-error {{no matching function}}
+    cuda::std::conj(it);  // expected-error {{no matching function}}
+    cuda::std::conj(uit); // expected-error {{no matching function}}
+  }
+  {
+    cuda::std::proj(ft); // expected-error {{no matching function}}
+    cuda::std::proj(dt); // expected-error {{no matching function}}
+    // cuda::std::proj(ldt); // expected-error {{no matching function}}
+    cuda::std::proj(it);  // expected-error {{no matching function}}
+    cuda::std::proj(uit); // expected-error {{no matching function}}
+  }
 
   return 0;
 }

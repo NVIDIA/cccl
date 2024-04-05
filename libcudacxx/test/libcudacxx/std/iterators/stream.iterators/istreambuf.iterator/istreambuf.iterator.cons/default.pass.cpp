@@ -23,28 +23,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
-        typedef cuda::std::istreambuf_iterator<char> T;
-        T it;
-        assert(it == T());
-        constexpr T it2;
-        (void)it2;
-    }
-    {
-        typedef cuda::std::istreambuf_iterator<wchar_t> T;
-        T it;
-        assert(it == T());
-        constexpr T it2;
-        (void)it2;
-    }
+int main(int, char**) {
+  {
+    typedef cuda::std::istreambuf_iterator<char> T;
+    T it;
+    assert(it == T());
+    constexpr T it2;
+    (void)it2;
+  }
+  {
+    typedef cuda::std::istreambuf_iterator<wchar_t> T;
+    T it;
+    assert(it == T());
+    constexpr T it2;
+    (void)it2;
+  }
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

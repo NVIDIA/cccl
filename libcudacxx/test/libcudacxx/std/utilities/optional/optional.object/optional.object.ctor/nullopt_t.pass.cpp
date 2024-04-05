@@ -20,76 +20,69 @@
 
 #include "test_macros.h"
 
-using cuda::std::optional;
-using cuda::std::nullopt_t;
 using cuda::std::nullopt;
+using cuda::std::nullopt_t;
+using cuda::std::optional;
 
 template <class Opt>
-__host__ __device__
-constexpr bool
-test_constexpr()
-{
-    static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value, "");
-    static_assert(cuda::std::is_trivially_destructible<Opt>::value, "");
-    static_assert(cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
+__host__ __device__ constexpr bool test_constexpr() {
+  static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value,
+                "");
+  static_assert(cuda::std::is_trivially_destructible<Opt>::value, "");
+  static_assert(
+      cuda::std::is_trivially_destructible<typename Opt::value_type>::value,
+      "");
 
-    Opt opt(nullopt);
-    assert(static_cast<bool>(opt) == false);
+  Opt opt(nullopt);
+  assert(static_cast<bool>(opt) == false);
 
-    struct test_constexpr_ctor
-        : public Opt
-    {
-        __host__ __device__
-        constexpr test_constexpr_ctor() {}
-    };
+  struct test_constexpr_ctor : public Opt {
+    __host__ __device__ constexpr test_constexpr_ctor() {}
+  };
 
-    return true;
+  return true;
 }
 
 template <class Opt>
-__host__ __device__
-void
-test()
-{
-    static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value, "");
-    static_assert(!cuda::std::is_trivially_destructible<Opt>::value, "");
-    static_assert(!cuda::std::is_trivially_destructible<typename Opt::value_type>::value, "");
-    {
+__host__ __device__ void test() {
+  static_assert(cuda::std::is_nothrow_constructible<Opt, nullopt_t&>::value,
+                "");
+  static_assert(!cuda::std::is_trivially_destructible<Opt>::value, "");
+  static_assert(
+      !cuda::std::is_trivially_destructible<typename Opt::value_type>::value,
+      "");
+  {
     Opt opt(nullopt);
     assert(static_cast<bool>(opt) == false);
-    }
-    {
+  }
+  {
     const Opt opt(nullopt);
     assert(static_cast<bool>(opt) == false);
-    }
-    struct test_constexpr_ctor
-        : public Opt
-    {
-        __host__ __device__
-        constexpr test_constexpr_ctor() {}
-    };
+  }
+  struct test_constexpr_ctor : public Opt {
+    __host__ __device__ constexpr test_constexpr_ctor() {}
+  };
 }
 
-int main(int, char**)
-{
-    test_constexpr<optional<int>>();
-    test_constexpr<optional<int*>>();
+int main(int, char**) {
+  test_constexpr<optional<int> >();
+  test_constexpr<optional<int*> >();
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-    test_constexpr<optional<ImplicitTypes::NoCtors>>();
-    test_constexpr<optional<NonTrivialTypes::NoCtors>>();
-    test_constexpr<optional<NonConstexprTypes::NoCtors>>();
+  test_constexpr<optional<ImplicitTypes::NoCtors> >();
+  test_constexpr<optional<NonTrivialTypes::NoCtors> >();
+  test_constexpr<optional<NonConstexprTypes::NoCtors> >();
 #endif
 #ifndef TEST_COMPILER_ICC
-    test<optional<NonLiteralTypes::NoCtors>>();
+  test<optional<NonLiteralTypes::NoCtors> >();
 #endif // TEST_COMPILER_ICC
 
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    static_assert(test_constexpr<optional<int>>(), "");
-    static_assert(test_constexpr<optional<int*>>(), "");
+  static_assert(test_constexpr<optional<int> >(), "");
+  static_assert(test_constexpr<optional<int*> >(), "");
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2017
-    static_assert(test_constexpr<optional<ImplicitTypes::NoCtors>>(), "");
-    static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors>>(), "");
-    static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors>>(), "");
+  static_assert(test_constexpr<optional<ImplicitTypes::NoCtors> >(), "");
+  static_assert(test_constexpr<optional<NonTrivialTypes::NoCtors> >(), "");
+  static_assert(test_constexpr<optional<NonConstexprTypes::NoCtors> >(), "");
 #endif
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 

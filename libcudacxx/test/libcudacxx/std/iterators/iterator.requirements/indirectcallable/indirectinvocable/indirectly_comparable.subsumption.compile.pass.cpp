@@ -16,28 +16,35 @@
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
-template<class F>
-  requires cuda::std::indirectly_comparable<int*, char*, F>
-           && true // This true is an additional atomic constraint as a tie breaker
-__host__ __device__ constexpr bool subsumes(F) { return true; }
+template <class F>
+    requires cuda::std::indirectly_comparable<int*, char*, F> &&
+    true // This true is an additional atomic constraint as a tie breaker
+    __host__ __device__ constexpr bool
+    subsumes(F) {
+  return true;
+}
 
-template<class F>
-  requires cuda::std::indirect_binary_predicate<F, cuda::std::projected<int*, cuda::std::identity>, cuda::std::projected<char*, cuda::std::identity>>
-__host__ __device__ void subsumes(F);
+template <class F>
+requires cuda::std::indirect_binary_predicate<
+    F, cuda::std::projected<int*, cuda::std::identity>,
+    cuda::std::projected<char*, cuda::std::identity> >
+    __host__ __device__ void subsumes(F);
 
-template<class F>
-  requires cuda::std::indirect_binary_predicate<F, cuda::std::projected<int*, cuda::std::identity>, cuda::std::projected<char*, cuda::std::identity>>
-           && true // This true is an additional atomic constraint as a tie breaker
-__host__ __device__ constexpr bool is_subsumed(F) { return true; }
+template <class F>
+    requires cuda::std::indirect_binary_predicate<
+        F, cuda::std::projected<int*, cuda::std::identity>,
+        cuda::std::projected<char*, cuda::std::identity> > &&
+    true // This true is an additional atomic constraint as a tie breaker
+    __host__ __device__ constexpr bool
+    is_subsumed(F) {
+  return true;
+}
 
-template<class F>
-  requires cuda::std::indirectly_comparable<int*, char*, F>
-__host__ __device__ void is_subsumed(F);
+template <class F>
+requires cuda::std::indirectly_comparable<int*, char*, F>
+    __host__ __device__ void is_subsumed(F);
 
 static_assert(subsumes(cuda::std::less<int>()));
 static_assert(is_subsumed(cuda::std::less<int>()));
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

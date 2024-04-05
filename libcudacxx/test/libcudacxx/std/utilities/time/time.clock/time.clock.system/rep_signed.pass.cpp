@@ -15,10 +15,9 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cassert>
 
-int main(int, char**)
-{
-    assert(cuda::std::chrono::system_clock::duration::min() <
-           cuda::std::chrono::system_clock::duration::zero());
+int main(int, char**) {
+  assert(cuda::std::chrono::system_clock::duration::min() <
+         cuda::std::chrono::system_clock::duration::zero());
 
   return 0;
 }

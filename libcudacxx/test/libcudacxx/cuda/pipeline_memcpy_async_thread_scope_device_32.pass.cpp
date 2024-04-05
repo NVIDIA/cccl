@@ -12,9 +12,8 @@
 
 #include "pipeline_memcpy_async_thread_scope_generic.h"
 
-int main(int argc, char ** argv)
-{
-    test_select_source<cuda::thread_scope_device, int32_t>();
+int main(int argc, char** argv) {
+  test_select_source<cuda::thread_scope_device, int32_t>();
 
-    return 0;
+  return 0;
 }

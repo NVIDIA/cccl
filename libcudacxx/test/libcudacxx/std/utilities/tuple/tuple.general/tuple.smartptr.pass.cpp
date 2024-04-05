@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 //  Tuples of smart pointers; based on bug #18350
 //  auto_ptr doesn't have a copy constructor that takes a const &, but tuple does.
 
@@ -33,9 +32,9 @@ int main(int, char**) {
     cuda::std::tuple<cuda::std::weak_ptr  <char[]>> wp;
     }
   */
-    // Smart pointers of type 'T[N]' are not tested here since they are not
-    // supported by the standard nor by libc++'s implementation.
-    // See https://reviews.llvm.org/D21320 for more information.
+  // Smart pointers of type 'T[N]' are not tested here since they are not
+  // supported by the standard nor by libc++'s implementation.
+  // See https://reviews.llvm.org/D21320 for more information.
 
   return 0;
 }

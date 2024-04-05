@@ -20,22 +20,18 @@
 #include "../../rep.h"
 
 template <class D, class R>
-__host__ __device__
-void
-test(R r)
-{
-    D d(r);
-    assert(d.count() == r);
-    constexpr D d2(R(2));
-    static_assert(d2.count() == 2, "");
+__host__ __device__ void test(R r) {
+  D d(r);
+  assert(d.count() == r);
+  constexpr D d2(R(2));
+  static_assert(d2.count() == 2, "");
 }
 
-int main(int, char**)
-{
-    test<cuda::std::chrono::duration<int> >(5);
-    test<cuda::std::chrono::duration<int, cuda::std::ratio<3, 2> > >(5);
-    test<cuda::std::chrono::duration<Rep, cuda::std::ratio<3, 2> > >(Rep(3));
-    test<cuda::std::chrono::duration<double, cuda::std::ratio<2, 3> > >(5.5);
+int main(int, char**) {
+  test<cuda::std::chrono::duration<int> >(5);
+  test<cuda::std::chrono::duration<int, cuda::std::ratio<3, 2> > >(5);
+  test<cuda::std::chrono::duration<Rep, cuda::std::ratio<3, 2> > >(Rep(3));
+  test<cuda::std::chrono::duration<double, cuda::std::ratio<2, 3> > >(5.5);
 
   return 0;
 }

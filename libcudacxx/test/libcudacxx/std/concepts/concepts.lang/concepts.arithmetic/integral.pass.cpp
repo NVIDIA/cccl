@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool CheckIntegralQualifiers() {
 
   static_assert(!integral<T (*)()>, "");
   static_assert(!integral<T (&)()>, "");
-  static_assert(!integral<T(&&)()>, "");
+  static_assert(!integral<T (&&)()>, "");
 
   return result;
 }

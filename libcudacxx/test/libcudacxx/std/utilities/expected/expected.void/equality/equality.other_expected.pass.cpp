@@ -25,16 +25,25 @@ template <class T1, class T2, class = void>
 constexpr bool CanCompare = false;
 
 template <class T1, class T2>
-constexpr bool CanCompare<T1, T2, cuda::std::void_t<decltype(cuda::std::declval<T1>() == cuda::std::declval<T2>())>> = true;
+constexpr bool
+    CanCompare<T1, T2,
+               cuda::std::void_t<decltype(cuda::std::declval<T1>() ==
+                                          cuda::std::declval<T2>())> > = true;
 
-struct Foo{};
+struct Foo {};
 static_assert(!CanCompare<Foo, Foo>, "");
 
-static_assert(CanCompare<cuda::std::expected<void, int>, cuda::std::expected<void, int>>, "");
-static_assert(CanCompare<cuda::std::expected<void, int>, cuda::std::expected<void, short>>, "");
+static_assert(
+    CanCompare<cuda::std::expected<void, int>, cuda::std::expected<void, int> >,
+    "");
+static_assert(CanCompare<cuda::std::expected<void, int>,
+                         cuda::std::expected<void, short> >,
+              "");
 
 // Note this is true because other overloads in expected<non-void> are unconstrained
-static_assert(CanCompare<cuda::std::expected<void, int>, cuda::std::expected<int, int>>, "");
+static_assert(
+    CanCompare<cuda::std::expected<void, int>, cuda::std::expected<int, int> >,
+    "");
 
 __host__ __device__ constexpr bool test() {
   // x.has_value() && y.has_value()

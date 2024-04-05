@@ -31,32 +31,33 @@ __host__ __device__ void test_single_pass(It i, It x) {
 
 template <class It>
 __host__ __device__ void test(It i, It x) {
-    cuda::std::move_iterator<It> r(i);
-    cuda::std::move_iterator<It> rr = r++;
-    assert(r.base() == x);
-    assert(rr.base() == i);
+  cuda::std::move_iterator<It> r(i);
+  cuda::std::move_iterator<It> rr = r++;
+  assert(r.base() == x);
+  assert(rr.base() == i);
 }
 
 int main(int, char**) {
   char s[] = "123";
 #if TEST_STD_VER > 2011
-  test_single_pass(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s + 1));
+  test_single_pass(cpp17_input_iterator<char*>(s),
+                   cpp17_input_iterator<char*>(s + 1));
 #else
-  test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s+1));
+  test(cpp17_input_iterator<char*>(s), cpp17_input_iterator<char*>(s + 1));
 #endif
-  test(forward_iterator<char*>(s), forward_iterator<char*>(s+1));
-  test(bidirectional_iterator<char*>(s), bidirectional_iterator<char*>(s+1));
-  test(random_access_iterator<char*>(s), random_access_iterator<char*>(s+1));
-  test(s, s+1);
+  test(forward_iterator<char*>(s), forward_iterator<char*>(s + 1));
+  test(bidirectional_iterator<char*>(s), bidirectional_iterator<char*>(s + 1));
+  test(random_access_iterator<char*>(s), random_access_iterator<char*>(s + 1));
+  test(s, s + 1);
 
 #if TEST_STD_VER > 2011
   {
-    constexpr const char *p = "123456789";
-    typedef cuda::std::move_iterator<const char *> MI;
+    constexpr const char* p = "123456789";
+    typedef cuda::std::move_iterator<const char*> MI;
     constexpr MI it1 = cuda::std::make_move_iterator(p);
-    constexpr MI it2 = cuda::std::make_move_iterator(p+1);
+    constexpr MI it2 = cuda::std::make_move_iterator(p + 1);
     static_assert(it1 != it2, "");
-    constexpr MI it3 = cuda::std::make_move_iterator(p) ++;
+    constexpr MI it3 = cuda::std::make_move_iterator(p)++;
     static_assert(it1 == it3, "");
     static_assert(it2 != it3, "");
   }
@@ -66,7 +67,7 @@ int main(int, char**) {
   // Forward iterators return a copy.
   {
     int a[] = {1, 2, 3};
-    using MoveIter = cuda::std::move_iterator<forward_iterator<int*>>;
+    using MoveIter = cuda::std::move_iterator<forward_iterator<int*> >;
 
     MoveIter i = MoveIter(forward_iterator<int*>(a));
     ASSERT_SAME_TYPE(decltype(i++), MoveIter);
@@ -80,7 +81,7 @@ int main(int, char**) {
   // Non-forward iterators return void.
   {
     int a[] = {1, 2, 3};
-    using MoveIter = cuda::std::move_iterator<cpp20_input_iterator<int*>>;
+    using MoveIter = cuda::std::move_iterator<cpp20_input_iterator<int*> >;
 
     MoveIter i = MoveIter(cpp20_input_iterator<int*>(a));
     ASSERT_SAME_TYPE(decltype(i++), void);

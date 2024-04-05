@@ -271,14 +271,14 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
   {}
 
   // element wise constructors
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
             __enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
   {}
 
-  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
             __enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T1) && _LIBCUDACXX_TRAIT(is_nothrow_copy_constructible, _T2))
@@ -373,9 +373,9 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<const _U1&, const _U2&>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  pair(const ::std::pair<_U1, _U2>& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
-                                                  && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(const ::std::pair<_U1, _U2>& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, const _U1&)
+    && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
   {}
 
@@ -383,9 +383,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14
-  pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
-                                             && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
 
@@ -393,9 +392,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS pair : public __pair_base<_T1, _T2>
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>,
             __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  pair(::std::pair<_U1, _U2>&& __p) noexcept(_LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1)
-                                             && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
+  _LIBCUDACXX_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
+    _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T1, _U1) && _LIBCUDACXX_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
 #endif // defined(__cuda_std__) && !defined(_CCCL_COMPILER_NVRTC)
@@ -650,8 +648,8 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
   swap(pair<_T1, _T2>& __x,
        pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
@@ -712,8 +710,7 @@ struct __get_pair<0>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&
-  get(const pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.first;
   }
@@ -725,8 +722,7 @@ struct __get_pair<0>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&&
-  get(const pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T1&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T1>(__p.first);
   }
@@ -742,8 +738,7 @@ struct __get_pair<1>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&
-  get(const pair<_T1, _T2>& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2& get(const pair<_T1, _T2>& __p) noexcept
   {
     return __p.second;
   }
@@ -755,8 +750,7 @@ struct __get_pair<1>
   }
 
   template <class _T1, class _T2>
-  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&&
-  get(const pair<_T1, _T2>&& __p) noexcept
+  static _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 const _T2&& get(const pair<_T1, _T2>&& __p) noexcept
   {
     return _CUDA_VSTD::forward<const _T2>(__p.second);
   }

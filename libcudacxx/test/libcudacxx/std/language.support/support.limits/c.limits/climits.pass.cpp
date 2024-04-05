@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
- // test climits
+// test climits
 
 #include <cuda/std/climits>
 
@@ -95,8 +95,4 @@
 static_assert(__CHAR_UNSIGNED__ == cuda::std::is_unsigned<char>::value, "");
 #endif
 
-int main(int, char**)
-{
-
-  return 0;
-}
+int main(int, char**) { return 0; }

@@ -23,39 +23,31 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void
-test(C c)
-{
-    const typename C::value_type v = typename C::value_type();
-    cuda::std::back_insert_iterator<C> i(c);
-    i = v;
-    assert(c.back() == v);
+__host__ __device__ void test(C c) {
+  const typename C::value_type v = typename C::value_type();
+  cuda::std::back_insert_iterator<C> i(c);
+  i = v;
+  assert(c.back() == v);
 }
 
-class Copyable
-{
-    int data_;
-public:
-__host__ __device__
-    Copyable() : data_(0) {}
-__host__ __device__
-    ~Copyable() {data_ = -1;}
+class Copyable {
+  int data_;
 
-__host__ __device__
-    friend bool operator==(const Copyable& x, const Copyable& y)
-        {return x.data_ == y.data_;}
+public:
+  __host__ __device__ Copyable() : data_(0) {}
+  __host__ __device__ ~Copyable() { data_ = -1; }
+
+  __host__ __device__ friend bool operator==(const Copyable& x,
+                                             const Copyable& y) {
+    return x.data_ == y.data_;
+  }
 };
 
-int main(int, char**)
-{
-    test(cuda::std::vector<Copyable>());
+int main(int, char**) {
+  test(cuda::std::vector<Copyable>());
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

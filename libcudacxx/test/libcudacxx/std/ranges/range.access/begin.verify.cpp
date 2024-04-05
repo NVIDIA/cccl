@@ -27,7 +27,4 @@ __host__ __device__ void test() {
   // expected-error@-2  {{attempt to use a deleted function}}
 }
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

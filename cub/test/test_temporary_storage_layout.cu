@@ -29,18 +29,17 @@
 // Ensure printing of CUDA runtime errors to console
 #define CUB_STDERR
 
+#include <memory>
+
 #include "cub/detail/temporary_storage.cuh"
 #include "test_util.h"
-
-#include <memory>
 
 template <int Items>
 std::size_t GetTemporaryStorageSize(std::size_t (&sizes)[Items])
 {
-  void *pointers[Items]{};
+  void* pointers[Items]{};
   std::size_t temp_storage_bytes{};
-  CubDebugExit(
-    cub::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
+  CubDebugExit(cub::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
   return temp_storage_bytes;
 }
 
@@ -64,33 +63,28 @@ void TestPartiallyFilledStorage()
   using target_type = std::uint64_t;
 
   constexpr std::size_t target_elements    = 42;
-  constexpr std::size_t full_slot_elements = target_elements *
-                                             sizeof(target_type);
+  constexpr std::size_t full_slot_elements = target_elements * sizeof(target_type);
   constexpr std::size_t empty_slot_elements{};
 
   cub::detail::temporary_storage::layout<StorageSlots> temporary_storage;
 
-  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>>
-    arrays[StorageSlots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> arrays[StorageSlots];
   std::size_t sizes[StorageSlots]{};
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
     auto slot = temporary_storage.get_slot(slot_id);
 
-    const std::size_t elements = slot_id % 2 == 0 ? full_slot_elements
-                                                  : empty_slot_elements;
+    const std::size_t elements = slot_id % 2 == 0 ? full_slot_elements : empty_slot_elements;
 
     sizes[slot_id] = elements * sizeof(target_type);
     arrays[slot_id].reset(
-      new cub::detail::temporary_storage::alias<target_type>(
-        slot->template create_alias<target_type>(elements)));
+      new cub::detail::temporary_storage::alias<target_type>(slot->template create_alias<target_type>(elements)));
   }
 
   const std::size_t temp_storage_bytes = temporary_storage.get_size();
 
-  std::unique_ptr<std::uint8_t[]> temp_storage(
-    new std::uint8_t[temp_storage_bytes]);
+  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[temp_storage_bytes]);
 
   temporary_storage.map_to_buffer(temp_storage.get(), temp_storage_bytes);
 
@@ -117,34 +111,28 @@ void TestGrow()
   constexpr std::size_t target_elements_number = 42;
 
   cub::detail::temporary_storage::layout<StorageSlots> preset_layout;
-  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>>
-    preset_arrays[StorageSlots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> preset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    preset_arrays[slot_id].reset(
-      new cub::detail::temporary_storage::alias<target_type>(
-        preset_layout.get_slot(slot_id)->template create_alias<target_type>(
-          target_elements_number)));
+    preset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
+      preset_layout.get_slot(slot_id)->template create_alias<target_type>(target_elements_number)));
   }
 
   cub::detail::temporary_storage::layout<StorageSlots> postset_layout;
-  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>>
-    postset_arrays[StorageSlots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> postset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    postset_arrays[slot_id].reset(
-      new cub::detail::temporary_storage::alias<target_type>(
-        postset_layout.get_slot(slot_id)->template create_alias<target_type>()));
+    postset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
+      postset_layout.get_slot(slot_id)->template create_alias<target_type>()));
     postset_arrays[slot_id]->grow(target_elements_number);
   }
 
   AssertEquals(preset_layout.get_size(), postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(
-    new std::uint8_t[tmp_storage_bytes]);
+  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
@@ -163,35 +151,28 @@ void TestDoubleGrow()
   constexpr std::size_t target_elements_number = 42;
 
   cub::detail::temporary_storage::layout<StorageSlots> preset_layout;
-  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>>
-    preset_arrays[StorageSlots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> preset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    preset_arrays[slot_id].reset(
-      new cub::detail::temporary_storage::alias<target_type>(
-        preset_layout.get_slot(slot_id)->template create_alias<target_type>(
-          2 * target_elements_number)));
+    preset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
+      preset_layout.get_slot(slot_id)->template create_alias<target_type>(2 * target_elements_number)));
   }
 
   cub::detail::temporary_storage::layout<StorageSlots> postset_layout;
-  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>>
-    postset_arrays[StorageSlots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> postset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    postset_arrays[slot_id].reset(
-      new cub::detail::temporary_storage::alias<target_type>(
-        postset_layout.get_slot(slot_id)->template create_alias<target_type>(
-          target_elements_number)));
+    postset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
+      postset_layout.get_slot(slot_id)->template create_alias<target_type>(target_elements_number)));
     postset_arrays[slot_id]->grow(2 * target_elements_number);
   }
 
   AssertEquals(preset_layout.get_size(), postset_layout.get_size());
 
   const std::size_t tmp_storage_bytes = preset_layout.get_size();
-  std::unique_ptr<std::uint8_t[]> temp_storage(
-    new std::uint8_t[tmp_storage_bytes]);
+  std::unique_ptr<std::uint8_t[]> temp_storage(new std::uint8_t[tmp_storage_bytes]);
 
   preset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);
   postset_layout.map_to_buffer(temp_storage.get(), tmp_storage_bytes);

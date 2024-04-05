@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/pair.h>
+#include <thrust/system/omp/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -36,34 +36,28 @@ namespace omp
 namespace detail
 {
 
+template <typename DerivedPolicy, typename ForwardIterator1, typename ForwardIterator2, typename BinaryPredicate>
+thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
+  execution_policy<DerivedPolicy>& exec,
+  ForwardIterator1 keys_first,
+  ForwardIterator1 keys_last,
+  ForwardIterator2 values_first,
+  BinaryPredicate binary_pred);
 
-template<typename DerivedPolicy,
-         typename ForwardIterator1,
-         typename ForwardIterator2,
-         typename BinaryPredicate>
-  thrust::pair<ForwardIterator1,ForwardIterator2>
-    unique_by_key(execution_policy<DerivedPolicy> &exec,
-                  ForwardIterator1 keys_first,
-                  ForwardIterator1 keys_last,
-                  ForwardIterator2 values_first,
-                  BinaryPredicate binary_pred);
-
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator1,
-         typename OutputIterator2,
-         typename BinaryPredicate>
-  thrust::pair<OutputIterator1,OutputIterator2>
-    unique_by_key_copy(execution_policy<DerivedPolicy> &exec,
-                       InputIterator1 keys_first,
-                       InputIterator1 keys_last,
-                       InputIterator2 values_first,
-                       OutputIterator1 keys_output,
-                       OutputIterator2 values_output,
-                       BinaryPredicate binary_pred);
-
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator1,
+          typename OutputIterator2,
+          typename BinaryPredicate>
+thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator1 keys_first,
+  InputIterator1 keys_last,
+  InputIterator2 values_first,
+  OutputIterator1 keys_output,
+  OutputIterator2 values_output,
+  BinaryPredicate binary_pred);
 
 } // end namespace detail
 } // end namespace omp
@@ -71,4 +65,3 @@ template<typename DerivedPolicy,
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/unique_by_key.inl>
-

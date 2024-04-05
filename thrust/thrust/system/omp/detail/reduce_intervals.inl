@@ -25,10 +25,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/omp/detail/reduce_intervals.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/detail/function.h>
 #include <thrust/detail/cstdint.h>
+#include <thrust/detail/function.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/omp/detail/reduce_intervals.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -43,11 +43,12 @@ template <typename DerivedPolicy,
           typename OutputIterator,
           typename BinaryFunction,
           typename Decomposition>
-void reduce_intervals(execution_policy<DerivedPolicy> &,
-                      InputIterator input,
-                      OutputIterator output,
-                      BinaryFunction binary_op,
-                      Decomposition decomp)
+void reduce_intervals(
+  execution_policy<DerivedPolicy>&,
+  InputIterator input,
+  OutputIterator output,
+  BinaryFunction binary_op,
+  Decomposition decomp)
 {
   // we're attempting to launch an omp kernel, assert we're compiling with omp support
   // ========================================================================
@@ -55,24 +56,22 @@ void reduce_intervals(execution_policy<DerivedPolicy> &,
   // X you need to enable OpenMP support in your compiler.                  X
   // ========================================================================
   THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<
-      InputIterator, (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-    >::value)
-  , "OpenMP compiler support is not enabled"
-  );
+    (thrust::detail::depend_on_instantiation< InputIterator,
+                                              (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE) >::value),
+    "OpenMP compiler support is not enabled");
 
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
   typedef typename thrust::iterator_value<OutputIterator>::type OutputType;
 
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction,OutputType> wrapped_binary_op(binary_op);
+  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op(binary_op);
 
   typedef thrust::detail::intptr_t index_type;
 
   index_type n = static_cast<index_type>(decomp.size());
 
   THRUST_PRAGMA_OMP(parallel for)
-  for(index_type i = 0; i < n; i++)
+  for (index_type i = 0; i < n; i++)
   {
     InputIterator begin = input + decomp[i].begin();
     InputIterator end   = input + decomp[i].end();
@@ -90,7 +89,7 @@ void reduce_intervals(execution_policy<DerivedPolicy> &,
       }
 
       OutputIterator tmp = output + i;
-      *tmp = sum;
+      *tmp               = sum;
     }
   }
 #endif // THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE
@@ -100,4 +99,3 @@ void reduce_intervals(execution_policy<DerivedPolicy> &,
 } // end namespace omp
 } // end namespace system
 THRUST_NAMESPACE_END
-

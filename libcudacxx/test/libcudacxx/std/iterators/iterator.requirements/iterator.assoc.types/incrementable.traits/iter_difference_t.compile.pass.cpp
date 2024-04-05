@@ -18,30 +18,50 @@
 
 #if TEST_STD_VER > 2017
 template <class T>
-inline constexpr bool has_no_iter_difference_t = !requires { typename cuda::std::iter_difference_t<T>; };
+inline constexpr bool has_no_iter_difference_t = !requires {
+  typename cuda::std::iter_difference_t<T>;
+};
 
 #else
-template<class T, class = void>
+template <class T, class = void>
 inline constexpr bool has_no_iter_difference_t = true;
 
-template<class T>
-inline constexpr bool
-  has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
+template <class T>
+inline constexpr bool has_no_iter_difference_t<
+    T, cuda::std::void_t<cuda::std::iter_difference_t<T> > > = false;
 #endif
 
 #ifndef TEST_COMPILER_MSVC_2017 // MSVC 2017 cannot make this a constexpr function
 template <class T, class Expected>
 __host__ __device__ constexpr bool check_iter_difference_t() {
-  constexpr bool result = cuda::std::same_as<cuda::std::iter_difference_t<T>, Expected>;
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T volatile>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const volatile>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const&>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T volatile&>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const volatile&>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const&&>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T volatile&&>, Expected> == result);
-  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T const volatile&&>, Expected> == result);
+  constexpr bool result =
+      cuda::std::same_as<cuda::std::iter_difference_t<T>, Expected>;
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const>, Expected> ==
+      result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T volatile>, Expected> ==
+      result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const volatile>,
+                         Expected> == result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const&>, Expected> ==
+      result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T volatile&>, Expected> ==
+      result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const volatile&>,
+                         Expected> == result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const&&>, Expected> ==
+      result);
+  static_assert(cuda::std::same_as<cuda::std::iter_difference_t<T volatile&&>,
+                                   Expected> == result);
+  static_assert(
+      cuda::std::same_as<cuda::std::iter_difference_t<T const volatile&&>,
+                         Expected> == result);
 
   return result;
 }
@@ -66,7 +86,4 @@ struct void_subtraction {
 };
 static_assert(has_no_iter_difference_t<void_subtraction>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

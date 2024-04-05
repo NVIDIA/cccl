@@ -118,7 +118,8 @@ struct TracedCopy {
       : copied(other.copied + 1), data(other.data) {}
 
   __host__ __device__ constexpr TracedCopy(TracedCopy&& other) = delete;
-  __host__ __device__ constexpr TracedCopy& operator=(TracedCopy&& other) = delete;
+  __host__ __device__ constexpr TracedCopy&
+  operator=(TracedCopy&& other) = delete;
 
   __host__ __device__ constexpr TracedCopy& operator=(const TracedCopy& other) {
     copied = other.copied + 1;
@@ -132,10 +133,10 @@ struct TracedCopy {
     return data == o.data;
   }
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-  __host__ __device__ constexpr auto operator<=> (const TracedCopy& o) const {
-    return data <=> o.data;
+  __host__ __device__ constexpr auto operator<= > (const TracedCopy& o) const {
+    return data <= > o.data;
   }
-#else // ^^^ <=> ^^^ / vvv no <=> vvv
+#else  // ^^^ <=> ^^^ / vvv no <=> vvv
   __host__ __device__ constexpr auto operator<(const TracedCopy& o) const {
     return data < o.data;
   }
@@ -160,13 +161,16 @@ struct NonBorrowedRange {
   // std::__copy(contiguous_iterator<int*>, sentinel_wrapper<contiguous_iterator<int*>>, contiguous_iterator<int*>) doesn't seem to work.
   // It seems that it unwraps contiguous_iterator<int*> into int*, and then it failed because there is no == between int* and
   // sentinel_wrapper<contiguous_iterator<int*>>
-  using Sent = cuda::std::conditional_t<cuda::std::contiguous_iterator<Iter>, Iter,
-                                  sentinel_wrapper<Iter> >;
+  using Sent = cuda::std::conditional_t<cuda::std::contiguous_iterator<Iter>,
+                                        Iter, sentinel_wrapper<Iter> >;
 
-  __host__ __device__ constexpr NonBorrowedRange(int* d, cuda::std::size_t s) : data_{d}, size_{s} {}
+  __host__ __device__ constexpr NonBorrowedRange(int* d, cuda::std::size_t s)
+      : data_{d}, size_{s} {}
 
   __host__ __device__ constexpr Iter begin() const { return Iter{data_}; };
-  __host__ __device__ constexpr Sent end() const { return Sent{Iter{data_ + size_}}; };
+  __host__ __device__ constexpr Sent end() const {
+    return Sent{Iter{data_ + size_}};
+  };
 };
 #endif // TEST_STD_VER >= 2020
 

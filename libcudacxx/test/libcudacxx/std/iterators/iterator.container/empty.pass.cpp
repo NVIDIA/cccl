@@ -33,85 +33,78 @@
 #endif
 #endif
 
-template<typename C>
-__host__ __device__
-void test_const_container( const C& c )
-{
-//  Can't say noexcept here because the container might not be
-    assert ( cuda::std::empty(c)   == c.empty());
+template <typename C>
+__host__ __device__ void test_const_container(const C& c) {
+  //  Can't say noexcept here because the container might not be
+  assert(cuda::std::empty(c) == c.empty());
 }
 
-template<typename T>
-__host__ __device__
-void test_const_container( const cuda::std::initializer_list<T>& c )
-{
-    assert (!cuda::std::empty(c));
+template <typename T>
+__host__ __device__ void
+test_const_container(const cuda::std::initializer_list<T>& c) {
+  assert(!cuda::std::empty(c));
 }
 
-template<typename C>
-__host__ __device__
-void test_container( C& c )
-{
-//  Can't say noexcept here because the container might not be
-    assert ( cuda::std::empty(c)   == c.empty());
+template <typename C>
+__host__ __device__ void test_container(C& c) {
+  //  Can't say noexcept here because the container might not be
+  assert(cuda::std::empty(c) == c.empty());
 }
 
-template<typename T>
-__host__ __device__
-void test_container( cuda::std::initializer_list<T>& c )
-{
-    ASSERT_NOEXCEPT(cuda::std::empty(c));
-    assert (!cuda::std::empty(c));
+template <typename T>
+__host__ __device__ void test_container(cuda::std::initializer_list<T>& c) {
+  ASSERT_NOEXCEPT(cuda::std::empty(c));
+  assert(!cuda::std::empty(c));
 }
 
-template<typename T, size_t Sz>
-__host__ __device__
-void test_const_array( const T (&array)[Sz] )
-{
-    ASSERT_NOEXCEPT(cuda::std::empty(array));
-    assert (!cuda::std::empty(array));
+template <typename T, size_t Sz>
+__host__ __device__ void test_const_array(const T (&array)[Sz]) {
+  ASSERT_NOEXCEPT(cuda::std::empty(array));
+  assert(!cuda::std::empty(array));
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int arrA [] { 1, 2, 3 };
+STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int arrA[]{1, 2, 3};
 
-int main(int, char**)
-{
+int main(int, char**) {
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-    cuda::std::vector<int> v; v.push_back(1);
+  cuda::std::vector<int> v;
+  v.push_back(1);
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-    cuda::std::list<int>   l; l.push_back(2);
+  cuda::std::list<int> l;
+  l.push_back(2);
 #endif
-    cuda::std::array<int, 1> a; a[0] = 3;
-    cuda::std::initializer_list<int> il = { 4 };
+  cuda::std::array<int, 1> a;
+  a[0] = 3;
+  cuda::std::initializer_list<int> il = {4};
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-    test_container ( v );
+  test_container(v);
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-    test_container ( l );
+  test_container(l);
 #endif
-    test_container ( a );
-    test_container ( il );
+  test_container(a);
+  test_container(il);
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-    test_const_container ( v );
+  test_const_container(v);
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
-    test_const_container ( l );
+  test_const_container(l);
 #endif
-    test_const_container ( a );
-    test_const_container ( il );
+  test_const_container(a);
+  test_const_container(il);
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #if TEST_STD_VER > 2014
-    cuda::std::string_view sv{"ABC"};
-    test_container ( sv );
-    test_const_container ( sv );
+  cuda::std::string_view sv{"ABC"};
+  test_container(sv);
+  test_const_container(sv);
 #endif
 #endif
 
-    test_const_array ( arrA );
+  test_const_array(arrA);
 
   return 0;
 }

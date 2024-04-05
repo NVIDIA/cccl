@@ -27,8 +27,9 @@
 #include <cuda/std/variant>
 
 int main(int, char**) {
-    using V = cuda::std::variant<int, void *, const void *, long double>;
-    cuda::std::variant_alternative<4, V>::type foo;  // expected-error@variant:* {{Index out of bounds in cuda::std::variant_alternative<>}}
+  using V = cuda::std::variant<int, void*, const void*, long double>;
+  cuda::std::variant_alternative<4, V>::type
+      foo; // expected-error@variant:* {{Index out of bounds in cuda::std::variant_alternative<>}}
 
   return 0;
 }

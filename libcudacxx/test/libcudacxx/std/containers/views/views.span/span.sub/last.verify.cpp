@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11
 
-
 // <span>
 
 // template<size_t Count>
@@ -24,13 +23,12 @@ void f() {
   cuda::std::span<const int, 4> sp(array);
 
   //  Count too large
-  [[maybe_unused]] auto s1 = sp.last<5>(); // expected-error@span:* {{span<T, N>::last<Count>(): Count out of range}}
+  [[maybe_unused]] auto s1 = sp.last<
+      5>(); // expected-error@span:* {{span<T, N>::last<Count>(): Count out of range}}
 
   //  Count numeric_limits
-  [[maybe_unused]] auto s2 = sp.last<cuda::std::size_t(-1)>(); // expected-error@span:* {{span<T, N>::last<Count>(): Count out of range}}
+  [[maybe_unused]] auto s2 = sp.last<cuda::std::size_t(
+      -1)>(); // expected-error@span:* {{span<T, N>::last<Count>(): Count out of range}}
 }
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

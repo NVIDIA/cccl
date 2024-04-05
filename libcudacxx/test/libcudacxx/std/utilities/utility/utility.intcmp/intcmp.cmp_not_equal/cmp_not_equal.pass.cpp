@@ -75,17 +75,18 @@ __host__ __device__ constexpr void test_cmp_not_equal2() {
 
 template <class... Ts>
 __host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&) {
-  (test_cmp_not_equal1<Ts>() , ...);
+  (test_cmp_not_equal1<Ts>(), ...);
 }
 
 template <class T, class... Us>
 __host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&) {
-  (test_cmp_not_equal2<T, Us>() , ...);
+  (test_cmp_not_equal2<T, Us>(), ...);
 }
 
 template <class... Ts, class UTuple>
-__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple) {
-  (test2_impl<Ts>(utuple) , ...);
+__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&,
+                                         const UTuple& utuple) {
+  (test2_impl<Ts>(utuple), ...);
 }
 
 __host__ __device__ constexpr bool test() {
@@ -94,7 +95,8 @@ __host__ __device__ constexpr bool test() {
       __int128_t, __uint128_t,
 #endif
       unsigned long long, long long, unsigned long, long, unsigned int, int,
-      unsigned short, short, unsigned char, signed char> types;
+      unsigned short, short, unsigned char, signed char>
+      types;
   test1(types);
   test2(types, types);
   return true;

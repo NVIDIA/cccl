@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 // Before GCC 6, aggregate initialization kicks in.
 // See https://stackoverflow.com/q/41799015/627587.
 // UNSUPPORTED: gcc-5
@@ -22,9 +21,8 @@
 
 #include <cuda/std/utility>
 
+__host__ __device__ cuda::std::piecewise_construct_t f() {
+  return {};
+} // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
-__host__ __device__ cuda::std::piecewise_construct_t f() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
-
-int main(int, char**) {
-    return 0;
-}
+int main(int, char**) { return 0; }

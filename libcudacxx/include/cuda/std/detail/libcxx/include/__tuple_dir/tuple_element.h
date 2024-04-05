@@ -57,7 +57,8 @@ struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, const volatile _Tp>
 
 #ifdef _CCCL_COMPILER_MSVC
 
-namespace __indexer_detail {
+namespace __indexer_detail
+{
 
 template <size_t _Idx, class... _Types>
 struct _nth_of;
@@ -89,7 +90,8 @@ using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename __indexer_detail::
 
 #elif !__has_builtin(__type_pack_element)
 
-namespace __indexer_detail {
+namespace __indexer_detail
+{
 
 template <size_t _Idx, class _Tp>
 struct __indexed
@@ -110,9 +112,8 @@ _LIBCUDACXX_INLINE_VISIBILITY __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _T
 } // namespace __indexer_detail
 
 template <size_t _Idx, class... _Types>
-using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE =
-    typename decltype(__indexer_detail::__at_index<_Idx>(__indexer_detail::__indexer< __tuple_types<_Types...>,
-        __make_tuple_indices_t<sizeof...(_Types)>>{}))::type;
+using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename decltype(__indexer_detail::__at_index<_Idx>(
+  __indexer_detail::__indexer< __tuple_types<_Types...>, __make_tuple_indices_t<sizeof...(_Types)>>{}))::type;
 #endif
 
 template <size_t _Ip, class... _Types>

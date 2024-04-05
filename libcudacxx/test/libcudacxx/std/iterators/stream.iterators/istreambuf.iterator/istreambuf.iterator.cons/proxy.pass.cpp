@@ -20,28 +20,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
-        cuda::std::istringstream inf("abc");
-        cuda::std::istreambuf_iterator<char> j(inf);
-        cuda::std::istreambuf_iterator<char> i = j++;
-        assert(i != cuda::std::istreambuf_iterator<char>());
-        assert(*i == 'b');
-    }
-    {
-        cuda::std::wistringstream inf(L"abc");
-        cuda::std::istreambuf_iterator<wchar_t> j(inf);
-        cuda::std::istreambuf_iterator<wchar_t> i = j++;
-        assert(i != cuda::std::istreambuf_iterator<wchar_t>());
-        assert(*i == L'b');
-    }
+int main(int, char**) {
+  {
+    cuda::std::istringstream inf("abc");
+    cuda::std::istreambuf_iterator<char> j(inf);
+    cuda::std::istreambuf_iterator<char> i = j++;
+    assert(i != cuda::std::istreambuf_iterator<char>());
+    assert(*i == 'b');
+  }
+  {
+    cuda::std::wistringstream inf(L"abc");
+    cuda::std::istreambuf_iterator<wchar_t> j(inf);
+    cuda::std::istreambuf_iterator<wchar_t> i = j++;
+    assert(i != cuda::std::istreambuf_iterator<wchar_t>());
+    assert(*i == L'b');
+  }
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

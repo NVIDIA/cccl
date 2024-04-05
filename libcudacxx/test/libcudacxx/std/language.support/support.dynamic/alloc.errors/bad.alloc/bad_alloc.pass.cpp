@@ -15,20 +15,21 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    static_assert((cuda::std::is_base_of<cuda::std::exception, cuda::std::bad_alloc>::value),
-                 "cuda::std::is_base_of<cuda::std::exception, cuda::std::bad_alloc>::value");
-    static_assert(cuda::std::is_polymorphic<cuda::std::bad_alloc>::value,
-                 "cuda::std::is_polymorphic<cuda::std::bad_alloc>::value");
-    cuda::std::bad_alloc b;
-    cuda::std::bad_alloc b2 = b;
-    b2 = b;
-    const char* w = b2.what();
-    const char* expected = "cuda::std::bad_alloc";
-    for (size_t i = 0; i < 22; ++i) {
-      assert(w[i] == expected[i]);
-    }
+int main(int, char**) {
+  static_assert((cuda::std::is_base_of<cuda::std::exception,
+                                       cuda::std::bad_alloc>::value),
+                "cuda::std::is_base_of<cuda::std::exception, "
+                "cuda::std::bad_alloc>::value");
+  static_assert(cuda::std::is_polymorphic<cuda::std::bad_alloc>::value,
+                "cuda::std::is_polymorphic<cuda::std::bad_alloc>::value");
+  cuda::std::bad_alloc b;
+  cuda::std::bad_alloc b2 = b;
+  b2 = b;
+  const char* w = b2.what();
+  const char* expected = "cuda::std::bad_alloc";
+  for (size_t i = 0; i < 22; ++i) {
+    assert(w[i] == expected[i]);
+  }
 
   return 0;
 }

@@ -35,23 +35,22 @@ namespace omp
 namespace detail
 {
 
-template<typename DerivedPolicy,
-         typename RandomAccessIterator,
-         typename StrictWeakOrdering>
-void stable_sort(execution_policy<DerivedPolicy> &exec,
+template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
+void stable_sort(execution_policy<DerivedPolicy>& exec,
                  RandomAccessIterator first,
                  RandomAccessIterator last,
                  StrictWeakOrdering comp);
 
-template<typename DerivedPolicy,
-         typename RandomAccessIterator1,
-         typename RandomAccessIterator2,
-         typename StrictWeakOrdering>
-void stable_sort_by_key(execution_policy<DerivedPolicy> &exec,
-                        RandomAccessIterator1 keys_first,
-                        RandomAccessIterator1 keys_last,
-                        RandomAccessIterator2 values_first,
-                        StrictWeakOrdering comp);
+template <typename DerivedPolicy,
+          typename RandomAccessIterator1,
+          typename RandomAccessIterator2,
+          typename StrictWeakOrdering>
+void stable_sort_by_key(
+  execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first,
+  StrictWeakOrdering comp);
 
 } // end namespace detail
 } // end namespace omp
@@ -59,4 +58,3 @@ void stable_sort_by_key(execution_policy<DerivedPolicy> &exec,
 THRUST_NAMESPACE_END
 
 #include <thrust/system/omp/detail/sort.inl>
-

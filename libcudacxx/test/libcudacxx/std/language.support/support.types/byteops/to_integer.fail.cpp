@@ -17,8 +17,8 @@
 //   is_integral_v<IntegerType> is true.
 
 int main(int, char**) {
-    constexpr cuda::std::byte b1{static_cast<cuda::std::byte>(1)};
-    auto f = cuda::std::to_integer<float>(b1);
+  constexpr cuda::std::byte b1{static_cast<cuda::std::byte>(1)};
+  auto f = cuda::std::to_integer<float>(b1);
 
   return 0;
 }

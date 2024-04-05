@@ -19,18 +19,16 @@
 //     If wdi.index() is in the range [1, 5], appends with ']',
 //       otherwise appends with " is not a valid index]".
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
-    using weekday         = cuda::std::chrono::weekday;
+int main(int, char**) {
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
+  using weekday = cuda::std::chrono::weekday;
 
-    std::cout << weekday_indexed{weekday{3}};
+  std::cout << weekday_indexed{weekday{3}};
 
   return 0;
 }

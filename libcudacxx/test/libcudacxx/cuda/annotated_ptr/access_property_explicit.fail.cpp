@@ -23,8 +23,7 @@ __host__ __device__ __noinline__ void test_access_property_fail() {
   unused(o);
 }
 
-int main(int argc, char ** argv)
-{
+int main(int argc, char** argv) {
   test_access_property_fail();
   return 0;
 }

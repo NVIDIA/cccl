@@ -12,7 +12,6 @@
 // template<class F, class... Args>
 // concept relation;
 
-
 #include <cuda/std/concepts>
 
 using cuda::std::relation;

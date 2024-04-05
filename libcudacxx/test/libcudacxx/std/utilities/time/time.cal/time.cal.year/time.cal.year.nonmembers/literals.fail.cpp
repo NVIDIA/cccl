@@ -20,10 +20,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using cuda::std::chrono::year;
-    year d1 = 1234y; // expected-error-re {{no matching literal operator for call to 'operator""y' {{.*}}}}
+int main(int, char**) {
+  using cuda::std::chrono::year;
+  year d1 =
+      1234y; // expected-error-re {{no matching literal operator for call to 'operator""y' {{.*}}}}
 
   return 0;
 }

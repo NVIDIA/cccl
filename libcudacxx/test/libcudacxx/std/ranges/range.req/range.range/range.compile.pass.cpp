@@ -46,10 +46,11 @@ static_assert(!cuda::std::ranges::range<int_begin_iterator_end>);
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
 struct Incomplete;
-template<class T> struct Holder { T t; };
+template <class T>
+struct Holder {
+  T t;
+};
 static_assert(!cuda::std::ranges::range<Holder<Incomplete>*>);
 #endif
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

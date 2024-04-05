@@ -35,7 +35,8 @@ struct MoveOnly {
     return val_ == val;
   }
 
-  __host__ __device__ constexpr bool operator==(const MoveOnly& other) const noexcept {
+  __host__ __device__ constexpr bool
+  operator==(const MoveOnly& other) const noexcept {
     return val_ == other.val_;
   }
 };

@@ -27,24 +27,17 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void
-test(C c)
-{
-    cuda::std::back_insert_iterator<C> i(c);
-    i = typename C::value_type();
-    assert(c.back() == typename C::value_type());
+__host__ __device__ void test(C c) {
+  cuda::std::back_insert_iterator<C> i(c);
+  i = typename C::value_type();
+  assert(c.back() == typename C::value_type());
 }
 
-int main(int, char**)
-{
-    test(cuda::std::vector<cuda::std::unique_ptr<int> >());
+int main(int, char**) {
+  test(cuda::std::vector<cuda::std::unique_ptr<int> >());
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

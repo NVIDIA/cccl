@@ -15,12 +15,11 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
+int main(int, char**) {
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-    static_assert(cuda::std::is_trivially_copyable_v<weekday_indexed>, "");
-    static_assert(cuda::std::is_standard_layout_v<weekday_indexed>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<weekday_indexed>, "");
+  static_assert(cuda::std::is_standard_layout_v<weekday_indexed>, "");
 
   return 0;
 }

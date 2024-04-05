@@ -27,4 +27,3 @@
 #endif // no system header
 
 // cpp has no special swap_ranges
-

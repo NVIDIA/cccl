@@ -27,36 +27,52 @@ struct NoDefaultIterator {
   __host__ __device__ NoDefaultIterator& operator++();
   __host__ __device__ void operator++(int);
   __host__ __device__ int& operator*() const;
-  __host__ __device__ friend bool operator==(NoDefaultIterator const&, NoDefaultIterator const&);
+  __host__ __device__ friend bool operator==(NoDefaultIterator const&,
+                                             NoDefaultIterator const&);
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend bool operator!=(NoDefaultIterator const&, NoDefaultIterator const&);
+  __host__ __device__ friend bool operator!=(NoDefaultIterator const&,
+                                             NoDefaultIterator const&);
 #endif
 };
 static_assert(cuda::std::input_or_output_iterator<NoDefaultIterator>);
 
 // A sentinel type for the above iterator
 struct Sentinel {
-  __host__ __device__ friend bool operator==(NoDefaultIterator const&, Sentinel const&);
-  __host__ __device__ friend bool operator==(Sentinel const&, NoDefaultIterator const&);
-  __host__ __device__ friend bool operator!=(NoDefaultIterator const&, Sentinel const&);
-  __host__ __device__ friend bool operator!=(Sentinel const&, NoDefaultIterator const&);
+  __host__ __device__ friend bool operator==(NoDefaultIterator const&,
+                                             Sentinel const&);
+  __host__ __device__ friend bool operator==(Sentinel const&,
+                                             NoDefaultIterator const&);
+  __host__ __device__ friend bool operator!=(NoDefaultIterator const&,
+                                             Sentinel const&);
+  __host__ __device__ friend bool operator!=(Sentinel const&,
+                                             NoDefaultIterator const&);
 };
 
 __host__ __device__ constexpr bool test() {
   {
-    static_assert(!cuda::std::is_default_constructible_v<cuda::std::ranges::subrange<NoDefaultIterator, Sentinel, cuda::std::ranges::subrange_kind::sized>>);
-    static_assert(!cuda::std::is_default_constructible_v<cuda::std::ranges::subrange<NoDefaultIterator, Sentinel, cuda::std::ranges::subrange_kind::unsized>>);
+    static_assert(
+        !cuda::std::is_default_constructible_v<cuda::std::ranges::subrange<
+            NoDefaultIterator, Sentinel,
+            cuda::std::ranges::subrange_kind::sized> >);
+    static_assert(
+        !cuda::std::is_default_constructible_v<cuda::std::ranges::subrange<
+            NoDefaultIterator, Sentinel,
+            cuda::std::ranges::subrange_kind::unsized> >);
   }
 
   {
     using Iter = forward_iterator<int*>;
-    cuda::std::ranges::subrange<Iter, Iter, cuda::std::ranges::subrange_kind::sized> subrange;
+    cuda::std::ranges::subrange<Iter, Iter,
+                                cuda::std::ranges::subrange_kind::sized>
+        subrange;
     assert(subrange.begin() == Iter());
     assert(subrange.end() == Iter());
   }
   {
     using Iter = forward_iterator<int*>;
-    cuda::std::ranges::subrange<Iter, Iter, cuda::std::ranges::subrange_kind::unsized> subrange;
+    cuda::std::ranges::subrange<Iter, Iter,
+                                cuda::std::ranges::subrange_kind::unsized>
+        subrange;
     assert(subrange.begin() == Iter());
     assert(subrange.end() == Iter());
   }

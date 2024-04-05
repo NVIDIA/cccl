@@ -21,8 +21,10 @@ __host__ __device__ void test_assignment() {
   cuda::std::complex<T> from_real_imag{static_cast<T>(-1.0),
                                        static_cast<T>(1.0)};
 
-  const cuda::std::complex<U> only_real{static_cast<U>(42.0), static_cast<U>(0.0)};
-  const cuda::std::complex<U> only_imag{static_cast<U>(0.0), static_cast<U>(42.0)};
+  const cuda::std::complex<U> only_real{static_cast<U>(42.0),
+                                        static_cast<U>(0.0)};
+  const cuda::std::complex<U> only_imag{static_cast<U>(0.0),
+                                        static_cast<U>(42.0)};
   const cuda::std::complex<U> real_imag{static_cast<U>(42.0),
                                         static_cast<U>(112.0)};
 

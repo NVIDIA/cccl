@@ -17,8 +17,7 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
+int main(int, char**) {
   cuda::std::atomic_thread_fence(cuda::std::memory_order_seq_cst);
 
   return 0;

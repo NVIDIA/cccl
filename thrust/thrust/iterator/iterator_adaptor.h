@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file thrust/iterator/iterator_adaptor.h
  *  \brief An iterator which adapts a base iterator
  */
@@ -41,9 +40,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/iterator/iterator_facade.h>
 #include <thrust/detail/use_default.h>
 #include <thrust/iterator/detail/iterator_adaptor_base.h>
+#include <thrust/iterator/iterator_facade.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -106,137 +105,141 @@ THRUST_NAMESPACE_BEGIN
  *  \endcode
  *
  *  Except for the first two, \p iterator_adaptor's template parameters are optional. When omitted, or when the
- *  user specifies \p thrust::use_default in its place, \p iterator_adaptor will use a default type inferred from \p Base.
+ *  user specifies \p thrust::use_default in its place, \p iterator_adaptor will use a default type inferred from \p
+ * Base.
  *
  *  \p iterator_adaptor's functionality is derived from and generally equivalent to \p boost::iterator_adaptor.
  *  The exception is Thrust's addition of the template parameter \p System, which is necessary to allow Thrust
  *  to dispatch an algorithm to one of several parallel backend systems.
  *
- *  \p iterator_adaptor is a powerful tool for creating custom iterators directly. However, the large set of iterator semantics which must be satisfied
- *  for algorithm compatibility can make \p iterator_adaptor difficult to use correctly. Unless you require the full expressivity of \p iterator_adaptor,
- *  consider building a custom iterator through composition of existing higher-level fancy iterators instead.
+ *  \p iterator_adaptor is a powerful tool for creating custom iterators directly. However, the large set of iterator
+ * semantics which must be satisfied for algorithm compatibility can make \p iterator_adaptor difficult to use
+ * correctly. Unless you require the full expressivity of \p iterator_adaptor, consider building a custom iterator
+ * through composition of existing higher-level fancy iterators instead.
  *
  *  Interested users may refer to <tt>boost::iterator_adaptor</tt>'s documentation for further usage examples.
  */
-template<typename Derived,
-         typename Base,
-         typename Value      = use_default,
-         typename System     = use_default,
-         typename Traversal  = use_default,
-         typename Reference  = use_default,
-         typename Difference = use_default>
-  class iterator_adaptor:
-    public detail::iterator_adaptor_base<
-      Derived, Base, Value, System, Traversal, Reference, Difference
-    >::type
+template <typename Derived,
+          typename Base,
+          typename Value      = use_default,
+          typename System     = use_default,
+          typename Traversal  = use_default,
+          typename Reference  = use_default,
+          typename Difference = use_default>
+class iterator_adaptor
+    : public detail::iterator_adaptor_base< Derived, Base, Value, System, Traversal, Reference, Difference >::type
 {
   /*! \cond
    */
 
-    friend class thrust::iterator_core_access;
+  friend class thrust::iterator_core_access;
 
-  protected:
-    typedef typename detail::iterator_adaptor_base<
-        Derived, Base, Value, System, Traversal, Reference, Difference
-    >::type super_t;
+protected:
+  typedef typename detail::iterator_adaptor_base< Derived, Base, Value, System, Traversal, Reference, Difference >::type
+    super_t;
 
   /*! \endcond
    */
 
-  public:
-    /*! \p iterator_adaptor's default constructor does nothing.
-     */
-    iterator_adaptor() = default;
+public:
+  /*! \p iterator_adaptor's default constructor does nothing.
+   */
+  iterator_adaptor() = default;
 
-    /*! This constructor copies from a given instance of the \p Base iterator.
-     */
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE
-    explicit iterator_adaptor(Base const& iter)
+  /*! This constructor copies from a given instance of the \p Base iterator.
+   */
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE explicit iterator_adaptor(Base const& iter)
       : m_iterator(iter)
-    {}
+  {}
 
-    /*! The type of iterator this \p iterator_adaptor's \p adapts.
-     */
-    typedef Base       base_type;
+  /*! The type of iterator this \p iterator_adaptor's \p adapts.
+   */
+  typedef Base base_type;
 
-    /*! \cond
-     */
-    typedef typename super_t::reference reference;
+  /*! \cond
+   */
+  typedef typename super_t::reference reference;
 
-    typedef typename super_t::difference_type difference_type;
-    /*! \endcond
-     */
+  typedef typename super_t::difference_type difference_type;
+  /*! \endcond
+   */
 
-    /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
-     */
-    _CCCL_HOST_DEVICE
-    Base const& base() const
-    { return m_iterator; }
+  /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
+   */
+  _CCCL_HOST_DEVICE Base const& base() const
+  {
+    return m_iterator;
+  }
 
-  protected:
-    /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
-     */
-    _CCCL_HOST_DEVICE
-    Base const& base_reference() const
-    { return m_iterator; }
+protected:
+  /*! \return A \p const reference to the \p Base iterator this \p iterator_adaptor adapts.
+   */
+  _CCCL_HOST_DEVICE Base const& base_reference() const
+  {
+    return m_iterator;
+  }
 
-    /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
-     */
-    _CCCL_HOST_DEVICE
-    Base& base_reference()
-    { return m_iterator; }
+  /*! \return A mutable reference to the \p Base iterator this \p iterator_adaptor adapts.
+   */
+  _CCCL_HOST_DEVICE Base& base_reference()
+  {
+    return m_iterator;
+  }
 
-    /*! \cond
-     */
-  private: // Core iterator interface for iterator_facade
+  /*! \cond
+   */
 
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE
-    typename iterator_adaptor::reference dereference() const
-    { return *m_iterator; }
+private: // Core iterator interface for iterator_facade
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE typename iterator_adaptor::reference dereference() const
+  {
+    return *m_iterator;
+  }
 
-    _CCCL_EXEC_CHECK_DISABLE
-    template<typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-    _CCCL_HOST_DEVICE
-    bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
-    { return m_iterator == x.base(); }
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
+  _CCCL_HOST_DEVICE bool equal(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& x) const
+  {
+    return m_iterator == x.base();
+  }
 
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE
-    void advance(typename iterator_adaptor::difference_type n)
-    {
-      // XXX statically assert on random_access_traversal_tag
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void advance(typename iterator_adaptor::difference_type n)
+  {
+    // XXX statically assert on random_access_traversal_tag
 
-      // counting_iterator will pick eg. diff_t=int64 when base=int32.
-      // Explicitly cast to avoid static conversion warnings.
-      m_iterator = static_cast<base_type>(m_iterator + n);
-    }
+    // counting_iterator will pick eg. diff_t=int64 when base=int32.
+    // Explicitly cast to avoid static conversion warnings.
+    m_iterator = static_cast<base_type>(m_iterator + n);
+  }
 
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE
-    void increment()
-    { ++m_iterator; }
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void increment()
+  {
+    ++m_iterator;
+  }
 
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_HOST_DEVICE
-    void decrement()
-    {
-      // XXX statically assert on bidirectional_traversal_tag
-      --m_iterator;
-    }
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE void decrement()
+  {
+    // XXX statically assert on bidirectional_traversal_tag
+    --m_iterator;
+  }
 
-    _CCCL_EXEC_CHECK_DISABLE
-    template<typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
-    _CCCL_HOST_DEVICE
-    typename iterator_adaptor::difference_type distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
-    { return y.base() - m_iterator; }
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename OtherDerived, typename OtherIterator, typename V, typename S, typename T, typename R, typename D>
+  _CCCL_HOST_DEVICE typename iterator_adaptor::difference_type
+  distance_to(iterator_adaptor<OtherDerived, OtherIterator, V, S, T, R, D> const& y) const
+  {
+    return y.base() - m_iterator;
+  }
 
-  private:
-    Base m_iterator;
+private:
+  Base m_iterator;
 
-    /*! \endcond
-     */
+  /*! \endcond
+   */
 }; // end iterator_adaptor
 
 /*! \} // end fancyiterators
@@ -246,4 +249,3 @@ template<typename Derived,
  */
 
 THRUST_NAMESPACE_END
-

@@ -17,42 +17,76 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void test()
-{
-    {
+__host__ __device__ void test() {
+  {
     typedef T Exp;
     typedef cuda::std::array<T, 3> C;
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
-    }
-    {
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type,
+                            Exp>::value),
+        "");
+  }
+  {
     typedef T const Exp;
     typedef cuda::std::array<T, 3> const C;
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
-    }
-    {
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type,
+                            Exp>::value),
+        "");
+  }
+  {
     typedef T volatile Exp;
     typedef cuda::std::array<T, 3> volatile C;
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
-    }
-    {
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type,
+                            Exp>::value),
+        "");
+  }
+  {
     typedef T const volatile Exp;
     typedef cuda::std::array<T, 3> const volatile C;
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type, Exp>::value), "");
-    static_assert((cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type, Exp>::value), "");
-    }
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<0, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<1, C>::type,
+                            Exp>::value),
+        "");
+    static_assert(
+        (cuda::std::is_same<typename cuda::std::tuple_element<2, C>::type,
+                            Exp>::value),
+        "");
+  }
 }
 
-int main(int, char**)
-{
-    test<double>();
-    test<int>();
+int main(int, char**) {
+  test<double>();
+  test<int>();
 
   return 0;
 }

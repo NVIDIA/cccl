@@ -16,10 +16,8 @@
 
 #include <cuda/barrier>
 
-#ifndef  __cccl_lib_local_barrier_arrive_tx
+#ifndef __cccl_lib_local_barrier_arrive_tx
 static_assert(false, "should define __cccl_lib_local_barrier_arrive_tx");
 #endif // __cccl_lib_local_barrier_arrive_tx
 
-int main(int, char**){
-    return 0;
-}
+int main(int, char**) { return 0; }

@@ -31,15 +31,24 @@ struct NonTrivial {
   __host__ __device__ ~NonTrivial() {}
 };
 
-static_assert(cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, int>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<int, NonTrivial>>, "");
-static_assert(!cuda::std::is_trivially_destructible_v<cuda::std::expected<NonTrivial, NonTrivial>>, "");
+static_assert(
+    cuda::std::is_trivially_destructible_v<cuda::std::expected<int, int> >, "");
+static_assert(!cuda::std::is_trivially_destructible_v<
+                  cuda::std::expected<NonTrivial, int> >,
+              "");
+static_assert(!cuda::std::is_trivially_destructible_v<
+                  cuda::std::expected<int, NonTrivial> >,
+              "");
+static_assert(!cuda::std::is_trivially_destructible_v<
+                  cuda::std::expected<NonTrivial, NonTrivial> >,
+              "");
 
 struct TrackedDestroy {
   bool& destroyed;
   __host__ __device__ constexpr TrackedDestroy(bool& b) : destroyed(b) {}
-  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TrackedDestroy() { destroyed = true; }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~TrackedDestroy() {
+    destroyed = true;
+  }
 };
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
@@ -47,7 +56,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   {
     bool valueDestroyed = false;
     {
-      cuda::std::expected<TrackedDestroy, TrackedDestroy> e(cuda::std::in_place, valueDestroyed);
+      cuda::std::expected<TrackedDestroy, TrackedDestroy> e(cuda::std::in_place,
+                                                            valueDestroyed);
       unused(e);
     }
     assert(valueDestroyed);
@@ -57,7 +67,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   {
     bool errorDestroyed = false;
     {
-      cuda::std::expected<TrackedDestroy, TrackedDestroy> e(cuda::std::unexpect, errorDestroyed);
+      cuda::std::expected<TrackedDestroy, TrackedDestroy> e(cuda::std::unexpect,
+                                                            errorDestroyed);
       unused(e);
     }
     assert(errorDestroyed);

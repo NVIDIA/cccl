@@ -29,14 +29,17 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cpp/memory_resource.h>
-#include <thrust/memory.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
+#include <thrust/system/cpp/memory_resource.h>
+
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
-namespace system { namespace cpp
+namespace system
+{
+namespace cpp
 {
 
 /*! Allocates an area of memory available to Thrust's <tt>cpp</tt> system.
@@ -61,7 +64,7 @@ inline pointer<void> malloc(std::size_t n);
  *  \see cpp::free
  *  \see std::malloc
  */
-template<typename T>
+template <typename T>
 inline pointer<T> malloc(std::size_t n);
 
 /*! Deallocates an area of memory previously allocated by <tt>cpp::malloc</tt>.
@@ -77,32 +80,29 @@ inline void free(pointer<void> ptr);
  *  provided. \p cpp::allocator allocates (deallocates) storage with \p
  *  cpp::malloc (\p cpp::free).
  */
-template<typename T>
-using allocator = thrust::mr::stateless_resource_allocator<
-  T, thrust::system::cpp::memory_resource
->;
+template <typename T>
+using allocator = thrust::mr::stateless_resource_allocator< T, thrust::system::cpp::memory_resource >;
 
 /*! \p cpp::universal_allocator allocates memory that can be used by the \p cpp
  *  system and host systems.
  */
-template<typename T>
-using universal_allocator = thrust::mr::stateless_resource_allocator<
-  T, thrust::system::cpp::universal_memory_resource
->;
+template <typename T>
+using universal_allocator =
+  thrust::mr::stateless_resource_allocator< T, thrust::system::cpp::universal_memory_resource >;
 
-}} // namespace system::cpp
+} // namespace cpp
+} // namespace system
 
 /*! \namespace thrust::cpp
  *  \brief \p thrust::cpp is a top-level alias for thrust::system::cpp.
  */
 namespace cpp
 {
-using thrust::system::cpp::malloc;
-using thrust::system::cpp::free;
 using thrust::system::cpp::allocator;
+using thrust::system::cpp::free;
+using thrust::system::cpp::malloc;
 } // namespace cpp
 
 THRUST_NAMESPACE_END
 
 #include <thrust/system/cpp/detail/memory.inl>
-

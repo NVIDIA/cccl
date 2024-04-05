@@ -23,7 +23,8 @@ int main(int, char**) {
   static_assert(cuda::std::is_empty_v<cuda::std::default_sentinel_t>);
   static_assert(cuda::std::semiregular<cuda::std::default_sentinel_t>);
 
-  static_assert(cuda::std::same_as<decltype(cuda::std::default_sentinel), const cuda::std::default_sentinel_t>);
+  static_assert(cuda::std::same_as<decltype(cuda::std::default_sentinel),
+                                   const cuda::std::default_sentinel_t>);
 
   cuda::std::default_sentinel_t s1;
   auto s2 = cuda::std::default_sentinel_t{};

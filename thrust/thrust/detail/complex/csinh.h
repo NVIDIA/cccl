@@ -45,22 +45,22 @@
  *    lib/msun/src/s_csinh.c
  */
 
-
 #pragma once
-
-#include <thrust/detail/config.h>
 
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
+#include <thrust/detail/config.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace detail{
-namespace complex{		      	
+namespace detail
+{
+namespace complex
+{
 
 using thrust::complex;
 
-__host__ __device__ inline
-complex<double> csinh(const complex<double>& z){
+__host__ __device__ inline complex<double> csinh(const complex<double>& z)
+{
   double x, y, h;
   uint32_t hx, hy, ix, iy, lx, ly;
   const double huge = 8.98846567431157953864652595395e+307; // 0x1p1023;
@@ -75,22 +75,32 @@ complex<double> csinh(const complex<double>& z){
   iy = 0x7fffffff & hy;
 
   /* Handle the nearly-non-exceptional cases where x and y are finite. */
-  if (ix < 0x7ff00000 && iy < 0x7ff00000) {
+  if (ix < 0x7ff00000 && iy < 0x7ff00000)
+  {
     if ((iy | ly) == 0)
+    {
       return (complex<double>(sinh(x), y));
-    if (ix < 0x40360000)	/* small x: normal case */
+    }
+    if (ix < 0x40360000) /* small x: normal case */
+    {
       return (complex<double>(sinh(x) * cos(y), cosh(x) * sin(y)));
+    }
 
     /* |x| >= 22, so cosh(x) ~= exp(|x|) */
-    if (ix < 0x40862e42) {
+    if (ix < 0x40862e42)
+    {
       /* x < 710: exp(|x|) won't overflow */
       h = exp(fabs(x)) * 0.5;
       return (complex<double>(copysign(h, x) * cos(y), h * sin(y)));
-    } else if (ix < 0x4096bbaa) {
+    }
+    else if (ix < 0x4096bbaa)
+    {
       /* x < 1455: scale to avoid overflow */
       complex<double> z_ = ldexp_cexp(complex<double>(fabs(x), y), -1);
       return (complex<double>(z_.real() * copysign(1.0, x), z_.imag()));
-    } else {
+    }
+    else
+    {
       /* x >= 1455: the result always overflows */
       h = huge * x;
       return (complex<double>(h * cos(y), h * h * sin(y)));
@@ -107,16 +117,21 @@ complex<double> csinh(const complex<double>& z){
    * the same as d(NaN).
    */
   if ((ix | lx) == 0 && iy >= 0x7ff00000)
+  {
     return (complex<double>(copysign(0.0, x * (y - y)), y - y));
+  }
 
   /*
    * sinh(+-Inf +- I 0) = +-Inf + I +-0.
    *
    * sinh(NaN +- I 0)   = d(NaN) + I +-0.
    */
-  if ((iy | ly) == 0 && ix >= 0x7ff00000) {
+  if ((iy | ly) == 0 && ix >= 0x7ff00000)
+  {
     if (((hx & 0xfffff) | lx) == 0)
+    {
       return (complex<double>(x, y));
+    }
     return (complex<double>(x, copysign(0.0, y)));
   }
 
@@ -129,7 +144,9 @@ complex<double> csinh(const complex<double>& z){
    * nonzero x.  Choice = don't raise (except for signaling NaNs).
    */
   if (ix < 0x7ff00000 && iy >= 0x7ff00000)
+  {
     return (complex<double>(y - y, x * (y - y)));
+  }
 
   /*
    * sinh(+-Inf + I NaN)  = +-Inf + I d(NaN).
@@ -142,9 +159,12 @@ complex<double> csinh(const complex<double>& z){
    *
    * sinh(+-Inf + I y)   = +-Inf cos(y) + I Inf sin(y)
    */
-  if (ix >= 0x7ff00000 && ((hx & 0xfffff) | lx) == 0) {
+  if (ix >= 0x7ff00000 && ((hx & 0xfffff) | lx) == 0)
+  {
     if (iy >= 0x7ff00000)
+    {
       return (complex<double>(x * x, x * (y - y)));
+    }
     return (complex<double>(x * cos(y), infinity<double>() * sin(y)));
   }
 
@@ -162,8 +182,8 @@ complex<double> csinh(const complex<double>& z){
   return (complex<double>((x * x) * (y - y), (x + x) * (y - y)));
 }
 
-__host__ __device__ inline
-complex<double> csin(complex<double> z){
+__host__ __device__ inline complex<double> csin(complex<double> z)
+{
   /* csin(z) = -I * csinh(I * z) */
   z = csinh(complex<double>(-z.imag(), z.real()));
   return (complex<double>(z.imag(), -z.real()));
@@ -174,33 +194,30 @@ complex<double> csin(complex<double> z){
 } // namespace detail
 
 template <typename ValueType>
-__host__ __device__
-inline complex<ValueType> sin(const complex<ValueType>& z){
+__host__ __device__ inline complex<ValueType> sin(const complex<ValueType>& z)
+{
   const ValueType re = z.real();
   const ValueType im = z.imag();
-  return complex<ValueType>(std::sin(re) * std::cosh(im), 
-			    std::cos(re) * std::sinh(im));
+  return complex<ValueType>(std::sin(re) * std::cosh(im), std::cos(re) * std::sinh(im));
 }
 
-
 template <typename ValueType>
-__host__ __device__
-inline complex<ValueType> sinh(const complex<ValueType>& z){
+__host__ __device__ inline complex<ValueType> sinh(const complex<ValueType>& z)
+{
   const ValueType re = z.real();
   const ValueType im = z.imag();
-  return complex<ValueType>(std::sinh(re) * std::cos(im), 
-			    std::cosh(re) * std::sin(im));
+  return complex<ValueType>(std::sinh(re) * std::cos(im), std::cosh(re) * std::sin(im));
 }
 
 template <>
-__host__ __device__
-inline complex<double> sin(const complex<double>& z){
+__host__ __device__ inline complex<double> sin(const complex<double>& z)
+{
   return detail::complex::csin(z);
 }
 
 template <>
-__host__ __device__
-inline complex<double> sinh(const complex<double>& z){
+__host__ __device__ inline complex<double> sinh(const complex<double>& z)
+{
   return detail::complex::csinh(z);
 }
 

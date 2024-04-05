@@ -19,11 +19,13 @@
 
 template <class Iter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-  int array[]                           = {0, 1, 2, 3, 4};
-  int* b                                = array + 0;
-  int* e                                = array + 5;
-  cuda::std::__bounded_iter<Iter> const iter1 = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
-  cuda::std::__bounded_iter<Iter> const iter2 = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
+  int array[] = {0, 1, 2, 3, 4};
+  int* b = array + 0;
+  int* e = array + 5;
+  cuda::std::__bounded_iter<Iter> const iter1 =
+      cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+  cuda::std::__bounded_iter<Iter> const iter2 =
+      cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
 
   // operator==
   {

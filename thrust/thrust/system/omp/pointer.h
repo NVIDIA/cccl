@@ -29,13 +29,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <type_traits>
-#include <thrust/system/omp/detail/execution_policy.h>
 #include <thrust/detail/pointer.h>
 #include <thrust/detail/reference.h>
+#include <thrust/system/omp/detail/execution_policy.h>
+
+#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
-namespace system { namespace omp
+namespace system
+{
+namespace omp
 {
 
 /*! \p omp::pointer stores a pointer to an object allocated in memory accessible
@@ -61,11 +64,7 @@ namespace system { namespace omp
  *  \see raw_pointer_cast
  */
 template <typename T>
-using pointer = thrust::pointer<
-  T,
-  thrust::system::omp::tag,
-  thrust::tagged_reference<T, thrust::system::omp::tag>
->;
+using pointer = thrust::pointer< T, thrust::system::omp::tag, thrust::tagged_reference<T, thrust::system::omp::tag> >;
 
 /*! \p omp::universal_pointer stores a pointer to an object allocated in memory
  * accessible by the \p omp system and host systems.
@@ -90,11 +89,7 @@ using pointer = thrust::pointer<
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer<
-  T,
-  thrust::system::omp::tag,
-  typename std::add_lvalue_reference<T>::type
->;
+using universal_pointer = thrust::pointer< T, thrust::system::omp::tag, typename std::add_lvalue_reference<T>::type >;
 
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p omp system. \p reference is the type of the result of
@@ -105,7 +100,8 @@ using universal_pointer = thrust::pointer<
 template <typename T>
 using reference = thrust::tagged_reference<T, thrust::system::omp::tag>;
 
-}} // namespace system::omp
+} // namespace omp
+} // namespace system
 
 /*! \addtogroup system_backends Systems
  *  \ingroup system
@@ -117,9 +113,8 @@ using reference = thrust::tagged_reference<T, thrust::system::omp::tag>;
 namespace omp
 {
 using thrust::system::omp::pointer;
-using thrust::system::omp::universal_pointer;
 using thrust::system::omp::reference;
+using thrust::system::omp::universal_pointer;
 } // namespace omp
 
 THRUST_NAMESPACE_END
-

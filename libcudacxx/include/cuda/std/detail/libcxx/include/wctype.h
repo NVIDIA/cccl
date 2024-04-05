@@ -58,25 +58,25 @@ wctrans_t wctrans(const char* property);
 
 #ifdef __cplusplus
 
-#undef iswalnum
-#undef iswalpha
-#undef iswblank
-#undef iswcntrl
-#undef iswdigit
-#undef iswgraph
-#undef iswlower
-#undef iswprint
-#undef iswpunct
-#undef iswspace
-#undef iswupper
-#undef iswxdigit
-#undef iswctype
-#undef wctype
-#undef towlower
-#undef towupper
-#undef towctrans
-#undef wctrans
+#  undef iswalnum
+#  undef iswalpha
+#  undef iswblank
+#  undef iswcntrl
+#  undef iswdigit
+#  undef iswgraph
+#  undef iswlower
+#  undef iswprint
+#  undef iswpunct
+#  undef iswspace
+#  undef iswupper
+#  undef iswxdigit
+#  undef iswctype
+#  undef wctype
+#  undef towlower
+#  undef towupper
+#  undef towctrans
+#  undef wctrans
 
-#endif  // __cplusplus
+#endif // __cplusplus
 
-#endif  // _LIBCUDACXX_WCTYPE_H
+#endif // _LIBCUDACXX_WCTYPE_H

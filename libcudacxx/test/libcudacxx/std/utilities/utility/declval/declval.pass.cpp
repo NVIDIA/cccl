@@ -16,15 +16,14 @@
 
 #include "test_macros.h"
 
-class A
-{
-    __host__ __device__ A(const A&);
-    __host__ __device__ A& operator=(const A&);
+class A {
+  __host__ __device__ A(const A&);
+  __host__ __device__ A& operator=(const A&);
 };
 
-int main(int, char**)
-{
-    static_assert((cuda::std::is_same<decltype(cuda::std::declval<A>()), A&&>::value), "");
+int main(int, char**) {
+  static_assert(
+      (cuda::std::is_same<decltype(cuda::std::declval<A>()), A&&>::value), "");
 
   return 0;
 }

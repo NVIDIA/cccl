@@ -9,8 +9,7 @@
 #include <cuda/std/atomic>
 
 template <class A, class T>
-__host__ __device__
-bool cmpxchg_weak_loop(A& atomic, T& expected, T desired) {
+__host__ __device__ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired) {
   for (int i = 0; i < 10; i++) {
     if (atomic.compare_exchange_weak(expected, desired) == true) {
       return true;
@@ -21,13 +20,12 @@ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired) {
 }
 
 template <class A, class T>
-__host__ __device__
-bool cmpxchg_weak_loop(A& atomic, T& expected, T desired,
-                       cuda::std::memory_order success,
-                       cuda::std::memory_order failure) {
+__host__ __device__ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired,
+                                           cuda::std::memory_order success,
+                                           cuda::std::memory_order failure) {
   for (int i = 0; i < 10; i++) {
-    if (atomic.compare_exchange_weak(expected, desired, success,
-                                     failure) == true) {
+    if (atomic.compare_exchange_weak(expected, desired, success, failure) ==
+        true) {
       return true;
     }
   }
@@ -36,10 +34,11 @@ bool cmpxchg_weak_loop(A& atomic, T& expected, T desired,
 }
 
 template <class A, class T>
-__host__ __device__
-bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired) {
+__host__ __device__ bool c_cmpxchg_weak_loop(A* atomic, T* expected,
+                                             T desired) {
   for (int i = 0; i < 10; i++) {
-    if (cuda::std::atomic_compare_exchange_weak(atomic, expected, desired) == true) {
+    if (cuda::std::atomic_compare_exchange_weak(atomic, expected, desired) ==
+        true) {
       return true;
     }
   }
@@ -48,13 +47,12 @@ bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired) {
 }
 
 template <class A, class T>
-__host__ __device__
-bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired,
-                         cuda::std::memory_order success,
-                         cuda::std::memory_order failure) {
+__host__ __device__ bool c_cmpxchg_weak_loop(A* atomic, T* expected, T desired,
+                                             cuda::std::memory_order success,
+                                             cuda::std::memory_order failure) {
   for (int i = 0; i < 10; i++) {
-    if (cuda::std::atomic_compare_exchange_weak_explicit(atomic, expected, desired,
-                                                   success, failure) == true) {
+    if (cuda::std::atomic_compare_exchange_weak_explicit(
+            atomic, expected, desired, success, failure) == true) {
       return true;
     }
   }

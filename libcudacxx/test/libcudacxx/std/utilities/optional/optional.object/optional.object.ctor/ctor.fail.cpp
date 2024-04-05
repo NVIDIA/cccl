@@ -21,29 +21,41 @@
 
 #include "test_macros.h"
 
-struct NonDestructible { ~NonDestructible() = delete; };
+struct NonDestructible {
+  ~NonDestructible() = delete;
+};
 
-int main(int, char**)
-{
-    {
-    cuda::std::optional<char &> o1;          // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a reference type is ill-formed}}
-    cuda::std::optional<NonDestructible> o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-destructible type is ill-formed}}
-    cuda::std::optional<char[20]> o3;        // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with an array type is ill-formed}}
-    }
+int main(int, char**) {
+  {
+    cuda::std::optional<char&>
+        o1; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a reference type is ill-formed}}
+    cuda::std::optional<NonDestructible>
+        o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with a non-destructible type is ill-formed}}
+    cuda::std::optional<char[20]>
+        o3; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with an array type is ill-formed}}
+  }
 
-    {
-    cuda::std::optional<               cuda::std::in_place_t> o1; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
-    cuda::std::optional<const          cuda::std::in_place_t> o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
-    cuda::std::optional<      volatile cuda::std::in_place_t> o3; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
-    cuda::std::optional<const volatile cuda::std::in_place_t> o4; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
-    }
+  {
+    cuda::std::optional<cuda::std::in_place_t>
+        o1; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
+    cuda::std::optional<const cuda::std::in_place_t>
+        o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
+    cuda::std::optional<volatile cuda::std::in_place_t>
+        o3; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
+    cuda::std::optional<const volatile cuda::std::in_place_t>
+        o4; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with in_place_t is ill-formed}}
+  }
 
-    {
-    cuda::std::optional<               cuda::std::nullopt_t> o1; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-    cuda::std::optional<const          cuda::std::nullopt_t> o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-    cuda::std::optional<      volatile cuda::std::nullopt_t> o3; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-    cuda::std::optional<const volatile cuda::std::nullopt_t> o4; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
-    }
+  {
+    cuda::std::optional<cuda::std::nullopt_t>
+        o1; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+    cuda::std::optional<const cuda::std::nullopt_t>
+        o2; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+    cuda::std::optional<volatile cuda::std::nullopt_t>
+        o3; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+    cuda::std::optional<const volatile cuda::std::nullopt_t>
+        o4; // expected-error-re@optional:* {{{{(static_assert|static assertion)}} failed{{.*}}instantiation of optional with nullopt_t is ill-formed}}
+  }
 
-    return 0;
+  return 0;
 }

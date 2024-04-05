@@ -31,35 +31,32 @@
 // We have a separate variable for host and device because a constexpr
 // cuda::std::array cannot be shared between host and device as some of its
 // member functions take a const reference, which is unsupported by nvcc.
-           constexpr cuda::std::array<uint64_t, 5> GMEM_DIMS    {8, 11, 13, 3, 3};
-__device__ constexpr cuda::std::array<uint64_t, 5> GMEM_DIMS_DEV{8, 11, 13, 3, 3};
-           constexpr cuda::std::array<uint32_t, 5> SMEM_DIMS    {4,  2,  4, 1, 1};
-__device__ constexpr cuda::std::array<uint32_t, 5> SMEM_DIMS_DEV{4,  2,  4, 1, 1};
+constexpr cuda::std::array<uint64_t, 5> GMEM_DIMS{8, 11, 13, 3, 3};
+__device__ constexpr cuda::std::array<uint64_t, 5> GMEM_DIMS_DEV{8, 11, 13, 3,
+                                                                 3};
+constexpr cuda::std::array<uint32_t, 5> SMEM_DIMS{4, 2, 4, 1, 1};
+__device__ constexpr cuda::std::array<uint32_t, 5> SMEM_DIMS_DEV{4, 2, 4, 1, 1};
 
 __device__ constexpr cuda::std::array<uint32_t, 5> TEST_SMEM_COORDS[] = {
-    {0, 0, 0, 0, 0},
-    {4, 1, 3, 0, 1},
-    {4, 5, 1, 1, 2}
-};
+    {0, 0, 0, 0, 0}, {4, 1, 3, 0, 1}, {4, 5, 1, 1, 2}};
 
 constexpr size_t gmem_len = tensor_len(GMEM_DIMS);
 constexpr size_t smem_len = tensor_len(SMEM_DIMS);
 
 __device__ int gmem_tensor[gmem_len];
 
-int main(int, char**)
-{
-    NV_DISPATCH_TARGET(
-        NV_IS_HOST, (
-            //Required by concurrent_agents_launch to know how many we're launching
-            cuda_thread_count = 512;
-            init_tensor_map(gmem_tensor, GMEM_DIMS, SMEM_DIMS);
-        ),
-        NV_IS_DEVICE, (
-            for (auto smem_coord : TEST_SMEM_COORDS) {
-                test<smem_len>(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor, gmem_len);
-            }
-        )
-    );
-    return 0;
+int main(int, char**) {
+  NV_DISPATCH_TARGET(
+      NV_IS_HOST,
+      (
+          //Required by concurrent_agents_launch to know how many we're launching
+          cuda_thread_count = 512;
+          init_tensor_map(gmem_tensor, GMEM_DIMS, SMEM_DIMS);),
+      NV_IS_DEVICE,
+      (for (auto smem_coord
+            : TEST_SMEM_COORDS) {
+        test<smem_len>(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor,
+                       gmem_len);
+      }));
+  return 0;
 }

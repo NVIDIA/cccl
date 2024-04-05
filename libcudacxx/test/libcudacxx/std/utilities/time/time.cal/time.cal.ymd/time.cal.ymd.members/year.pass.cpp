@@ -19,23 +19,22 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using year           = cuda::std::chrono::year;
-    using month          = cuda::std::chrono::month;
-    using day            = cuda::std::chrono::day;
-    using year_month_day = cuda::std::chrono::year_month_day;
+int main(int, char**) {
+  using year = cuda::std::chrono::year;
+  using month = cuda::std::chrono::month;
+  using day = cuda::std::chrono::day;
+  using year_month_day = cuda::std::chrono::year_month_day;
 
-    ASSERT_NOEXCEPT(                cuda::std::declval<const year_month_day>().year());
-    ASSERT_SAME_TYPE(year, decltype(cuda::std::declval<const year_month_day>().year()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_day>().year());
+  ASSERT_SAME_TYPE(year,
+                   decltype(cuda::std::declval<const year_month_day>().year()));
 
-    static_assert( year_month_day{}.year() == year{}, "");
+  static_assert(year_month_day{}.year() == year{}, "");
 
-    for (int i = 1; i <= 50; ++i)
-    {
-        year_month_day ym(year{i}, month{}, day{});
-        assert( static_cast<int>(ym.year()) == i);
-    }
+  for (int i = 1; i <= 50; ++i) {
+    year_month_day ym(year{i}, month{}, day{});
+    assert(static_cast<int>(ym.year()) == i);
+  }
 
   return 0;
 }

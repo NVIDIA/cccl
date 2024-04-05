@@ -16,42 +16,42 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-#define CHECK_MDSPAN(m,d) \
-    static_assert(cuda::std::is_same<decltype(m)::element_type,int>::value, ""); \
-    static_assert(m.is_exhaustive(), ""); \
-    assert(m.data_handle()  == d.data()); \
-    assert(m.rank()         == 0       ); \
-    assert(m.rank_dynamic() == 0       )
+#define CHECK_MDSPAN(m, d)                                                     \
+  static_assert(cuda::std::is_same<decltype(m)::element_type, int>::value,     \
+                "");                                                           \
+  static_assert(m.is_exhaustive(), "");                                        \
+  assert(m.data_handle() == d.data());                                         \
+  assert(m.rank() == 0);                                                       \
+  assert(m.rank_dynamic() == 0)
 
-int main(int, char**)
-{
+int main(int, char**) {
 #ifdef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
-    // TEST(TestMdspanCTAD, ctad_pointer)
-    {
-        cuda::std::array<int,5> d = {1,2,3,4,5};
-        int* ptr = d.data();
-        cuda::std::mdspan m(ptr);
+  // TEST(TestMdspanCTAD, ctad_pointer)
+  {
+    cuda::std::array<int, 5> d = {1, 2, 3, 4, 5};
+    int* ptr = d.data();
+    cuda::std::mdspan m(ptr);
 
-        CHECK_MDSPAN(m,d);
-    }
+    CHECK_MDSPAN(m, d);
+  }
 
-    // TEST(TestMdspanCTAD, ctad_pointer_tmp)
-    {
-        cuda::std::array<int,5> d = {1,2,3,4,5};
-        cuda::std::mdspan m(d.data());
+  // TEST(TestMdspanCTAD, ctad_pointer_tmp)
+  {
+    cuda::std::array<int, 5> d = {1, 2, 3, 4, 5};
+    cuda::std::mdspan m(d.data());
 
-        CHECK_MDSPAN(m,d);
-    }
+    CHECK_MDSPAN(m, d);
+  }
 
-    // TEST(TestMdspanCTAD, ctad_pointer_move)
-    {
-        cuda::std::array<int,5> d = {1,2,3,4,5};
-        int* ptr = d.data();
-        cuda::std::mdspan m(std::move(ptr));
+  // TEST(TestMdspanCTAD, ctad_pointer_move)
+  {
+    cuda::std::array<int, 5> d = {1, 2, 3, 4, 5};
+    int* ptr = d.data();
+    cuda::std::mdspan m(std::move(ptr));
 
-        CHECK_MDSPAN(m,d);
-    }
+    CHECK_MDSPAN(m, d);
+  }
 #endif
 
-    return 0;
+  return 0;
 }

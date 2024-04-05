@@ -19,22 +19,21 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using year       = cuda::std::chrono::year;
-    using month      = cuda::std::chrono::month;
-    using year_month = cuda::std::chrono::year_month;
+int main(int, char**) {
+  using year = cuda::std::chrono::year;
+  using month = cuda::std::chrono::month;
+  using year_month = cuda::std::chrono::year_month;
 
-    ASSERT_NOEXCEPT(                 cuda::std::declval<const year_month>().month());
-    ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const year_month>().month()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const year_month>().month());
+  ASSERT_SAME_TYPE(month,
+                   decltype(cuda::std::declval<const year_month>().month()));
 
-    static_assert( year_month{}.month() == month{}, "");
+  static_assert(year_month{}.month() == month{}, "");
 
-    for (unsigned i = 1; i <= 50; ++i)
-    {
-        year_month ym(year{1234}, month{i});
-        assert( static_cast<unsigned>(ym.month()) == i);
-    }
+  for (unsigned i = 1; i <= 50; ++i) {
+    year_month ym(year{1234}, month{i});
+    assert(static_cast<unsigned>(ym.month()) == i);
+  }
 
   return 0;
 }

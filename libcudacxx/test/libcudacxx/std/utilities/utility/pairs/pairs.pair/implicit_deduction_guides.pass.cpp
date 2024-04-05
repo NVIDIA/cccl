@@ -46,8 +46,7 @@
 // (6)  explicit pair(pair<U1, U2> const&) -> pair<U1, U2>
 // (7)  pair(pair<U1, U2> &&) -> pair<U1, U2>
 // (8)  explicit pair(pair<U1, U2> &&) -> pair<U1, U2>
-int main(int, char**)
-{
+int main(int, char**) {
   using E = ExplicitTestTypes::TestType;
   static_assert(!cuda::std::is_convertible<E const&, E>::value, "");
   { // Testing (1)

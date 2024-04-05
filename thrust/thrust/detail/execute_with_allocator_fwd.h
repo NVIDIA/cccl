@@ -26,9 +26,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/type_traits.h>
-
 #include <thrust/detail/execute_with_dependencies.h>
+#include <thrust/detail/type_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -36,8 +35,7 @@ namespace detail
 {
 
 template <typename Allocator, template <typename> class BaseSystem>
-struct execute_with_allocator
-  : BaseSystem<execute_with_allocator<Allocator, BaseSystem> >
+struct execute_with_allocator : BaseSystem<execute_with_allocator<Allocator, BaseSystem> >
 {
 private:
   typedef BaseSystem<execute_with_allocator<Allocator, BaseSystem> > super_t;
@@ -45,63 +43,59 @@ private:
   Allocator alloc;
 
 public:
-  _CCCL_HOST_DEVICE
-  execute_with_allocator(super_t const& super, Allocator alloc_)
-    : super_t(super), alloc(alloc_)
+  _CCCL_HOST_DEVICE execute_with_allocator(super_t const& super, Allocator alloc_)
+      : super_t(super)
+      , alloc(alloc_)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  execute_with_allocator(Allocator alloc_)
-    : alloc(alloc_)
+  _CCCL_HOST_DEVICE execute_with_allocator(Allocator alloc_)
+      : alloc(alloc_)
   {}
 
-  typename remove_reference<Allocator>::type& get_allocator() { return alloc; }
-
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  after(Dependencies&& ...dependencies) const
+  typename remove_reference<Allocator>::type& get_allocator()
   {
-    return { alloc, capture_as_dependency(THRUST_FWD(dependencies))... };
+    return alloc;
   }
 
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  after(Dependencies&&... dependencies) const
+  {
+    return {alloc, capture_as_dependency(THRUST_FWD(dependencies))...};
+  }
+
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(std::tuple<Dependencies...>& dependencies) const
   {
-      return { alloc, capture_as_dependency(dependencies) };
+    return {alloc, capture_as_dependency(dependencies)};
   }
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   after(std::tuple<Dependencies...>&& dependencies) const
   {
-      return { alloc, capture_as_dependency(std::move(dependencies)) };
+    return {alloc, capture_as_dependency(std::move(dependencies))};
   }
 
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
-  rebind_after(Dependencies&& ...dependencies) const
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  rebind_after(Dependencies&&... dependencies) const
   {
-    return { alloc, capture_as_dependency(THRUST_FWD(dependencies))... };
+    return {alloc, capture_as_dependency(THRUST_FWD(dependencies))...};
   }
 
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   rebind_after(std::tuple<Dependencies...>& dependencies) const
   {
-      return { alloc, capture_as_dependency(dependencies) };
+    return {alloc, capture_as_dependency(dependencies)};
   }
-  template<typename ...Dependencies>
-  _CCCL_HOST
-  execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
+  template <typename... Dependencies>
+  _CCCL_HOST execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>
   rebind_after(std::tuple<Dependencies...>&& dependencies) const
   {
-      return { alloc, capture_as_dependency(std::move(dependencies)) };
+    return {alloc, capture_as_dependency(std::move(dependencies))};
   }
 };
 

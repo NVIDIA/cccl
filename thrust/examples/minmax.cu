@@ -1,14 +1,13 @@
 #include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
 #include <thrust/extrema.h>
+#include <thrust/functional.h>
+#include <thrust/host_vector.h>
 #include <thrust/random.h>
-
+#include <thrust/transform_reduce.h>
 
 // compute minimum and maximum values in a single reduction
 
-// minmax_pair stores the minimum and maximum 
+// minmax_pair stores the minimum and maximum
 // values that have been encountered so far
 template <typename T>
 struct minmax_pair
@@ -21,11 +20,9 @@ struct minmax_pair
 // returns a minmax_pair whose minimum and maximum values
 // are initialized to x.
 template <typename T>
-struct minmax_unary_op
-  : public thrust::unary_function< T, minmax_pair<T> >
+struct minmax_unary_op : public thrust::unary_function< T, minmax_pair<T> >
 {
-  __host__ __device__
-  minmax_pair<T> operator()(const T& x) const
+  __host__ __device__ minmax_pair<T> operator()(const T& x) const
   {
     minmax_pair<T> result;
     result.min_val = x;
@@ -34,16 +31,14 @@ struct minmax_unary_op
   }
 };
 
-// minmax_binary_op is a functor that accepts two minmax_pair 
-// structs and returns a new minmax_pair whose minimum and 
-// maximum values are the min() and max() respectively of 
+// minmax_binary_op is a functor that accepts two minmax_pair
+// structs and returns a new minmax_pair whose minimum and
+// maximum values are the min() and max() respectively of
 // the minimums and maximums of the input pairs
 template <typename T>
-struct minmax_binary_op
-  : public thrust::binary_function< minmax_pair<T>, minmax_pair<T>, minmax_pair<T> >
+struct minmax_binary_op : public thrust::binary_function< minmax_pair<T>, minmax_pair<T>, minmax_pair<T> >
 {
-  __host__ __device__
-  minmax_pair<T> operator()(const minmax_pair<T>& x, const minmax_pair<T>& y) const
+  __host__ __device__ minmax_pair<T> operator()(const minmax_pair<T>& x, const minmax_pair<T>& y) const
   {
     minmax_pair<T> result;
     result.min_val = thrust::min(x.min_val, y.min_val);
@@ -51,7 +46,6 @@ struct minmax_binary_op
     return result;
   }
 };
-
 
 int main(void)
 {
@@ -65,10 +59,12 @@ int main(void)
   // initialize data on host
   thrust::device_vector<int> data(N);
   for (size_t i = 0; i < data.size(); i++)
-      data[i] = dist(rng);
+  {
+    data[i] = dist(rng);
+  }
 
   // setup arguments
-  minmax_unary_op<int>  unary_op;
+  minmax_unary_op<int> unary_op;
   minmax_binary_op<int> binary_op;
 
   // initialize reduction with the first value
@@ -79,13 +75,14 @@ int main(void)
 
   // print results
   std::cout << "[ ";
-  for(size_t i = 0; i < N; i++)
+  for (size_t i = 0; i < N; i++)
+  {
     std::cout << data[i] << " ";
+  }
   std::cout << "]" << std::endl;
- 
+
   std::cout << "minimum = " << result.min_val << std::endl;
   std::cout << "maximum = " << result.max_val << std::endl;
 
   return 0;
 }
-

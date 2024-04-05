@@ -21,77 +21,88 @@
 template <class Iter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
   int array[] = {40, 41, 42, 43, 44};
-  int* b      = array + 0;
-  int* e      = array + 5;
+  int* b = array + 0;
+  int* e = array + 5;
 
   // ++it
   {
-    cuda::std::__bounded_iter<Iter> iter    = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter>& result = ++iter;
     assert(&result == &iter);
     assert(*iter == 41);
   }
   // it++
   {
-    cuda::std::__bounded_iter<Iter> iter   = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> result = iter++;
     assert(*result == 40);
     assert(*iter == 41);
   }
   // --it
   {
-    cuda::std::__bounded_iter<Iter> iter    = cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter>& result = --iter;
     assert(&result == &iter);
     assert(*iter == 42);
   }
   // it--
   {
-    cuda::std::__bounded_iter<Iter> iter   = cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> result = iter--;
     assert(*result == 43);
     assert(*iter == 42);
   }
   // it += n
   {
-    cuda::std::__bounded_iter<Iter> iter    = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter>& result = (iter += 3);
     assert(&result == &iter);
     assert(*iter == 43);
   }
   // it + n
   {
-    cuda::std::__bounded_iter<Iter> iter   = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> result = iter + 3;
     assert(*iter == 40);
     assert(*result == 43);
   }
   // n + it
   {
-    cuda::std::__bounded_iter<Iter> iter   = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> result = 3 + iter;
     assert(*iter == 40);
     assert(*result == 43);
   }
   // it -= n
   {
-    cuda::std::__bounded_iter<Iter> iter    = cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter>& result = (iter -= 3);
     assert(&result == &iter);
     assert(*iter == 40);
   }
   // it - n
   {
-    cuda::std::__bounded_iter<Iter> iter   = cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter =
+        cuda::std::__make_bounded_iter(Iter(b + 3), Iter(b), Iter(e));
     cuda::std::__bounded_iter<Iter> result = iter - 3;
     assert(*iter == 43);
     assert(*result == 40);
   }
   // it - it
   {
-    cuda::std::__bounded_iter<Iter> iter1 = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
-    cuda::std::__bounded_iter<Iter> iter2 = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
-    cuda::std::ptrdiff_t result           = iter2 - iter1;
+    cuda::std::__bounded_iter<Iter> iter1 =
+        cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
+    cuda::std::__bounded_iter<Iter> iter2 =
+        cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
+    cuda::std::ptrdiff_t result = iter2 - iter1;
     assert(result == 5);
   }
 

@@ -23,7 +23,8 @@
 #include "cases.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int(&input_data)[num_elements]) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void
+test(const int (&input_data)[num_elements]) {
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
 
@@ -37,9 +38,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int(&input_data)[num_el
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   constexpr int input_data[num_elements] = INPUT_DATA;
-  test<forward_iterator<const int*>>(input_data);
-  test<bidirectional_iterator<const int*>>(input_data);
-  test<random_access_iterator<const int*>>(input_data);
+  test<forward_iterator<const int*> >(input_data);
+  test<bidirectional_iterator<const int*> >(input_data);
+  test<random_access_iterator<const int*> >(input_data);
   test<const int*>(input_data);
 
   return true;

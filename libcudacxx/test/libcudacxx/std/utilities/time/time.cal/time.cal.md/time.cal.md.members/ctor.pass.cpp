@@ -25,24 +25,23 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using day       = cuda::std::chrono::day;
-    using month     = cuda::std::chrono::month;
-    using month_day = cuda::std::chrono::month_day;
+int main(int, char**) {
+  using day = cuda::std::chrono::day;
+  using month = cuda::std::chrono::month;
+  using month_day = cuda::std::chrono::month_day;
 
-    ASSERT_NOEXCEPT(month_day{});
-    ASSERT_NOEXCEPT(month_day{month{1}, day{1}});
+  ASSERT_NOEXCEPT(month_day{});
+  ASSERT_NOEXCEPT(month_day{month{1}, day{1}});
 
-    constexpr month_day md0{};
-    static_assert( md0.month() == month{}, "");
-    static_assert( md0.day()   == day{},   "");
-    static_assert(!md0.ok(),               "");
+  constexpr month_day md0{};
+  static_assert(md0.month() == month{}, "");
+  static_assert(md0.day() == day{}, "");
+  static_assert(!md0.ok(), "");
 
-    constexpr month_day md1{cuda::std::chrono::January, day{4}};
-    static_assert( md1.month() == cuda::std::chrono::January, "");
-    static_assert( md1.day()   == day{4},               "");
-    static_assert( md1.ok(),                            "");
+  constexpr month_day md1{cuda::std::chrono::January, day{4}};
+  static_assert(md1.month() == cuda::std::chrono::January, "");
+  static_assert(md1.day() == day{4}, "");
+  static_assert(md1.ok(), "");
 
   return 0;
 }

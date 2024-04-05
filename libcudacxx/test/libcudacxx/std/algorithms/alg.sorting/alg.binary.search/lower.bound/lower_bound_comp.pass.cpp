@@ -24,9 +24,9 @@
 #include "../cases.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, const T& value) {
-  Iter i =
-      cuda::std::lower_bound(first, last, value, cuda::std::less<int>());
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last,
+                                                   const T& value) {
+  Iter i = cuda::std::lower_bound(first, last, value, cuda::std::less<int>());
   for (Iter j = first; j != i; ++j)
     assert(cuda::std::less<int>()(*j, value));
   for (Iter j = i; j != last; ++j)

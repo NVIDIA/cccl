@@ -24,18 +24,17 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__
-void test_const_get_if() {
+__host__ __device__ void test_const_get_if() {
   {
     using V = cuda::std::variant<int>;
-    constexpr const V *v = nullptr;
+    constexpr const V* v = nullptr;
     static_assert(cuda::std::get_if<int>(v) == nullptr, "");
   }
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
     ASSERT_NOEXCEPT(cuda::std::get_if<int>(&v));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), const int *);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), const int*);
 #if TEST_STD_VER > 2014 && defined(_LIBCUDACXX_ADDRESSOF)
     static_assert(*cuda::std::get_if<int>(&v) == 42, "");
 #endif
@@ -44,7 +43,7 @@ void test_const_get_if() {
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long *);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long*);
 #if TEST_STD_VER > 2014 && defined(_LIBCUDACXX_ADDRESSOF)
     static_assert(*cuda::std::get_if<const long>(&v) == 42, "");
 #endif
@@ -53,80 +52,79 @@ void test_const_get_if() {
 // FIXME: Remove these once reference support is reinstated
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int &>;
+    using V = cuda::std::variant<int&>;
     int x = 42;
     const V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int &>(&v)), int *);
-    assert(cuda::std::get_if<int &>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&>(&v)), int*);
+    assert(cuda::std::get_if<int&>(&v) == &x);
   }
   {
-    using V = cuda::std::variant<int &&>;
+    using V = cuda::std::variant<int&&>;
     int x = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int &&>(&v)), int *);
-    assert(cuda::std::get_if<int &&>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&&>(&v)), int*);
+    assert(cuda::std::get_if<int&&>(&v) == &x);
   }
   {
-    using V = cuda::std::variant<const int &&>;
+    using V = cuda::std::variant<const int&&>;
     int x = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int &&>(&v)), const int *);
-    assert(cuda::std::get_if<const int &&>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&&>(&v)), const int*);
+    assert(cuda::std::get_if<const int&&>(&v) == &x);
   }
 #endif
 }
 
-__host__ __device__
-void test_get_if() {
+__host__ __device__ void test_get_if() {
   {
     using V = cuda::std::variant<int>;
-    V *v = nullptr;
+    V* v = nullptr;
     assert(cuda::std::get_if<int>(v) == nullptr);
   }
   {
     using V = cuda::std::variant<int, const long>;
     V v(42);
     ASSERT_NOEXCEPT(cuda::std::get_if<int>(&v));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), int *);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), int*);
     assert(*cuda::std::get_if<int>(&v) == 42);
     assert(cuda::std::get_if<const long>(&v) == nullptr);
   }
   {
     using V = cuda::std::variant<int, const long>;
     V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long *);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long*);
     assert(*cuda::std::get_if<const long>(&v) == 42);
     assert(cuda::std::get_if<int>(&v) == nullptr);
   }
 // FIXME: Remove these once reference support is reinstated
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int &>;
+    using V = cuda::std::variant<int&>;
     int x = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int &>(&v)), int *);
-    assert(cuda::std::get_if<int &>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&>(&v)), int*);
+    assert(cuda::std::get_if<int&>(&v) == &x);
   }
   {
-    using V = cuda::std::variant<const int &>;
+    using V = cuda::std::variant<const int&>;
     int x = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int &>(&v)), const int *);
-    assert(cuda::std::get_if<const int &>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&>(&v)), const int*);
+    assert(cuda::std::get_if<const int&>(&v) == &x);
   }
   {
-    using V = cuda::std::variant<int &&>;
+    using V = cuda::std::variant<int&&>;
     int x = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int &&>(&v)), int *);
-    assert(cuda::std::get_if<int &&>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&&>(&v)), int*);
+    assert(cuda::std::get_if<int&&>(&v) == &x);
   }
   {
-    using V = cuda::std::variant<const int &&>;
+    using V = cuda::std::variant<const int&&>;
     int x = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int &&>(&v)), const int *);
-    assert(cuda::std::get_if<const int &&>(&v) == &x);
+    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&&>(&v)), const int*);
+    assert(cuda::std::get_if<const int&&>(&v) == &x);
   }
 #endif
 }

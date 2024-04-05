@@ -61,7 +61,9 @@ struct invalid_allocate_async_argument {
   void* allocate_async(invalid_argument, std::size_t) { return nullptr; }
   void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
   bool operator==(const invalid_allocate_async_argument&) const { return true; }
-  bool operator!=(const invalid_allocate_async_argument&) const { return false; }
+  bool operator!=(const invalid_allocate_async_argument&) const {
+    return false;
+  }
 };
 static_assert(!cuda::mr::async_resource<invalid_allocate_async_argument>, "");
 
@@ -82,8 +84,12 @@ struct invalid_deallocate_async_argument {
     return nullptr;
   }
   void deallocate_async(void*, invalid_argument, std::size_t) {}
-  bool operator==(const invalid_deallocate_async_argument&) const { return true; }
-  bool operator!=(const invalid_deallocate_async_argument&) const { return false; }
+  bool operator==(const invalid_deallocate_async_argument&) const {
+    return true;
+  }
+  bool operator!=(const invalid_deallocate_async_argument&) const {
+    return false;
+  }
 };
 static_assert(!cuda::mr::async_resource<invalid_deallocate_async_argument>, "");
 

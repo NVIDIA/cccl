@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file functional.h
  *  \brief Function objects and tools for manipulating them
  */
@@ -30,17 +29,20 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <functional>
 #include <thrust/detail/functional/placeholder.h>
+
+#include <functional>
 
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup function_objects Function Objects
  */
 
-template<typename Operation> struct unary_traits;
+template <typename Operation>
+struct unary_traits;
 
-template<typename Operation> struct binary_traits;
+template <typename Operation>
+struct binary_traits;
 
 /*! \addtogroup function_object_adaptors Function Object Adaptors
  *  \ingroup function_objects
@@ -72,8 +74,7 @@ template<typename Operation> struct binary_traits;
  *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_function
  *  \see binary_function
  */
-template<typename Argument,
-         typename Result>
+template <typename Argument, typename Result>
 struct unary_function
 {
   /*! \typedef argument_type
@@ -84,7 +85,7 @@ struct unary_function
   /*! \typedef result_type;
    *  \brief The type of the function object's result.
    */
-  typedef Result   result_type;
+  typedef Result result_type;
 }; // end unary_function
 
 /*! \p binary_function is an empty base class: it contains no member functions
@@ -112,9 +113,7 @@ struct unary_function
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_function
  *  \see unary_function
  */
-template<typename Argument1,
-         typename Argument2,
-         typename Result>
+template <typename Argument1, typename Argument2, typename Result>
 struct binary_function
 {
   /*! \typedef first_argument_type
@@ -130,12 +129,11 @@ struct binary_function
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    */
-  typedef Result    result_type;
+  typedef Result result_type;
 }; // end binary_function
 
 /*! \}
  */
-
 
 /*! \addtogroup predefined_function_objects Predefined Function Objects
  *  \ingroup function_objects
@@ -146,47 +144,44 @@ struct binary_function
  *  \{
  */
 
-#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                   \
-  template <>                                                                  \
-  struct func<void>                                                            \
-  {                                                                            \
-    using is_transparent = void;                                               \
-    _CCCL_EXEC_CHECK_DISABLE                                              \
-    template <typename T>                                                      \
-    _CCCL_HOST_DEVICE                                                        \
-    constexpr auto operator()(T&& x) const                                     \
-      noexcept(noexcept(impl)) THRUST_TRAILING_RETURN(decltype(impl))          \
-    {                                                                          \
-      return impl;                                                             \
-    }                                                                          \
+#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                          \
+  template <>                                                                         \
+  struct func<void>                                                                   \
+  {                                                                                   \
+    using is_transparent = void;                                                      \
+    _CCCL_EXEC_CHECK_DISABLE                                                          \
+    template <typename T>                                                             \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) \
+      THRUST_TRAILING_RETURN(decltype(impl))                                          \
+    {                                                                                 \
+      return impl;                                                                    \
+    }                                                                                 \
   }
 
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                  \
-  template <>                                                                  \
-  struct func<void>                                                            \
-  {                                                                            \
-    using is_transparent = void;                                               \
-    _CCCL_EXEC_CHECK_DISABLE                                              \
-    template <typename T1, typename T2>                                        \
-    _CCCL_HOST_DEVICE                                                        \
-    constexpr auto operator()(T1&& t1, T2&& t2) const                          \
-      noexcept(noexcept(impl)) THRUST_TRAILING_RETURN(decltype(impl))          \
-    {                                                                          \
-      return impl;                                                             \
-    }                                                                          \
+#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                    \
+  template <>                                                                                    \
+  struct func<void>                                                                              \
+  {                                                                                              \
+    using is_transparent = void;                                                                 \
+    _CCCL_EXEC_CHECK_DISABLE                                                                     \
+    template <typename T1, typename T2>                                                          \
+    _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const noexcept(noexcept(impl)) \
+      THRUST_TRAILING_RETURN(decltype(impl))                                                     \
+    {                                                                                            \
+      return impl;                                                                               \
+    }                                                                                            \
   }
 
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op)                 \
-  THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(                                   \
-    func, THRUST_FWD(t1) op THRUST_FWD(t2))
-
+#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op) \
+  THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, THRUST_FWD(t1) op THRUST_FWD(t2))
 
 /*! \p plus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>plus<T></tt>, and \c x and \c y are objects
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x+y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x+y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x+y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>plus</tt> to sum two
  *  device_vectors of \c floats.
@@ -214,7 +209,7 @@ struct binary_function
  *  \see https://en.cppreference.com/w/cpp/utility/functional/plus
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct plus
 {
   /*! \typedef first_argument_type
@@ -235,8 +230,7 @@ struct plus
   /*! Function call operator. The return value is <tt>lhs + rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs + rhs;
   }
@@ -249,7 +243,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(plus, +);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x-y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x-y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x-y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>minus</tt> to subtract
  *  a device_vector of \c floats from another.
@@ -277,7 +272,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(plus, +);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/minus
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct minus
 {
   /*! \typedef first_argument_type
@@ -298,8 +293,7 @@ struct minus
   /*! Function call operator. The return value is <tt>lhs - rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs - rhs;
   }
@@ -312,7 +306,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(minus, -);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x*y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x*y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x*y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>multiplies</tt> to multiply
  *  two device_vectors of \c floats.
@@ -340,7 +335,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(minus, -);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/multiplies
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct multiplies
 {
   /*! \typedef first_argument_type
@@ -361,8 +356,7 @@ struct multiplies
   /*! Function call operator. The return value is <tt>lhs * rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs * rhs;
   }
@@ -375,7 +369,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(multiplies, *);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x/y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x/y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x/y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>divides</tt> to divide
  *  one device_vectors of \c floats by another.
@@ -403,7 +398,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(multiplies, *);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/divides
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct divides
 {
   /*! \typedef first_argument_type
@@ -424,8 +419,7 @@ struct divides
   /*! Function call operator. The return value is <tt>lhs / rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs / rhs;
   }
@@ -438,7 +432,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(divides, /);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x \% y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x \% y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x \% y</tt> must be defined and must have a return
+ * type that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>modulus</tt> to take
  *  the modulus of one device_vectors of \c floats by another.
@@ -466,7 +461,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(divides, /);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/modulus
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct modulus
 {
   /*! \typedef first_argument_type
@@ -487,8 +482,7 @@ struct modulus
   /*! Function call operator. The return value is <tt>lhs % rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs % rhs;
   }
@@ -501,7 +495,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(modulus, %);
  *  of class \c T, then <tt>f(x)</tt> returns <tt>-x</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x is an object of type \p T, then <tt>-x</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x is an object of type \p T, then <tt>-x</tt> must be defined and must have a return type that is
+ * convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>negate</tt> to negate
  *  the elements of a device_vector of \c floats.
@@ -526,7 +521,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(modulus, %);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/negate
  *  \see unary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct negate
 {
   /*! \typedef argument_type
@@ -542,8 +537,7 @@ struct negate
   /*! Function call operator. The return value is <tt>-x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &x) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
   {
     return -x;
   }
@@ -556,7 +550,8 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
  *  of class \c T, then <tt>f(x)</tt> returns <tt>x*x</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x is an object of type \p T, then <tt>x*x</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x is an object of type \p T, then <tt>x*x</tt> must be defined and must have a return type that is
+ * convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>square</tt> to square
  *  the elements of a device_vector of \c floats.
@@ -580,7 +575,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
  *
  *  \see unary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct square
 {
   /*! \typedef argument_type
@@ -596,14 +591,13 @@ struct square
   /*! Function call operator. The return value is <tt>x*x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &x) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
   {
-    return x*x;
+    return x * x;
   }
 }; // end square
 
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x*x);
+THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
 
 /*! \}
  */
@@ -619,12 +613,13 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x*x);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x == y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/equal_to
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct equal_to
 {
   /*! \typedef first_argument_type
@@ -645,8 +640,7 @@ struct equal_to
   /*! Function call operator. The return value is <tt>lhs == rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs == rhs;
   }
@@ -660,12 +654,13 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(equal_to, ==);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x != y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/not_equal_to
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct not_equal_to
 {
   /*! \typedef first_argument_type
@@ -686,8 +681,7 @@ struct not_equal_to
   /*! Function call operator. The return value is <tt>lhs != rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs != rhs;
   }
@@ -701,12 +695,13 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(not_equal_to, !=);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x > y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct greater
 {
   /*! \typedef first_argument_type
@@ -727,8 +722,7 @@ struct greater
   /*! Function call operator. The return value is <tt>lhs > rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs > rhs;
   }
@@ -742,12 +736,13 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater, >);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x < y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct less
 {
   /*! \typedef first_argument_type
@@ -768,8 +763,7 @@ struct less
   /*! Function call operator. The return value is <tt>lhs < rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs;
   }
@@ -783,12 +777,13 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less, <);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x >= y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater_equal
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct greater_equal
 {
   /*! \typedef first_argument_type
@@ -809,8 +804,7 @@ struct greater_equal
   /*! Function call operator. The return value is <tt>lhs >= rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs >= rhs;
   }
@@ -824,12 +818,13 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(greater_equal, >=);
  *  and \c y are objects of class \c T, then <tt>f(x,y)</tt> returns \c true if
  *  <tt>x <= y</tt> and \c false otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less_equal
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct less_equal
 {
   /*! \typedef first_argument_type
@@ -850,8 +845,7 @@ struct less_equal
   /*! Function call operator. The return value is <tt>lhs <= rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs <= rhs;
   }
@@ -861,7 +855,6 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less_equal, <=);
 
 /*! \}
  */
-
 
 /*! \addtogroup logical_operations Logical Operations
  *  \ingroup predefined_function_objects
@@ -879,7 +872,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(less_equal, <=);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_and
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct logical_and
 {
   /*! \typedef first_argument_type
@@ -900,8 +893,7 @@ struct logical_and
   /*! Function call operator. The return value is <tt>lhs && rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs && rhs;
   }
@@ -920,7 +912,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_and, &&);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_or
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct logical_or
 {
   /*! \typedef first_argument_type
@@ -941,8 +933,7 @@ struct logical_or
   /*! Function call operator. The return value is <tt>lhs || rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs || rhs;
   }
@@ -975,7 +966,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(logical_or, ||);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_not
  *  \see unary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct logical_not
 {
   /*! \typedef first_argument_type
@@ -996,8 +987,7 @@ struct logical_not
   /*! Function call operator. The return value is <tt>!x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr bool operator()(const T &x) const
+  _CCCL_HOST_DEVICE constexpr bool operator()(const T& x) const
   {
     return !x;
   }
@@ -1018,7 +1008,8 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(logical_not, !THRUST_FWD(x));
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x&y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x&y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x&y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>bit_and</tt> to take
  *  the bitwise AND of one device_vector of \c ints by another.
@@ -1045,7 +1036,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(logical_not, !THRUST_FWD(x));
  *
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct bit_and
 {
   /*! \typedef first_argument_type
@@ -1066,8 +1057,7 @@ struct bit_and
   /*! Function call operator. The return value is <tt>lhs & rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs & rhs;
   }
@@ -1080,7 +1070,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_and, &);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x|y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x|y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x|y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>bit_or</tt> to take
  *  the bitwise OR of one device_vector of \c ints by another.
@@ -1107,7 +1098,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_and, &);
  *
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct bit_or
 {
   /*! \typedef first_argument_type
@@ -1128,8 +1119,7 @@ struct bit_or
   /*! Function call operator. The return value is <tt>lhs | rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs | rhs;
   }
@@ -1142,7 +1132,8 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_or, |);
  *  of class \c T, then <tt>f(x,y)</tt> returns <tt>x^y</tt>.
  *
  *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and if \c x and \c y are objects of type \p T, then <tt>x^y</tt> must be defined and must have a return type that is convertible to \c T.
+ *          and if \c x and \c y are objects of type \p T, then <tt>x^y</tt> must be defined and must have a return type
+ * that is convertible to \c T.
  *
  *  The following code snippet demonstrates how to use <tt>bit_xor</tt> to take
  *  the bitwise XOR of one device_vector of \c ints by another.
@@ -1169,7 +1160,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_or, |);
  *
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct bit_xor
 {
   /*! \typedef first_argument_type
@@ -1190,8 +1181,7 @@ struct bit_xor
   /*! Function call operator. The return value is <tt>lhs ^ rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs ^ rhs;
   }
@@ -1227,7 +1217,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(bit_xor, ^);
  *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
  *  \see unary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct identity
 {
   /*! \typedef argument_type
@@ -1243,8 +1233,7 @@ struct identity
   /*! Function call operator. The return value is <tt>x</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr const T &operator()(const T &x) const
+  _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
   {
     return x;
   }
@@ -1257,7 +1246,8 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
  *  object of class <tt>maximum<T></tt> and \c x and \c y are objects of class \c T
  *  <tt>f(x,y)</tt> returns \c x if <tt>x > y</tt> and \c y, otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  The following code snippet demonstrates that \p maximum returns its
  *  greater argument.
@@ -1276,7 +1266,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
  *  \see min
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct maximum
 {
   /*! \typedef first_argument_type
@@ -1297,23 +1287,21 @@ struct maximum
   /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs ? rhs : lhs;
   }
 }; // end maximum
 
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum,
-                                          t1 < t2 ? THRUST_FWD(t2)
-                                                  : THRUST_FWD(t1));
+THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum, t1 < t2 ? THRUST_FWD(t2) : THRUST_FWD(t1));
 
 /*! \p minimum is a function object that takes two arguments and returns the lesser
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
  *  object of class <tt>minimum<T></tt> and \c x and \c y are objects of class \c T
  *  <tt>f(x,y)</tt> returns \c x if <tt>x < y</tt> and \c y, otherwise.
  *
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan Comparable</a>.
+ *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/named_req/LessThanComparable">LessThan
+ * Comparable</a>.
  *
  *  The following code snippet demonstrates that \p minimum returns its
  *  lesser argument.
@@ -1332,7 +1320,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum,
  *  \see max
  *  \see binary_function
  */
-template<typename T = void>
+template <typename T = void>
 struct minimum
 {
   /*! \typedef first_argument_type
@@ -1353,16 +1341,13 @@ struct minimum
   /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  constexpr T operator()(const T &lhs, const T &rhs) const
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs ? lhs : rhs;
   }
 }; // end minimum
 
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(minimum,
-                                          t1 < t2 ? THRUST_FWD(t1)
-                                                  : THRUST_FWD(t2));
+THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(minimum, t1 < t2 ? THRUST_FWD(t1) : THRUST_FWD(t2));
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -1382,7 +1367,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(minimum,
  *  \see project2nd
  *  \see binary_function
  */
-template<typename T1 = void, typename T2 = void>
+template <typename T1 = void, typename T2 = void>
 struct project1st
 {
   /*! \typedef first_argument_type
@@ -1402,8 +1387,7 @@ struct project1st
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
-  _CCCL_HOST_DEVICE
-  constexpr const T1 &operator()(const T1 &lhs, const T2 & /*rhs*/) const
+  _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
   {
     return lhs;
   }
@@ -1415,9 +1399,7 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&&) const
-    noexcept(noexcept(THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
     THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1)))
   {
     return THRUST_FWD(t1);
@@ -1442,7 +1424,7 @@ struct project1st<void, void>
  *  \see project1st
  *  \see binary_function
  */
-template<typename T1 = void, typename T2 = void>
+template <typename T1 = void, typename T2 = void>
 struct project2nd
 {
   /*! \typedef first_argument_type
@@ -1462,8 +1444,7 @@ struct project2nd
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
-  _CCCL_HOST_DEVICE
-  constexpr const T2 &operator()(const T1 &/*lhs*/, const T2 &rhs) const
+  _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
   {
     return rhs;
   }
@@ -1475,10 +1456,8 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&&, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
+    THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t2)))
   {
     return THRUST_FWD(t2);
   }
@@ -1504,21 +1483,23 @@ struct project2nd<void, void>
  *  \see https://en.cppreference.com/w/cpp/utility/functional/unary_negate
  *  \see not1
  */
-template<typename Predicate>
-struct unary_negate
-    : public thrust::unary_function<typename Predicate::argument_type, bool>
+template <typename Predicate>
+struct unary_negate : public thrust::unary_function<typename Predicate::argument_type, bool>
 {
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
-  _CCCL_HOST_DEVICE
-  explicit unary_negate(Predicate p) : pred(p){}
+  _CCCL_HOST_DEVICE explicit unary_negate(Predicate p)
+      : pred(p)
+  {}
 
   /*! Function call operator. The return value is <tt>!pred(x)</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  bool operator()(const typename Predicate::argument_type& x) { return !pred(x); }
+  _CCCL_HOST_DEVICE bool operator()(const typename Predicate::argument_type& x)
+  {
+    return !pred(x);
+  }
 
   /*! \cond
    */
@@ -1538,14 +1519,14 @@ struct unary_negate
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x)</tt> always returns
  *          the same value as <tt>!pred(x)</tt>.
  *
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_negate">Adaptable Predicate</a>.
+ *  \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/unary_negate">Adaptable Predicate</a>.
  *
  *  \see unary_negate
  *  \see not2
  */
-template<typename Predicate>
-  _CCCL_HOST_DEVICE
-  unary_negate<Predicate> not1(const Predicate &pred);
+template <typename Predicate>
+_CCCL_HOST_DEVICE unary_negate<Predicate> not1(const Predicate& pred);
 
 /*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
  *  Predicate that represents the logical negation of some other Adaptable
@@ -1557,25 +1538,25 @@ template<typename Predicate>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_negate
  */
-template<typename Predicate>
+template <typename Predicate>
 struct binary_negate
-    : public thrust::binary_function<typename Predicate::first_argument_type,
-                                     typename Predicate::second_argument_type,
-                                     bool>
+    : public thrust::
+        binary_function<typename Predicate::first_argument_type, typename Predicate::second_argument_type, bool>
 {
   /*! Constructor takes a \p Predicate object to negate.
    *  \param p The \p Predicate object to negate.
    */
-  _CCCL_HOST_DEVICE
-  explicit binary_negate(Predicate p) : pred(p){}
+  _CCCL_HOST_DEVICE explicit binary_negate(Predicate p)
+      : pred(p)
+  {}
 
   /*! Function call operator. The return value is <tt>!pred(x,y)</tt>.
    */
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE
-  bool operator()(const typename Predicate::first_argument_type& x, const typename Predicate::second_argument_type& y)
+  _CCCL_HOST_DEVICE bool operator()(const typename Predicate::first_argument_type& x,
+                                    const typename Predicate::second_argument_type& y)
   {
-      return !pred(x,y);
+    return !pred(x, y);
   }
 
   /*! \cond
@@ -1596,24 +1577,22 @@ struct binary_negate
  *  \return A new object, <tt>npred</tt> such that <tt>npred(x,y)</tt> always returns
  *          the same value as <tt>!pred(x,y)</tt>.
  *
- *  \tparam Binary Predicate is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/AdaptableBinaryPredicate">Adaptable Binary Predicate</a>.
+ *  \tparam Binary Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/AdaptableBinaryPredicate">Adaptable Binary Predicate</a>.
  *
  *  \see binary_negate
  *  \see not1
  */
-template<typename BinaryPredicate>
-  _CCCL_HOST_DEVICE
-  binary_negate<BinaryPredicate> not2(const BinaryPredicate &pred);
+template <typename BinaryPredicate>
+_CCCL_HOST_DEVICE binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
 
 /*! \}
  */
-
 
 /*! \addtogroup placeholder_objects Placeholder Objects
  *  \ingroup function_objects
  *  \{
  */
-
 
 /*! \namespace thrust::placeholders
  *  \brief Facilities for constructing simple functions inline.
@@ -1660,59 +1639,47 @@ template<typename BinaryPredicate>
 namespace placeholders
 {
 
-
 /*! \p thrust::placeholders::_1 is the placeholder for the first function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<0>::type _1;
-
 
 /*! \p thrust::placeholders::_2 is the placeholder for the second function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<1>::type _2;
 
-
 /*! \p thrust::placeholders::_3 is the placeholder for the third function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<2>::type _3;
-
 
 /*! \p thrust::placeholders::_4 is the placeholder for the fourth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<3>::type _4;
 
-
 /*! \p thrust::placeholders::_5 is the placeholder for the fifth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<4>::type _5;
-
 
 /*! \p thrust::placeholders::_6 is the placeholder for the sixth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<5>::type _6;
 
-
 /*! \p thrust::placeholders::_7 is the placeholder for the seventh function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<6>::type _7;
-
 
 /*! \p thrust::placeholders::_8 is the placeholder for the eighth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<7>::type _8;
 
-
 /*! \p thrust::placeholders::_9 is the placeholder for the ninth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<8>::type _9;
-
 
 /*! \p thrust::placeholders::_10 is the placeholder for the tenth function parameter.
  */
 THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
-
-} // end placeholders
-
+} // namespace placeholders
 
 /*! \} // placeholder_objects
  */

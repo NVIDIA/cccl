@@ -19,59 +19,67 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**)
-{
-    using index_t = int;
+int main(int, char**) {
+  using index_t = int;
 
-    {
-        cuda::std::extents<index_t,16> e;
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,16>> m{e};
+  {
+    cuda::std::extents<index_t, 16> e;
+    cuda::std::layout_right::mapping<cuda::std::extents<index_t, 16> > m{e};
 
-        assert( m(5) == 5 );
-    }
+    assert(m(5) == 5);
+  }
 
-    {
-        cuda::std::extents<index_t,dyn,dyn> e{16, 32};
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,dyn,dyn>> m{e};
+  {
+    cuda::std::extents<index_t, dyn, dyn> e{16, 32};
+    cuda::std::layout_right::mapping<cuda::std::extents<index_t, dyn, dyn> > m{
+        e};
 
-        assert( m(2,1) == 2*32 + 1*1 );
-    }
+    assert(m(2, 1) == 2 * 32 + 1 * 1);
+  }
 
-    {
-        cuda::std::extents<index_t,dyn,dyn,dyn> e{16, 32, 8};
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,dyn,dyn,dyn>> m{e};
+  {
+    cuda::std::extents<index_t, dyn, dyn, dyn> e{16, 32, 8};
+    cuda::std::layout_right::mapping<
+        cuda::std::extents<index_t, dyn, dyn, dyn> >
+        m{e};
 
-        assert( m(2,1,3) == 2*32*8 + 1*8 + 3*1 );
-    }
+    assert(m(2, 1, 3) == 2 * 32 * 8 + 1 * 8 + 3 * 1);
+  }
 
-    // Indices are of a type implicitly convertible to index_type
-    {
-        cuda::std::extents<index_t,dyn,dyn> e{16, 32};
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,dyn,dyn>> m{e};
+  // Indices are of a type implicitly convertible to index_type
+  {
+    cuda::std::extents<index_t, dyn, dyn> e{16, 32};
+    cuda::std::layout_right::mapping<cuda::std::extents<index_t, dyn, dyn> > m{
+        e};
 
-        assert( m(my_int(2),my_int(1)) == 2*32 + 1*1 );
-    }
+    assert(m(my_int(2), my_int(1)) == 2 * 32 + 1 * 1);
+  }
 
-    // Constraints
-    {
-        cuda::std::extents<index_t,16> e;
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,16>> m{e};
+  // Constraints
+  {
+    cuda::std::extents<index_t, 16> e;
+    cuda::std::layout_right::mapping<cuda::std::extents<index_t, 16> > m{e};
 
-        unused( m );
+    unused(m);
 
-        static_assert( is_paren_op_avail_v< decltype(m), index_t          > ==  true, "" );
+    static_assert(is_paren_op_avail_v<decltype(m), index_t> == true, "");
 
-        // rank consistency
-        static_assert( is_paren_op_avail_v< decltype(m), index_t, index_t > == false, "" );
+    // rank consistency
+    static_assert(is_paren_op_avail_v<decltype(m), index_t, index_t> == false,
+                  "");
 
-        // convertibility
-        static_assert( is_paren_op_avail_v< decltype(m), my_int_non_convertible           > == false, "" );
+    // convertibility
+    static_assert(
+        is_paren_op_avail_v<decltype(m), my_int_non_convertible> == false, "");
 
-        // nothrow-constructibility
+    // nothrow-constructibility
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-        static_assert( is_paren_op_avail_v< decltype(m), my_int_non_nothrow_constructible > == false, "" );
+    static_assert(
+        is_paren_op_avail_v<decltype(m), my_int_non_nothrow_constructible> ==
+            false,
+        "");
 #endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-    }
+  }
 
-    return 0;
+  return 0;
 }

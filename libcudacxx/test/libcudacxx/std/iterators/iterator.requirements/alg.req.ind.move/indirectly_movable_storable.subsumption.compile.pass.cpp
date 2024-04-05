@@ -14,21 +14,19 @@
 
 #include <cuda/std/iterator>
 
-template<class I, class O>
-  requires cuda::std::indirectly_movable<I, O>
-__host__ __device__ constexpr bool indirectly_movable_storable_subsumption() {
+template <class I, class O>
+requires cuda::std::indirectly_movable<I, O> __host__ __device__ constexpr bool
+indirectly_movable_storable_subsumption() {
   return false;
 }
 
-template<class I, class O>
-  requires cuda::std::indirectly_movable_storable<I, O>
-__host__ __device__ constexpr bool indirectly_movable_storable_subsumption() {
+template <class I, class O>
+requires cuda::std::indirectly_movable_storable<I, O>
+    __host__ __device__ constexpr bool
+    indirectly_movable_storable_subsumption() {
   return true;
 }
 
 static_assert(indirectly_movable_storable_subsumption<int*, int*>());
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

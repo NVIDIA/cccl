@@ -26,32 +26,30 @@
 #include "test_macros.h"
 #include "template_cost_testing.h"
 
-template <int N> struct Arg { enum { value = 1 }; };
+template <int N>
+struct Arg {
+  enum { value = 1 };
+};
 
 #ifdef TEST_NEW
-#define IS_SAME  cuda::std::_IsSame
+#define IS_SAME cuda::std::_IsSame
 #else
 #define IS_SAME cuda::std::is_same
 #endif
 
-#define TEST_CASE_NOP() IS_SAME < Arg< __COUNTER__ >, Arg < __COUNTER__ > >::value,
-#define TEST_CASE_TYPE() IS_SAME < Arg< __COUNTER__ >, Arg < __COUNTER__ > >,
+#define TEST_CASE_NOP() IS_SAME<Arg<__COUNTER__>, Arg<__COUNTER__> >::value,
+#define TEST_CASE_TYPE() IS_SAME<Arg<__COUNTER__>, Arg<__COUNTER__> >,
 
 int sink(...);
 
-int x = sink(
-  REPEAT_10000(TEST_CASE_NOP)
-  REPEAT_10000(TEST_CASE_NOP) 42
-);
+int x = sink(REPEAT_10000(TEST_CASE_NOP) REPEAT_10000(TEST_CASE_NOP) 42);
 
-void Foo( REPEAT_1000(TEST_CASE_TYPE) int) { }
+void Foo(REPEAT_1000(TEST_CASE_TYPE) int) {}
 
 static_assert(__COUNTER__ > 10000, "");
 
 void escape() {
 
-sink(&x);
-sink(&Foo);
+  sink(&x);
+  sink(&Foo);
 }
-
-

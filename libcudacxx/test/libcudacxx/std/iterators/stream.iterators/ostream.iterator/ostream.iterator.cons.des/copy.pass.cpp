@@ -20,19 +20,15 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    cuda::std::ostringstream outf;
-    cuda::std::ostream_iterator<int> i(outf);
-    cuda::std::ostream_iterator<int> j = i;
-    assert(outf.good());
-    ((void)j);
+int main(int, char**) {
+  cuda::std::ostringstream outf;
+  cuda::std::ostream_iterator<int> i(outf);
+  cuda::std::ostream_iterator<int> j = i;
+  assert(outf.good());
+  ((void)j);
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

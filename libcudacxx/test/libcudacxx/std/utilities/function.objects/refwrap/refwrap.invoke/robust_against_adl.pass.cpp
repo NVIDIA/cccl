@@ -15,37 +15,39 @@
 #include "test_macros.h"
 
 struct Incomplete;
-template<class T> struct Holder { T t; };
-typedef Holder<Incomplete> *Ptr;
+template <class T>
+struct Holder {
+  T t;
+};
+typedef Holder<Incomplete>* Ptr;
 
 __host__ __device__ Ptr no_args() { return nullptr; }
 __host__ __device__ Ptr one_arg(Ptr p) { return p; }
 __host__ __device__ Ptr two_args(Ptr p, Ptr) { return p; }
 __host__ __device__ Ptr three_args(Ptr p, Ptr, Ptr) { return p; }
 
-__host__ __device__ void one_arg_void(Ptr) { }
+__host__ __device__ void one_arg_void(Ptr) {}
 
-int main(int, char**)
-{
-    Ptr x = nullptr;
-    const Ptr cx = nullptr;
-    cuda::std::ref(no_args)();
-    cuda::std::ref(one_arg)(x);
-    cuda::std::ref(one_arg)(cx);
-    cuda::std::ref(two_args)(x, x);
-    cuda::std::ref(two_args)(x, cx);
-    cuda::std::ref(two_args)(cx, x);
-    cuda::std::ref(two_args)(cx, cx);
-    cuda::std::ref(three_args)(x, x, x);
-    cuda::std::ref(three_args)(x, x, cx);
-    cuda::std::ref(three_args)(x, cx, x);
-    cuda::std::ref(three_args)(cx, x, x);
-    cuda::std::ref(three_args)(x, cx, cx);
-    cuda::std::ref(three_args)(cx, x, cx);
-    cuda::std::ref(three_args)(cx, cx, x);
-    cuda::std::ref(three_args)(cx, cx, cx);
-    cuda::std::ref(one_arg_void)(x);
-    cuda::std::ref(one_arg_void)(cx);
+int main(int, char**) {
+  Ptr x = nullptr;
+  const Ptr cx = nullptr;
+  cuda::std::ref(no_args)();
+  cuda::std::ref(one_arg)(x);
+  cuda::std::ref(one_arg)(cx);
+  cuda::std::ref(two_args)(x, x);
+  cuda::std::ref(two_args)(x, cx);
+  cuda::std::ref(two_args)(cx, x);
+  cuda::std::ref(two_args)(cx, cx);
+  cuda::std::ref(three_args)(x, x, x);
+  cuda::std::ref(three_args)(x, x, cx);
+  cuda::std::ref(three_args)(x, cx, x);
+  cuda::std::ref(three_args)(cx, x, x);
+  cuda::std::ref(three_args)(x, cx, cx);
+  cuda::std::ref(three_args)(cx, x, cx);
+  cuda::std::ref(three_args)(cx, cx, x);
+  cuda::std::ref(three_args)(cx, cx, cx);
+  cuda::std::ref(one_arg_void)(x);
+  cuda::std::ref(one_arg_void)(cx);
 
-    return 0;
+  return 0;
 }

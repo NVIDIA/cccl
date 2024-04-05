@@ -26,36 +26,35 @@
 
 struct any_visitor {
   template <typename T>
-  __host__ __device__
-  void operator()(const T&) const {}
+  __host__ __device__ void operator()(const T&) const {}
 };
 
-template <typename T, typename = decltype(cuda::std::visit(
-                          cuda::std::declval<any_visitor&>(), cuda::std::declval<T>()))>
-__host__ __device__
-constexpr bool has_visit(int) {
+template <typename T,
+          typename = decltype(cuda::std::visit(
+              cuda::std::declval<any_visitor&>(), cuda::std::declval<T>()))>
+__host__ __device__ constexpr bool has_visit(int) {
   return true;
 }
 
 template <typename T>
-__host__ __device__
-constexpr bool has_visit(...) {
+__host__ __device__ constexpr bool has_visit(...) {
   return false;
 }
 
-__host__ __device__
-void test_sfinae() {
-  struct BadVariant : cuda::std::variant<short>, cuda::std::variant<long, float> {};
+__host__ __device__ void test_sfinae() {
+  struct BadVariant : cuda::std::variant<short>,
+                      cuda::std::variant<long, float> {};
   struct BadVariant2 : private cuda::std::variant<long, float> {};
   struct GoodVariant : cuda::std::variant<long, float> {};
   struct GoodVariant2 : GoodVariant {};
 
   static_assert(!has_visit<int>(0), "");
-#if !defined(TEST_COMPILER_MSVC) // MSVC cannot deal with that even with std::variant
+#if !defined(                                                                  \
+    TEST_COMPILER_MSVC) // MSVC cannot deal with that even with std::variant
   static_assert(!has_visit<BadVariant>(0), "");
 #endif // !TEST_COMPILER_MSVC
   static_assert(!has_visit<BadVariant2>(0), "");
-  static_assert(has_visit<cuda::std::variant<int>>(0), "");
+  static_assert(has_visit<cuda::std::variant<int> >(0), "");
   static_assert(has_visit<GoodVariant>(0), "");
   static_assert(has_visit<GoodVariant2>(0), "");
 }

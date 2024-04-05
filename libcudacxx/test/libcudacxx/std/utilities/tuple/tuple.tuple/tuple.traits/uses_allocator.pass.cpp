@@ -15,7 +15,6 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
@@ -23,28 +22,35 @@
 
 struct A {};
 
-int main(int, char**)
-{
-    {
-        typedef cuda::std::tuple<> T;
-        static_assert((cuda::std::is_base_of<cuda::std::true_type,
-                                       cuda::std::uses_allocator<T, A>>::value), "");
-    }
-    {
-        typedef cuda::std::tuple<int> T;
-        static_assert((cuda::std::is_base_of<cuda::std::true_type,
-                                       cuda::std::uses_allocator<T, A>>::value), "");
-    }
-    {
-        typedef cuda::std::tuple<char, int> T;
-        static_assert((cuda::std::is_base_of<cuda::std::true_type,
-                                       cuda::std::uses_allocator<T, A>>::value), "");
-    }
-    {
-        typedef cuda::std::tuple<double&, char, int> T;
-        static_assert((cuda::std::is_base_of<cuda::std::true_type,
-                                       cuda::std::uses_allocator<T, A>>::value), "");
-    }
+int main(int, char**) {
+  {
+    typedef cuda::std::tuple<> T;
+    static_assert(
+        (cuda::std::is_base_of<cuda::std::true_type,
+                               cuda::std::uses_allocator<T, A> >::value),
+        "");
+  }
+  {
+    typedef cuda::std::tuple<int> T;
+    static_assert(
+        (cuda::std::is_base_of<cuda::std::true_type,
+                               cuda::std::uses_allocator<T, A> >::value),
+        "");
+  }
+  {
+    typedef cuda::std::tuple<char, int> T;
+    static_assert(
+        (cuda::std::is_base_of<cuda::std::true_type,
+                               cuda::std::uses_allocator<T, A> >::value),
+        "");
+  }
+  {
+    typedef cuda::std::tuple<double&, char, int> T;
+    static_assert(
+        (cuda::std::is_base_of<cuda::std::true_type,
+                               cuda::std::uses_allocator<T, A> >::value),
+        "");
+  }
 
   return 0;
 }

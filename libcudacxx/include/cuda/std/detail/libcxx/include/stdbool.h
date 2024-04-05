@@ -9,7 +9,6 @@
 #ifndef _LIBCUDACXX_STDBOOL_H
 #define _LIBCUDACXX_STDBOOL_H
 
-
 /*
     stdbool.h synopsis
 
@@ -32,11 +31,11 @@ Macros:
 #include_next <stdbool.h>
 
 #ifdef __cplusplus
-#undef bool
-#undef true
-#undef false
-#undef __bool_true_false_are_defined
-#define __bool_true_false_are_defined 1
+#  undef bool
+#  undef true
+#  undef false
+#  undef __bool_true_false_are_defined
+#  define __bool_true_false_are_defined 1
 #endif
 
-#endif  // _LIBCUDACXX_STDBOOL_H
+#endif // _LIBCUDACXX_STDBOOL_H

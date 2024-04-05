@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 // <cuda/std/tuple>
 
 // template <class... Types> class tuple;
@@ -35,8 +34,7 @@ typedef cuda::std::array<char, 1256> array_t;
 typedef cuda::std::tuple<array_t> tuple_t;
 */
 
-int main(int, char**)
-{
+int main(int, char**) {
   /*
   array_t arr;
   tuple_t tup(arr);

@@ -17,40 +17,42 @@
 
 #include <cuda/std/functional>
 
-using CompInt = bool(*)(int, int);
+using CompInt = bool (*)(int, int);
 using CompDefault = cuda::std::ranges::less;
 
 using AllConstraintsSatisfied = int*;
-static_assert( cuda::std::permutable<AllConstraintsSatisfied>);
-static_assert( cuda::std::indirect_strict_weak_order<CompDefault, AllConstraintsSatisfied>);
-static_assert( cuda::std::sortable<AllConstraintsSatisfied>);
-static_assert( cuda::std::indirect_strict_weak_order<CompInt, AllConstraintsSatisfied>);
-static_assert( cuda::std::sortable<AllConstraintsSatisfied, CompInt>);
+static_assert(cuda::std::permutable<AllConstraintsSatisfied>);
+static_assert(cuda::std::indirect_strict_weak_order<CompDefault,
+                                                    AllConstraintsSatisfied>);
+static_assert(cuda::std::sortable<AllConstraintsSatisfied>);
+static_assert(
+    cuda::std::indirect_strict_weak_order<CompInt, AllConstraintsSatisfied>);
+static_assert(cuda::std::sortable<AllConstraintsSatisfied, CompInt>);
 
 struct Foo {};
-using Proj = int(*)(Foo);
-static_assert( cuda::std::permutable<Foo*>);
+using Proj = int (*)(Foo);
+static_assert(cuda::std::permutable<Foo*>);
 static_assert(!cuda::std::indirect_strict_weak_order<CompDefault, Foo*>);
-static_assert( cuda::std::indirect_strict_weak_order<CompDefault, cuda::std::projected<Foo*, Proj>>);
+static_assert(cuda::std::indirect_strict_weak_order<
+              CompDefault, cuda::std::projected<Foo*, Proj> >);
 static_assert(!cuda::std::sortable<Foo*, CompDefault>);
-static_assert( cuda::std::sortable<Foo*, CompDefault, Proj>);
+static_assert(cuda::std::sortable<Foo*, CompDefault, Proj>);
 static_assert(!cuda::std::indirect_strict_weak_order<CompInt, Foo*>);
-static_assert( cuda::std::indirect_strict_weak_order<CompInt, cuda::std::projected<Foo*, Proj>>);
+static_assert(cuda::std::indirect_strict_weak_order<
+              CompInt, cuda::std::projected<Foo*, Proj> >);
 static_assert(!cuda::std::sortable<Foo*, CompInt>);
-static_assert( cuda::std::sortable<Foo*, CompInt, Proj>);
+static_assert(cuda::std::sortable<Foo*, CompInt, Proj>);
 
 using NotPermutable = const int*;
 static_assert(!cuda::std::permutable<NotPermutable>);
-static_assert( cuda::std::indirect_strict_weak_order<CompInt, NotPermutable>);
+static_assert(cuda::std::indirect_strict_weak_order<CompInt, NotPermutable>);
 static_assert(!cuda::std::sortable<NotPermutable, CompInt>);
 
 struct Empty {};
 using NoIndirectStrictWeakOrder = Empty*;
-static_assert( cuda::std::permutable<NoIndirectStrictWeakOrder>);
-static_assert(!cuda::std::indirect_strict_weak_order<CompInt, NoIndirectStrictWeakOrder>);
+static_assert(cuda::std::permutable<NoIndirectStrictWeakOrder>);
+static_assert(
+    !cuda::std::indirect_strict_weak_order<CompInt, NoIndirectStrictWeakOrder>);
 static_assert(!cuda::std::sortable<NoIndirectStrictWeakOrder, CompInt>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

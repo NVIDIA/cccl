@@ -1,8 +1,9 @@
 #include <thrust/device_vector.h>
-#include <thrust/for_each.h>
-#include <thrust/transform.h>
-#include <thrust/functional.h>
 #include <thrust/execution_policy.h>
+#include <thrust/for_each.h>
+#include <thrust/functional.h>
+#include <thrust/transform.h>
+
 #include <iostream>
 
 // This example demonstrates how to build a minimal custom
@@ -14,7 +15,8 @@
 // the functionality of the default device backend.
 // Note that we pass the name of our system as a template parameter
 // to thrust::device_execution_policy.
-struct my_system : thrust::device_execution_policy<my_system> {};
+struct my_system : thrust::device_execution_policy<my_system>
+{};
 
 // Next, we'll create a novel version of for_each which only
 // applies to algorithm invocations executed with my_system.
@@ -24,10 +26,8 @@ struct my_system : thrust::device_execution_policy<my_system> {};
 // The first parameter to our version for_each is my_system. This allows
 // Thrust to locate it when dispatching thrust::for_each.
 // The following parameters are as normal.
-template<typename Iterator, typename Function>
-  Iterator for_each(my_system, 
-                    Iterator first, Iterator last,
-                    Function f)
+template <typename Iterator, typename Function>
+Iterator for_each(my_system, Iterator first, Iterator last, Function f)
 {
   // output a message
   std::cout << "Hello, world from for_each(my_system)!" << std::endl;
@@ -57,4 +57,3 @@ int main()
 
   return 0;
 }
-

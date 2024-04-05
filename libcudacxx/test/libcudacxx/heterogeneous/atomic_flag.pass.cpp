@@ -13,61 +13,43 @@
 
 #include <cuda/std/atomic>
 
-struct clear
-{
-    template<typename AF>
-    __host__ __device__
-    static void initialize(AF & af)
-    {
-        af.clear();
-    }
+struct clear {
+  template <typename AF>
+  __host__ __device__ static void initialize(AF& af) {
+    af.clear();
+  }
 };
 
-struct clear_tester : clear
-{
-    template<typename AF>
-    __host__ __device__
-    static void validate(AF & af)
-    {
-        assert(af.test_and_set() == false);
-    }
+struct clear_tester : clear {
+  template <typename AF>
+  __host__ __device__ static void validate(AF& af) {
+    assert(af.test_and_set() == false);
+  }
 };
 
-template<bool Previous>
-struct test_and_set_tester
-{
-    template<typename AF>
-    __host__ __device__
-    static void initialize(AF & af)
-    {
-        assert(af.test_and_set() == Previous);
-    }
+template <bool Previous>
+struct test_and_set_tester {
+  template <typename AF>
+  __host__ __device__ static void initialize(AF& af) {
+    assert(af.test_and_set() == Previous);
+  }
 
-    template<typename AF>
-    __host__ __device__
-    static void validate(AF & af)
-    {
-        assert(af.test_and_set() == true);
-    }
+  template <typename AF>
+  __host__ __device__ static void validate(AF& af) {
+    assert(af.test_and_set() == true);
+  }
 };
 
-using atomic_flag_testers = tester_list<
-    clear_tester,
-    clear,
-    test_and_set_tester<false>,
-    test_and_set_tester<true>
->;
+using atomic_flag_testers =
+    tester_list<clear_tester, clear, test_and_set_tester<false>,
+                test_and_set_tester<true> >;
 
-void kernel_invoker()
-{
-    validate_not_movable<cuda::std::atomic_flag, atomic_flag_testers>();
+void kernel_invoker() {
+  validate_not_movable<cuda::std::atomic_flag, atomic_flag_testers>();
 }
 
-int main(int argc, char ** argv)
-{
-    NV_IF_TARGET(NV_IS_HOST,(
-        kernel_invoker();
-    ))
+int main(int argc, char** argv) {
+  NV_IF_TARGET(NV_IS_HOST, (kernel_invoker();))
 
-    return 0;
+  return 0;
 }

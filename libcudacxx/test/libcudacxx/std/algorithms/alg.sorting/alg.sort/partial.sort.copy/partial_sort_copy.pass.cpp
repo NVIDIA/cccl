@@ -85,7 +85,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 
 int main(int, char**) {
   test();
-#if !defined(TEST_COMPILER_CLANG) && !defined(TEST_COMPILER_MSVC) // Over constexpr evaluation limit
+#if !defined(TEST_COMPILER_CLANG) &&                                           \
+    !defined(TEST_COMPILER_MSVC) // Over constexpr evaluation limit
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014

@@ -19,16 +19,14 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
-{
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   int i = 0;
   cuda::std::reference_wrapper<const int> r = cuda::std::cref(i);
   assert(&r.get() == &i);
   return true;
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
   test();
 #if TEST_STD_VER > 2017 && !defined(__CUDACC_RTC__)
   static_assert(test());

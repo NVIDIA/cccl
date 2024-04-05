@@ -18,7 +18,8 @@
 #endif
 
 #if defined(_MSC_VER)
-#pragma warning(disable: 4244) // conversion from 'const double' to 'int', possible loss of data
+#pragma warning(                                                               \
+    disable : 4244) // conversion from 'const double' to 'int', possible loss of data
 #endif
 
 #include <cuda/std/complex>
@@ -27,88 +28,81 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
-test_constexpr()
-{
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr() {
 #if TEST_STD_VER > 2011
-    {
+  {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
     constexpr T rhs(-2.5);
     static_assert(!(lhs == rhs), "");
-    }
-    {
+  }
+  {
     constexpr cuda::std::complex<T> lhs(1.5, 0);
     constexpr T rhs(-2.5);
     static_assert(!(lhs == rhs), "");
-    }
-    {
+  }
+  {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
     constexpr T rhs(1.5);
     static_assert(!(lhs == rhs), "");
-    }
-    {
+  }
+  {
     constexpr cuda::std::complex<T> lhs(1.5, 0);
     constexpr T rhs(1.5);
-    static_assert( (lhs == rhs), "");
-    }
+    static_assert((lhs == rhs), "");
+  }
 #endif
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
-test_nonconstexpr()
-{
-    {
-        cuda::std::complex<T> lhs(1.5,  2.5);
-        T rhs(-2.5);
-        assert(!(lhs == rhs));
-    }
-    {
-        cuda::std::complex<T> lhs(1.5, 0);
-        T rhs(-2.5);
-        assert(!(lhs == rhs));
-    }
-    {
-        cuda::std::complex<T> lhs(1.5, 2.5);
-        T rhs(1.5);
-        assert(!(lhs == rhs));
-    }
-    {
-        cuda::std::complex<T> lhs(1.5, 0);
-        T rhs(1.5);
-        assert( (lhs == rhs));
-    }
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr() {
+  {
+    cuda::std::complex<T> lhs(1.5, 2.5);
+    T rhs(-2.5);
+    assert(!(lhs == rhs));
+  }
+  {
+    cuda::std::complex<T> lhs(1.5, 0);
+    T rhs(-2.5);
+    assert(!(lhs == rhs));
+  }
+  {
+    cuda::std::complex<T> lhs(1.5, 2.5);
+    T rhs(1.5);
+    assert(!(lhs == rhs));
+  }
+  {
+    cuda::std::complex<T> lhs(1.5, 0);
+    T rhs(1.5);
+    assert((lhs == rhs));
+  }
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool
-test()
-{
-    test_nonconstexpr<T>();
-    test_constexpr<T> ();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+  test_nonconstexpr<T>();
+  test_constexpr<T>();
 
-    return true;
+  return true;
 }
 
-int main(int, char**)
-{
-    test<float>();
-    test<double>();
+int main(int, char**) {
+  test<float>();
+  test<double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test_nonconstexpr<__half>();
+  test_nonconstexpr<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test_nonconstexpr<__nv_bfloat16>();
+  test_nonconstexpr<__nv_bfloat16>();
 #endif
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011
-    static_assert(test<float>(), "");
-    static_assert(test<double>(), "");
+  static_assert(test<float>(), "");
+  static_assert(test<double>(), "");
 // CUDA treats long double as double
 //  static_assert(test<long double>(), "");
 #endif
-    test_constexpr<int> ();
+  test_constexpr<int>();
 
   return 0;
 }

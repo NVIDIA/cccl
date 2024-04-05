@@ -26,7 +26,8 @@ using concatenate_t = typename concatenate<Types...>::type;
 
 // for_each takes a type_list calls f with each element as the first template argument
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f);
+__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>,
+                                                       Functor f);
 
 // impl
 template <class... Types>
@@ -48,7 +49,8 @@ template <class... Types>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void swallow(Types...) {}
 
 template <class... Types, class Functor>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>, Functor f) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void for_each(type_list<Types...>,
+                                                       Functor f) {
   swallow((f.template operator()<Types>(), 0)...);
 }
 
@@ -82,38 +84,27 @@ struct partial_instantiation {
 
 // type categories defined in [basic.fundamental] plus extensions (without CV-qualifiers)
 
-using character_types =
-    type_list<char
+using character_types = type_list<char
 #ifndef TEST_HAS_NO_WIDE_CHARACTERS
-              ,
-              wchar_t
+                                  ,
+                                  wchar_t
 #endif
 #ifndef TEST_HAS_NO_CHAR8_T
-              ,
-              char8_t
+                                  ,
+                                  char8_t
 #endif
-              ,
-              char16_t,
-              char32_t
-              >;
+                                  ,
+                                  char16_t, char32_t>;
 
-using signed_integer_types =
-    type_list<signed char,
-              short,
-              int,
-              long,
-              long long
+using signed_integer_types = type_list<signed char, short, int, long, long long
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-              ,
-              __int128_t
+                                       ,
+                                       __int128_t
 #endif
-              >;
+                                       >;
 
 using unsigned_integer_types =
-    type_list<unsigned char,
-              unsigned short,
-              unsigned int,
-              unsigned long,
+    type_list<unsigned char, unsigned short, unsigned int, unsigned long,
               unsigned long long
 #ifndef _LIBCUDACXX_HAS_NO_INT128
               ,
@@ -121,7 +112,8 @@ using unsigned_integer_types =
 #endif
               >;
 
-using integer_types = concatenate_t<character_types, signed_integer_types, unsigned_integer_types>;
+using integer_types = concatenate_t<character_types, signed_integer_types,
+                                    unsigned_integer_types>;
 
 using integral_types = concatenate_t<integer_types, type_list<bool> >;
 
@@ -130,7 +122,8 @@ using floating_point_types = type_list<float, double, long double>;
 using arithmetic_types = concatenate_t<integral_types, floating_point_types>;
 
 template <class T>
-using cv_qualified_versions = type_list<T, const T, volatile T, const volatile T>;
+using cv_qualified_versions =
+    type_list<T, const T, volatile T, const volatile T>;
 
 template <class T>
 struct type_list_as_pointers;

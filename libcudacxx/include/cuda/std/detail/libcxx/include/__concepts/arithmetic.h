@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___CONCEPTS_ARITHMETIC_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -37,16 +37,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concepts.arithmetic], arithmetic concepts
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT integral = _LIBCUDACXX_TRAIT(is_integral, _Tp);
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && _LIBCUDACXX_TRAIT(is_signed, _Tp);
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT floating_point = _LIBCUDACXX_TRAIT(is_floating_point, _Tp);
 
 template <class _Tp>

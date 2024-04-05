@@ -21,52 +21,47 @@
 
 using cuda::std::optional;
 
-struct X
-{
-    STATIC_MEMBER_VAR(dtor_called, bool)
-    __host__ __device__
-    ~X() {dtor_called() = true;}
+struct X {
+  STATIC_MEMBER_VAR(dtor_called, bool)
+  __host__ __device__ ~X() { dtor_called() = true; }
 };
 
-__host__ __device__
-constexpr bool check_reset()
-{
-    {
-        optional<int> opt;
-        static_assert(noexcept(opt.reset()) == true, "");
-        opt.reset();
-        assert(static_cast<bool>(opt) == false);
-    }
-    {
-        optional<int> opt(3);
-        opt.reset();
-        assert(static_cast<bool>(opt) == false);
-    }
-    return true;
+__host__ __device__ constexpr bool check_reset() {
+  {
+    optional<int> opt;
+    static_assert(noexcept(opt.reset()) == true, "");
+    opt.reset();
+    assert(static_cast<bool>(opt) == false);
+  }
+  {
+    optional<int> opt(3);
+    opt.reset();
+    assert(static_cast<bool>(opt) == false);
+  }
+  return true;
 }
 
-int main(int, char**)
-{
-    check_reset();
+int main(int, char**) {
+  check_reset();
 #if TEST_STD_VER >= 2020
-    static_assert(check_reset());
+  static_assert(check_reset());
 #endif
-    {
-        optional<X> opt;
-        static_assert(noexcept(opt.reset()) == true, "");
-        assert(X::dtor_called() == false);
-        opt.reset();
-        assert(X::dtor_called() == false);
-        assert(static_cast<bool>(opt) == false);
-    }
-    {
-        optional<X> opt(X{});
-        X::dtor_called() = false;
-        opt.reset();
-        assert(X::dtor_called() == true);
-        assert(static_cast<bool>(opt) == false);
-        X::dtor_called() = false;
-    }
+  {
+    optional<X> opt;
+    static_assert(noexcept(opt.reset()) == true, "");
+    assert(X::dtor_called() == false);
+    opt.reset();
+    assert(X::dtor_called() == false);
+    assert(static_cast<bool>(opt) == false);
+  }
+  {
+    optional<X> opt(X{});
+    X::dtor_called() = false;
+    opt.reset();
+    assert(X::dtor_called() == true);
+    assert(static_cast<bool>(opt) == false);
+    X::dtor_called() = false;
+  }
 
   return 0;
 }

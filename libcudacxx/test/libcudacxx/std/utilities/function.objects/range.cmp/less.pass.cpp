@@ -23,14 +23,19 @@
 #include "pointer_comparison_test_helper.h"
 
 struct NotTotallyOrdered {
-  __host__ __device__ friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
+  __host__ __device__ friend bool operator<(const NotTotallyOrdered&,
+                                            const NotTotallyOrdered&);
 };
 
-static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::less, NotTotallyOrdered, NotTotallyOrdered>);
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC considers implict conversions in C++17
-static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::less, int, MoveOnly>);
+static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::less,
+                                         NotTotallyOrdered, NotTotallyOrdered>);
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC considers implict conversions in C++17
+static_assert(
+    !cuda::std::is_invocable_v<cuda::std::ranges::less, int, MoveOnly>);
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
-static_assert(cuda::std::is_invocable_v<cuda::std::ranges::less, explicit_operators, explicit_operators>);
+static_assert(cuda::std::is_invocable_v<
+              cuda::std::ranges::less, explicit_operators, explicit_operators>);
 
 #if TEST_STD_VER > 2017
 static_assert(requires { typename cuda::std::ranges::less::is_transparent; });
@@ -38,14 +43,16 @@ static_assert(requires { typename cuda::std::ranges::less::is_transparent; });
 template <class T, class = void>
 inline constexpr bool is_transparent = false;
 template <class T>
-inline constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transparent>> = true;
+inline constexpr bool
+    is_transparent<T, cuda::std::void_t<typename T::is_transparent> > = true;
 static_assert(is_transparent<cuda::std::ranges::less>);
 #endif
 
 __host__ __device__ constexpr bool test() {
   auto fn = cuda::std::ranges::less();
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) &&                               \
+    !defined(TEST_COMPILER_MSVC_2017)
   assert(fn(MoveOnly(41), MoveOnly(42)));
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_MSVC_2017
 

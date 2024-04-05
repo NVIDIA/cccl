@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___VARIANT_MONOSTATE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,7 +23,7 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include <cuda/std/detail/libcxx/include/__compare/ordering.h>
+#  include <cuda/std/detail/libcxx/include/__compare/ordering.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include <cuda/std/detail/libcxx/include/__functional/hash.h>
 
@@ -33,45 +33,67 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2011
 
-struct _LIBCUDACXX_TEMPLATE_VIS monostate {};
+struct _LIBCUDACXX_TEMPLATE_VIS monostate
+{};
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(monostate, monostate) noexcept { return true; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(monostate, monostate) noexcept
+{
+  return true;
+}
 
-#if _CCCL_STD_VER < 2020
+#  if _CCCL_STD_VER < 2020
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(monostate, monostate) noexcept { return false; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(monostate, monostate) noexcept
+{
+  return false;
+}
 
-#endif // _CCCL_STD_VER < 2020
+#  endif // _CCCL_STD_VER < 2020
 
-#if _CCCL_STD_VER >= 2020 && !defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
+#  if _CCCL_STD_VER >= 2020 && !defined(_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR)
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr strong_ordering operator<=>(monostate, monostate) noexcept {
+_LIBCUDACXX_INLINE_VISIBILITY constexpr strong_ordering operator<=>(monostate, monostate) noexcept
+{
   return strong_ordering::equal;
 }
 
-#else // _CCCL_STD_VER >= 2020
+#  else // _CCCL_STD_VER >= 2020
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(monostate, monostate) noexcept { return false; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(monostate, monostate) noexcept
+{
+  return false;
+}
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(monostate, monostate) noexcept { return false; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(monostate, monostate) noexcept
+{
+  return false;
+}
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(monostate, monostate) noexcept { return true; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(monostate, monostate) noexcept
+{
+  return true;
+}
 
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(monostate, monostate) noexcept { return true; }
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(monostate, monostate) noexcept
+{
+  return true;
+}
 
 #  endif // _CCCL_STD_VER >= 2020
 
-#ifndef __cuda_std__
+#  ifndef __cuda_std__
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate> {
+struct _LIBCUDACXX_TEMPLATE_VIS hash<monostate>
+{
   using argument_type = monostate;
-  using result_type = size_t;
+  using result_type   = size_t;
 
-  inline _LIBCUDACXX_INLINE_VISIBILITY result_type operator()(const argument_type&) const noexcept {
+  inline _LIBCUDACXX_INLINE_VISIBILITY result_type operator()(const argument_type&) const noexcept
+  {
     return 66740831; // return a fundamentally attractive random value.
   }
 };
-#endif // __cuda_std__
+#  endif // __cuda_std__
 
 #endif // _CCCL_STD_VER >= 2011
 

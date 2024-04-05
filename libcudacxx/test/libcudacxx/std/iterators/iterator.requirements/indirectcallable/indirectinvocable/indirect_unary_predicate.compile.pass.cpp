@@ -22,14 +22,15 @@ using It = IndirectlyReadable<struct Token>;
 
 template <class I>
 struct GoodPredicate {
-    __host__ __device__ bool operator()(cuda::std::iter_reference_t<I>) const;
-    __host__ __device__ bool operator()(cuda::std::iter_value_t<I>&) const;
-    __host__ __device__ bool operator()(cuda::std::iter_common_reference_t<I>) const;
+  __host__ __device__ bool operator()(cuda::std::iter_reference_t<I>) const;
+  __host__ __device__ bool operator()(cuda::std::iter_value_t<I>&) const;
+  __host__ __device__ bool
+  operator()(cuda::std::iter_common_reference_t<I>) const;
 };
 
 // Should work when all constraints are satisfied
 static_assert(cuda::std::indirect_unary_predicate<GoodPredicate<It>, It>);
-static_assert(cuda::std::indirect_unary_predicate<bool(*)(int), int*>);
+static_assert(cuda::std::indirect_unary_predicate<bool (*)(int), int*>);
 
 #ifdef TEST_COMPILER_CLANG_CUDA
 #pragma clang diagnostic ignored "-Wunneeded-internal-declaration"
@@ -41,43 +42,41 @@ static_assert(cuda::std::indirect_unary_predicate<decltype(lambda), int*>);
 
 // Should fail when the iterator is not indirectly_readable
 #if TEST_STD_VER > 2017
-struct NotIndirectlyReadable { };
-static_assert(!cuda::std::indirect_unary_predicate<GoodPredicate<NotIndirectlyReadable>, NotIndirectlyReadable>);
+struct NotIndirectlyReadable {};
+static_assert(!cuda::std::indirect_unary_predicate<
+              GoodPredicate<NotIndirectlyReadable>, NotIndirectlyReadable>);
 #endif
 
 // Should fail when the predicate is not copy constructible
 struct BadPredicate1 {
-    BadPredicate1(BadPredicate1 const&) = delete;
-    template <class T>
-    __host__ __device__ bool operator()(T const&) const;
+  BadPredicate1(BadPredicate1 const&) = delete;
+  template <class T>
+  __host__ __device__ bool operator()(T const&) const;
 };
 static_assert(!cuda::std::indirect_unary_predicate<BadPredicate1, It>);
 
 // Should fail when the predicate can't be called with cuda::std::iter_value_t<It>&
 struct BadPredicate2 {
-    template <class T>
-    __host__ __device__ bool operator()(T const&) const;
-    bool operator()(cuda::std::iter_value_t<It>&) const = delete;
+  template <class T>
+  __host__ __device__ bool operator()(T const&) const;
+  bool operator()(cuda::std::iter_value_t<It>&) const = delete;
 };
 static_assert(!cuda::std::indirect_unary_predicate<BadPredicate2, It>);
 
 // Should fail when the predicate can't be called with cuda::std::iter_reference_t<It>
 struct BadPredicate3 {
-    template <class T>
-    __host__ __device__ bool operator()(T const&) const;
-    bool operator()(cuda::std::iter_reference_t<It>) const = delete;
+  template <class T>
+  __host__ __device__ bool operator()(T const&) const;
+  bool operator()(cuda::std::iter_reference_t<It>) const = delete;
 };
 static_assert(!cuda::std::indirect_unary_predicate<BadPredicate3, It>);
 
 // Should fail when the predicate can't be called with cuda::std::iter_common_reference_t<It>
 struct BadPredicate4 {
-    template <class T>
-    __host__ __device__ bool operator()(T const&) const;
-    bool operator()(cuda::std::iter_common_reference_t<It>) const = delete;
+  template <class T>
+  __host__ __device__ bool operator()(T const&) const;
+  bool operator()(cuda::std::iter_common_reference_t<It>) const = delete;
 };
 static_assert(!cuda::std::indirect_unary_predicate<BadPredicate4, It>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

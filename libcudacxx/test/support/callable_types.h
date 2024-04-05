@@ -23,11 +23,14 @@ template <class Ret>
 struct MoveOnlyCallable {
   MoveOnlyCallable(MoveOnlyCallable const&) = delete;
   __host__ __device__ constexpr MoveOnlyCallable(MoveOnlyCallable&& other)
-      : value(other.value)
-  { other.value = !other.value; }
+      : value(other.value) {
+    other.value = !other.value;
+  }
 
-  template <class ...Args>
-  __host__ __device__ constexpr Ret operator()(Args&&...) { return Ret{value}; }
+  template <class... Args>
+  __host__ __device__ constexpr Ret operator()(Args&&...) {
+    return Ret{value};
+  }
 
   __host__ __device__ constexpr explicit MoveOnlyCallable(bool x) : value(x) {}
   Ret value;
@@ -39,15 +42,18 @@ struct CopyCallable {
       : value(other.value) {}
 
   __host__ __device__ constexpr CopyCallable(CopyCallable&& other)
-      : value(other.value) { other.value = !other.value; }
+      : value(other.value) {
+    other.value = !other.value;
+  }
 
-  template <class ...Args>
-  __host__ __device__ constexpr Ret operator()(Args&&...) { return Ret{value}; }
+  template <class... Args>
+  __host__ __device__ constexpr Ret operator()(Args&&...) {
+    return Ret{value};
+  }
 
-  __host__ __device__ constexpr explicit CopyCallable(bool x) : value(x)  {}
+  __host__ __device__ constexpr explicit CopyCallable(bool x) : value(x) {}
   Ret value;
 };
-
 
 template <class Ret>
 struct ConstCallable {
@@ -55,56 +61,69 @@ struct ConstCallable {
       : value(other.value) {}
 
   __host__ __device__ constexpr ConstCallable(ConstCallable&& other)
-      : value(other.value) { other.value = !other.value; }
+      : value(other.value) {
+    other.value = !other.value;
+  }
 
-  template <class ...Args>
-  __host__ __device__ constexpr Ret operator()(Args&&...) const { return Ret{value}; }
+  template <class... Args>
+  __host__ __device__ constexpr Ret operator()(Args&&...) const {
+    return Ret{value};
+  }
 
-  __host__ __device__ constexpr explicit ConstCallable(bool x) : value(x)  {}
+  __host__ __device__ constexpr explicit ConstCallable(bool x) : value(x) {}
   Ret value;
 };
-
-
 
 template <class Ret>
 struct NoExceptCallable {
   __host__ __device__ constexpr NoExceptCallable(NoExceptCallable const& other)
       : value(other.value) {}
 
-  template <class ...Args>
-  __host__ __device__ constexpr Ret operator()(Args&&...) noexcept { return Ret{value}; }
+  template <class... Args>
+  __host__ __device__ constexpr Ret operator()(Args&&...) noexcept {
+    return Ret{value};
+  }
 
-  template <class ...Args>
-  __host__ __device__ constexpr Ret operator()(Args&&...) const noexcept { return Ret{value}; }
+  template <class... Args>
+  __host__ __device__ constexpr Ret operator()(Args&&...) const noexcept {
+    return Ret{value};
+  }
 
-  __host__ __device__ constexpr explicit NoExceptCallable(bool x) : value(x)  {}
+  __host__ __device__ constexpr explicit NoExceptCallable(bool x) : value(x) {}
   Ret value;
 };
 
 struct CopyAssignableWrapper {
   constexpr CopyAssignableWrapper(CopyAssignableWrapper const&) = default;
   constexpr CopyAssignableWrapper(CopyAssignableWrapper&&) = default;
-  constexpr CopyAssignableWrapper& operator=(CopyAssignableWrapper const&) = default;
-  constexpr CopyAssignableWrapper& operator=(CopyAssignableWrapper &&) = default;
+  constexpr CopyAssignableWrapper&
+  operator=(CopyAssignableWrapper const&) = default;
+  constexpr CopyAssignableWrapper& operator=(CopyAssignableWrapper&&) = default;
 
-  template <class ...Args>
-  __host__ __device__ constexpr bool operator()(Args&&...) { return value; }
+  template <class... Args>
+  __host__ __device__ constexpr bool operator()(Args&&...) {
+    return value;
+  }
 
-  __host__ __device__ constexpr explicit CopyAssignableWrapper(bool x) : value(x) {}
+  __host__ __device__ constexpr explicit CopyAssignableWrapper(bool x)
+      : value(x) {}
   bool value;
 };
-
 
 struct MoveAssignableWrapper {
   constexpr MoveAssignableWrapper(MoveAssignableWrapper const&) = delete;
   constexpr MoveAssignableWrapper(MoveAssignableWrapper&&) = default;
-  constexpr MoveAssignableWrapper& operator=(MoveAssignableWrapper const&) = delete;
-  constexpr MoveAssignableWrapper& operator=(MoveAssignableWrapper &&) = default;
+  constexpr MoveAssignableWrapper&
+  operator=(MoveAssignableWrapper const&) = delete;
+  constexpr MoveAssignableWrapper& operator=(MoveAssignableWrapper&&) = default;
 
-  template <class ...Args>
-  __host__ __device__ constexpr bool operator()(Args&&...) { return value; }
+  template <class... Args>
+  __host__ __device__ constexpr bool operator()(Args&&...) {
+    return value;
+  }
 
-  __host__ __device__ constexpr explicit MoveAssignableWrapper(bool x) : value(x) {}
+  __host__ __device__ constexpr explicit MoveAssignableWrapper(bool x)
+      : value(x) {}
   bool value;
 };
 
@@ -124,8 +143,10 @@ enum CallType : unsigned {
   CT_RValue = 8
 };
 
-__host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType RHS) {
-    return static_cast<CallType>(static_cast<unsigned>(LHS) | static_cast<unsigned>(RHS));
+__host__ __device__ inline constexpr CallType operator|(CallType LHS,
+                                                        CallType RHS) {
+  return static_cast<CallType>(static_cast<unsigned>(LHS) |
+                               static_cast<unsigned>(RHS));
 }
 #if 0
 struct ForwardingCallObject {

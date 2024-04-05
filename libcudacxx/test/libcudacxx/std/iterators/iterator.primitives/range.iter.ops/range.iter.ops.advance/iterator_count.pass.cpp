@@ -20,14 +20,18 @@
 #include "test_macros.h"
 
 struct Abs {
-  template<class T>
-  __host__ __device__ constexpr T operator()(T x) const noexcept { return x < 0 ? -x : x; };
+  template <class T>
+  __host__ __device__ constexpr T operator()(T x) const noexcept {
+    return x < 0 ? -x : x;
+  };
 };
 
 template <bool Count, typename It>
-__host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
+__host__ __device__ constexpr void
+check(int* first, cuda::std::iter_difference_t<It> n, int* expected) {
   using Difference = cuda::std::iter_difference_t<It>;
-  Difference const M = (expected - first); // expected travel distance (which may be negative)
+  Difference const M =
+      (expected - first); // expected travel distance (which may be negative)
   Abs abs{};
   unused(abs);
   unused(M);
@@ -56,22 +60,22 @@ __host__ __device__ constexpr bool test() {
 
   // Check advancing forward
   for (int n = 0; n != 10; ++n) {
-    check<false, cpp17_input_iterator<int*>>(  range, n, range+n);
-    check<false, cpp20_input_iterator<int*>>(  range, n, range+n);
-    check<true,  forward_iterator<int*>>(      range, n, range+n);
-    check<true,  bidirectional_iterator<int*>>(range, n, range+n);
-    check<true,  random_access_iterator<int*>>(range, n, range+n);
-    check<true,  contiguous_iterator<int*>>(   range, n, range+n);
-    check<true,  int*>(                        range, n, range+n);
-    check<true,  cpp17_output_iterator<int*> >(range, n, range+n);
+    check<false, cpp17_input_iterator<int*> >(range, n, range + n);
+    check<false, cpp20_input_iterator<int*> >(range, n, range + n);
+    check<true, forward_iterator<int*> >(range, n, range + n);
+    check<true, bidirectional_iterator<int*> >(range, n, range + n);
+    check<true, random_access_iterator<int*> >(range, n, range + n);
+    check<true, contiguous_iterator<int*> >(range, n, range + n);
+    check<true, int*>(range, n, range + n);
+    check<true, cpp17_output_iterator<int*> >(range, n, range + n);
   }
 
   // Check advancing backward
   for (int n = 0; n != 10; ++n) {
-    check<true,  bidirectional_iterator<int*>>(range+9, -n, range+9 - n);
-    check<true,  random_access_iterator<int*>>(range+9, -n, range+9 - n);
-    check<true,  contiguous_iterator<int*>>(   range+9, -n, range+9 - n);
-    check<true,  int*>(                        range+9, -n, range+9 - n);
+    check<true, bidirectional_iterator<int*> >(range + 9, -n, range + 9 - n);
+    check<true, random_access_iterator<int*> >(range + 9, -n, range + 9 - n);
+    check<true, contiguous_iterator<int*> >(range + 9, -n, range + 9 - n);
+    check<true, int*>(range + 9, -n, range + 9 - n);
   }
 
   return true;

@@ -25,35 +25,30 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void
-test(C c)
-{
-    const typename C::value_type v = typename C::value_type();
-    cuda::std::front_insert_iterator<C> i(c);
-    i = v;
-    assert(c.front() == v);
+__host__ __device__ void test(C c) {
+  const typename C::value_type v = typename C::value_type();
+  cuda::std::front_insert_iterator<C> i(c);
+  i = v;
+  assert(c.front() == v);
 }
 
-class Copyable
-{
-    int data_;
-public:
-__host__ __device__
-    Copyable() : data_(0) {}
-__host__ __device__
-    ~Copyable() {data_ = -1;}
+class Copyable {
+  int data_;
 
-__host__ __device__
-    friend bool operator==(const Copyable& x, const Copyable& y)
-        {return x.data_ == y.data_;}
+public:
+  __host__ __device__ Copyable() : data_(0) {}
+  __host__ __device__ ~Copyable() { data_ = -1; }
+
+  __host__ __device__ friend bool operator==(const Copyable& x,
+                                             const Copyable& y) {
+    return x.data_ == y.data_;
+  }
 };
 
-int main(int, char**)
-{
+int main(int, char**) {
 #if defined(_LIBCUDACXX_HAS_LIST)
-    test(cuda::std::list<Copyable>());
-    test(nasty_list<Copyable>());
+  test(cuda::std::list<Copyable>());
+  test(nasty_list<Copyable>());
 #endif
 
   return 0;

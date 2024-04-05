@@ -23,18 +23,15 @@
 struct TestT {
   int x;
   int size;
-  int *ptr;
-  __host__ __device__
-  constexpr TestT(cuda::std::initializer_list<int> il)
-    : x(*il.begin()), size(static_cast<int>(il.size())), ptr(nullptr) {}
-  __host__ __device__
-  constexpr TestT(cuda::std::initializer_list<int> il, int *p)
-    : x(*il.begin()), size(static_cast<int>(il.size())), ptr(p) {}
+  int* ptr;
+  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il)
+      : x(*il.begin()), size(static_cast<int>(il.size())), ptr(nullptr) {}
+  __host__ __device__ constexpr TestT(cuda::std::initializer_list<int> il,
+                                      int* p)
+      : x(*il.begin()), size(static_cast<int>(il.size())), ptr(p) {}
 };
 
-__host__ __device__
-constexpr bool test()
-{
+__host__ __device__ constexpr bool test() {
   {
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3});
     ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
@@ -53,8 +50,7 @@ constexpr bool test()
   return true;
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
   test();
 #if defined(_LIBCUDACXX_ADDRESSOF)
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))

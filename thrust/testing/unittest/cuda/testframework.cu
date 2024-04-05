@@ -1,8 +1,11 @@
-#include <unittest/testframework.h>
-#include <unittest/cuda/testframework.h>
 #include <thrust/system/cuda/memory.h>
+
 #include <cuda_runtime.h>
+
 #include <numeric>
+
+#include <unittest/cuda/testframework.h>
+#include <unittest/testframework.h>
 
 __global__ void dummy_kernel() {}
 
@@ -16,7 +19,10 @@ bool binary_exists_for_current_device()
 
   // clear the CUDA global error state if we just set it, so that
   // check_cuda_error doesn't complain
-  if (cudaSuccess != error) (void)cudaGetLastError();
+  if (cudaSuccess != error)
+  {
+    (void) cudaGetLastError();
+  }
 
   return cudaSuccess == error;
 }
@@ -25,7 +31,7 @@ void list_devices(void)
 {
   int deviceCount;
   cudaGetDeviceCount(&deviceCount);
-  if(deviceCount == 0)
+  if (deviceCount == 0)
   {
     std::cout << "There is no device supporting CUDA" << std::endl;
   }
@@ -38,43 +44,52 @@ void list_devices(void)
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, dev);
 
-    if(dev == 0)
+    if (dev == 0)
     {
-      if(deviceProp.major == 9999 && deviceProp.minor == 9999)
+      if (deviceProp.major == 9999 && deviceProp.minor == 9999)
+      {
         std::cout << "There is no device supporting CUDA." << std::endl;
-      else if(deviceCount == 1)
-        std::cout << "There is 1 device supporting CUDA" << std:: endl;
+      }
+      else if (deviceCount == 1)
+      {
+        std::cout << "There is 1 device supporting CUDA" << std::endl;
+      }
       else
-        std::cout << "There are " << deviceCount <<  " devices supporting CUDA" << std:: endl;
+      {
+        std::cout << "There are " << deviceCount << " devices supporting CUDA" << std::endl;
+      }
     }
 
     std::cout << "\nDevice " << dev << ": \"" << deviceProp.name << "\"";
-    if(dev == selected_device)
+    if (dev == selected_device)
+    {
       std::cout << "  [SELECTED]";
+    }
     std::cout << std::endl;
 
     std::cout << "  Major revision number:                         " << deviceProp.major << std::endl;
     std::cout << "  Minor revision number:                         " << deviceProp.minor << std::endl;
-    std::cout << "  Total amount of global memory:                 " << deviceProp.totalGlobalMem << " bytes" << std::endl;
+    std::cout
+      << "  Total amount of global memory:                 " << deviceProp.totalGlobalMem << " bytes" << std::endl;
   }
   std::cout << std::endl;
 }
 
 // provide next, which c++03 doesn't have
-template<typename Iterator> Iterator my_next(Iterator iter)
+template <typename Iterator>
+Iterator my_next(Iterator iter)
 {
   return ++iter;
 }
 
-
-std::vector<int> CUDATestDriver::target_devices(const ArgumentMap &kwargs)
+std::vector<int> CUDATestDriver::target_devices(const ArgumentMap& kwargs)
 {
   std::vector<int> result;
 
   // by default, test all devices in the system (device id -1)
   int device_id = kwargs.count("device") ? atoi(kwargs.find("device")->second.c_str()) : -1;
 
-  if(device_id < 0)
+  if (device_id < 0)
   {
     // target all devices in the system
     int count = 0;
@@ -86,7 +101,7 @@ std::vector<int> CUDATestDriver::target_devices(const ArgumentMap &kwargs)
   else
   {
     // target the specified device
-    result = std::vector<int>(1,device_id);
+    result = std::vector<int>(1, device_id);
   }
 
   return result;
@@ -95,56 +110,54 @@ std::vector<int> CUDATestDriver::target_devices(const ArgumentMap &kwargs)
 bool CUDATestDriver::check_cuda_error(bool concise)
 {
   cudaError_t const error = cudaGetLastError();
-  if(cudaSuccess != error)
+  if (cudaSuccess != error)
   {
-    if(!concise)
+    if (!concise)
     {
-      std::cout << "[ERROR] CUDA error detected before running tests: ["
-                << std::string(cudaGetErrorName(error))
-                << ": "
-                << std::string(cudaGetErrorString(error))
-                << "]" << std::endl;
+      std::cout << "[ERROR] CUDA error detected before running tests: [" << std::string(cudaGetErrorName(error)) << ": "
+                << std::string(cudaGetErrorString(error)) << "]" << std::endl;
     }
   }
 
   return cudaSuccess != error;
 }
 
-bool CUDATestDriver::post_test_smoke_check(const UnitTest &test, bool concise)
+bool CUDATestDriver::post_test_smoke_check(const UnitTest& test, bool concise)
 {
   cudaError_t const error = cudaDeviceSynchronize();
-  if(cudaSuccess != error)
+  if (cudaSuccess != error)
   {
-    if(!concise)
+    if (!concise)
     {
-      std::cout << "\t[ERROR] CUDA error detected after running " << test.name << ": ["
-                << std::string(cudaGetErrorName(error))
-                << ": "
-                << std::string(cudaGetErrorString(error))
-                << "]" << std::endl;
+      std::cout
+        << "\t[ERROR] CUDA error detected after running " << test.name << ": [" << std::string(cudaGetErrorName(error))
+        << ": " << std::string(cudaGetErrorString(error)) << "]" << std::endl;
     }
   }
 
   return cudaSuccess == error;
 }
 
-bool CUDATestDriver::run_tests(const ArgumentSet &args, const ArgumentMap &kwargs)
+bool CUDATestDriver::run_tests(const ArgumentSet& args, const ArgumentMap& kwargs)
 {
   bool verbose = kwargs.count("verbose");
   bool concise = kwargs.count("concise");
 
-  if(verbose && concise)
+  if (verbose && concise)
   {
     std::cout << "--verbose and --concise cannot be used together" << std::endl;
     exit(EXIT_FAILURE);
   }
 
   // check error status before doing anything
-  if(check_cuda_error(concise)) return false;
+  if (check_cuda_error(concise))
+  {
+    return false;
+  }
 
   bool result = true;
 
-  if(kwargs.count("verbose"))
+  if (kwargs.count("verbose"))
   {
     list_devices();
   }
@@ -153,9 +166,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet &args, const ArgumentMap &kwarg
   std::vector<int> devices = target_devices(kwargs);
 
   // target each device
-  for(std::vector<int>::iterator device = devices.begin();
-      device != devices.end();
-      ++device)
+  for (std::vector<int>::iterator device = devices.begin(); device != devices.end(); ++device)
   {
     cudaDeviceSynchronize();
 
@@ -164,7 +175,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet &args, const ArgumentMap &kwarg
 
     // check if a binary exists for this device
     // if none exists, skip the device silently unless this is the only one we're targeting
-    if(devices.size() > 1 && !binary_exists_for_current_device())
+    if (devices.size() > 1 && !binary_exists_for_current_device())
     {
       // note which device we're skipping
       cudaDeviceProp deviceProp;
@@ -175,7 +186,7 @@ bool CUDATestDriver::run_tests(const ArgumentSet &args, const ArgumentMap &kwarg
       continue;
     }
 
-    if(!concise)
+    if (!concise)
     {
       // note which device we're testing
       cudaDeviceProp deviceProp;
@@ -185,12 +196,15 @@ bool CUDATestDriver::run_tests(const ArgumentSet &args, const ArgumentMap &kwarg
     }
 
     // check error status before running any tests
-    if(check_cuda_error(concise)) return false;
+    if (check_cuda_error(concise))
+    {
+      return false;
+    }
 
     // run tests
     result &= UnitTestDriver::run_tests(args, kwargs);
 
-    if(!concise && my_next(device) != devices.end())
+    if (!concise && my_next(device) != devices.end())
     {
       // provide some separation between the output of separate tests
       std::cout << std::endl;
@@ -210,9 +224,8 @@ int CUDATestDriver::current_device_architecture() const
   return 100 * deviceProp.major + 10 * deviceProp.minor;
 }
 
-UnitTestDriver &driver_instance(thrust::system::cuda::tag)
+UnitTestDriver& driver_instance(thrust::system::cuda::tag)
 {
   static CUDATestDriver s_instance;
   return s_instance;
 }
-

@@ -16,11 +16,11 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using cuda::std::optional;
+int main(int, char**) {
+  using cuda::std::optional;
 
-    cuda::std::initializer_list<int> list; unused(list);
+  cuda::std::initializer_list<int> list;
+  unused(list);
 
   return 0;
 }

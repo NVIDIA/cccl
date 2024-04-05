@@ -30,13 +30,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/mr/host_memory_resource.h>
 #include <thrust/mr/memory_resource.h>
+#include <thrust/system/cuda/detail/util.h>
+#include <thrust/system/cuda/error.h>
 #include <thrust/system/cuda/pointer.h>
 #include <thrust/system/detail/bad_alloc.h>
-#include <thrust/system/cuda/error.h>
-#include <thrust/system/cuda/detail/util.h>
-
-#include <thrust/mr/host_memory_resource.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -49,59 +48,55 @@ namespace cuda
 namespace detail
 {
 
-    typedef cudaError_t (CUDARTAPI *allocation_fn)(void **, std::size_t);
-    typedef cudaError_t (CUDARTAPI *deallocation_fn)(void *);
+typedef cudaError_t(CUDARTAPI* allocation_fn)(void**, std::size_t);
+typedef cudaError_t(CUDARTAPI* deallocation_fn)(void*);
 
-    template<allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
-    class cuda_memory_resource final : public mr::memory_resource<Pointer>
+template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
+class cuda_memory_resource final : public mr::memory_resource<Pointer>
+{
+public:
+  Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  {
+    (void) alignment;
+
+    void* ret;
+    cudaError_t status = Alloc(&ret, bytes);
+
+    if (status != cudaSuccess)
     {
-    public:
-        Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
-        {
-            (void)alignment;
-
-            void * ret;
-            cudaError_t status = Alloc(&ret, bytes);
-
-            if (status != cudaSuccess)
-            {
-                cudaGetLastError(); // Clear the CUDA global error state.
-                throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
-            }
-
-            return Pointer(ret);
-        }
-
-        void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
-        {
-            (void)bytes;
-            (void)alignment;
-
-            cudaError_t status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
-
-            if (status != cudaSuccess)
-            {
-                thrust::cuda_cub::throw_on_error(status, "CUDA free failed");
-            }
-        }
-    };
-
-    inline cudaError_t CUDARTAPI cudaMallocManaged(void ** ptr, std::size_t bytes)
-    {
-        return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
+      cudaGetLastError(); // Clear the CUDA global error state.
+      throw thrust::system::detail::bad_alloc(thrust::cuda_category().message(status).c_str());
     }
 
-    typedef detail::cuda_memory_resource<cudaMalloc, cudaFree,
-        thrust::cuda::pointer<void> >
-        device_memory_resource;
-    typedef detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree,
-        thrust::cuda::universal_pointer<void> >
-        managed_memory_resource;
-    typedef detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost,
-        thrust::cuda::universal_pointer<void> >
-        pinned_memory_resource;
+    return Pointer(ret);
+  }
 
-} // end detail
+  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  {
+    (void) bytes;
+    (void) alignment;
+
+    cudaError_t status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
+
+    if (status != cudaSuccess)
+    {
+      thrust::cuda_cub::throw_on_error(status, "CUDA free failed");
+    }
+  }
+};
+
+inline cudaError_t CUDARTAPI cudaMallocManaged(void** ptr, std::size_t bytes)
+{
+  return ::cudaMallocManaged(ptr, bytes, cudaMemAttachGlobal);
+}
+
+typedef detail::cuda_memory_resource<cudaMalloc, cudaFree, thrust::cuda::pointer<void> > device_memory_resource;
+typedef detail::cuda_memory_resource<detail::cudaMallocManaged, cudaFree, thrust::cuda::universal_pointer<void> >
+  managed_memory_resource;
+typedef detail::cuda_memory_resource<cudaMallocHost, cudaFreeHost, thrust::cuda::universal_pointer<void> >
+  pinned_memory_resource;
+
+} // namespace detail
 //! \endcond
 
 /*! The memory resource for the CUDA system. Uses <tt>cudaMalloc</tt> and wraps
@@ -119,15 +114,14 @@ typedef detail::managed_memory_resource universal_memory_resource;
  */
 typedef detail::pinned_memory_resource universal_host_pinned_memory_resource;
 
-} // end cuda
-} // end system
+} // namespace cuda
+} // namespace system
 
 namespace cuda
 {
 using thrust::system::cuda::memory_resource;
-using thrust::system::cuda::universal_memory_resource;
 using thrust::system::cuda::universal_host_pinned_memory_resource;
-}
+using thrust::system::cuda::universal_memory_resource;
+} // namespace cuda
 
 THRUST_NAMESPACE_END
-

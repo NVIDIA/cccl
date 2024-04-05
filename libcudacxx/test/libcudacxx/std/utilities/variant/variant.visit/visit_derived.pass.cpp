@@ -25,52 +25,52 @@
 #include "variant_test_helpers.h"
 
 struct almost_string {
-    const char * ptr;
+  const char* ptr;
 
-    __host__ __device__
-    almost_string(const char * ptr) : ptr(ptr) {}
+  __host__ __device__ almost_string(const char* ptr) : ptr(ptr) {}
 
-    __host__ __device__
-    friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
-        return lhs.ptr == rhs.ptr;
-    }
+  __host__ __device__ friend bool operator==(const almost_string& lhs,
+                                             const almost_string& rhs) {
+    return lhs.ptr == rhs.ptr;
+  }
 };
 
 struct MyVariant : cuda::std::variant<short, long, float> {
-    using cuda::std::variant<short, long, float>::variant;
+  using cuda::std::variant<short, long, float>::variant;
 };
 
-namespace cuda { namespace std {
+namespace cuda {
+namespace std {
 template <size_t Index>
-__host__ __device__
-void get(const MyVariant&) {
+__host__ __device__ void get(const MyVariant&) {
   assert(false);
 }
-} } // namespace cuda::std
+} // namespace std
+} // namespace cuda
 
 struct visitor_42 {
-  template<class T>
+  template <class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == 42);
     return true;
   }
 };
 struct visitor_142 {
-  template<class T>
+  template <class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == 142);
     return true;
   }
 };
 struct visitor_float {
-  template<class T>
+  template <class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == -1.25f);
     return true;
   }
 };
 struct visitor_double {
-  template<class T>
+  template <class T>
   __host__ __device__ constexpr bool operator()(T x) const noexcept {
     assert(x == 42.3);
     return true;
@@ -92,7 +92,10 @@ struct EvilVariant1 : cuda::std::variant<int, long, double>,
 // Check that visit unambiguously picks the variant, even if the other base has __impl member.
 struct ImplVariantBase {
   struct Callable {
-    __host__ __device__ bool operator()() const { assert(false); return false; }
+    __host__ __device__ bool operator()() const {
+      assert(false);
+      return false;
+    }
   };
   Callable __impl;
 };
@@ -101,8 +104,7 @@ struct EvilVariant2 : cuda::std::variant<int, long, double>, ImplVariantBase {
   using cuda::std::variant<int, long, double>::variant;
 };
 
-__host__ __device__
-void test_derived_from_variant() {
+__host__ __device__ void test_derived_from_variant() {
   auto v1 = MyVariant{42};
   const auto cv1 = MyVariant{142};
 
@@ -114,7 +116,6 @@ void test_derived_from_variant() {
 
   cuda::std::visit(visitor_42{}, EvilVariant1{42});
   cuda::std::visit(visitor_double{}, EvilVariant1{42.3});
-
 
   cuda::std::visit(visitor_42{}, EvilVariant2{42});
   cuda::std::visit(visitor_double{}, EvilVariant2{42.3});

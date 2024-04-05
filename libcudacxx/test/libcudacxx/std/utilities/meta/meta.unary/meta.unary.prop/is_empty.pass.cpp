@@ -17,92 +17,88 @@
 //  no virtual base classes,
 //  and no base class B for which is_empty_v<B> is false.
 
-
 #include <cuda/std/type_traits>
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_is_empty()
-{
-    static_assert( cuda::std::is_empty<T>::value, "");
-    static_assert( cuda::std::is_empty<const T>::value, "");
-    static_assert( cuda::std::is_empty<volatile T>::value, "");
-    static_assert( cuda::std::is_empty<const volatile T>::value, "");
+__host__ __device__ void test_is_empty() {
+  static_assert(cuda::std::is_empty<T>::value, "");
+  static_assert(cuda::std::is_empty<const T>::value, "");
+  static_assert(cuda::std::is_empty<volatile T>::value, "");
+  static_assert(cuda::std::is_empty<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert( cuda::std::is_empty_v<T>, "");
-    static_assert( cuda::std::is_empty_v<const T>, "");
-    static_assert( cuda::std::is_empty_v<volatile T>, "");
-    static_assert( cuda::std::is_empty_v<const volatile T>, "");
+  static_assert(cuda::std::is_empty_v<T>, "");
+  static_assert(cuda::std::is_empty_v<const T>, "");
+  static_assert(cuda::std::is_empty_v<volatile T>, "");
+  static_assert(cuda::std::is_empty_v<const volatile T>, "");
 #endif
 }
 
 template <class T>
-__host__ __device__
-void test_is_not_empty()
-{
-    static_assert(!cuda::std::is_empty<T>::value, "");
-    static_assert(!cuda::std::is_empty<const T>::value, "");
-    static_assert(!cuda::std::is_empty<volatile T>::value, "");
-    static_assert(!cuda::std::is_empty<const volatile T>::value, "");
+__host__ __device__ void test_is_not_empty() {
+  static_assert(!cuda::std::is_empty<T>::value, "");
+  static_assert(!cuda::std::is_empty<const T>::value, "");
+  static_assert(!cuda::std::is_empty<volatile T>::value, "");
+  static_assert(!cuda::std::is_empty<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert(!cuda::std::is_empty_v<T>, "");
-    static_assert(!cuda::std::is_empty_v<const T>, "");
-    static_assert(!cuda::std::is_empty_v<volatile T>, "");
-    static_assert(!cuda::std::is_empty_v<const volatile T>, "");
+  static_assert(!cuda::std::is_empty_v<T>, "");
+  static_assert(!cuda::std::is_empty_v<const T>, "");
+  static_assert(!cuda::std::is_empty_v<volatile T>, "");
+  static_assert(!cuda::std::is_empty_v<const volatile T>, "");
 #endif
 }
 
 class Empty {};
-struct NotEmpty { int foo; };
+struct NotEmpty {
+  int foo;
+};
 
-class VirtualFn
-{
-    __host__ __device__
-    virtual ~VirtualFn();
+class VirtualFn {
+  __host__ __device__ virtual ~VirtualFn();
 };
 
 union Union {};
 
-struct EmptyBase    : public Empty {};
-struct VirtualBase  : virtual Empty {};
+struct EmptyBase : public Empty {};
+struct VirtualBase : virtual Empty {};
 struct NotEmptyBase : public NotEmpty {};
 
-struct StaticMember    { static const int foo; };
-struct NonStaticMember {        int foo; };
-
-struct bit_zero
-{
-    int :  0;
+struct StaticMember {
+  static const int foo;
+};
+struct NonStaticMember {
+  int foo;
 };
 
-struct bit_one
-{
-    int :  1;
+struct bit_zero {
+  int : 0;
 };
 
-int main(int, char**)
-{
-    test_is_not_empty<void>();
-    test_is_not_empty<int&>();
-    test_is_not_empty<int>();
-    test_is_not_empty<double>();
-    test_is_not_empty<int*>();
-    test_is_not_empty<const int*>();
-    test_is_not_empty<char[3]>();
-    test_is_not_empty<char[]>();
-    test_is_not_empty<Union>();
-    test_is_not_empty<NotEmpty>();
-    test_is_not_empty<VirtualFn>();
-    test_is_not_empty<VirtualBase>();
-    test_is_not_empty<NotEmptyBase>();
-    test_is_not_empty<NonStaticMember>();
-//    test_is_not_empty<bit_one>();
+struct bit_one {
+  int : 1;
+};
 
-    test_is_empty<Empty>();
-    test_is_empty<EmptyBase>();
-    test_is_empty<StaticMember>();
-    test_is_empty<bit_zero>();
+int main(int, char**) {
+  test_is_not_empty<void>();
+  test_is_not_empty<int&>();
+  test_is_not_empty<int>();
+  test_is_not_empty<double>();
+  test_is_not_empty<int*>();
+  test_is_not_empty<const int*>();
+  test_is_not_empty<char[3]>();
+  test_is_not_empty<char[]>();
+  test_is_not_empty<Union>();
+  test_is_not_empty<NotEmpty>();
+  test_is_not_empty<VirtualFn>();
+  test_is_not_empty<VirtualBase>();
+  test_is_not_empty<NotEmptyBase>();
+  test_is_not_empty<NonStaticMember>();
+  //    test_is_not_empty<bit_one>();
+
+  test_is_empty<Empty>();
+  test_is_empty<EmptyBase>();
+  test_is_empty<StaticMember>();
+  test_is_empty<bit_zero>();
 
   return 0;
 }

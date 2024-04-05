@@ -31,30 +31,45 @@
 #include "test_macros.h"
 
 // Test Constraints
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, const cuda::std::unexpected<int>&>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>,
+                                            const cuda::std::unexpected<int>&>,
+              "");
 
 // !is_constructible_v<E, GF>
 struct foo {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, const cuda::std::unexpected<foo>&>, "");
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, MoveOnly>, const cuda::std::unexpected<MoveOnly>&>, "");
+static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>,
+                                             const cuda::std::unexpected<foo>&>,
+              "");
+static_assert(
+    !cuda::std::is_constructible_v<cuda::std::expected<int, MoveOnly>,
+                                   const cuda::std::unexpected<MoveOnly>&>,
+    "");
 
 // explicit(!is_convertible_v<const G&, E>)
 struct NotConvertible {
   __host__ __device__ explicit NotConvertible(int);
 };
-static_assert(cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_convertible_v<const cuda::std::unexpected<int>&, cuda::std::expected<int, NotConvertible>>, "");
+static_assert(cuda::std::is_convertible_v<const cuda::std::unexpected<int>&,
+                                          cuda::std::expected<int, int> >,
+              "");
+static_assert(
+    !cuda::std::is_convertible_v<const cuda::std::unexpected<int>&,
+                                 cuda::std::expected<int, NotConvertible> >,
+    "");
 
 struct MyInt {
   int i;
   __host__ __device__ constexpr MyInt(int ii) : i(ii) {}
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  __host__ __device__ friend constexpr bool operator==(const MyInt&,
+                                                       const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept {
+  __host__ __device__ friend constexpr bool
+  operator==(const MyInt& lhs, const MyInt& rhs) noexcept {
     return lhs.i == rhs.i;
   };
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept {
+  __host__ __device__ friend constexpr bool
+  operator!=(const MyInt& lhs, const MyInt& rhs) noexcept {
     return lhs.i != rhs.i;
   };
 #endif // TEST_STD_VER > 2017

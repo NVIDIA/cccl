@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file thrust/iterator/iterator_categories.h
  *  \brief Types for reasoning about the categories of iterators
  */
@@ -28,7 +27,6 @@
  * For more information, see http://www.boost.org
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -40,9 +38,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/iterator_category_with_system_and_traversal.h>
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
-#include <thrust/iterator/detail/device_system_tag.h>
 
 // #include this for stl's iterator tags
 #include <iterator>
@@ -69,11 +67,9 @@ THRUST_NAMESPACE_BEGIN
  *  bidirectional_host_iterator_tag, random_access_host_iterator_tag
  */
 struct input_device_iterator_tag
-  : thrust::detail::iterator_category_with_system_and_traversal<
-      std::input_iterator_tag,
-      thrust::device_system_tag,
-      thrust::single_pass_traversal_tag
-    >
+    : thrust::detail::iterator_category_with_system_and_traversal< std::input_iterator_tag,
+                                                                   thrust::device_system_tag,
+                                                                   thrust::single_pass_traversal_tag >
 {};
 
 /*! \p output_device_iterator_tag is an empty class: it has no member functions,
@@ -88,11 +84,9 @@ struct input_device_iterator_tag
  *  bidirectional_host_iterator_tag, random_access_host_iterator_tag
  */
 struct output_device_iterator_tag
-  : thrust::detail::iterator_category_with_system_and_traversal<
-      std::output_iterator_tag,
-      thrust::device_system_tag,
-      thrust::single_pass_traversal_tag
-    >
+    : thrust::detail::iterator_category_with_system_and_traversal< std::output_iterator_tag,
+                                                                   thrust::device_system_tag,
+                                                                   thrust::single_pass_traversal_tag >
 {};
 
 /*! \p forward_device_iterator_tag is an empty class: it has no member functions,
@@ -107,11 +101,9 @@ struct output_device_iterator_tag
  *  bidirectional_host_iterator_tag, random_access_host_iterator_tag
  */
 struct forward_device_iterator_tag
-  : thrust::detail::iterator_category_with_system_and_traversal<
-      std::forward_iterator_tag,
-      thrust::device_system_tag,
-      thrust::forward_traversal_tag
-    >
+    : thrust::detail::iterator_category_with_system_and_traversal< std::forward_iterator_tag,
+                                                                   thrust::device_system_tag,
+                                                                   thrust::forward_traversal_tag >
 {};
 
 /*! \p bidirectional_device_iterator_tag is an empty class: it has no member
@@ -126,11 +118,9 @@ struct forward_device_iterator_tag
  *  bidirectional_host_iterator_tag, random_access_host_iterator_tag
  */
 struct bidirectional_device_iterator_tag
-  : thrust::detail::iterator_category_with_system_and_traversal<
-      std::bidirectional_iterator_tag,
-      thrust::device_system_tag,
-      thrust::bidirectional_traversal_tag
-    >
+    : thrust::detail::iterator_category_with_system_and_traversal< std::bidirectional_iterator_tag,
+                                                                   thrust::device_system_tag,
+                                                                   thrust::bidirectional_traversal_tag >
 {};
 
 /*! \p random_access_device_iterator_tag is an empty class: it has no member
@@ -145,11 +135,9 @@ struct bidirectional_device_iterator_tag
  *  bidirectional_host_iterator_tag, random_access_host_iterator_tag
  */
 struct random_access_device_iterator_tag
-  : thrust::detail::iterator_category_with_system_and_traversal<
-      std::random_access_iterator_tag,
-      thrust::device_system_tag,
-      thrust::random_access_traversal_tag
-    >
+    : thrust::detail::iterator_category_with_system_and_traversal< std::random_access_iterator_tag,
+                                                                   thrust::device_system_tag,
+                                                                   thrust::random_access_traversal_tag >
 {};
 
 /*! \p input_host_iterator_tag is an empty class: it has no member
@@ -228,4 +216,3 @@ typedef std::random_access_iterator_tag random_access_host_iterator_tag;
 THRUST_NAMESPACE_END
 
 #include <thrust/iterator/detail/universal_categories.h>
-

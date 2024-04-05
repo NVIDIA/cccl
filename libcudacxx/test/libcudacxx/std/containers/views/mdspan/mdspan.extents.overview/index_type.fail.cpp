@@ -13,32 +13,30 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-__host__ __device__ void check( cuda::std::dextents<size_t,2> e )
-{
-    static_assert( e.rank        () == 2, "" );
-    static_assert( e.rank_dynamic() == 2, "" );
+__host__ __device__ void check(cuda::std::dextents<size_t, 2> e) {
+  static_assert(e.rank() == 2, "");
+  static_assert(e.rank_dynamic() == 2, "");
 
-    assert( e.extent(0) == 2 );
-    assert( e.extent(1) == 2 );
+  assert(e.extent(0) == 2);
+  assert(e.extent(1) == 2);
 }
 
 struct dummy {};
 
-int main(int, char**)
-{
-    {
-        cuda::std::dextents<int  ,2> e{2, 2};
+int main(int, char**) {
+  {
+    cuda::std::dextents<int, 2> e{2, 2};
 
-        check( e );
-    }
+    check(e);
+  }
 
-    // Mandate: IndexType is a signed or unsigned integer type
-    {
+  // Mandate: IndexType is a signed or unsigned integer type
+  {
 
-        cuda::std::dextents<float,2> e{2, 2};
+    cuda::std::dextents<float, 2> e{2, 2};
 
-        check( e );
-    }
+    check(e);
+  }
 
-    return 0;
+  return 0;
 }

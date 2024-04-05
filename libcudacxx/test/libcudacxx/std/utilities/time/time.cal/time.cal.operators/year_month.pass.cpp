@@ -16,8 +16,6 @@
 // constexpr year_month operator/(const year& y, int m) noexcept;
 //   Returns: y / month(m).
 
-
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -25,45 +23,41 @@
 #include "test_macros.h"
 #include "test_comparisons.h"
 
-int main(int, char**)
-{
-    using month      = cuda::std::chrono::month;
-    using year       = cuda::std::chrono::year;
-    using year_month = cuda::std::chrono::year_month;
+int main(int, char**) {
+  using month = cuda::std::chrono::month;
+  using year = cuda::std::chrono::year;
+  using year_month = cuda::std::chrono::year_month;
 
-    constexpr month February = cuda::std::chrono::February;
+  constexpr month February = cuda::std::chrono::February;
 
-    { // operator/(const year& y, const month& m)
-        ASSERT_NOEXCEPT (                     year{2018}/February);
-        ASSERT_SAME_TYPE(year_month, decltype(year{2018}/February));
+  { // operator/(const year& y, const month& m)
+    ASSERT_NOEXCEPT(year{2018} / February);
+    ASSERT_SAME_TYPE(year_month, decltype(year{2018} / February));
 
-        static_assert((year{2018}/February).year()  == year{2018}, "");
-        static_assert((year{2018}/February).month() == month{2},   "");
-        for (int i = 1000; i <= 1030; ++i)
-            for (unsigned j = 1; j <= 12; ++j)
-            {
-                year_month ym = year{i}/month{j};
-                assert(static_cast<int>(ym.year())       == i);
-                assert(static_cast<unsigned>(ym.month()) == j);
-            }
-    }
+    static_assert((year{2018} / February).year() == year{2018}, "");
+    static_assert((year{2018} / February).month() == month{2}, "");
+    for (int i = 1000; i <= 1030; ++i)
+      for (unsigned j = 1; j <= 12; ++j) {
+        year_month ym = year{i} / month{j};
+        assert(static_cast<int>(ym.year()) == i);
+        assert(static_cast<unsigned>(ym.month()) == j);
+      }
+  }
 
+  { // operator/(const year& y, const int m)
+    ASSERT_NOEXCEPT(year{2018} / 4);
+    ASSERT_SAME_TYPE(year_month, decltype(year{2018} / 4));
 
-    { // operator/(const year& y, const int m)
-        ASSERT_NOEXCEPT (                     year{2018}/4);
-        ASSERT_SAME_TYPE(year_month, decltype(year{2018}/4));
+    static_assert((year{2018} / 2).year() == year{2018}, "");
+    static_assert((year{2018} / 2).month() == month{2}, "");
 
-        static_assert((year{2018}/2).year()  == year{2018}, "");
-        static_assert((year{2018}/2).month() == month{2},   "");
-
-        for (int i = 1000; i <= 1030; ++i)
-            for (unsigned j = 1; j <= 12; ++j)
-            {
-                year_month ym = year{i}/j;
-                assert(static_cast<int>(ym.year())       == i);
-                assert(static_cast<unsigned>(ym.month()) == j);
-            }
-    }
+    for (int i = 1000; i <= 1030; ++i)
+      for (unsigned j = 1; j <= 12; ++j) {
+        year_month ym = year{i} / j;
+        assert(static_cast<int>(ym.year()) == i);
+        assert(static_cast<unsigned>(ym.month()) == j);
+      }
+  }
 
   return 0;
 }

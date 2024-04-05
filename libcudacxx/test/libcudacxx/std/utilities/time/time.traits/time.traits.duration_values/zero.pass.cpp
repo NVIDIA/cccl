@@ -16,18 +16,17 @@
 #include "test_macros.h"
 #include "../../rep.h"
 
-int main(int, char**)
-{
-    assert(cuda::std::chrono::duration_values<int>::zero() == 0);
-    assert(cuda::std::chrono::duration_values<Rep>::zero() == 0);
-    static_assert(cuda::std::chrono::duration_values<int>::zero() == 0, "");
-    static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0, "");
+int main(int, char**) {
+  assert(cuda::std::chrono::duration_values<int>::zero() == 0);
+  assert(cuda::std::chrono::duration_values<Rep>::zero() == 0);
+  static_assert(cuda::std::chrono::duration_values<int>::zero() == 0, "");
+  static_assert(cuda::std::chrono::duration_values<Rep>::zero() == 0, "");
 
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
-    LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
+  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
+  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
 #if TEST_STD_VER > 2017
-    ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
-    ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
+  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::zero());
+  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::zero());
 #endif
 
   return 0;

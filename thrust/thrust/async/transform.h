@@ -33,12 +33,11 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#include <thrust/detail/static_assert.h>
-#include <thrust/detail/select_system.h>
-#include <thrust/type_traits/remove_cvref.h>
-#include <thrust/system/detail/adl/async/transform.h>
-
-#include <thrust/event.h>
+#  include <thrust/detail/select_system.h>
+#  include <thrust/detail/static_assert.h>
+#  include <thrust/event.h>
+#  include <thrust/system/detail/adl/async/transform.h>
+#  include <thrust/type_traits/remove_cvref.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -51,22 +50,12 @@ namespace async
 namespace unimplemented
 {
 
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Sentinel, typename OutputIt
-, typename UnaryOperation
->
-_CCCL_HOST
-event<DerivedPolicy>
-async_transform(
-  thrust::execution_policy<DerivedPolicy>& exec
-, ForwardIt first, Sentinel last, OutputIt output, UnaryOperation op
-)
+template < typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation >
+_CCCL_HOST event<DerivedPolicy> async_transform(
+  thrust::execution_policy<DerivedPolicy>& exec, ForwardIt first, Sentinel last, OutputIt output, UnaryOperation op)
 {
-  THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<ForwardIt, false>::value)
-  , "this algorithm is not implemented for the specified system"
-  );
+  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<ForwardIt, false>::value),
+                           "this algorithm is not implemented for the specified system");
   return {};
 }
 
@@ -79,60 +68,36 @@ using thrust::async::unimplemented::async_transform;
 
 struct transform_fn final
 {
-  template <
-    typename DerivedPolicy
-  , typename ForwardIt, typename Sentinel, typename OutputIt
-  , typename UnaryOperation
-  >
-  _CCCL_HOST
-  static auto
-  call(
-    thrust::detail::execution_policy_base<DerivedPolicy> const& exec
-  , ForwardIt&& first, Sentinel&& last
-  , OutputIt&& output
-  , UnaryOperation&& op
-  )
-  // ADL dispatch.
-  THRUST_RETURNS(
-    async_transform(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec))
-    , THRUST_FWD(first), THRUST_FWD(last)
-    , THRUST_FWD(output)
-    , THRUST_FWD(op)
-    )
-  )
+  template < typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation >
+  _CCCL_HOST static auto
+  call(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+       ForwardIt&& first,
+       Sentinel&& last,
+       OutputIt&& output,
+       UnaryOperation&& op)
+    // ADL dispatch.
+    THRUST_RETURNS(async_transform(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+      THRUST_FWD(first),
+      THRUST_FWD(last),
+      THRUST_FWD(output),
+      THRUST_FWD(op)))
 
-  template <
-    typename ForwardIt, typename Sentinel, typename OutputIt
-  , typename UnaryOperation
-  >
-  _CCCL_HOST
-  static auto call(
-    ForwardIt&& first, Sentinel&& last
-  , OutputIt&& output
-  , UnaryOperation&& op
-  )
-  THRUST_RETURNS(
-    transform_fn::call(
-      thrust::detail::select_system(
-        typename iterator_system<remove_cvref_t<ForwardIt>>::type{}
-      , typename iterator_system<remove_cvref_t<OutputIt>>::type{}
-      )
-    , THRUST_FWD(first), THRUST_FWD(last)
-    , THRUST_FWD(output)
-    , THRUST_FWD(op)
-    )
-  )
+      template < typename ForwardIt, typename Sentinel, typename OutputIt, typename UnaryOperation >
+      _CCCL_HOST static auto call(ForwardIt&& first, Sentinel&& last, OutputIt&& output, UnaryOperation&& op)
+        THRUST_RETURNS(transform_fn::call(
+          thrust::detail::select_system(typename iterator_system<remove_cvref_t<ForwardIt>>::type{},
+                                        typename iterator_system<remove_cvref_t<OutputIt>>::type{}),
+          THRUST_FWD(first),
+          THRUST_FWD(last),
+          THRUST_FWD(output),
+          THRUST_FWD(op)))
 
-  template <typename... Args>
-  THRUST_NODISCARD _CCCL_HOST
-  auto operator()(Args&&... args) const
-  THRUST_RETURNS(
-    call(THRUST_FWD(args)...)
-  )
+          template <typename... Args>
+          THRUST_NODISCARD _CCCL_HOST auto operator()(Args&&... args) const THRUST_RETURNS(call(THRUST_FWD(args)...))
 };
 
-} // namespace tranform_detail
+} // namespace transform_detail
 
 THRUST_INLINE_CONSTANT transform_detail::transform_fn transform{};
 

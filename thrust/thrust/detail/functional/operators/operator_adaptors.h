@@ -27,8 +27,8 @@
 #endif // no system header
 #include <thrust/detail/functional/argument.h>
 #include <thrust/detail/type_deduction.h>
-#include <thrust/tuple.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/tuple.h>
 #include <thrust/type_traits/void_t.h>
 
 #include <type_traits>
@@ -49,40 +49,32 @@ struct transparent_unary_operator
 
   template <typename Env>
   using argument =
-  typename thrust::detail::eval_if<
-    thrust::tuple_size<Env>::value != 1,
-    thrust::detail::identity_<thrust::tuple<>>,
-    thrust::detail::functional::argument_helper<0, Env>
-  >::type;
+    typename thrust::detail::eval_if< thrust::tuple_size<Env>::value != 1,
+                                      thrust::detail::identity_<thrust::tuple<>>,
+                                      thrust::detail::functional::argument_helper<0, Env> >::type;
 
   template <typename Env>
   struct result_type_impl
   {
-    using type = decltype(
-      std::declval<UnaryFunctor>()(std::declval<argument<Env>>()));
+    using type = decltype(std::declval<UnaryFunctor>()(std::declval<argument<Env>>()));
   };
 
   template <typename Env>
   using result_type =
-  typename thrust::detail::eval_if<
-    std::is_same<thrust::tuple<>, argument<Env>>::value,
-    thrust::detail::identity_<thrust::tuple<>>,
-    result_type_impl<Env>
-  >::type;
+    typename thrust::detail::eval_if< std::is_same<thrust::tuple<>, argument<Env>>::value,
+                                      thrust::detail::identity_<thrust::tuple<>>,
+                                      result_type_impl<Env> >::type;
 
   template <typename Env>
   struct result
   {
     using op_type = UnaryFunctor;
-    using type = result_type<Env>;
+    using type    = result_type<Env>;
   };
 
   template <typename Env>
-  _CCCL_HOST_DEVICE
-  result_type<Env> eval(Env&& e) const
-  THRUST_RETURNS(UnaryFunctor{}(thrust::get<0>(THRUST_FWD(e))))
+  _CCCL_HOST_DEVICE result_type<Env> eval(Env&& e) const THRUST_RETURNS(UnaryFunctor{}(thrust::get<0>(THRUST_FWD(e))))
 };
-
 
 // Adapts a transparent binary functor from functional.h (e.g. thrust::less<>)
 // into the Eval interface.
@@ -94,51 +86,42 @@ struct transparent_binary_operator
 
   template <typename Env>
   using first_argument =
-    typename thrust::detail::eval_if<
-      thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::tuple<>>,
-    thrust::detail::functional::argument_helper<0, Env>
-    >::type;
+    typename thrust::detail::eval_if< thrust::tuple_size<Env>::value != 2,
+                                      thrust::detail::identity_<thrust::tuple<>>,
+                                      thrust::detail::functional::argument_helper<0, Env> >::type;
 
   template <typename Env>
   using second_argument =
-    typename thrust::detail::eval_if<
-      thrust::tuple_size<Env>::value != 2,
-      thrust::detail::identity_<thrust::tuple<>>,
-    thrust::detail::functional::argument_helper<1, Env>
-    >::type;
+    typename thrust::detail::eval_if< thrust::tuple_size<Env>::value != 2,
+                                      thrust::detail::identity_<thrust::tuple<>>,
+                                      thrust::detail::functional::argument_helper<1, Env> >::type;
 
   template <typename Env>
   struct result_type_impl
   {
-    using type = decltype(
-      std::declval<BinaryFunctor>()(std::declval<first_argument<Env>>(),
-                                    std::declval<second_argument<Env>>()));
+    using type = decltype(std::declval<BinaryFunctor>()(
+      std::declval<first_argument<Env>>(), std::declval<second_argument<Env>>()));
   };
 
   template <typename Env>
   using result_type =
-    typename thrust::detail::eval_if<
-      (std::is_same<thrust::tuple<>, first_argument<Env>>::value ||
-       std::is_same<thrust::tuple<>, second_argument<Env>>::value),
-      thrust::detail::identity_<thrust::tuple<>>,
-      result_type_impl<Env>
-    >::type;
+    typename thrust::detail::eval_if< (std::is_same<thrust::tuple<>, first_argument<Env>>::value
+                                       || std::is_same<thrust::tuple<>, second_argument<Env>>::value),
+                                      thrust::detail::identity_<thrust::tuple<>>,
+                                      result_type_impl<Env> >::type;
 
   template <typename Env>
   struct result
   {
     using op_type = BinaryFunctor;
-    using type = result_type<Env>;
+    using type    = result_type<Env>;
   };
 
   template <typename Env>
-  _CCCL_HOST_DEVICE
-  result_type<Env> eval(Env&& e) const
-  THRUST_RETURNS(BinaryFunctor{}(thrust::get<0>(e), thrust::get<1>(e)))
+  _CCCL_HOST_DEVICE result_type<Env> eval(Env&& e) const
+    THRUST_RETURNS(BinaryFunctor{}(thrust::get<0>(e), thrust::get<1>(e)))
 };
 
-} // end functional
-} // end detail
+} // namespace functional
+} // namespace detail
 THRUST_NAMESPACE_END
-

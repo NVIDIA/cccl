@@ -19,24 +19,28 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using year                    = cuda::std::chrono::year;
-    using month                   = cuda::std::chrono::month;
-    using weekday                 = cuda::std::chrono::weekday;
-    using weekday_last            = cuda::std::chrono::weekday_last;
-    using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
+int main(int, char**) {
+  using year = cuda::std::chrono::year;
+  using month = cuda::std::chrono::month;
+  using weekday = cuda::std::chrono::weekday;
+  using weekday_last = cuda::std::chrono::weekday_last;
+  using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
 
-    ASSERT_NOEXCEPT(                   cuda::std::declval<const year_month_weekday_last>().weekday());
-    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<const year_month_weekday_last>().weekday()));
+  ASSERT_NOEXCEPT(
+      cuda::std::declval<const year_month_weekday_last>().weekday());
+  ASSERT_SAME_TYPE(
+      weekday,
+      decltype(cuda::std::declval<const year_month_weekday_last>().weekday()));
 
-    static_assert( year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.weekday() == weekday{}, "");
+  static_assert(
+      year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}
+              .weekday() == weekday{},
+      "");
 
-    for (unsigned i = 1; i <= 50; ++i)
-    {
-        year_month_weekday_last ymwdl(year{1}, month{1}, weekday_last{weekday{i}});
-        assert(ymwdl.weekday().c_encoding() == (i == 7 ? 0 : i));
-    }
+  for (unsigned i = 1; i <= 50; ++i) {
+    year_month_weekday_last ymwdl(year{1}, month{1}, weekday_last{weekday{i}});
+    assert(ymwdl.weekday().c_encoding() == (i == 7 ? 0 : i));
+  }
 
   return 0;
 }

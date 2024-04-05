@@ -20,14 +20,16 @@ template <class I, class R, class P>
 __host__ __device__ void test_subsumption() requires cuda::std::permutable<I>;
 
 template <class I, class R, class P>
-__host__ __device__ void test_subsumption() requires cuda::std::indirect_strict_weak_order<R, cuda::std::projected<I, P>>;
+__host__ __device__ void test_subsumption() requires
+    cuda::std::indirect_strict_weak_order<R, cuda::std::projected<I, P> >;
 
 template <class I, class R, class P>
-__host__ __device__ constexpr bool test_subsumption() requires cuda::std::sortable<I, R, P> { return true; }
-
-static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
-
-int main(int, char**)
-{
-  return 0;
+__host__ __device__ constexpr bool
+test_subsumption() requires cuda::std::sortable<I, R, P> {
+  return true;
 }
+
+static_assert(
+    test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
+
+int main(int, char**) { return 0; }

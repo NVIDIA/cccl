@@ -25,20 +25,19 @@
  *
  ******************************************************************************/
 
+#include <thrust/binary_search.h>
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
-#include <thrust/binary_search.h>
 #include <thrust/sort.h>
 
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements      = static_cast<std::size_t>(state.get_int64("Elements"));
   const auto needles_ratio = static_cast<std::size_t>(state.get_int64("NeedlesRatio"));
-  const auto needles       = needles_ratio *
-                       static_cast<std::size_t>(static_cast<double>(elements) / 100.0);
+  const auto needles       = needles_ratio * static_cast<std::size_t>(static_cast<double>(elements) / 100.0);
 
   thrust::device_vector<T> data = generate(elements + needles);
   thrust::device_vector<T> result(needles);
@@ -47,19 +46,13 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_element_count(needles);
 
   caching_allocator_t alloc;
-  thrust::lower_bound(policy(alloc),
-                      data.begin(),
-                      data.begin() + elements,
-                      data.begin() + elements,
-                      data.end(),
-                      result.begin());
+  thrust::lower_bound(
+    policy(alloc), data.begin(), data.begin() + elements, data.begin() + elements, data.end(), result.begin());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::lower_bound(
-                   policy(alloc, launch), data.begin(), data.begin() + elements,
-                   data.begin() + elements, data.end(), result.begin());
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::lower_bound(
+      policy(alloc, launch), data.begin(), data.begin() + elements, data.begin() + elements, data.end(), result.begin());
+  });
 }
 
 using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;

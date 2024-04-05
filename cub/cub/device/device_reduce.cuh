@@ -42,17 +42,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <iterator>
-#include <limits>
-
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_deprecated.cuh>
 
-CUB_NAMESPACE_BEGIN
+#include <iterator>
+#include <limits>
 
+CUB_NAMESPACE_BEGIN
 
 //! @rst
 //! DeviceReduce provides device-wide, parallel operations for computing
@@ -185,63 +184,40 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename T,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 NumItemsT num_items,
-                                                 ReductionOpT reduction_op,
-                                                 T init,
-                                                 cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T, typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumItemsT num_items,
+    ReductionOpT reduction_op,
+    T init,
+    cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchReduce<InputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          ReductionOpT,
-                          T>::Dispatch(d_temp_storage,
-                                       temp_storage_bytes,
-                                       d_in,
-                                       d_out,
-                                       static_cast<OffsetT>(num_items),
-                                       reduction_op,
-                                       init,
-                                       stream);
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, T>::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
   }
 
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename ReductionOpT,
-            typename T>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Reduce(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_items,
-                                                 ReductionOpT reduction_op,
-                                                 T init,
-                                                 cudaStream_t stream,
-                                                 bool debug_synchronous)
+  template <typename InputIteratorT, typename OutputIteratorT, typename ReductionOpT, typename T>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t Reduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_items,
+    ReductionOpT reduction_op,
+    T init,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Reduce<InputIteratorT, OutputIteratorT, ReductionOpT, T>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_items,
-      reduction_op,
-      init,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
 
   //! @rst
@@ -319,58 +295,47 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Sum(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              NumItemsT num_items,
-                                              cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      NumItemsT num_items,
+      cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The output value type
-    using OutputT =
-      cub::detail::non_void_value_t<OutputIteratorT,
-                                    cub::detail::value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
     using InitT = OutputT;
 
-    return DispatchReduce<InputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          cub::Sum,
-                          InitT>::Dispatch(d_temp_storage,
-                                           temp_storage_bytes,
-                                           d_in,
-                                           d_out,
-                                           static_cast<OffsetT>(num_items),
-                                           cub::Sum(),
-                                           InitT{}, // zero-initialize
-                                           stream);
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Sum, InitT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      cub::Sum(),
+      InitT{}, // zero-initialize
+      stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Sum(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              int num_items,
-                                              cudaStream_t stream,
-                                              bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      int num_items,
+      cudaStream_t stream,
+      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage,
-                                                temp_storage_bytes,
-                                                d_in,
-                                                d_out,
-                                                num_items,
-                                                stream);
+    return Sum<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 
   //! @rst
@@ -449,15 +414,14 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Min(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              NumItemsT num_items,
-                                              cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Min(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      NumItemsT num_items,
+      cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -467,41 +431,33 @@ struct DeviceReduce
 
     using InitT = InputT;
 
-    return DispatchReduce<InputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          cub::Min,
-                          InitT>::Dispatch(d_temp_storage,
-                                           temp_storage_bytes,
-                                           d_in,
-                                           d_out,
-                                           static_cast<OffsetT>(num_items),
-                                           cub::Min(),
-                                           // replace with
-                                           // std::numeric_limits<T>::max() when
-                                           // C++11 support is more prevalent
-                                           Traits<InitT>::Max(),
-                                           stream);
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Min, InitT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      cub::Min(),
+      // replace with
+      // std::numeric_limits<T>::max() when
+      // C++11 support is more prevalent
+      Traits<InitT>::Max(),
+      stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Min(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              int num_items,
-                                              cudaStream_t stream,
-                                              bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  Min(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      int num_items,
+      cudaStream_t stream,
+      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Min<InputIteratorT, OutputIteratorT>(d_temp_storage,
-                                                temp_storage_bytes,
-                                                d_in,
-                                                d_out,
-                                                num_items,
-                                                stream);
+    return Min<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 
   //! @rst
@@ -582,14 +538,14 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_items,
-                                                 cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = int;
@@ -598,8 +554,7 @@ struct DeviceReduce
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT =
-      cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
@@ -609,8 +564,7 @@ struct DeviceReduce
     using OutputValueT = typename OutputTupleT::Value;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT =
-      ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
 
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
@@ -618,39 +572,23 @@ struct DeviceReduce
     // TODO Address https://github.com/NVIDIA/cub/issues/651
     InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
 
-    return DispatchReduce<ArgIndexInputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          cub::ArgMin,
-                          InitT,
-                          AccumT>::Dispatch(d_temp_storage,
-                                            temp_storage_bytes,
-                                            d_indexed_in,
-                                            d_out,
-                                            num_items,
-                                            cub::ArgMin(),
-                                            initial_value,
-                                            stream);
+    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_items,
-                                                 cudaStream_t stream,
-                                                 bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_in,
-                                                   d_out,
-                                                   num_items,
-                                                   stream);
+    return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 
   //! @rst
@@ -726,15 +664,14 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t Max(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              NumItemsT num_items,
-                                              cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Max(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      NumItemsT num_items,
+      cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -744,42 +681,34 @@ struct DeviceReduce
 
     using InitT = InputT;
 
-    return DispatchReduce<InputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          cub::Max,
-                          InitT>::Dispatch(d_temp_storage,
-                                           temp_storage_bytes,
-                                           d_in,
-                                           d_out,
-                                           static_cast<OffsetT>(num_items),
-                                           cub::Max(),
-                                           // replace with
-                                           // std::numeric_limits<T>::lowest()
-                                           // when C++11 support is more
-                                           // prevalent
-                                           Traits<InitT>::Lowest(),
-                                           stream);
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Max, InitT>::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      static_cast<OffsetT>(num_items),
+      cub::Max(),
+      // replace with
+      // std::numeric_limits<T>::lowest()
+      // when C++11 support is more
+      // prevalent
+      Traits<InitT>::Lowest(),
+      stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t Max(void *d_temp_storage,
-                                              size_t &temp_storage_bytes,
-                                              InputIteratorT d_in,
-                                              OutputIteratorT d_out,
-                                              int num_items,
-                                              cudaStream_t stream,
-                                              bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
+  Max(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      int num_items,
+      cudaStream_t stream,
+      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Max<InputIteratorT, OutputIteratorT>(d_temp_storage,
-                                                temp_storage_bytes,
-                                                d_in,
-                                                d_out,
-                                                num_items,
-                                                stream);
+    return Max<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 
   //! @rst
@@ -864,14 +793,14 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_items,
-                                                 cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = int;
@@ -880,9 +809,7 @@ struct DeviceReduce
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT =
-      cub::detail::non_void_value_t<OutputIteratorT,
-                                    KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
@@ -892,8 +819,7 @@ struct DeviceReduce
     using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT =
-      ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
 
     ArgIndexInputIteratorT d_indexed_in(d_in);
 
@@ -901,39 +827,23 @@ struct DeviceReduce
     // TODO Address https://github.com/NVIDIA/cub/issues/651
     InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
 
-    return DispatchReduce<ArgIndexInputIteratorT,
-                          OutputIteratorT,
-                          OffsetT,
-                          cub::ArgMax,
-                          InitT,
-                          AccumT>::Dispatch(d_temp_storage,
-                                            temp_storage_bytes,
-                                            d_indexed_in,
-                                            d_out,
-                                            num_items,
-                                            cub::ArgMax(),
-                                            initial_value,
-                                            stream);
+    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(void *d_temp_storage,
-                                                 size_t &temp_storage_bytes,
-                                                 InputIteratorT d_in,
-                                                 OutputIteratorT d_out,
-                                                 int num_items,
-                                                 cudaStream_t stream,
-                                                 bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_in,
-                                                   d_out,
-                                                   num_items,
-                                                   stream);
+    return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 
   //! @rst
@@ -1213,17 +1123,17 @@ struct DeviceReduce
             typename NumRunsOutputIteratorT,
             typename ReductionOpT,
             typename NumItemsT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  ReduceByKey(void *d_temp_storage,
-              size_t &temp_storage_bytes,
-              KeysInputIteratorT d_keys_in,
-              UniqueOutputIteratorT d_unique_out,
-              ValuesInputIteratorT d_values_in,
-              AggregatesOutputIteratorT d_aggregates_out,
-              NumRunsOutputIteratorT d_num_runs_out,
-              ReductionOpT reduction_op,
-              NumItemsT num_items,
-              cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t ReduceByKey(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ReductionOpT reduction_op,
+    NumItemsT num_items,
+    cudaStream_t stream = 0)
   {
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1235,24 +1145,25 @@ struct DeviceReduce
     // Default == operator
     typedef Equality EqualityOp;
 
-    return DispatchReduceByKey<KeysInputIteratorT,
-                               UniqueOutputIteratorT,
-                               ValuesInputIteratorT,
-                               AggregatesOutputIteratorT,
-                               NumRunsOutputIteratorT,
-                               EqualityOp,
-                               ReductionOpT,
-                               OffsetT>::Dispatch(d_temp_storage,
-                                                  temp_storage_bytes,
-                                                  d_keys_in,
-                                                  d_unique_out,
-                                                  d_values_in,
-                                                  d_aggregates_out,
-                                                  d_num_runs_out,
-                                                  EqualityOp(),
-                                                  reduction_op,
-                                                  static_cast<OffsetT>(num_items),
-                                                  stream);
+    return DispatchReduceByKey<
+      KeysInputIteratorT,
+      UniqueOutputIteratorT,
+      ValuesInputIteratorT,
+      AggregatesOutputIteratorT,
+      NumRunsOutputIteratorT,
+      EqualityOp,
+      ReductionOpT,
+      OffsetT>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_keys_in,
+                         d_unique_out,
+                         d_values_in,
+                         d_aggregates_out,
+                         d_num_runs_out,
+                         EqualityOp(),
+                         reduction_op,
+                         static_cast<OffsetT>(num_items),
+                         stream);
   }
 
   template <typename KeysInputIteratorT,
@@ -1261,19 +1172,18 @@ struct DeviceReduce
             typename AggregatesOutputIteratorT,
             typename NumRunsOutputIteratorT,
             typename ReductionOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  ReduceByKey(void *d_temp_storage,
-              size_t &temp_storage_bytes,
-              KeysInputIteratorT d_keys_in,
-              UniqueOutputIteratorT d_unique_out,
-              ValuesInputIteratorT d_values_in,
-              AggregatesOutputIteratorT d_aggregates_out,
-              NumRunsOutputIteratorT d_num_runs_out,
-              ReductionOpT reduction_op,
-              int num_items,
-              cudaStream_t stream,
-              bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t ReduceByKey(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    ReductionOpT reduction_op,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1282,16 +1192,17 @@ struct DeviceReduce
                        ValuesInputIteratorT,
                        AggregatesOutputIteratorT,
                        NumRunsOutputIteratorT,
-                       ReductionOpT>(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_keys_in,
-                                     d_unique_out,
-                                     d_values_in,
-                                     d_aggregates_out,
-                                     d_num_runs_out,
-                                     reduction_op,
-                                     num_items,
-                                     stream);
+                       ReductionOpT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_unique_out,
+      d_values_in,
+      d_aggregates_out,
+      d_num_runs_out,
+      reduction_op,
+      num_items,
+      stream);
   }
 };
 

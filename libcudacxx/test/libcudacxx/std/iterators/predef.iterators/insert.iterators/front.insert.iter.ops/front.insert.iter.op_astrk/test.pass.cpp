@@ -24,20 +24,16 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void
-test(C c)
-{
-    cuda::std::front_insert_iterator<C> i(c);
-    cuda::std::front_insert_iterator<C>& r = *i;
-    assert(&r == &i);
+__host__ __device__ void test(C c) {
+  cuda::std::front_insert_iterator<C> i(c);
+  cuda::std::front_insert_iterator<C>& r = *i;
+  assert(&r == &i);
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
 #if defined(_LIBCUDACXX_HAS_LIST)
-    test(cuda::std::list<int>());
-    test(nasty_list<int>());
+  test(cuda::std::list<int>());
+  test(nasty_list<int>());
 #endif
 
   return 0;

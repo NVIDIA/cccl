@@ -17,7 +17,6 @@
 //
 //     Returns: os << mdl.month() << "/last".
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -25,11 +24,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using month_day_last = cuda::std::chrono::month_day_last;
-    using month          = cuda::std::chrono::month;
-    std::cout << month_day_last{month{1}};
+int main(int, char**) {
+  using month_day_last = cuda::std::chrono::month_day_last;
+  using month = cuda::std::chrono::month;
+  std::cout << month_day_last{month{1}};
 
   return 0;
 }

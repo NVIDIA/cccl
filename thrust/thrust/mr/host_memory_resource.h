@@ -33,8 +33,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-typedef thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::memory_resource
-    host_memory_resource;
+typedef thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::memory_resource host_memory_resource;
 
 THRUST_NAMESPACE_END
-

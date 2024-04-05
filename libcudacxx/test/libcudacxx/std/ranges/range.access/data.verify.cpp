@@ -27,7 +27,4 @@ __host__ __device__ void test() {
   // expected-error-re@-1 {{{{no matching function for call to object of type 'const (std::ranges::)?__data::__fn'}}}}
 }
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

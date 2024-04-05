@@ -19,23 +19,22 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using year               = cuda::std::chrono::year;
-    using month              = cuda::std::chrono::month;
-    using weekday_indexed    = cuda::std::chrono::weekday_indexed;
-    using year_month_weekday = cuda::std::chrono::year_month_weekday;
+int main(int, char**) {
+  using year = cuda::std::chrono::year;
+  using month = cuda::std::chrono::month;
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
+  using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-    ASSERT_NOEXCEPT(                cuda::std::declval<const year_month_weekday>().year());
-    ASSERT_SAME_TYPE(year, decltype(cuda::std::declval<const year_month_weekday>().year()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_weekday>().year());
+  ASSERT_SAME_TYPE(
+      year, decltype(cuda::std::declval<const year_month_weekday>().year()));
 
-    static_assert( year_month_weekday{}.year() == year{}, "");
+  static_assert(year_month_weekday{}.year() == year{}, "");
 
-    for (int i = 1; i <= 50; ++i)
-    {
-        year_month_weekday ym(year{i}, month{1}, weekday_indexed{});
-        assert( static_cast<int>(ym.year()) == i);
-    }
+  for (int i = 1; i <= 50; ++i) {
+    year_month_weekday ym(year{i}, month{1}, weekday_indexed{});
+    assert(static_cast<int>(ym.year()) == i);
+  }
 
   return 0;
 }

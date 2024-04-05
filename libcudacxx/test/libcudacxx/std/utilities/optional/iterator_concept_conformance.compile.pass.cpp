@@ -19,7 +19,11 @@
 static_assert(!cuda::std::indirectly_readable<cuda::std::optional<int> >);
 static_assert(!cuda::std::indirectly_writable<cuda::std::optional<int>, int>);
 static_assert(!cuda::std::weakly_incrementable<cuda::std::optional<int> >);
-static_assert(!cuda::std::indirectly_movable<cuda::std::optional<int>, cuda::std::optional<int>>);
-static_assert(!cuda::std::indirectly_movable_storable<cuda::std::optional<int>, cuda::std::optional<int>>);
-static_assert(!cuda::std::indirectly_copyable<cuda::std::optional<int>, cuda::std::optional<int>>);
-static_assert(!cuda::std::indirectly_copyable_storable<cuda::std::optional<int>, cuda::std::optional<int>>);
+static_assert(!cuda::std::indirectly_movable<cuda::std::optional<int>,
+                                             cuda::std::optional<int> >);
+static_assert(!cuda::std::indirectly_movable_storable<
+              cuda::std::optional<int>, cuda::std::optional<int> >);
+static_assert(!cuda::std::indirectly_copyable<cuda::std::optional<int>,
+                                              cuda::std::optional<int> >);
+static_assert(!cuda::std::indirectly_copyable_storable<
+              cuda::std::optional<int>, cuda::std::optional<int> >);

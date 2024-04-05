@@ -28,35 +28,48 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, int>, "");
+static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, int>,
+              "");
 
 // is_same_v<remove_cvref_t<Err>, unexpected>
 struct CstrFromUnexpected {
   __host__ __device__ CstrFromUnexpected(CstrFromUnexpected const&) = delete;
-  __host__ __device__ CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
+  __host__ __device__
+  CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
 };
-static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>, "");
+static_assert(
+    !cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>,
+                                   cuda::std::unexpected<CstrFromUnexpected> >,
+    "");
 
 // is_same_v<remove_cvref_t<Err>, in_place_t>
 struct CstrFromInplace {
   __host__ __device__ CstrFromInplace(cuda::std::in_place_t);
 };
-static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromInplace>, cuda::std::in_place_t>, "");
+static_assert(
+    !cuda::std::constructible_from<cuda::std::unexpected<CstrFromInplace>,
+                                   cuda::std::in_place_t>,
+    "");
 
 // !is_constructible_v<E, Err>
 struct Foo {};
-static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, int>, "");
+static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, int>,
+              "");
 
 // test explicit
 static_assert(cuda::std::convertible_to<int, int>, "");
-static_assert(!cuda::std::convertible_to<int, cuda::std::unexpected<int>>, "");
+static_assert(!cuda::std::convertible_to<int, cuda::std::unexpected<int> >, "");
 
 struct Error {
   int i;
   __host__ __device__ constexpr Error(int ii) : i(ii) {}
   __host__ __device__ constexpr Error(const Error& other) : i(other.i) {}
-  __host__ __device__ constexpr Error(Error&& other) : i(other.i) { other.i = 0; }
-  __host__ __device__ Error(cuda::std::initializer_list<Error>) { assert(false); }
+  __host__ __device__ constexpr Error(Error&& other) : i(other.i) {
+    other.i = 0;
+  }
+  __host__ __device__ Error(cuda::std::initializer_list<Error>) {
+    assert(false);
+  }
 };
 
 __host__ __device__ constexpr bool test() {

@@ -15,24 +15,21 @@
 
 void test_ready(cuda::stream_ref& ref) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    try {
-      assert(ref.ready());
-    } catch (...) {
-      assert(false && "Should not have thrown");
-    }
-#else
+  try {
     assert(ref.ready());
+  } catch (...) {
+    assert(false && "Should not have thrown");
+  }
+#else
+  assert(ref.ready());
 #endif // _LIBCUDACXX_NO_EXCEPTIONS
 }
 
 int main(int argc, char** argv) {
-    NV_IF_TARGET(NV_IS_HOST,( // passing case
-        cudaStream_t stream;
-        cudaStreamCreate(&stream);
-        cuda::stream_ref ref{stream};
-        test_ready(ref);
-        cudaStreamDestroy(stream);
-    ))
+  NV_IF_TARGET(NV_IS_HOST, ( // passing case
+                               cudaStream_t stream; cudaStreamCreate(&stream);
+                               cuda::stream_ref ref{stream}; test_ready(ref);
+                               cudaStreamDestroy(stream);))
 
-    return 0;
+  return 0;
 }

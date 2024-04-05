@@ -23,76 +23,75 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
-        typedef cuda::std::pair<int, short> P;
-        P p1(3, static_cast<short>(4));
-        P p2(3, static_cast<short>(4));
-        assert( (p1 == p2));
-        assert(!(p1 != p2));
-        assert(!(p1 <  p2));
-        assert( (p1 <= p2));
-        assert(!(p1 >  p2));
-        assert( (p1 >= p2));
-    }
-    {
-        typedef cuda::std::pair<int, short> P;
-        P p1(2, static_cast<short>(4));
-        P p2(3, static_cast<short>(4));
-        assert(!(p1 == p2));
-        assert( (p1 != p2));
-        assert( (p1 <  p2));
-        assert( (p1 <= p2));
-        assert(!(p1 >  p2));
-        assert(!(p1 >= p2));
-    }
-    {
-        typedef cuda::std::pair<int, short> P;
-        P p1(3, static_cast<short>(2));
-        P p2(3, static_cast<short>(4));
-        assert(!(p1 == p2));
-        assert( (p1 != p2));
-        assert( (p1 <  p2));
-        assert( (p1 <= p2));
-        assert(!(p1 >  p2));
-        assert(!(p1 >= p2));
-    }
-    {
-        typedef cuda::std::pair<int, short> P;
-        P p1(3, static_cast<short>(4));
-        P p2(2, static_cast<short>(4));
-        assert(!(p1 == p2));
-        assert( (p1 != p2));
-        assert(!(p1 <  p2));
-        assert(!(p1 <= p2));
-        assert( (p1 >  p2));
-        assert( (p1 >= p2));
-    }
-    {
-        typedef cuda::std::pair<int, short> P;
-        P p1(3, static_cast<short>(4));
-        P p2(3, static_cast<short>(2));
-        assert(!(p1 == p2));
-        assert( (p1 != p2));
-        assert(!(p1 <  p2));
-        assert(!(p1 <= p2));
-        assert( (p1 >  p2));
-        assert( (p1 >= p2));
-    }
+int main(int, char**) {
+  {
+    typedef cuda::std::pair<int, short> P;
+    P p1(3, static_cast<short>(4));
+    P p2(3, static_cast<short>(4));
+    assert((p1 == p2));
+    assert(!(p1 != p2));
+    assert(!(p1 < p2));
+    assert((p1 <= p2));
+    assert(!(p1 > p2));
+    assert((p1 >= p2));
+  }
+  {
+    typedef cuda::std::pair<int, short> P;
+    P p1(2, static_cast<short>(4));
+    P p2(3, static_cast<short>(4));
+    assert(!(p1 == p2));
+    assert((p1 != p2));
+    assert((p1 < p2));
+    assert((p1 <= p2));
+    assert(!(p1 > p2));
+    assert(!(p1 >= p2));
+  }
+  {
+    typedef cuda::std::pair<int, short> P;
+    P p1(3, static_cast<short>(2));
+    P p2(3, static_cast<short>(4));
+    assert(!(p1 == p2));
+    assert((p1 != p2));
+    assert((p1 < p2));
+    assert((p1 <= p2));
+    assert(!(p1 > p2));
+    assert(!(p1 >= p2));
+  }
+  {
+    typedef cuda::std::pair<int, short> P;
+    P p1(3, static_cast<short>(4));
+    P p2(2, static_cast<short>(4));
+    assert(!(p1 == p2));
+    assert((p1 != p2));
+    assert(!(p1 < p2));
+    assert(!(p1 <= p2));
+    assert((p1 > p2));
+    assert((p1 >= p2));
+  }
+  {
+    typedef cuda::std::pair<int, short> P;
+    P p1(3, static_cast<short>(4));
+    P p2(3, static_cast<short>(2));
+    assert(!(p1 == p2));
+    assert((p1 != p2));
+    assert(!(p1 < p2));
+    assert(!(p1 <= p2));
+    assert((p1 > p2));
+    assert((p1 >= p2));
+  }
 
 #if TEST_STD_VER > 2011
-    {
-        typedef cuda::std::pair<int, short> P;
-        constexpr P p1(3, static_cast<short>(4));
-        constexpr P p2(3, static_cast<short>(2));
-        static_assert(!(p1 == p2), "");
-        static_assert( (p1 != p2), "");
-        static_assert(!(p1 <  p2), "");
-        static_assert(!(p1 <= p2), "");
-        static_assert( (p1 >  p2), "");
-        static_assert( (p1 >= p2), "");
-    }
+  {
+    typedef cuda::std::pair<int, short> P;
+    constexpr P p1(3, static_cast<short>(4));
+    constexpr P p2(3, static_cast<short>(2));
+    static_assert(!(p1 == p2), "");
+    static_assert((p1 != p2), "");
+    static_assert(!(p1 < p2), "");
+    static_assert(!(p1 <= p2), "");
+    static_assert((p1 > p2), "");
+    static_assert((p1 >= p2), "");
+  }
 #endif
 
   return 0;

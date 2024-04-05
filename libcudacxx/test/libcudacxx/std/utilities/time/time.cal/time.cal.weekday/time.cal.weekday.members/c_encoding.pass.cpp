@@ -12,7 +12,6 @@
 
 //  constexpr unsigned c_encoding() const noexcept;
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -20,27 +19,24 @@
 #include "test_macros.h"
 
 template <typename WD>
-__host__ __device__
-constexpr bool testConstexpr()
-{
-    WD wd{5};
-    return wd.c_encoding() == 5;
+__host__ __device__ constexpr bool testConstexpr() {
+  WD wd{5};
+  return wd.c_encoding() == 5;
 }
 
-int main(int, char**)
-{
-    using weekday = cuda::std::chrono::weekday;
+int main(int, char**) {
+  using weekday = cuda::std::chrono::weekday;
 
-    ASSERT_NOEXCEPT(                    cuda::std::declval<weekday&>().c_encoding());
-    ASSERT_SAME_TYPE(unsigned, decltype(cuda::std::declval<weekday&>().c_encoding()));
+  ASSERT_NOEXCEPT(cuda::std::declval<weekday&>().c_encoding());
+  ASSERT_SAME_TYPE(unsigned,
+                   decltype(cuda::std::declval<weekday&>().c_encoding()));
 
-    static_assert(testConstexpr<weekday>(), "");
+  static_assert(testConstexpr<weekday>(), "");
 
-    for (unsigned i = 0; i <= 10; ++i)
-    {
-        weekday wd(i);
-        assert(wd.c_encoding() == (i == 7 ? 0 : i));
-    }
+  for (unsigned i = 0; i <= 10; ++i) {
+    weekday wd(i);
+    assert(wd.c_encoding() == (i == 7 ? 0 : i));
+  }
 
   return 0;
 }

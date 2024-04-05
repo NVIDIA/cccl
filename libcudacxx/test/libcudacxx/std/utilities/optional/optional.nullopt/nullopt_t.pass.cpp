@@ -22,24 +22,21 @@
 
 #include "test_macros.h"
 
-using cuda::std::nullopt_t;
 using cuda::std::nullopt;
+using cuda::std::nullopt_t;
 
-__host__ __device__
-constexpr bool test()
-{
-    nullopt_t foo{nullopt};
-    unused(foo);
-    return true;
+__host__ __device__ constexpr bool test() {
+  nullopt_t foo{nullopt};
+  unused(foo);
+  return true;
 }
 
-int main(int, char**)
-{
-    static_assert(cuda::std::is_empty_v<nullopt_t>, "");
-    static_assert(!cuda::std::is_default_constructible_v<nullopt_t>, "");
+int main(int, char**) {
+  static_assert(cuda::std::is_empty_v<nullopt_t>, "");
+  static_assert(!cuda::std::is_default_constructible_v<nullopt_t>, "");
 
-    static_assert(cuda::std::is_same_v<const nullopt_t, decltype(nullopt)>, "");
-    static_assert(test(), "");
+  static_assert(cuda::std::is_same_v<const nullopt_t, decltype(nullopt)>, "");
+  static_assert(test(), "");
 
   return 0;
 }

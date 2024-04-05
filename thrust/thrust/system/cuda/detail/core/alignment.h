@@ -31,50 +31,46 @@
 #include <thrust/system/cuda/detail/util.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
-namespace alignment_of_detail {
-
-
-  template <typename T>
-  class alignment_of_impl;
-
-  template <typename T, std::size_t size_diff>
-  struct helper
-  {
-    static const std::size_t value = size_diff;
-  };
-
-  template <typename T>
-  class helper<T, 0>
-  {
-  public:
-    static const std::size_t value = alignment_of_impl<T>::value;
-  };
-
-  template <typename T>
-  class alignment_of_impl
-  {
-  private:
-    struct big
-    {
-      T    x;
-      char c;
-    };
-
-  public:
-    static const std::size_t value = helper<big, sizeof(big) - sizeof(T)>::value;
-  };
-
-
-}    // end alignment_of_detail
-
+namespace cuda_cub
+{
+namespace alignment_of_detail
+{
 
 template <typename T>
-struct alignment_of
-    : alignment_of_detail::alignment_of_impl<T>
+class alignment_of_impl;
+
+template <typename T, std::size_t size_diff>
+struct helper
 {
+  static const std::size_t value = size_diff;
 };
 
+template <typename T>
+class helper<T, 0>
+{
+public:
+  static const std::size_t value = alignment_of_impl<T>::value;
+};
+
+template <typename T>
+class alignment_of_impl
+{
+private:
+  struct big
+  {
+    T x;
+    char c;
+  };
+
+public:
+  static const std::size_t value = helper<big, sizeof(big) - sizeof(T)>::value;
+};
+
+} // namespace alignment_of_detail
+
+template <typename T>
+struct alignment_of : alignment_of_detail::alignment_of_impl<T>
+{};
 
 template <std::size_t Align>
 struct aligned_type;
@@ -84,7 +80,7 @@ struct aligned_type;
 
 // implementing aligned_type portably is tricky:
 
-#if defined(_CCCL_COMPILER_MSVC)
+#  if defined(_CCCL_COMPILER_MSVC)
 // implement aligned_type with specialization because MSVC
 // requires literals as arguments to declspec(align(n))
 template <>
@@ -170,7 +166,7 @@ struct aligned_type<8192>
 {
   struct __align__(8192) type{};
 };
-#elif defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#  elif defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
 // implement aligned_type with specialization because gcc 4.2
 // requires literals as arguments to __attribute__(aligned(n))
 template <>
@@ -221,7 +217,7 @@ struct aligned_type<128>
   struct __align__(128) type{};
 };
 
-#else
+#  else
 // assume the compiler allows template parameters as
 // arguments to __align__
 template <std::size_t Align>
@@ -229,17 +225,15 @@ struct aligned_type
 {
   struct __align__(Align) type{};
 };
-#endif    // THRUST_HOST_COMPILER
+#  endif // THRUST_HOST_COMPILER
 #else
 template <std::size_t Align>
 struct aligned_type
 {
   struct type
-  {
-  };
+  {};
 };
-#endif    // THRUST_DEVICE_COMPILER
-
+#endif // THRUST_DEVICE_COMPILER
 
 template <std::size_t Len, std::size_t Align>
 struct aligned_storage
@@ -252,7 +246,6 @@ struct aligned_storage
   };
 };
 
-
-}    // end cuda_
+} // namespace cuda_cub
 
 THRUST_NAMESPACE_END

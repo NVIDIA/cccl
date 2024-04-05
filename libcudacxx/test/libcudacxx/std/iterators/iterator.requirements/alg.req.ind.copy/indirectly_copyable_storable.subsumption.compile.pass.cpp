@@ -14,15 +14,16 @@
 
 #include <cuda/std/iterator>
 
-template<class I, class O>
-  requires cuda::std::indirectly_copyable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_storable_subsumption() {
+template <class I, class O>
+requires cuda::std::indirectly_copyable<I, O> __host__ __device__ constexpr bool
+indirectly_copyable_storable_subsumption() {
   return false;
 }
 
-template<class I, class O>
-  requires cuda::std::indirectly_copyable_storable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_storable_subsumption() {
+template <class I, class O>
+requires cuda::std::indirectly_copyable_storable<I, O>
+    __host__ __device__ constexpr bool
+    indirectly_copyable_storable_subsumption() {
   return true;
 }
 
@@ -30,7 +31,4 @@ __host__ __device__ constexpr bool indirectly_copyable_storable_subsumption() {
 static_assert(indirectly_copyable_storable_subsumption<int*, int*>());
 #endif
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

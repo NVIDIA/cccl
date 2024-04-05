@@ -5,44 +5,34 @@
 
 #include <string>
 
-static void platform_exec(char const* process, char ** args, size_t nargs) {
-    std::string cl{};
+static void platform_exec(char const* process, char** args, size_t nargs) {
+  std::string cl{};
 
-    STARTUPINFOA si{};
-    PROCESS_INFORMATION pi{};
+  STARTUPINFOA si{};
+  PROCESS_INFORMATION pi{};
 
-    si.cb = sizeof(si);
+  si.cb = sizeof(si);
 
-    cl.append(process);
+  cl.append(process);
 
-    for (auto iter = args; iter < (args + nargs); iter++) {
-        cl.append(" ");
-        cl.append(*iter);
-    }
+  for (auto iter = args; iter < (args + nargs); iter++) {
+    cl.append(" ");
+    cl.append(*iter);
+  }
 
-    printf("Running command: %s\r\n", cl.data());
+  printf("Running command: %s\r\n", cl.data());
 
-    bool exec_result = CreateProcess(
-        NULL,
-        (LPSTR)cl.data(),
-        NULL,
-        NULL,
-        false,
-        false,
-        NULL,
-        NULL,
-        &si,
-        &pi
-    );
+  bool exec_result = CreateProcess(NULL, (LPSTR)cl.data(), NULL, NULL, false,
+                                   false, NULL, NULL, &si, &pi);
 
-    if (!exec_result) {
-        printf("Launch error: %i",  GetLastError());
-    }
+  if (!exec_result) {
+    printf("Launch error: %i", GetLastError());
+  }
 
-    WaitForSingleObject(pi.hProcess, INFINITE);
+  WaitForSingleObject(pi.hProcess, INFINITE);
 
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
 
-    ExitProcess(0);
+  ExitProcess(0);
 }

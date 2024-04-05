@@ -38,7 +38,8 @@ int main(int, char**) {
     const MoveOnly cmo[] = {MoveOnly{3}};
     // expected-error@array:* {{to_array requires move constructible elements}}
     // expected-error-re@array:* {{{{(call to implicitly-deleted copy constructor of 'MoveOnly')|(call to deleted constructor of 'MoveOnly')}}}}
-    cuda::std::to_array(cuda::std::move(cmo)); // expected-note {{requested here}}
+    cuda::std::to_array(
+        cuda::std::move(cmo)); // expected-note {{requested here}}
   }
 
   return 0;

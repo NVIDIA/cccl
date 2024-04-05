@@ -22,24 +22,38 @@ static_assert(cuda::std::input_or_output_iterator<int volatile*>);
 static_assert(cuda::std::input_or_output_iterator<int const volatile*>);
 
 static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*> >);
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const*> >);
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int volatile*> >);
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int const volatile*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<cpp17_input_iterator<int const*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<cpp17_input_iterator<int volatile*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              cpp17_input_iterator<int const volatile*> >);
 
 static_assert(cuda::std::input_or_output_iterator<forward_iterator<int*> >);
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const*> >);
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int volatile*> >);
-static_assert(cuda::std::input_or_output_iterator<forward_iterator<int const volatile*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<forward_iterator<int const*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<forward_iterator<int volatile*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              forward_iterator<int const volatile*> >);
 
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int*> >);
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const*> >);
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int volatile*> >);
-static_assert(cuda::std::input_or_output_iterator<bidirectional_iterator<int const volatile*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<bidirectional_iterator<int*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<bidirectional_iterator<int const*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              bidirectional_iterator<int volatile*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              bidirectional_iterator<int const volatile*> >);
 
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int*> >);
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const*> >);
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int volatile*> >);
-static_assert(cuda::std::input_or_output_iterator<random_access_iterator<int const volatile*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<random_access_iterator<int*> >);
+static_assert(
+    cuda::std::input_or_output_iterator<random_access_iterator<int const*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              random_access_iterator<int volatile*> >);
+static_assert(cuda::std::input_or_output_iterator<
+              random_access_iterator<int const volatile*> >);
 
 static_assert(!cuda::std::input_or_output_iterator<void*>);
 static_assert(!cuda::std::input_or_output_iterator<void const*>);
@@ -59,7 +73,8 @@ struct missing_dereference {
   __host__ __device__ missing_dereference& operator++();
   __host__ __device__ missing_dereference& operator++(int);
 };
-static_assert(cuda::std::weakly_incrementable<missing_dereference> && !cuda::std::input_or_output_iterator<missing_dereference>);
+static_assert(cuda::std::weakly_incrementable<missing_dereference> &&
+              !cuda::std::input_or_output_iterator<missing_dereference>);
 
 struct void_dereference {
   using difference_type = cuda::std::ptrdiff_t;
@@ -68,14 +83,12 @@ struct void_dereference {
   __host__ __device__ void_dereference& operator++();
   __host__ __device__ void_dereference& operator++(int);
 };
-static_assert(cuda::std::weakly_incrementable<void_dereference> && !cuda::std::input_or_output_iterator<void_dereference>);
+static_assert(cuda::std::weakly_incrementable<void_dereference> &&
+              !cuda::std::input_or_output_iterator<void_dereference>);
 
 struct not_weakly_incrementable {
   __host__ __device__ int operator*() const;
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

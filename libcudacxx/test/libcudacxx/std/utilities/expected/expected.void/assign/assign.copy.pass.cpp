@@ -33,23 +33,28 @@
 #include "test_macros.h"
 
 struct NotCopyConstructible {
-  NotCopyConstructible(const NotCopyConstructible&)            = delete;
+  NotCopyConstructible(const NotCopyConstructible&) = delete;
   NotCopyConstructible& operator=(const NotCopyConstructible&) = default;
 };
 
 struct NotCopyAssignable {
-  NotCopyAssignable(const NotCopyAssignable&)            = default;
+  NotCopyAssignable(const NotCopyAssignable&) = default;
   NotCopyAssignable& operator=(const NotCopyAssignable&) = delete;
 };
 
 // Test constraints
-static_assert(cuda::std::is_copy_assignable_v<cuda::std::expected<void, int>>, "");
+static_assert(cuda::std::is_copy_assignable_v<cuda::std::expected<void, int> >,
+              "");
 
 // !is_copy_assignable_v<E>
-static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopyAssignable>>, "");
+static_assert(!cuda::std::is_copy_assignable_v<
+                  cuda::std::expected<void, NotCopyAssignable> >,
+              "");
 
 // !is_copy_constructible_v<E>
-static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<void, NotCopyConstructible>>, "");
+static_assert(!cuda::std::is_copy_assignable_v<
+                  cuda::std::expected<void, NotCopyConstructible> >,
+              "");
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // If this->has_value() && rhs.has_value() is true, no effects.
@@ -57,7 +62,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<void, int> e1;
     cuda::std::expected<void, int> e2;
     decltype(auto) x = (e1 = e2);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, int>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<void, int>&>, "");
     assert(&x == &e1);
     assert(e1.has_value());
   }
@@ -68,7 +74,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<void, Traced> e1;
     cuda::std::expected<void, Traced> e2(cuda::std::unexpect, state, 5);
     decltype(auto) x = (e1 = e2);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>,
+        "");
     assert(&x == &e1);
     assert(!e1.has_value());
     assert(e1.error().data_ == 5);
@@ -82,7 +90,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<void, Traced> e1(cuda::std::unexpect, state, 5);
     cuda::std::expected<void, Traced> e2;
     decltype(auto) x = (e1 = e2);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>,
+        "");
     assert(&x == &e1);
     assert(e1.has_value());
 
@@ -95,7 +105,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<void, Traced> e1(cuda::std::unexpect, state, 5);
     cuda::std::expected<void, Traced> e2(cuda::std::unexpect, state, 10);
     decltype(auto) x = (e1 = e2);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<void, Traced>&>,
+        "");
     assert(&x == &e1);
     assert(!e1.has_value());
     assert(e1.error().data_ == 10);

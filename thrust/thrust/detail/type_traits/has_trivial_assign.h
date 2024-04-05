@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file type_traits.h
  *  \brief Temporarily define some type traits
  *         until nvcc can compile tr1::type_traits.
@@ -40,16 +39,13 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template<typename T>
+template <typename T>
 struct has_trivial_assign
-  : public integral_constant<
-      bool,
-      (is_pod<T>::value && !is_const<T>::value)
-      || ::cuda::std::is_trivially_copy_assignable<T>::value
-    >
+    : public integral_constant<
+        bool,
+        (is_pod<T>::value && !is_const<T>::value) || ::cuda::std::is_trivially_copy_assignable<T>::value >
 {};
 
-} // end detail
+} // namespace detail
 
 THRUST_NAMESPACE_END
-

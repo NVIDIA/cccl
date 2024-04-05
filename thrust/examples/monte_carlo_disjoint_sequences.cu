@@ -1,12 +1,12 @@
-#include <thrust/random.h>
-#include <thrust/iterator/counting_iterator.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/random.h>
 #include <thrust/transform_reduce.h>
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
-// The technique demonstrated in the example monte_carlo.cu 
+// The technique demonstrated in the example monte_carlo.cu
 // assigns an independently seeded random number generator to each
 // of 30K threads, and uses a hashing scheme based on thread index to
 // seed each RNG. This technique, while simple, may be succeptible
@@ -21,12 +21,11 @@
 // past n states of the RNG. This function is accelerated and executes
 // in O(lg n) time.
 
-struct estimate_pi : public thrust::unary_function<unsigned int,float>
+struct estimate_pi : public thrust::unary_function<unsigned int, float>
 {
-  __host__ __device__
-  float operator()(unsigned int thread_id)
+  __host__ __device__ float operator()(unsigned int thread_id)
   {
-    float sum = 0;
+    float sum      = 0;
     unsigned int N = 5000; // samples per stream
 
     // note that M * N <= default_random_engine::max,
@@ -41,21 +40,23 @@ struct estimate_pi : public thrust::unary_function<unsigned int,float>
     rng.discard(N * thread_id);
 
     // create a mapping from random numbers to [0,1)
-    thrust::uniform_real_distribution<float> u01(0,1);
+    thrust::uniform_real_distribution<float> u01(0, 1);
 
     // take N samples in a quarter circle
-    for(unsigned int i = 0; i < N; ++i)
+    for (unsigned int i = 0; i < N; ++i)
     {
       // draw a sample from the unit square
       float x = u01(rng);
       float y = u01(rng);
 
       // measure distance from the origin
-      float dist = sqrtf(x*x + y*y);
+      float dist = sqrtf(x * x + y * y);
 
       // add 1.0f if (u0,u1) is inside the quarter circle
-      if(dist <= 1.0f)
+      if (dist <= 1.0f)
+      {
         sum += 1.0f;
+      }
     }
 
     // multiply by 4 to get the area of the whole circle
@@ -71,15 +72,11 @@ int main(void)
   // use 30K subsequences of random numbers
   int M = 30000;
 
-  float estimate = thrust::transform_reduce(thrust::counting_iterator<int>(0),
-                                            thrust::counting_iterator<int>(M),
-                                            estimate_pi(),
-                                            0.0f,
-                                            thrust::plus<float>());
+  float estimate = thrust::transform_reduce(
+    thrust::counting_iterator<int>(0), thrust::counting_iterator<int>(M), estimate_pi(), 0.0f, thrust::plus<float>());
   estimate /= M;
 
   std::cout << "pi is around " << estimate << std::endl;
 
   return 0;
 }
-

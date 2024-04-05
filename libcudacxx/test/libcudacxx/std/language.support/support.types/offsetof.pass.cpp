@@ -16,14 +16,12 @@
 #error offsetof not defined
 #endif
 
-struct A
-{
-    int x;
+struct A {
+  int x;
 };
 
-int main(int, char**)
-{
-    static_assert(noexcept(offsetof(A, x)), "");
+int main(int, char**) {
+  static_assert(noexcept(offsetof(A, x)), "");
 
   return 0;
 }

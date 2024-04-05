@@ -21,29 +21,27 @@
 #include "test_iterators.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-    int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
-    const unsigned sa = sizeof(ia)/sizeof(ia[0]);
-    assert(cuda::std::adjacent_find(forward_iterator<const int*>(ia),
-                                    forward_iterator<const int*>(ia + sa),
-                                    cuda::std::equal_to<int>()) ==
-                                    forward_iterator<const int*>(ia+2));
-    assert(cuda::std::adjacent_find(forward_iterator<const int*>(ia),
-                                    forward_iterator<const int*>(ia),
-                                    cuda::std::equal_to<int>()) ==
-                                    forward_iterator<const int*>(ia));
-    assert(cuda::std::adjacent_find(forward_iterator<const int*>(ia+3),
-                                    forward_iterator<const int*>(ia + sa),
-                                    cuda::std::equal_to<int>()) ==
-                                    forward_iterator<const int*>(ia+sa));
+  int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
+  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
+  assert(cuda::std::adjacent_find(forward_iterator<const int*>(ia),
+                                  forward_iterator<const int*>(ia + sa),
+                                  cuda::std::equal_to<int>()) ==
+         forward_iterator<const int*>(ia + 2));
+  assert(cuda::std::adjacent_find(
+             forward_iterator<const int*>(ia), forward_iterator<const int*>(ia),
+             cuda::std::equal_to<int>()) == forward_iterator<const int*>(ia));
+  assert(cuda::std::adjacent_find(forward_iterator<const int*>(ia + 3),
+                                  forward_iterator<const int*>(ia + sa),
+                                  cuda::std::equal_to<int>()) ==
+         forward_iterator<const int*>(ia + sa));
 
-    return true;
+  return true;
 }
 
-int main(int, char**)
-{
-    test();
+int main(int, char**) {
+  test();
 #if TEST_STD_VER > 2011
-    static_assert(test(), "");
+  static_assert(test(), "");
 #endif
 
   return 0;

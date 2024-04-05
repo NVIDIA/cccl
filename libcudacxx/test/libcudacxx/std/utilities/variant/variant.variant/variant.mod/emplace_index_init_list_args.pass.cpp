@@ -28,39 +28,39 @@
 
 struct InitList {
   cuda::std::size_t size;
-  __host__ __device__
-  constexpr InitList(cuda::std::initializer_list<int> il) : size(il.size()) {}
+  __host__ __device__ constexpr InitList(cuda::std::initializer_list<int> il)
+      : size(il.size()) {}
 };
 
 struct InitListArg {
   cuda::std::size_t size;
   int value;
-  __host__ __device__
-  constexpr InitListArg(cuda::std::initializer_list<int> il, int v)
+  __host__ __device__ constexpr InitListArg(cuda::std::initializer_list<int> il,
+                                            int v)
       : size(il.size()), value(v) {}
 };
 
 template <class Var, size_t I, class... Args>
-__host__ __device__
-constexpr auto test_emplace_exists_imp(int) -> decltype(
-    cuda::std::declval<Var>().template emplace<I>(cuda::std::declval<Args>()...), true) {
+__host__ __device__ constexpr auto test_emplace_exists_imp(int)
+    -> decltype(cuda::std::declval<Var>().template emplace<I>(
+                    cuda::std::declval<Args>()...),
+                true) {
   return true;
 }
 
 template <class, size_t, class...>
-__host__ __device__
-constexpr auto test_emplace_exists_imp(long) -> bool {
+__host__ __device__ constexpr auto test_emplace_exists_imp(long) -> bool {
   return false;
 }
 
-template <class Var, size_t I, class... Args> __host__ __device__ constexpr bool emplace_exists() {
+template <class Var, size_t I, class... Args>
+__host__ __device__ constexpr bool emplace_exists() {
   return test_emplace_exists_imp<Var, I, Args...>(0);
 }
 
-__host__ __device__
-void test_emplace_sfinae() {
-  using V =
-      cuda::std::variant<int, TestTypes::NoCtors, InitList, InitListArg, long, long>;
+__host__ __device__ void test_emplace_sfinae() {
+  using V = cuda::std::variant<int, TestTypes::NoCtors, InitList, InitListArg,
+                               long, long>;
   using IL = cuda::std::initializer_list<int>;
   static_assert(!emplace_exists<V, 1, IL>(), "no such constructor");
   static_assert(emplace_exists<V, 2, IL>(), "");
@@ -72,8 +72,7 @@ void test_emplace_sfinae() {
   static_assert(!emplace_exists<V, 3, IL, int, int>(), "too many args");
 }
 
-__host__ __device__
-void test_basic() {
+__host__ __device__ void test_basic() {
   using V = cuda::std::variant<int, InitList, InitListArg, TestTypes::NoCtors>;
   V v;
   auto& ref1 = v.emplace<1>({1, 2, 3});

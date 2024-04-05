@@ -29,46 +29,44 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using sys_days  = cuda::std::chrono::sys_days;
-    using days      = cuda::std::chrono::days;
-    using weekday   = cuda::std::chrono::weekday;
+int main(int, char**) {
+  using sys_days = cuda::std::chrono::sys_days;
+  using days = cuda::std::chrono::days;
+  using weekday = cuda::std::chrono::weekday;
 
-    ASSERT_NOEXCEPT(weekday{cuda::std::declval<sys_days>()});
+  ASSERT_NOEXCEPT(weekday{cuda::std::declval<sys_days>()});
 
-    {
+  {
     constexpr sys_days sd{}; // 1-Jan-1970 was a Thursday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 4, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 4, "");
+  }
 
-    {
-    constexpr sys_days sd{days{10957+32}}; // 2-Feb-2000 was a Wednesday
+  {
+    constexpr sys_days sd{days{10957 + 32}}; // 2-Feb-2000 was a Wednesday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 3, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 3, "");
+  }
 
-
-    {
+  {
     constexpr sys_days sd{days{-10957}}; // 2-Jan-1940 was a Tuesday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 2, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 2, "");
+  }
 
-    {
-    sys_days sd{days{-(10957+34)}}; // 29-Nov-1939 was a Wednesday
+  {
+    sys_days sd{days{-(10957 + 34)}}; // 29-Nov-1939 was a Wednesday
     weekday wd{sd};
 
-    assert( wd.ok());
-    assert( wd.c_encoding() == 3);
-    }
+    assert(wd.ok());
+    assert(wd.c_encoding() == 3);
+  }
 
-    return 0;
+  return 0;
 }

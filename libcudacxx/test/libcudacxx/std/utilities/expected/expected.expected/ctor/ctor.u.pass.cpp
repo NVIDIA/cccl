@@ -33,42 +33,63 @@
 #include "test_macros.h"
 
 // Test Constraints:
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, int>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, int>,
+              "");
 
 // is_same_v<remove_cvref_t<U>, in_place_t>
 struct FromJustInplace {
   __host__ __device__ FromJustInplace(cuda::std::in_place_t);
 };
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t>, "");
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>, cuda::std::in_place_t const&>, "");
+static_assert(
+    !cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>,
+                                   cuda::std::in_place_t>,
+    "");
+static_assert(
+    !cuda::std::is_constructible_v<cuda::std::expected<FromJustInplace, int>,
+                                   cuda::std::in_place_t const&>,
+    "");
 
 // is_same_v<expected, remove_cvref_t<U>>
 // Note that result is true because it is covered by the constructors that take expected
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::expected<int, int>&>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>,
+                                            cuda::std::expected<int, int>&>,
+              "");
 
 // remove_cvref_t<U> is a specialization of unexpected
 // Note that result is true because it is covered by the constructors that take unexpected
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpected<int>&>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, int>,
+                                            cuda::std::unexpected<int>&>,
+              "");
 
 // !is_constructible_v<T, U>
 struct foo {};
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, foo>, "");
+static_assert(
+    !cuda::std::is_constructible_v<cuda::std::expected<int, int>, foo>, "");
 
 // test explicit(!is_convertible_v<U, T>)
 struct NotConvertible {
   __host__ __device__ explicit NotConvertible(int);
 };
-static_assert(cuda::std::is_convertible_v<int, cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_convertible_v<int, cuda::std::expected<NotConvertible, int>>, "");
+static_assert(cuda::std::is_convertible_v<int, cuda::std::expected<int, int> >,
+              "");
+static_assert(!cuda::std::is_convertible_v<
+                  int, cuda::std::expected<NotConvertible, int> >,
+              "");
 
 struct CopyOnly {
   int i;
   __host__ __device__ constexpr CopyOnly(int ii) : i(ii) {}
   CopyOnly(const CopyOnly&) = default;
-  __host__ __device__ CopyOnly(CopyOnly&&)      = delete;
-  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi, int ii) { return mi.i == ii; }
+  __host__ __device__ CopyOnly(CopyOnly&&) = delete;
+  __host__ __device__ friend constexpr bool operator==(const CopyOnly& mi,
+                                                       int ii) {
+    return mi.i == ii;
+  }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi, int ii) { return mi.i != ii; }
+  __host__ __device__ friend constexpr bool operator!=(const CopyOnly& mi,
+                                                       int ii) {
+    return mi.i != ii;
+  }
 #endif // TEST_STD_VER < 2020
 };
 

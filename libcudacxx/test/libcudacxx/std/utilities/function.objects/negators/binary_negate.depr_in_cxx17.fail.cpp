@@ -20,14 +20,17 @@
 #include "test_macros.h"
 
 struct Predicate {
-    typedef int first_argument_type;
-    typedef int second_argument_type;
-    bool operator()(first_argument_type, second_argument_type) const { return true; }
+  typedef int first_argument_type;
+  typedef int second_argument_type;
+  bool operator()(first_argument_type, second_argument_type) const {
+    return true;
+  }
 };
 
 int main(int, char**) {
-    cuda::std::binary_negate<Predicate> f((Predicate())); // expected-error{{'binary_negate<Predicate>' is deprecated}}
-    (void)f;
+  cuda::std::binary_negate<Predicate> f((
+      Predicate())); // expected-error{{'binary_negate<Predicate>' is deprecated}}
+  (void)f;
 
   return 0;
 }

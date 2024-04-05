@@ -15,14 +15,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <limits>
-
 #include <thrust/detail/config.h>
 #include <thrust/detail/type_traits.h>
+
+#include <limits>
 
 THRUST_NAMESPACE_BEGIN
 
 template <typename T>
-struct numeric_limits : std::numeric_limits<T> {};
+struct numeric_limits : std::numeric_limits<T>
+{};
 
 THRUST_NAMESPACE_END

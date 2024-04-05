@@ -37,14 +37,15 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <iterator>
-#include <thrust/system/cuda/config.h>
+#  include <thrust/distance.h>
+#  include <thrust/system/cuda/config.h>
+#  include <thrust/system/cuda/detail/for_each.h>
 
-#include <thrust/system/cuda/detail/for_each.h>
-#include <thrust/distance.h>
+#  include <iterator>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
+namespace cuda_cub
+{
 
 // for_each functor
 template <class Generator>
@@ -53,46 +54,33 @@ struct generate_f
   Generator generator;
 
   THRUST_FUNCTION
-  generate_f(Generator generator_) : generator(generator_) {}
+  generate_f(Generator generator_)
+      : generator(generator_)
+  {}
 
-  template<class T>
+  template <class T>
   THRUST_DEVICE_FUNCTION void operator()(T const& value)
   {
-    T & lvalue = const_cast<T&>(value);
-    lvalue = generator();
+    T& lvalue = const_cast<T&>(value);
+    lvalue    = generator();
   }
 };
 
 // for_each_n
-template <class Derived,
-          class OutputIt,
-          class Size,
-          class Generator>
+template <class Derived, class OutputIt, class Size, class Generator>
 OutputIt _CCCL_HOST_DEVICE
-generate_n(execution_policy<Derived> &policy,
-           OutputIt                   result,
-           Size                       count,
-           Generator                  generator)
+generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Generator generator)
 {
-  return cuda_cub::for_each_n(policy,
-                              result,
-                              count,
-                              generate_f<Generator>(generator));
+  return cuda_cub::for_each_n(policy, result, count, generate_f<Generator>(generator));
 }
 
-  // for_each
-template <class Derived,
-          class OutputIt,
-          class Generator>
-void _CCCL_HOST_DEVICE
-generate(execution_policy<Derived> &policy,
-         OutputIt                   first,
-         OutputIt                   last,
-         Generator                  generator)
+// for_each
+template <class Derived, class OutputIt, class Generator>
+void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
 {
   cuda_cub::generate_n(policy, first, thrust::distance(first, last), generator);
 }
 
-}    // namespace cuda_cub
+} // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -24,17 +24,16 @@ int main(int, char**) {
   typedef cpp17_input_iterator<const int*> Iter;
   {
     // expected-error@*:* {{cuda::std::min_element requires a ForwardIterator}}
-    (void) cuda::std::min_element(Iter(b), Iter(e));
+    (void)cuda::std::min_element(Iter(b), Iter(e));
   }
   {
     // expected-error@*:* {{cuda::std::max_element requires a ForwardIterator}}
-    (void) cuda::std::max_element(Iter(b), Iter(e));
+    (void)cuda::std::max_element(Iter(b), Iter(e));
   }
   {
     // expected-error@*:* {{cuda::std::minmax_element requires a ForwardIterator}}
-    (void) cuda::std::minmax_element(Iter(b), Iter(e));
+    (void)cuda::std::minmax_element(Iter(b), Iter(e));
   }
-
 
   return 0;
 }

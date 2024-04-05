@@ -19,25 +19,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using month_weekday   = cuda::std::chrono::month_weekday;
-    using month           = cuda::std::chrono::month;
-    using weekday         = cuda::std::chrono::weekday;
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
+int main(int, char**) {
+  using month_weekday = cuda::std::chrono::month_weekday;
+  using month = cuda::std::chrono::month;
+  using weekday = cuda::std::chrono::weekday;
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-    constexpr weekday Sunday = cuda::std::chrono::Sunday;
+  constexpr weekday Sunday = cuda::std::chrono::Sunday;
 
-    ASSERT_NOEXCEPT(                 cuda::std::declval<const month_weekday>().month());
-    ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const month_weekday>().month()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const month_weekday>().month());
+  ASSERT_SAME_TYPE(month,
+                   decltype(cuda::std::declval<const month_weekday>().month()));
 
-    static_assert( month_weekday{}.month() == month{}, "");
+  static_assert(month_weekday{}.month() == month{}, "");
 
-    for (unsigned i = 1; i <= 50; ++i)
-    {
-        month_weekday md(month{i}, weekday_indexed{Sunday, 1});
-        assert( static_cast<unsigned>(md.month()) == i);
-    }
+  for (unsigned i = 1; i <= 50; ++i) {
+    month_weekday md(month{i}, weekday_indexed{Sunday, 1});
+    assert(static_cast<unsigned>(md.month()) == i);
+  }
 
   return 0;
 }

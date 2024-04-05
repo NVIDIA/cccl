@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,23 +35,16 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename BidirectionalIterator>
+_CCCL_HOST_DEVICE void
+reverse(thrust::execution_policy<DerivedPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last);
 
-template<typename DerivedPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE
-  void reverse(thrust::execution_policy<DerivedPolicy> &exec,
-               BidirectionalIterator first,
-               BidirectionalIterator last);
-
-
-template<typename DerivedPolicy,
-         typename BidirectionalIterator,
-         typename OutputIterator>
-_CCCL_HOST_DEVICE
-  OutputIterator reverse_copy(thrust::execution_policy<DerivedPolicy> &exec,
-                              BidirectionalIterator first,
-                              BidirectionalIterator last,
-                              OutputIterator result);
-
+template <typename DerivedPolicy, typename BidirectionalIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  BidirectionalIterator first,
+  BidirectionalIterator last,
+  OutputIterator result);
 
 } // end namespace generic
 } // end namespace detail
@@ -60,4 +52,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/reverse.inl>
-

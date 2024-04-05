@@ -23,20 +23,19 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using month     = cuda::std::chrono::month;
-    using month_day_last = cuda::std::chrono::month_day_last;
+int main(int, char**) {
+  using month = cuda::std::chrono::month;
+  using month_day_last = cuda::std::chrono::month_day_last;
 
-    ASSERT_NOEXCEPT(month_day_last{month{1}});
+  ASSERT_NOEXCEPT(month_day_last{month{1}});
 
-    constexpr month_day_last md0{month{}};
-    static_assert( md0.month() == month{}, "");
-    static_assert(!md0.ok(),               "");
+  constexpr month_day_last md0{month{}};
+  static_assert(md0.month() == month{}, "");
+  static_assert(!md0.ok(), "");
 
-    constexpr month_day_last md1{cuda::std::chrono::January};
-    static_assert( md1.month() == cuda::std::chrono::January, "");
-    static_assert( md1.ok(),                            "");
+  constexpr month_day_last md1{cuda::std::chrono::January};
+  static_assert(md1.month() == cuda::std::chrono::January, "");
+  static_assert(md1.ok(), "");
 
   return 0;
 }

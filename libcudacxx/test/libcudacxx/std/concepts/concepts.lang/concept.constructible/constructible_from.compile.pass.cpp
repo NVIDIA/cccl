@@ -13,7 +13,6 @@
 // concept constructible_from;
 //    destructible<T> && is_constructible_v<T, Args...>;
 
-
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
@@ -52,13 +51,16 @@ private:
 
 template <class T>
 struct NoexceptDependant {
-  __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
+  __host__ __device__ ~NoexceptDependant()
+      noexcept(cuda::std::is_same_v<T, int>);
 };
 
 template <class T, class... Args>
 __host__ __device__ void test() {
   static_assert(cuda::std::constructible_from<T, Args...> ==
-                (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>), "");
+                    (cuda::std::destructible<T> &&
+                     cuda::std::is_constructible_v<T, Args...>),
+                "");
 }
 
 __host__ __device__ void test() {
@@ -76,9 +78,7 @@ __host__ __device__ void test() {
   test<double, int>();
   test<double, float>();
 
-  NV_IF_TARGET(NV_IS_HOST,(
-      test<double, long double>();
-  ))
+  NV_IF_TARGET(NV_IS_HOST, (test<double, long double>();))
 
   test<void>();
   test<void, bool>();

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -30,14 +29,12 @@
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename Assignable1, typename Assignable2>
-_CCCL_HOST_DEVICE
-inline void swap(Assignable1 &a, Assignable2 &b)
+template <typename Assignable1, typename Assignable2>
+_CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b)
 {
   Assignable1 temp = a;
-  a = b;
-  b = temp;
+  a                = b;
+  b                = temp;
 } // end swap()
 
 THRUST_NAMESPACE_END
-

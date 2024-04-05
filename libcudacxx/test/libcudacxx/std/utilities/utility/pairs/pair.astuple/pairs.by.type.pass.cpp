@@ -22,10 +22,9 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    // cuda/std/complex not supported
-    /*
+int main(int, char**) {
+  // cuda/std/complex not supported
+  /*
     typedef cuda::std::complex<float> cf;
     {
     auto t1 = cuda::std::make_pair<int, cf> ( 42, { 1,2 } );
@@ -34,16 +33,16 @@ int main(int, char**)
     assert ( cuda::std::get<cf>(t1).imag() == 2 );
     }
     */
-    {
-    const cuda::std::pair<int, const int> p1 { 1, 2 };
-    const int &i1 = cuda::std::get<int>(p1);
-    const int &i2 = cuda::std::get<const int>(p1);
-    assert ( i1 == 1 );
-    assert ( i2 == 2 );
-    }
+  {
+    const cuda::std::pair<int, const int> p1{1, 2};
+    const int& i1 = cuda::std::get<int>(p1);
+    const int& i2 = cuda::std::get<const int>(p1);
+    assert(i1 == 1);
+    assert(i2 == 2);
+  }
 
-    // cuda/std/memory not supported
-    /*
+  // cuda/std/memory not supported
+  /*
     {
     typedef cuda::std::unique_ptr<int> upint;
     cuda::std::pair<upint, int> t(upint(new int(4)), 42);
@@ -67,31 +66,43 @@ int main(int, char**)
     }
     */
 
-    {
+  {
     int x = 42;
     int const y = 43;
     cuda::std::pair<int&, int const&> const p(x, y);
-    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<int&>(cuda::std::move(p)))>::value, "");
+    static_assert(cuda::std::is_same<int&, decltype(cuda::std::get<int&>(
+                                               cuda::std::move(p)))>::value,
+                  "");
     static_assert(noexcept(cuda::std::get<int&>(cuda::std::move(p))), "");
-    static_assert(cuda::std::is_same<int const&, decltype(cuda::std::get<int const&>(cuda::std::move(p)))>::value, "");
+    static_assert(
+        cuda::std::is_same<int const&, decltype(cuda::std::get<int const&>(
+                                           cuda::std::move(p)))>::value,
+        "");
     static_assert(noexcept(cuda::std::get<int const&>(cuda::std::move(p))), "");
-    }
+  }
 
-    {
+  {
     int x = 42;
     int const y = 43;
-    cuda::std::pair<int&&, int const&&> const p(cuda::std::move(x), cuda::std::move(y));
-    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(cuda::std::move(p)))>::value, "");
+    cuda::std::pair<int&&, int const&&> const p(cuda::std::move(x),
+                                                cuda::std::move(y));
+    static_assert(cuda::std::is_same<int&&, decltype(cuda::std::get<int&&>(
+                                                cuda::std::move(p)))>::value,
+                  "");
     static_assert(noexcept(cuda::std::get<int&&>(cuda::std::move(p))), "");
-    static_assert(cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(cuda::std::move(p)))>::value, "");
-    static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(p))), "");
-    }
+    static_assert(
+        cuda::std::is_same<int const&&, decltype(cuda::std::get<int const&&>(
+                                            cuda::std::move(p)))>::value,
+        "");
+    static_assert(noexcept(cuda::std::get<int const&&>(cuda::std::move(p))),
+                  "");
+  }
 
-    {
-    constexpr const cuda::std::pair<int, const int> p { 1, 2 };
+  {
+    constexpr const cuda::std::pair<int, const int> p{1, 2};
     static_assert(cuda::std::get<int>(cuda::std::move(p)) == 1, "");
     static_assert(cuda::std::get<const int>(cuda::std::move(p)) == 2, "");
-    }
+  }
 
   return 0;
 }

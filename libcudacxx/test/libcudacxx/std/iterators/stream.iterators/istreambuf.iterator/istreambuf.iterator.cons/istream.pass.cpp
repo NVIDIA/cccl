@@ -20,34 +20,30 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
-        cuda::std::istringstream inf;
-        cuda::std::istreambuf_iterator<char> i(inf);
-        assert(i == cuda::std::istreambuf_iterator<char>());
-    }
-    {
-        cuda::std::istringstream inf("a");
-        cuda::std::istreambuf_iterator<char> i(inf);
-        assert(i != cuda::std::istreambuf_iterator<char>());
-    }
-    {
-        cuda::std::wistringstream inf;
-        cuda::std::istreambuf_iterator<wchar_t> i(inf);
-        assert(i == cuda::std::istreambuf_iterator<wchar_t>());
-    }
-    {
-        cuda::std::wistringstream inf(L"a");
-        cuda::std::istreambuf_iterator<wchar_t> i(inf);
-        assert(i != cuda::std::istreambuf_iterator<wchar_t>());
-    }
+int main(int, char**) {
+  {
+    cuda::std::istringstream inf;
+    cuda::std::istreambuf_iterator<char> i(inf);
+    assert(i == cuda::std::istreambuf_iterator<char>());
+  }
+  {
+    cuda::std::istringstream inf("a");
+    cuda::std::istreambuf_iterator<char> i(inf);
+    assert(i != cuda::std::istreambuf_iterator<char>());
+  }
+  {
+    cuda::std::wistringstream inf;
+    cuda::std::istreambuf_iterator<wchar_t> i(inf);
+    assert(i == cuda::std::istreambuf_iterator<wchar_t>());
+  }
+  {
+    cuda::std::wistringstream inf(L"a");
+    cuda::std::istreambuf_iterator<wchar_t> i(inf);
+    assert(i != cuda::std::istreambuf_iterator<wchar_t>());
+  }
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

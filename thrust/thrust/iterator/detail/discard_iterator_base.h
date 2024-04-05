@@ -26,33 +26,30 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/detail/any_assign.h>
+#include <thrust/iterator/iterator_adaptor.h>
+
 #include <cstddef> // for std::ptrdiff_t
 
 THRUST_NAMESPACE_BEGIN
 
 // forward declaration of discard_iterator
-template<typename> class discard_iterator;
+template <typename>
+class discard_iterator;
 
 namespace detail
 {
 
-
-template<typename System>
-  struct discard_iterator_base
+template <typename System>
+struct discard_iterator_base
 {
   // XXX value_type should actually be void
   //     but this interferes with zip_iterator<discard_iterator>
-  typedef any_assign         value_type;
-  typedef any_assign&        reference;
-  typedef std::ptrdiff_t     incrementable;
+  typedef any_assign value_type;
+  typedef any_assign& reference;
+  typedef std::ptrdiff_t incrementable;
 
-  typedef typename thrust::counting_iterator<
-    incrementable,
-    System,
-    thrust::random_access_traversal_tag
-  > base_iterator;
+  typedef typename thrust::counting_iterator< incrementable, System, thrust::random_access_traversal_tag > base_iterator;
 
   typedef typename thrust::iterator_adaptor<
     discard_iterator<System>,
@@ -60,13 +57,10 @@ template<typename System>
     value_type,
     typename thrust::iterator_system<base_iterator>::type,
     typename thrust::iterator_traversal<base_iterator>::type,
-    reference
-  > type;
+    reference >
+    type;
 }; // end discard_iterator_base
 
-
-} // end detail
+} // namespace detail
 
 THRUST_NAMESPACE_END
-
-

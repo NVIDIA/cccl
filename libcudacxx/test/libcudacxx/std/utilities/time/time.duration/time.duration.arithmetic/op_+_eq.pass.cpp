@@ -18,29 +18,27 @@
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2014
-__host__ __device__
-constexpr bool test_constexpr()
-{
-    cuda::std::chrono::seconds s(3);
-    s += cuda::std::chrono::seconds(2);
-    if (s.count() != 5) return false;
-    s += cuda::std::chrono::minutes(2);
-    return s.count() == 125;
+__host__ __device__ constexpr bool test_constexpr() {
+  cuda::std::chrono::seconds s(3);
+  s += cuda::std::chrono::seconds(2);
+  if (s.count() != 5)
+    return false;
+  s += cuda::std::chrono::minutes(2);
+  return s.count() == 125;
 }
 #endif
 
-int main(int, char**)
-{
-    {
+int main(int, char**) {
+  {
     cuda::std::chrono::seconds s(3);
     s += cuda::std::chrono::seconds(2);
     assert(s.count() == 5);
     s += cuda::std::chrono::minutes(2);
     assert(s.count() == 125);
-    }
+  }
 
 #if TEST_STD_VER > 2014
-    static_assert(test_constexpr(), "");
+  static_assert(test_constexpr(), "");
 #endif
 
   return 0;

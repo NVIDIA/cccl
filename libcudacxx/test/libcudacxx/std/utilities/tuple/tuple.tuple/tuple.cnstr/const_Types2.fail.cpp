@@ -14,16 +14,15 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 #include <cuda/std/tuple>
 #include <cuda/std/cassert>
 
-int main(int, char**)
-{
-    // cuda::std::string not supported
-    {
-        cuda::std::tuple<int, char*, cuda::std::string, double&> t(2, nullptr, "text");
-    }
+int main(int, char**) {
+  // cuda::std::string not supported
+  {
+    cuda::std::tuple<int, char*, cuda::std::string, double&> t(2, nullptr,
+                                                               "text");
+  }
 
   return 0;
 }

@@ -12,8 +12,4 @@
    'libcpp-has-no-threads' is available iff _LIBCUDACXX_HAS_NO_THREADS is defined
 #endif
 
-int main(int, char**)
-{
-
-  return 0;
-}
+int main(int, char**) { return 0; }

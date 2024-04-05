@@ -16,7 +16,6 @@
 // bool operator>(array<T, N> const&, array<T, N> const&);
 // bool operator>=(array<T, N> const&, array<T, N> const&);
 
-
 #include <cuda/std/array>
 #include <cuda/std/vector>
 #include <cuda/std/cassert>
@@ -36,33 +35,33 @@ void test_compare(const Array& LHS, const Array& RHS) {
   assert((LHS >= RHS) == (LHSV >= RHSV));
 }
 
-template <int Dummy> struct NoCompare {};
+template <int Dummy>
+struct NoCompare {};
 
-int main(int, char**)
-{
+int main(int, char**) {
   {
     typedef NoCompare<0> T;
     typedef cuda::std::array<T, 3> C;
     C c1 = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
-    TEST_IGNORE_NODISCARD (c1 == c1);
-    TEST_IGNORE_NODISCARD (c1 < c1);
+    TEST_IGNORE_NODISCARD(c1 == c1);
+    TEST_IGNORE_NODISCARD(c1 < c1);
   }
   {
     typedef NoCompare<1> T;
     typedef cuda::std::array<T, 3> C;
     C c1 = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
-    TEST_IGNORE_NODISCARD (c1 != c1);
-    TEST_IGNORE_NODISCARD (c1 > c1);
+    TEST_IGNORE_NODISCARD(c1 != c1);
+    TEST_IGNORE_NODISCARD(c1 > c1);
   }
   {
     typedef NoCompare<2> T;
     typedef cuda::std::array<T, 0> C;
     C c1 = {{}};
     // expected-error@*:* 2 {{invalid operands to binary expression}}
-    TEST_IGNORE_NODISCARD (c1 == c1);
-    TEST_IGNORE_NODISCARD (c1 < c1);
+    TEST_IGNORE_NODISCARD(c1 == c1);
+    TEST_IGNORE_NODISCARD(c1 < c1);
   }
 
   return 0;

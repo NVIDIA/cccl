@@ -35,23 +35,13 @@ namespace tbb
 namespace detail
 {
 
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
+OutputIterator
+copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred);
 
-template<typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-  OutputIterator copy_if(tag,
-                         InputIterator1 first,
-                         InputIterator1 last,
-                         InputIterator2 stencil,
-                         OutputIterator result,
-                         Predicate pred);
-
-
-} // end detail
-} // end tbb
-} // end system
+} // namespace detail
+} // namespace tbb
+} // namespace system
 THRUST_NAMESPACE_END
 
 #include <thrust/system/tbb/detail/copy_if.inl>
-

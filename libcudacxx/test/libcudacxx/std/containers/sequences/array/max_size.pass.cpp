@@ -18,36 +18,34 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
-{
-    {
-        typedef cuda::std::array<int, 2> C;
-        C c = {};
-        ASSERT_NOEXCEPT(c.max_size());
-        assert(c.max_size() == 2);
-    }
-    {
-        typedef cuda::std::array<int, 0> C;
-        C c = {};
-        ASSERT_NOEXCEPT(c.max_size());
-        assert(c.max_size() == 0);
-    }
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+  {
+    typedef cuda::std::array<int, 2> C;
+    C c = {};
+    ASSERT_NOEXCEPT(c.max_size());
+    assert(c.max_size() == 2);
+  }
+  {
+    typedef cuda::std::array<int, 0> C;
+    C c = {};
+    ASSERT_NOEXCEPT(c.max_size());
+    assert(c.max_size() == 0);
+  }
 
-    return true;
+  return true;
 }
 
-int main(int, char**)
-{
-    tests();
+int main(int, char**) {
+  tests();
 #if TEST_STD_VER >= 2014
-    static_assert(tests(), "");
+  static_assert(tests(), "");
 #endif
 
-    // Sanity check for constexpr in C++11
-    {
-        constexpr cuda::std::array<int, 3> array = {};
-        static_assert(array.max_size() == 3, "");
-    }
+  // Sanity check for constexpr in C++11
+  {
+    constexpr cuda::std::array<int, 3> array = {};
+    static_assert(array.max_size() == 3, "");
+  }
 
-    return 0;
+  return 0;
 }

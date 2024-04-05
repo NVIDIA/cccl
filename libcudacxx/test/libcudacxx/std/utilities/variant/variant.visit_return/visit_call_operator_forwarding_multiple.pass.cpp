@@ -26,48 +26,50 @@
 #include "variant_test_helpers.h"
 
 struct almost_string {
-    const char * ptr;
+  const char* ptr;
 
-    __host__ __device__
-    almost_string(const char * ptr) : ptr(ptr) {}
+  __host__ __device__ almost_string(const char* ptr) : ptr(ptr) {}
 
-    __host__ __device__
-    friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
-        return lhs.ptr == rhs.ptr;
-    }
+  __host__ __device__ friend bool operator==(const almost_string& lhs,
+                                             const almost_string& rhs) {
+    return lhs.ptr == rhs.ptr;
+  }
 };
 
 template <typename ReturnType>
-__host__ __device__
-void test_call_operator_forwarding() {
+__host__ __device__ void test_call_operator_forwarding() {
   using Fn = ForwardingCallObject;
   Fn obj{};
-  const Fn &cobj = obj;
+  const Fn& cobj = obj;
   { // test call operator forwarding - multi variant, multi arg
     using V = cuda::std::variant<int, long, double>;
-    using V2 = cuda::std::variant<int *, almost_string>;
+    using V2 = cuda::std::variant<int*, almost_string>;
     V v(42l);
     V2 v2("hello");
     cuda::std::visit<int>(obj, v, v2);
-    assert((Fn::check_call<long &, almost_string &>(CT_NonConst | CT_LValue)));
+    assert((Fn::check_call<long&, almost_string&>(CT_NonConst | CT_LValue)));
     cuda::std::visit<ReturnType>(cobj, v, v2);
-    assert((Fn::check_call<long &, almost_string &>(CT_Const | CT_LValue)));
+    assert((Fn::check_call<long&, almost_string&>(CT_Const | CT_LValue)));
     cuda::std::visit<ReturnType>(cuda::std::move(obj), v, v2);
-    assert((Fn::check_call<long &, almost_string &>(CT_NonConst | CT_RValue)));
+    assert((Fn::check_call<long&, almost_string&>(CT_NonConst | CT_RValue)));
     cuda::std::visit<ReturnType>(cuda::std::move(cobj), v, v2);
-    assert((Fn::check_call<long &, almost_string &>(CT_Const | CT_RValue)));
+    assert((Fn::check_call<long&, almost_string&>(CT_Const | CT_RValue)));
   }
   {
     using V = cuda::std::variant<int, long, double, almost_string>;
     V v1(42l), v2("hello"), v3(101), v4(1.1);
     cuda::std::visit<ReturnType>(obj, v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_NonConst | CT_LValue)));
+    assert((Fn::check_call<long&, almost_string&, int&, double&>(CT_NonConst |
+                                                                 CT_LValue)));
     cuda::std::visit<ReturnType>(cobj, v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_Const | CT_LValue)));
+    assert((Fn::check_call<long&, almost_string&, int&, double&>(CT_Const |
+                                                                 CT_LValue)));
     cuda::std::visit<ReturnType>(cuda::std::move(obj), v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_NonConst | CT_RValue)));
+    assert((Fn::check_call<long&, almost_string&, int&, double&>(CT_NonConst |
+                                                                 CT_RValue)));
     cuda::std::visit<ReturnType>(cuda::std::move(cobj), v1, v2, v3, v4);
-    assert((Fn::check_call<long &, almost_string &, int &, double &>(CT_Const | CT_RValue)));
+    assert((Fn::check_call<long&, almost_string&, int&, double&>(CT_Const |
+                                                                 CT_RValue)));
   }
 }
 

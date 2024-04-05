@@ -25,41 +25,38 @@
 #endif
 
 #ifdef TEST_COMPILER_MSVC
-#pragma warning(disable: 4244) // conversion from 'X' to 'Y', possible loss of data
+#pragma warning(                                                               \
+    disable : 4244) // conversion from 'X' to 'Y', possible loss of data
 #endif
 
-int main(int, char**)
-{
-    {
-        cuda::std::ostringstream outf;
-        cuda::std::ostream_iterator<int> i(outf);
-        i = 2.4;
-        assert(outf.str() == "2");
-    }
-    {
-        cuda::std::ostringstream outf;
-        cuda::std::ostream_iterator<int> i(outf, ", ");
-        i = 2.4;
-        assert(outf.str() == "2, ");
-    }
-    {
-        cuda::std::wostringstream outf;
-        cuda::std::ostream_iterator<int, wchar_t> i(outf);
-        i = 2.4;
-        assert(outf.str() == L"2");
-    }
-    {
-        cuda::std::wostringstream outf;
-        cuda::std::ostream_iterator<int, wchar_t> i(outf, L", ");
-        i = 2.4;
-        assert(outf.str() == L"2, ");
-    }
+int main(int, char**) {
+  {
+    cuda::std::ostringstream outf;
+    cuda::std::ostream_iterator<int> i(outf);
+    i = 2.4;
+    assert(outf.str() == "2");
+  }
+  {
+    cuda::std::ostringstream outf;
+    cuda::std::ostream_iterator<int> i(outf, ", ");
+    i = 2.4;
+    assert(outf.str() == "2, ");
+  }
+  {
+    cuda::std::wostringstream outf;
+    cuda::std::ostream_iterator<int, wchar_t> i(outf);
+    i = 2.4;
+    assert(outf.str() == L"2");
+  }
+  {
+    cuda::std::wostringstream outf;
+    cuda::std::ostream_iterator<int, wchar_t> i(outf, L", ");
+    i = 2.4;
+    assert(outf.str() == L"2, ");
+  }
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

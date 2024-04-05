@@ -47,93 +47,77 @@ namespace functional
 template <typename... Eval>
 class composite;
 
-template<typename Eval0, typename Eval1>
-  class composite<Eval0, Eval1>
+template <typename Eval0, typename Eval1>
+class composite<Eval0, Eval1>
 {
-  public:
-    template<typename Env>
-      struct result
-    {
-      typedef typename Eval0::template result<
-        thrust::tuple<
-          typename Eval1::template result<Env>::type
-        >
-      >::type type;
-    };
+public:
+  template <typename Env>
+  struct result
+  {
+    typedef typename Eval0::template result< thrust::tuple< typename Eval1::template result<Env>::type > >::type type;
+  };
 
-    _CCCL_HOST_DEVICE
-    composite(const Eval0 &e0, const Eval1 &e1)
-      : m_eval0(e0),
-        m_eval1(e1)
-    {}
+  _CCCL_HOST_DEVICE composite(const Eval0& e0, const Eval1& e1)
+      : m_eval0(e0)
+      , m_eval1(e1)
+  {}
 
-    template<typename Env>
-    _CCCL_HOST_DEVICE
-    typename result<Env>::type
-    eval(const Env &x) const
-    {
-      typename Eval1::template result<Env>::type result1 = m_eval1.eval(x);
-      return m_eval0.eval(thrust::tie(result1));
-    }
+  template <typename Env>
+  _CCCL_HOST_DEVICE typename result<Env>::type eval(const Env& x) const
+  {
+    typename Eval1::template result<Env>::type result1 = m_eval1.eval(x);
+    return m_eval0.eval(thrust::tie(result1));
+  }
 
-  private:
-    Eval0 m_eval0;
-    Eval1 m_eval1;
+private:
+  Eval0 m_eval0;
+  Eval1 m_eval1;
 }; // end composite<Eval0,Eval1>
 
-template<typename Eval0, typename Eval1, typename Eval2>
-  class composite<Eval0, Eval1, Eval2>
+template <typename Eval0, typename Eval1, typename Eval2>
+class composite<Eval0, Eval1, Eval2>
 {
-  public:
-    template<typename Env>
-      struct result
-    {
-      typedef typename Eval0::template result<
-        thrust::tuple<
-          typename Eval1::template result<Env>::type,
-          typename Eval2::template result<Env>::type
-        >
-      >::type type;
-    };
+public:
+  template <typename Env>
+  struct result
+  {
+    typedef typename Eval0::template result<
+      thrust::tuple< typename Eval1::template result<Env>::type, typename Eval2::template result<Env>::type > >::type
+      type;
+  };
 
-    _CCCL_HOST_DEVICE
-    composite(const Eval0 &e0, const Eval1 &e1, const Eval2 &e2)
-      : m_eval0(e0),
-        m_eval1(e1),
-        m_eval2(e2)
-    {}
+  _CCCL_HOST_DEVICE composite(const Eval0& e0, const Eval1& e1, const Eval2& e2)
+      : m_eval0(e0)
+      , m_eval1(e1)
+      , m_eval2(e2)
+  {}
 
-    template<typename Env>
-    _CCCL_HOST_DEVICE
-    typename result<Env>::type
-    eval(const Env &x) const
-    {
-      typename Eval1::template result<Env>::type result1 = m_eval1.eval(x);
-      typename Eval2::template result<Env>::type result2 = m_eval2.eval(x);
-      return m_eval0.eval(thrust::tie(result1,result2));
-    }
+  template <typename Env>
+  _CCCL_HOST_DEVICE typename result<Env>::type eval(const Env& x) const
+  {
+    typename Eval1::template result<Env>::type result1 = m_eval1.eval(x);
+    typename Eval2::template result<Env>::type result2 = m_eval2.eval(x);
+    return m_eval0.eval(thrust::tie(result1, result2));
+  }
 
-  private:
-    Eval0 m_eval0;
-    Eval1 m_eval1;
-    Eval2 m_eval2;
+private:
+  Eval0 m_eval0;
+  Eval1 m_eval1;
+  Eval2 m_eval2;
 }; // end composite<Eval0,Eval1,Eval2>
 
-template<typename Eval0, typename Eval1>
-_CCCL_HOST_DEVICE
-  actor<composite<Eval0,Eval1> > compose(const Eval0 &e0, const Eval1 &e1)
+template <typename Eval0, typename Eval1>
+_CCCL_HOST_DEVICE actor<composite<Eval0, Eval1> > compose(const Eval0& e0, const Eval1& e1)
 {
-  return actor<composite<Eval0,Eval1> >(composite<Eval0,Eval1>(e0,e1));
+  return actor<composite<Eval0, Eval1> >(composite<Eval0, Eval1>(e0, e1));
 }
 
-template<typename Eval0, typename Eval1, typename Eval2>
-_CCCL_HOST_DEVICE
-  actor<composite<Eval0,Eval1,Eval2> > compose(const Eval0 &e0, const Eval1 &e1, const Eval2 &e2)
+template <typename Eval0, typename Eval1, typename Eval2>
+_CCCL_HOST_DEVICE actor<composite<Eval0, Eval1, Eval2> > compose(const Eval0& e0, const Eval1& e1, const Eval2& e2)
 {
-  return actor<composite<Eval0,Eval1,Eval2> >(composite<Eval0,Eval1,Eval2>(e0,e1,e2));
+  return actor<composite<Eval0, Eval1, Eval2> >(composite<Eval0, Eval1, Eval2>(e0, e1, e2));
 }
 
-} // end functional
-} // end detail
+} // namespace functional
+} // namespace detail
 THRUST_NAMESPACE_END
-

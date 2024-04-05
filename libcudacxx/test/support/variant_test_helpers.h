@@ -24,7 +24,7 @@
 // FIXME: Currently the variant<T&> tests are disabled using this macro.
 #define TEST_VARIANT_HAS_NO_REFERENCES
 #ifdef _LIBCPP_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
-# define TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
+#define TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
 #endif
 
 #ifdef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
@@ -43,8 +43,8 @@ struct CopyThrows {
 struct MoveThrows {
   static int alive;
   MoveThrows() { ++alive; }
-  MoveThrows(MoveThrows const&) {++alive;}
-  MoveThrows(MoveThrows&&) {  throw 42; }
+  MoveThrows(MoveThrows const&) { ++alive; }
+  MoveThrows(MoveThrows&&) { throw 42; }
   MoveThrows& operator=(MoveThrows const&) { return *this; }
   MoveThrows& operator=(MoveThrows&&) { throw 42; }
   ~MoveThrows() { --alive; }
@@ -56,20 +56,14 @@ struct MakeEmptyT {
   static int alive;
   MakeEmptyT() { ++alive; }
   MakeEmptyT(MakeEmptyT const&) {
-      ++alive;
-      // Don't throw from the copy constructor since variant's assignment
-      // operator performs a copy before committing to the assignment.
+    ++alive;
+    // Don't throw from the copy constructor since variant's assignment
+    // operator performs a copy before committing to the assignment.
   }
-  MakeEmptyT(MakeEmptyT &&) {
-      throw 42;
-  }
-  MakeEmptyT& operator=(MakeEmptyT const&) {
-      throw 42;
-  }
-  MakeEmptyT& operator=(MakeEmptyT&&) {
-      throw 42;
-  }
-   ~MakeEmptyT() { --alive; }
+  MakeEmptyT(MakeEmptyT&&) { throw 42; }
+  MakeEmptyT& operator=(MakeEmptyT const&) { throw 42; }
+  MakeEmptyT& operator=(MakeEmptyT&&) { throw 42; }
+  ~MakeEmptyT() { --alive; }
 };
 static_assert(cuda::std::is_swappable_v<MakeEmptyT>, ""); // required for test
 
@@ -77,13 +71,13 @@ int MakeEmptyT::alive = 0;
 
 template <class Variant>
 void makeEmpty(Variant& v) {
-    Variant v2(cuda::std::in_place_type<MakeEmptyT>);
-    try {
-        v = cuda::std::move(v2);
-        assert(false);
-    } catch (...) {
-        assert(v.valueless_by_exception());
-    }
+  Variant v2(cuda::std::in_place_type<MakeEmptyT>);
+  try {
+    v = cuda::std::move(v2);
+    assert(false);
+  } catch (...) {
+    assert(v.valueless_by_exception());
+  }
 }
 #endif // TEST_HAS_NO_EXCEPTIONS
 
@@ -95,8 +89,8 @@ enum CallType : unsigned {
   CT_RValue = 8
 };
 
-__host__ __device__
-inline constexpr CallType operator|(CallType LHS, CallType RHS) {
+__host__ __device__ inline constexpr CallType operator|(CallType LHS,
+                                                        CallType RHS) {
   return static_cast<CallType>(static_cast<unsigned>(LHS) |
                                static_cast<unsigned>(RHS));
 }
@@ -104,41 +98,40 @@ inline constexpr CallType operator|(CallType LHS, CallType RHS) {
 struct ForwardingCallObject {
 
   template <class... Args>
-  __host__ __device__
-  ForwardingCallObject& operator()(Args&&...) & {
-    set_call<Args &&...>(CT_NonConst | CT_LValue);
+  __host__ __device__ ForwardingCallObject& operator()(Args&&...) & {
+    set_call<Args&&...>(CT_NonConst | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__
-  const ForwardingCallObject& operator()(Args&&...) const & {
-    set_call<Args &&...>(CT_Const | CT_LValue);
+  __host__ __device__ const ForwardingCallObject& operator()(Args&&...) const& {
+    set_call<Args&&...>(CT_Const | CT_LValue);
     return *this;
   }
 
   template <class... Args>
-  __host__ __device__
-  ForwardingCallObject&& operator()(Args&&...) && {
-    set_call<Args &&...>(CT_NonConst | CT_RValue);
+  __host__ __device__ ForwardingCallObject&& operator()(Args&&...) && {
+    set_call<Args&&...>(CT_NonConst | CT_RValue);
     return cuda::std::move(*this);
   }
 
   template <class... Args>
-  __host__ __device__
-  const ForwardingCallObject&& operator()(Args&&...) const && {
-    set_call<Args &&...>(CT_Const | CT_RValue);
+  __host__ __device__ const ForwardingCallObject&&
+  operator()(Args&&...) const&& {
+    set_call<Args&&...>(CT_Const | CT_RValue);
     return cuda::std::move(*this);
   }
 
-  template <class... Args> __host__ __device__ static void set_call(CallType type) {
+  template <class... Args>
+  __host__ __device__ static void set_call(CallType type) {
     assert(last_call_type() == CT_None);
     assert(last_call_args() == nullptr);
     last_call_type() = type;
     last_call_args() = cuda::std::addressof(makeArgumentID<Args...>());
   }
 
-  template <class... Args> __host__ __device__ static bool check_call(CallType type) {
+  template <class... Args>
+  __host__ __device__ static bool check_call(CallType type) {
     bool result = last_call_type() == type && last_call_args() &&
                   *last_call_args() == makeArgumentID<Args...>();
     last_call_type() = CT_None;
@@ -147,24 +140,22 @@ struct ForwardingCallObject {
   }
 
   // To check explicit return type for visit<R>
-  __host__ __device__
-  constexpr operator int() const
-  {
-    return 0;
-  }
+  __host__ __device__ constexpr operator int() const { return 0; }
 
   STATIC_MEMBER_VAR(last_call_type, CallType);
-  STATIC_MEMBER_VAR(last_call_args, const TypeID *);
+  STATIC_MEMBER_VAR(last_call_args, const TypeID*);
 };
 
 struct ReturnFirst {
-  template <class... Args> __host__ __device__ constexpr int operator()(int f, Args &&...) const {
+  template <class... Args>
+  __host__ __device__ constexpr int operator()(int f, Args&&...) const {
     return f;
   }
 };
 
 struct ReturnArity {
-  template <class... Args> __host__ __device__ constexpr int operator()(Args &&...) const {
+  template <class... Args>
+  __host__ __device__ constexpr int operator()(Args&&...) const {
     return sizeof...(Args);
   }
 };

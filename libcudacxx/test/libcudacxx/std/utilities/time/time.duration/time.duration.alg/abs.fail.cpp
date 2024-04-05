@@ -18,14 +18,12 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 
 typedef cuda::std::chrono::duration<unsigned> unsigned_secs;
 
-int main(int, char**)
-{
-    cuda::std::chrono::abs(unsigned_secs(0));
+int main(int, char**) {
+  cuda::std::chrono::abs(unsigned_secs(0));
 
   return 0;
 }

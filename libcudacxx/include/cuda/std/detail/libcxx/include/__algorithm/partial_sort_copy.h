@@ -46,8 +46,7 @@ template <class _AlgPolicy,
           class _Sentinel2,
           class _Proj1,
           class _Proj2>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _RandomAccessIterator>
-__partial_sort_copy(
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_InputIterator, _RandomAccessIterator> __partial_sort_copy(
   _InputIterator __first,
   _Sentinel1 __last,
   _RandomAccessIterator __result_first,

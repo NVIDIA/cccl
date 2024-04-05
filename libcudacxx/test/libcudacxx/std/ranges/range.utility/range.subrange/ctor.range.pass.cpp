@@ -19,13 +19,20 @@
 #include "test_macros.h"
 #include "test_iterators.h"
 
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardBorrowedRange>); // Default case.
-static_assert(!cuda::std::is_constructible_v<ForwardSubrange, ForwardRange>); // Not borrowed.
+static_assert(cuda::std::is_constructible_v<
+              ForwardSubrange, ForwardBorrowedRange>); // Default case.
+static_assert(!cuda::std::is_constructible_v<ForwardSubrange,
+                                             ForwardRange>); // Not borrowed.
 // Iter convertible to sentinel (pointer) type.
-static_assert( cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardBorrowedRange>);
+static_assert(cuda::std::is_constructible_v<ConvertibleForwardSubrange,
+                                            ConvertibleForwardBorrowedRange>);
 // Where neither iter or sentinel are pointers, but they are different.
-static_assert( cuda::std::is_constructible_v<DifferentSentinelSubrange, ForwardBorrowedRangeDifferentSentinel>);
-static_assert( cuda::std::is_constructible_v<DifferentSentinelWithSizeMemberSubrange, DifferentSentinelWithSizeMember>);
+static_assert(
+    cuda::std::is_constructible_v<DifferentSentinelSubrange,
+                                  ForwardBorrowedRangeDifferentSentinel>);
+static_assert(
+    cuda::std::is_constructible_v<DifferentSentinelWithSizeMemberSubrange,
+                                  DifferentSentinelWithSizeMember>);
 
 __host__ __device__ constexpr bool test() {
   ForwardSubrange a{ForwardBorrowedRange()};

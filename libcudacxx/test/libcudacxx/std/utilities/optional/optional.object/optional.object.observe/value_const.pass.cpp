@@ -19,58 +19,50 @@
 
 #include "test_macros.h"
 
-using cuda::std::optional;
-using cuda::std::in_place_t;
 using cuda::std::in_place;
+using cuda::std::in_place_t;
+using cuda::std::optional;
 #ifndef TEST_HAS_NO_EXCEPTIONS
 using cuda::std::bad_optional_access;
 #endif
 
-struct X
-{
-    X() = default;
-    X(const X&) = delete;
-    __host__ __device__
-    constexpr int test() const & {return 3;}
-    __host__ __device__
-    int test() & {return 4;}
-    __host__ __device__
-    constexpr int test() const && {return 5;}
-    __host__ __device__
-    int test() && {return 6;}
+struct X {
+  X() = default;
+  X(const X&) = delete;
+  __host__ __device__ constexpr int test() const& { return 3; }
+  __host__ __device__ int test() & { return 4; }
+  __host__ __device__ constexpr int test() const&& { return 5; }
+  __host__ __device__ int test() && { return 6; }
 };
 
-int main(int, char**)
-{
-    {
-        const optional<X> opt; unused(opt);
+int main(int, char**) {
+  {
+    const optional<X> opt;
+    unused(opt);
 #ifndef TEST_COMPILER_ICC
-        ASSERT_NOT_NOEXCEPT(opt.value());
+    ASSERT_NOT_NOEXCEPT(opt.value());
 #endif // TEST_COMPILER_ICC
-        ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
-    }
+    ASSERT_SAME_TYPE(decltype(opt.value()), X const&);
+  }
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    {
-        constexpr optional<X> opt(in_place);
-        static_assert(opt.value().test() == 3, "");
-    }
+  {
+    constexpr optional<X> opt(in_place);
+    static_assert(opt.value().test() == 3, "");
+  }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    {
-        const optional<X> opt(in_place);
-        assert(opt.value().test() == 3);
-    }
+  {
+    const optional<X> opt(in_place);
+    assert(opt.value().test() == 3);
+  }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        const optional<X> opt;
-        try
-        {
-            (void)opt.value();
-            assert(false);
-        }
-        catch (const bad_optional_access&)
-        {
-        }
+  {
+    const optional<X> opt;
+    try {
+      (void)opt.value();
+      assert(false);
+    } catch (const bad_optional_access&) {
     }
+  }
 #endif
 
   return 0;

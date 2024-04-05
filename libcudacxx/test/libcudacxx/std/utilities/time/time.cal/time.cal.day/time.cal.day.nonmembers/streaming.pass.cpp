@@ -40,7 +40,6 @@
 //             successfully parsed, that value will be assigned to *offset if offset is non-null.
 //
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -48,10 +47,9 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-   using day = cuda::std::chrono::day;
-   std::cout << day{1};
+int main(int, char**) {
+  using day = cuda::std::chrono::day;
+  std::cout << day{1};
 
   return 0;
 }

@@ -23,8 +23,6 @@
 //   holding a value in the range [1, 12] even if !x.ok(). —end note]
 //   [Example: February + months{11} == January. —end example]
 
-
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -32,43 +30,44 @@
 #include "test_macros.h"
 
 template <typename M, typename Ms>
-__host__ __device__
-constexpr bool testConstexpr()
-{
-    M m{1};
-    Ms offset{4};
-    if (m + offset != M{5}) return false;
-    if (offset + m != M{5}) return false;
-//  Check the example
-    if (M{2} + Ms{11} != M{1}) return false;
-    return true;
+__host__ __device__ constexpr bool testConstexpr() {
+  M m{1};
+  Ms offset{4};
+  if (m + offset != M{5})
+    return false;
+  if (offset + m != M{5})
+    return false;
+  //  Check the example
+  if (M{2} + Ms{11} != M{1})
+    return false;
+  return true;
 }
 
-int main(int, char**)
-{
-    using month  = cuda::std::chrono::month;
-    using months = cuda::std::chrono::months;
+int main(int, char**) {
+  using month = cuda::std::chrono::month;
+  using months = cuda::std::chrono::months;
 
-    ASSERT_NOEXCEPT(cuda::std::declval<month>() + cuda::std::declval<months>());
-    ASSERT_NOEXCEPT(cuda::std::declval<months>() + cuda::std::declval<month>());
+  ASSERT_NOEXCEPT(cuda::std::declval<month>() + cuda::std::declval<months>());
+  ASSERT_NOEXCEPT(cuda::std::declval<months>() + cuda::std::declval<month>());
 
-    ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<month>()  + cuda::std::declval<months>()));
-    ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<months>() + cuda::std::declval<month>() ));
+  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<month>() +
+                                   cuda::std::declval<months>()));
+  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<months>() +
+                                   cuda::std::declval<month>()));
 
-    static_assert(testConstexpr<month, months>(), "");
+  static_assert(testConstexpr<month, months>(), "");
 
-    month my{2};
-    for (unsigned i = 0; i <= 15; ++i)
-    {
-        month m1 = my + months{i};
-        month m2 = months{i} + my;
-        assert(m1 == m2);
-        unsigned exp = i + 2;
-        while (exp > 12)
-            exp -= 12;
-        assert(static_cast<unsigned>(m1) == exp);
-        assert(static_cast<unsigned>(m2) == exp);
-    }
+  month my{2};
+  for (unsigned i = 0; i <= 15; ++i) {
+    month m1 = my + months{i};
+    month m2 = months{i} + my;
+    assert(m1 == m2);
+    unsigned exp = i + 2;
+    while (exp > 12)
+      exp -= 12;
+    assert(static_cast<unsigned>(m1) == exp);
+    assert(static_cast<unsigned>(m2) == exp);
+  }
 
   return 0;
 }

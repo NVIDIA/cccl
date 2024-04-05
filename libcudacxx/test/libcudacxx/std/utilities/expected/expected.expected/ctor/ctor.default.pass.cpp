@@ -30,16 +30,26 @@ struct NoDedefaultCtor {
 };
 
 // Test constraints
-static_assert(cuda::std::is_default_constructible_v<cuda::std::expected<int, int>>, "");
-static_assert(!cuda::std::is_default_constructible_v<cuda::std::expected<NoDedefaultCtor, int>>, "");
+static_assert(
+    cuda::std::is_default_constructible_v<cuda::std::expected<int, int> >, "");
+static_assert(!cuda::std::is_default_constructible_v<
+                  cuda::std::expected<NoDedefaultCtor, int> >,
+              "");
 
 struct MyInt {
   int i;
 #if TEST_STD_VER > 2017
-  __host__ __device__ friend constexpr bool operator==(const MyInt&, const MyInt&) = default;
+  __host__ __device__ friend constexpr bool operator==(const MyInt&,
+                                                       const MyInt&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const MyInt& lhs, const MyInt& rhs) noexcept { return lhs.i == rhs.i; }
+  __host__ __device__ friend constexpr bool
+  operator==(const MyInt& lhs, const MyInt& rhs) noexcept {
+    return lhs.i == rhs.i;
+  }
+  __host__ __device__ friend constexpr bool
+  operator!=(const MyInt& lhs, const MyInt& rhs) noexcept {
+    return lhs.i == rhs.i;
+  }
 #endif // TEST_STD_VER > 2017
 };
 

@@ -36,34 +36,27 @@ namespace cpp
 namespace detail
 {
 
-
-struct par_t : thrust::system::cpp::detail::execution_policy<par_t>,
-  thrust::detail::allocator_aware_execution_policy<
-    thrust::system::cpp::detail::execution_policy>
+struct par_t
+    : thrust::system::cpp::detail::execution_policy<par_t>
+    , thrust::detail::allocator_aware_execution_policy< thrust::system::cpp::detail::execution_policy>
 {
-  _CCCL_HOST_DEVICE
-  constexpr par_t() : thrust::system::cpp::detail::execution_policy<par_t>() {}
+  _CCCL_HOST_DEVICE constexpr par_t()
+      : thrust::system::cpp::detail::execution_policy<par_t>()
+  {}
 };
 
-
-} // end detail
-
+} // namespace detail
 
 THRUST_INLINE_CONSTANT detail::par_t par;
 
-
-} // end cpp
-} // end system
-
+} // namespace cpp
+} // namespace system
 
 // alias par here
 namespace cpp
 {
 
-
 using thrust::system::cpp::par;
 
-
-} // end cpp
+} // namespace cpp
 THRUST_NAMESPACE_END
-

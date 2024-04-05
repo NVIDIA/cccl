@@ -15,15 +15,16 @@
 
 #include <cuda/std/iterator>
 
-class not_incrementable{};
+class not_incrementable {};
 
 __host__ __device__ void proper_constraints() {
   not_incrementable p{};
-  cuda::std::ranges::advance(p, 5); // expected-error {{no matching function for call}}
-  cuda::std::ranges::advance(p, p); // expected-error {{no matching function for call}}
-  cuda::std::ranges::advance(p, 5, p); // expected-error {{no matching function for call}}
+  cuda::std::ranges::advance(
+      p, 5); // expected-error {{no matching function for call}}
+  cuda::std::ranges::advance(
+      p, p); // expected-error {{no matching function for call}}
+  cuda::std::ranges::advance(
+      p, 5, p); // expected-error {{no matching function for call}}
 }
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

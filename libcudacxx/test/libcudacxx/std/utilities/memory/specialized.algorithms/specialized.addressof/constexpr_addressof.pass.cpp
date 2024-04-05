@@ -24,11 +24,10 @@ struct Pointer {
   void* value;
 };
 
-struct A
-{
-    __host__ __device__ constexpr A() : n(42) {}
-    __host__ __device__ void operator&() const { }
-    int n;
+struct A {
+  __host__ __device__ constexpr A() : n(42) {}
+  __host__ __device__ void operator&() const {}
+  int n;
 };
 
 constexpr int global_integer = 0;
@@ -44,7 +43,4 @@ static_assert(&(address->n) == &(global_struct.n), "");
 #endif
 #endif
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

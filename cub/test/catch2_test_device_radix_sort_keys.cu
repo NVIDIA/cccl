@@ -491,7 +491,7 @@ void do_large_offset_test(std::size_t num_items)
   }
   catch (std::bad_alloc& e)
   {
-    (void)e;
+    (void) e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
     const std::size_t num_bytes = num_items * sizeof(key_t);
     std::cerr

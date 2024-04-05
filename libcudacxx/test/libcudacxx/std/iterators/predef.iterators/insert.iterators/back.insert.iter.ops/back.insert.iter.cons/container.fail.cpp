@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-
-
 // back_insert_iterator
 
 // explicit back_insert_iterator(Cont& x);
@@ -21,15 +19,14 @@
 #if defined(_LIBCUDACXX_HAS_VECTOR)
 #include <cuda/std/vector>
 
-int main(int, char**)
-{
-    cuda::std::back_insert_iterator<cuda::std::vector<int> > i = cuda::std::vector<int>();
+int main(int, char**) {
+  cuda::std::back_insert_iterator<cuda::std::vector<int> > i =
+      cuda::std::vector<int>();
 
   return 0;
 }
 #else
-int main(int, char**)
-{
+int main(int, char**) {
   assert();
   return 0;
 }

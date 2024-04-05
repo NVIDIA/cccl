@@ -11,8 +11,8 @@
 
 #include <cuda/std/utility>
 
-[[noreturn]] void unreachable() { cuda::std::unreachable(); } // expected-no-diagnostics
+[[noreturn]] void unreachable() {
+  cuda::std::unreachable();
+} // expected-no-diagnostics
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

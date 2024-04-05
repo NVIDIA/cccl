@@ -97,9 +97,8 @@ struct _IterOps<_ClassicAlgPolicy>
 
   // distance
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
-    typename iterator_traits<_Iter>::difference_type
-    distance(_Iter __first, _Iter __last)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static typename iterator_traits<_Iter>::difference_type
+  distance(_Iter __first, _Iter __last)
   {
     return _CUDA_VSTD::distance(__first, __last);
   }

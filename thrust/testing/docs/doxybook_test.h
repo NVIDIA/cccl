@@ -31,7 +31,8 @@ namespace thrust
  *  test Doxybook rendering.
  */
 template <typename... Z>
-struct test_predefined_friend_struct {};
+struct test_predefined_friend_struct
+{};
 
 /*! \brief \c test_predefined_friend_function is a function intended to
  *  exercise and test Doxybook rendering.
@@ -54,7 +55,8 @@ class test_class
 {
 public:
   template <typename Z>
-  struct test_nested_struct {};
+  struct test_nested_struct
+  {};
 
   int test_member_variable = 0; ///< A test member variable.
 
@@ -63,7 +65,8 @@ public:
   template <typename X, typename Y>
   using test_type_alias = test_class<X, Y>;
 
-  enum class test_enum_class {
+  enum class test_enum_class
+  {
     A = 15, ///< An enumerator. It is equal to 15.
     B,
     C
@@ -75,20 +78,17 @@ public:
 
   /*! \brief Construct a test class.
    */
-  __host__ __device__ constexpr
-  test_class(int);
+  __host__ __device__ constexpr test_class(int);
 
   /*! \brief \c test_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__ constexpr
-  int test_member_function() = 0;
+  __host__ __device__ constexpr int test_member_function() = 0;
 
   /*! \brief \c test_virtual_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__
-  virtual int test_virtual_member_function() = 0;
+  __host__ __device__ virtual int test_virtual_member_function() = 0;
 
   /*! \brief \c test_parameter_overflow_member_function is a function intended
    *  to test Doxybook's rendering of function and template parameters that exceed
@@ -98,12 +98,14 @@ public:
             typename B = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>,
             typename C = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>>
   test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>
-  test_parameter_overflow_member_function(test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> a,
-                                          test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> b,
-                                          test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> c);
+  test_parameter_overflow_member_function(
+    test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> a,
+    test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> b,
+    test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int> c);
 
   template <typename Z>
-  friend void test_friend_function() {}
+  friend void test_friend_function()
+  {}
 
   template <typename Z>
   friend void test_predefined_friend_function();
@@ -112,15 +114,14 @@ public:
   friend struct thrust::test_predefined_friend_struct;
 
 protected:
-
   template <typename Z>
-  class test_protected_nested_class {};
+  class test_protected_nested_class
+  {};
 
   /*! \brief \c test_protected_member_function is a function intended to
    *  exercise and test Doxybook rendering.
    */
-  __device__
-  auto test_protected_member_function();
+  __device__ auto test_protected_member_function();
 };
 
 /*! \brief \c test_derived_class is a derived class intended to exercise and
@@ -129,7 +130,8 @@ protected:
 class test_derived_class : test_class<int, double>
 {
   template <typename Z>
-  struct test_derived_nested_struct {};
+  struct test_derived_nested_struct
+  {};
 
   double test_derived_member_variable = 3.14; ///< A test member variable.
 
@@ -138,8 +140,7 @@ class test_derived_class : test_class<int, double>
   /*! \brief \c test_derived_member_function is a function intended to exercise
    *  and test Doxybook rendering.
    */
-  __host__ __device__ constexpr
-  double test_derived_member_function(int, int);
+  __host__ __device__ constexpr double test_derived_member_function(int, int);
 };
 
 /*! \brief \c test_function is a function intended to exercise and test Doxybook
@@ -158,18 +159,19 @@ void test_function(T const& a, test_class<T, T const>&& b);
  *  length of a line.
  */
 template <typename T = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>,
-  typename U = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>,
-  typename V = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>
->
+          typename U = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int>,
+          typename V = test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int> >
 test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int, int, int, int>
-test_parameter_overflow_function(test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int> t,
+test_parameter_overflow_function(
+  test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int> t,
   test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int> u,
   test_predefined_friend_struct<int, int, int, int, int, int, int, int, int, int, int, int> v);
 
 /*! \brief \c test_enum is an enum namespace intended to exercise and test
  *  Doxybook rendering.
  */
-enum class test_enum {
+enum class test_enum
+{
   X = 1, ///< An enumerator. It is equal to 1.
   Y = X,
   Z = 2
@@ -183,7 +185,8 @@ using test_alias = test_class<int, double>;
 /*! \brief \c test_namespace is a namespace intended to exercise and test
  *  Doxybook rendering.
  */
-namespace test_namespace {
+namespace test_namespace
+{
 
 inline constexpr int test_constant = 12;
 
@@ -192,7 +195,9 @@ inline constexpr int test_constant = 12;
  */
 template <typename T, typename U>
 auto test_nested_function(T t, U u) noexcept(noexcept(t + u)) -> decltype(t + u)
-{ return t + u; }
+{
+  return t + u;
+}
 
 /*! \brief \c test_struct is a struct intended to exercise and test Doxybook
  *  rendering.
@@ -219,4 +224,3 @@ struct test_struct
  */
 
 } // namespace thrust
-

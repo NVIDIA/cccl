@@ -64,12 +64,10 @@ __host__ __device__ constexpr bool check_relation_subsumes_itself() {
 }
 // clang-format on
 
-static_assert(check_relation_subsumes_itself<int (*)(int, double), int, int>(), "");
+static_assert(check_relation_subsumes_itself<int (*)(int, double), int, int>(),
+              "");
 static_assert(check_relation_subsumes_itself<R, S1, S1>(), "");
 
 #endif // TEST_STD_VER > 2017
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

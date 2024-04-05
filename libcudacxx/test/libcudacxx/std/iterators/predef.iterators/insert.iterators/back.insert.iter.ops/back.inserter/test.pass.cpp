@@ -22,26 +22,19 @@
 #include "test_macros.h"
 
 template <class C>
-__host__ __device__
-void
-test(C c)
-{
-    cuda::std::back_insert_iterator<C> i = cuda::std::back_inserter(c);
-    i = 0;
-    assert(c.size() == 1);
-    assert(c.back() == 0);
+__host__ __device__ void test(C c) {
+  cuda::std::back_insert_iterator<C> i = cuda::std::back_inserter(c);
+  i = 0;
+  assert(c.size() == 1);
+  assert(c.back() == 0);
 }
 
-int main(int, char**)
-{
-    test(cuda::std::vector<int>());
-    test(nasty_vector<int>());
+int main(int, char**) {
+  test(cuda::std::vector<int>());
+  test(nasty_vector<int>());
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

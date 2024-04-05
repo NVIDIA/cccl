@@ -20,18 +20,17 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
+int main(int, char**) {
+  {
     cuda::std::chrono::nanoseconds ns(15);
     ns = ns / 5;
     assert(ns.count() == 3);
-    }
-    {
+  }
+  {
     constexpr cuda::std::chrono::nanoseconds ns(15);
     constexpr cuda::std::chrono::nanoseconds ns2 = ns / 5;
     static_assert(ns2.count() == 3, "");
-    }
+  }
 
   return 0;
 }

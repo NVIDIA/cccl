@@ -18,95 +18,91 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_has_unique_object_representations()
-{
-    static_assert( cuda::std::has_unique_object_representations<T>::value, "");
-    static_assert( cuda::std::has_unique_object_representations<const T>::value, "");
-    static_assert( cuda::std::has_unique_object_representations<volatile T>::value, "");
-    static_assert( cuda::std::has_unique_object_representations<const volatile T>::value, "");
+__host__ __device__ void test_has_unique_object_representations() {
+  static_assert(cuda::std::has_unique_object_representations<T>::value, "");
+  static_assert(cuda::std::has_unique_object_representations<const T>::value,
+                "");
+  static_assert(cuda::std::has_unique_object_representations<volatile T>::value,
+                "");
+  static_assert(
+      cuda::std::has_unique_object_representations<const volatile T>::value,
+      "");
 
-    static_assert( cuda::std::has_unique_object_representations_v<T>, "");
-    static_assert( cuda::std::has_unique_object_representations_v<const T>, "");
-    static_assert( cuda::std::has_unique_object_representations_v<volatile T>, "");
-    static_assert( cuda::std::has_unique_object_representations_v<const volatile T>, "");
+  static_assert(cuda::std::has_unique_object_representations_v<T>, "");
+  static_assert(cuda::std::has_unique_object_representations_v<const T>, "");
+  static_assert(cuda::std::has_unique_object_representations_v<volatile T>, "");
+  static_assert(
+      cuda::std::has_unique_object_representations_v<const volatile T>, "");
 }
 
 template <class T>
-__host__ __device__
-void test_has_not_has_unique_object_representations()
-{
-    static_assert(!cuda::std::has_unique_object_representations<T>::value, "");
-    static_assert(!cuda::std::has_unique_object_representations<const T>::value, "");
-    static_assert(!cuda::std::has_unique_object_representations<volatile T>::value, "");
-    static_assert(!cuda::std::has_unique_object_representations<const volatile T>::value, "");
+__host__ __device__ void test_has_not_has_unique_object_representations() {
+  static_assert(!cuda::std::has_unique_object_representations<T>::value, "");
+  static_assert(!cuda::std::has_unique_object_representations<const T>::value,
+                "");
+  static_assert(
+      !cuda::std::has_unique_object_representations<volatile T>::value, "");
+  static_assert(
+      !cuda::std::has_unique_object_representations<const volatile T>::value,
+      "");
 
-    static_assert(!cuda::std::has_unique_object_representations_v<T>, "");
-    static_assert(!cuda::std::has_unique_object_representations_v<const T>, "");
-    static_assert(!cuda::std::has_unique_object_representations_v<volatile T>, "");
-    static_assert(!cuda::std::has_unique_object_representations_v<const volatile T>, "");
+  static_assert(!cuda::std::has_unique_object_representations_v<T>, "");
+  static_assert(!cuda::std::has_unique_object_representations_v<const T>, "");
+  static_assert(!cuda::std::has_unique_object_representations_v<volatile T>,
+                "");
+  static_assert(
+      !cuda::std::has_unique_object_representations_v<const volatile T>, "");
 }
 
-class Empty
-{
-};
+class Empty {};
 
-class NotEmpty
-{
-    __host__ __device__
-    virtual ~NotEmpty();
+class NotEmpty {
+  __host__ __device__ virtual ~NotEmpty();
 };
 
 union EmptyUnion {};
-struct NonEmptyUnion {int x; unsigned y;};
-
-struct bit_zero
-{
-    int :  0;
+struct NonEmptyUnion {
+  int x;
+  unsigned y;
 };
 
-class Abstract
-{
-    __host__ __device__
-    virtual ~Abstract() = 0;
+struct bit_zero {
+  int : 0;
 };
 
-struct A
-{
-    __host__ __device__
-    ~A();
-    unsigned foo;
+class Abstract {
+  __host__ __device__ virtual ~Abstract() = 0;
 };
 
-struct B
-{
-   char bar;
-   int foo;
+struct A {
+  __host__ __device__ ~A();
+  unsigned foo;
 };
 
+struct B {
+  char bar;
+  int foo;
+};
 
-int main(int, char**)
-{
-    test_has_not_has_unique_object_representations<void>();
-    test_has_not_has_unique_object_representations<Empty>();
-    test_has_not_has_unique_object_representations<EmptyUnion>();
-    test_has_not_has_unique_object_representations<NotEmpty>();
-    test_has_not_has_unique_object_representations<bit_zero>();
-    test_has_not_has_unique_object_representations<Abstract>();
-    test_has_not_has_unique_object_representations<B>();
+int main(int, char**) {
+  test_has_not_has_unique_object_representations<void>();
+  test_has_not_has_unique_object_representations<Empty>();
+  test_has_not_has_unique_object_representations<EmptyUnion>();
+  test_has_not_has_unique_object_representations<NotEmpty>();
+  test_has_not_has_unique_object_representations<bit_zero>();
+  test_has_not_has_unique_object_representations<Abstract>();
+  test_has_not_has_unique_object_representations<B>();
 
-//  I would expect all three of these to have unique representations.
-//  I would also expect that there are systems where they do not.
-//     test_has_not_has_unique_object_representations<int&>();
-//     test_has_not_has_unique_object_representations<int *>();
-//     test_has_not_has_unique_object_representations<double>();
+  //  I would expect all three of these to have unique representations.
+  //  I would also expect that there are systems where they do not.
+  //     test_has_not_has_unique_object_representations<int&>();
+  //     test_has_not_has_unique_object_representations<int *>();
+  //     test_has_not_has_unique_object_representations<double>();
 
-
-    test_has_unique_object_representations<unsigned>();
-    test_has_unique_object_representations<NonEmptyUnion>();
-    test_has_unique_object_representations<char[3]>();
-    test_has_unique_object_representations<char[]>();
-
+  test_has_unique_object_representations<unsigned>();
+  test_has_unique_object_representations<NonEmptyUnion>();
+  test_has_unique_object_representations<char[3]>();
+  test_has_unique_object_representations<char[]>();
 
   return 0;
 }

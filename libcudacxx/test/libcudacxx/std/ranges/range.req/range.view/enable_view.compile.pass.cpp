@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 // Doesn't derive from view_base
-struct Empty { };
+struct Empty {};
 static_assert(!cuda::std::ranges::enable_view<Empty>);
 static_assert(!cuda::std::ranges::enable_view<Empty&>);
 static_assert(!cuda::std::ranges::enable_view<Empty&&>);
@@ -29,7 +29,7 @@ static_assert(!cuda::std::ranges::enable_view<const Empty&>);
 static_assert(!cuda::std::ranges::enable_view<const Empty&&>);
 
 // Derives from view_base, but privately
-struct PrivateViewBase : private cuda::std::ranges::view_base { };
+struct PrivateViewBase : private cuda::std::ranges::view_base {};
 static_assert(!cuda::std::ranges::enable_view<PrivateViewBase>);
 static_assert(!cuda::std::ranges::enable_view<PrivateViewBase&>);
 static_assert(!cuda::std::ranges::enable_view<PrivateViewBase&&>);
@@ -38,7 +38,7 @@ static_assert(!cuda::std::ranges::enable_view<const PrivateViewBase&>);
 static_assert(!cuda::std::ranges::enable_view<const PrivateViewBase&&>);
 
 // Derives from view_base, but specializes enable_view to false
-struct EnableViewFalse : cuda::std::ranges::view_base { };
+struct EnableViewFalse : cuda::std::ranges::view_base {};
 template <>
 constexpr bool cuda::std::ranges::enable_view<EnableViewFalse> = false;
 
@@ -50,7 +50,7 @@ static_assert(!cuda::std::ranges::enable_view<const EnableViewFalse&>);
 static_assert(!cuda::std::ranges::enable_view<const EnableViewFalse&&>);
 
 // Derives from view_base
-struct PublicViewBase : cuda::std::ranges::view_base { };
+struct PublicViewBase : cuda::std::ranges::view_base {};
 static_assert(cuda::std::ranges::enable_view<PublicViewBase>);
 static_assert(!cuda::std::ranges::enable_view<PublicViewBase&>);
 static_assert(!cuda::std::ranges::enable_view<PublicViewBase&&>);
@@ -59,8 +59,9 @@ static_assert(!cuda::std::ranges::enable_view<const PublicViewBase&>);
 static_assert(!cuda::std::ranges::enable_view<const PublicViewBase&&>);
 
 // Does not derive from view_base, but specializes enable_view to true
-struct EnableViewTrue { };
-template <> constexpr bool cuda::std::ranges::enable_view<EnableViewTrue> = true;
+struct EnableViewTrue {};
+template <>
+constexpr bool cuda::std::ranges::enable_view<EnableViewTrue> = true;
 
 static_assert(cuda::std::ranges::enable_view<EnableViewTrue>);
 static_assert(!cuda::std::ranges::enable_view<EnableViewTrue&>);
@@ -71,7 +72,8 @@ static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&&>);
 
 // Make sure that enable_view is a bool, not some other contextually-convertible-to-bool type.
 ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<Empty>), const bool);
-ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool);
+ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<PublicViewBase>),
+                 const bool);
 
 struct V1 : cuda::std::ranges::view_interface<V1> {};
 static_assert(cuda::std::ranges::enable_view<V1>);
@@ -81,13 +83,18 @@ static_assert(cuda::std::ranges::enable_view<const V1>);
 static_assert(!cuda::std::ranges::enable_view<const V1&>);
 static_assert(!cuda::std::ranges::enable_view<const V1&&>);
 
-struct V2 : cuda::std::ranges::view_interface<V1>, cuda::std::ranges::view_interface<V2> {};
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion despite the ambiguity in C++17
+struct V2 : cuda::std::ranges::view_interface<V1>,
+            cuda::std::ranges::view_interface<V2> {};
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER >                                                             \
+        2017 // MSVC seems to allow the conversion despite the ambiguity in C++17
 static_assert(!cuda::std::ranges::enable_view<V2>);
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(!cuda::std::ranges::enable_view<V2&>);
 static_assert(!cuda::std::ranges::enable_view<V2&&>);
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion despite the ambiguity in C++17
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER >                                                             \
+        2017 // MSVC seems to allow the conversion despite the ambiguity in C++17
 static_assert(!cuda::std::ranges::enable_view<const V2>);
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 static_assert(!cuda::std::ranges::enable_view<const V2&>);
@@ -101,18 +108,20 @@ static_assert(cuda::std::ranges::enable_view<const V3>);
 static_assert(!cuda::std::ranges::enable_view<const V3&>);
 static_assert(!cuda::std::ranges::enable_view<const V3&&>);
 
-struct PrivateInherit : private cuda::std::ranges::view_interface<PrivateInherit> {};
+struct PrivateInherit
+    : private cuda::std::ranges::view_interface<PrivateInherit> {};
 static_assert(!cuda::std::ranges::enable_view<PrivateInherit>);
 
 #if TEST_STD_VER > 2017
 // ADL-proof
 struct Incomplete;
-template<class T> struct Holder { T t; };
+template <class T>
+struct Holder {
+  T t;
+};
 static_assert(!cuda::std::ranges::enable_view<Holder<Incomplete>*>);
 #endif
 
 static_assert(!cuda::std::ranges::enable_view<void>);
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

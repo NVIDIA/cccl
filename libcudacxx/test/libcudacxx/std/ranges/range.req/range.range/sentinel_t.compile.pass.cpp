@@ -20,13 +20,27 @@
 #include "test_iterators.h"
 #include "test_range.h"
 
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> >, sentinel>);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> const>, sentinel>);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_non_const_range<cpp20_input_iterator> >, sentinel>);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_common_range<forward_iterator> >, forward_iterator<int*> >);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_common_range<forward_iterator> const>, forward_iterator<int const*> >);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_non_const_common_range<forward_iterator> >, forward_iterator<int*> >);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> >,
+              sentinel>);
+static_assert(
+    cuda::std::same_as<
+        cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> const>,
+        sentinel>);
+static_assert(
+    cuda::std::same_as<cuda::std::ranges::sentinel_t<
+                           test_non_const_range<cpp20_input_iterator> >,
+                       sentinel>);
+static_assert(
+    cuda::std::same_as<
+        cuda::std::ranges::sentinel_t<test_common_range<forward_iterator> >,
+        forward_iterator<int*> >);
+static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<
+                                     test_common_range<forward_iterator> const>,
+                                 forward_iterator<int const*> >);
+static_assert(
+    cuda::std::same_as<cuda::std::ranges::sentinel_t<
+                           test_non_const_common_range<forward_iterator> >,
+                       forward_iterator<int*> >);
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

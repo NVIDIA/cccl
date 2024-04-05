@@ -13,7 +13,6 @@
 //   constexpr weekday_indexed operator[](unsigned index) const noexcept;
 //   constexpr weekday_last    operator[](last_spec)      const noexcept;
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
 #include <cuda/std/cassert>
@@ -21,39 +20,39 @@
 #include "test_macros.h"
 #include "../../euclidian.h"
 
-int main(int, char**)
-{
-    using weekday         = cuda::std::chrono::weekday;
-    using weekday_last    = cuda::std::chrono::weekday_last;
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
+int main(int, char**) {
+  using weekday = cuda::std::chrono::weekday;
+  using weekday_last = cuda::std::chrono::weekday_last;
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-    constexpr weekday Sunday = cuda::std::chrono::Sunday;
+  constexpr weekday Sunday = cuda::std::chrono::Sunday;
 
-    ASSERT_NOEXCEPT(                           cuda::std::declval<weekday>()[1U]);
-    ASSERT_SAME_TYPE(weekday_indexed, decltype(cuda::std::declval<weekday>()[1U]));
+  ASSERT_NOEXCEPT(cuda::std::declval<weekday>()[1U]);
+  ASSERT_SAME_TYPE(weekday_indexed,
+                   decltype(cuda::std::declval<weekday>()[1U]));
 
-    ASSERT_NOEXCEPT(                           cuda::std::declval<weekday>()[cuda::std::chrono::last]);
-    ASSERT_SAME_TYPE(weekday_last,    decltype(cuda::std::declval<weekday>()[cuda::std::chrono::last]));
+  ASSERT_NOEXCEPT(cuda::std::declval<weekday>()[cuda::std::chrono::last]);
+  ASSERT_SAME_TYPE(
+      weekday_last,
+      decltype(cuda::std::declval<weekday>()[cuda::std::chrono::last]));
 
-    static_assert(Sunday[2].weekday() == Sunday, "");
-    static_assert(Sunday[2].index  () == 2, "");
+  static_assert(Sunday[2].weekday() == Sunday, "");
+  static_assert(Sunday[2].index() == 2, "");
 
-    for (unsigned i = 0; i <= 6; ++i)
-    {
-        weekday wd(i);
-        weekday_last wdl = wd[cuda::std::chrono::last];
-        assert(wdl.weekday() == wd);
-        assert(wdl.ok());
-    }
+  for (unsigned i = 0; i <= 6; ++i) {
+    weekday wd(i);
+    weekday_last wdl = wd[cuda::std::chrono::last];
+    assert(wdl.weekday() == wd);
+    assert(wdl.ok());
+  }
 
-    for (unsigned i = 0; i <= 6; ++i)
-        for (unsigned j = 1; j <= 5; ++j)
-    {
-        weekday wd(i);
-        weekday_indexed wdi = wd[j];
-        assert(wdi.weekday() == wd);
-        assert(wdi.index() == j);
-        assert(wdi.ok());
+  for (unsigned i = 0; i <= 6; ++i)
+    for (unsigned j = 1; j <= 5; ++j) {
+      weekday wd(i);
+      weekday_indexed wdi = wd[j];
+      assert(wdi.weekday() == wd);
+      assert(wdi.index() == j);
+      assert(wdi.ok());
     }
 
   return 0;

@@ -20,26 +20,22 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    cuda::std::istringstream inf(" 1 23");
-    cuda::std::istream_iterator<int> i(inf);
-    int j = 0;
-    j = *i;
-    assert(j == 1);
-    j = *i;
-    assert(j == 1);
-    ++i;
-    j = *i;
-    assert(j == 23);
-    j = *i;
-    assert(j == 23);
+int main(int, char**) {
+  cuda::std::istringstream inf(" 1 23");
+  cuda::std::istream_iterator<int> i(inf);
+  int j = 0;
+  j = *i;
+  assert(j == 1);
+  j = *i;
+  assert(j == 1);
+  ++i;
+  j = *i;
+  assert(j == 23);
+  j = *i;
+  assert(j == 23);
 
   return 0;
 }
 #else
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }
 #endif

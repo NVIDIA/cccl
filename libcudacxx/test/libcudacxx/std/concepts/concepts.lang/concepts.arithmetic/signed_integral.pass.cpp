@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool CheckSignedIntegralQualifiers() {
 
   static_assert(!signed_integral<T (*)()>, "");
   static_assert(!signed_integral<T (&)()>, "");
-  static_assert(!signed_integral<T(&&)()>, "");
+  static_assert(!signed_integral<T (&&)()>, "");
 
   return result;
 }
@@ -58,17 +58,25 @@ static_assert(CheckSignedIntegralQualifiers<long long>(), "");
 
 // bool and character *may* be signed
 static_assert(CheckSignedIntegralQualifiers<wchar_t>() ==
-              cuda::std::is_signed_v<wchar_t>, "");
-static_assert(CheckSignedIntegralQualifiers<bool>() == cuda::std::is_signed_v<bool>, "");
-static_assert(CheckSignedIntegralQualifiers<char>() == cuda::std::is_signed_v<char>, "");
+                  cuda::std::is_signed_v<wchar_t>,
+              "");
+static_assert(CheckSignedIntegralQualifiers<bool>() ==
+                  cuda::std::is_signed_v<bool>,
+              "");
+static_assert(CheckSignedIntegralQualifiers<char>() ==
+                  cuda::std::is_signed_v<char>,
+              "");
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckSignedIntegralQualifiers<char8_t>() ==
-              cuda::std::is_signed_v<char8_t>, "");
+                  cuda::std::is_signed_v<char8_t>,
+              "");
 #endif // TEST_STD_VER > 2017 && defined(__cpp_char8_t)
 static_assert(CheckSignedIntegralQualifiers<char16_t>() ==
-              cuda::std::is_signed_v<char16_t>, "");
+                  cuda::std::is_signed_v<char16_t>,
+              "");
 static_assert(CheckSignedIntegralQualifiers<char32_t>() ==
-              cuda::std::is_signed_v<char32_t>, "");
+                  cuda::std::is_signed_v<char32_t>,
+              "");
 
 // integers that aren't signed integrals
 static_assert(!CheckSignedIntegralQualifiers<unsigned char>(), "");

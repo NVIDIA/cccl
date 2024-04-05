@@ -22,31 +22,29 @@
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 
-int main(int, char**){
-    NV_DISPATCH_TARGET(
-        NV_IS_HOST, (
-            // When PR #416 is merged, uncomment this line:
-            // cuda_cluster_size = 2;
-        ),
-        NV_IS_DEVICE, (
-            __shared__ cuda::barrier<cuda::thread_scope_block> bar;
+int main(int, char**) {
+  NV_DISPATCH_TARGET(
+      NV_IS_HOST,
+      (
+          // When PR #416 is merged, uncomment this line:
+          // cuda_cluster_size = 2;
+          ),
+      NV_IS_DEVICE,
+      (__shared__ cuda::barrier<cuda::thread_scope_block> bar;
 
-            if (threadIdx.x == 0) {
-                init(&bar, blockDim.x);
-            }
-            namespace cg = cooperative_groups;
-            auto cluster = cg::this_cluster();
+       if (threadIdx.x == 0) { init(&bar, blockDim.x); } namespace cg =
+           cooperative_groups;
+       auto cluster = cg::this_cluster();
 
-            cluster.sync();
+       cluster.sync();
 
-            // This test currently fails at this point because support for
-            // clusters has not yet been added.
-            cuda::barrier<cuda::thread_scope_block> *remote_bar;
-            remote_bar = cluster.map_shared_rank(&bar, cluster.block_rank() ^ 1);
+       // This test currently fails at this point because support for
+       // clusters has not yet been added.
+       cuda::barrier<cuda::thread_scope_block> * remote_bar;
+       remote_bar = cluster.map_shared_rank(&bar, cluster.block_rank() ^ 1);
 
-            // When PR #416 is merged, this should fail here because the barrier
-            // is in device memory.
-            auto token = cuda::device::barrier_arrive_tx(*remote_bar, 1, 0);
-    ));
-    return 0;
+       // When PR #416 is merged, this should fail here because the barrier
+       // is in device memory.
+       auto token = cuda::device::barrier_arrive_tx(*remote_bar, 1, 0);));
+  return 0;
 }

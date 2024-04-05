@@ -27,6 +27,4 @@ __host__ __device__ consteval bool check_subsumption() {
 
 static_assert(check_subsumption<int (&)[8]>());
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

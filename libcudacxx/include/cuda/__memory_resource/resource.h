@@ -23,14 +23,14 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
-#include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
-#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
-#include <cuda/stream_ref>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
+#  include <cuda/std/detail/libcxx/include/__concepts/equality_comparable.h>
+#  include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#  include <cuda/stream_ref>
 
-#if _CCCL_STD_VER >= 2014
+#  if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -78,7 +78,7 @@ _LIBCUDACXX_CONCEPT __different_resource =
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#endif // _CCCL_STD_VER >= 2014
+#  endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER_MSVC_2017
 

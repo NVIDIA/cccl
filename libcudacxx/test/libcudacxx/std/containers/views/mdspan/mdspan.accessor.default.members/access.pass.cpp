@@ -13,16 +13,15 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/cassert>
 
-int main(int, char**)
-{
-    {
-        using  element_t = int;
-        cuda::std::array<element_t, 2> d{42,43};
-        cuda::std::default_accessor<element_t> a;
+int main(int, char**) {
+  {
+    using element_t = int;
+    cuda::std::array<element_t, 2> d{42, 43};
+    cuda::std::default_accessor<element_t> a;
 
-        assert( a.access( d.data(), 0 ) == 42 );
-        assert( a.access( d.data(), 1 ) == 43 );
-    }
+    assert(a.access(d.data(), 0) == 42);
+    assert(a.access(d.data(), 1) == 43);
+  }
 
-    return 0;
+  return 0;
 }

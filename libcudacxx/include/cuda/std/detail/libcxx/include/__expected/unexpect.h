@@ -10,7 +10,7 @@
 #define _LIBCUDACXX___EXPECTED_UNEXPECT_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,7 +25,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct unexpect_t {
+struct unexpect_t
+{
   explicit unexpect_t() = default;
 };
 

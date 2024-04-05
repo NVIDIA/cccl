@@ -21,7 +21,7 @@ struct Error {
   int i;
   __host__ __device__ constexpr Error(int ii) : i(ii) {}
   __host__ __device__ constexpr Error& operator=(Error&& other) {
-    i       = other.i;
+    i = other.i;
     other.i = 0;
     return *this;
   }

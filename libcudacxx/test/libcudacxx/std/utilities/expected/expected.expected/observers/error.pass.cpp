@@ -27,7 +27,9 @@ template <class T, class = void>
 constexpr bool ErrorNoexcept = false;
 
 template <class T>
-constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().error())>> = noexcept(cuda::std::declval<T>().error());
+constexpr bool ErrorNoexcept<
+    T, cuda::std::void_t<decltype(cuda::std::declval<T>().error())> > =
+    noexcept(cuda::std::declval<T>().error());
 
 static_assert(!ErrorNoexcept<int>, "");
 

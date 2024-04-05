@@ -16,25 +16,26 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**)
-{
-    {
-        typedef int    data_t ;
-        typedef size_t index_t;
+int main(int, char**) {
+  {
+    typedef int data_t;
+    typedef size_t index_t;
 
-        cuda::std::array<data_t, 1> d{42};
-        cuda::std::mdspan<data_t, cuda::std::extents<index_t,dyn, dyn>, cuda::std::layout_left> m{d.data(), 16, 32};
+    cuda::std::array<data_t, 1> d{42};
+    cuda::std::mdspan<data_t, cuda::std::extents<index_t, dyn, dyn>,
+                      cuda::std::layout_left>
+        m{d.data(), 16, 32};
 
-        static_assert(m.is_exhaustive() == true, "");
+    static_assert(m.is_exhaustive() == true, "");
 
-        assert(m.data_handle()  == d.data());
-        assert(m.rank()         == 2       );
-        assert(m.rank_dynamic() == 2       );
-        assert(m.extent(0)      == 16      );
-        assert(m.extent(1)      == 32      );
-        assert(m.stride(0)      == 1       );
-        assert(m.stride(1)      == 16      );
-    }
+    assert(m.data_handle() == d.data());
+    assert(m.rank() == 2);
+    assert(m.rank_dynamic() == 2);
+    assert(m.extent(0) == 16);
+    assert(m.extent(1) == 32);
+    assert(m.stride(0) == 1);
+    assert(m.stride(1) == 16);
+  }
 
-    return 0;
+  return 0;
 }

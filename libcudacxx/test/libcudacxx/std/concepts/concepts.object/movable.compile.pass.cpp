@@ -12,7 +12,6 @@
 // template<class T>
 // concept movable = see below;
 
-
 #include <cuda/std/concepts>
 
 #include "test_macros.h"
@@ -96,9 +95,11 @@ static_assert(movable<multi_param_move_ctor>, "");
 #endif // !TEST_COMPILER_MSVC_2017
 static_assert(!movable<not_quite_multi_param_move_ctor>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
 static_assert(!cuda::std::assignable_from<copy_with_mutable_parameter&,
-                                    copy_with_mutable_parameter>, "");
+                                          copy_with_mutable_parameter>,
+              "");
 static_assert(!movable<copy_with_mutable_parameter>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
@@ -109,7 +110,8 @@ static_assert(!movable<cv_move_assignment>, "");
 static_assert(!movable<const_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<volatile_move_assign_and_traditional_move_assign>, "");
 static_assert(!movable<cv_move_assign_and_traditional_move_assign>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
 static_assert(movable<const_move_assign_and_default_ops>, "");
 static_assert(movable<volatile_move_assign_and_default_ops>, "");
 static_assert(movable<cv_move_assign_and_default_ops>, "");

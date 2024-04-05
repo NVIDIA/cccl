@@ -20,33 +20,29 @@
 
 template <class T, class U>
 void test_comparison() {
-    ::cuda::std::complex<T> input{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  ::cuda::std::complex<T> input{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
-    const ::std::complex<U> not_equal_real{static_cast<T>(-1.0), 0};
-    const ::std::complex<U> not_equal_imag{0, static_cast<T>(1.0)};
-    const ::std::complex<U> equal{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  const ::std::complex<U> not_equal_real{static_cast<T>(-1.0), 0};
+  const ::std::complex<U> not_equal_imag{0, static_cast<T>(1.0)};
+  const ::std::complex<U> equal{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
-    assert(!(input == not_equal_real));
-    assert(!(input == not_equal_imag));
-    assert(  input == equal);
+  assert(!(input == not_equal_real));
+  assert(!(input == not_equal_imag));
+  assert(input == equal);
 
-    assert(  input != not_equal_real);
-    assert(  input != not_equal_imag);
-    assert(!(input != equal));
+  assert(input != not_equal_real);
+  assert(input != not_equal_imag);
+  assert(!(input != equal));
 }
 
 void test() {
-    test_comparison<float, float>();
-    test_comparison<double, float>();
-    test_comparison<double, double>();
+  test_comparison<float, float>();
+  test_comparison<double, float>();
+  test_comparison<double, double>();
 }
 
-int main(int arg, char ** argv)
-{
-NV_IF_TARGET(
-NV_IS_HOST, (
-    test();
-));
+int main(int arg, char** argv) {
+  NV_IF_TARGET(NV_IS_HOST, (test();));
 
-    return 0;
+  return 0;
 }

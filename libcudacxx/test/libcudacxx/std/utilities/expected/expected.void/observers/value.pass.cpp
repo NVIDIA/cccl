@@ -40,14 +40,16 @@ __host__ __device__ constexpr bool test() {
   {
     cuda::std::expected<void, int> e;
     cuda::std::move(e).value();
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
+    static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
   }
 
   // const &&
   {
     const cuda::std::expected<void, int> e;
     cuda::std::move(e).value();
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
+    static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(e).value()), void>, "");
   }
 
   return true;

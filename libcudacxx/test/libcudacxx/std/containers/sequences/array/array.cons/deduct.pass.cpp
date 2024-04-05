@@ -23,44 +23,44 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool tests()
-{
-    //  Test the explicit deduction guides
-    {
-        cuda::std::array arr{1,2,3};  // array(T, U...)
-        static_assert(cuda::std::is_same_v<decltype(arr), cuda::std::array<int, 3>>, "");
-        assert(arr[0] == 1);
-        assert(arr[1] == 2);
-        assert(arr[2] == 3);
-    }
+__host__ __device__ constexpr bool tests() {
+  //  Test the explicit deduction guides
+  {
+    cuda::std::array arr{1, 2, 3}; // array(T, U...)
+    static_assert(
+        cuda::std::is_same_v<decltype(arr), cuda::std::array<int, 3> >, "");
+    assert(arr[0] == 1);
+    assert(arr[1] == 2);
+    assert(arr[2] == 3);
+  }
 
-    {
-        const long l1 = 42;
-        cuda::std::array arr{1L, 4L, 9L, l1}; // array(T, U...)
-        static_assert(cuda::std::is_same_v<decltype(arr)::value_type, long>, "");
-        static_assert(arr.size() == 4, "");
-        assert(arr[0] == 1);
-        assert(arr[1] == 4);
-        assert(arr[2] == 9);
-        assert(arr[3] == l1);
-    }
+  {
+    const long l1 = 42;
+    cuda::std::array arr{1L, 4L, 9L, l1}; // array(T, U...)
+    static_assert(cuda::std::is_same_v<decltype(arr)::value_type, long>, "");
+    static_assert(arr.size() == 4, "");
+    assert(arr[0] == 1);
+    assert(arr[1] == 4);
+    assert(arr[2] == 9);
+    assert(arr[3] == l1);
+  }
 
-    //  Test the implicit deduction guides
-    {
-        cuda::std::array<double, 2> source = {4.0, 5.0};
-        cuda::std::array arr(source);   // array(array)
-        static_assert(cuda::std::is_same_v<decltype(arr), decltype(source)>, "");
-        static_assert(cuda::std::is_same_v<decltype(arr), cuda::std::array<double, 2>>, "");
-        assert(arr[0] == 4.0);
-        assert(arr[1] == 5.0);
-    }
+  //  Test the implicit deduction guides
+  {
+    cuda::std::array<double, 2> source = {4.0, 5.0};
+    cuda::std::array arr(source); // array(array)
+    static_assert(cuda::std::is_same_v<decltype(arr), decltype(source)>, "");
+    static_assert(
+        cuda::std::is_same_v<decltype(arr), cuda::std::array<double, 2> >, "");
+    assert(arr[0] == 4.0);
+    assert(arr[1] == 5.0);
+  }
 
-    return true;
+  return true;
 }
 
-int main(int, char**)
-{
-    tests();
-    static_assert(tests(), "");
-    return 0;
+int main(int, char**) {
+  tests();
+  static_assert(tests(), "");
+  return 0;
 }

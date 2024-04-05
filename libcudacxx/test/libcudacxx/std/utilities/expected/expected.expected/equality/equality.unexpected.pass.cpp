@@ -23,9 +23,15 @@ struct Data {
   int i;
   __host__ __device__ constexpr Data(int ii) : i(ii) {}
 
-  __host__ __device__ friend constexpr bool operator==(const Data& data, int ii) { return data.i == ii; }
+  __host__ __device__ friend constexpr bool operator==(const Data& data,
+                                                       int ii) {
+    return data.i == ii;
+  }
 #if TEST_STD_VER < 2020
-  __host__ __device__ friend constexpr bool operator!=(const Data& data, int ii) { return data.i != ii; }
+  __host__ __device__ friend constexpr bool operator!=(const Data& data,
+                                                       int ii) {
+    return data.i != ii;
+  }
 #endif // TEST_STD_VER < 2020
 };
 

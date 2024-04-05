@@ -18,28 +18,25 @@
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 TEST_NV_DIAG_SUPPRESS(set_but_not_used)
 
-__device__
-void test()
-{
-    __shared__ cuda::barrier<cuda::thread_scope_block>* b;
-    shared_memory_selector<cuda::barrier<cuda::thread_scope_block>, constructor_initializer> sel;
-    b = sel.construct(2);
+__device__ void test() {
+  __shared__ cuda::barrier<cuda::thread_scope_block>* b;
+  shared_memory_selector<cuda::barrier<cuda::thread_scope_block>,
+                         constructor_initializer>
+      sel;
+  b = sel.construct(2);
 
-    uint64_t token;
-    asm volatile ("mbarrier.arrive.b64 %0, [%1];"
-        : "=l"(token)
-        : "l"(cuda::device::barrier_native_handle(*b))
-        : "memory");
-    (void)token;
+  uint64_t token;
+  asm volatile("mbarrier.arrive.b64 %0, [%1];"
+               : "=l"(token)
+               : "l"(cuda::device::barrier_native_handle(*b))
+               : "memory");
+  (void)token;
 
-    b->arrive_and_wait();
+  b->arrive_and_wait();
 }
 
-int main(int argc, char ** argv)
-{
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-        test();
-    )
+int main(int argc, char** argv) {
+  NV_IF_TARGET(NV_PROVIDES_SM_80, test();)
 
-    return 0;
+  return 0;
 }

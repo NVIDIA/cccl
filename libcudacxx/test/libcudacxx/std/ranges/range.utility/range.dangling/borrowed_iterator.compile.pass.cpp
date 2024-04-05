@@ -28,37 +28,47 @@
 #endif
 
 #if defined(_LIBCUDACXX_HAS_STRING)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::string>, cuda::std::ranges::dangling>);
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::string&&>, cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::string>,
+              cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::string&&>,
+              cuda::std::ranges::dangling>);
 #endif
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::vector<int> >, cuda::std::ranges::dangling>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::vector<int> >,
+              cuda::std::ranges::dangling>);
 #endif
 
 #if defined(_LIBCUDACXX_HAS_STRING)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::string&>, cuda::std::string::iterator>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::string&>,
+              cuda::std::string::iterator>);
 #endif
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::string_view>, cuda::std::string_view::iterator>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::string_view>,
+              cuda::std::string_view::iterator>);
 #endif
-static_assert(cuda::std::same_as<cuda::std::ranges::borrowed_iterator_t<cuda::std::span<int> >, cuda::std::span<int>::iterator>);
+static_assert(cuda::std::same_as<
+              cuda::std::ranges::borrowed_iterator_t<cuda::std::span<int> >,
+              cuda::std::span<int>::iterator>);
 
 #if TEST_STD_VER >= 2020
 template <class T>
 constexpr bool has_borrowed_iterator = requires {
   typename cuda::std::ranges::borrowed_iterator_t<T>;
 };
-#else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#else  // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class T, class = void>
 constexpr bool has_borrowed_iterator = false;
 
 template <class T>
-constexpr bool has_borrowed_iterator<T, cuda::std::void_t<cuda::std::ranges::borrowed_iterator_t<T>>> = true;
+constexpr bool has_borrowed_iterator<
+    T, cuda::std::void_t<cuda::std::ranges::borrowed_iterator_t<T> > > = true;
 #endif // TEST_STD_VER <= 2017
 
 static_assert(!has_borrowed_iterator<int>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

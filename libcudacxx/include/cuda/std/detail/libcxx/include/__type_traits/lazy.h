@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_LAZY_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,8 +24,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <template <class...> class _Func, class ..._Args>
-struct _Lazy : _Func<_Args...> {};
+template <template <class...> class _Func, class... _Args>
+struct _Lazy : _Func<_Args...>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -25,28 +25,33 @@ concept check_has_difference_type = requires {
 };
 
 template <class T, class Expected>
-concept check_difference_type_matches = check_has_difference_type<T>
-  && cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>;
+concept check_difference_type_matches =
+    check_has_difference_type<T> &&
+    cuda::std::same_as<
+        typename cuda::std::incrementable_traits<T>::difference_type, Expected>;
 #else
-template<class T, class = void>
+template <class T, class = void>
 inline constexpr bool check_has_difference_type = false;
 
-template<class T>
-inline constexpr bool
-  check_has_difference_type<T, cuda::std::void_t<typename cuda::std::incrementable_traits<T>::difference_type>> = true;
+template <class T>
+inline constexpr bool check_has_difference_type<
+    T, cuda::std::void_t<
+           typename cuda::std::incrementable_traits<T>::difference_type> > =
+    true;
 
 template <class T, class Expected>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
-  check_difference_type_matches_,
-  requires()(
-    requires(check_has_difference_type<T>),
-    requires(cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>)
-  ));
+    check_difference_type_matches_,
+    requires()(
+        requires(check_has_difference_type<T>),
+        requires(cuda::std::same_as<
+                 typename cuda::std::incrementable_traits<T>::difference_type,
+                 Expected>)));
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT check_difference_type_matches = _LIBCUDACXX_FRAGMENT(check_difference_type_matches_, T, Expected);
+_LIBCUDACXX_CONCEPT check_difference_type_matches =
+    _LIBCUDACXX_FRAGMENT(check_difference_type_matches_, T, Expected);
 #endif
-
 
 template <class T, class Expected>
 __host__ __device__ constexpr bool check_incrementable_traits() {
@@ -57,8 +62,10 @@ __host__ __device__ constexpr bool check_incrementable_traits() {
 
 static_assert(check_incrementable_traits<float*, cuda::std::ptrdiff_t>());
 static_assert(check_incrementable_traits<float const*, cuda::std::ptrdiff_t>());
-static_assert(check_incrementable_traits<float volatile*, cuda::std::ptrdiff_t>());
-static_assert(check_incrementable_traits<float const volatile*, cuda::std::ptrdiff_t>());
+static_assert(
+    check_incrementable_traits<float volatile*, cuda::std::ptrdiff_t>());
+static_assert(
+    check_incrementable_traits<float const volatile*, cuda::std::ptrdiff_t>());
 static_assert(check_incrementable_traits<float**, cuda::std::ptrdiff_t>());
 
 static_assert(check_incrementable_traits<int[], cuda::std::ptrdiff_t>());
@@ -87,7 +94,8 @@ static_assert(check_incrementable_traits<int const volatile&&, int>());
 
 static_assert(check_incrementable_traits<int volatile, int>());
 #ifdef INVESTIGATE_VOLATILE_POINTER
-static_assert(check_incrementable_traits<int* volatile, cuda::std::ptrdiff_t>());
+static_assert(
+    check_incrementable_traits<int* volatile, cuda::std::ptrdiff_t>());
 #endif
 
 struct integral_difference_type {
@@ -106,7 +114,8 @@ struct int_subtraction {
 static_assert(check_incrementable_traits<int_subtraction, int>());
 #ifdef INVESTIGATE_VOLATILE_REFERENCES
 static_assert(!check_incrementable_traits<int_subtraction volatile&, int>());
-static_assert(!check_incrementable_traits<int_subtraction const volatile&, int>());
+static_assert(
+    !check_incrementable_traits<int_subtraction const volatile&, int>());
 #endif
 
 struct char_subtraction {
@@ -115,19 +124,27 @@ struct char_subtraction {
 static_assert(check_incrementable_traits<char_subtraction, signed char>());
 
 struct unsigned_int_subtraction_with_cv {
-  __host__ __device__ friend unsigned int operator-(unsigned_int_subtraction_with_cv const&, unsigned_int_subtraction_with_cv const&);
-  __host__ __device__ friend unsigned int operator-(unsigned_int_subtraction_with_cv const volatile&, unsigned_int_subtraction_with_cv const volatile&);
+  __host__ __device__ friend unsigned int
+  operator-(unsigned_int_subtraction_with_cv const&,
+            unsigned_int_subtraction_with_cv const&);
+  __host__ __device__ friend unsigned int
+  operator-(unsigned_int_subtraction_with_cv const volatile&,
+            unsigned_int_subtraction_with_cv const volatile&);
 };
-static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv, int>());
-static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv volatile&, int>());
-static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv const volatile&, int>());
+static_assert(
+    check_incrementable_traits<unsigned_int_subtraction_with_cv, int>());
+static_assert(check_incrementable_traits<
+              unsigned_int_subtraction_with_cv volatile&, int>());
+static_assert(check_incrementable_traits<
+              unsigned_int_subtraction_with_cv const volatile&, int>());
 
 struct specialised_incrementable_traits {};
 template <>
 struct cuda::std::incrementable_traits<specialised_incrementable_traits> {
   using difference_type = int;
 };
-static_assert(check_incrementable_traits<specialised_incrementable_traits, int>());
+static_assert(
+    check_incrementable_traits<specialised_incrementable_traits, int>());
 
 static_assert(!check_has_difference_type<void>);
 static_assert(!check_has_difference_type<float>);
@@ -136,7 +153,8 @@ static_assert(!check_has_difference_type<long double>);
 static_assert(!check_has_difference_type<float&>);
 static_assert(!check_has_difference_type<float const&>);
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020 // gcc 10 has an issue with void
+#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 ||                            \
+    TEST_STD_VER < 2020 // gcc 10 has an issue with void
 static_assert(!check_has_difference_type<void*>);
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 11 || TEST_STD_VER < 2020
 static_assert(!check_has_difference_type<cuda::std::nullptr_t>);
@@ -148,12 +166,12 @@ static_assert(!check_has_difference_type<int (&)()>);
 static_assert(!check_has_difference_type<int (&)() noexcept>);
 
 #define TEST_POINTER_TO_MEMBER_FUNCTION(type, cv)                              \
-  static_assert(!check_has_difference_type<int (type::*)() cv>);           \
-  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>);  \
-  static_assert(!check_has_difference_type<int (type::*)() cv&>);          \
-  static_assert(!check_has_difference_type<int (type::*)() cv& noexcept>); \
-  static_assert(!check_has_difference_type<int (type::*)() cv&&>);         \
-  static_assert(!check_has_difference_type<int (type::*)() cv&& noexcept>);
+  static_assert(!check_has_difference_type<int (type::*)() cv>);               \
+  static_assert(!check_has_difference_type<int (type::*)() cv noexcept>);      \
+  static_assert(!check_has_difference_type<int (type::*)() cv&>);              \
+  static_assert(!check_has_difference_type<int (type::*)() cv & noexcept>);    \
+  static_assert(!check_has_difference_type<int (type::*)() cv&&>);             \
+  static_assert(!check_has_difference_type < int(type::*)() cv && noexcept >);
 
 struct empty {};
 
@@ -168,11 +186,10 @@ struct void_subtraction {
 };
 static_assert(!check_has_difference_type<void_subtraction>);
 
-#define TEST_NOT_DIFFERENCE_TYPE(S, qual1, qual2) \
-  struct S {                                      \
-    __host__ __device__                           \
-    friend int operator-(S qual1, S qual2);       \
-  };                                              \
+#define TEST_NOT_DIFFERENCE_TYPE(S, qual1, qual2)                              \
+  struct S {                                                                   \
+    __host__ __device__ friend int operator-(S qual1, S qual2);                \
+  };                                                                           \
   static_assert(!check_has_difference_type<S>, "")
 
 TEST_NOT_DIFFERENCE_TYPE(A01, &, &);
@@ -265,7 +282,4 @@ TEST_NOT_DIFFERENCE_TYPE(A96, NO_QUALIFIER, const&&);
 TEST_NOT_DIFFERENCE_TYPE(A97, NO_QUALIFIER, volatile&&);
 TEST_NOT_DIFFERENCE_TYPE(A98, NO_QUALIFIER, const volatile&&);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

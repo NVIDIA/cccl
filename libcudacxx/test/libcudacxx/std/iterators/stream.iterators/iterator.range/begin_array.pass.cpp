@@ -16,13 +16,12 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    int ia[] = {1, 2, 3};
-    int* i = cuda::std::begin(ia);
-    assert(*i == 1);
-    *i = 2;
-    assert(ia[0] == 2);
+int main(int, char**) {
+  int ia[] = {1, 2, 3};
+  int* i = cuda::std::begin(ia);
+  assert(*i == 1);
+  *i = 2;
+  assert(ia[0] == 2);
 
   return 0;
 }

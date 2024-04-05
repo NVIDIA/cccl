@@ -12,7 +12,6 @@
 // template<class T>
 // concept copy_constructible;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -94,17 +93,20 @@ static_assert(copy_constructible<CopyCtorUserDefined>, "");
 
 struct CopyAssignUserDefined {
   CopyAssignUserDefined& operator=(CopyAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
+  __host__ __device__ CopyAssignUserDefined&
+  operator=(const CopyAssignUserDefined&);
 };
 static_assert(!copy_constructible<CopyAssignUserDefined>, "");
 
 struct CopyCtorAndAssignUserDefined {
   CopyCtorAndAssignUserDefined(CopyCtorAndAssignUserDefined&&) noexcept =
       default;
-  __host__ __device__ CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
+  __host__ __device__
+  CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
   CopyCtorAndAssignUserDefined&
   operator=(CopyCtorAndAssignUserDefined&&) noexcept = default;
-  __host__ __device__ CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
+  __host__ __device__ CopyCtorAndAssignUserDefined&
+  operator=(const CopyCtorAndAssignUserDefined&);
 };
 static_assert(copy_constructible<CopyCtorAndAssignUserDefined>, "");
 
@@ -126,7 +128,8 @@ struct CopyCtorHasMutableRef {
 };
 static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy constructor
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC chokes on the deleted copy constructor
 struct CopyCtorProhibitsMutableRef {
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&&) noexcept = default;
   CopyCtorProhibitsMutableRef(const CopyCtorProhibitsMutableRef&) = default;
@@ -142,7 +145,8 @@ struct CopyAssignHasMutableRef {
 };
 static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy assignment
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC chokes on the deleted copy assignment
 struct CopyAssignProhibitsMutableRef {
   CopyAssignProhibitsMutableRef&
   operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;

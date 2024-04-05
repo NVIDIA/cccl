@@ -42,8 +42,12 @@ struct not_input_iterator {
 #if TEST_STD_VER > 2017
   bool operator==(not_input_iterator const&) const = default;
 #else
-    __host__ __device__ bool operator==(const not_input_iterator&) const { return true; };
-    __host__ __device__ bool operator!=(const not_input_iterator&) const { return false; };
+  __host__ __device__ bool operator==(const not_input_iterator&) const {
+    return true;
+  };
+  __host__ __device__ bool operator!=(const not_input_iterator&) const {
+    return false;
+  };
 #endif
 };
 static_assert(cuda::std::input_or_output_iterator<not_input_iterator>);
@@ -63,8 +67,12 @@ struct bad_iterator_tag {
 #if TEST_STD_VER > 2017
   bool operator==(bad_iterator_tag const&) const = default;
 #else
-    __host__ __device__ bool operator==(const bad_iterator_tag&) const { return true; };
-    __host__ __device__ bool operator!=(const bad_iterator_tag&) const { return false; };
+  __host__ __device__ bool operator==(const bad_iterator_tag&) const {
+    return true;
+  };
+  __host__ __device__ bool operator!=(const bad_iterator_tag&) const {
+    return false;
+  };
 #endif
 };
 static_assert(!cuda::std::forward_iterator<bad_iterator_tag>);
@@ -82,8 +90,12 @@ struct not_incrementable {
 #if TEST_STD_VER > 2017
   bool operator==(not_incrementable const&) const = default;
 #else
-    __host__ __device__ bool operator==(const not_incrementable&) const { return true; };
-    __host__ __device__ bool operator!=(const not_incrementable&) const { return false; };
+  __host__ __device__ bool operator==(const not_incrementable&) const {
+    return true;
+  };
+  __host__ __device__ bool operator!=(const not_incrementable&) const {
+    return false;
+  };
 #endif
 };
 static_assert(!cuda::std::forward_iterator<not_incrementable>);
@@ -98,11 +110,9 @@ struct not_equality_comparable {
   __host__ __device__ not_equality_comparable& operator++();
   __host__ __device__ not_equality_comparable operator++(int);
 
-  __host__ __device__ bool operator==(not_equality_comparable const&) const = delete;
+  __host__ __device__ bool
+  operator==(not_equality_comparable const&) const = delete;
 };
 static_assert(!cuda::std::forward_iterator<not_equality_comparable>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

@@ -12,8 +12,8 @@
 #ifndef _CUDA_PTX_HELPER_FUNCTIONS_H_
 #define _CUDA_PTX_HELPER_FUNCTIONS_H_
 
-#include <cuda/std/cstdint>        // uint32_t
-#include <cuda/std/cstddef>        // size_t
+#include <cuda/std/cstdint> // uint32_t
+#include <cuda/std/cstddef> // size_t
 #include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -60,7 +60,6 @@ inline _LIBCUDACXX_DEVICE _CUDA_VSTD::uint64_t __as_ptr_gmem(const void* __ptr)
   return static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__ptr));
 }
 
-
 /*************************************************************
  *
  * Conversion from state space "pointer" -> generic pointer
@@ -93,7 +92,6 @@ inline _LIBCUDACXX_DEVICE _Tp* __from_ptr_gmem(_CUDA_VSTD::size_t __ptr)
   // Consider adding debug asserts here.
   return reinterpret_cast<_Tp*>(__cvta_global_to_generic(__ptr));
 }
-
 
 /*************************************************************
  *

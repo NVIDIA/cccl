@@ -33,16 +33,15 @@
 
 // NOTE: The order of these #includes matters.
 
-#include <thrust/detail/config/simple_defines.h>
 #include <thrust/detail/config/compiler.h>
-#include <thrust/detail/config/cpp_dialect.h>
 #include <thrust/detail/config/cpp_compatibility.h>
+#include <thrust/detail/config/cpp_dialect.h>
 #include <thrust/detail/config/deprecated.h>
+#include <thrust/detail/config/simple_defines.h>
 // host_system.h & device_system.h must be #included as early as possible
 // because other config headers depend on it
-#include <thrust/detail/config/host_system.h>
-#include <thrust/detail/config/device_system.h>
 #include <thrust/detail/config/debug.h>
+#include <thrust/detail/config/device_system.h>
 #include <thrust/detail/config/global_workarounds.h>
+#include <thrust/detail/config/host_system.h>
 #include <thrust/detail/config/namespace.h>
-

@@ -20,40 +20,44 @@
 #include "test_macros.h"
 
 template <typename Y, typename Ys>
-__host__ __device__
-constexpr bool testConstexpr()
-{
-    Y y1{1};
-    if (static_cast<int>(y1 += Ys{ 1}) !=  2) return false;
-    if (static_cast<int>(y1 += Ys{ 2}) !=  4) return false;
-    if (static_cast<int>(y1 += Ys{ 8}) != 12) return false;
-    if (static_cast<int>(y1 -= Ys{ 1}) != 11) return false;
-    if (static_cast<int>(y1 -= Ys{ 2}) !=  9) return false;
-    if (static_cast<int>(y1 -= Ys{ 8}) !=  1) return false;
-    return true;
+__host__ __device__ constexpr bool testConstexpr() {
+  Y y1{1};
+  if (static_cast<int>(y1 += Ys{1}) != 2)
+    return false;
+  if (static_cast<int>(y1 += Ys{2}) != 4)
+    return false;
+  if (static_cast<int>(y1 += Ys{8}) != 12)
+    return false;
+  if (static_cast<int>(y1 -= Ys{1}) != 11)
+    return false;
+  if (static_cast<int>(y1 -= Ys{2}) != 9)
+    return false;
+  if (static_cast<int>(y1 -= Ys{8}) != 1)
+    return false;
+  return true;
 }
 
-int main(int, char**)
-{
-    using year  = cuda::std::chrono::year;
-    using years = cuda::std::chrono::years;
+int main(int, char**) {
+  using year = cuda::std::chrono::year;
+  using years = cuda::std::chrono::years;
 
-    ASSERT_NOEXCEPT(cuda::std::declval<year&>() += cuda::std::declval<years>());
-    ASSERT_NOEXCEPT(cuda::std::declval<year&>() -= cuda::std::declval<years>());
+  ASSERT_NOEXCEPT(cuda::std::declval<year&>() += cuda::std::declval<years>());
+  ASSERT_NOEXCEPT(cuda::std::declval<year&>() -= cuda::std::declval<years>());
 
-    ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() += cuda::std::declval<years>()));
-    ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() -= cuda::std::declval<years>()));
+  ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() +=
+                                   cuda::std::declval<years>()));
+  ASSERT_SAME_TYPE(year&, decltype(cuda::std::declval<year&>() -=
+                                   cuda::std::declval<years>()));
 
-    static_assert(testConstexpr<year, years>(), "");
+  static_assert(testConstexpr<year, years>(), "");
 
-    for (int i = 10000; i <= 10020; ++i)
-    {
-        year year(i);
-        assert(static_cast<int>(year += years{10}) == i + 10);
-        assert(static_cast<int>(year)              == i + 10);
-        assert(static_cast<int>(year -= years{ 9}) == i +  1);
-        assert(static_cast<int>(year)              == i +  1);
-    }
+  for (int i = 10000; i <= 10020; ++i) {
+    year year(i);
+    assert(static_cast<int>(year += years{10}) == i + 10);
+    assert(static_cast<int>(year) == i + 10);
+    assert(static_cast<int>(year -= years{9}) == i + 1);
+    assert(static_cast<int>(year) == i + 1);
+  }
 
   return 0;
 }

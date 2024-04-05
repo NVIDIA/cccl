@@ -29,10 +29,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/cuda/memory_resource.h>
-#include <thrust/memory.h>
 #include <thrust/detail/type_traits.h>
+#include <thrust/memory.h>
 #include <thrust/mr/allocator.h>
+#include <thrust/system/cuda/memory_resource.h>
+
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN
@@ -77,41 +78,40 @@ inline _CCCL_HOST_DEVICE void free(pointer<void> ptr);
  *  provided. \p cuda::allocator allocates (deallocates) storage with \p
  *  cuda::malloc (\p cuda::free).
  */
-template<typename T>
-using allocator = thrust::mr::stateless_resource_allocator<
-  T, thrust::system::cuda::memory_resource
->;
+template <typename T>
+using allocator = thrust::mr::stateless_resource_allocator< T, thrust::system::cuda::memory_resource >;
 
 /*! \p cuda::universal_allocator allocates memory that can be used by the \p cuda
  *  system and host systems.
  */
-template<typename T>
-using universal_allocator = thrust::mr::stateless_resource_allocator<
-  T, thrust::system::cuda::universal_memory_resource
->;
+template <typename T>
+using universal_allocator =
+  thrust::mr::stateless_resource_allocator< T, thrust::system::cuda::universal_memory_resource >;
 
 } // namespace cuda_cub
 
-namespace system { namespace cuda
+namespace system
 {
-using thrust::cuda_cub::malloc;
-using thrust::cuda_cub::free;
+namespace cuda
+{
 using thrust::cuda_cub::allocator;
+using thrust::cuda_cub::free;
+using thrust::cuda_cub::malloc;
 using thrust::cuda_cub::universal_allocator;
-}} // namespace system::cuda
+} // namespace cuda
+} // namespace system
 
 /*! \namespace thrust::cuda
  *  \brief \p thrust::cuda is a top-level alias for \p thrust::system::cuda.
  */
 namespace cuda
 {
-using thrust::cuda_cub::malloc;
-using thrust::cuda_cub::free;
 using thrust::cuda_cub::allocator;
+using thrust::cuda_cub::free;
+using thrust::cuda_cub::malloc;
 using thrust::cuda_cub::universal_allocator;
 } // namespace cuda
 
 THRUST_NAMESPACE_END
 
 #include <thrust/system/cuda/detail/memory.inl>
-

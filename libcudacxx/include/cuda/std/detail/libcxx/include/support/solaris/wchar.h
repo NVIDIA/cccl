@@ -6,27 +6,27 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define iswalpha sun_iswalpha
-#define iswupper sun_iswupper
-#define iswlower sun_iswlower
-#define iswdigit sun_iswdigit
+#define iswalpha  sun_iswalpha
+#define iswupper  sun_iswupper
+#define iswlower  sun_iswlower
+#define iswdigit  sun_iswdigit
 #define iswxdigit sun_iswxdigit
-#define iswalnum sun_iswalnum
-#define iswspace sun_iswspace
-#define iswpunct sun_iswpunct
-#define iswprint sun_iswprint
-#define iswgraph sun_iswgraph
-#define iswcntrl sun_iswcntrl
-#define iswctype sun_iswctype
-#define towlower sun_towlower
-#define towupper sun_towupper
-#define wcswcs sun_wcswcs
-#define wcswidth sun_wcswidth
-#define wcwidth sun_wcwidth
-#define wctype sun_wctype
-#define _WCHAR_T 1
+#define iswalnum  sun_iswalnum
+#define iswspace  sun_iswspace
+#define iswpunct  sun_iswpunct
+#define iswprint  sun_iswprint
+#define iswgraph  sun_iswgraph
+#define iswcntrl  sun_iswcntrl
+#define iswctype  sun_iswctype
+#define towlower  sun_towlower
+#define towupper  sun_towupper
+#define wcswcs    sun_wcswcs
+#define wcswidth  sun_wcswidth
+#define wcwidth   sun_wcwidth
+#define wctype    sun_wctype
+#define _WCHAR_T  1
 #include_next "wchar.h"
-#undef iswalpha 
+#undef iswalpha
 #undef iswupper
 #undef iswlower
 #undef iswdigit

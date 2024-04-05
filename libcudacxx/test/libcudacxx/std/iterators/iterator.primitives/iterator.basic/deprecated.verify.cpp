@@ -13,9 +13,7 @@
 
 #include <cuda/std/iterator>
 
-cuda::std::iterator<cuda::std::input_iterator_tag, char> it; // expected-warning-re {{'iterator<{{.+}}>' is deprecated}}
+cuda::std::iterator<cuda::std::input_iterator_tag, char>
+    it; // expected-warning-re {{'iterator<{{.+}}>' is deprecated}}
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

@@ -17,11 +17,11 @@
 
 #include <cuda/std/iterator>
 
-struct Base { };
-struct Derived : Base { };
+struct Base {};
+struct Derived : Base {};
 
 void test() {
-    cuda::std::move_iterator<Base*> base;
-    cuda::std::move_iterator<Derived*> derived;
-    derived = base; // expected-error {{no viable overloaded '='}}
+  cuda::std::move_iterator<Base*> base;
+  cuda::std::move_iterator<Derived*> derived;
+  derived = base; // expected-error {{no viable overloaded '='}}
 }

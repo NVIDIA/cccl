@@ -26,39 +26,36 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using weekday  = cuda::std::chrono::weekday;
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
+int main(int, char**) {
+  using weekday = cuda::std::chrono::weekday;
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
-    ASSERT_NOEXCEPT(weekday_indexed{});
-    ASSERT_NOEXCEPT(weekday_indexed(weekday{1}, 1));
+  ASSERT_NOEXCEPT(weekday_indexed{});
+  ASSERT_NOEXCEPT(weekday_indexed(weekday{1}, 1));
 
-    constexpr weekday_indexed wdi0{};
-    static_assert( wdi0.weekday() == weekday{}, "");
-    static_assert( wdi0.index() == 0,           "");
-    static_assert(!wdi0.ok(),                   "");
+  constexpr weekday_indexed wdi0{};
+  static_assert(wdi0.weekday() == weekday{}, "");
+  static_assert(wdi0.index() == 0, "");
+  static_assert(!wdi0.ok(), "");
 
-    constexpr weekday_indexed wdi1{cuda::std::chrono::Sunday, 2};
-    static_assert( wdi1.weekday() == cuda::std::chrono::Sunday, "");
-    static_assert( wdi1.index() == 2,                     "");
-    static_assert( wdi1.ok(),                             "");
+  constexpr weekday_indexed wdi1{cuda::std::chrono::Sunday, 2};
+  static_assert(wdi1.weekday() == cuda::std::chrono::Sunday, "");
+  static_assert(wdi1.index() == 2, "");
+  static_assert(wdi1.ok(), "");
 
-    auto constexpr Tuesday = cuda::std::chrono::Tuesday;
+  auto constexpr Tuesday = cuda::std::chrono::Tuesday;
 
-    for (unsigned i = 1; i <= 5; ++i)
-    {
-        weekday_indexed wdi(Tuesday, i);
-        assert( wdi.weekday() == Tuesday);
-        assert( wdi.index() == i);
-        assert( wdi.ok());
-    }
+  for (unsigned i = 1; i <= 5; ++i) {
+    weekday_indexed wdi(Tuesday, i);
+    assert(wdi.weekday() == Tuesday);
+    assert(wdi.index() == i);
+    assert(wdi.ok());
+  }
 
-    for (unsigned i = 6; i <= 20; ++i)
-    {
-        weekday_indexed wdi(Tuesday, i);
-        assert(!wdi.ok());
-    }
+  for (unsigned i = 6; i <= 20; ++i) {
+    weekday_indexed wdi(Tuesday, i);
+    assert(!wdi.ok());
+  }
 
   return 0;
 }

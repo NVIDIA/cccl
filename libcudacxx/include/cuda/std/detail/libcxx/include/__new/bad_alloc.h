@@ -40,7 +40,8 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc() {
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc()
+{
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_alloc();
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
@@ -58,7 +59,8 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_array_new_length() {
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_array_new_length()
+{
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_array_new_length();
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS

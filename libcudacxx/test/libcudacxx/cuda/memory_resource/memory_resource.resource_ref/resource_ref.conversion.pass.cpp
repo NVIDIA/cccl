@@ -55,12 +55,16 @@ struct resource {
   int _val = 0;
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  _LIBCUDACXX_REQUIRES(
+      (!cuda::property_with_value<Property>)&&_CUDA_VSTD::_One_of<
+          Property, Properties...>) //
   friend void get_property(const resource&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const resource& res, Property) noexcept {
+  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&&
+                           _CUDA_VSTD::_One_of<Property, Properties...>) //
+  friend typename Property::value_type get_property(const resource& res,
+                                                    Property) noexcept {
     return static_cast<typename Property::value_type>(res._val);
   }
 };
@@ -152,21 +156,21 @@ void test_conversion_from_async_resource_ref() {
 }
 
 int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,(
-        test_conversion_from_resource_ref<property_with_value<short>,
-                                          property_with_value<int> >();
-        test_conversion_from_resource_ref<property_with_value<short>,
-                                          property_without_value<int> >();
-        test_conversion_from_resource_ref<property_without_value<short>,
-                                          property_without_value<int> >();
+  NV_IF_TARGET(
+      NV_IS_HOST,
+      (test_conversion_from_resource_ref<property_with_value<short>,
+                                         property_with_value<int> >();
+       test_conversion_from_resource_ref<property_with_value<short>,
+                                         property_without_value<int> >();
+       test_conversion_from_resource_ref<property_without_value<short>,
+                                         property_without_value<int> >();
 
-        test_conversion_from_async_resource_ref<property_with_value<short>,
-                                                property_with_value<int> >();
-        test_conversion_from_async_resource_ref<property_with_value<short>,
-                                                property_without_value<int> >();
-        test_conversion_from_async_resource_ref<property_without_value<short>,
-                                                property_without_value<int> >();
-    ))
+       test_conversion_from_async_resource_ref<property_with_value<short>,
+                                               property_with_value<int> >();
+       test_conversion_from_async_resource_ref<property_with_value<short>,
+                                               property_without_value<int> >();
+       test_conversion_from_async_resource_ref<
+           property_without_value<short>, property_without_value<int> >();))
 
-    return 0;
+  return 0;
 }

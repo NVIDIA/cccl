@@ -29,13 +29,15 @@ struct A1 {
 
 struct A2 {
   mutable B b_;
-  __host__ __device__ TEST_CONSTEXPR operator B&() const TEST_NOEXCEPT { return b_; }
+  __host__ __device__ TEST_CONSTEXPR operator B&() const TEST_NOEXCEPT {
+    return b_;
+  }
 };
 
-__host__ __device__ void implicitly_convert(cuda::std::reference_wrapper<B>) TEST_NOEXCEPT;
+__host__ __device__ void
+    implicitly_convert(cuda::std::reference_wrapper<B>) TEST_NOEXCEPT;
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
-{
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   {
     A1 a{};
 #ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT

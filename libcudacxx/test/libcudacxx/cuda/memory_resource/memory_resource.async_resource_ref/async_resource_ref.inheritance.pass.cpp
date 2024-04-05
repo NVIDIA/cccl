@@ -41,12 +41,16 @@ struct async_resource_base {
   bool operator!=(const async_resource_base& other) const { return false; }
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( (!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
+  _LIBCUDACXX_REQUIRES(
+      (!cuda::property_with_value<Property>)&&_CUDA_VSTD::_One_of<
+          Property, Properties...>) //
   friend void get_property(const async_resource_base&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-    _LIBCUDACXX_REQUIRES( cuda::property_with_value<Property> && _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const async_resource_base& res, Property) noexcept {
+  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&&
+                           _CUDA_VSTD::_One_of<Property, Properties...>) //
+  friend typename Property::value_type
+  get_property(const async_resource_base& res, Property) noexcept {
     return 42;
   }
 };
@@ -69,8 +73,12 @@ struct async_resource_derived_first
   void deallocate_async(void* ptr, std::size_t, std::size_t,
                         cuda::stream_ref) override {}
 
-  bool operator==(const async_resource_derived_first& other) const { return true; }
-  bool operator!=(const async_resource_derived_first& other) const { return false; }
+  bool operator==(const async_resource_derived_first& other) const {
+    return true;
+  }
+  bool operator!=(const async_resource_derived_first& other) const {
+    return false;
+  }
 
   int _val = 0;
 };
@@ -98,8 +106,12 @@ struct async_resource_derived_second
   void deallocate_async(void* ptr, std::size_t, std::size_t,
                         cuda::stream_ref) override {}
 
-  bool operator==(const async_resource_derived_second& other) const { return true; }
-  bool operator!=(const async_resource_derived_second& other) const { return false; }
+  bool operator==(const async_resource_derived_second& other) const {
+    return true;
+  }
+  bool operator!=(const async_resource_derived_second& other) const {
+    return false;
+  }
 
   some_data* _val = 0;
 };
@@ -155,22 +167,23 @@ extern "C" void __cxa_pure_virtual() {
 }
 
 int main(int, char**) {
-    NV_IF_TARGET(NV_IS_HOST,(
-        // Test some basic combinations of properties w/o state
-        test_async_resource_ref<property_with_value<short>,
-                                property_with_value<int> >();
-        test_async_resource_ref<property_with_value<short>,
-                                property_without_value<int> >();
-        test_async_resource_ref<property_without_value<short>,
-                                property_without_value<int> >();
+  NV_IF_TARGET(
+      NV_IS_HOST,
+      (
+          // Test some basic combinations of properties w/o state
+          test_async_resource_ref<property_with_value<short>,
+                                  property_with_value<int> >();
+          test_async_resource_ref<property_with_value<short>,
+                                  property_without_value<int> >();
+          test_async_resource_ref<property_without_value<short>,
+                                  property_without_value<int> >();
 
-        test_async_resource_ref_from_pointer<property_with_value<short>,
-                                            property_with_value<int> >();
-        test_async_resource_ref_from_pointer<property_with_value<short>,
-                                            property_without_value<int> >();
-        test_async_resource_ref_from_pointer<property_without_value<short>,
-                                            property_without_value<int> >();
-    ))
+          test_async_resource_ref_from_pointer<property_with_value<short>,
+                                               property_with_value<int> >();
+          test_async_resource_ref_from_pointer<property_with_value<short>,
+                                               property_without_value<int> >();
+          test_async_resource_ref_from_pointer<
+              property_without_value<short>, property_without_value<int> >();))
 
-    return 0;
+  return 0;
 }

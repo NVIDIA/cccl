@@ -47,11 +47,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-   using weekday = cuda::std::chrono::weekday;
+int main(int, char**) {
+  using weekday = cuda::std::chrono::weekday;
 
-   std::cout << weekday{3};
+  std::cout << weekday{3};
 
   return 0;
 }

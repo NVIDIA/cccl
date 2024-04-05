@@ -23,25 +23,23 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using day = cuda::std::chrono::day;
+int main(int, char**) {
+  using day = cuda::std::chrono::day;
 
-    ASSERT_NOEXCEPT(day{});
-    ASSERT_NOEXCEPT(day(0U));
-    ASSERT_NOEXCEPT(static_cast<unsigned>(day(0U)));
+  ASSERT_NOEXCEPT(day{});
+  ASSERT_NOEXCEPT(day(0U));
+  ASSERT_NOEXCEPT(static_cast<unsigned>(day(0U)));
 
-    constexpr day d0{};
-    static_assert(static_cast<unsigned>(d0) == 0, "");
+  constexpr day d0{};
+  static_assert(static_cast<unsigned>(d0) == 0, "");
 
-    constexpr day d1{1};
-    static_assert(static_cast<unsigned>(d1) == 1, "");
+  constexpr day d1{1};
+  static_assert(static_cast<unsigned>(d1) == 1, "");
 
-    for (unsigned i = 0; i <= 255; ++i)
-    {
-        day day(i);
-        assert(static_cast<unsigned>(day) == i);
-    }
+  for (unsigned i = 0; i <= 255; ++i) {
+    day day(i);
+    assert(static_cast<unsigned>(day) == i);
+  }
 
   return 0;
 }

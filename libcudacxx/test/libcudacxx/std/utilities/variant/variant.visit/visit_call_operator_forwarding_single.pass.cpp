@@ -24,11 +24,10 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-__host__ __device__
-void test_call_operator_forwarding() {
+__host__ __device__ void test_call_operator_forwarding() {
   using Fn = ForwardingCallObject;
   Fn obj{};
-  const Fn &cobj = obj;
+  const Fn& cobj = obj;
   { // test call operator forwarding - no variant
     cuda::std::visit(obj);
     assert(Fn::check_call<>(CT_NonConst | CT_LValue));
@@ -43,25 +42,25 @@ void test_call_operator_forwarding() {
     using V = cuda::std::variant<int>;
     V v(42);
     cuda::std::visit(obj, v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_LValue));
+    assert(Fn::check_call<int&>(CT_NonConst | CT_LValue));
     cuda::std::visit(cobj, v);
-    assert(Fn::check_call<int &>(CT_Const | CT_LValue));
+    assert(Fn::check_call<int&>(CT_Const | CT_LValue));
     cuda::std::visit(cuda::std::move(obj), v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_RValue));
+    assert(Fn::check_call<int&>(CT_NonConst | CT_RValue));
     cuda::std::visit(cuda::std::move(cobj), v);
-    assert(Fn::check_call<int &>(CT_Const | CT_RValue));
+    assert(Fn::check_call<int&>(CT_Const | CT_RValue));
   }
   { // test call operator forwarding - single variant, multi arg
     using V = cuda::std::variant<int, long, double>;
     V v(42l);
     cuda::std::visit(obj, v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_LValue));
+    assert(Fn::check_call<long&>(CT_NonConst | CT_LValue));
     cuda::std::visit(cobj, v);
-    assert(Fn::check_call<long &>(CT_Const | CT_LValue));
+    assert(Fn::check_call<long&>(CT_Const | CT_LValue));
     cuda::std::visit(cuda::std::move(obj), v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_RValue));
+    assert(Fn::check_call<long&>(CT_NonConst | CT_RValue));
     cuda::std::visit(cuda::std::move(cobj), v);
-    assert(Fn::check_call<long &>(CT_Const | CT_RValue));
+    assert(Fn::check_call<long&>(CT_Const | CT_RValue));
   }
 }
 

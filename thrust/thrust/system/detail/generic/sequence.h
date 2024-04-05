@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -36,31 +35,17 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename ForwardIterator>
+_CCCL_HOST_DEVICE void
+sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last);
 
-template<typename DerivedPolicy,
-         typename ForwardIterator>
-_CCCL_HOST_DEVICE
-  void sequence(thrust::execution_policy<DerivedPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last);
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE void
+sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init);
 
-
-template<typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-  void sequence(thrust::execution_policy<DerivedPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                T init);
-
-
-template<typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-  void sequence(thrust::execution_policy<DerivedPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                T init,
-                T step);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE void
+sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init, T step);
 
 } // end namespace generic
 } // end namespace detail
@@ -68,4 +53,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/sequence.inl>
-

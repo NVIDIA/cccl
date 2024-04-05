@@ -93,6 +93,4 @@ static_assert(cuda::std::default_initializable<View>);
 static_assert(cuda::std::ranges::enable_view<View>);
 static_assert(cuda::std::ranges::view<View>);
 
-int main(int, char**) {
-  return 0;
-}
+int main(int, char**) { return 0; }

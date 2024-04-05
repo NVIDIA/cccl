@@ -65,8 +65,10 @@ struct multi_param_move_ctor {
 };
 
 struct not_quite_multi_param_move_ctor {
-  __host__ __device__ not_quite_multi_param_move_ctor(not_quite_multi_param_move_ctor&&, int);
-  __host__ __device__ not_quite_multi_param_move_ctor& operator=(not_quite_multi_param_move_ctor&&);
+  __host__ __device__
+  not_quite_multi_param_move_ctor(not_quite_multi_param_move_ctor&&, int);
+  __host__ __device__ not_quite_multi_param_move_ctor&
+  operator=(not_quite_multi_param_move_ctor&&);
 };
 
 struct copy_with_mutable_parameter {
@@ -76,15 +78,18 @@ struct copy_with_mutable_parameter {
 };
 
 struct const_move_assignment {
-  __host__ __device__ const_move_assignment& operator=(const_move_assignment&&) const;
+  __host__ __device__ const_move_assignment&
+  operator=(const_move_assignment&&) const;
 };
 
 struct volatile_move_assignment {
-  __host__ __device__ const_move_assignment& operator=(const_move_assignment&&) volatile;
+  __host__ __device__ const_move_assignment&
+  operator=(const_move_assignment&&) volatile;
 };
 
 struct cv_move_assignment {
-  __host__ __device__ cv_move_assignment& operator=(cv_move_assignment&&) const volatile;
+  __host__ __device__ cv_move_assignment& operator=(cv_move_assignment&&) const
+      volatile;
 };
 
 struct const_move_assign_and_traditional_move_assign {
@@ -108,7 +113,8 @@ struct cv_move_assign_and_traditional_move_assign {
   operator=(cv_move_assign_and_traditional_move_assign&&) const volatile;
 };
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
+#if !defined(TEST_COMPILER_MSVC) ||                                            \
+    TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
 struct const_move_assign_and_default_ops {
   const_move_assign_and_default_ops(const_move_assign_and_default_ops const&) =
       default;
@@ -151,7 +157,8 @@ struct cv_move_assign_and_default_ops {
 struct deleted_assignment_from_const_rvalue {
   __host__ __device__ deleted_assignment_from_const_rvalue(
       deleted_assignment_from_const_rvalue const&);
-  __host__ __device__ deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue&&);
+  __host__ __device__
+  deleted_assignment_from_const_rvalue(deleted_assignment_from_const_rvalue&&);
   __host__ __device__ deleted_assignment_from_const_rvalue&
   operator=(const deleted_assignment_from_const_rvalue&);
   __host__ __device__ deleted_assignment_from_const_rvalue&

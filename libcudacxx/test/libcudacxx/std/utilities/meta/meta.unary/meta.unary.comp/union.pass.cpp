@@ -15,37 +15,31 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_union_imp()
-{
-    static_assert(!cuda::std::is_reference<T>::value, "");
-    static_assert(!cuda::std::is_arithmetic<T>::value, "");
-    static_assert(!cuda::std::is_fundamental<T>::value, "");
-    static_assert( cuda::std::is_object<T>::value, "");
-    static_assert(!cuda::std::is_scalar<T>::value, "");
-    static_assert( cuda::std::is_compound<T>::value, "");
-    static_assert(!cuda::std::is_member_pointer<T>::value, "");
+__host__ __device__ void test_union_imp() {
+  static_assert(!cuda::std::is_reference<T>::value, "");
+  static_assert(!cuda::std::is_arithmetic<T>::value, "");
+  static_assert(!cuda::std::is_fundamental<T>::value, "");
+  static_assert(cuda::std::is_object<T>::value, "");
+  static_assert(!cuda::std::is_scalar<T>::value, "");
+  static_assert(cuda::std::is_compound<T>::value, "");
+  static_assert(!cuda::std::is_member_pointer<T>::value, "");
 }
 
 template <class T>
-__host__ __device__
-void test_union()
-{
-    test_union_imp<T>();
-    test_union_imp<const T>();
-    test_union_imp<volatile T>();
-    test_union_imp<const volatile T>();
+__host__ __device__ void test_union() {
+  test_union_imp<T>();
+  test_union_imp<const T>();
+  test_union_imp<volatile T>();
+  test_union_imp<const volatile T>();
 }
 
-union Union
-{
-    int _;
-    double __;
+union Union {
+  int _;
+  double __;
 };
 
-int main(int, char**)
-{
-    test_union<Union>();
+int main(int, char**) {
+  test_union<Union>();
 
   return 0;
 }

@@ -8,7 +8,7 @@
 #ifndef SUPPORT_NASTY_MACROS_H
 #define SUPPORT_NASTY_MACROS_H
 
-#define NASTY_MACRO This should not be expanded!!!
+#define NASTY_MACRO This should not be expanded !!!
 #define _A NASTY_MACRO
 #define _B NASTY_MACRO
 #define _C NASTY_MACRO
@@ -42,12 +42,12 @@
 #define _Z NASTY_MACRO
 
 // tchar.h defines these macros on Windows.
-#define _UI   NASTY_MACRO
-#define _PUC  NASTY_MACRO
+#define _UI NASTY_MACRO
+#define _PUC NASTY_MACRO
 #define _CPUC NASTY_MACRO
-#define _PC   NASTY_MACRO
+#define _PC NASTY_MACRO
 #define _CRPC NASTY_MACRO
-#define _CPC  NASTY_MACRO
+#define _CPC NASTY_MACRO
 
 // yvals.h on MINGW defines this macro
 #define _C2 NASTY_MACRO

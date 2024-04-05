@@ -23,8 +23,7 @@
 #include "test_macros.h"
 
 struct LVal {
-  __host__ __device__
-  constexpr int operator()(int&) { return 1; }
+  __host__ __device__ constexpr int operator()(int&) { return 1; }
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
   int operator()(const int&&) = delete;
@@ -32,8 +31,7 @@ struct LVal {
 
 struct CLVal {
   int operator()(int&) = delete;
-  __host__ __device__
-  constexpr int operator()(const int&) { return 1; }
+  __host__ __device__ constexpr int operator()(const int&) { return 1; }
   int operator()(int&&) = delete;
   int operator()(const int&&) = delete;
 };
@@ -41,8 +39,7 @@ struct CLVal {
 struct RVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
-  __host__ __device__
-  constexpr int operator()(int&&) { return 1; }
+  __host__ __device__ constexpr int operator()(int&&) { return 1; }
   int operator()(const int&&) = delete;
 };
 
@@ -50,13 +47,11 @@ struct CRVal {
   int operator()(int&) = delete;
   int operator()(const int&) = delete;
   int operator()(int&&) = delete;
-  __host__ __device__
-  constexpr int operator()(const int&&) { return 1; }
+  __host__ __device__ constexpr int operator()(const int&&) { return 1; }
 };
 
 struct RefQual {
-  __host__ __device__
-  constexpr int operator()(int) & { return 1; }
+  __host__ __device__ constexpr int operator()(int) & { return 1; }
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
   int operator()(int) const&& = delete;
@@ -64,8 +59,7 @@ struct RefQual {
 
 struct CRefQual {
   int operator()(int) & = delete;
-  __host__ __device__
-  constexpr int operator()(int) const& { return 1; }
+  __host__ __device__ constexpr int operator()(int) const& { return 1; }
   int operator()(int) && = delete;
   int operator()(int) const&& = delete;
 };
@@ -73,8 +67,7 @@ struct CRefQual {
 struct RVRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
-  __host__ __device__
-  constexpr int operator()(int) && { return 1; }
+  __host__ __device__ constexpr int operator()(int) && { return 1; }
   int operator()(int) const&& = delete;
 };
 
@@ -82,29 +75,24 @@ struct RVCRefQual {
   int operator()(int) & = delete;
   int operator()(int) const& = delete;
   int operator()(int) && = delete;
-  __host__ __device__
-  constexpr int operator()(int) const&& { return 1; }
+  __host__ __device__ constexpr int operator()(int) const&& { return 1; }
 };
 
 #if TEST_STD_VER >= 2017
 struct NoCopy {
   NoCopy() = default;
-  __host__ __device__
-  NoCopy(const NoCopy&) { assert(false); }
-  __host__ __device__
-  int operator()(const NoCopy&&) { return 1; }
+  __host__ __device__ NoCopy(const NoCopy&) { assert(false); }
+  __host__ __device__ int operator()(const NoCopy&&) { return 1; }
 };
 
 struct NoMove {
   NoMove() = default;
   NoMove(NoMove&&) = delete;
-  __host__ __device__
-  NoMove operator()(const NoCopy&&) { return NoMove{}; }
+  __host__ __device__ NoMove operator()(const NoCopy&&) { return NoMove{}; }
 };
 #endif
 
-__host__ __device__
-constexpr void test_val_types() {
+__host__ __device__ constexpr void test_val_types() {
   // Test & overload
   {
     // Without & qualifier on F's operator()
@@ -129,7 +117,8 @@ constexpr void test_val_types() {
     {
       const cuda::std::optional<int> i{0};
       assert(i.transform(CLVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(CLVal{})), cuda::std::optional<int>);
+      ASSERT_SAME_TYPE(decltype(i.transform(CLVal{})),
+                       cuda::std::optional<int>);
     }
 
     //With & qualifier on F's operator()
@@ -147,14 +136,16 @@ constexpr void test_val_types() {
     {
       cuda::std::optional<int> i{0};
       assert(cuda::std::move(i).transform(RVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(RVal{})), cuda::std::optional<int>);
+      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(RVal{})),
+                       cuda::std::optional<int>);
     }
 
     //With & qualifier on F's operator()
     {
       cuda::std::optional<int> i{0};
       assert(i.transform(RVRefQual{}) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(RVRefQual{})), cuda::std::optional<int>);
+      ASSERT_SAME_TYPE(decltype(i.transform(RVRefQual{})),
+                       cuda::std::optional<int>);
     }
   }
 
@@ -164,7 +155,8 @@ constexpr void test_val_types() {
     {
       const cuda::std::optional<int> i{0};
       assert(cuda::std::move(i).transform(CRVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(CRVal{})), cuda::std::optional<int>);
+      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(CRVal{})),
+                       cuda::std::optional<int>);
     }
 
     //With & qualifier on F's operator()
@@ -172,37 +164,34 @@ constexpr void test_val_types() {
       const cuda::std::optional<int> i{0};
       const RVCRefQual l{};
       assert(i.transform(cuda::std::move(l)) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))), cuda::std::optional<int>);
+      ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))),
+                       cuda::std::optional<int>);
     }
   }
 }
 
 struct NonConst {
-  __host__ __device__
-  int non_const() { return 1; }
+  __host__ __device__ int non_const() { return 1; }
 };
 
 // For a generic lambda, nvrtc appears to not know what to do and claims it needs an annotation (when normal lambdas don't).
 // This is an expanded lambda from the original test.
 struct nvrtc_workaround {
-    template<typename T>
-    __host__ __device__
-    int operator()(T && t) {
-        return t.non_const();
-    }
+  template <typename T>
+  __host__ __device__ int operator()(T&& t) {
+    return t.non_const();
+  }
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__
-TEST_CONSTEXPR_CXX17 void test_sfinae() {
+__host__ __device__ TEST_CONSTEXPR_CXX17 void test_sfinae() {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
   opt.transform(l);
   cuda::std::move(opt).transform(l);
 }
 
-__host__ __device__
-TEST_CONSTEXPR_CXX17 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX17 bool test() {
   test_sfinae();
   test_val_types();
   cuda::std::optional<int> opt;
@@ -219,7 +208,8 @@ TEST_CONSTEXPR_CXX17 bool test() {
   cuda::std::move(copt).transform(never_called);
 
   // the code below depends on guaranteed copy/move elision
-#if TEST_STD_VER >= 2017 && (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
+#if TEST_STD_VER >= 2017 &&                                                    \
+    (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
   cuda::std::optional<NoCopy> nc;
   const auto& cnc = nc;
   cuda::std::move(nc).transform(NoCopy{});

@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___FWD_MEMORY_RESOURCE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,7 +24,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace pmr {
+namespace pmr
+{
 template <class _ValueType>
 class _LIBCUDACXX_TEMPLATE_VIS polymorphic_allocator;
 } // namespace pmr

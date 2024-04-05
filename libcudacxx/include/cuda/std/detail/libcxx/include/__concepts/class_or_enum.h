@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___CONCEPTS_CLASS_OR_ENUM_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,13 +32,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-template<class _Tp>
-_LIBCUDACXX_CONCEPT __class_or_enum = _LIBCUDACXX_TRAIT(is_class, _Tp) || _LIBCUDACXX_TRAIT(is_union, _Tp) || _LIBCUDACXX_TRAIT(is_enum, _Tp);
+template <class _Tp>
+_LIBCUDACXX_CONCEPT __class_or_enum =
+  _LIBCUDACXX_TRAIT(is_class, _Tp) || _LIBCUDACXX_TRAIT(is_union, _Tp) || _LIBCUDACXX_TRAIT(is_enum, _Tp);
 
 // Work around Clang bug https://llvm.org/PR52970
 // TODO: remove this workaround once libc++ no longer has to support Clang 13 (it was fixed in Clang 14).
-template<class _Tp>
-_LIBCUDACXX_CONCEPT __workaround_52970 = _LIBCUDACXX_TRAIT(is_class, remove_cvref_t<_Tp>) || _LIBCUDACXX_TRAIT(is_union, remove_cvref_t<_Tp>);
+template <class _Tp>
+_LIBCUDACXX_CONCEPT __workaround_52970 =
+  _LIBCUDACXX_TRAIT(is_class, remove_cvref_t<_Tp>) || _LIBCUDACXX_TRAIT(is_union, remove_cvref_t<_Tp>);
 
 #endif // _CCCL_STD_VER > 2011
 

@@ -16,39 +16,45 @@
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
-int main(int, char**)
-{
-    using index_t = size_t;
+int main(int, char**) {
+  using index_t = size_t;
 
-    {
-        cuda::std::layout_left ::mapping<cuda::std::extents<index_t,dyn>> m_right{cuda::std::dextents<index_t,1>{16}};
-        cuda::std::layout_right::mapping<cuda::std::extents<index_t,dyn>> m( m_right);
+  {
+    cuda::std::layout_left ::mapping<cuda::std::extents<index_t, dyn> > m_right{
+        cuda::std::dextents<index_t, 1>{16}};
+    cuda::std::layout_right::mapping<cuda::std::extents<index_t, dyn> > m(
+        m_right);
 
-        static_assert( m.is_exhaustive() == true, "" );
+    static_assert(m.is_exhaustive() == true, "");
 
-        assert( m.extents().rank()         == 1  );
-        assert( m.extents().rank_dynamic() == 1  );
-        assert( m.extents().extent(0)      == 16 );
-        assert( m.stride(0)                == 1  );
-    }
+    assert(m.extents().rank() == 1);
+    assert(m.extents().rank_dynamic() == 1);
+    assert(m.extents().extent(0) == 16);
+    assert(m.stride(0) == 1);
+  }
 
-    // Constraint: extents_type::rank() <= 1 is true
-    {
-        using mapping0_t = cuda::std::layout_left::mapping<cuda::std::extents<index_t,16,32>>;
-        using mapping1_t = cuda::std::layout_right::mapping<cuda::std::extents<index_t,16,32>>;
+  // Constraint: extents_type::rank() <= 1 is true
+  {
+    using mapping0_t =
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t, 16, 32> >;
+    using mapping1_t =
+        cuda::std::layout_right::mapping<cuda::std::extents<index_t, 16, 32> >;
 
-        static_assert( is_cons_avail_v< mapping1_t, mapping0_t > == false, "" );
-    }
+    static_assert(is_cons_avail_v<mapping1_t, mapping0_t> == false, "");
+  }
 
-    // Constraint: is_constructible_v<extents_type, OtherExtents> is true
-    {
-        using mapping0_t = cuda::std::layout_left::mapping<cuda::std::extents <index_t,16>>;
-        using mapping1_t = cuda::std::layout_right::mapping<cuda::std::extents <index_t,32>>;
-        using mappingd_t = cuda::std::layout_right::mapping<cuda::std::dextents<index_t,1>>;
+  // Constraint: is_constructible_v<extents_type, OtherExtents> is true
+  {
+    using mapping0_t =
+        cuda::std::layout_left::mapping<cuda::std::extents<index_t, 16> >;
+    using mapping1_t =
+        cuda::std::layout_right::mapping<cuda::std::extents<index_t, 32> >;
+    using mappingd_t =
+        cuda::std::layout_right::mapping<cuda::std::dextents<index_t, 1> >;
 
-        static_assert( is_cons_avail_v< mappingd_t, mapping0_t > == true , "" );
-        static_assert( is_cons_avail_v< mapping1_t, mapping0_t > == false, "" );
-    }
+    static_assert(is_cons_avail_v<mappingd_t, mapping0_t> == true, "");
+    static_assert(is_cons_avail_v<mapping1_t, mapping0_t> == false, "");
+  }
 
-    return 0;
+  return 0;
 }

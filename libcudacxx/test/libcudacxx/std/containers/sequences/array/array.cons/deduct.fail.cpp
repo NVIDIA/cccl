@@ -15,18 +15,18 @@
 //
 //  Requires: (is_same_v<T, U> && ...) is true. Otherwise the program is ill-formed.
 
-
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
-    cuda::std::array arr{1,2,3L}; // expected-error {{no viable constructor or deduction guide for deduction of template arguments of 'array'}}
-    }
+int main(int, char**) {
+  {
+    cuda::std::array arr{
+        1, 2,
+        3L}; // expected-error {{no viable constructor or deduction guide for deduction of template arguments of 'array'}}
+  }
 
   return 0;
 }

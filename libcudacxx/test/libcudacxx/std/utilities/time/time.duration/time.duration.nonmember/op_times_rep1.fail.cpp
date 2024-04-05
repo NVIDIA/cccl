@@ -20,15 +20,13 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 
 #include "../../rep.h"
 
-int main(int, char**)
-{
-    cuda::std::chrono::duration<Rep> d;
-    d = d * 5;
+int main(int, char**) {
+  cuda::std::chrono::duration<Rep> d;
+  d = d * 5;
 
   return 0;
 }

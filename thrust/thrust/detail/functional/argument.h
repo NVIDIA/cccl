@@ -42,41 +42,35 @@ namespace detail
 namespace functional
 {
 
-template<unsigned int i, typename Env>
-  struct argument_helper
+template <unsigned int i, typename Env>
+struct argument_helper
 {
-  typedef typename thrust::tuple_element<i,Env>::type type;
+  typedef typename thrust::tuple_element<i, Env>::type type;
 };
 
-template<unsigned int i>
-  struct argument_helper<i,thrust::tuple<>>
+template <unsigned int i>
+struct argument_helper<i, thrust::tuple<>>
 {
   typedef thrust::tuple<> type;
 };
 
-
-template<unsigned int i>
-  class argument
+template <unsigned int i>
+class argument
 {
-  public:
-    template<typename Env>
-    struct result
-        : argument_helper<i,Env>
-    {
-    };
+public:
+  template <typename Env>
+  struct result : argument_helper<i, Env>
+  {};
 
-    _CCCL_HOST_DEVICE
-    constexpr argument(){}
+  _CCCL_HOST_DEVICE constexpr argument() {}
 
-    template<typename Env>
-    _CCCL_HOST_DEVICE
-    typename result<Env>::type eval(const Env &e) const
-    {
-      return thrust::get<i>(e);
-    } // end eval()
+  template <typename Env>
+  _CCCL_HOST_DEVICE typename result<Env>::type eval(const Env& e) const
+  {
+    return thrust::get<i>(e);
+  } // end eval()
 }; // end argument
 
-} // end functional
-} // end detail
+} // namespace functional
+} // namespace detail
 THRUST_NAMESPACE_END
-

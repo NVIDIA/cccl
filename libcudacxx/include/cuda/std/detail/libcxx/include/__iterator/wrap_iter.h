@@ -145,8 +145,7 @@ public:
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator+(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
@@ -159,8 +158,7 @@ public:
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator-(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
@@ -169,8 +167,7 @@ public:
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
-  operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__subscriptable(this, __n),
                              "Attempted to subscript an iterator outside its valid range");

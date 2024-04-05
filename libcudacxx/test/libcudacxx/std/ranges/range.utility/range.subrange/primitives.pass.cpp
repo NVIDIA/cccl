@@ -22,30 +22,35 @@ __host__ __device__ constexpr bool test() {
   int buff[] = {1, 2, 3, 4, 5};
 
   {
-    cuda::std::ranges::subrange<MoveOnlyForwardIter, int*> a(MoveOnlyForwardIter(buff), buff + 5, 5);
+    cuda::std::ranges::subrange<MoveOnlyForwardIter, int*> a(
+        MoveOnlyForwardIter(buff), buff + 5, 5);
     assert(base(a.begin()) == buff);
     assert(!a.empty());
     assert(a.size() == 5);
   }
 
   {
-    cuda::std::ranges::subrange<ForwardIter> b(ForwardIter(nullptr), ForwardIter(nullptr));
+    cuda::std::ranges::subrange<ForwardIter> b(ForwardIter(nullptr),
+                                               ForwardIter(nullptr));
     assert(b.empty());
   }
 
   {
-    cuda::std::ranges::subrange<ForwardIter> c{ForwardIter(buff), ForwardIter(buff)};
+    cuda::std::ranges::subrange<ForwardIter> c{ForwardIter(buff),
+                                               ForwardIter(buff)};
     assert(c.empty());
   }
 
   {
-    cuda::std::ranges::subrange<ForwardIter> d(ForwardIter(buff), ForwardIter(buff + 1));
+    cuda::std::ranges::subrange<ForwardIter> d(ForwardIter(buff),
+                                               ForwardIter(buff + 1));
     assert(!d.empty());
   }
 
   {
     bool minusWasCalled = false;
-    SizedSentinelForwardIter beg(buff, &minusWasCalled), end(buff + 5, &minusWasCalled);
+    SizedSentinelForwardIter beg(buff, &minusWasCalled),
+        end(buff + 5, &minusWasCalled);
     cuda::std::ranges::subrange<SizedSentinelForwardIter> e(beg, end, 5);
     assert(!e.empty());
 
@@ -57,7 +62,6 @@ __host__ __device__ constexpr bool test() {
 
   return true;
 }
-
 
 int main(int, char**) {
   test();

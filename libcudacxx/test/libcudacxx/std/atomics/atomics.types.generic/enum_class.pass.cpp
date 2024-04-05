@@ -56,48 +56,52 @@
 
 #include "cuda_space_selector.h"
 
-enum class foo_bar_enum : uint8_t {
-  foo,
-  bar,
-  baz
-};
+enum class foo_bar_enum : uint8_t { foo, bar, baz };
 
-template <class A, class T, template<typename, typename> class Selector>
-__host__ __device__ void test()
-{
-    Selector<A, constructor_initializer> sel;
-    A & obj = *sel.construct(T(0));
-    T expected{};
+template <class A, class T, template <typename, typename> class Selector>
+__host__ __device__ void test() {
+  Selector<A, constructor_initializer> sel;
+  A& obj = *sel.construct(T(0));
+  T expected{};
 
-    obj.store(expected);
-    obj.load();
-    obj.compare_exchange_strong(expected, expected);
+  obj.store(expected);
+  obj.load();
+  obj.compare_exchange_strong(expected, expected);
 }
 
-int main(int, char**)
-{
+int main(int, char**) {
   NV_DISPATCH_TARGET(
-  NV_IS_HOST,(
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, local_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, local_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, local_memory_selector>();
-  ),
-  NV_PROVIDES_SM_70,(
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, local_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, local_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, local_memory_selector>();
-  ))
+      NV_IS_HOST,
+      (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum,
+            local_memory_selector>();
+       test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum,
+            local_memory_selector>();
+       test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum,
+            local_memory_selector>();),
+      NV_PROVIDES_SM_70,
+      (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum,
+            local_memory_selector>();
+       test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum,
+            local_memory_selector>();
+       test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum,
+            local_memory_selector>();))
 
-  NV_IF_TARGET(NV_IS_DEVICE,(
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, shared_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, shared_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, shared_memory_selector>();
+  NV_IF_TARGET(NV_IS_DEVICE,
+               (test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>,
+                     foo_bar_enum, shared_memory_selector>();
+                test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>,
+                     foo_bar_enum, shared_memory_selector>();
+                test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>,
+                     foo_bar_enum, shared_memory_selector>();
 
-      test<cuda::std::atomic<foo_bar_enum>, foo_bar_enum, global_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>, foo_bar_enum, global_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>, foo_bar_enum, global_memory_selector>();
-      test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>, foo_bar_enum, global_memory_selector>();
-  ))
+                test<cuda::std::atomic<foo_bar_enum>, foo_bar_enum,
+                     global_memory_selector>();
+                test<cuda::atomic<foo_bar_enum, cuda::thread_scope_system>,
+                     foo_bar_enum, global_memory_selector>();
+                test<cuda::atomic<foo_bar_enum, cuda::thread_scope_device>,
+                     foo_bar_enum, global_memory_selector>();
+                test<cuda::atomic<foo_bar_enum, cuda::thread_scope_block>,
+                     foo_bar_enum, global_memory_selector>();))
 
   return 0;
 }

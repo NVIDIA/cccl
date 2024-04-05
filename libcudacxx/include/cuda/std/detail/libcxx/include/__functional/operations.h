@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -36,14 +36,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS plus
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS plus : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x + __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x + __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 
@@ -51,14 +51,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(plus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS plus<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) + _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -67,14 +68,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS minus
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS minus : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x - __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x - __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
 
@@ -82,14 +83,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS minus<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) - _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -98,14 +100,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS multiplies
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS multiplies : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x * __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x * __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 
@@ -113,14 +115,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(multiplies);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS multiplies<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) * _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -129,14 +132,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS divides
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS divides : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x / __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x / __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
 
@@ -144,14 +147,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(divides);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS divides<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) / _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -160,14 +164,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS modulus
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS modulus : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x % __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x % __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
 
@@ -175,14 +179,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(modulus);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS modulus<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) % _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -191,14 +196,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS negate
-    : __unary_function<_Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS negate : __unary_function<_Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x) const
-        {return -__x;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x) const
+  {
+    return -__x;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 
@@ -206,14 +211,14 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(negate);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS negate<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _Tp>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_Tp&& __x) const
-        noexcept(noexcept(- _CUDA_VSTD::forward<_Tp>(__x)))
-        -> decltype(      - _CUDA_VSTD::forward<_Tp>(__x))
-        { return          - _CUDA_VSTD::forward<_Tp>(__x); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Tp&& __x) const
+    noexcept(noexcept(-_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(-_CUDA_VSTD::forward<_Tp>(__x))
+  {
+    return -_CUDA_VSTD::forward<_Tp>(__x);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -224,14 +229,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS bit_and
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS bit_and : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x & __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x & __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 
@@ -239,40 +244,41 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_and);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_and<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) & _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp = void>
-struct _LIBCUDACXX_TEMPLATE_VIS bit_not
-    : __unary_function<_Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS bit_not : __unary_function<_Tp, _Tp>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x) const
-        {return ~__x;}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x) const
+  {
+    return ~__x;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_not);
 
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_not<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _Tp>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_Tp&& __x) const
-        noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x)))
-        -> decltype(      ~_CUDA_VSTD::forward<_Tp>(__x))
-        { return          ~_CUDA_VSTD::forward<_Tp>(__x); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Tp&& __x) const
+    noexcept(noexcept(~_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(~_CUDA_VSTD::forward<_Tp>(__x))
+  {
+    return ~_CUDA_VSTD::forward<_Tp>(__x);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -281,14 +287,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS bit_or
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS bit_or : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x | __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x | __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 
@@ -296,14 +302,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_or);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_or<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) | _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -312,14 +319,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS bit_xor
-    : __binary_function<_Tp, _Tp, _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS bit_xor : __binary_function<_Tp, _Tp, _Tp>
 {
-    typedef _Tp __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x ^ __y;}
+  typedef _Tp __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY _Tp operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x ^ __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 
@@ -327,14 +334,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(bit_xor);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS bit_xor<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) ^ _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -345,14 +353,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS equal_to
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS equal_to : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x == __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x == __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 
@@ -360,14 +368,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(equal_to);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS equal_to<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) == _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -376,14 +385,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x != __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x != __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 
@@ -391,14 +400,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(not_equal_to);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS not_equal_to<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) != _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -407,14 +417,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS less
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS less : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x < __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x < __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
 
@@ -422,14 +432,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) < _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -438,14 +449,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS less_equal
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS less_equal : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x <= __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x <= __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 
@@ -453,14 +464,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(less_equal);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS less_equal<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) <= _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -469,14 +481,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS greater_equal
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS greater_equal : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x >= __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x >= __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 
@@ -484,14 +496,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater_equal);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater_equal<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) >= _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -500,14 +513,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS greater
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS greater : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x > __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x > __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
 
@@ -515,14 +528,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(greater);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS greater<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) > _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -533,14 +547,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS logical_and
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS logical_and : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x && __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x && __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 
@@ -548,14 +562,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_and);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_and<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) && _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -564,14 +579,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS logical_not
-    : __unary_function<_Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS logical_not : __unary_function<_Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x) const
-        {return !__x;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x) const
+  {
+    return !__x;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 
@@ -579,14 +594,14 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_not);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_not<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _Tp>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_Tp&& __x) const
-        noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x)))
-        -> decltype(      !_CUDA_VSTD::forward<_Tp>(__x))
-        { return          !_CUDA_VSTD::forward<_Tp>(__x); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_Tp&& __x) const
+    noexcept(noexcept(!_CUDA_VSTD::forward<_Tp>(__x))) -> decltype(!_CUDA_VSTD::forward<_Tp>(__x))
+  {
+    return !_CUDA_VSTD::forward<_Tp>(__x);
+  }
+  typedef void is_transparent;
 };
 #endif
 
@@ -595,14 +610,14 @@ template <class _Tp = void>
 #else
 template <class _Tp>
 #endif
-struct _LIBCUDACXX_TEMPLATE_VIS logical_or
-    : __binary_function<_Tp, _Tp, bool>
+struct _LIBCUDACXX_TEMPLATE_VIS logical_or : __binary_function<_Tp, _Tp, bool>
 {
-    typedef bool __result_type;  // used by valarray
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const _Tp& __x, const _Tp& __y) const
-        {return __x || __y;}
+  typedef bool __result_type; // used by valarray
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool operator()(const _Tp& __x, const _Tp& __y) const
+  {
+    return __x || __y;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 
@@ -610,14 +625,15 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(logical_or);
 template <>
 struct _LIBCUDACXX_TEMPLATE_VIS logical_or<void>
 {
-    _CCCL_EXEC_CHECK_DISABLE
-    template <class _T1, class _T2>
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    auto operator()(_T1&& __t, _T2&& __u) const
-        noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u)))
-        -> decltype(      _CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u))
-        { return          _CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u); }
-    typedef void is_transparent;
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _T1, class _T2>
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY auto operator()(_T1&& __t, _T2&& __u) const
+    noexcept(noexcept(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u)))
+      -> decltype(_CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u))
+  {
+    return _CUDA_VSTD::forward<_T1>(__t) || _CUDA_VSTD::forward<_T2>(__u);
+  }
+  typedef void is_transparent;
 };
 #endif
 

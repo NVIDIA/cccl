@@ -25,12 +25,14 @@ template <class T, class = void>
 constexpr bool ArrowNoexcept = false;
 
 template <class T>
-constexpr bool ArrowNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator->())>> = noexcept(cuda::std::declval<T>().operator->());
+constexpr bool ArrowNoexcept<
+    T, cuda::std::void_t<decltype(cuda::std::declval<T>().operator->())> > =
+    noexcept(cuda::std::declval<T>().operator->());
 
 static_assert(!ArrowNoexcept<int>, "");
 
-static_assert(ArrowNoexcept<cuda::std::expected<int, int>>, "");
-static_assert(ArrowNoexcept<const cuda::std::expected<int, int>>, "");
+static_assert(ArrowNoexcept<cuda::std::expected<int, int> >, "");
+static_assert(ArrowNoexcept<const cuda::std::expected<int, int> >, "");
 
 __host__ __device__ constexpr bool test() {
   // const

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file reduce.h
  *  \brief OpenMP implementation of reduce algorithms.
  */
@@ -30,8 +29,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/omp/detail/partition.h>
 #include <thrust/system/detail/generic/partition.h>
+#include <thrust/system/omp/detail/partition.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -41,75 +40,63 @@ namespace omp
 namespace detail
 {
 
-
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename Predicate>
-  ForwardIterator stable_partition(execution_policy<DerivedPolicy> &exec,
-                                   ForwardIterator first,
-                                   ForwardIterator last,
-                                   Predicate pred)
+template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
+ForwardIterator
+stable_partition(execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, Predicate pred)
 {
   // omp prefers generic::stable_partition to cpp::stable_partition
   return thrust::system::detail::generic::stable_partition(exec, first, last, pred);
 } // end stable_partition()
 
-
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename InputIterator,
-         typename Predicate>
-  ForwardIterator stable_partition(execution_policy<DerivedPolicy> &exec,
-                                   ForwardIterator first,
-                                   ForwardIterator last,
-                                   InputIterator stencil,
-                                   Predicate pred)
+template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
+ForwardIterator stable_partition(
+  execution_policy<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  InputIterator stencil,
+  Predicate pred)
 {
   // omp prefers generic::stable_partition to cpp::stable_partition
   return thrust::system::detail::generic::stable_partition(exec, first, last, stencil, pred);
 } // end stable_partition()
 
-
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename OutputIterator1,
-         typename OutputIterator2,
-         typename Predicate>
-  thrust::pair<OutputIterator1,OutputIterator2>
-    stable_partition_copy(execution_policy<DerivedPolicy> &exec,
-                          InputIterator first,
-                          InputIterator last,
-                          OutputIterator1 out_true,
-                          OutputIterator2 out_false,
-                          Predicate pred)
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator1,
+          typename OutputIterator2,
+          typename Predicate>
+thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator1 out_true,
+  OutputIterator2 out_false,
+  Predicate pred)
 {
   // omp prefers generic::stable_partition_copy to cpp::stable_partition_copy
   return thrust::system::detail::generic::stable_partition_copy(exec, first, last, out_true, out_false, pred);
 } // end stable_partition_copy()
 
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator1,
-         typename OutputIterator2,
-         typename Predicate>
-  thrust::pair<OutputIterator1,OutputIterator2>
-    stable_partition_copy(execution_policy<DerivedPolicy> &exec,
-                          InputIterator1 first,
-                          InputIterator1 last,
-                          InputIterator2 stencil,
-                          OutputIterator1 out_true,
-                          OutputIterator2 out_false,
-                          Predicate pred)
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator1,
+          typename OutputIterator2,
+          typename Predicate>
+thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
+  execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator1 out_true,
+  OutputIterator2 out_false,
+  Predicate pred)
 {
   // omp prefers generic::stable_partition_copy to cpp::stable_partition_copy
   return thrust::system::detail::generic::stable_partition_copy(exec, first, last, stencil, out_true, out_false, pred);
 } // end stable_partition_copy()
 
-
 } // end namespace detail
 } // end namespace omp
 } // end namespace system
 THRUST_NAMESPACE_END
-

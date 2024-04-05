@@ -21,9 +21,11 @@
 
 #include "test_macros.h"
 
-template<class T, size_t Extent>
+template <class T, size_t Extent>
 cuda::std::span<T, Extent> createImplicitSpan(T* first, T* last) {
-    return {first, last}; // expected-error {{chosen constructor is explicit in copy-initialization}}
+  return {
+      first,
+      last}; // expected-error {{chosen constructor is explicit in copy-initialization}}
 }
 
 int main(int, char**) {

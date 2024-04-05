@@ -18,53 +18,51 @@
 
 #include "cuda_space_selector.h"
 
-template<typename Barrier,
-    template<typename, typename> typename Selector,
-    typename Initializer = constructor_initializer>
-__host__ __device__
-void test(bool add_delay = false)
-{
+template <typename Barrier, template <typename, typename> typename Selector,
+          typename Initializer = constructor_initializer>
+__host__ __device__ void test(bool add_delay = false) {
   Selector<Barrier, Initializer> sel;
-  SHARED Barrier * b;
+  SHARED Barrier* b;
   b = sel.construct(2);
   auto delay = cuda::std::chrono::duration<int>(0);
 
   if (add_delay)
-	delay = cuda::std::chrono::duration<int>(1);
+    delay = cuda::std::chrono::duration<int>(1);
 
   typename Barrier::arrival_token* tok = nullptr;
-  execute_on_main_thread([&]{
-    tok = new auto(b->arrive());
-  });
+  execute_on_main_thread([&] { tok = new auto(b->arrive()); });
 
-  auto awaiter = LAMBDA (){
-    while(b->try_wait_for(cuda::std::move(*tok), delay) == false) {}
+  auto awaiter = LAMBDA() {
+    while (b->try_wait_for(cuda::std::move(*tok), delay) == false) {
+    }
   };
-  auto arriver = LAMBDA (){
-    (void)b->arrive();
-  };
+  auto arriver = LAMBDA() { (void)b->arrive(); };
   concurrent_agents_launch(awaiter, arriver);
 
-  execute_on_main_thread([&]{
+  execute_on_main_thread([&] {
     auto tok2 = b->arrive(2);
-    while(b->try_wait_for(cuda::std::move(tok2), delay) == false) {}
+    while (b->try_wait_for(cuda::std::move(tok2), delay) == false) {
+    }
   });
 }
 
-int main(int, char**)
-{
-    NV_IF_ELSE_TARGET(NV_IS_HOST,(
-      //Required by concurrent_agents_launch to know how many we're launching
-      cuda_thread_count = 2;
+int main(int, char**) {
+  NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (
+          //Required by concurrent_agents_launch to know how many we're launching
+          cuda_thread_count = 2;
 
-      test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>();
-      test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(true);
-    ),(
-      test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
-      test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
-      test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(true);
-      test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(true);
-    ))
+          test<cuda::barrier<cuda::thread_scope_block>,
+               local_memory_selector>();
+          test<cuda::barrier<cuda::thread_scope_block>, local_memory_selector>(
+              true);),
+      (test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>();
+       test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>();
+       test<cuda::barrier<cuda::thread_scope_block>, shared_memory_selector>(
+           true);
+       test<cuda::barrier<cuda::thread_scope_block>, global_memory_selector>(
+           true);))
 
-    return 0;
+  return 0;
 }

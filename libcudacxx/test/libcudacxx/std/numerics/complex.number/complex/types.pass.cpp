@@ -23,24 +23,21 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
-test()
-{
-    typedef cuda::std::complex<T> C;
-    static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
+__host__ __device__ void test() {
+  typedef cuda::std::complex<T> C;
+  static_assert((cuda::std::is_same<typename C::value_type, T>::value), "");
 }
 
-int main(int, char**)
-{
-    test<float>();
-    test<double>();
+int main(int, char**) {
+  test<float>();
+  test<double>();
 // CUDA treats long double as double
 //  test<long double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test<__half>();
+  test<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test<__nv_bfloat16>();
+  test<__nv_bfloat16>();
 #endif
 
   return 0;

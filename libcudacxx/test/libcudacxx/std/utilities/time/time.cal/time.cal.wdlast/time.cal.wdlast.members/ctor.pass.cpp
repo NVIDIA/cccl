@@ -23,26 +23,24 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    using weekday      = cuda::std::chrono::weekday;
-    using weekday_last = cuda::std::chrono::weekday_last;
+int main(int, char**) {
+  using weekday = cuda::std::chrono::weekday;
+  using weekday_last = cuda::std::chrono::weekday_last;
 
-    ASSERT_NOEXCEPT(weekday_last{weekday{}});
+  ASSERT_NOEXCEPT(weekday_last{weekday{}});
 
-    constexpr weekday_last wdl0{weekday{}};
-    static_assert( wdl0.weekday() == weekday{}, "");
-    static_assert( wdl0.ok(),                   "");
+  constexpr weekday_last wdl0{weekday{}};
+  static_assert(wdl0.weekday() == weekday{}, "");
+  static_assert(wdl0.ok(), "");
 
-    constexpr weekday_last wdl1 {weekday{1}};
-    static_assert( wdl1.weekday() == weekday{1}, "");
-    static_assert( wdl1.ok(),                    "");
+  constexpr weekday_last wdl1{weekday{1}};
+  static_assert(wdl1.weekday() == weekday{1}, "");
+  static_assert(wdl1.ok(), "");
 
-    for (unsigned i = 0; i <= 255; ++i)
-    {
-        weekday_last wdl{weekday{i}};
-        assert(wdl.weekday() == weekday{i});
-    }
+  for (unsigned i = 0; i <= 255; ++i) {
+    weekday_last wdl{weekday{i}};
+    assert(wdl.weekday() == weekday{i});
+  }
 
   return 0;
 }

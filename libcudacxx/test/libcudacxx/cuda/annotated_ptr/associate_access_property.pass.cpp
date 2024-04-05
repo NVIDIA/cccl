@@ -17,9 +17,7 @@
 #define ARR_SZ 128
 
 template <typename T, typename P>
-__device__ __host__ __noinline__
-void test(P ap, bool shared = false)
-{
+__device__ __host__ __noinline__ void test(P ap, bool shared = false) {
 
   T* arr = alloc<T, ARR_SZ>(shared);
 
@@ -32,9 +30,7 @@ void test(P ap, bool shared = false)
   dealloc<T>(arr, shared);
 }
 
-__device__ __host__ __noinline__
-void test_all()
-{
+__device__ __host__ __noinline__ void test_all() {
   test<int>(cuda::access_property::normal{});
   test<int>(cuda::access_property::persisting{});
   test<int>(cuda::access_property::streaming{});
@@ -43,12 +39,9 @@ void test_all()
   test<int>(cuda::access_property::shared{}, true);
 }
 
-__global__ void test_kernel() {
-  test_all();
-}
+__global__ void test_kernel() { test_all(); }
 
-int main(int argc, char ** argv)
-{
+int main(int argc, char** argv) {
 
   test_all();
   return 0;

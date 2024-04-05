@@ -22,23 +22,21 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 
 #include "../../clock.h"
 
-int main(int, char**)
-{
-    typedef cuda::std::chrono::system_clock Clock1;
-    typedef Clock                     Clock2;
-    typedef cuda::std::chrono::milliseconds Duration1;
-    typedef cuda::std::chrono::microseconds Duration2;
-    typedef cuda::std::chrono::time_point<Clock1, Duration1> T1;
-    typedef cuda::std::chrono::time_point<Clock2, Duration2> T2;
+int main(int, char**) {
+  typedef cuda::std::chrono::system_clock Clock1;
+  typedef Clock Clock2;
+  typedef cuda::std::chrono::milliseconds Duration1;
+  typedef cuda::std::chrono::microseconds Duration2;
+  typedef cuda::std::chrono::time_point<Clock1, Duration1> T1;
+  typedef cuda::std::chrono::time_point<Clock2, Duration2> T2;
 
-    T1 t1(Duration1(3));
-    T2 t2(Duration2(3000));
-    t1 == t2;
+  T1 t1(Duration1(3));
+  T2 t2(Duration2(3000));
+  t1 == t2;
 
   return 0;
 }

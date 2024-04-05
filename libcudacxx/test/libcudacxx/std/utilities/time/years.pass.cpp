@@ -17,15 +17,18 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    typedef cuda::std::chrono::years D;
-    typedef D::rep Rep;
-    typedef D::period Period;
-    static_assert(cuda::std::is_signed<Rep>::value, "");
-    static_assert(cuda::std::is_integral<Rep>::value, "");
-    static_assert(cuda::std::numeric_limits<Rep>::digits >= 17, "");
-    static_assert(cuda::std::is_same_v<Period, cuda::std::ratio_multiply<cuda::std::ratio<146097, 400>, cuda::std::chrono::days::period>>, "");
+int main(int, char**) {
+  typedef cuda::std::chrono::years D;
+  typedef D::rep Rep;
+  typedef D::period Period;
+  static_assert(cuda::std::is_signed<Rep>::value, "");
+  static_assert(cuda::std::is_integral<Rep>::value, "");
+  static_assert(cuda::std::numeric_limits<Rep>::digits >= 17, "");
+  static_assert(
+      cuda::std::is_same_v<
+          Period, cuda::std::ratio_multiply<cuda::std::ratio<146097, 400>,
+                                            cuda::std::chrono::days::period> >,
+      "");
 
   return 0;
 }

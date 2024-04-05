@@ -17,11 +17,11 @@
 
 #include <cuda/std/iterator>
 
-struct Base { };
-struct Derived : Base { };
+struct Base {};
+struct Derived : Base {};
 
 __host__ __device__ void test() {
-    cuda::std::reverse_iterator<Base*> base;
-    cuda::std::reverse_iterator<Derived*> derived;
-    derived = base; // expected-error {{no viable overloaded '='}}
+  cuda::std::reverse_iterator<Base*> base;
+  cuda::std::reverse_iterator<Derived*> derived;
+  derived = base; // expected-error {{no viable overloaded '='}}
 }

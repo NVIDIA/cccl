@@ -42,11 +42,14 @@ struct CustomIt {
   __host__ __device__ int& operator*() const;
   __host__ __device__ CustomIt& operator++();
   __host__ __device__ CustomIt operator++(int);
-  __host__ __device__ constexpr friend difference_type operator-(const CustomIt& a, const CustomIt& b) { return static_cast<difference_type>(a.p_ - b.p_); }
-  int *p_ = nullptr;
+  __host__ __device__ constexpr friend difference_type
+  operator-(const CustomIt& a, const CustomIt& b) {
+    return static_cast<difference_type>(a.p_ - b.p_);
+  }
+  int* p_ = nullptr;
 };
 
-template <class It, class Sent = sized_sentinel<It>>
+template <class It, class Sent = sized_sentinel<It> >
 __host__ __device__ constexpr void test_one() {
   int arr[] = {3, 1, 4};
 
@@ -83,13 +86,13 @@ __host__ __device__ constexpr void test_one() {
 
 __host__ __device__ constexpr bool test() {
   test_one<CustomIt>();
-  test_one<cpp17_input_iterator<int*>>();
-  test_one<forward_iterator<int*>>();
-  test_one<bidirectional_iterator<int*>>();
-  test_one<random_access_iterator<int*>>();
+  test_one<cpp17_input_iterator<int*> >();
+  test_one<forward_iterator<int*> >();
+  test_one<bidirectional_iterator<int*> >();
+  test_one<random_access_iterator<int*> >();
   test_one<int*>();
   test_one<const int*>();
-  test_one<contiguous_iterator<int*>>();
+  test_one<contiguous_iterator<int*> >();
 
   return true;
 }

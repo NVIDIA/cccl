@@ -22,45 +22,48 @@
 
 #if TEST_STD_VER > 2011
 struct add_two {
-    __host__ __device__ constexpr void operator()(int& a) const noexcept { a += 2; }
+  __host__ __device__ constexpr void operator()(int& a) const noexcept {
+    a += 2;
+  }
 };
 
 __host__ __device__ constexpr bool test_constexpr() {
-    int ia[] = {1, 3, 6, 7};
-    int expected[] = {3, 5, 8, 9};
+  int ia[] = {1, 3, 6, 7};
+  int expected[] = {3, 5, 8, 9};
 
-    cuda::std::for_each(cuda::std::begin(ia), cuda::std::end(ia), add_two{});
-    for (size_t i = 0; i < 4; ++i) {
-        assert(ia[i] == expected[i]);
-    }
-    return true;
+  cuda::std::for_each(cuda::std::begin(ia), cuda::std::end(ia), add_two{});
+  for (size_t i = 0; i < 4; ++i) {
+    assert(ia[i] == expected[i]);
+  }
+  return true;
 }
 #endif
 
-struct for_each_test
-{
-    int count;
+struct for_each_test {
+  int count;
 
-    __host__ __device__ constexpr for_each_test(int c) : count(c) {}
-    __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()(int& i) {++i; ++count;}
+  __host__ __device__ constexpr for_each_test(int c) : count(c) {}
+  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()(int& i) {
+    ++i;
+    ++count;
+  }
 };
 
-int main(int, char**)
-{
-    {
-        int ia[] = {0, 1, 2, 3, 4, 5};
-        const unsigned s = sizeof(ia)/sizeof(ia[0]);
-        for_each_test f = cuda::std::for_each(cpp17_input_iterator<int*>(ia),
-                                        cpp17_input_iterator<int*>(ia+s),
-                                        for_each_test(0));
-        assert(f.count == s);
-        for (unsigned i = 0; i < s; ++i) {
-            assert(ia[i] == static_cast<int>(i+1));
-        }
+int main(int, char**) {
+  {
+    int ia[] = {0, 1, 2, 3, 4, 5};
+    const unsigned s = sizeof(ia) / sizeof(ia[0]);
+    for_each_test f = cuda::std::for_each(cpp17_input_iterator<int*>(ia),
+                                          cpp17_input_iterator<int*>(ia + s),
+                                          for_each_test(0));
+    assert(f.count == s);
+    for (unsigned i = 0; i < s; ++i) {
+      assert(ia[i] == static_cast<int>(i + 1));
     }
+  }
 
 #if TEST_STD_VER > 2011
-    static_assert(test_constexpr(), "");
+  static_assert(test_constexpr(), "");
 #endif
 
   return 0;

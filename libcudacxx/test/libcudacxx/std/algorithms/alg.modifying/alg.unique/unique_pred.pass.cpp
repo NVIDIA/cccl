@@ -24,10 +24,12 @@
 #include "MoveOnly.h"
 
 struct count_equal {
-  __host__ __device__ constexpr count_equal(int& count) noexcept : count_(count) {}
+  __host__ __device__ constexpr count_equal(int& count) noexcept
+      : count_(count) {}
   int& count_;
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) const noexcept {
+  __host__ __device__ TEST_CONSTEXPR_CXX14 bool
+  operator()(const T& x, const T& y) const noexcept {
     ++count_;
     return x == y;
   }
@@ -35,7 +37,8 @@ struct count_equal {
 
 template <class Iter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
+  using iter_value_t = typename cuda::std::remove_reference<decltype(
+      *cuda::std::declval<Iter>())>::type;
 
   int count_equal_count = 0;
   count_equal count_op{count_equal_count};

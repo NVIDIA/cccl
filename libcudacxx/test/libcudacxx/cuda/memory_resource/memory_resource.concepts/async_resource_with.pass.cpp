@@ -44,7 +44,9 @@ struct valid_resource_without_property {
   }
   void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
   bool operator==(const valid_resource_without_property&) const { return true; }
-  bool operator!=(const valid_resource_without_property&) const { return false; }
+  bool operator!=(const valid_resource_without_property&) const {
+    return false;
+  }
 };
 static_assert(!cuda::mr::async_resource_with<valid_resource_without_property,
                                              prop_with_value>,

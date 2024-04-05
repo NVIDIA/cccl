@@ -24,27 +24,46 @@ struct prop_with_value {
 struct prop {};
 
 struct upstream_with_valueless_property {
-  friend constexpr void get_property(const upstream_with_valueless_property&, prop) {}
+  friend constexpr void get_property(const upstream_with_valueless_property&,
+                                     prop) {}
 };
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop>, "");
-static_assert(!cuda::std::invocable<decltype(cuda::get_property), upstream_with_valueless_property, prop_with_value>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property),
+                                   upstream_with_valueless_property, prop>,
+              "");
+static_assert(
+    !cuda::std::invocable<decltype(cuda::get_property),
+                          upstream_with_valueless_property, prop_with_value>,
+    "");
 
 struct upstream_with_stateful_property {
-  friend constexpr int get_property(const upstream_with_stateful_property&, prop_with_value) {
+  friend constexpr int get_property(const upstream_with_stateful_property&,
+                                    prop_with_value) {
     return 42;
   }
 };
-static_assert(!cuda::std::invocable<decltype(cuda::get_property), upstream_with_stateful_property, prop>, "");
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_stateful_property, prop_with_value>, "");
+static_assert(!cuda::std::invocable<decltype(cuda::get_property),
+                                    upstream_with_stateful_property, prop>,
+              "");
+static_assert(
+    cuda::std::invocable<decltype(cuda::get_property),
+                         upstream_with_stateful_property, prop_with_value>,
+    "");
 
 struct upstream_with_both_properties {
-  friend constexpr void get_property(const upstream_with_both_properties&, prop) {}
-  friend constexpr int get_property(const upstream_with_both_properties&, prop_with_value) {
+  friend constexpr void get_property(const upstream_with_both_properties&,
+                                     prop) {}
+  friend constexpr int get_property(const upstream_with_both_properties&,
+                                    prop_with_value) {
     return 42;
   }
 };
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop>, "");
-static_assert( cuda::std::invocable<decltype(cuda::get_property), upstream_with_both_properties, prop_with_value>, "");
+static_assert(cuda::std::invocable<decltype(cuda::get_property),
+                                   upstream_with_both_properties, prop>,
+              "");
+static_assert(
+    cuda::std::invocable<decltype(cuda::get_property),
+                         upstream_with_both_properties, prop_with_value>,
+    "");
 
 __host__ __device__ constexpr bool test() {
   upstream_with_valueless_property with_valueless{};

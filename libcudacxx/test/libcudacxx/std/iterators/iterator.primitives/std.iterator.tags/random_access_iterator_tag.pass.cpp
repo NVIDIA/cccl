@@ -16,14 +16,17 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    cuda::std::random_access_iterator_tag tag;
-    ((void)tag); // Prevent unused warning
-    static_assert((cuda::std::is_base_of<cuda::std::bidirectional_iterator_tag,
-                                   cuda::std::random_access_iterator_tag>::value), "");
-    static_assert((!cuda::std::is_base_of<cuda::std::output_iterator_tag,
-                                    cuda::std::random_access_iterator_tag>::value), "");
+int main(int, char**) {
+  cuda::std::random_access_iterator_tag tag;
+  ((void)tag); // Prevent unused warning
+  static_assert(
+      (cuda::std::is_base_of<cuda::std::bidirectional_iterator_tag,
+                             cuda::std::random_access_iterator_tag>::value),
+      "");
+  static_assert(
+      (!cuda::std::is_base_of<cuda::std::output_iterator_tag,
+                              cuda::std::random_access_iterator_tag>::value),
+      "");
 
   return 0;
 }

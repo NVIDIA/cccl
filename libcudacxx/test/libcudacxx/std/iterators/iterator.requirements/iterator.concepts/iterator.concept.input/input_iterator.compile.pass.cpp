@@ -87,7 +87,8 @@ struct not_indirectly_readable {
   __host__ __device__ not_indirectly_readable& operator++();
   __host__ __device__ void operator++(int);
 };
-static_assert(!cuda::std::indirectly_readable<not_indirectly_readable> && !cuda::std::input_iterator<not_indirectly_readable>);
+static_assert(!cuda::std::indirectly_readable<not_indirectly_readable> &&
+              !cuda::std::input_iterator<not_indirectly_readable>);
 
 struct bad_iterator_category {
   using value_type = int;
@@ -129,7 +130,4 @@ struct bad_iterator_concept {
 };
 static_assert(!cuda::std::input_iterator<bad_iterator_concept>);
 
-int main(int, char**)
-{
-  return 0;
-}
+int main(int, char**) { return 0; }

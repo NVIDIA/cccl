@@ -32,11 +32,15 @@ struct MaybeNoexceptMove {
   using value_type = int;
   using difference_type = ptrdiff_t;
 
-  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove) noexcept(IsNoexcept) {
+  __host__ __device__ constexpr friend value_type&& iter_move(MaybeNoexceptMove)
+      noexcept(IsNoexcept) {
     return cuda::std::move(global);
   }
 
-  __host__ __device__ int& operator*() const { static int a; return a; }
+  __host__ __device__ int& operator*() const {
+    static int a;
+    return a;
+  }
 
   __host__ __device__ MaybeNoexceptMove& operator++();
   __host__ __device__ MaybeNoexceptMove operator++(int);
@@ -45,12 +49,13 @@ using ThrowingBase = MaybeNoexceptMove<false>;
 using NoexceptBase = MaybeNoexceptMove<true>;
 static_assert(cuda::std::input_iterator<ThrowingBase>);
 #ifndef TEST_COMPILER_ICC
-ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase>()));
+ASSERT_NOT_NOEXCEPT(
+    cuda::std::ranges::iter_move(cuda::std::declval<ThrowingBase>()));
 #endif // TEST_COMPILER_ICC
-ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>()));
+ASSERT_NOEXCEPT(
+    cuda::std::ranges::iter_move(cuda::std::declval<NoexceptBase>()));
 
-__host__ __device__
-constexpr bool test() {
+__host__ __device__ constexpr bool test() {
   // Can use `iter_move` with a regular array.
   {
     int a[] = {0, 1, 2};

@@ -20,27 +20,30 @@
 #include "test_macros.h"
 
 struct MoveOnly {
-    double val_ = 0.0;
+  double val_ = 0.0;
 
-    MoveOnly() = default;
-    MoveOnly(MoveOnly&&) = default;
-    MoveOnly& operator=(MoveOnly&&) = default;
+  MoveOnly() = default;
+  MoveOnly(MoveOnly&&) = default;
+  MoveOnly& operator=(MoveOnly&&) = default;
 
-    MoveOnly(const MoveOnly&) = delete;
-    MoveOnly& operator=(const MoveOnly&) = delete;
+  MoveOnly(const MoveOnly&) = delete;
+  MoveOnly& operator=(const MoveOnly&) = delete;
 
-    __host__ __device__ constexpr MoveOnly(const double val) noexcept : val_(val) {}
+  __host__ __device__ constexpr MoveOnly(const double val) noexcept
+      : val_(val) {}
 };
 
-int main(int, char**)
-{
-    {
-        typedef cuda::std::array<MoveOnly, 1> C;
-        C c = {3.5};
-        static_assert(cuda::std::is_same<MoveOnly&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>::value, "");
-        MoveOnly t = cuda::std::get<0>(cuda::std::move(c));
-        assert(t.val_ == 3.5);
-    }
+int main(int, char**) {
+  {
+    typedef cuda::std::array<MoveOnly, 1> C;
+    C c = {3.5};
+    static_assert(
+        cuda::std::is_same<MoveOnly&&, decltype(cuda::std::get<0>(
+                                           cuda::std::move(c)))>::value,
+        "");
+    MoveOnly t = cuda::std::get<0>(cuda::std::move(c));
+    assert(t.val_ == 3.5);
+  }
 
-    return 0;
+  return 0;
 }

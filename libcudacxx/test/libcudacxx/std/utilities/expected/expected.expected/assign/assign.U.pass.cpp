@@ -39,39 +39,48 @@
 #include "test_macros.h"
 
 struct NotCopyConstructible {
-  NotCopyConstructible(const NotCopyConstructible&)            = delete;
+  NotCopyConstructible(const NotCopyConstructible&) = delete;
   NotCopyConstructible& operator=(const NotCopyConstructible&) = default;
 };
 
 struct NotCopyAssignable {
-  NotCopyAssignable(const NotCopyAssignable&)            = default;
+  NotCopyAssignable(const NotCopyAssignable&) = default;
   NotCopyAssignable& operator=(const NotCopyAssignable&) = delete;
 };
 
 // Test constraints
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, int>, "");
+static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, int>,
+              "");
 
 // is_same_v<expected, remove_cvref_t<U>>
 // it is true because it covered by the copy assignment
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::std::expected<int, int>>, "");
+static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&,
+                                         cuda::std::expected<int, int> >,
+              "");
 
 // remove_cvref_t<U> is a specialization of unexpected
 // it is true because it covered the unepxected overload
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&, cuda::std::unexpected<int>>, "");
+static_assert(cuda::std::is_assignable_v<cuda::std::expected<int, int>&,
+                                         cuda::std::unexpected<int> >,
+              "");
 
 // !is_constructible_v<T, U>
 struct NoCtorFromInt {
   __host__ __device__ NoCtorFromInt(int) = delete;
   __host__ __device__ NoCtorFromInt& operator=(int);
 };
-static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoCtorFromInt, int>&, int>, "");
+static_assert(
+    !cuda::std::is_assignable_v<cuda::std::expected<NoCtorFromInt, int>&, int>,
+    "");
 
 // !is_assignable_v<T&, U>
 struct NoAssignFromInt {
   __host__ __device__ explicit NoAssignFromInt(int);
   __host__ __device__ NoAssignFromInt& operator=(int) = delete;
 };
-static_assert(!cuda::std::is_assignable_v<cuda::std::expected<NoAssignFromInt, int>&, int>, "");
+static_assert(!cuda::std::is_assignable_v<
+                  cuda::std::expected<NoAssignFromInt, int>&, int>,
+              "");
 
 template <bool moveNoexcept, bool convertNoexcept>
 struct MaybeNoexcept {
@@ -83,20 +92,34 @@ struct MaybeNoexcept {
 
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
 // is_nothrow_move_constructible_v<E>
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, int>&, int>, "");
+static_assert(cuda::std::is_assignable_v<
+                  cuda::std::expected<MaybeNoexcept<false, false>, int>&, int>,
+              "");
 
 // is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, true>, MaybeNoexcept<false, false>>&, int>, "");
+static_assert(cuda::std::is_assignable_v<
+                  cuda::std::expected<MaybeNoexcept<false, true>,
+                                      MaybeNoexcept<false, false> >&,
+                  int>,
+              "");
 
 // !is_nothrow_constructible_v<T, U> && is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
-static_assert(cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<true, false>, MaybeNoexcept<false, false>>&, int>, "");
+static_assert(cuda::std::is_assignable_v<
+                  cuda::std::expected<MaybeNoexcept<true, false>,
+                                      MaybeNoexcept<false, false> >&,
+                  int>,
+              "");
 
 #ifndef TEST_COMPILER_ICC
 // !is_nothrow_constructible_v<T, U> && !is_nothrow_move_constructible_v<T> &&
 // !is_nothrow_move_constructible_v<E>
-static_assert(!cuda::std::is_assignable_v<cuda::std::expected<MaybeNoexcept<false, false>, MaybeNoexcept<false, false>>&, int>, "");
+static_assert(!cuda::std::is_assignable_v<
+                  cuda::std::expected<MaybeNoexcept<false, false>,
+                                      MaybeNoexcept<false, false> >&,
+                  int>,
+              "");
 #endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
@@ -108,7 +131,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<Traced, int> e1(cuda::std::in_place, oldState, 5);
     Traced u(newState, 10);
     decltype(auto) x = (e1 = u);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<Traced, int>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<Traced, int>&>, "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -124,7 +148,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::expected<Traced, int> e1(cuda::std::in_place, oldState, 5);
     Traced u(newState, 10);
     decltype(auto) x = (e1 = cuda::std::move(u));
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<Traced, int>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x), cuda::std::expected<Traced, int>&>, "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -143,10 +168,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //    construct_at(addressof(newval), cuda::std::forward<Args>(args)...);
   {
     BothMayThrow::state oldState{};
-    cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow> e1(cuda::std::unexpect, oldState, 5);
-    const int i      = 10;
+    cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow> e1(
+        cuda::std::unexpect, oldState, 5);
+    const int i = 10;
     decltype(auto) x = (e1 = i);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow>&>, "");
+    static_assert(
+        cuda::std::same_as<
+            decltype(x),
+            cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -169,9 +199,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //    construct_at(addressof(newval), cuda::std::forward<Args>(args)...);
   {
     BothMayThrow::state oldState{};
-    cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow> e1(cuda::std::unexpect, oldState, 5);
+    cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow> e1(
+        cuda::std::unexpect, oldState, 5);
     decltype(auto) x = (e1 = 10);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow>&>, "");
+    static_assert(
+        cuda::std::same_as<
+            decltype(x),
+            cuda::std::expected<MoveThrowConvNoexcept, BothMayThrow>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -195,10 +230,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //  construct_at(addressof(newval), cuda::std::move(tmp));
   {
     BothMayThrow::state oldState{};
-    cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow> e1(cuda::std::unexpect, oldState, 5);
-    const int i      = 10;
+    cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow> e1(
+        cuda::std::unexpect, oldState, 5);
+    const int i = 10;
     decltype(auto) x = (e1 = i);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow>&>, "");
+    static_assert(
+        cuda::std::same_as<
+            decltype(x),
+            cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -223,9 +263,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //  construct_at(addressof(newval), cuda::std::move(tmp));
   {
     BothMayThrow::state oldState{};
-    cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow> e1(cuda::std::unexpect, oldState, 5);
+    cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow> e1(
+        cuda::std::unexpect, oldState, 5);
     decltype(auto) x = (e1 = 10);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow>&>, "");
+    static_assert(
+        cuda::std::same_as<
+            decltype(x),
+            cuda::std::expected<MoveNoexceptConvThrow, BothMayThrow>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -255,10 +300,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //  }
   {
     TracedNoexcept::state oldState{};
-    cuda::std::expected<BothMayThrow, TracedNoexcept> e1(cuda::std::unexpect, oldState, 5);
-    const int i      = 10;
+    cuda::std::expected<BothMayThrow, TracedNoexcept> e1(cuda::std::unexpect,
+                                                         oldState, 5);
+    const int i = 10;
     decltype(auto) x = (e1 = i);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothMayThrow, TracedNoexcept>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x),
+                           cuda::std::expected<BothMayThrow, TracedNoexcept>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());
@@ -287,9 +336,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   //  }
   {
     TracedNoexcept::state oldState{};
-    cuda::std::expected<BothMayThrow, TracedNoexcept> e1(cuda::std::unexpect, oldState, 5);
+    cuda::std::expected<BothMayThrow, TracedNoexcept> e1(cuda::std::unexpect,
+                                                         oldState, 5);
     decltype(auto) x = (e1 = 10);
-    static_assert(cuda::std::same_as<decltype(x), cuda::std::expected<BothMayThrow, TracedNoexcept>&>, "");
+    static_assert(
+        cuda::std::same_as<decltype(x),
+                           cuda::std::expected<BothMayThrow, TracedNoexcept>&>,
+        "");
     assert(&x == &e1);
 
     assert(e1.has_value());

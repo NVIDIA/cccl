@@ -20,20 +20,19 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
+int main(int, char**) {
+  {
     const cuda::std::complex<float> cd(2.5, 3.5);
     cuda::std::complex<double> cf = cd;
     assert(cf.real() == cd.real());
     assert(cf.imag() == cd.imag());
-    }
-    {
+  }
+  {
     constexpr cuda::std::complex<float> cd(2.5, 3.5);
     constexpr cuda::std::complex<double> cf = cd;
     static_assert(cf.real() == cd.real(), "");
     static_assert(cf.imag() == cd.imag(), "");
-    }
+  }
 
   return 0;
 }

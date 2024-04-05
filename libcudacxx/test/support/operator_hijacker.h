@@ -18,8 +18,12 @@
 ///
 /// The class has some additional operations to be usable in all containers.
 struct operator_hijacker {
-  __host__ __device__ bool operator<(const operator_hijacker&) const { return true; }
-  __host__ __device__ bool operator==(const operator_hijacker&) const { return true; }
+  __host__ __device__ bool operator<(const operator_hijacker&) const {
+    return true;
+  }
+  __host__ __device__ bool operator==(const operator_hijacker&) const {
+    return true;
+  }
 
   template <typename T>
   __host__ __device__ friend void operator&(T&&) = delete;
@@ -31,12 +35,13 @@ struct operator_hijacker {
   __host__ __device__ friend void operator||(T&&, U&&) = delete;
 };
 
-static_assert(cuda::std::is_trivially_copyable<operator_hijacker>::value &&     //
-                  cuda::std::is_copy_constructible<operator_hijacker>::value && //
-                  cuda::std::is_move_constructible<operator_hijacker>::value && //
-                  cuda::std::is_copy_assignable<operator_hijacker>::value &&    //
-                  cuda::std::is_move_assignable<operator_hijacker>::value,      //
-              "does not satisfy the requirements for atomic<operator_hijacker>");
+static_assert(
+    cuda::std::is_trivially_copyable<operator_hijacker>::value&&             //
+        cuda::std::is_copy_constructible<operator_hijacker>::value&&         //
+            cuda::std::is_move_constructible<operator_hijacker>::value&&     //
+                cuda::std::is_copy_assignable<operator_hijacker>::value&&    //
+                    cuda::std::is_move_assignable<operator_hijacker>::value, //
+    "does not satisfy the requirements for atomic<operator_hijacker>");
 /*
 template <>
 struct cuda::std::hash<operator_hijacker> {

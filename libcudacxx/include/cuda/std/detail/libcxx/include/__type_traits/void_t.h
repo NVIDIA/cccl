@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_VOID_T_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,7 +25,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
-template <class...> using void_t = void;
+template <class...>
+using void_t = void;
 #endif
 
 template <class...>

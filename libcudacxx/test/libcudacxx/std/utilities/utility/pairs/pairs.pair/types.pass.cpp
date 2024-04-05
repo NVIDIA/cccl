@@ -19,11 +19,10 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    typedef cuda::std::pair<float, short*> P;
-    static_assert((cuda::std::is_same<P::first_type, float>::value), "");
-    static_assert((cuda::std::is_same<P::second_type, short*>::value), "");
+int main(int, char**) {
+  typedef cuda::std::pair<float, short*> P;
+  static_assert((cuda::std::is_same<P::first_type, float>::value), "");
+  static_assert((cuda::std::is_same<P::second_type, short*>::value), "");
 
   return 0;
 }

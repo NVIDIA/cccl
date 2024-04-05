@@ -26,7 +26,8 @@
 
 template <class Iter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
+  using iter_value_t = typename cuda::std::remove_reference<decltype(
+      *cuda::std::declval<Iter>())>::type;
   iter_value_t ia[] = {0};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
   Iter r = cuda::std::unique(Iter(ia), Iter(ia + sa));

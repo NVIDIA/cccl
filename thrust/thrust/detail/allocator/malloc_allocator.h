@@ -25,35 +25,29 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/type_traits/pointer_traits.h>
 #include <thrust/detail/allocator/tagged_allocator.h>
+#include <thrust/detail/type_traits/pointer_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-template<typename T, typename System, typename Pointer>
-  class malloc_allocator
-    : public thrust::detail::tagged_allocator<
-               T, System, Pointer
-             >
+template <typename T, typename System, typename Pointer>
+class malloc_allocator : public thrust::detail::tagged_allocator< T, System, Pointer >
 {
-  private:
-    typedef thrust::detail::tagged_allocator<
-      T, System, Pointer
-    > super_t;
+private:
+  typedef thrust::detail::tagged_allocator< T, System, Pointer > super_t;
 
-  public:
-    typedef typename super_t::pointer   pointer;
-    typedef typename super_t::size_type size_type;
+public:
+  typedef typename super_t::pointer pointer;
+  typedef typename super_t::size_type size_type;
 
-    pointer allocate(size_type cnt);
+  pointer allocate(size_type cnt);
 
-    void deallocate(pointer p, size_type n);
+  void deallocate(pointer p, size_type n);
 };
 
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/allocator/malloc_allocator.inl>
-

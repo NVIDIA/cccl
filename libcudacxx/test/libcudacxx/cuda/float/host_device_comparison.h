@@ -34,21 +34,24 @@ void generate(const F& f, T* buffer, cuda::std::size_t size) {
 
 template <typename T, typename F>
 void generate(const F& f, T* buffer, cuda::std::size_t size, T other) {
-  if (!cuda::std::isfinite(float(other))) { return; }
+  if (!cuda::std::isfinite(float(other))) {
+    return;
+  }
   for (auto i = 0ull; i < size; ++i) {
     buffer[i] = f(other, i);
   }
 }
 
 template <typename T, typename F, typename Head, typename... Args>
-void generate(const F& f, T* buffer, cuda::std::size_t size, Head head, Args... args) {
+void generate(const F& f, T* buffer, cuda::std::size_t size, Head head,
+              Args... args) {
   for (auto i = 0ull; i < size; ++i) {
     buffer[i] = f(head, args..., i);
   }
 }
 
 template <typename T, typename F, typename... Args>
-__global__ void generate_kernel(const F &f, T* buffer, cuda::std::size_t,
+__global__ void generate_kernel(const F& f, T* buffer, cuda::std::size_t,
                                 Args... args) {
   cuda::std::size_t index = blockIdx.x * blockDim.x + threadIdx.x;
   buffer[index] = f(args..., index);
@@ -85,7 +88,7 @@ struct calculate_problem_sizes<T, 1, Bitpatterns> {
     CUDA_SAFE_CALL(cudaMemset(device_buffer, 0, sizeof(T) * problem_size));
 
     generate(f, host_buffer, problem_size, args...);
-    generate_kernel<<<problem_size / 256, 256>>>(f, device_buffer,
+    generate_kernel<<<problem_size / 256, 256> > >(f, device_buffer,
                                                    problem_size, args...);
     CUDA_SAFE_CALL(cudaDeviceSynchronize());
     CUDA_SAFE_CALL(cudaGetLastError());
@@ -94,8 +97,9 @@ struct calculate_problem_sizes<T, 1, Bitpatterns> {
 
     for (cuda::std::size_t i = 0ull; i < problem_size; ++i) {
       if (memcmp(host_buffer + i, device_buffer + i, sizeof(T)) != 0) {
-        printf("[%zu] unmatched, values = %+.10f, host = %+.10f, device = %+.10f\n", i,
-                float(__half(__half_raw{(unsigned short)i})),
+        printf("[%zu] unmatched, values = %+.10f, host = %+.10f, device = "
+               "%+.10f\n",
+               i, float(__half(__half_raw{(unsigned short)i})),
                (float)host_buffer[i], (float)device_buffer[i]);
         good = false;
       }

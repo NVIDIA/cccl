@@ -18,8 +18,8 @@
 #include "test_macros.h"
 
 int main(int, char**) {
-    cuda::std::piecewise_construct_t x = cuda::std::piecewise_construct;
-    unused(x);
+  cuda::std::piecewise_construct_t x = cuda::std::piecewise_construct;
+  unused(x);
 
-    return 0;
+  return 0;
 }

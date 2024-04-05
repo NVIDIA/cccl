@@ -11,13 +11,12 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 #include <cuda/std/cassert>
 
-int main(int, char**)
-{
-    cuda::std::chrono::hours h  = 4h;  // should fail w/conversion operator not found
+int main(int, char**) {
+  cuda::std::chrono::hours h =
+      4h; // should fail w/conversion operator not found
 
   return 0;
 }

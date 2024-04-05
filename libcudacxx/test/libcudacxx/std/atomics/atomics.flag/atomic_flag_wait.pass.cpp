@@ -20,54 +20,45 @@
 #include "concurrent_agents.h"
 #include "cuda_space_selector.h"
 
-template<template<typename, typename> class Selector>
-__host__ __device__
-void test()
-{
-    SHARED cuda::std::atomic_flag * t;
-    execute_on_main_thread([&]{
-        t = new cuda::std::atomic_flag();
-        cuda::std::atomic_flag_clear(t);
-        cuda::std::atomic_flag_wait(t, true);
-    });
+template <template <typename, typename> class Selector>
+__host__ __device__ void test() {
+  SHARED cuda::std::atomic_flag* t;
+  execute_on_main_thread([&] {
+    t = new cuda::std::atomic_flag();
+    cuda::std::atomic_flag_clear(t);
+    cuda::std::atomic_flag_wait(t, true);
+  });
 
-    auto agent_notify = LAMBDA (){
-        assert(cuda::std::atomic_flag_test_and_set(t) == false);
-        cuda::std::atomic_flag_notify_one(t);
-    };
+  auto agent_notify = LAMBDA() {
+    assert(cuda::std::atomic_flag_test_and_set(t) == false);
+    cuda::std::atomic_flag_notify_one(t);
+  };
 
-    auto agent_wait = LAMBDA (){
-        cuda::std::atomic_flag_wait(t, false);
-    };
+  auto agent_wait = LAMBDA() { cuda::std::atomic_flag_wait(t, false); };
 
-    concurrent_agents_launch(agent_notify, agent_wait);
+  concurrent_agents_launch(agent_notify, agent_wait);
 
-    SHARED volatile cuda::std::atomic_flag * vt;
-    execute_on_main_thread([&]{
-        vt = new cuda::std::atomic_flag();
-        cuda::std::atomic_flag_clear(vt);
-        cuda::std::atomic_flag_wait(vt, true);
-    });
+  SHARED volatile cuda::std::atomic_flag* vt;
+  execute_on_main_thread([&] {
+    vt = new cuda::std::atomic_flag();
+    cuda::std::atomic_flag_clear(vt);
+    cuda::std::atomic_flag_wait(vt, true);
+  });
 
-    auto agent_notify_v = LAMBDA (){
-        assert(cuda::std::atomic_flag_test_and_set(vt) == false);
-        cuda::std::atomic_flag_notify_one(vt);
-    };
+  auto agent_notify_v = LAMBDA() {
+    assert(cuda::std::atomic_flag_test_and_set(vt) == false);
+    cuda::std::atomic_flag_notify_one(vt);
+  };
 
-    auto agent_wait_v = LAMBDA (){
-        cuda::std::atomic_flag_wait(vt, false);
-    };
+  auto agent_wait_v = LAMBDA() { cuda::std::atomic_flag_wait(vt, false); };
 
-    concurrent_agents_launch(agent_notify_v, agent_wait_v);
+  concurrent_agents_launch(agent_notify_v, agent_wait_v);
 }
 
-int main(int, char**)
-{
-    NV_IF_TARGET(NV_IS_HOST,
-        cuda_thread_count = 2;
-    )
+int main(int, char**) {
+  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 2;)
 
-    test<shared_memory_selector>();
+  test<shared_memory_selector>();
 
   return 0;
 }

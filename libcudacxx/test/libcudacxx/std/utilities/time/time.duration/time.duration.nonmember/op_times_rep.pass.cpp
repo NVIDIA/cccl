@@ -25,22 +25,21 @@
 
 #include "test_macros.h"
 
-int main(int, char**)
-{
-    {
+int main(int, char**) {
+  {
     cuda::std::chrono::nanoseconds ns(3);
     ns = ns * 5;
     assert(ns.count() == 15);
     ns = 6 * ns;
     assert(ns.count() == 90);
-    }
-    {
+  }
+  {
     constexpr cuda::std::chrono::nanoseconds ns(3);
     constexpr cuda::std::chrono::nanoseconds ns2 = ns * 5;
     static_assert(ns2.count() == 15, "");
     constexpr cuda::std::chrono::nanoseconds ns3 = 6 * ns;
     static_assert(ns3.count() == 18, "");
-    }
+  }
 
   return 0;
 }

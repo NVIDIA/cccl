@@ -27,10 +27,15 @@
 //   5. Pointer elements are same type (succeed)
 
 // !StoreSize ctor.
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // Default case.
-static_assert(!cuda::std::is_constructible_v<ForwardSubrange, Empty, ForwardIter>); // 1.
-static_assert( cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardIter, int*>); // 2.
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // 3. (Same as default case.)
+static_assert(cuda::std::is_constructible_v<ForwardSubrange, ForwardIter,
+                                            ForwardIter>); // Default case.
+static_assert(
+    !cuda::std::is_constructible_v<ForwardSubrange, Empty, ForwardIter>); // 1.
+static_assert(cuda::std::is_constructible_v<
+              ConvertibleForwardSubrange, ConvertibleForwardIter, int*>); // 2.
+static_assert(
+    cuda::std::is_constructible_v<ForwardSubrange, ForwardIter,
+                                  ForwardIter>); // 3. (Same as default case.)
 // 4. and 5. must be sized.
 
 __host__ __device__ constexpr bool test() {
@@ -38,7 +43,8 @@ __host__ __device__ constexpr bool test() {
   assert(base(a.begin()) == globalBuff);
   assert(base(a.end()) == globalBuff + 8);
 
-  ConvertibleForwardSubrange b(ConvertibleForwardIter(globalBuff), globalBuff + 8);
+  ConvertibleForwardSubrange b(ConvertibleForwardIter(globalBuff),
+                               globalBuff + 8);
   assert(b.begin() == globalBuff);
   assert(b.end() == globalBuff + 8);
 

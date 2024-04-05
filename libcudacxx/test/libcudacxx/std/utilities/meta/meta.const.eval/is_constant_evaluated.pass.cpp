@@ -20,15 +20,15 @@
 #if TEST_STD_VER > 2017
 #ifndef __cccl_lib_is_constant_evaluated
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
-# error __cccl_lib_is_constant_evaluated should be defined
+#error __cccl_lib_is_constant_evaluated should be defined
 #endif
 #endif // __cccl_lib_is_constant_evaluated
 #endif // TEST_STD_VER > 2017
 
-template <bool> struct InTemplate {};
+template <bool>
+struct InTemplate {};
 
-int main(int, char**)
-{
+int main(int, char**) {
 #if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   // Test the signature
   {
@@ -43,7 +43,8 @@ int main(int, char**)
     static_assert(cuda::std::is_constant_evaluated(), "");
     bool p = cuda::std::is_constant_evaluated();
     assert(!p);
-    ASSERT_SAME_TYPE(InTemplate<cuda::std::is_constant_evaluated()>, InTemplate<true>);
+    ASSERT_SAME_TYPE(InTemplate<cuda::std::is_constant_evaluated()>,
+                     InTemplate<true>);
     static int local_static = cuda::std::is_constant_evaluated() ? 42 : -1;
     assert(local_static == 42);
   }

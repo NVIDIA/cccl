@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_MAKE_32_64_OR_128_BIT_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -36,20 +36,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 /// The restriction is the same as the integral version of to_char.
 template <class _Tp>
 #if _CCCL_STD_VER > 2017
-  requires (is_signed_v<_Tp> || is_unsigned_v<_Tp> || is_same_v<_Tp, char>)
+  requires(is_signed_v<_Tp> || is_unsigned_v<_Tp> || is_same_v<_Tp, char>)
 #endif
 using __make_32_64_or_128_bit_t =
   __copy_unsigned_t<_Tp,
-    __conditional_t<sizeof(_Tp) <= sizeof(int32_t),    int32_t,
-    __conditional_t<sizeof(_Tp) <= sizeof(int64_t),    int64_t,
+                    __conditional_t<sizeof(_Tp) <= sizeof(int32_t),
+                                    int32_t,
+                                    __conditional_t<sizeof(_Tp) <= sizeof(int64_t),
+                                                    int64_t,
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-    __conditional_t<sizeof(_Tp) <= sizeof(__int128_t), __int128_t,
-    /* else */                                         void>
+                                                    __conditional_t<sizeof(_Tp) <= sizeof(__int128_t),
+                                                                    __int128_t,
+                                                                    /* else */ void>
 #else
-    /* else */                                         void
+                                                    /* else */ void
 #endif
-    > >
-  >;
+                                                    > > >;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -138,12 +138,13 @@ struct TestNestedZipFunction
 };
 SimpleUnitTest<TestNestedZipFunction, type_list<int, float> > TestNestedZipFunctionInstance;
 
-struct SortPred {
-    __device__ __forceinline__
-    bool operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a,
-                    const thrust::tuple<thrust::tuple<int, int>, int>& b) {
-        return thrust::get<1>(a) < thrust::get<1>(b);
-    }
+struct SortPred
+{
+  __device__ __forceinline__ bool
+  operator()(const thrust::tuple<thrust::tuple<int, int>, int>& a, const thrust::tuple<thrust::tuple<int, int>, int>& b)
+  {
+    return thrust::get<1>(a) < thrust::get<1>(b);
+  }
 };
 template <typename T>
 struct TestNestedZipFunction2
@@ -155,7 +156,7 @@ struct TestNestedZipFunction2
     thrust::device_vector<int> C(5);
     auto n = A.size();
 
-    auto tupleIt = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
+    auto tupleIt       = thrust::make_zip_iterator(cuda::std::begin(A), cuda::std::begin(B));
     auto nestedTupleIt = thrust::make_zip_iterator(tupleIt, cuda::std::begin(C));
     thrust::sort(nestedTupleIt, nestedTupleIt + n, SortPred{});
   }
