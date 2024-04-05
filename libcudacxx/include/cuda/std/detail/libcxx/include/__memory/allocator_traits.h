@@ -436,14 +436,12 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
   }
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-_CCCL_NV_DIAG_SUPPRESS(1215)
   template <class _Ap = _Alloc, __enable_if_t<__has_max_size<const _Ap>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type
   max_size(const allocator_type& __a) noexcept
   {
     return __a.max_size();
   }
-_CCCL_NV_DIAG_DEFAULT(1215)
 _CCCL_SUPPRESS_DEPRECATED_POP
   template <class _Ap = _Alloc, class = void, __enable_if_t<!__has_max_size<const _Ap>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type

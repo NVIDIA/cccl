@@ -49,7 +49,7 @@ struct C
     typedef CPtr<const void> const_void_pointer;
 };
 
-
+#if !defined(TEST_COMPILER_MSVC_2017) // const_void_pointer is inaccessible
 template <class T>
 struct D
 {
@@ -57,13 +57,15 @@ struct D
 private:
     typedef int const_void_pointer;
 };
+#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::const_void_pointer, Ptr<const void> >::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::const_void_pointer, const void*>::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::const_void_pointer, CPtr<const void> >::value), "");
+#if !defined(TEST_COMPILER_MSVC_2017) // const_void_pointer is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::const_void_pointer, const void*>::value), "");
-
+#endif // !TEST_COMPILER_MSVC_2017
   return 0;
 }

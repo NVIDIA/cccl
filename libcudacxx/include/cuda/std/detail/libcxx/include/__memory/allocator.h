@@ -133,9 +133,12 @@ public:
 #if _CCCL_STD_VER >= 2020 && !defined(_CCCL_COMPILER_NVRTC)
     if (_CUDA_VSTD::is_constant_evaluated())
     {
-      return ::std::allocator<_Tp>{}.allocate(__n);
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (
+        return ::std::allocator<_Tp>{}.allocate(__n);
+      ),(
+        return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
+      ))
     }
-    else
 #endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER_NVRTC
     {
       return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
@@ -157,7 +160,11 @@ public:
 #if _CCCL_STD_VER >= 2020 && !defined(_CCCL_COMPILER_NVRTC)
     if (_CUDA_VSTD::is_constant_evaluated())
     {
-      return ::std::allocator<_Tp>{}.deallocate(__p, __n);
+      NV_IF_ELSE_TARGET(NV_IS_HOST, (
+        return ::std::allocator<_Tp>{}.deallocate(__p, __n);
+      ),(
+        _CUDA_VSTD::__libcpp_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
+      ))
     }
     else
 #endif // _CCCL_STD_VER >= 2020 && !_CCCL_COMPILER_NVRTC

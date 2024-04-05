@@ -22,6 +22,10 @@
 #include "test_macros.h"
 #include "count_new.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#pragma warning(disable: 4324)
+#endif // TEST_COMPILER_MSVC
+
 #ifdef TEST_HAS_NO_ALIGNED_ALLOCATION
 static const bool UsingAlignedNew = false;
 #else

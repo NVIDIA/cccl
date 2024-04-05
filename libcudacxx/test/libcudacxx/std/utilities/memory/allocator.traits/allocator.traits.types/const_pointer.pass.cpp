@@ -49,19 +49,23 @@ struct C
     typedef CPtr<const T> const_pointer;
 };
 
+#if !defined(TEST_COMPILER_MSVC_2017) // const_pointer is inaccessible
 template <class T>
 struct D {
   typedef T value_type;
 private:
   typedef void const_pointer;
 };
+#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::const_pointer, Ptr<const char> >::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::const_pointer, const char*>::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::const_pointer, CPtr<const char> >::value), "");
+#if !defined(TEST_COMPILER_MSVC_2017) // const_pointer is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<char> >::const_pointer, const char*>::value), "");
+#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

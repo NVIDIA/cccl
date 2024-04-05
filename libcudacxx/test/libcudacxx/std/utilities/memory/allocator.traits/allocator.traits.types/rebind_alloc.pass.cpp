@@ -63,6 +63,7 @@ struct E
     template <class U> struct rebind {typedef ReboundA<U> otter;};
 };
 
+#if !defined(TEST_COMPILER_MSVC_2017) // rebind is inaccessible
 template <class T>
 struct F {
     typedef T value_type;
@@ -80,6 +81,7 @@ struct G {
         typedef void other;
     };
 };
+#endif // !TEST_COMPILER_MSVC_2017
 
 int main(int, char**)
 {
@@ -88,8 +90,10 @@ int main(int, char**)
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::rebind_alloc<double>, C<double> >::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<D<int, char> >::rebind_alloc<double>, D<double, char> >::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<E<char> >::rebind_alloc<double>, E<double> >::value), "");
+#if !defined(TEST_COMPILER_MSVC_2017) // rebind is inaccessible
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<F<char> >::rebind_alloc<double>, F<double> >::value), "");
   static_assert((cuda::std::is_same<cuda::std::allocator_traits<G<char> >::rebind_alloc<double>, G<double> >::value), "");
+#endif // !TEST_COMPILER_MSVC_2017
 
   return 0;
 }
