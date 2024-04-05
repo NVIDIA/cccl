@@ -14,10 +14,10 @@
 
 template <class VType, size_t Size>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  assert(cuda::std::tuple_size<VType>::value == Size);
-  assert(cuda::std::tuple_size<const VType>::value == Size);
-  assert(cuda::std::tuple_size<volatile VType>::value == Size);
-  assert(cuda::std::tuple_size<const volatile VType>::value == Size);
+  static_assert(cuda::std::tuple_size<VType>::value == Size, "");
+  static_assert(cuda::std::tuple_size<const VType>::value == Size, "");
+  static_assert(cuda::std::tuple_size<volatile VType>::value == Size, "");
+  static_assert(cuda::std::tuple_size<const volatile VType>::value == Size, "");
 }
 
 #define EXPAND_VECTOR_TYPE(Type) \

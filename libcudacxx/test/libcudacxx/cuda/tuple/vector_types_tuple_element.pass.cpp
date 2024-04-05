@@ -18,10 +18,10 @@ using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index < VSize), int> = 0>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  assert((expected_type<VType, BaseType, Index>::value));
-  assert((expected_type<const VType, const BaseType, Index>::value));
-  assert((expected_type<volatile VType, volatile BaseType, Index>::value));
-  assert((expected_type<const volatile VType, const volatile BaseType, Index>::value));
+  static_assert((expected_type<VType, BaseType, Index>::value), "");
+  static_assert((expected_type<const VType, const BaseType, Index>::value), "");
+  static_assert((expected_type<volatile VType, volatile BaseType, Index>::value), "");
+  static_assert((expected_type<const volatile VType, const volatile BaseType, Index>::value), "");
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index >= VSize), int> = 0>
