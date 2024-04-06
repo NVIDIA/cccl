@@ -175,7 +175,8 @@ char_traits<_CharT>::find(const char_type* __s, size_t __n, const char_type& __a
 }
 
 template <class _CharT>
-_CharT*
+inline
+_LIBCUDACXX_INLINE_VISIBILITY _CharT*
 char_traits<_CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
 {
     char_type* __r = __s1;
@@ -241,20 +242,20 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char>
     int compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
     _LIBCUDACXX_INLINE_VISIBILITY static inline size_t _CCCL_CONSTEXPR_CXX14
     length(const char_type* __s)  noexcept {
+#ifdef _CCCL_COMPILER_GCC // GCC's builtin_strlen isn't reliable at constexpr time
+        if (__libcpp_is_constant_evaluated()) {
+            size_t __len = 0;
+            for (; !eq(*__s, char(0)); ++__s)
+                ++__len;
+            return __len;
+        }
+#endif
         NV_IF_ELSE_TARGET(NV_IS_DEVICE, (
             size_t __len = 0;
             for (; !eq(*__s, char(0)); ++__s)
                 ++__len;
             return __len;
         ), (
-#ifdef _CCCL_COMPILER_GCC // GCC's builtin_strlen isn't reliable at constexpr time
-            if (__libcpp_is_constant_evaluated()) {
-                size_t __len = 0;
-                for (; !eq(*__s, char(0)); ++__s)
-                    ++__len;
-                return __len;
-            }
-#endif
             return __builtin_strlen(__s);
         ))
     }
@@ -302,8 +303,6 @@ char_traits<char>::compare(const char_type* __s1, const char_type* __s2, size_t 
         return 0;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_memcmp(__s1, __s2, __n);
-#elif _CCCL_STD_VER <= 2014
-    return memcmp(__s1, __s2, __n);
 #else
     for (; __n; --__n, ++__s1, ++__s2)
     {
@@ -324,8 +323,6 @@ char_traits<char>::find(const char_type* __s, size_t __n, const char_type& __a) 
         return nullptr;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_char_memchr(__s, to_int_type(__a), __n);
-#elif _CCCL_STD_VER <= 2014
-    return (const char_type*) memchr(__s, to_int_type(__a), __n);
 #else
     for (; __n; --__n)
     {
@@ -459,8 +456,6 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
         return nullptr;
 #if __has_feature(cxx_constexpr_string_builtins)
     return __builtin_wmemchr(__s, __a, __n);
-#elif _CCCL_STD_VER <= 2014
-    return wmemchr(__s, __a, __n);
 #else
     for (; __n; --__n)
     {
@@ -497,24 +492,29 @@ struct _LIBCUDACXX_TEMPLATE_VIS char_traits<char8_t>
     static inline constexpr bool lt(char_type __c1, char_type __c2) noexcept
         {return __c1 < __c2;}
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static constexpr
     int              compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static constexpr
     size_t           length(const char_type* __s) noexcept;
 
     _LIBCUDACXX_INLINE_VISIBILITY static constexpr
     const char_type* find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
-        {return __n == 0 ? __s1 : (char_type*) memmove(__s1, __s2, __n);}
+        {return __n == 0 ? __s1 : (char_type*) __copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first - __n;}
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
        {
             _LIBCUDACXX_ASSERT(__s2 < __s1 || __s2 >= __s1+__n, "char_traits::copy overlapped range");
             return __n == 0 ? __s1 : (char_type*)memcpy(__s1, __s2, __n);
        }
 
+    _LIBCUDACXX_INLINE_VISIBILITY
     static char_type*       assign(char_type* __s, size_t __n, char_type __a) noexcept
         {return __n == 0 ? __s : (char_type*)memset(__s, to_int_type(__a), __n);}
 
