@@ -4,8 +4,14 @@
 
 set -u
 
-head_sha=$GITHUB_SHA
-base_sha=$BASE_SHA
+# Usage: inspect_changes.sh <base_sha> <head_sha>
+if [ "$#" -ne 2 ]; then
+  echo "Usage: $0 <base_sha> <head_sha>"
+  exit 1
+fi
+
+base_sha=$1
+head_sha=$2
 
 # Github gives the SHA as the current HEAD of the target ref, not the common ancestor.
 # Find the common ancestor and use that for the base.
@@ -21,20 +27,10 @@ subprojects=(
 )
 
 # ...and their dependencies:
-libcudacxx_dependencies=(
-  cccl
-)
-
-cub_dependencies=(
-  cccl
-  libcudacxx
-  thrust
-)
-
-thrust_dependencies=(
-  cccl
-  libcudacxx
-  cub
+declare -A dependencies=(
+  [libcudacxx]="cccl"
+  [cub]="cccl libcudacxx thrust"
+  [thrust]="cccl libcudacxx cub"
 )
 
 write_output() {
@@ -84,8 +80,7 @@ add_dependencies() {
     return 1
   fi
 
-  eval "dependencies=\${${subproject}_dependencies[@]}"
-  for dependency in ${dependencies}; do
+  for dependency in ${dependencies[$subproject]}; do
     dirty_flag="${dependency^^}_DIRTY"
     if [[ ${!dirty_flag} -ne 0 ]]; then
       return 1
@@ -114,16 +109,13 @@ main() {
   echo
   echo "Dependencies:"
   for subproject in "${subprojects[@]}"; do
-    eval "deps=\${${subproject}_dependencies[@]}"
-    echo "  - ${subproject} -> ${deps}"
+    echo "  - ${subproject} -> ${dependencies[$subproject]}"
   done
   echo
 
   echo "Base SHA: ${base_sha}"
   echo "HEAD SHA: ${head_sha}"
   echo
-
-  git fetch origin "${base_sha}"
 
   # Print the list of files that have changed:
   echo "Dirty files:"

@@ -51,7 +51,7 @@ jobs:
       - name: Identify dirty subprojects
         id: set-outputs
         run: |
-          ./ci/inspect_changes.sh
+          ./ci/inspect_changes.sh ${BASE_SHA} ${GITHUB_SHA}
         env:
           BASE_SHA: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
 
