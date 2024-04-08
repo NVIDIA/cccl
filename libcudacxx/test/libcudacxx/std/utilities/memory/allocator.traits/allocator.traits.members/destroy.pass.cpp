@@ -102,6 +102,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 
     cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
   }
+#if !defined(TEST_COMPILER_MSVC) && TEST_STD_VER >= 2020 // incomplete type not allowed
   if (!cuda::std::__libcpp_is_constant_evaluated()) {
     typedef IncompleteHolder* T;
     typedef NoDestroy<T> Alloc;
@@ -111,6 +112,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
     cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
   }
+#endif // !defined(TEST_COMPILER_MSVC) && TEST_STD_VER >= 2020
   {
     using Alloc = CountDestroy<CountDestructor>;
     int destroys_called = 0;
