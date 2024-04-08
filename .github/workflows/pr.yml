@@ -35,9 +35,31 @@ permissions:
   pull-requests: read
 
 jobs:
+  inspect-changes:
+    name: "Inspect Changes"
+    runs-on: ubuntu-latest
+    outputs:
+      LIBCUDACXX_DIRTY: ${{ steps.set-outputs.outputs.LIBCUDACXX_DIRTY }}
+      CUB_DIRTY: ${{ steps.set-outputs.outputs.CUB_DIRTY }}
+      THRUST_DIRTY: ${{ steps.set-outputs.outputs.THRUST_DIRTY }}
+    steps:
+      - name: Get Base Branch from PR
+        id: get-pr-info
+        uses: nv-gha-runners/get-pr-info@main
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Identify dirty subprojects
+        id: set-outputs
+        run: |
+          ./ci/inspect_changes.sh
+        env:
+          BASE_SHA: ${{ fromJSON(steps.get-pr-info.outputs.pr-info).base.sha }}
+
   compute-matrix:
     name: Compute matrix
     runs-on: ubuntu-latest
+    needs:
+      - inspect-changes
     outputs:
       DEVCONTAINER_VERSION: ${{steps.set-outputs.outputs.DEVCONTAINER_VERSION}}
       PER_CUDA_COMPILER_MATRIX: ${{steps.set-outputs.outputs.PER_CUDA_COMPILER_MATRIX}}
@@ -52,21 +74,10 @@ jobs:
         id: set-outputs
         run: |
           .github/actions/compute-matrix/compute-matrix.sh ci/matrix.yaml pull_request
-
-  inspect-changes:
-    name: "Inspect Changes"
-    runs-on: ubuntu-latest
-    outputs:
-      LIBCUDACXX_DIRTY: ${{ steps.set-outputs.outputs.LIBCUDACXX_DIRTY }}
-      CUB_DIRTY: ${{ steps.set-outputs.outputs.CUB_DIRTY }}
-      THRUST_DIRTY: ${{ steps.set-outputs.outputs.THRUST_DIRTY }}
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-      - name: Identify dirty subprojects
-        id: set-outputs
-        run: |
-          ./ci/inspect_changes.sh
+        env:
+          THRUST_DIRTY: ${{ needs.inspect-changes.outputs.THRUST_DIRTY }}
+          CUB_DIRTY: ${{ needs.inspect-changes.outputs.CUB_DIRTY }}
+          LIBCUDACXX_DIRTY: ${{ needs.inspect-changes.outputs.LIBCUDACXX_DIRTY }}
 
   nvrtc:
     name: libcudacxx NVRTC CUDA${{matrix.cuda}}

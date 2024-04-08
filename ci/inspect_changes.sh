@@ -4,6 +4,15 @@
 
 set -u
 
+head_sha=$GITHUB_SHA
+base_sha=$BASE_SHA
+
+# Github gives the SHA as the current HEAD of the target ref, not the common ancestor.
+# Find the common ancestor and use that for the base.
+git fetch origin --unshallow -q
+git fetch origin $base_sha -q
+base_sha=$(git merge-base $head_sha $base_sha)
+
 # Define a list of subproject directories:
 subprojects=(
   libcudacxx
@@ -27,9 +36,6 @@ thrust_dependencies=(
   libcudacxx
   cub
 )
-
-base_sha=$GITHUB_BASE_REF
-head_sha=$GITHUB_SHA
 
 write_output() {
   local key="$1"
@@ -117,6 +123,8 @@ main() {
   echo "HEAD SHA: ${head_sha}"
   echo
 
+  git fetch origin "${base_sha}"
+
   # Print the list of files that have changed:
   echo "Dirty files:"
   dirty_files | sed 's/^/  - /'
@@ -126,7 +134,7 @@ main() {
   # Assign the return value of `inspect_cccl` to the variable `CCCL_DIRTY`:
   inspect_cccl
   CCCL_DIRTY=$?
-  echo "$(if [[ ${CCCL_DIRTY} -eq 0 ]]; then echo " "; else echo "X"; fi) - non-project files"
+  echo "$(if [[ ${CCCL_DIRTY} -eq 0 ]]; then echo " "; else echo "X"; fi) - CCCL Infrastructure"
 
   # Check for changes in each subprojects directory:
   for subproject in "${subprojects[@]}"; do
