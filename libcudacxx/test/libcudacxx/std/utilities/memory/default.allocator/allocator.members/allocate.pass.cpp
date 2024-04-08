@@ -108,9 +108,7 @@ int main(int, char**) {
     test_aligned<OverAligned>();
     test_aligned<OverAligned * 2>();
 
-#if TEST_STD_VER >= 2020 \
- && !defined(TEST_COMPILER_NVCC) \
- && !defined(TEST_COMPILER_NVRTC)
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     static_assert(test_aligned_constexpr<1>());
     static_assert(test_aligned_constexpr<2>());
     static_assert(test_aligned_constexpr<4>());
@@ -119,7 +117,7 @@ int main(int, char**) {
     static_assert(test_aligned_constexpr<MaxAligned>());
     static_assert(test_aligned_constexpr<OverAligned>());
     static_assert(test_aligned_constexpr<OverAligned * 2>());
-#endif // TEST_STD_VER >= 2020
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
   return 0;
 }

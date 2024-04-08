@@ -34,9 +34,9 @@
 #include <cuda/std/detail/libcxx/include/cstdlib>
 #include <cuda/std/detail/libcxx/include/new>
 
-#if _CCCL_STD_VER >= 2020 && !defined(_CCCL_COMPILER_NVRTC)
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #  include <memory>
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -123,19 +123,19 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Tp*
+  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp*
   allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
       __throw_bad_array_new_length();
     }
-#if _CCCL_STD_VER >= 2020
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     if (__libcpp_is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
-#endif // _CCCL_STD_VER >= 2020
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
     {
       return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
@@ -148,12 +148,12 @@ public:
   {
     return {allocate(__n), __n};
   }
-#endif // _CCCL_STD_VER >= 2023
+#endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(_Tp* __p, size_t __n) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
-#if _CCCL_STD_VER >= 2020
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     if (__libcpp_is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);

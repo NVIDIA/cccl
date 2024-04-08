@@ -172,6 +172,12 @@
 #else
 #  define TEST_CONSTEXPR_CXX20
 #endif
+#  if defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && TEST_STD_VER >= 2020 \
+    && !defined(TEST_COMPILER_NVRTC)
+#  define TEST_CONSTEXPR_CXX20_ALLOC constexpr
+#else
+#  define TEST_CONSTEXPR_CXX20_ALLOC
+#endif
 #if TEST_STD_VER > 2014
 #  define TEST_THROW_SPEC(...)
 #else

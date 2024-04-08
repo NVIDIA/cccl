@@ -2158,6 +2158,15 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
   _CUDA_VSTD::__construct_at(_CUDA_VSTD::addressof(_LOCATION), __VA_ARGS__)
 #endif
 
+// We can only expose constexpr allocations if the compiler supports it
+#  if defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
+    && !defined(_CCCL_COMPILER_NVRTC)
+#    define _CCCL_HAS_CONSTEXPR_ALLOCATION
+#    define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
+#  else // ^^^ __cpp_constexpr_dynamic_alloc ^^^ / vvv !__cpp_constexpr_dynamic_alloc vvv
+#    define _CCCL_CONSTEXPR_CXX20_ALLOCATION
+#  endif
+
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
 #  if defined(_CCCL_COMPILER_NVRTC) || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))

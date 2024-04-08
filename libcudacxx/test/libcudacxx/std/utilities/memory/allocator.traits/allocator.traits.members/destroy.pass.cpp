@@ -27,111 +27,115 @@
 #include "incomplete_type_helper.h"
 
 template <class T>
-struct NoDestroy
-{
-    typedef T value_type;
+struct NoDestroy {
+  typedef T value_type;
 
-    __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
-    {
-        return cuda::std::allocator<T>().allocate(n);
-    }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n) {
+    return cuda::std::allocator<T>().allocate(n);
+  }
 
-    __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n)
-    {
-        return cuda::std::allocator<T>().deallocate(p, n);
-    }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void
+  deallocate(T* p, cuda::std::size_t n) {
+    return cuda::std::allocator<T>().deallocate(p, n);
+  }
 };
 
 template <class T>
-struct CountDestroy
-{
-    __host__ __device__ TEST_CONSTEXPR explicit CountDestroy(int* counter)
-        : counter_(counter)
-    { }
+struct CountDestroy {
+  __host__ __device__ TEST_CONSTEXPR explicit CountDestroy(int* counter)
+      : counter_(counter) {}
 
-    typedef T value_type;
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~CountDestroy() {}
 
-    __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n)
-    {
-        return cuda::std::allocator<T>().allocate(n);
-    }
+  typedef T value_type;
 
-    __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n)
-    {
-        return cuda::std::allocator<T>().deallocate(p, n);
-    }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 T* allocate(cuda::std::size_t n) {
+    return &storage;
+  }
 
-    template <class U>
-    __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p)
-    {
-        ++*counter_;
-        p->~U();
-    }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void
+  deallocate(T* p, cuda::std::size_t n) {}
 
-    int* counter_;
+  template <class U, class... Args>
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void construct(U* p,
+                                                          Args&&... args) {
+    assert(p == nullptr);
+    cuda::std::__construct_at(&storage, cuda::std::forward<Args>(args)...);
+  }
+
+  template <class U>
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p) {
+    assert(p == nullptr);
+    ++*counter_;
+    storage.~U();
+  }
+
+  int* counter_;
+  union {
+    char dummy_{};
+    value_type storage;
+  };
 };
 
-struct CountDestructor
-{
-    __host__ __device__ TEST_CONSTEXPR explicit CountDestructor(int* counter)
-        : counter_(counter)
-    { }
+struct CountDestructor {
+  __host__ __device__ TEST_CONSTEXPR explicit CountDestructor(int* counter)
+      : counter_(counter) {}
 
-    __host__ __device__ TEST_CONSTEXPR_CXX20 ~CountDestructor() { ++*counter_; }
+  __host__ __device__ TEST_CONSTEXPR_CXX20 ~CountDestructor() { ++*counter_; }
 
-    int* counter_;
+  int* counter_;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
-{
-    {
-        typedef NoDestroy<CountDestructor> Alloc;
-        int destructors = 0;
-        Alloc alloc;
-        CountDestructor* pool = cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+  if (!cuda::std::__libcpp_is_constant_evaluated()) {
+    using Alloc = NoDestroy<CountDestructor>;
+    int destructors = 0;
+    Alloc alloc;
+    CountDestructor* pool =
+        cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
 
-        cuda::std::allocator_traits<Alloc>::construct(alloc, pool, &destructors);
-        assert(destructors == 0);
+    cuda::std::allocator_traits<Alloc>::construct(alloc, pool, &destructors);
+    assert(destructors == 0);
 
-        cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
-        assert(destructors == 1);
+    cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
+    assert(destructors == 1);
 
-        cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
-    }
-    {
-        typedef IncompleteHolder* T;
-        typedef NoDestroy<T> Alloc;
-        Alloc alloc;
-        T* pool = cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
-        cuda::std::allocator_traits<Alloc>::construct(alloc, pool, nullptr);
-        cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
-        cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
-    }
-    {
-        typedef CountDestroy<CountDestructor> Alloc;
-        int destroys_called = 0;
-        int destructors_called = 0;
-        Alloc alloc(&destroys_called);
+    cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
+  }
+  if (!cuda::std::__libcpp_is_constant_evaluated()) {
+    typedef IncompleteHolder* T;
+    typedef NoDestroy<T> Alloc;
+    Alloc alloc;
+    T* pool = cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
+    cuda::std::allocator_traits<Alloc>::construct(alloc, pool, nullptr);
+    cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
+    cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
+  }
+  {
+    using Alloc = CountDestroy<CountDestructor>;
+    int destroys_called = 0;
+    int destructors_called = 0;
+    Alloc alloc(&destroys_called);
+    CountDestructor* fake_ptr = nullptr;
 
-        CountDestructor* pool = cuda::std::allocator_traits<Alloc>::allocate(alloc, 1);
-        cuda::std::allocator_traits<Alloc>::construct(alloc, pool, &destructors_called);
-        assert(destroys_called == 0);
-        assert(destructors_called == 0);
+    cuda::std::allocator_traits<Alloc>::construct(alloc, fake_ptr,
+                                                  &destructors_called);
+    assert(destroys_called == 0);
+    assert(destructors_called == 0);
 
-        cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
-        assert(destroys_called == 1);
-        assert(destructors_called == 1);
+    cuda::std::allocator_traits<Alloc>::destroy(alloc, fake_ptr);
+    assert(destroys_called == 1);
+    assert(destructors_called == 1);
 
-        cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
-    }
-    return true;
+    cuda::std::allocator_traits<Alloc>::deallocate(alloc, fake_ptr, 1);
+  }
+  return true;
 }
 
-int main(int, char**)
-{
-    test();
+int main(int, char**) {
+  test();
 #if TEST_STD_VER >= 2020
-    static_assert(test());
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020
-    return 0;
+  return 0;
 }
