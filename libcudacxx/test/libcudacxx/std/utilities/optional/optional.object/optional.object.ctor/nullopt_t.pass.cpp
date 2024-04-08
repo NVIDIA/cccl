@@ -71,7 +71,7 @@ test()
 }
 
 __global__ void test_global_visibility() {
-    cuda::std::nullopt meow;
+    cuda::std::optional<int> meow = cuda::std::nullopt;
     (void)meow;
 }
 
