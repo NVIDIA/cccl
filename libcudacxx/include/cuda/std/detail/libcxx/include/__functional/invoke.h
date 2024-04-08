@@ -23,23 +23,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/add_lvalue_reference.h"
-#include "../__type_traits/apply_cv.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_base_of.h"
-#include "../__type_traits/is_core_convertible.h"
-#include "../__type_traits/is_member_function_pointer.h"
-#include "../__type_traits/is_member_object_pointer.h"
-#include "../__type_traits/is_reference_wrapper.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/nat.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__utility/declval.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/apply_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_core_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_member_function_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_member_object_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/nat.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 

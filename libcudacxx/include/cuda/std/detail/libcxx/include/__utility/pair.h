@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___UTILITY_PAIR_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,45 +23,45 @@
 #endif // no system header
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/common_comparison_category.h"
-#  include "../__compare/synth_three_way.h"
+#  include <cuda/std/detail/libcxx/include/__compare/common_comparison_category.h>
+#  include <cuda/std/detail/libcxx/include/__compare/synth_three_way.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#include "../__functional/unwrap_ref.h"
-#include "../__fwd/get.h"
-#include "../__fwd/pair.h"
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/sfinae_helpers.h"
-#include "../__tuple_dir/structured_bindings.h"
-#include "../__tuple_dir/tuple_element.h"
-#include "../__tuple_dir/tuple_indices.h"
-#include "../__tuple_dir/tuple_size.h"
-#include "../__type_traits/common_reference.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_implicitly_default_constructible.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_nothrow_assignable.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/make_const_lvalue_ref.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__utility/piecewise_construct.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__functional/unwrap_ref.h>
+#include <cuda/std/detail/libcxx/include/__fwd/get.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_indices.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/common_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/piecewise_construct.h>
+#include <cuda/std/cstddef>
 
 // Provide compatability between `std::pair` and `cuda::std::pair`
 #if defined(__cuda_std__) && !defined(__CUDACC_RTC__)

@@ -264,9 +264,10 @@ private:
 
       // NVCC claims that these variables are set-but-not-used, and the usual tricks to silence
       // those warnings don't work. This convoluted nonsense, however, does work...
-      if (static_cast<bool>(unchecked_values_for_current_dup_key_begin) || static_cast<bool>(unchecked_values_for_current_dup_key_end))
+      if (static_cast<bool>(unchecked_values_for_current_dup_key_begin)
+          || static_cast<bool>(unchecked_values_for_current_dup_key_end))
       {
-        [](){}(); // no-op lambda
+        []() {}(); // no-op lambda
       }
 
       // Validate all output values for the current key by determining the input key indicies and computing the matching
@@ -1500,7 +1501,10 @@ inline int generate_unspecified_segments_offsets(
 
   // Scatter some zeros around to erase half of the segments:
   c2h::device_vector<int> erase_indices(num_segments / 2);
-  c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 1);
+  // Don't zero out the first or last segment. These are handled specially in other ways -- the first segment is always
+  // zeroed explicitly in the offset arrays, and the last segment is required to be specified for the num_items
+  // calculation below.
+  c2h::gen(make_offset_eraser_seed(seed), erase_indices, 1, num_segments - 2);
 
   auto const_zero_begin = thrust::make_constant_iterator<int>(0);
   auto const_zero_end   = const_zero_begin + erase_indices.size();

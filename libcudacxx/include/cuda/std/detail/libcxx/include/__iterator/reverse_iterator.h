@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,36 +23,36 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__algorithm/unwrap_iter.h"
+#include <cuda/std/detail/libcxx/include/__algorithm/unwrap_iter.h>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#  include "../__compare/compare_three_way_result.h"
-#  include "../__compare/three_way_comparable.h"
+#  include <cuda/std/detail/libcxx/include/__compare/compare_three_way_result.h>
+#  include <cuda/std/detail/libcxx/include/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "../__concepts/convertible_to.h"
-#include "../__iterator/advance.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/incrementable_traits.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iter_swap.h"
-#include "../__iterator/iterator.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/next.h"
-#include "../__iterator/prev.h"
-#include "../__iterator/readable_traits.h"
-#include "../__memory/addressof.h"
+#include <cuda/std/detail/libcxx/include/__concepts/convertible_to.h>
+#include <cuda/std/detail/libcxx/include/__iterator/advance.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/incrementable_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_swap.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/next.h>
+#include <cuda/std/detail/libcxx/include/__iterator/prev.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
 #ifdef _LIBCUDACXX_HAS_RANGES
-#  include "../__ranges/access.h"
-#  include "../__ranges/concepts.h"
-#  include "../__ranges/subrange.h"
+#  include <cuda/std/detail/libcxx/include/__ranges/access.h>
+#  include <cuda/std/detail/libcxx/include/__ranges/concepts.h>
+#  include <cuda/std/detail/libcxx/include/__ranges/subrange.h>
 #endif // _LIBCUDACXX_HAS_RANGES
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

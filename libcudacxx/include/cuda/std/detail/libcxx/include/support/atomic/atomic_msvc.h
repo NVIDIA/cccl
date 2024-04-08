@@ -447,4 +447,4 @@ _Type __atomic_fetch_min(_Type volatile *__ptr, _Delta __val, int __memorder) {
     return __expected;
 }
 
-#include "atomic_base.h"
+#include <cuda/std/detail/libcxx/include/support/atomic/atomic_base.h>

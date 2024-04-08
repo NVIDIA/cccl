@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/is_nothrow_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

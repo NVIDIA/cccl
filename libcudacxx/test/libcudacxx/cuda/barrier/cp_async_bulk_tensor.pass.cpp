@@ -64,7 +64,7 @@ __device__ void test(int base_i, int base_j)
     __syncthreads();
 
     // TEST: Add i to buffer[i]
-    __shared__ alignas(128) int smem_buffer[buf_len];
+    alignas(128) __shared__ int smem_buffer[buf_len];
     __shared__ barrier bar;
     if (threadIdx.x == 0) { init(&bar, blockDim.x); }
     __syncthreads();

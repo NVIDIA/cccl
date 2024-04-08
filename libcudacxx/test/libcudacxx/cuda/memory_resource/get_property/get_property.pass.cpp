@@ -8,15 +8,15 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::get_property
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-
-#include <cuda/std/cassert>
 #include <cuda/memory_resource>
+#include <cuda/std/cassert>
+#include <cuda/std/concepts>
+#include <cuda/std/type_traits>
 
 struct prop_with_value {
   using value_type = int;

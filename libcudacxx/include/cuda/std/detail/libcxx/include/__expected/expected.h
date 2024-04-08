@@ -21,52 +21,52 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__assert"
-#include "../__concepts/invocable.h"
+#include <cuda/std/detail/libcxx/include/__assert>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-#include "../__expected/bad_expected_access.h"
+#include <cuda/std/detail/libcxx/include/__expected/bad_expected_access.h>
 #endif // _LIBCUDACXX_NO_EXCEPTIONS
-#include "../__expected/expected_base.h"
-#include "../__expected/unexpect.h"
-#include "../__expected/unexpected.h"
-#include "../__memory/addressof.h"
-#include "../__memory/construct_at.h"
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_assignable.h"
-#include "../__type_traits/is_constructible.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_copy_assignable.h"
-#include "../__type_traits/is_copy_constructible.h"
-#include "../__type_traits/is_default_constructible.h"
-#include "../__type_traits/is_function.h"
-#include "../__type_traits/is_move_assignable.h"
-#include "../__type_traits/is_move_constructible.h"
-#include "../__type_traits/is_nothrow_constructible.h"
-#include "../__type_traits/is_nothrow_copy_assignable.h"
-#include "../__type_traits/is_nothrow_copy_constructible.h"
-#include "../__type_traits/is_nothrow_default_constructible.h"
-#include "../__type_traits/is_nothrow_move_assignable.h"
-#include "../__type_traits/is_nothrow_move_constructible.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_swappable.h"
-#include "../__type_traits/is_trivially_copy_constructible.h"
-#include "../__type_traits/is_trivially_destructible.h"
-#include "../__type_traits/is_trivially_move_constructible.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/lazy.h"
-#include "../__type_traits/negation.h"
-#include "../__type_traits/remove_cv.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/exception_guard.h"
-#include "../__utility/forward.h"
-#include "../__utility/in_place.h"
-#include "../__utility/move.h"
-#include "../__utility/swap.h"
+#include <cuda/std/detail/libcxx/include/__expected/expected_base.h>
+#include <cuda/std/detail/libcxx/include/__expected/unexpect.h>
+#include <cuda/std/detail/libcxx/include/__expected/unexpected.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/lazy.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/negation.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/exception_guard.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
 
-#include "../cstdlib"
-#include "../initializer_list"
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/initializer_list>
 
 #if _CCCL_STD_VER > 2011
 
@@ -81,7 +81,7 @@ namespace __expected {
   _LIBCUDACXX_INLINE_VISIBILITY
   void __throw_bad_expected_access(_Arg&& __arg) {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    throw _CUDA_STD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
+    throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));
 #else
     (void)__arg;
     _LIBCUDACXX_UNREACHABLE();

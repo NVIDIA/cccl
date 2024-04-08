@@ -160,7 +160,7 @@ template<class T>
 */
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -171,45 +171,45 @@ template<class T>
 #  pragma system_header
 #endif // no system header
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__availability"
-#include "__concepts/__concept_macros.h"
-#include "__concepts/invocable.h"
-#include "__functional/hash.h"
-#include "__functional/invoke.h"
-#include "__functional/unary_function.h"
-#include "__memory/addressof.h"
-#include "__memory/construct_at.h"
-#include "__tuple_dir/sfinae_helpers.h"
-#include "__type_traits/conjunction.h"
-#include "__type_traits/disjunction.h"
-#include "__type_traits/is_trivially_copy_assignable.h"
-#include "__type_traits/is_trivially_copy_constructible.h"
-#include "__type_traits/is_trivially_destructible.h"
-#include "__type_traits/is_trivially_move_assignable.h"
-#include "__type_traits/is_trivially_move_constructible.h"
-#include "__type_traits/is_object.h"
-#include "__type_traits/negation.h"
-#include "__type_traits/remove_cv.h"
-#include "__utility/declval.h"
-#include "__utility/forward.h"
-#include "__utility/in_place.h"
-#include "__utility/move.h"
-#include "__utility/swap.h"
-#include "__verbose_abort"
-#include "cstdlib"
-#include "initializer_list"
-#include "version"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__availability>
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/invocable.h>
+#include <cuda/std/detail/libcxx/include/__functional/hash.h>
+#include <cuda/std/detail/libcxx/include/__functional/invoke.h>
+#include <cuda/std/detail/libcxx/include/__functional/unary_function.h>
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/sfinae_helpers.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/negation.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/in_place.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/__verbose_abort>
+#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/detail/libcxx/include/new>
+#include <cuda/std/initializer_list>
+#include <cuda/std/version>
 
 // standard-mandated includes
 
 // [optional.syn]
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-#include "compare"
+#include <cuda/std/compare>
 #endif
 
 #ifndef __cuda_std__
-#include <new>
 #include <stdexcept>
 #endif // __cuda_std__
 
@@ -254,7 +254,7 @@ struct nullopt_t
     _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit nullopt_t(__secret_tag, __secret_tag) noexcept {}
 };
 
-_LIBCUDACXX_INLINE_VAR constexpr nullopt_t nullopt{nullopt_t::__secret_tag{}, nullopt_t::__secret_tag{}};
+_LIBCUDACXX_CPO_ACCESSIBILITY nullopt_t nullopt{nullopt_t::__secret_tag{}, nullopt_t::__secret_tag{}};
 
 struct __optional_construct_from_invoke_tag {};
 

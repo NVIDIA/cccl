@@ -22,17 +22,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_array.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/is_floating_point.h"
-#include "../__type_traits/is_function.h"
-#include "../__type_traits/is_integral.h"
-#include "../__type_traits/is_member_pointer.h"
-#include "../__type_traits/is_pointer.h"
-#include "../__type_traits/is_reference.h"
-#include "../__type_traits/is_union.h"
-#include "../__type_traits/is_void.h"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_array.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_class.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_floating_point.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_member_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_pointer.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_union.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -22,14 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
-#include "../__type_traits/disjunction.h"
-#include "../__type_traits/is_integral.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_signed.h"
-#include "../__type_traits/make_unsigned.h"
-#include "../limits"
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_signed.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
+#include <cuda/std/limits>
 
 #ifndef __cuda_std__
 #include <__pragma_push>

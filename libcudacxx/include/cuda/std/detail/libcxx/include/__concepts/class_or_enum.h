@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/is_enum.h"
-#include "../__type_traits/is_union.h"
-#include "../__type_traits/remove_cvref.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_class.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_enum.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_union.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

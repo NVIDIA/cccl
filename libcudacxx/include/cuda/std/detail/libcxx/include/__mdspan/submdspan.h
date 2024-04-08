@@ -57,23 +57,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/dynamic_extent.h"
-#include "../__mdspan/full_extent_t.h"
-#include "../__mdspan/layout_left.h"
-#include "../__mdspan/layout_right.h"
-#include "../__mdspan/layout_stride.h"
-#include "../__mdspan/macros.h"
-#include "../__mdspan/mdspan.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_convertible.h"
-#include "../__type_traits/is_same.h"
-#include "../__type_traits/is_signed.h"
-#include "../__type_traits/remove_const.h"
-#include "../__type_traits/remove_reference.h"
-#include "../__utility/move.h"
-#include "../__utility/pair.h"
-#include "../tuple"
+#include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/full_extent_t.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/layout_left.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/layout_right.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/layout_stride.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__mdspan/mdspan.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_convertible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_signed.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__utility/pair.h>
+#include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

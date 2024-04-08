@@ -52,7 +52,7 @@ size_t strlen(const char* s);
 */
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

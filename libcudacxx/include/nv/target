@@ -198,6 +198,6 @@ namespace nv {
 
 #endif // C++11  && !defined(__CUDACC_RTC__)
 
-#include "detail/__target_macros"
+#include <nv/detail/__target_macros>
 
 #endif // __NV_TARGET_H

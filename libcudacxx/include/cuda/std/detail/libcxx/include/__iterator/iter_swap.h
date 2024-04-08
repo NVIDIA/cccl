@@ -22,15 +22,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/class_or_enum.h"
-#include "../__concepts/swappable.h"
-#include "../__iterator/concepts.h"
-#include "../__iterator/iter_move.h"
-#include "../__iterator/iterator_traits.h"
-#include "../__iterator/readable_traits.h"
-#include "../__type_traits/remove_cvref.h"
-#include "../__utility/forward.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
+#include <cuda/std/detail/libcxx/include/__concepts/swappable.h>
+#include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iter_move.h>
+#include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
+#include <cuda/std/detail/libcxx/include/__iterator/readable_traits.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 #if _CCCL_STD_VER > 2014
 

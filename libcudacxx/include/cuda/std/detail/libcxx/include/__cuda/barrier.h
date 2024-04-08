@@ -27,11 +27,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../cstdlib"                // _LIBCUDACXX_UNREACHABLE
-#include "../__type_traits/void_t.h" // _CUDA_VSTD::__void_t
+#include <cuda/std/detail/libcxx/include/cstdlib>                // _LIBCUDACXX_UNREACHABLE
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h> // _CUDA_VSTD::__void_t
 
 #if defined(_CCCL_CUDA_COMPILER)
-#include "../__cuda/ptx.h"           // cuda::ptx::*
+#include <cuda/std/detail/libcxx/include/__cuda/ptx.h>           // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
 
 #if defined(_CCCL_COMPILER_NVRTC)
@@ -343,7 +343,7 @@ private:
                             "}"
                             : "=r"(__ready)
                             : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                            "l"(__token)
+                            "l"(__token),
                             "r"(__wait_nsec)
                             : "memory");
                     __elapsed = _CUDA_VSTD::chrono::high_resolution_clock::now() - __start;

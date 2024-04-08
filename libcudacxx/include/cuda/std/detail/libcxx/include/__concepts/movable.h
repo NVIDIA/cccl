@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/assignable.h"
-#include "../__concepts/constructible.h"
-#include "../__concepts/swappable.h"
-#include "../__type_traits/is_object.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/assignable.h>
+#include <cuda/std/detail/libcxx/include/__concepts/constructible.h>
+#include <cuda/std/detail/libcxx/include/__concepts/swappable.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_object.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

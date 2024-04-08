@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__concepts/same_as.h"
-#include "../__type_traits/remove_cvref.h"
+#include <cuda/std/detail/libcxx/include/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/__concepts/same_as.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

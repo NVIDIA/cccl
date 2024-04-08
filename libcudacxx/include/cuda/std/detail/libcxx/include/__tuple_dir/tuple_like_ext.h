@@ -22,12 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__fwd/array.h"
-#include "../__fwd/pair.h"
-#include "../__fwd/tuple.h"
-#include "../__tuple_dir/tuple_types.h"
-#include "../__type_traits/integral_constant.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__fwd/array.h>
+#include <cuda/std/detail/libcxx/include/__fwd/pair.h>
+#include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

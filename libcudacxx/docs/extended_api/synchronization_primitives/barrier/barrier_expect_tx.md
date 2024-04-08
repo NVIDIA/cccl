@@ -45,7 +45,7 @@ __device__ alignas(16) int gmem_x[2048];
 
 __global__ void example_kernel() {
     using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-  __shared__ alignas(16) int smem_x[1024];
+  alignas(16) __shared__ int smem_x[1024];
   __shared__ barrier_t bar;
 
   if (threadIdx.x == 0) {
@@ -56,9 +56,9 @@ __global__ void example_kernel() {
   if (threadIdx.x == 0) {
     cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), bar);
     cuda::device::barrier_expect_tx(bar, sizeof(smem_x));
-  } 
+  }
   auto token = bar.arrive(1);
-  
+
   bar.wait(cuda::std::move(token));
 
   // smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]

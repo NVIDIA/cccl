@@ -29,7 +29,7 @@
 
 #  include <nv/target>
 
-#  include "../cmath"
+#  include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

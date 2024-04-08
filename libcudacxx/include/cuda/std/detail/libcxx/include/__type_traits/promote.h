@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_same.h"
-#include "../__utility/declval.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/cstddef>
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
 #include <cuda_fp16.h>
@@ -113,6 +113,9 @@ public:
 
 template <class _A1, class _A2 = void, class _A3 = void>
 class __promote : public __promote_imp<_A1, _A2, _A3> {};
+
+template <class _A1, class _A2 = void, class _A3 = void>
+using __promote_t = typename __promote<_A1, _A2, _A3>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

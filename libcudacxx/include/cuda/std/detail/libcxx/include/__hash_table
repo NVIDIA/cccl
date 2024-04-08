@@ -28,8 +28,8 @@
 #include <utility>
 #include <type_traits>
 
-#include "__assert" // all public C++ headers provide the assertion handler
-#include "__debug"
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
+#include <cuda/std/detail/libcxx/include/__debug>
 
 _LIBCUDACXX_PUSH_MACROS
 #include <__undef_macros>

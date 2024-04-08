@@ -56,11 +56,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__mdspan/macros.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/is_empty.h"
-#include "../__type_traits/is_trivially_destructible.h"
-#include "../__utility/move.h"
+#include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_empty.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

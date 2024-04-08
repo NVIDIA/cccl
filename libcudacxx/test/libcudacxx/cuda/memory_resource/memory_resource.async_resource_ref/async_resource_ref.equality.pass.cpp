@@ -8,12 +8,10 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: c++03, c++11
+// UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: nvrtc
-// UNSUPPORTED: windows
 
 // cuda::mr::async_resource_ref equality
-
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #include <cuda/memory_resource>
 #include <cuda/stream_ref>

@@ -22,18 +22,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__memory/addressof.h"
-#include "../__type_traits/conjunction.h"
-#include "../__type_traits/conditional.h"
-#include "../__type_traits/decay.h"
-#include "../__type_traits/enable_if.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__type_traits/is_class.h"
-#include "../__type_traits/is_function.h"
-#include "../__type_traits/is_void.h"
-#include "../__type_traits/void_t.h"
-#include "../__utility/declval.h"
-#include "../cstddef"
+#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conjunction.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_class.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_function.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_void.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/void_t.h>
+#include <cuda/std/detail/libcxx/include/__utility/declval.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_IDENTITY_H
 
 #ifndef __cuda_std__
-#  include <__config>
+#  include <cuda/std/detail/__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -23,9 +23,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__functional/reference_wrapper.h"
-#include "../__type_traits/integral_constant.h"
-#include "../__utility/forward.h"
+#include <cuda/std/detail/libcxx/include/__functional/reference_wrapper.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

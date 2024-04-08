@@ -32,21 +32,21 @@ inline _LIBCUDACXX_HOST_DEVICE int __stronger_order_cuda(int __a, int __b) {
 // Wrap host atomic implementations into a sub-namespace
 namespace __host {
 #if defined(_CCCL_COMPILER_MSVC)
-#  include "atomic_msvc.h"
+#   include <cuda/std/detail/libcxx/include/support/atomic/atomic_msvc.h>
 #elif defined (_LIBCUDACXX_HAS_GCC_ATOMIC_IMP)
-#  include "atomic_gcc.h"
+#   include <cuda/std/detail/libcxx/include/support/atomic/atomic_gcc.h>
 #elif defined (_LIBCUDACXX_HAS_C11_ATOMIC_IMP)
 //TODO
-// #  include "atomic_c11.h"
+// #  include <cuda/std/detail/libcxx/include/support/atomic/atomic_c11.h>
 #elif defined(_CCCL_COMPILER_NVRTC)
-#  include "atomic_nvrtc.h"
+#   include <cuda/std/detail/libcxx/include/support/atomic/atomic_nvrtc.h>
 #endif
 }
 
 using __host::__cxx_atomic_underlying_t;
 
-#include "atomic_cuda_generated.h"
-#include "atomic_cuda_derived.h"
+#include <cuda/std/detail/libcxx/include/support/atomic/atomic_cuda_generated.h>
+#include <cuda/std/detail/libcxx/include/support/atomic/atomic_cuda_derived.h>
 
 _LIBCUDACXX_HOST_DEVICE
 inline
