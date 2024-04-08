@@ -39,7 +39,7 @@ int main(int, char**)
     NV_DISPATCH_TARGET(
         NV_IS_DEVICE, (
             using barrier_t = cuda::barrier<cuda::thread_scope_block>;
-            __shared__ alignas(16) int smem_x[1024];
+            alignas(16) __shared__ int smem_x[1024];
 
             shared_memory_selector<barrier_t, constructor_initializer> sel;
             barrier_t* b = sel.construct(blockDim.x);
