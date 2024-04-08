@@ -70,6 +70,11 @@ test()
     };
 }
 
+__global__ void test_global_visibility() {
+    cuda::std::nullopt meow;
+    (void)meow;
+}
+
 int main(int, char**)
 {
     test_constexpr<optional<int>>();
