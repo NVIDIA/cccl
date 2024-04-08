@@ -72,7 +72,7 @@ test()
 
 __global__ void test_global_visibility() {
     cuda::std::optional<int> meow = cuda::std::nullopt;
-    (void)meow;
+    unused(meow);
 }
 
 int main(int, char**)
