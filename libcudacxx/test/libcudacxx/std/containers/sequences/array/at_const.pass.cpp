@@ -36,7 +36,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-__host__ __device__ void test_exceptions()
+void test_exceptions()
 {
     {
         cuda::std::array<int, 4> const array = {1, 2, 3, 4};
@@ -98,7 +98,7 @@ int main(int, char**)
 {
     tests();
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    test_exceptions();
+    NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
 #endif // TEST_HAS_NO_EXCEPTIONS
 
 #if TEST_STD_VER >= 2014

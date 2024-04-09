@@ -274,10 +274,9 @@ void test_T_assignment_basic() {
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__
+#ifndef TEST_HAS_NO_EXCEPTIONS
 void test_T_assignment_performs_construction() {
   using namespace RuntimeHelpers;
-#ifndef TEST_HAS_NO_EXCEPTIONS
 #if defined(_LIBCUDACXX_HAS_STRING)
   {
     using V = cuda::std::variant<cuda::std::string, ThrowsCtorT>;
@@ -298,13 +297,12 @@ void test_T_assignment_performs_construction() {
     assert(cuda::std::get<0>(v).value == 42);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__
+#ifndef TEST_HAS_NO_EXCEPTIONS
 void test_T_assignment_performs_assignment() {
   using namespace RuntimeHelpers;
-#ifndef TEST_HAS_NO_EXCEPTIONS
   {
     using V = cuda::std::variant<ThrowsCtorT>;
     V v;
@@ -345,13 +343,15 @@ void test_T_assignment_performs_assignment() {
     assert(cuda::std::get<1>(v).value == 100);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   test_T_assignment_basic();
-  test_T_assignment_performs_construction();
-  test_T_assignment_performs_assignment();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST,(test_T_assignment_performs_construction();))
+  NV_IF_TARGET(NV_IS_HOST,(test_T_assignment_performs_assignment();))
+#endif // TEST_HAS_NO_EXCEPTIONS
   test_T_assignment_noexcept();
   test_T_assignment_sfinae();
 

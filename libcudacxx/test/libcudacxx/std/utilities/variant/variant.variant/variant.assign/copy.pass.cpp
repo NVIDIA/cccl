@@ -213,7 +213,7 @@ struct MakeEmptyT {
 int MakeEmptyT::alive = 0;
 
 template <class Variant>
-__host__ __device__ void makeEmpty(Variant &v) {
+void makeEmpty(Variant &v) {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try {
     v = cuda::std::move(v2);
@@ -285,9 +285,8 @@ void test_copy_assignment_sfinae() {
   }
 }
 
-__host__ __device__
-void test_copy_assignment_empty_empty() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_copy_assignment_empty_empty() {
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, long, MET>;
@@ -300,12 +299,9 @@ void test_copy_assignment_empty_empty() {
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
 void test_copy_assignment_non_empty_empty() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -329,12 +325,9 @@ void test_copy_assignment_non_empty_empty() {
     assert(v1.index() == cuda::std::variant_npos);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
 void test_copy_assignment_empty_non_empty() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -358,8 +351,8 @@ void test_copy_assignment_empty_non_empty() {
     assert(cuda::std::get<2>(v1) == "hello");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // TEST_HAS_NO_EXCEPTIONS
 
 template <typename T> struct Result { size_t index; T value; };
 
@@ -638,9 +631,11 @@ void test_constexpr_copy_assignment() {
 }
 
 int main(int, char**) {
-  test_copy_assignment_empty_empty();
-  test_copy_assignment_non_empty_empty();
-  test_copy_assignment_empty_non_empty();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_non_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_non_empty();))
+#endif // TEST_HAS_NO_EXCEPTIONS
   test_copy_assignment_same_index();
   test_copy_assignment_different_index();
   test_copy_assignment_sfinae();

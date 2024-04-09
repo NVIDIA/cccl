@@ -236,9 +236,8 @@ void test_move_assignment_sfinae() {
   }
 }
 
-__host__ __device__
-void test_move_assignment_empty_empty() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_move_assignment_empty_empty() {
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, long, MET>;
@@ -251,12 +250,9 @@ void test_move_assignment_empty_empty() {
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
 void test_move_assignment_non_empty_empty() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -280,12 +276,9 @@ void test_move_assignment_non_empty_empty() {
     assert(v1.index() == cuda::std::variant_npos);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
 void test_move_assignment_empty_non_empty() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -309,8 +302,8 @@ void test_move_assignment_empty_non_empty() {
     assert(cuda::std::get<2>(v1) == "hello");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // TEST_HAS_NO_EXCEPTIONS
 
 template <typename T> struct Result { size_t index; T value; };
 
@@ -522,9 +515,12 @@ void test_constexpr_move_assignment() {
 }
 
 int main(int, char**) {
-  test_move_assignment_empty_empty();
-  test_move_assignment_non_empty_empty();
-  test_move_assignment_empty_non_empty();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_non_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_non_empty();))
+#endif // TEST_HAS_NO_EXCEPTIONS
+
   test_move_assignment_same_index();
   test_move_assignment_different_index();
   test_move_assignment_sfinae();

@@ -169,6 +169,7 @@ void test_equality() {
   test_equality_basic<int, ComparesToMyBool>();
   test_equality_basic<ComparesToMyBool, ComparesToMyBool>();
 #ifndef TEST_HAS_NO_EXCEPTIONS
+
   {
     using V = cuda::std::variant<int, MakeEmptyT>;
     V v1;
