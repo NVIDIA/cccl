@@ -64,23 +64,37 @@ public:
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
 
-class Z
-{
-    int i_;
-    int j_ = 0;
-public:
-    __host__ __device__
-    Z() : i_(0) {}
-    __host__ __device__
-    Z(int i) : i_(i) {}
-    __host__ __device__
-    Z(cuda::std::initializer_list<int> il) : i_(il.begin()[0]), j_(il.begin()[1])
-        {TEST_THROW(6);}
+#ifndef TEST_HAS_NO_EXCEPTIONS
+class Z {
+  int i_;
+  int j_ = 0;
 
-    __host__ __device__
-    friend bool operator==(const Z& x, const Z& y)
-        {return x.i_ == y.i_ && x.j_ == y.j_;}
+public:
+  __host__ __device__ Z() : i_(0) {}
+  __host__ __device__ Z(int i) : i_(i) {}
+  __host__ __device__ Z(cuda::std::initializer_list<int> il)
+      : i_(il.begin()[0]), j_(il.begin()[1]) {
+    TEST_THROW(6);
+  }
+
+  __host__ __device__ friend bool operator==(const Z& x, const Z& y) {
+    return x.i_ == y.i_ && x.j_ == y.j_;
+  }
 };
+
+void test_exceptions() {
+  static_assert(
+      cuda::std::is_constructible<optional<Z>,
+                                  cuda::std::initializer_list<int>&>::value,
+      "");
+  try {
+    optional<Z> opt(in_place, {3, 1});
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -128,19 +142,8 @@ int main(int, char**)
 
     }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        static_assert(cuda::std::is_constructible<optional<Z>, cuda::std::initializer_list<int>&>::value, "");
-        try
-        {
-            optional<Z> opt(in_place, {3, 1});
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-        }
-    }
-#endif
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

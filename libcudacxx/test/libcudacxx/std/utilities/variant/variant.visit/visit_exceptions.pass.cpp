@@ -24,6 +24,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
 struct almost_string {
     const char * ptr;
 
@@ -36,9 +37,7 @@ struct almost_string {
     }
 };
 
-__host__ __device__
 void test_exceptions() {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   ReturnArity obj{};
   auto test = [&](auto &&... args) {
     try {
@@ -95,11 +94,13 @@ void test_exceptions() {
     makeEmpty(v4);
     assert(test(v1, v2, v3, v4));
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
-  test_exceptions();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

@@ -62,27 +62,6 @@ public:
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
 
-class Z
-{
-    int i_;
-    int j_ = 0;
-public:
-    STATIC_MEMBER_VAR(dtor_called, bool);
-    __host__ __device__
-    Z() : i_(0) {}
-    __host__ __device__
-    Z(int i) : i_(i) {}
-    __host__ __device__
-    Z(cuda::std::initializer_list<int> il) : i_(il.begin()[0]), j_(il.begin()[1])
-        { TEST_THROW(6);}
-    __host__ __device__
-    ~Z() {dtor_called() = true;}
-
-    __host__ __device__
-    friend bool operator==(const Z& x, const Z& y)
-        {return x.i_ == y.i_ && x.j_ == y.j_;}
-};
-
 __host__ __device__
 TEST_CONSTEXPR_CXX20 bool check_X()
 {
@@ -110,6 +89,43 @@ TEST_CONSTEXPR_CXX20 bool check_Y()
     return true;
 }
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+class Z {
+  int i_;
+  int j_ = 0;
+
+public:
+  STATIC_MEMBER_VAR(dtor_called, bool);
+  Z() : i_(0) {}
+  Z(int i) : i_(i) {}
+  Z(cuda::std::initializer_list<int> il)
+      : i_(il.begin()[0]), j_(il.begin()[1]) {
+    TEST_THROW(6);
+  }
+  ~Z() { dtor_called() = true; }
+
+  friend bool operator==(const Z& x, const Z& y) {
+    return x.i_ == y.i_ && x.j_ == y.j_;
+  }
+};
+void test_exceptions() {
+  Z::dtor_called() = false;
+  Z z;
+  optional<Z> opt(z);
+  try {
+    assert(static_cast<bool>(opt) == true);
+    assert(Z::dtor_called() == false);
+    auto& v = opt.emplace({1, 2});
+    static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+    assert(static_cast<bool>(opt) == false);
+    assert(Z::dtor_called() == true);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
 int main(int, char**)
 {
     {
@@ -135,25 +151,8 @@ int main(int, char**)
 #endif
     }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        Z z;
-        optional<Z> opt(z);
-        try
-        {
-            assert(static_cast<bool>(opt) == true);
-            assert(Z::dtor_called() == false);
-            auto &v = opt.emplace({1, 2});
-            static_assert( cuda::std::is_same_v<Z&, decltype(v)>, "" );
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-            assert(static_cast<bool>(opt) == false);
-            assert(Z::dtor_called() == true);
-        }
-    }
-#endif
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

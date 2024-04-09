@@ -222,7 +222,7 @@ void makeEmpty(Variant &v) {
     assert(v.valueless_by_exception());
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__
 void test_copy_assignment_not_noexcept() {
@@ -352,7 +352,7 @@ void test_copy_assignment_empty_non_empty() {
   }
 #endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <typename T> struct Result { size_t index; T value; };
 
@@ -412,7 +412,7 @@ void test_copy_assignment_same_index() {
     assert(&cuda::std::get<1>(v1) == &mref);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -571,7 +571,7 @@ void test_copy_assignment_different_index() {
     assert(cuda::std::get<2>(v2) == "hello");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -635,7 +635,7 @@ int main(int, char**) {
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_non_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_non_empty();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
   test_copy_assignment_same_index();
   test_copy_assignment_different_index();
   test_copy_assignment_sfinae();

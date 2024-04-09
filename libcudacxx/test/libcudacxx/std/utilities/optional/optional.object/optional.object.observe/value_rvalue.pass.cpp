@@ -52,6 +52,17 @@ test()
     return cuda::std::move(opt).value().test();
 }
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions() {
+  optional<X> opt;
+  try {
+    (void)cuda::std::move(opt).value();
+    assert(false);
+  } catch (const bad_optional_access&) {
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
 int main(int, char**)
 {
     {
@@ -66,23 +77,14 @@ int main(int, char**)
         opt.emplace();
         assert(cuda::std::move(opt).value().test() == 6);
     }
-#ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        optional<X> opt;
-        try
-        {
-            (void)cuda::std::move(opt).value();
-            assert(false);
-        }
-        catch (const bad_optional_access&)
-        {
-        }
-    }
-#endif
     assert(test() == 7);
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test() == 7, "");
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

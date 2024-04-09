@@ -61,13 +61,21 @@ public:
         {return x.i_ == y.i_ && x.j_ == y.j_;}
 };
 
-class Z
-{
+#ifndef TEST_HAS_NO_EXCEPTIONS
+class Z {
 public:
-    __host__ __device__
-    Z(int) {TEST_THROW(6);}
+  Z(int) { TEST_THROW(6); }
 };
 
+void test_exceptions() {
+  try {
+    const optional<Z> opt(in_place, 1);
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -152,19 +160,10 @@ int main(int, char**)
 
     }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        try
-        {
-            const optional<Z> opt(in_place, 1);
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-        }
-    }
-#endif
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

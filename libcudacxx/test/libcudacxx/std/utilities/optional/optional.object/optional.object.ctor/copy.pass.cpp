@@ -44,28 +44,28 @@ constexpr bool constexpr_test(InitArgs&&... args)
            (lhs.has_value() ? *lhs == *rhs : true);
 }
 
-__host__ __device__
-void test_throwing_ctor() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    struct Z {
-        Z() : count(0) {}
-        Z(Z const& o) : count(o.count + 1)
-        { if (count == 2) throw 6; }
-        int count;
-    };
-    const Z z;
-    const optional<Z> rhs(z);
-    try
-    {
-        optional<Z> lhs(rhs);
-        assert(false);
+struct Z {
+  Z() : count(0) {}
+  Z(Z const& o) : count(o.count + 1) {
+    if (count == 2) {
+      TEST_THROW(6);
     }
-    catch (int i)
-    {
-        assert(i == 6);
-    }
-#endif
+  }
+  int count;
+};
+
+void test_throwing_ctor() {
+  const Z z;
+  const optional<Z> rhs(z);
+  try {
+    optional<Z> lhs(rhs);
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class T, class ...InitArgs>
 __host__ __device__
@@ -166,9 +166,11 @@ int main(int, char**)
         test<TestType>();
         test<TestType>(42);
     }
+#ifndef TEST_HAS_NO_EXCEPTIONS
     {
-        test_throwing_ctor();
+        NV_IF_TARGET(NV_IS_HOST, (test_throwing_ctor();))
     }
+#endif // !TEST_HAS_NO_EXCEPTIONS
     {
         test_reference_extension();
     }

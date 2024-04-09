@@ -47,29 +47,28 @@ constexpr bool constexpr_test(InitArgs&&... args)
            (lhs.has_value() ? *lhs == *orig : true);
 }
 
-__host__ __device__
-void test_throwing_ctor() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    struct Z {
-        Z() : count(0) {}
-        Z(Z&& o) : count(o.count + 1)
-        { if (count == 2) throw 6; }
-        int count;
-    };
-    Z z;
-    optional<Z> rhs(cuda::std::move(z));
-    try
-    {
-        optional<Z> lhs(cuda::std::move(rhs));
-        assert(false);
+struct Z {
+  Z() : count(0) {}
+  Z(Z&& o) : count(o.count + 1) {
+    if (count == 2) {
+      TEST_THROW(6);
     }
-    catch (int i)
-    {
-        assert(i == 6);
-    }
-#endif
-}
+  }
+  int count;
+};
 
+void test_throwing_ctor() {
+  Z z;
+  optional<Z> rhs(cuda::std::move(z));
+  try {
+    optional<Z> lhs(cuda::std::move(rhs));
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class T, class ...InitArgs>
 __host__ __device__
@@ -200,9 +199,11 @@ int main(int, char**)
         test<TestType>();
         test<TestType>(42);
     }
+#ifndef TEST_HAS_NO_EXCEPTIONS
     {
-        test_throwing_ctor();
+        NV_IF_TARGET(NV_IS_HOST, (test_throwing_ctor();))
     }
+#endif // !TEST_HAS_NO_EXCEPTIONS
     {
 #ifndef TEST_COMPILER_ICC
         struct ThrowsMove {

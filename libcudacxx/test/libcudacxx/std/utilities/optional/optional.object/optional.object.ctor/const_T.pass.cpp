@@ -22,6 +22,25 @@
 
 using cuda::std::optional;
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct Z {
+  Z(int) {}
+  Z(const Z&) { TEST_THROW(6); }
+};
+
+void test_exceptions() {
+
+  typedef Z T;
+  try {
+    const T t(3);
+    optional<T> opt(t);
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
 int main(int, char**)
 {
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
@@ -114,25 +133,10 @@ int main(int, char**)
 
     }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        struct Z {
-            Z(int) {}
-            Z(const Z&) {throw 6;}
-        };
-        typedef Z T;
-        try
-        {
-            const T t(3);
-            optional<T> opt(t);
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-        }
-    }
-#endif
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

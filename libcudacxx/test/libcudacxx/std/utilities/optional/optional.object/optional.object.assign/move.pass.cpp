@@ -24,31 +24,6 @@
 
 using cuda::std::optional;
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
-struct X
-{
-    STATIC_MEMBER_VAR(throw_now, bool);
-    STATIC_MEMBER_VAR(alive, int);
-
-    X() { ++alive(); }
-    X(X&&)
-    {
-        if (throw_now())
-            TEST_THROW(6);
-        ++alive();
-    }
-
-    X& operator=(X&&)
-    {
-        if (throw_now())
-            TEST_THROW(42);
-        return *this;
-    }
-
-    ~X() { assert(alive() > 0); --alive(); }
-};
-#endif
-
 struct Y {};
 
 template <class Tp>
@@ -66,6 +41,73 @@ constexpr bool assign_value(optional<Tp>&& lhs) {
     lhs = cuda::std::move(rhs);
     return lhs.has_value() && rhs.has_value() && *lhs == Tp{101};
 }
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct X {
+  STATIC_MEMBER_VAR(throw_now, bool);
+  STATIC_MEMBER_VAR(alive, int);
+
+  X() { ++alive(); }
+  X(X&&) {
+    if (throw_now()) {
+      TEST_THROW(6);
+    }
+    ++alive();
+  }
+
+  X& operator=(X&&) {
+    if (throw_now())
+      TEST_THROW(42);
+    return *this;
+  }
+
+  ~X() {
+    assert(alive() > 0);
+    --alive();
+  }
+};
+
+void test_exceptions() {
+  {
+    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X> >::value,
+                  "");
+    X::alive() = 0;
+    X::throw_now() = false;
+    optional<X> opt;
+    optional<X> opt2(X{});
+    assert(X::alive() == 1);
+    assert(static_cast<bool>(opt2) == true);
+    try {
+      X::throw_now() = true;
+      opt = cuda::std::move(opt2);
+      assert(false);
+    } catch (int i) {
+      assert(i == 6);
+      assert(static_cast<bool>(opt) == false);
+    }
+    assert(X::alive() == 1);
+  }
+  assert(X::alive() == 0);
+  {
+    static_assert(!cuda::std::is_nothrow_move_assignable<optional<X> >::value,
+                  "");
+    X::throw_now() = false;
+    optional<X> opt(X{});
+    optional<X> opt2(X{});
+    assert(X::alive() == 2);
+    assert(static_cast<bool>(opt2) == true);
+    try {
+      X::throw_now() = true;
+      opt = cuda::std::move(opt2);
+      assert(false);
+    } catch (int i) {
+      assert(i == 42);
+      assert(static_cast<bool>(opt) == true);
+    }
+    assert(X::alive() == 2);
+  }
+  assert(X::alive() == 0);
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -140,50 +182,8 @@ int main(int, char**)
         assert(assign_value(O{42}));
     }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value, "");
-        X::alive() = 0;
-        X::throw_now() = false;
-        optional<X> opt;
-        optional<X> opt2(X{});
-        assert(X::alive() == 1);
-        assert(static_cast<bool>(opt2) == true);
-        try
-        {
-            X::throw_now() = true;
-            opt = cuda::std::move(opt2);
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-            assert(static_cast<bool>(opt) == false);
-        }
-        assert(X::alive() == 1);
-    }
-    assert(X::alive() == 0);
-    {
-        static_assert(!cuda::std::is_nothrow_move_assignable<optional<X>>::value, "");
-        X::throw_now() = false;
-        optional<X> opt(X{});
-        optional<X> opt2(X{});
-        assert(X::alive() == 2);
-        assert(static_cast<bool>(opt2) == true);
-        try
-        {
-            X::throw_now() = true;
-            opt = cuda::std::move(opt2);
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 42);
-            assert(static_cast<bool>(opt) == true);
-        }
-        assert(X::alive() == 2);
-    }
-    assert(X::alive() == 0);
-#endif // TEST_HAS_NO_EXCEPTIONS
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
     {
         static_assert(cuda::std::is_nothrow_move_assignable<optional<Y>>::value, "");
     }

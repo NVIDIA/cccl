@@ -29,19 +29,6 @@
 
 using cuda::std::optional;
 
-struct X
-{
-    STATIC_MEMBER_VAR(throw_now, bool);
-
-    X() = default;
-    __host__ __device__
-    X(int &&)
-    {
-        if (throw_now())
-            TEST_THROW(6);
-    }
-};
-
 struct Y1
 {
     Y1() = default;
@@ -308,6 +295,32 @@ TEST_CONSTEXPR_CXX20 bool test()
     return true;
 }
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct X {
+  STATIC_MEMBER_VAR(throw_now, bool);
+
+  X() = default;
+  X(int&&) {
+    if (throw_now()) {
+      TEST_THROW(6);
+    }
+  }
+};
+
+void test_exceptions() {
+  optional<X> opt;
+  optional<int> opt2(42);
+  assert(static_cast<bool>(opt2) == true);
+  try {
+    X::throw_now() = true;
+    opt = cuda::std::move(opt2);
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+    assert(static_cast<bool>(opt) == false);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -327,25 +340,10 @@ int main(int, char**)
         assert(opt->get() != nullptr);
         assert(other->get() == nullptr);
     }
-#endif
-#ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        optional<X> opt;
-        optional<int> opt2(42);
-        assert(static_cast<bool>(opt2) == true);
-        try
-        {
-            X::throw_now() = true;
-            opt = cuda::std::move(opt2);
-            assert(false);
-        }
-        catch (int i)
-        {
-            assert(i == 6);
-            assert(static_cast<bool>(opt) == false);
-        }
-    }
-#endif
+#endif // _LIBCUDACXX_HAS_MEMORY
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+    NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

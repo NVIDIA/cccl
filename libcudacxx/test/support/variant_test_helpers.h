@@ -85,7 +85,7 @@ void makeEmpty(Variant& v) {
         assert(v.valueless_by_exception());
     }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 enum CallType : unsigned {
   CT_None,

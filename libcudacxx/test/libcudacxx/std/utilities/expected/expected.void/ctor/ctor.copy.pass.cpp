@@ -93,7 +93,7 @@ void test_exceptions() {
   }
 
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   test();
@@ -102,6 +102,6 @@ int main(int, char**) {
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
     NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

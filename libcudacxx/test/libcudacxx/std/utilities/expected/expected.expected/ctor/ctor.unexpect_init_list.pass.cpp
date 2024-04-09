@@ -142,7 +142,7 @@ void test_exceptions() {
   } catch (Except) {
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   test();
@@ -153,6 +153,6 @@ int main(int, char**) {
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
     NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

@@ -260,8 +260,8 @@ struct identity {
   using type = Tp;
 };
 
-__host__ __device__ void test_throws_for_all_value_categories() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_throws_for_all_value_categories() {
   using V = cuda::std::variant<int, long>;
   V v0(42);
   const V& cv0 = v0;
@@ -298,15 +298,17 @@ __host__ __device__ void test_throws_for_all_value_categories() {
     assert(test(one, cuda::std::move(cv0)));
     assert(test(zero, cuda::std::move(cv1)));
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   test_const_lvalue_get();
   test_lvalue_get();
   test_rvalue_get();
   test_const_rvalue_get();
-  test_throws_for_all_value_categories();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_throws_for_all_value_categories();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

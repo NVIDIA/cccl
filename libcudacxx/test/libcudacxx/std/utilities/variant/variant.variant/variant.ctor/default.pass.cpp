@@ -72,9 +72,8 @@ void test_default_ctor_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__
-void test_default_ctor_throws() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_default_ctor_throws() {
   using V = cuda::std::variant<DefaultCtorThrows, int>;
   try {
     V v;
@@ -84,8 +83,8 @@ void test_default_ctor_throws() {
   } catch (...) {
     assert(false);
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__
 void test_default_ctor_basic() {
@@ -128,7 +127,9 @@ int main(int, char**) {
   test_default_ctor_basic();
   test_default_ctor_sfinae();
   test_default_ctor_noexcept();
-  test_default_ctor_throws();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_default_ctor_throws();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

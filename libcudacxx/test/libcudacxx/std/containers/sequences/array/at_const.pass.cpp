@@ -18,7 +18,7 @@
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #include <cuda/std/detail/libcxx/include/stdexcept>
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
@@ -92,14 +92,14 @@ void test_exceptions()
         }
     }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
     tests();
 #ifndef TEST_HAS_NO_EXCEPTIONS
     NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 #if TEST_STD_VER >= 2014
     static_assert(tests(), "");

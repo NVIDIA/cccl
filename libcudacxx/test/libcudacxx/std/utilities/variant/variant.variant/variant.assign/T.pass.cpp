@@ -298,7 +298,7 @@ void test_T_assignment_performs_construction() {
   }
 #endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
 void test_T_assignment_performs_assignment() {
@@ -344,14 +344,14 @@ void test_T_assignment_performs_assignment() {
   }
 #endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   test_T_assignment_basic();
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST,(test_T_assignment_performs_construction();))
   NV_IF_TARGET(NV_IS_HOST,(test_T_assignment_performs_assignment();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
   test_T_assignment_noexcept();
   test_T_assignment_sfinae();
 

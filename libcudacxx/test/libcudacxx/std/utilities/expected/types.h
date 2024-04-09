@@ -141,7 +141,7 @@ struct ThrowOnMove {
   }
 };
 
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 struct TestError {
     __host__ __device__

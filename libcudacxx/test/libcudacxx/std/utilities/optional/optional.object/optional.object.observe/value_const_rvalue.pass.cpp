@@ -40,6 +40,17 @@ struct X
     int test() && {return 6;}
 };
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions() {
+  const optional<X> opt;
+  try {
+    (void)cuda::std::move(opt).value();
+    assert(false);
+  } catch (const bad_optional_access&) {
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
 int main(int, char**)
 {
     {
@@ -59,19 +70,10 @@ int main(int, char**)
         const optional<X> opt(in_place);
         assert(cuda::std::move(opt).value().test() == 5);
     }
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        const optional<X> opt;
-        try
-        {
-            (void)cuda::std::move(opt).value();
-            assert(false);
-        }
-        catch (const bad_optional_access&)
-        {
-        }
-    }
-#endif
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

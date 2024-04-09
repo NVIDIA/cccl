@@ -303,7 +303,7 @@ void test_move_assignment_empty_non_empty() {
   }
 #endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <typename T> struct Result { size_t index; T value; };
 
@@ -356,7 +356,7 @@ void test_move_assignment_same_index() {
     assert(&cuda::std::get<1>(v1) == &mref);
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -454,7 +454,7 @@ void test_move_assignment_different_index() {
     assert(cuda::std::get<2>(v1) == "hello");
   }
 #endif // _LIBCUDACXX_HAS_STRING
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -519,7 +519,7 @@ int main(int, char**) {
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_non_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_non_empty();))
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   test_move_assignment_same_index();
   test_move_assignment_different_index();

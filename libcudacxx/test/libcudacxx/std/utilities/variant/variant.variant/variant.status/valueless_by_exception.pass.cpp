@@ -17,7 +17,9 @@
 // constexpr bool valueless_by_exception() const noexcept;
 
 #include <cuda/std/cassert>
-// #include <cuda/std/string>
+#if defined(_LIBCUDACXX_HAS_STRING)
+#include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
 
@@ -25,6 +27,16 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions()
+{
+  using V = cuda::std::variant<int, MakeEmptyT>;
+  V v;
+  assert(!v.valueless_by_exception());
+  makeEmpty(v);
+  assert(v.valueless_by_exception());
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
   {
@@ -37,20 +49,16 @@ int main(int, char**) {
     V v;
     assert(!v.valueless_by_exception());
   }
-  /*{
+#if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, long, cuda::std::string>;
     const V v("abc");
     assert(!v.valueless_by_exception());
-  }*/
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    using V = cuda::std::variant<int, MakeEmptyT>;
-    V v;
-    assert(!v.valueless_by_exception());
-    makeEmpty(v);
-    assert(v.valueless_by_exception());
   }
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

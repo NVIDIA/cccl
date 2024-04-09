@@ -31,24 +31,6 @@ TEST_CONSTEXPR_CXX14 void test(optional<U>&& rhs)
     assert(static_cast<bool>(lhs) == rhs_engaged);
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
-template <class T, class U>
-__host__ __device__ void test_exception(optional<U>&& rhs)
-{
-    static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
-    try
-    {
-        optional<T> lhs(cuda::std::move(rhs));
-        unused(lhs);
-        assert(false);
-    }
-    catch (int i)
-    {
-        assert(i == 6);
-    }
-}
-#endif // !TEST_HAS_NO_EXCEPTIONS
-
 class X
 {
     int i_;
@@ -63,12 +45,36 @@ public:
     friend constexpr bool operator==(const X& x, const X& y) {return x.i_ == y.i_;}
 };
 
-class Z
-{
-public:
-    __host__ __device__
-    explicit Z(int) { TEST_THROW(6); }
+struct TerminatesOnConstruction {
+  __host__ __device__ explicit TerminatesOnConstruction(int) {
+    cuda::std::terminate();
+  }
 };
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+class Z {
+public:
+  __host__ __device__ explicit Z(int) { TEST_THROW(6); }
+};
+
+template <class T, class U>
+__host__ __device__ void test_exception(optional<U>&& rhs) {
+  static_assert(
+      !(cuda::std::is_convertible<optional<U>&&, optional<T> >::value), "");
+  try {
+    optional<T> lhs(cuda::std::move(rhs));
+    unused(lhs);
+    assert(false);
+  } catch (int i) {
+    assert(i == 6);
+  }
+}
+
+void test_exceptions() {
+  optional<int> rhs(3);
+  test_exception<Z>(cuda::std::move(rhs));
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__
 TEST_CONSTEXPR_CXX14 bool test()
@@ -93,13 +99,10 @@ int main(int, char**)
     test();
     {
         optional<int> rhs;
-        test<Z>(cuda::std::move(rhs));
+        test<TerminatesOnConstruction>(cuda::std::move(rhs));
     }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        optional<int> rhs(3);
-        test_exception<Z>(cuda::std::move(rhs));
-    }
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;

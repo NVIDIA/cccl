@@ -256,7 +256,7 @@ namespace Name                                                      \
 #define TEST_CHECK_THROW(Except, ...) ((void)0)
 #define TEST_CHECK_THROW_RESULT(Except, Checker, ...) ((void)0)
 
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -317,7 +317,7 @@ namespace Name                                                      \
 
 #define TEST_REQUIRE_THROW(Except, ...) ((void)0)
 
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 ////////////////////////////////////////////////////////////////////////////////
 //                    TEST_ASSERT_NO_THROW / TEST_ASSERT_THROW
@@ -377,7 +377,7 @@ namespace Name                                                      \
 
 #define TEST_ASSERT_THROW(Except, ...) ((void)0)
 
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 ////////////////////////////////////////////////////////////////////////////////
 //

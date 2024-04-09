@@ -26,19 +26,6 @@
 
 using cuda::std::optional;
 
-struct ThrowAssign {
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
-  ThrowAssign() = default;
-  __host__ __device__
-  ThrowAssign(int) { TEST_THROW(42); }
-  __host__ __device__
-  ThrowAssign& operator=(int) {
-      TEST_THROW(42);
-      return *this;
-  }
-  __host__ __device__
-  ~ThrowAssign() { ++dtor_called(); }
-};
 
 template <class T, class Arg = T, bool Expect = true>
 __host__ __device__
@@ -229,10 +216,20 @@ void test_with_type_multi() {
     }
 }
 
-__host__ __device__
-void test_throws()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
+struct ThrowAssign {
+  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  ThrowAssign() = default;
+  ThrowAssign(int) { TEST_THROW(42); }
+  ThrowAssign& operator=(int) {
+      TEST_THROW(42);
+      return *this;
+  }
+  ~ThrowAssign() { ++dtor_called(); }
+};
+
+void test_exceptions()
+{
     using T = ThrowAssign;
     {
         optional<T> opt;
@@ -254,8 +251,8 @@ void test_throws()
         assert(T::dtor_called() == 0);
     }
     assert(T::dtor_called() == 1);
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 enum MyEnum { Zero, One, Two, Three, FortyTwo = 42 };
 
@@ -312,7 +309,10 @@ int main(int, char**)
         assert(*opt == 3);
     }
 #endif
-    test_throws();
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 #if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))

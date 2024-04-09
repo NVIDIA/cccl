@@ -22,20 +22,7 @@
 #include "archetypes.h"
 #include "test_convertible.h"
 
-
 using cuda::std::optional;
-
-struct ImplicitThrow
-{
-    __host__ __device__
-    constexpr ImplicitThrow(int x) { if (x != -1) TEST_THROW(6);}
-};
-
-struct ExplicitThrow
-{
-    __host__ __device__
-    constexpr explicit ExplicitThrow(int x) { if (x != -1) TEST_THROW(6);}
-};
 
 struct ImplicitAny {
   template <class U>
@@ -103,18 +90,27 @@ void test_implicit()
     static_assert(!test_convertible<O, const cuda::std::in_place_t&&>(), "");
 
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        try {
-            using T = ImplicitThrow;
-            optional<T> t = 42;
-            assert(false);
-            ((void)t);
-        } catch (int) {
-        }
-    }
-#endif
 }
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct ImplicitThrow {
+  constexpr ImplicitThrow(int x) {
+    if (x != -1) {
+      TEST_THROW(6);
+    }
+  }
+};
+
+void test_exceptions_implicit() {
+  try {
+    using T = ImplicitThrow;
+    optional<T> t = 42;
+    assert(false);
+    ((void)t);
+  } catch (int) {
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__
 void test_explicit() {
@@ -147,21 +143,34 @@ void test_explicit() {
         }
         assert(T::alive() == 0);
     }
-#ifndef TEST_HAS_NO_EXCEPTIONS
-    {
-        try {
-            using T = ExplicitThrow;
-            optional<T> t(42);
-            assert(false);
-        } catch (int) {
-        }
-    }
-#endif
 }
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct ExplicitThrow {
+  constexpr explicit ExplicitThrow(int x) {
+    if (x != -1) {
+      TEST_THROW(6);
+    }
+  }
+};
+void test_exceptions_explicit() {
+  try {
+    using T = ExplicitThrow;
+    optional<T> t(42);
+    assert(false);
+  } catch (int) {
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**) {
     test_implicit();
     test_explicit();
 
-  return 0;
+#ifndef TEST_HAS_NO_EXCEPTIONS
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions_implicit();))
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions_explicit();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
+    return 0;
 }
