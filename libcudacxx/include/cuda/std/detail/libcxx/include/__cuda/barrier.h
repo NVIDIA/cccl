@@ -343,7 +343,7 @@ private:
                             "}"
                             : "=r"(__ready)
                             : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(&__barrier))),
-                            "l"(__token)
+                            "l"(__token),
                             "r"(__wait_nsec)
                             : "memory");
                     __elapsed = _CUDA_VSTD::chrono::high_resolution_clock::now() - __start;

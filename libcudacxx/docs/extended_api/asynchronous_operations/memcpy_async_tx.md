@@ -32,7 +32,7 @@ Copies `size` bytes from global memory `src` to shared memory `dest` and decreme
 ## Requires
 
 * `is_trivially_copyable_v<T>` is true.
- 
+
 ## Notes
 
 This function can only be used under CUDA Compute Capability 9.0 (Hopper) or
@@ -60,7 +60,7 @@ static_assert(false, "Insufficient CUDA Compute Capability: cuda::device::memcpy
 __device__ alignas(16) int gmem_x[2048];
 
 __global__ void example_kernel() {
-  __shared__ alignas(16) int smem_x[1024];
+  alignas(16) __shared__ int smem_x[1024];
   __shared__ cuda::barrier<cuda::thread_scope_block> bar;
   if (threadIdx.x == 0) {
     init(&bar, blockDim.x);
@@ -73,7 +73,7 @@ __global__ void example_kernel() {
     token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_x));
   } else {
     token = bar.arrive(1);
-  } 
+  }
   bar.wait(cuda::std::move(token));
 
   // smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
