@@ -30,9 +30,7 @@
 #include <cuda/std/detail/libcxx/include/__type_traits/is_callable.h>
 #include <cuda/std/detail/libcxx/include/__utility/move.h>
 
-#ifndef __cuda_std__
-#  include <__pragma_push>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -87,8 +85,6 @@ min_element(_ForwardIterator __first, _ForwardIterator __last)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#  include <__pragma_pop>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H
