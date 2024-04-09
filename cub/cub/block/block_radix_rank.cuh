@@ -204,15 +204,15 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //! @tparam LEGACY_PTX_ARCH
 //!   **[optional]** Unused.
-template < int BLOCK_DIM_X,
-           int RADIX_BITS,
-           bool IS_DESCENDING,
-           bool MEMOIZE_OUTER_SCAN                 = true,
-           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
-           int BLOCK_DIM_Y                         = 1,
-           int BLOCK_DIM_Z                         = 1,
-           int LEGACY_PTX_ARCH                     = 0>
+template <int BLOCK_DIM_X,
+          int RADIX_BITS,
+          bool IS_DESCENDING,
+          bool MEMOIZE_OUTER_SCAN                 = true,
+          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+          cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
+          int BLOCK_DIM_Y                         = 1,
+          int BLOCK_DIM_Z                         = 1,
+          int LEGACY_PTX_ARCH                     = 0>
 class BlockRadixRank
 {
 private:
@@ -553,13 +553,13 @@ public:
 /**
  * Radix-rank using match.any
  */
-template < int BLOCK_DIM_X,
-           int RADIX_BITS,
-           bool IS_DESCENDING,
-           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-           int BLOCK_DIM_Y                         = 1,
-           int BLOCK_DIM_Z                         = 1,
-           int LEGACY_PTX_ARCH                     = 0>
+template <int BLOCK_DIM_X,
+          int RADIX_BITS,
+          bool IS_DESCENDING,
+          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+          int BLOCK_DIM_Y                         = 1,
+          int BLOCK_DIM_Z                         = 1,
+          int LEGACY_PTX_ARCH                     = 0>
 class BlockRadixRankMatch
 {
 private:
@@ -795,7 +795,7 @@ public:
     }
   }
 
-  template < typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
+  template <typename UnsignedBits, int KEYS_PER_THREAD, typename DigitExtractorT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   RankKeys(UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], DigitExtractorT digit_extractor)
   {

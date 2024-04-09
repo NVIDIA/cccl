@@ -107,7 +107,7 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template < typename T, typename OffsetT = ptrdiff_t>
+template <typename T, typename OffsetT = ptrdiff_t>
 class TexObjInputIterator
 {
 public:

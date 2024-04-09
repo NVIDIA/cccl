@@ -124,7 +124,7 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// Basic inclusive scan iteration (template unrolled, inductive-case specialization)
-  template < bool HAS_IDENTITY, int STEP, typename ScanOp>
+  template <bool HAS_IDENTITY, int STEP, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& partial, ScanOp scan_op, Int2Type<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
@@ -146,7 +146,7 @@ struct WarpScanSmem
   }
 
   /// Basic inclusive scan iteration(template unrolled, base-case specialization)
-  template < bool HAS_IDENTITY, typename ScanOp>
+  template <bool HAS_IDENTITY, typename ScanOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanStep(T& /*partial*/, ScanOp /*scan_op*/, Int2Type<STEPS> /*step*/)
   {}
 

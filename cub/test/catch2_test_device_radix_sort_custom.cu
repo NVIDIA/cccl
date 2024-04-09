@@ -533,7 +533,14 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     // example-begin keys
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> in = {{+2.5f, 4}, {-2.5f, 0}, {+1.1f, 3}, {+0.0f, 1}, {-0.0f, 2}, {+3.7f, 5}};
+    thrust::device_vector<custom_t> in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -554,7 +561,13 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
     thrust::device_vector<custom_t> expected_output = {
-      {-2.5f, 0}, {+0.0f, 1}, {-0.0f, 2}, {+1.1f, 3}, {+2.5f, 4}, {+3.7f, 5}};
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+1.1f, 3}, //
+      {+2.5f, 4}, //
+      {+3.7f, 5} //
+    };
     // example-end keys
 
     REQUIRE(expected_output == out);
@@ -568,7 +581,14 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> in = {{+1.1f, 2}, {+2.5f, 1}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}, {+3.7f, 0}};
+    thrust::device_vector<custom_t> in = {
+      {+1.1f, 2}, //
+      {+2.5f, 1}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5}, //
+      {+3.7f, 0} //
+    };
 
     thrust::device_vector<custom_t> out(num_items);
 
@@ -583,7 +603,13 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
     thrust::device_vector<custom_t> expected_output = {
-      {+3.7f, 0}, {+2.5f, 1}, {+1.1f, 2}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}};
+      {+3.7f, 0}, //
+      {+2.5f, 1}, //
+      {+1.1f, 2}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5} //
+    };
     // example-end keys-descending
 
     REQUIRE(expected_output == out);
@@ -597,7 +623,14 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_in = {{+2.5f, 4}, {-2.5f, 0}, {+1.1f, 3}, {+0.0f, 1}, {-0.0f, 2}, {+3.7f, 5}};
+    thrust::device_vector<custom_t> keys_in = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<custom_t> keys_out(num_items);
 
@@ -620,7 +653,13 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
     thrust::device_vector<custom_t> expected_keys = {
-      {-2.5f, 0}, {+0.0f, 1}, {-0.0f, 2}, {+1.1f, 3}, {+2.5f, 4}, {+3.7f, 5}};
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+1.1f, 3}, //
+      {+2.5f, 4}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs
@@ -637,7 +676,14 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_in = {{+1.1f, 2}, {+2.5f, 1}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}, {+3.7f, 0}};
+    thrust::device_vector<custom_t> keys_in = {
+      {+1.1f, 2}, //
+      {+2.5f, 1}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5}, //
+      {+3.7f, 0} //
+    };
 
     thrust::device_vector<custom_t> keys_out(num_items);
 
@@ -660,7 +706,13 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
     thrust::device_vector<custom_t> expected_keys = {
-      {+3.7f, 0}, {+2.5f, 1}, {+1.1f, 2}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}};
+      {+3.7f, 0}, //
+      {+2.5f, 1}, //
+      {+1.1f, 2}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5} //
+    };
 
     thrust::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending
@@ -680,7 +732,14 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {{+2.5f, 4}, {-2.5f, 0}, {+1.1f, 3}, {+0.0f, 1}, {-0.0f, 2}, {+3.7f, 5}};
+    thrust::device_vector<custom_t> keys_buf = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<custom_t> keys_alt_buf(num_items);
 
@@ -700,7 +759,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
     thrust::device_vector<custom_t> expected_output = {
-      {-2.5f, 0}, {+0.0f, 1}, {-0.0f, 2}, {+1.1f, 3}, {+2.5f, 4}, {+3.7f, 5}};
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+1.1f, 3}, //
+      {+2.5f, 4}, //
+      {+3.7f, 5} //
+    };
     // example-end keys-db
 
     REQUIRE(expected_output == current);
@@ -714,7 +779,14 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {{+1.1f, 2}, {+2.5f, 1}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}, {+3.7f, 0}};
+    thrust::device_vector<custom_t> keys_buf = {
+      {+1.1f, 2}, //
+      {+2.5f, 1}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5}, //
+      {+3.7f, 0} //
+    };
 
     thrust::device_vector<custom_t> keys_alt_buf(num_items);
 
@@ -734,7 +806,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
     thrust::device_vector<custom_t> expected_output = {
-      {+3.7f, 0}, {+2.5f, 1}, {+1.1f, 2}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}};
+      {+3.7f, 0}, //
+      {+2.5f, 1}, //
+      {+1.1f, 2}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5} //
+    };
     // example-end keys-descending-db
 
     REQUIRE(expected_output == current);
@@ -748,7 +826,14 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {{+2.5f, 4}, {-2.5f, 0}, {+1.1f, 3}, {+0.0f, 1}, {-0.0f, 2}, {+3.7f, 5}};
+    thrust::device_vector<custom_t> keys_buf = {
+      {+2.5f, 4}, //
+      {-2.5f, 0}, //
+      {+1.1f, 3}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<custom_t> keys_alt_buf(num_items);
 
@@ -778,7 +863,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
     thrust::device_vector<custom_t> expected_keys = {
-      {-2.5f, 0}, {+0.0f, 1}, {-0.0f, 2}, {+1.1f, 3}, {+2.5f, 4}, {+3.7f, 5}};
+      {-2.5f, 0}, //
+      {+0.0f, 1}, //
+      {-0.0f, 2}, //
+      {+1.1f, 3}, //
+      {+2.5f, 4}, //
+      {+3.7f, 5} //
+    };
 
     thrust::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs-db
@@ -795,7 +886,14 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {{+1.1f, 2}, {+2.5f, 1}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}, {+3.7f, 0}};
+    thrust::device_vector<custom_t> keys_buf = {
+      {+1.1f, 2}, //
+      {+2.5f, 1}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5}, //
+      {+3.7f, 0} //
+    };
 
     thrust::device_vector<custom_t> keys_alt_buf(num_items);
 
@@ -827,7 +925,13 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
     thrust::device_vector<custom_t> expected_keys = {
-      {+3.7f, 0}, {+2.5f, 1}, {+1.1f, 2}, {-0.0f, 4}, {+0.0f, 3}, {-2.5f, 5}};
+      {+3.7f, 0}, //
+      {+2.5f, 1}, //
+      {+1.1f, 2}, //
+      {-0.0f, 4}, //
+      {+0.0f, 3}, //
+      {-2.5f, 5} //
+    };
 
     thrust::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending-db
@@ -1031,7 +1135,10 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   {
     // example-begin pairs-descending-bits
     constexpr int num_items                 = 2;
-    thrust::device_vector<custom_t> keys_in = {{42.4f, 1ll << 60}, {24.2f, 1ll << 61}};
+    thrust::device_vector<custom_t> keys_in = {
+      {42.4f, 1ll << 60}, //
+      {24.2f, 1ll << 61} //
+    };
 
     thrust::device_vector<int> vals_in = {1, 0};
 

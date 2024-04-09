@@ -68,9 +68,9 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide reduction.
  */
-template < int BLOCK_THREADS,
-           int ITEMS_PER_THREAD,
-           BlockReduceAlgorithm ALGORITHM>
+template <int BLOCK_THREADS,
+          int ITEMS_PER_THREAD,
+          BlockReduceAlgorithm ALGORITHM>
 __global__ void BlockReduceKernel(int* d_in, // Tile of input
                                   int* d_out, // Tile aggregate
                                   clock_t* d_elapsed) // Elapsed cycle count of block reduction
@@ -126,7 +126,7 @@ int Initialize(int* h_in, int num_items)
 /**
  * Test thread block reduction
  */
-template < int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockReduceAlgorithm ALGORITHM>
+template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockReduceAlgorithm ALGORITHM>
 void Test()
 {
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;

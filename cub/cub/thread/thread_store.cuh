@@ -109,7 +109,7 @@ enum CacheStoreModifier
  * @tparam T
  *   <b>[inferred]</b> Data type of output value
  */
-template < CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
+template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val);
 
 //@}  end member group

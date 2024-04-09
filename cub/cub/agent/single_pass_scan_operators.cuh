@@ -491,7 +491,7 @@ using default_reduce_by_key_delay_constructor_t =
 /**
  * Tile status interface.
  */
-template < typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
+template <typename T, bool SINGLE_WORD = Traits<T>::PRIMITIVE>
 struct ScanTileState;
 
 /**
@@ -849,17 +849,17 @@ struct ScanTileState<T, false>
  * Tile status interface for reduction by key.
  *
  */
-template < typename ValueT,
-           typename KeyT,
-           bool SINGLE_WORD = (Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16)>
+template <typename ValueT,
+          typename KeyT,
+          bool SINGLE_WORD = (Traits<ValueT>::PRIMITIVE) && (sizeof(ValueT) + sizeof(KeyT) < 16)>
 struct ReduceByKeyScanTileState;
 
 /**
  * Tile status interface for reduction by key, specialized for scan status and value types that
  * cannot be combined into one machine word.
  */
-template < typename ValueT, typename KeyT>
-struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT> >
+template <typename ValueT, typename KeyT>
+struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT>>
 {
   typedef ScanTileState<KeyValuePair<KeyT, ValueT> > SuperClass;
 
@@ -873,7 +873,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePai
  * Tile status interface for reduction by key, specialized for scan status and value types that
  * can be combined into one machine word that can be read/written coherently in a single access.
  */
-template < typename ValueT, typename KeyT>
+template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 {
   using KeyValuePairT = KeyValuePair<KeyT, ValueT>;
@@ -1074,11 +1074,11 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template < typename T,
-           typename ScanOpT,
-           typename ScanTileStateT,
-           int LEGACY_PTX_ARCH        = 0,
-           typename DelayConstructorT = detail::default_delay_constructor_t<T>>
+template <typename T,
+          typename ScanOpT,
+          typename ScanTileStateT,
+          int LEGACY_PTX_ARCH        = 0,
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce

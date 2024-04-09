@@ -110,9 +110,9 @@ CUB_NAMESPACE_BEGIN
  * @tparam OutputValueT
  *   The paired value type of the <offset,value> tuple (Default: value type of input iterator)
  */
-template < typename InputIteratorT,
-           typename OffsetT      = ptrdiff_t,
-           typename OutputValueT = cub::detail::value_t<InputIteratorT>>
+template <typename InputIteratorT,
+          typename OffsetT      = ptrdiff_t,
+          typename OutputValueT = cub::detail::value_t<InputIteratorT>>
 class ArgIndexInputIterator
 {
 public:

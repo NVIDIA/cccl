@@ -47,11 +47,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-template < int _BLOCK_THREADS,
-           int _ITEMS_PER_THREAD                     = 1,
-           cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-           cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
-           cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD                     = 1,
+          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
 struct AgentAdjacentDifferencePolicy
 {
   static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;

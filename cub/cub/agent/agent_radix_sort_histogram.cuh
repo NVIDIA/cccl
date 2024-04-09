@@ -52,7 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-template < int _BLOCK_THREADS, int _ITEMS_PER_THREAD, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int _RADIX_BITS>
+template <int _BLOCK_THREADS, int _ITEMS_PER_THREAD, int NOMINAL_4B_NUM_PARTS, typename ComputeT, int _RADIX_BITS>
 struct AgentRadixSortHistogramPolicy
 {
   enum
@@ -69,7 +69,7 @@ struct AgentRadixSortHistogramPolicy
   };
 };
 
-template < int _BLOCK_THREADS, int _RADIX_BITS>
+template <int _BLOCK_THREADS, int _RADIX_BITS>
 struct AgentRadixSortExclusiveSumPolicy
 {
   enum
@@ -79,11 +79,11 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
-template < typename AgentRadixSortHistogramPolicy,
-           bool IS_DESCENDING,
-           typename KeyT,
-           typename OffsetT,
-           typename DecomposerT = detail::identity_decomposer_t>
+template <typename AgentRadixSortHistogramPolicy,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename OffsetT,
+          typename DecomposerT = detail::identity_decomposer_t>
 struct AgentRadixSortHistogram
 {
   // constants

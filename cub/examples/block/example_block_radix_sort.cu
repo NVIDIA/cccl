@@ -72,9 +72,9 @@ bool g_uniform_keys;
 /**
  * Simple kernel for performing a block-wide sorting over integers
  */
-template < typename Key,
-           int BLOCK_THREADS,
-           int ITEMS_PER_THREAD>
+template <typename Key,
+          int BLOCK_THREADS,
+          int ITEMS_PER_THREAD>
 __launch_bounds__(BLOCK_THREADS) __global__
   void BlockSortKernel(Key* d_in, // Tile of input
                        Key* d_out, // Tile of output
@@ -160,7 +160,7 @@ void Initialize(Key* h_in, Key* h_reference, int num_items, int tile_size)
 /**
  * Test BlockScan
  */
-template < typename Key, int BLOCK_THREADS, int ITEMS_PER_THREAD>
+template <typename Key, int BLOCK_THREADS, int ITEMS_PER_THREAD>
 void Test()
 {
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;

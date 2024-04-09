@@ -153,16 +153,16 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
  * Dispatch
  ******************************************************************************/
 
-template < typename InputIteratorT,
-           typename FirstOutputIteratorT,
-           typename SecondOutputIteratorT,
-           typename UnselectedOutputIteratorT,
-           typename NumSelectedIteratorT,
-           typename SelectFirstPartOp,
-           typename SelectSecondPartOp,
-           typename OffsetT,
-           typename SelectedPolicy =
-             detail::device_three_way_partition_policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
+template <typename InputIteratorT,
+          typename FirstOutputIteratorT,
+          typename SecondOutputIteratorT,
+          typename UnselectedOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename SelectFirstPartOp,
+          typename SelectSecondPartOp,
+          typename OffsetT,
+          typename SelectedPolicy =
+            detail::device_three_way_partition_policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************

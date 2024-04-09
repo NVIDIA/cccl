@@ -727,14 +727,14 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) 
   agent.Process();
 }
 
-template < typename ChainedPolicyT,
-           bool IS_DESCENDING,
-           typename KeyT,
-           typename ValueT,
-           typename OffsetT,
-           typename PortionOffsetT,
-           typename AtomicOffsetT = PortionOffsetT,
-           typename DecomposerT   = detail::identity_decomposer_t>
+template <typename ChainedPolicyT,
+          bool IS_DESCENDING,
+          typename KeyT,
+          typename ValueT,
+          typename OffsetT,
+          typename PortionOffsetT,
+          typename AtomicOffsetT = PortionOffsetT,
+          typename DecomposerT   = detail::identity_decomposer_t>
 CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
   DeviceRadixSortOnesweepKernel(
     AtomicOffsetT* d_lookback,
@@ -775,7 +775,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy
 /**
  * Exclusive sum kernel
  */
-template < typename ChainedPolicyT, typename OffsetT>
+template <typename ChainedPolicyT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
 {
   typedef typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy ExclusiveSumPolicyT;
@@ -2049,7 +2049,7 @@ struct DispatchRadixSort : SelectedPolicy
   }
 
   /// Pass configuration structure
-  template < typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
+  template <typename UpsweepKernelT, typename ScanKernelT, typename DownsweepKernelT>
   struct PassConfig
   {
     UpsweepKernelT upsweep_kernel;
@@ -2064,7 +2064,7 @@ struct DispatchRadixSort : SelectedPolicy
     GridEvenShare<OffsetT> even_share;
 
     /// Initialize pass configuration
-    template < typename UpsweepPolicyT, typename ScanPolicyT, typename DownsweepPolicyT>
+    template <typename UpsweepPolicyT, typename ScanPolicyT, typename DownsweepPolicyT>
     CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE cudaError_t InitPassConfig(
       UpsweepKernelT upsweep_kernel,
       ScanKernelT scan_kernel,

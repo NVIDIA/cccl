@@ -90,7 +90,7 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template < typename ValueType, typename OffsetT = ptrdiff_t>
+template <typename ValueType, typename OffsetT = ptrdiff_t>
 class ConstantInputIterator
 {
 public:

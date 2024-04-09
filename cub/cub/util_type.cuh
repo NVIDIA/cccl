@@ -775,14 +775,14 @@ struct Uninitialized
 /**
  * \brief A key identifier paired with a corresponding value
  */
-template < typename _Key,
-           typename _Value
+template <typename _Key,
+          typename _Value
 #  if defined(_WIN32) && !defined(_WIN64)
-           ,
-           bool KeyIsLT = (AlignBytes<_Key>::ALIGN_BYTES < AlignBytes<_Value>::ALIGN_BYTES),
-           bool ValIsLT = (AlignBytes<_Value>::ALIGN_BYTES < AlignBytes<_Key>::ALIGN_BYTES)
+          ,
+          bool KeyIsLT = (AlignBytes<_Key>::ALIGN_BYTES < AlignBytes<_Value>::ALIGN_BYTES),
+          bool ValIsLT = (AlignBytes<_Value>::ALIGN_BYTES < AlignBytes<_Key>::ALIGN_BYTES)
 #  endif // #if defined(_WIN32) && !defined(_WIN64)
-           >
+          >
 struct KeyValuePair
 {
   typedef _Key Key; ///< Key data type

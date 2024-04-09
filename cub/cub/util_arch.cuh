@@ -136,7 +136,7 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 #    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING     CUB_PREFER_CONFLICT_OVER_PADDING(0)
 #  endif
 
-template < int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
 struct RegBoundScaling
 {
   enum
@@ -146,7 +146,7 @@ struct RegBoundScaling
   };
 };
 
-template < int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
+template <int NOMINAL_4B_BLOCK_THREADS, int NOMINAL_4B_ITEMS_PER_THREAD, typename T>
 struct MemBoundScaling
 {
   enum

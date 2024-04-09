@@ -55,7 +55,7 @@ CUB_NAMESPACE_BEGIN
 /**
  * Computes the begin offsets into A and B for the specific diagonal
  */
-template < typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
+template <typename AIteratorT, typename BIteratorT, typename OffsetT, typename CoordinateT>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {

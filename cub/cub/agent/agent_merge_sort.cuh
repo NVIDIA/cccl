@@ -47,11 +47,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-template < int _BLOCK_THREADS,
-           int _ITEMS_PER_THREAD                     = 1,
-           cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-           cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
-           cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD                     = 1,
+          cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier _LOAD_MODIFIER     = cub::LOAD_LDG,
+          cub::BlockStoreAlgorithm _STORE_ALGORITHM = cub::BLOCK_STORE_DIRECT>
 struct AgentMergeSortPolicy
 {
   static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
@@ -277,7 +277,7 @@ struct AgentBlockSort
  * Odeh et al, "Merge Path - Parallel Merging Made Simple"
  * doi:10.1109/IPDPSW.2012.202
  */
-template < typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
+template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 struct AgentPartition
 {
   bool ping;
@@ -367,13 +367,13 @@ struct AgentPartition
 };
 
 /// \brief The agent is responsible for merging N consecutive sorted arrays into N/2 sorted arrays.
-template < typename Policy,
-           typename KeyIteratorT,
-           typename ValueIteratorT,
-           typename OffsetT,
-           typename CompareOpT,
-           typename KeyT,
-           typename ValueT>
+template <typename Policy,
+          typename KeyIteratorT,
+          typename ValueIteratorT,
+          typename OffsetT,
+          typename CompareOpT,
+          typename KeyT,
+          typename ValueT>
 struct AgentMerge
 {
   //---------------------------------------------------------------------

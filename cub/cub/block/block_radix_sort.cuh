@@ -217,17 +217,17 @@ CUB_NAMESPACE_BEGIN
 //!
 //! @tparam LEGACY_PTX_ARCH
 //!   **[optional]** Unused
-template < typename KeyT,
-           int BLOCK_DIM_X,
-           int ITEMS_PER_THREAD,
-           typename ValueT                         = NullType,
-           int RADIX_BITS                          = 4,
-           bool MEMOIZE_OUTER_SCAN                 = true,
-           BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
-           cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
-           int BLOCK_DIM_Y                         = 1,
-           int BLOCK_DIM_Z                         = 1,
-           int LEGACY_PTX_ARCH                     = 0>
+template <typename KeyT,
+          int BLOCK_DIM_X,
+          int ITEMS_PER_THREAD,
+          typename ValueT                         = NullType,
+          int RADIX_BITS                          = 4,
+          bool MEMOIZE_OUTER_SCAN                 = true,
+          BlockScanAlgorithm INNER_SCAN_ALGORITHM = BLOCK_SCAN_WARP_SCANS,
+          cudaSharedMemConfig SMEM_CONFIG         = cudaSharedMemBankSizeFourByte,
+          int BLOCK_DIM_Y                         = 1,
+          int BLOCK_DIM_Z                         = 1,
+          int LEGACY_PTX_ARCH                     = 0>
 class BlockRadixSort
 {
 private:

@@ -593,7 +593,7 @@ struct AgentRadixSortDownsweep
   /**
    * Copy tiles within the range of input
    */
-  template < typename InputIteratorT, typename T>
+  template <typename InputIteratorT, typename T>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Copy(InputIteratorT d_in, T* d_out, OffsetT block_offset, OffsetT block_end)
   {
     // Simply copy the input

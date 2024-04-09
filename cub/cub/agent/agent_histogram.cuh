@@ -761,7 +761,7 @@ struct AgentHistogram
   //---------------------------------------------------------------------
 
   // Return a native pixel pointer (specialized for CacheModifiedInputIterator types)
-  template < CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
+  template <CacheLoadModifier _MODIFIER, typename _ValueT, typename _OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE SampleT* NativePointer(CacheModifiedInputIterator<_MODIFIER, _ValueT, _OffsetT> itr)
   {
     return itr.ptr;

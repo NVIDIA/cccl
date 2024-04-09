@@ -68,9 +68,9 @@ int g_grid_size = 1;
 /**
  * Simple kernel for performing a block-wide exclusive prefix sum over integers
  */
-template < int BLOCK_THREADS,
-           int ITEMS_PER_THREAD,
-           BlockScanAlgorithm ALGORITHM>
+template <int BLOCK_THREADS,
+          int ITEMS_PER_THREAD,
+          BlockScanAlgorithm ALGORITHM>
 __global__ void BlockPrefixSumKernel(int* d_in, // Tile of input
                                      int* d_out, // Tile of output
                                      clock_t* d_elapsed) // Elapsed cycle count of block scan
@@ -153,7 +153,7 @@ int Initialize(int* h_in, int* h_reference, int num_items)
 /**
  * Test thread block scan
  */
-template < int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockScanAlgorithm ALGORITHM>
+template <int BLOCK_THREADS, int ITEMS_PER_THREAD, BlockScanAlgorithm ALGORITHM>
 void Test()
 {
   constexpr int TILE_SIZE = BLOCK_THREADS * ITEMS_PER_THREAD;

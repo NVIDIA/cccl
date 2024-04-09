@@ -347,7 +347,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoad(T const* ptr, Int2Type<MODIFIER> /*m
 /**
  * ThreadLoad definition for generic modifiers
  */
-template < CacheLoadModifier MODIFIER, typename InputIteratorT>
+template <CacheLoadModifier MODIFIER, typename InputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<InputIteratorT> ThreadLoad(InputIteratorT itr)
 {
   // Apply tags for partial-specialization
