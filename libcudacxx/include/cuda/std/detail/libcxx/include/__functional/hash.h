@@ -34,11 +34,8 @@
 #include <cuda/std/detail/libcxx/include/__utility/move.h>
 #include <cuda/std/detail/libcxx/include/__utility/pair.h>
 #include <cuda/std/detail/libcxx/include/__utility/swap.h>
+#include <cuda/std/detail/libcxx/include/cstring>
 #include <cuda/std/cstdint>
-
-#ifndef __cuda_std__
-#include <cstring>
-#endif // __cuda_std__
 
 #ifndef __cuda_std__
 

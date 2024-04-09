@@ -47,11 +47,6 @@
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
-#include <memory>
-#include <typeinfo>
-#endif // __cuda_std__
-
-#ifndef __cuda_std__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

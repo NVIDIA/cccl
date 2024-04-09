@@ -60,15 +60,6 @@
 #  define __has_include(x) 0
 #endif
 
-#ifndef __cuda_std__
-#if __has_include(<version>)
-#  include <version>
-#else
-#  include <type_traits>
-#  include <utility>
-#endif
-#endif
-
 #ifdef _MSVC_LANG
 #define __MDSPAN_CPLUSPLUS _MSVC_LANG
 #else
