@@ -647,15 +647,8 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 }  // std
 
 */
-#ifndef __cuda_std__
-#include <__config>
-#include <typeinfo>
-#include <stdexcept>
-#include <cstring>
-#if !defined(_LIBCUDACXX_HAS_NO_ATOMIC_HEADER)
-#  include <atomic>
-#endif
-#endif //__cuda_std__
+
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

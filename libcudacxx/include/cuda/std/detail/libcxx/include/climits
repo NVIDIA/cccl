@@ -37,11 +37,7 @@ Macros:
 
 */
 
-#ifndef __cuda_std__
-#include <__config>
-#else
-#include <cuda/std/detail/libcxx/include/__cuda/climits_prelude.h>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -51,6 +47,7 @@ Macros:
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/detail/libcxx/include/__cuda/climits_prelude.h>
 #include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #if defined(_CCCL_COMPILER_MSVC)
