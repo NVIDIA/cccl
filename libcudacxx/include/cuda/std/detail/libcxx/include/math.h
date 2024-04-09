@@ -304,7 +304,7 @@ long double    truncl(long double x);
 #define _LIBCUDACXX_STDLIB_INCLUDE_NEXT
 #include <stdlib.h>
 
-#include_next <math.h>
+#include <math.h>
 
 #ifdef __cplusplus
 
