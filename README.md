@@ -146,7 +146,7 @@ conda config --add channels conda-forge
 conda install cccl
 ```
 
-This will install the latest CCCL to the conda environment's `include/` and `lib/cmake/` directories.
+This will install the latest CCCL to the conda environment's `$CONDA_PREFIX/include/` and `$CONDA_PREFIX/lib/cmake/` directories.
 It is discoverable by CMake via `find_package(CCCL)` and can be used by any compilers in the conda environment.
 For more information, see [this introduction to conda-forge](https://conda-forge.org/docs/user/introduction/).
 
