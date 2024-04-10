@@ -42,7 +42,7 @@ namespace detail
 template <typename T, size_t... Extents>
 _CCCL_HOST_DEVICE constexpr auto fool_compiler(const dimensions<T, Extents...>& ex)
 {
-  if constexpr (ex.rank_dynamic() == 0)
+  if constexpr (dimensions<T, Extents...>::rank_dynamic() == 0)
   {
     return dimensions<T, Extents...>();
   }
@@ -274,7 +274,7 @@ _CCCL_HOST_DEVICE constexpr auto get_level_counts_helper(const Levels&... ls)
 template <typename Unit, typename Level, typename Dims>
 _CCCL_HOST_DEVICE constexpr auto replace_with_intrinsics_or_constexpr(const Dims& dims)
 {
-  if constexpr (is_core_cuda_hierarchy_level<Level> && is_core_cuda_hierarchy_level<Unit> && dims.rank_dynamic() != 0)
+  if constexpr (is_core_cuda_hierarchy_level<Level> && is_core_cuda_hierarchy_level<Unit> && Dims::rank_dynamic() != 0)
   {
     // We replace hierarchy access with CUDA intrinsic to enable compiler optimizations, its ok for the prototype,
     // but might lead to unexpected results and should be eventually addressed at the API level

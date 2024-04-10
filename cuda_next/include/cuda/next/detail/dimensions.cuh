@@ -63,8 +63,8 @@ _CCCL_HOST_DEVICE constexpr auto
 dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   // For now target only 3 dim extents
-  static_assert(h1.rank() == h2.rank());
-  static_assert(h1.rank() == 3);
+  static_assert(sizeof...(Extents1) == sizeof...(Extents2));
+  static_assert(sizeof...(Extents1) == 3);
 
   return dimensions<DstType, merge_extents<OpType>(Extents1, Extents2)...>(
     op(h1.extent(0), h2.extent(0)), op(h1.extent(1), h2.extent(1)), op(h1.extent(2), h2.extent(2)));
@@ -103,6 +103,7 @@ __device__ constexpr auto index_to_linear(const Index& index, const Dims& dims)
 {
   static_assert(dims.rank() == 3);
 
+  //printf("%d %d %d, %d %d %d:  %d %d %d, %d %d %d:  %d %d %d\n", blockDim.x, blockDim.y, blockDim.z, threadIdx.x, threadIdx.y, threadIdx.z, dims.extent(0), dims.extent(1), dims.extent(2), index.extent(0), index.extent(1), index.extent(2), dims.static_extent(0) == cuda::std::dynamic_extent, dims.static_extent(1) == cuda::std::dynamic_extent, dims.static_extent(2) == cuda::std::dynamic_extent);
   return (index.extent(2) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
 }
 

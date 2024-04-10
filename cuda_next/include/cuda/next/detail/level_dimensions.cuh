@@ -84,7 +84,9 @@ struct level_dimensions
 {
   static_assert(::cuda::std::is_base_of_v<hierarchy_level, Level>);
   using level_type = Level;
-  const Dimensions dims; // Unit for dimensions is implicit
+
+  // Needs alignas to work around an issue with tuple
+  alignas(16) const Dimensions dims; // Unit for dimensions is implicit
 
   constexpr _CCCL_HOST_DEVICE level_dimensions(const Dimensions& d)
       : dims(d)
@@ -92,7 +94,7 @@ struct level_dimensions
   constexpr _CCCL_HOST_DEVICE level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  constexpr level_dimensions() = default;
+  constexpr level_dimensions() {};
 };
 
 template <size_t X, size_t Y = 1, size_t Z = 1>

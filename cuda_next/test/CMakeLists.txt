@@ -35,6 +35,9 @@ function(CudaNext_add_catch2_test target_name_var test_name cn_target) # ARGN=te
   add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
+  if(MSVC)
+    target_compile_options(${test_target} PRIVATE "/Zc:__cplusplus")
+  endif()
 endfunction()
 
 # Create tests for each enabled configuration:

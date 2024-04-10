@@ -25,10 +25,7 @@ template <typename Level, typename Dims>
 struct custom_level_dims : public cuda_next::level_dimensions<Level, Dims>
 {
   int dummy;
-  constexpr __host__ __device__ custom_level_dims(const Dims& d)
-      : cuda_next::level_dimensions<Level, Dims>(d)
-  {}
-  constexpr custom_level_dims() = default;
+  constexpr custom_level_dims() : cuda_next::level_dimensions<Level, Dims>() {};
 };
 
 template <typename Dims>
