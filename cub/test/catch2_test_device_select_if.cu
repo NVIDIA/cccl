@@ -409,15 +409,15 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  offset_t match_every_nth = 1000000;
-  offset_t expected_num_copied =
-    (num_items_ull + static_cast<std::size_t>(match_every_nth) - 1ULL) / static_cast<std::size_t>(match_every_nth);
+  std::size_t match_every_nth  = 1000000;
+  offset_t expected_num_copied = static_cast<offset_t>((num_items_ull + match_every_nth - 1ULL) / match_every_nth);
   c2h::device_vector<type> out(expected_num_copied);
   dispatch_select_if(in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{match_every_nth});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
-  auto expected_out_it     = thrust::make_transform_iterator(in, multiply_n<offset_t>{match_every_nth});
+  auto expected_out_it =
+    thrust::make_transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
   bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
   REQUIRE(all_results_correct == true);
 }
@@ -436,7 +436,7 @@ CUB_TEST("DeviceSelect::If works for very large number of output items", "[devic
   // Prepare input
   c2h::device_vector<type> in(num_items);
   c2h::gen(CUB_SEED(1), in);
-  
+
   // Prepare output
   c2h::device_vector<type> out(num_items);
 
