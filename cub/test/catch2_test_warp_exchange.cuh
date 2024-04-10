@@ -35,8 +35,8 @@
 
 #include <type_traits>
 
-#include "fill_striped.cuh"
 #include "catch2_test_helper.h"
+#include "fill_striped.cuh"
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg, typename = void>
 struct exchange_data_t;
@@ -53,8 +53,7 @@ struct exchange_data_t<InputT,
 
   template <int LogicalWarpThreads>
   inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg> &exchange,
-          int (&ranks)[ItemsPerThread])
+  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange, int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, ranks);
   }
@@ -72,8 +71,7 @@ struct exchange_data_t<InputT,
 
   template <int LogicalWarpThreads>
   inline __device__ void
-  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg> &exchange,
-          int (&ranks)[ItemsPerThread])
+  scatter(cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange, int (&ranks)[ItemsPerThread])
   {
     exchange.ScatterToStriped(input, output, ranks);
   }
@@ -85,7 +83,7 @@ template <int LOGICAL_WARP_THREADS,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT>
-__global__ void scatter_kernel(const InputT *input_data, OutputT *output_data)
+__global__ void scatter_kernel(const InputT* input_data, OutputT* output_data)
 {
   using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, 0, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
@@ -131,11 +129,11 @@ template <int LOGICAL_WARP_THREADS,
           cub::WarpExchangeAlgorithm Alg,
           typename InputT,
           typename OutputT>
-void warp_scatter_strided(c2h::device_vector<InputT> &in, c2h::device_vector<OutputT> &out)
+void warp_scatter_strided(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& out)
 {
   scatter_kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
-                                                thrust::raw_pointer_cast(out.data()));
+    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+      thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
@@ -147,7 +145,7 @@ template <int LOGICAL_WARP_THREADS,
           typename InputT,
           typename OutputT,
           typename ActionT>
-__global__ void kernel(const InputT *input_data, OutputT *output_data, ActionT action)
+__global__ void kernel(const InputT* input_data, OutputT* output_data, ActionT action)
 {
   using warp_exchange_t = cub::WarpExchange<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, 0, Alg>;
   using storage_t       = typename warp_exchange_t::TempStorage;
@@ -188,14 +186,11 @@ template <int LOGICAL_WARP_THREADS,
           typename InputT,
           typename OutputT,
           typename ActionT>
-void warp_exchange(c2h::device_vector<InputT> &in,
-                   c2h::device_vector<OutputT> &out,
-                   ActionT action)
+void warp_exchange(c2h::device_vector<InputT>& in, c2h::device_vector<OutputT>& out, ActionT action)
 {
   kernel<LOGICAL_WARP_THREADS, ITEMS_PER_THREAD, TOTAL_WARPS, Alg, InputT, OutputT, ActionT>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
-                                                thrust::raw_pointer_cast(out.data()),
-                                                action);
+    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+      thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
@@ -210,7 +205,7 @@ struct blocked_to_striped
             cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ITEMS_PER_THREAD],
                              OutputT (&output)[ITEMS_PER_THREAD],
-                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg> &exchange)
+                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange)
   {
     exchange.BlockedToStriped(input, output);
   }
@@ -226,15 +221,14 @@ struct striped_to_blocked
             cub::WarpExchangeAlgorithm Alg>
   __device__ void operator()(InputT (&input)[ITEMS_PER_THREAD],
                              OutputT (&output)[ITEMS_PER_THREAD],
-                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg> &exchange)
+                             cub::WarpExchange<InputT, ItemsPerThread, LogicalWarpThreads, 0, Alg>& exchange)
   {
     exchange.StripedToBlocked(input, output);
   }
 };
 
 template <typename T>
-c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T> &d_input,
-                                              int tile_size)
+c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input, int tile_size)
 {
   c2h::host_vector<T> input = d_input;
 
@@ -258,5 +252,8 @@ private:
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 
 public:
-  static constexpr int value() { return total_warps; }
+  static constexpr int value()
+  {
+    return total_warps;
+  }
 };

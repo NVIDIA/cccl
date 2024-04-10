@@ -36,15 +36,15 @@
 // Ensure printing of CUDA runtime errors to console (define before including cub.h)
 #define CUB_STDERR
 
-#include <stdio.h>
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_reduce.cuh>
+#include <cub/block/block_store.cuh>
+
 #include <algorithm>
 #include <iostream>
 
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/block/block_reduce.cuh>
-
 #include "../../test/test_util.h"
+#include <stdio.h>
 
 // Some implementation details rely on c++14
 #if _CCCL_STD_VER >= 2014
@@ -69,46 +69,46 @@ int g_grid_size = 1;
  * Simple kernel for performing a block-wide reduction.
  */
 template <int BLOCK_THREADS>
-__global__ void BlockReduceKernel(
-    int         *d_in,          // Tile of input
-    int         *d_out          // Tile aggregate
-    )
+__global__ void BlockReduceKernel(int* d_in, // Tile of input
+                                  int* d_out // Tile aggregate
+)
 {
-    // Specialize BlockReduce type for our thread block
-    using BlockReduceT = cub::BlockReduce<int, BLOCK_THREADS>;
-    using TempStorageT = typename BlockReduceT::TempStorage;
+  // Specialize BlockReduce type for our thread block
+  using BlockReduceT = cub::BlockReduce<int, BLOCK_THREADS>;
+  using TempStorageT = typename BlockReduceT::TempStorage;
 
-    union ShmemLayout
-    {
-      TempStorageT reduce;
-      int aggregate;
-    };
+  union ShmemLayout
+  {
+    TempStorageT reduce;
+    int aggregate;
+  };
 
-    // shared memory byte-array
-    extern __shared__ __align__(alignof(ShmemLayout)) char smem[];
+  // shared memory byte-array
+  extern __shared__ __align__(alignof(ShmemLayout)) char smem[];
 
-    // cast to lvalue reference of expected type
-    auto& temp_storage = reinterpret_cast<TempStorageT&>(smem);
+  // cast to lvalue reference of expected type
+  auto& temp_storage = reinterpret_cast<TempStorageT&>(smem);
 
-    int data = d_in[threadIdx.x];
+  int data = d_in[threadIdx.x];
 
-    // Compute sum
-    int aggregate = BlockReduceT(temp_storage).Sum(data);
+  // Compute sum
+  int aggregate = BlockReduceT(temp_storage).Sum(data);
 
-    // block-wide sync barrier necessary to re-use shared mem safely
-    __syncthreads();
-    int* smem_integers = reinterpret_cast<int*>(smem);
-    if (threadIdx.x == 0) smem_integers[0] = aggregate;
+  // block-wide sync barrier necessary to re-use shared mem safely
+  __syncthreads();
+  int* smem_integers = reinterpret_cast<int*>(smem);
+  if (threadIdx.x == 0)
+  {
+    smem_integers[0] = aggregate;
+  }
 
-    // sync to make new shared value available to all threads
-    __syncthreads();
-    aggregate = smem_integers[0];
+  // sync to make new shared value available to all threads
+  __syncthreads();
+  aggregate = smem_integers[0];
 
-    // all threads write the aggregate to output
-    d_out[threadIdx.x] = aggregate;
+  // all threads write the aggregate to output
+  d_out[threadIdx.x] = aggregate;
 }
-
-
 
 //---------------------------------------------------------------------
 // Host utilities
@@ -118,17 +118,17 @@ __global__ void BlockReduceKernel(
  * Initialize reduction problem (and solution).
  * Returns the aggregate
  */
-int Initialize(int *h_in, int num_items)
+int Initialize(int* h_in, int num_items)
 {
-    int inclusive = 0;
+  int inclusive = 0;
 
-    for (int i = 0; i < num_items; ++i)
-    {
-        h_in[i] = i % 17;
-        inclusive += h_in[i];
-    }
+  for (int i = 0; i < num_items; ++i)
+  {
+    h_in[i] = i % 17;
+    inclusive += h_in[i];
+  }
 
-    return inclusive;
+  return inclusive;
 }
 
 /**
@@ -137,101 +137,108 @@ int Initialize(int *h_in, int num_items)
 template <int BLOCK_THREADS>
 void Test()
 {
-    // Allocate host arrays
-    int *h_in = new int[BLOCK_THREADS];
+  // Allocate host arrays
+  int* h_in = new int[BLOCK_THREADS];
 
-    // Initialize problem and reference output on host
-    int h_aggregate = Initialize(h_in, BLOCK_THREADS);
+  // Initialize problem and reference output on host
+  int h_aggregate = Initialize(h_in, BLOCK_THREADS);
 
-    // Initialize device arrays
-    int *d_in           = NULL;
-    int *d_out          = NULL;
-    cudaMalloc((void**)&d_in,          sizeof(int) * BLOCK_THREADS);
-    cudaMalloc((void**)&d_out,         sizeof(int) * BLOCK_THREADS);
+  // Initialize device arrays
+  int* d_in  = NULL;
+  int* d_out = NULL;
+  cudaMalloc((void**) &d_in, sizeof(int) * BLOCK_THREADS);
+  cudaMalloc((void**) &d_out, sizeof(int) * BLOCK_THREADS);
 
-    // Display input problem data
-    if (g_verbose)
+  // Display input problem data
+  if (g_verbose)
+  {
+    printf("Input data: ");
+    for (int i = 0; i < BLOCK_THREADS; i++)
     {
-        printf("Input data: ");
-        for (int i = 0; i < BLOCK_THREADS; i++)
-            printf("%d, ", h_in[i]);
-        printf("\n\n");
+      printf("%d, ", h_in[i]);
     }
+    printf("\n\n");
+  }
 
-    // Copy problem to device
-    cudaMemcpy(d_in, h_in, sizeof(int) * BLOCK_THREADS, cudaMemcpyHostToDevice);
+  // Copy problem to device
+  cudaMemcpy(d_in, h_in, sizeof(int) * BLOCK_THREADS, cudaMemcpyHostToDevice);
 
-    // determine necessary storage size:
-    auto block_reduce_temp_bytes =
-      sizeof(typename cub::BlockReduce<int, BLOCK_THREADS>::TempStorage);
-    // finally, we need to make sure that we can hold at least one integer
-    // needed in the kernel to exchange data after reduction
-    auto smem_size = (std::max)(1 * sizeof(int), block_reduce_temp_bytes);
+  // determine necessary storage size:
+  auto block_reduce_temp_bytes = sizeof(typename cub::BlockReduce<int, BLOCK_THREADS>::TempStorage);
+  // finally, we need to make sure that we can hold at least one integer
+  // needed in the kernel to exchange data after reduction
+  auto smem_size = (std::max)(1 * sizeof(int), block_reduce_temp_bytes);
 
-    // use default stream
-    cudaStream_t stream = NULL;
+  // use default stream
+  cudaStream_t stream = NULL;
 
-    // Run reduction kernel
-    BlockReduceKernel<BLOCK_THREADS>
-        <<<g_grid_size, BLOCK_THREADS, smem_size, stream>>>(
-            d_in,
-            d_out);
+  // Run reduction kernel
+  BlockReduceKernel<BLOCK_THREADS><<<g_grid_size, BLOCK_THREADS, smem_size, stream>>>(d_in, d_out);
 
-    // Check total aggregate
-    printf("\tAggregate: ");
-    int compare = 0;
-    for (int i = 0; i < BLOCK_THREADS; i++) {
-        compare = compare || CompareDeviceResults(
-            &h_aggregate, d_out + i, 1, g_verbose, g_verbose);
-    }
-    printf("%s\n", compare ? "FAIL" : "PASS");
-    AssertEquals(0, compare);
+  // Check total aggregate
+  printf("\tAggregate: ");
+  int compare = 0;
+  for (int i = 0; i < BLOCK_THREADS; i++)
+  {
+    compare = compare || CompareDeviceResults(&h_aggregate, d_out + i, 1, g_verbose, g_verbose);
+  }
+  printf("%s\n", compare ? "FAIL" : "PASS");
+  AssertEquals(0, compare);
 
-    // Check for kernel errors and STDIO from the kernel, if any
-    CubDebugExit(cudaPeekAtLastError());
-    CubDebugExit(cudaDeviceSynchronize());
+  // Check for kernel errors and STDIO from the kernel, if any
+  CubDebugExit(cudaPeekAtLastError());
+  CubDebugExit(cudaDeviceSynchronize());
 
-    // Cleanup
-    if (h_in) delete[] h_in;
-    if (d_in) cudaFree(d_in);
-    if (d_out) cudaFree(d_out);
+  // Cleanup
+  if (h_in)
+  {
+    delete[] h_in;
+  }
+  if (d_in)
+  {
+    cudaFree(d_in);
+  }
+  if (d_out)
+  {
+    cudaFree(d_out);
+  }
 }
-
 
 /**
  * Main
  */
 int main(int argc, char** argv)
 {
-    // Initialize command line
-    CommandLineArgs args(argc, argv);
-    g_verbose = args.CheckCmdLineFlag("v");
-    args.GetCmdLineArgument("grid-size", g_grid_size);
+  // Initialize command line
+  CommandLineArgs args(argc, argv);
+  g_verbose = args.CheckCmdLineFlag("v");
+  args.GetCmdLineArgument("grid-size", g_grid_size);
 
-    // Print usage
-    if (args.CheckCmdLineFlag("help"))
-    {
-        printf("%s "
-            "[--device=<device-id>] "
-            "[--grid-size=<grid size>] "
-            "[--v] "
-            "\n", argv[0]);
-        exit(0);
-    }
+  // Print usage
+  if (args.CheckCmdLineFlag("help"))
+  {
+    printf("%s "
+           "[--device=<device-id>] "
+           "[--grid-size=<grid size>] "
+           "[--v] "
+           "\n",
+           argv[0]);
+    exit(0);
+  }
 
-    // Initialize device
-    CubDebugExit(args.DeviceInit());
+  // Initialize device
+  CubDebugExit(args.DeviceInit());
 
-    // Run tests
-    Test<1024>();
-    Test<512>();
-    Test<256>();
-    Test<128>();
-    Test<64>();
-    Test<32>();
-    Test<16>();
+  // Run tests
+  Test<1024>();
+  Test<512>();
+  Test<256>();
+  Test<128>();
+  Test<64>();
+  Test<32>();
+  Test<16>();
 
-    return 0;
+  return 0;
 }
 
 #else // < C++14

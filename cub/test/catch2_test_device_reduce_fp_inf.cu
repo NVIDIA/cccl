@@ -29,8 +29,8 @@
 
 #include <cuda/std/limits>
 
-#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
@@ -47,7 +47,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
 
   c2h::device_vector<out_t> out(1);
-  out_t *d_out = thrust::raw_pointer_cast(out.data());
+  out_t* d_out = thrust::raw_pointer_cast(out.data());
 
   /**
    * ArgMin should return max value for empty input. This interferes with
@@ -57,7 +57,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   SECTION("InfInArgMin")
   {
     c2h::device_vector<in_t> in(n, inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
+    const in_t* d_in = thrust::raw_pointer_cast(in.data());
 
     device_arg_min(d_in, d_out, n);
 
@@ -74,7 +74,7 @@ CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   SECTION("InfInArgMax")
   {
     c2h::device_vector<in_t> in(n, -inf);
-    const in_t *d_in = thrust::raw_pointer_cast(in.data());
+    const in_t* d_in = thrust::raw_pointer_cast(in.data());
 
     device_arg_max(d_in, d_out, n);
 

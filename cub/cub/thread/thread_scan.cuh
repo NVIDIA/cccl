@@ -48,7 +48,8 @@
 CUB_NAMESPACE_BEGIN
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal {
+namespace internal
+{
 
 /**
  * @name Sequential prefix scan over statically-sized array types
@@ -66,22 +67,18 @@ namespace internal {
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T inclusive,
-                                                 T exclusive,
-                                                 T *input,
-                                                 T *output,
-                                                 ScanOp scan_op,
-                                                 Int2Type<LENGTH> /*length*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadScanExclusive(T inclusive, T exclusive, T* input, T* output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
 {
-    #pragma unroll
-    for (int i = 0; i < LENGTH; ++i)
-    {
-        inclusive = scan_op(exclusive, input[i]);
-        output[i] = exclusive;
-        exclusive = inclusive;
-    }
+#pragma unroll
+  for (int i = 0; i < LENGTH; ++i)
+  {
+    inclusive = scan_op(exclusive, input[i]);
+    output[i] = exclusive;
+    exclusive = inclusive;
+  }
 
-    return inclusive;
+  return inclusive;
 }
 
 /**
@@ -117,17 +114,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T inclusive,
  */
 template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadScanExclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
+ThreadScanExclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-    T inclusive = input[0];
-    if (apply_prefix)
-    {
-        inclusive = scan_op(prefix, inclusive);
-    }
-    output[0] = prefix;
-    T exclusive = inclusive;
+  T inclusive = input[0];
+  if (apply_prefix)
+  {
+    inclusive = scan_op(prefix, inclusive);
+  }
+  output[0]   = prefix;
+  T exclusive = inclusive;
 
-    return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  return ThreadScanExclusive(inclusive, exclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
 /**
@@ -161,13 +158,10 @@ ThreadScanExclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T (&input)[LENGTH],
-                                                 T (&output)[LENGTH],
-                                                 ScanOp scan_op,
-                                                 T prefix,
-                                                 bool apply_prefix = true)
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadScanExclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-    return ThreadScanExclusive<LENGTH>((T *)input, (T *)output, scan_op, prefix, apply_prefix);
+  return ThreadScanExclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
 }
 
 /**
@@ -182,16 +176,16 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(T (&input)[LENGTH],
  */
 template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadScanInclusive(T inclusive, T *input, T *output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
+ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, Int2Type<LENGTH> /*length*/)
 {
-    #pragma unroll
-    for (int i = 0; i < LENGTH; ++i)
-    {
-        inclusive = scan_op(inclusive, input[i]);
-        output[i] = inclusive;
-    }
+#pragma unroll
+  for (int i = 0; i < LENGTH; ++i)
+  {
+    inclusive = scan_op(inclusive, input[i]);
+    output[i] = inclusive;
+  }
 
-    return inclusive;
+  return inclusive;
 }
 
 /**
@@ -218,13 +212,13 @@ ThreadScanInclusive(T inclusive, T *input, T *output, ScanOp scan_op, Int2Type<L
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T *input, T *output, ScanOp scan_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T* input, T* output, ScanOp scan_op)
 {
-    T inclusive = input[0];
-    output[0] = inclusive;
+  T inclusive = input[0];
+  output[0]   = inclusive;
 
-    // Continue scan
-    return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  // Continue scan
+  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
 /**
@@ -251,11 +245,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T *input, T *output, ScanOp
  *   Binary scan operator
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH],
-                                                 T (&output)[LENGTH],
-                                                 ScanOp scan_op)
+_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op)
 {
-    return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
+  return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op);
 }
 
 /**
@@ -291,17 +283,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH],
  */
 template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadScanInclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_prefix = true)
+ThreadScanInclusive(T* input, T* output, ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-    T inclusive = input[0];
-    if (apply_prefix)
-    {
-        inclusive = scan_op(prefix, inclusive);
-    }
-    output[0] = inclusive;
+  T inclusive = input[0];
+  if (apply_prefix)
+  {
+    inclusive = scan_op(prefix, inclusive);
+  }
+  output[0] = inclusive;
 
-    // Continue scan
-    return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
+  // Continue scan
+  return ThreadScanInclusive(inclusive, input + 1, output + 1, scan_op, Int2Type<LENGTH - 1>());
 }
 
 /**
@@ -336,17 +328,13 @@ ThreadScanInclusive(T *input, T *output, ScanOp scan_op, T prefix, bool apply_pr
  *   (Handy for preventing thread-0 from applying a prefix.)
  */
 template <int LENGTH, typename T, typename ScanOp>
-_CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanInclusive(T (&input)[LENGTH],
-                                                 T (&output)[LENGTH],
-                                                 ScanOp scan_op,
-                                                 T prefix,
-                                                 bool apply_prefix = true)
+_CCCL_DEVICE _CCCL_FORCEINLINE T
+ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T prefix, bool apply_prefix = true)
 {
-    return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
+  return ThreadScanInclusive<LENGTH>((T*) input, (T*) output, scan_op, prefix, apply_prefix);
 }
-
 
 //@}  end member group
 
-} // internal namespace
+} // namespace internal
 CUB_NAMESPACE_END

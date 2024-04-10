@@ -25,34 +25,27 @@
  *
  ******************************************************************************/
 
-#include "test_util.h"
-#include "cub/thread/thread_sort.cuh"
-
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/random.h>
 #include <thrust/sequence.h>
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
-#include <thrust/random.h>
 
+#include "cub/thread/thread_sort.cuh"
+#include "test_util.h"
 
 struct CustomLess
 {
   template <typename DataType>
-  __host__ __device__ bool operator()(DataType &lhs, DataType &rhs)
+  __host__ __device__ bool operator()(DataType& lhs, DataType& rhs)
   {
     return lhs < rhs;
   }
 };
 
-
-template <typename KeyT,
-          typename ValueT,
-          int ItemsPerThread>
-__global__ void kernel(const KeyT *keys_in,
-                       KeyT *keys_out,
-                       const ValueT *values_in,
-                       ValueT *values_out)
+template <typename KeyT, typename ValueT, int ItemsPerThread>
+__global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values_in, ValueT* values_out)
 {
   KeyT thread_keys[ItemsPerThread];
   KeyT thread_values[ItemsPerThread];
@@ -65,7 +58,7 @@ __global__ void kernel(const KeyT *keys_in,
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    thread_keys[item] = keys_in[item];
+    thread_keys[item]   = keys_in[item];
     thread_values[item] = values_in[item];
   }
 
@@ -73,19 +66,16 @@ __global__ void kernel(const KeyT *keys_in,
 
   for (int item = 0; item < ItemsPerThread; item++)
   {
-    keys_out[item] = thread_keys[item];
+    keys_out[item]   = thread_keys[item];
     values_out[item] = thread_values[item];
   }
 }
 
-
-template <typename KeyT,
-          typename ValueT,
-          int ItemsPerThread>
+template <typename KeyT, typename ValueT, int ItemsPerThread>
 void Test()
 {
   constexpr unsigned int threads_in_block = 1024;
-  constexpr unsigned int elements = threads_in_block * ItemsPerThread;
+  constexpr unsigned int elements         = threads_in_block * ItemsPerThread;
 
   thrust::default_random_engine re;
   thrust::device_vector<std::uint8_t> data_source(elements);
@@ -113,7 +103,7 @@ void Test()
     for (unsigned int tid = 0; tid < threads_in_block; tid++)
     {
       const auto thread_begin = tid * ItemsPerThread;
-      const auto thread_end = thread_begin + ItemsPerThread;
+      const auto thread_end   = thread_begin + ItemsPerThread;
 
       thrust::sort_by_key(host_keys.begin() + thread_begin,
                           host_keys.begin() + thread_end,
@@ -126,9 +116,7 @@ void Test()
   }
 }
 
-
-template <typename KeyT,
-          typename ValueT>
+template <typename KeyT, typename ValueT>
 void Test()
 {
   Test<KeyT, ValueT, 2>();

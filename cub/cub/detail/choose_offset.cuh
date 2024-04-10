@@ -37,7 +37,6 @@
 #  pragma system_header
 #endif // no system header
 
-
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
@@ -71,7 +70,7 @@ struct choose_offset
 template <typename NumItemsT>
 using choose_offset_t = typename choose_offset<NumItemsT>::type;
 
-/** 
+/**
  * promote_small_offset checks NumItemsT, the type of the num_items parameter, and
  * promotes any integral type smaller than 32 bits to a signed 32-bit integer type.
  */

@@ -17,9 +17,9 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
         case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); break;
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_fence_acq_rel_block(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -27,10 +27,10 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST:
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_membar_block(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -47,8 +47,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_block(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_32_block(__ptr, __tmp); break;
           default: assert(0);
@@ -56,8 +56,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_block(__ptr, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_32_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    uint32_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_block(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_32_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_block(__ptr, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_32_block(__ptr, __tmp); break;
           default: assert(0);
@@ -75,8 +100,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_block(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_64_block(__ptr, __tmp); break;
           default: assert(0);
@@ -84,8 +109,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_block(__ptr, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_64_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    uint64_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_block(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_64_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_block(__ptr, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_64_block(__ptr, __tmp); break;
           default: assert(0);
@@ -105,15 +155,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_32_block(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_32_block(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_block();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_32_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_block_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_32_block(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_32_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_32_block(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -131,15 +204,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_64_block(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_64_block(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_block();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_64_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_block_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_64_block(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_64_block(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_64_block(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -160,8 +256,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_block(__ptr, __old, __old_tmp, __tmp); break;
@@ -171,9 +267,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+    uint32_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 4);
+    memcpy(&__old, __expected, 4);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_32_block(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_block(__ptr, __old, __old_tmp, __tmp); break;
@@ -197,8 +327,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_32_block(__ptr, __tmp, __tmp); break;
@@ -208,9 +338,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_block(__ptr, __tmp, __tmp); break;
@@ -233,8 +393,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_block(__ptr, __tmp, __tmp); break;
@@ -244,9 +404,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_block(__ptr, __tmp, __tmp); break;
@@ -270,8 +462,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_block(__ptr, __tmp, __tmp); break;
@@ -281,9 +473,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_block(__ptr, __tmp, __tmp); break;
@@ -307,8 +531,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_block(__ptr, __tmp, __tmp); break;
@@ -318,9 +542,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_block(__ptr, __tmp, __tmp); break;
@@ -344,8 +600,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_block(__ptr, __tmp, __tmp); break;
@@ -355,9 +611,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_block(__ptr, __tmp, __tmp); break;
@@ -381,8 +669,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_block(__ptr, __tmp, __tmp); break;
@@ -392,9 +680,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_block(__ptr, __tmp, __tmp); break;
@@ -418,8 +738,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_block(__ptr, __tmp, __tmp); break;
@@ -429,9 +749,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_block(__ptr, __tmp, __tmp); break;
@@ -455,8 +807,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_block(__ptr, __tmp, __tmp); break;
@@ -466,9 +818,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_block(__ptr, __tmp, __tmp); break;
@@ -492,8 +876,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_block(__ptr, __tmp, __tmp); break;
@@ -503,9 +887,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_block(__ptr, __tmp, __tmp); break;
@@ -529,8 +945,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_block(__ptr, __tmp, __tmp); break;
@@ -540,9 +956,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_block(__ptr, __tmp, __tmp); break;
@@ -571,8 +1019,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_block(__ptr, __tmp, __tmp); break;
@@ -582,9 +1030,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_block(__ptr, __tmp, __tmp); break;
@@ -613,8 +1093,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_block(__ptr, __tmp, __tmp); break;
@@ -624,9 +1104,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u32_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_block(__ptr, __tmp, __tmp); break;
@@ -651,8 +1163,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_block(__ptr, __old, __old_tmp, __tmp); break;
@@ -662,9 +1174,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_block_tag) {
+    uint64_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 8);
+    memcpy(&__old, __expected, 8);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_64_block(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_block(__ptr, __old, __old_tmp, __tmp); break;
@@ -688,8 +1234,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_64_block(__ptr, __tmp, __tmp); break;
@@ -699,9 +1245,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_block_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_block(__ptr, __tmp, __tmp); break;
@@ -724,8 +1300,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_block(__ptr, __tmp, __tmp); break;
@@ -735,9 +1311,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_block(__ptr, __tmp, __tmp); break;
@@ -761,8 +1369,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_block(__ptr, __tmp, __tmp); break;
@@ -772,9 +1380,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_block(__ptr, __tmp, __tmp); break;
@@ -798,8 +1438,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_block(__ptr, __tmp, __tmp); break;
@@ -809,9 +1449,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_block(__ptr, __tmp, __tmp); break;
@@ -835,8 +1507,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_block(__ptr, __tmp, __tmp); break;
@@ -846,9 +1518,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_block(__ptr, __tmp, __tmp); break;
@@ -872,8 +1576,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -883,9 +1587,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -909,8 +1645,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_block(__ptr, __tmp, __tmp); break;
@@ -920,9 +1656,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_block(__ptr, __tmp, __tmp); break;
@@ -946,8 +1714,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -957,9 +1725,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -983,8 +1783,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_block(__ptr, __tmp, __tmp); break;
@@ -994,9 +1794,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_block(__ptr, __tmp, __tmp); break;
@@ -1020,8 +1852,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -1031,9 +1863,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -1062,8 +1926,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_block(__ptr, __tmp, __tmp); break;
@@ -1073,9 +1937,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_block(__ptr, __tmp, __tmp); break;
@@ -1104,8 +2000,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -1115,9 +2011,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_block_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -1137,8 +2065,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -1147,9 +2075,9 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -1170,8 +2098,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
@@ -1180,9 +2108,74 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_block();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_block_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_block_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp = -__tmp;
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_block(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_block(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_block(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); __cuda_membar_block(); break;
           case __ATOMIC_RELEASE: __cuda_membar_block(); __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_block(__ptr, __tmp, __tmp); break;
@@ -1201,9 +2194,9 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
         case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); break;
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_fence_acq_rel_device(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -1211,10 +2204,10 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST:
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_membar_device(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -1231,8 +2224,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_device(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_32_device(__ptr, __tmp); break;
           default: assert(0);
@@ -1240,8 +2233,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_device(__ptr, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_32_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    uint32_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_device(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_32_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_device(__ptr, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_32_device(__ptr, __tmp); break;
           default: assert(0);
@@ -1259,8 +2277,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_device(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_64_device(__ptr, __tmp); break;
           default: assert(0);
@@ -1268,8 +2286,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_device(__ptr, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_64_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    uint64_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_device(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_64_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_device(__ptr, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_64_device(__ptr, __tmp); break;
           default: assert(0);
@@ -1289,15 +2332,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_32_device(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_32_device(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_device();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_32_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_device_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_32_device(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_32_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_32_device(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -1315,15 +2381,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_64_device(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_64_device(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_device();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_64_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_device_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_64_device(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_64_device(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_64_device(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -1344,8 +2433,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_device(__ptr, __old, __old_tmp, __tmp); break;
@@ -1355,9 +2444,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+    uint32_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 4);
+    memcpy(&__old, __expected, 4);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_32_device(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_device(__ptr, __old, __old_tmp, __tmp); break;
@@ -1381,8 +2504,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_32_device(__ptr, __tmp, __tmp); break;
@@ -1392,9 +2515,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_device(__ptr, __tmp, __tmp); break;
@@ -1417,8 +2570,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_device(__ptr, __tmp, __tmp); break;
@@ -1428,9 +2581,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_device(__ptr, __tmp, __tmp); break;
@@ -1454,8 +2639,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_device(__ptr, __tmp, __tmp); break;
@@ -1465,9 +2650,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_device(__ptr, __tmp, __tmp); break;
@@ -1491,8 +2708,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_device(__ptr, __tmp, __tmp); break;
@@ -1502,9 +2719,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_device(__ptr, __tmp, __tmp); break;
@@ -1528,8 +2777,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_device(__ptr, __tmp, __tmp); break;
@@ -1539,9 +2788,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_device(__ptr, __tmp, __tmp); break;
@@ -1565,8 +2846,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_device(__ptr, __tmp, __tmp); break;
@@ -1576,9 +2857,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_device(__ptr, __tmp, __tmp); break;
@@ -1602,8 +2915,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_device(__ptr, __tmp, __tmp); break;
@@ -1613,9 +2926,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_device(__ptr, __tmp, __tmp); break;
@@ -1639,8 +2984,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_device(__ptr, __tmp, __tmp); break;
@@ -1650,9 +2995,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_device(__ptr, __tmp, __tmp); break;
@@ -1676,8 +3053,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_device(__ptr, __tmp, __tmp); break;
@@ -1687,9 +3064,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_device(__ptr, __tmp, __tmp); break;
@@ -1713,8 +3122,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_device(__ptr, __tmp, __tmp); break;
@@ -1724,9 +3133,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_device(__ptr, __tmp, __tmp); break;
@@ -1755,8 +3196,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_device(__ptr, __tmp, __tmp); break;
@@ -1766,9 +3207,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_device(__ptr, __tmp, __tmp); break;
@@ -1797,8 +3270,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_device(__ptr, __tmp, __tmp); break;
@@ -1808,9 +3281,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u32_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_device(__ptr, __tmp, __tmp); break;
@@ -1835,8 +3340,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_device(__ptr, __old, __old_tmp, __tmp); break;
@@ -1846,9 +3351,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_device_tag) {
+    uint64_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 8);
+    memcpy(&__old, __expected, 8);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_64_device(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_device(__ptr, __old, __old_tmp, __tmp); break;
@@ -1872,8 +3411,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_64_device(__ptr, __tmp, __tmp); break;
@@ -1883,9 +3422,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_device_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_device(__ptr, __tmp, __tmp); break;
@@ -1908,8 +3477,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_device(__ptr, __tmp, __tmp); break;
@@ -1919,9 +3488,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_device(__ptr, __tmp, __tmp); break;
@@ -1945,8 +3546,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_device(__ptr, __tmp, __tmp); break;
@@ -1956,9 +3557,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_device(__ptr, __tmp, __tmp); break;
@@ -1982,8 +3615,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_device(__ptr, __tmp, __tmp); break;
@@ -1993,9 +3626,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_device(__ptr, __tmp, __tmp); break;
@@ -2019,8 +3684,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_device(__ptr, __tmp, __tmp); break;
@@ -2030,9 +3695,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_device(__ptr, __tmp, __tmp); break;
@@ -2056,8 +3753,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2067,9 +3764,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2093,8 +3822,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_device(__ptr, __tmp, __tmp); break;
@@ -2104,9 +3833,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_device(__ptr, __tmp, __tmp); break;
@@ -2130,8 +3891,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2141,9 +3902,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2167,8 +3960,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_device(__ptr, __tmp, __tmp); break;
@@ -2178,9 +3971,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_device(__ptr, __tmp, __tmp); break;
@@ -2204,8 +4029,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2215,9 +4040,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2246,8 +4103,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_device(__ptr, __tmp, __tmp); break;
@@ -2257,9 +4114,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_device(__ptr, __tmp, __tmp); break;
@@ -2288,8 +4177,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2299,9 +4188,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_device_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2321,8 +4242,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2331,9 +4252,9 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2354,8 +4275,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
@@ -2364,9 +4285,74 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_device();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_device_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_device_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp = -__tmp;
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_device(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_device(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_device(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); __cuda_membar_device(); break;
           case __ATOMIC_RELEASE: __cuda_membar_device(); __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_device(__ptr, __tmp, __tmp); break;
@@ -2385,9 +4371,9 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     NV_PROVIDES_SM_70, (
       switch (__memorder) {
         case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); break;
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_fence_acq_rel_system(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -2395,10 +4381,10 @@ static inline _LIBCUDACXX_DEVICE void __atomic_thread_fence_cuda(int __memorder,
     ),
     NV_IS_DEVICE, (
       switch (__memorder) {
-        case __ATOMIC_SEQ_CST:
-        case __ATOMIC_CONSUME:
-        case __ATOMIC_ACQUIRE:
-        case __ATOMIC_ACQ_REL:
+        case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();
+        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();
         case __ATOMIC_RELEASE: __cuda_membar_system(); break;
         case __ATOMIC_RELAXED: break;
         default: assert(0);
@@ -2415,8 +4401,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_system(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_32_system(__ptr, __tmp); break;
           default: assert(0);
@@ -2424,8 +4410,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_system(__ptr, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_32_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    uint32_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_32_system(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_32_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_32_system(__ptr, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_32_system(__ptr, __tmp); break;
           default: assert(0);
@@ -2443,8 +4454,8 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_system(__ptr, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_load_relaxed_64_system(__ptr, __tmp); break;
           default: assert(0);
@@ -2452,8 +4463,33 @@ _LIBCUDACXX_DEVICE void __atomic_load_cuda(const volatile _Type *__ptr, _Type *_
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_system(__ptr, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELAXED: __cuda_load_volatile_64_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_load_cuda(const _Type *__ptr, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    uint64_t __tmp = 0;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_load_acquire_64_system(__ptr, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_load_relaxed_64_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_load_volatile_64_system(__ptr, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELAXED: __cuda_load_volatile_64_system(__ptr, __tmp); break;
           default: assert(0);
@@ -2473,15 +4509,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_32_system(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_32_system(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_system();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_32_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_system_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_32_system(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_32_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_32_system(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -2499,15 +4558,38 @@ _LIBCUDACXX_DEVICE void __atomic_store_cuda(volatile _Type *__ptr, _Type *__val,
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
           case __ATOMIC_RELEASE: __cuda_store_release_64_system(__ptr, __tmp); break;
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_relaxed_64_system(__ptr, __tmp); break;
           default: assert(0);
         }
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_RELEASE:
-          case __ATOMIC_SEQ_CST: __cuda_membar_system();
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_volatile_64_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_store_cuda(_Type *__ptr, _Type *__val, int __memorder, __thread_scope_system_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: __cuda_store_release_64_system(__ptr, __tmp); break;
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_RELAXED: __cuda_store_relaxed_64_system(__ptr, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_SEQ_CST: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_RELAXED: __cuda_store_volatile_64_system(__ptr, __tmp); break;
           default: assert(0);
         }
@@ -2528,8 +4610,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_system(__ptr, __old, __old_tmp, __tmp); break;
@@ -2539,9 +4621,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+    uint32_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 4);
+    memcpy(&__old, __expected, 4);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_32_system(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_32_system(__ptr, __old, __old_tmp, __tmp); break;
@@ -2565,8 +4681,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_32_system(__ptr, __tmp, __tmp); break;
@@ -2576,9 +4692,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 4);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, __val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_32_system(__ptr, __tmp, __tmp); break;
@@ -2601,8 +4747,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_system(__ptr, __tmp, __tmp); break;
@@ -2612,9 +4758,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_32_system(__ptr, __tmp, __tmp); break;
@@ -2638,8 +4816,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_system(__ptr, __tmp, __tmp); break;
@@ -2649,9 +4827,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_32_system(__ptr, __tmp, __tmp); break;
@@ -2675,8 +4885,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_system(__ptr, __tmp, __tmp); break;
@@ -2686,9 +4896,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_32_system(__ptr, __tmp, __tmp); break;
@@ -2712,8 +4954,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_system(__ptr, __tmp, __tmp); break;
@@ -2723,9 +4965,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f32_system(__ptr, __tmp, __tmp); break;
@@ -2749,8 +5023,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_system(__ptr, __tmp, __tmp); break;
@@ -2760,9 +5034,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u32_system(__ptr, __tmp, __tmp); break;
@@ -2786,8 +5092,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_system(__ptr, __tmp, __tmp); break;
@@ -2797,9 +5103,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s32_system(__ptr, __tmp, __tmp); break;
@@ -2823,8 +5161,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_system(__ptr, __tmp, __tmp); break;
@@ -2834,9 +5172,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u32_system(__ptr, __tmp, __tmp); break;
@@ -2860,8 +5230,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_system(__ptr, __tmp, __tmp); break;
@@ -2871,9 +5241,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s32_system(__ptr, __tmp, __tmp); break;
@@ -2897,8 +5299,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_system(__ptr, __tmp, __tmp); break;
@@ -2908,9 +5310,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u32_system(__ptr, __tmp, __tmp); break;
@@ -2939,8 +5373,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_system(__ptr, __tmp, __tmp); break;
@@ -2950,9 +5384,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    float __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f32_system(__ptr, __tmp, __tmp); break;
@@ -2981,8 +5447,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_system(__ptr, __tmp, __tmp); break;
@@ -2992,9 +5458,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 4);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==4 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint32_t __tmp = 0;
+    memcpy(&__tmp, &__val, 4);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u32_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u32_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u32_system(__ptr, __tmp, __tmp); break;
@@ -3019,8 +5517,8 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_system(__ptr, __old, __old_tmp, __tmp); break;
@@ -3030,9 +5528,43 @@ _LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(volatile _Type *__ptr, _T
       ),
       NV_IS_DEVICE, (
         switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    bool const __ret = __old == __old_tmp;
+    memcpy(__expected, &__old, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE bool __atomic_compare_exchange_cuda(_Type *__ptr, _Type *__expected, const _Type *__desired, bool, int __success_memorder, int __failure_memorder, __thread_scope_system_tag) {
+    uint64_t __tmp = 0, __old = 0, __old_tmp;
+    memcpy(&__tmp, __desired, 8);
+    memcpy(&__old, __expected, 8);
+    __old_tmp = __old;
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_compare_exchange_relaxed_64_system(__ptr, __old, __old_tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_64_system(__ptr, __old, __old_tmp, __tmp); break;
@@ -3056,8 +5588,8 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_exchange_release_64_system(__ptr, __tmp, __tmp); break;
@@ -3067,9 +5599,39 @@ _LIBCUDACXX_DEVICE void __atomic_exchange_cuda(volatile _Type *__ptr, _Type *__v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(__ret, &__tmp, 8);
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE void __atomic_exchange_cuda(_Type *__ptr, _Type *__val, _Type *__ret, int __memorder, __thread_scope_system_tag) {
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, __val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_exchange_acquire_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_exchange_acq_rel_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_exchange_release_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_exchange_relaxed_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_exchange_volatile_64_system(__ptr, __tmp, __tmp); break;
@@ -3092,8 +5654,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_system(__ptr, __tmp, __tmp); break;
@@ -3103,9 +5665,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_and_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_and_acquire_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_and_acq_rel_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_and_release_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_and_relaxed_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_and_volatile_64_system(__ptr, __tmp, __tmp); break;
@@ -3129,8 +5723,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_system(__ptr, __tmp, __tmp); break;
@@ -3140,9 +5734,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(volatile _Type *__ptr, _Type __v
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_or_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_or_acquire_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_or_acq_rel_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_or_release_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_or_relaxed_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_or_volatile_64_system(__ptr, __tmp, __tmp); break;
@@ -3166,8 +5792,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_system(__ptr, __tmp, __tmp); break;
@@ -3177,9 +5803,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_xor_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_xor_acquire_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_xor_acq_rel_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_xor_release_64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_xor_relaxed_64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_xor_volatile_64_system(__ptr, __tmp, __tmp); break;
@@ -3203,8 +5861,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_system(__ptr, __tmp, __tmp); break;
@@ -3214,9 +5872,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_f64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_f64_system(__ptr, __tmp, __tmp); break;
@@ -3240,8 +5930,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3251,9 +5941,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_add_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
@@ -3277,8 +5999,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_system(__ptr, __tmp, __tmp); break;
@@ -3288,9 +6010,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_s64_system(__ptr, __tmp, __tmp); break;
@@ -3314,8 +6068,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3325,9 +6079,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_max_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_max_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_max_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_max_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_max_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_max_volatile_u64_system(__ptr, __tmp, __tmp); break;
@@ -3351,8 +6137,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_system(__ptr, __tmp, __tmp); break;
@@ -3362,9 +6148,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_signed<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_s64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_s64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_s64_system(__ptr, __tmp, __tmp); break;
@@ -3388,8 +6206,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3399,9 +6217,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value && _CUDA_VSTD::is_unsigned<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_min_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_min_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_min_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_min_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_min_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_min_volatile_u64_system(__ptr, __tmp, __tmp); break;
@@ -3430,8 +6280,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_system(__ptr, __tmp, __tmp); break;
@@ -3441,9 +6291,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_floating_point<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    double __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_f64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_f64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_f64_system(__ptr, __tmp, __tmp); break;
@@ -3472,8 +6354,8 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3483,9 +6365,41 @@ _LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(volatile _Type *__ptr, _Type __
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type, _CUDA_VSTD::__enable_if_t<sizeof(_Type)==8 && _CUDA_VSTD::is_integral<_Type>::value, int> = 0>
+_LIBCUDACXX_DEVICE _Type __atomic_fetch_sub_cuda(_Type *__ptr, _Type __val, int __memorder, __thread_scope_system_tag) {
+    _Type __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_sub_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_sub_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_sub_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_sub_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_sub_volatile_u64_system(__ptr, __tmp, __tmp); break;
@@ -3505,8 +6419,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3515,9 +6429,9 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
@@ -3538,8 +6452,8 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_70, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
@@ -3548,9 +6462,74 @@ _LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type *volatile *__ptr, ptrdif
       ),
       NV_IS_DEVICE, (
         switch (__memorder) {
-          case __ATOMIC_SEQ_CST:
-          case __ATOMIC_ACQ_REL: __cuda_membar_system();
-          case __ATOMIC_CONSUME:
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_add_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_system_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
+          case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
+          default: assert(0);
+        }
+      )
+    )
+    memcpy(&__ret, &__tmp, 8);
+    return __ret;
+}
+template<class _Type>
+_LIBCUDACXX_DEVICE _Type* __atomic_fetch_sub_cuda(_Type **__ptr, ptrdiff_t __val, int __memorder, __thread_scope_system_tag) {
+    _Type* __ret;
+    uint64_t __tmp = 0;
+    memcpy(&__tmp, &__val, 8);
+    __tmp = -__tmp;
+    __tmp *= sizeof(_Type);
+    NV_DISPATCH_TARGET(
+      NV_PROVIDES_SM_70, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: __cuda_fence_sc_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_system(__ptr, __tmp, __tmp); break;
+          case __ATOMIC_RELAXED: __cuda_fetch_add_relaxed_u64_system(__ptr, __tmp, __tmp); break;
+        }
+      ),
+      NV_IS_DEVICE, (
+        switch (__memorder) {
+          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_ACQ_REL: __cuda_membar_system(); _LIBCUDACXX_FALLTHROUGH();
+          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();
           case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); __cuda_membar_system(); break;
           case __ATOMIC_RELEASE: __cuda_membar_system(); __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;
           case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_system(__ptr, __tmp, __tmp); break;

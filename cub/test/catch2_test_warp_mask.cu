@@ -33,12 +33,14 @@ template <int logical_warp_threads>
 struct total_warps_t
 {
 private:
-  static constexpr unsigned int total_warps = (cub::PowerOfTwo<logical_warp_threads>::VALUE)
-                                                ? CUB_WARP_THREADS(0) / logical_warp_threads
-                                                : 1;
+  static constexpr unsigned int total_warps =
+    (cub::PowerOfTwo<logical_warp_threads>::VALUE) ? CUB_WARP_THREADS(0) / logical_warp_threads : 1;
 
 public:
-  static constexpr unsigned int value() { return total_warps; }
+  static constexpr unsigned int value()
+  {
+    return total_warps;
+  }
 };
 
 bool is_lane_involved(unsigned int member_mask, unsigned int lane)
@@ -49,9 +51,7 @@ bool is_lane_involved(unsigned int member_mask, unsigned int lane)
 using logical_warp_threads      = c2h::iota<1, 32>;
 using power_of_two_warp_threads = c2h::enum_type_list<int, 1, 2, 4, 8, 16, 32>;
 
-CUB_TEST("Warp mask ignores lanes before current logical warp",
-         "[mask][warp]",
-         power_of_two_warp_threads)
+CUB_TEST("Warp mask ignores lanes before current logical warp", "[mask][warp]", power_of_two_warp_threads)
 {
   constexpr int logical_warp_thread  = c2h::get<0, TestType>::value;
   constexpr unsigned int total_warps = total_warps_t<logical_warp_thread>::value();
@@ -97,8 +97,7 @@ CUB_TEST("Warp mask ignores lanes after current logical warp", "[mask][warp]", l
     const unsigned int warp_begin = logical_warp_thread * warp_id;
     const unsigned int warp_end   = warp_begin + logical_warp_thread;
 
-    for (unsigned int post_warp_lane = warp_end; post_warp_lane < CUB_WARP_THREADS(0);
-         post_warp_lane++)
+    for (unsigned int post_warp_lane = warp_end; post_warp_lane < CUB_WARP_THREADS(0); post_warp_lane++)
     {
       REQUIRE_FALSE(is_lane_involved(warp_mask, post_warp_lane));
     }

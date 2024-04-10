@@ -1884,8 +1884,6 @@ template <class _Tp>
     explicit atomic_ref(_Tp& __ref) : __base(__ref) {}
 
     _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp operator=(_Tp __v) const noexcept {__base::store(__v); return __v;}
-    _LIBCUDACXX_INLINE_VISIBILITY
     _Tp operator=(_Tp __v) const volatile noexcept {__base::store(__v); return __v;}
 };
 
@@ -1907,48 +1905,26 @@ template <class _Tp>
 
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator=(_Tp* __v) const noexcept {__base::store(__v); return __v;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator=(_Tp* __v) const volatile noexcept {__base::store(__v); return __v;}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        const volatile noexcept
-        {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const noexcept
         {return __cxx_atomic_fetch_add(&this->__a_, __op, __m);}
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
-                                                                        const volatile noexcept
-        {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst)
                                                                         const noexcept
         {return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);}
 
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++(int) const volatile noexcept            {return fetch_add(1);}
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator++(int) const noexcept                     {return fetch_add(1);}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--(int) const volatile noexcept            {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator--(int) const noexcept                     {return fetch_sub(1);}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator++() const volatile noexcept               {return fetch_add(1) + 1;}
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator++() const noexcept                        {return fetch_add(1) + 1;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator--() const volatile noexcept               {return fetch_sub(1) - 1;}
-    _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator--() const noexcept                        {return fetch_sub(1) - 1;}
     _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator+=(ptrdiff_t __op) const volatile noexcept {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator+=(ptrdiff_t __op) const noexcept          {return fetch_add(__op) + __op;}
-    _LIBCUDACXX_INLINE_VISIBILITY
-    _Tp* operator-=(ptrdiff_t __op) const volatile noexcept {return fetch_sub(__op) - __op;}
     _LIBCUDACXX_INLINE_VISIBILITY
     _Tp* operator-=(ptrdiff_t __op) const noexcept          {return fetch_sub(__op) - __op;}
 };

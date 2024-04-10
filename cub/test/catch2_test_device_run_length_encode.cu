@@ -35,22 +35,22 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using all_types = c2h::type_list<std::uint8_t,
-                                 std::uint64_t,
-                                 std::int8_t,
-                                 std::int64_t,
-                                 ulonglong2,
-                                 c2h::custom_type_t<c2h::equal_comparable_t>>;
+using all_types =
+  c2h::type_list<std::uint8_t,
+                 std::uint64_t,
+                 std::int8_t,
+                 std::int64_t,
+                 ulonglong2,
+                 c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using types = c2h::type_list<std::uint32_t,
-                             std::int8_t>;
+using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
 #if 0 // DeviceRunLengthEncode::Encode cannot handle empty inputs
       // https://github.com/NVIDIA/cccl/issues/426
@@ -79,33 +79,25 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][
   c2h::device_vector<int> out_counts(num_items);
   c2h::device_vector<int> out_num_runs(num_items, -1);
 
-  run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  REQUIRE(out_unique.front()   == 42);
-  REQUIRE(out_counts.front()   == 1);
+  REQUIRE(out_unique.front() == 42);
+  REQUIRE(out_counts.front() == 1);
   REQUIRE(out_num_runs.front() == num_items);
 }
 
 CUB_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
-  c2h::device_vector<int>               in(num_items, 42);
-  c2h::device_vector<int>               out_unique(num_items);
+  c2h::device_vector<int> in(num_items, 42);
+  c2h::device_vector<int> out_unique(num_items);
   c2h::device_vector<cuda::std::size_t> out_counts(num_items);
-  c2h::device_vector<std::int16_t>      out_num_runs(num_items);
+  c2h::device_vector<std::int16_t> out_num_runs(num_items);
 
-  run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  REQUIRE(out_unique.front()   == 42);
-  REQUIRE(out_counts.front()   == 1);
+  REQUIRE(out_unique.front() == 42);
+  REQUIRE(out_counts.front() == 1);
   REQUIRE(out_num_runs.front() == static_cast<std::int16_t>(num_items));
 }
 
@@ -115,22 +107,20 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
 
   constexpr int num_items = 10;
   c2h::device_vector<type> out_unique(num_items);
-  c2h::device_vector<int>  out_counts(num_items);
-  c2h::device_vector<int>  out_num_runs(1);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(1);
 
-  run_length_encode(thrust::make_counting_iterator(type{}),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(
+    thrust::make_counting_iterator(type{}), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
   c2h::device_vector<type> reference_unique(num_items);
-  thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ..., num_items -1]
-  c2h::device_vector<int> reference_counts(num_items, 1);                  // [1, 1, ..., 1]
-  c2h::device_vector<int> reference_num_runs(1, num_items);                // [num_items]
+  thrust::sequence(c2h::device_policy, reference_unique.begin(), reference_unique.end(), type{}); // [0, 1, 2, ...,
+                                                                                                  // num_items -1]
+  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
-  REQUIRE(out_unique   == reference_unique);
-  REQUIRE(out_counts   == reference_counts);
+  REQUIRE(out_unique == reference_unique);
+  REQUIRE(out_counts == reference_counts);
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
@@ -141,21 +131,17 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_len
   constexpr int num_items = 10;
   c2h::device_vector<type> in(num_items, type{1});
   c2h::device_vector<type> out_unique(1);
-  c2h::device_vector<int>  out_counts(1);
-  c2h::device_vector<int>  out_num_runs(1);
+  c2h::device_vector<int> out_counts(1);
+  c2h::device_vector<int> out_num_runs(1);
 
-  run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  c2h::device_vector<type> reference_unique(1, type{1});  // [1]
+  c2h::device_vector<type> reference_unique(1, type{1}); // [1]
   c2h::device_vector<int> reference_counts(1, num_items); // [num_items]
-  c2h::device_vector<int> reference_num_runs(1, 1);       // [1]
+  c2h::device_vector<int> reference_num_runs(1, 1); // [1]
 
-  REQUIRE(out_unique   == reference_unique);
-  REQUIRE(out_counts   == reference_counts);
+  REQUIRE(out_unique == reference_unique);
+  REQUIRE(out_counts == reference_counts);
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
@@ -166,15 +152,11 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_len
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out_unique(num_items);
-  c2h::device_vector<int>  out_counts(num_items);
-  c2h::device_vector<int>  out_num_runs(num_items);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
   // trim output
   out_unique.resize(out_num_runs.front());
@@ -192,15 +174,16 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_leng
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out_unique(num_items);
-  c2h::device_vector<int>  out_counts(num_items);
-  c2h::device_vector<int>  out_num_runs(num_items);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(num_items);
   c2h::gen(CUB_SEED(2), in);
 
-  run_length_encode(thrust::raw_pointer_cast(in.data()),
-                    thrust::raw_pointer_cast(out_unique.data()),
-                    thrust::raw_pointer_cast(out_counts.data()),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    thrust::raw_pointer_cast(in.data()),
+    thrust::raw_pointer_cast(out_unique.data()),
+    thrust::raw_pointer_cast(out_counts.data()),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   // trim output
   out_unique.resize(out_num_runs.front());
@@ -259,26 +242,22 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_l
   c2h::device_vector<type> in(num_items);
   thrust::sequence(c2h::device_policy, in.begin(), in.end(), 0.0);
   c2h::device_vector<type> out_unique(num_items);
-  c2h::device_vector<int>  out_counts(num_items);
-  c2h::device_vector<int>  out_num_runs(1);
+  c2h::device_vector<int> out_counts(num_items);
+  c2h::device_vector<int> out_num_runs(1);
 
   c2h::device_vector<type> reference_unique = in;
-  in.front() = std::numeric_limits<type>::quiet_NaN();
+  in.front()                                = std::numeric_limits<type>::quiet_NaN();
 
-  run_length_encode(in.begin(),
-                    out_unique.begin(),
-                    out_counts.begin(),
-                    out_num_runs.begin(),
-                    num_items);
+  run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
-  c2h::device_vector<int> reference_counts(num_items, 1);                  // [1, 1, ..., 1]
-  c2h::device_vector<int> reference_num_runs(1, num_items);                // [num_items]
+  c2h::device_vector<int> reference_counts(num_items, 1); // [1, 1, ..., 1]
+  c2h::device_vector<int> reference_num_runs(1, num_items); // [num_items]
 
   // turn the NaN into something else to make it comparable
-  out_unique.front() = 42.0;
+  out_unique.front()       = 42.0;
   reference_unique.front() = 42.0;
 
-  REQUIRE(out_unique   == reference_unique);
-  REQUIRE(out_counts   == reference_counts);
+  REQUIRE(out_unique == reference_unique);
+  REQUIRE(out_counts == reference_counts);
   REQUIRE(out_num_runs == reference_num_runs);
 }
