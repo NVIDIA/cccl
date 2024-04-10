@@ -412,7 +412,8 @@ CUB_TEST("DeviceSelect::If works for very large number of items", "[device][sele
   std::size_t match_every_nth  = 1000000;
   offset_t expected_num_copied = static_cast<offset_t>((num_items_ull + match_every_nth - 1ULL) / match_every_nth);
   c2h::device_vector<type> out(expected_num_copied);
-  dispatch_select_if(in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{match_every_nth});
+  dispatch_select_if(
+    in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_num_copied);
