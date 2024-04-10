@@ -142,16 +142,19 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 CCCL also provides conda packages of each release via the `conda-forge` channel:
 
 ```bash
-conda install -c conda-forge cccl
+conda config --add channels conda-forge
+conda install cccl
 ```
 
 This will install the latest CCCL to the conda environment's `include/` and `lib/cmake/` directories.
 It is discoverable by CMake via `find_package(CCCL)` and can be used by any compilers in the conda environment.
+For more information, see [this introduction to conda-forge](https://conda-forge.org/docs/user/introduction/).
 
 If you want to use the same CCCL version that shipped with a particular CUDA Toolkit, e.g. CUDA 12.4, you can install CCCL with:
 
 ```bash
-conda install -c conda-forge cuda-cccl cuda-version=12.4
+conda config --add channels conda-forge
+conda install cuda-cccl cuda-version=12.4
 ```
 
 The `cuda-cccl` metapackage installs the `cccl` version that shipped with the CUDA Toolkit corresponding to `cuda-version`.
@@ -166,7 +169,7 @@ conda install -c conda-forge cccl
 > There are also conda packages with names like `cuda-cccl_linux-64`.
 > Those packages contain the CCCL versions shipped as part of the CUDA Toolkit, but are designed for internal use by the CUDA Toolkit.
 > Install `cccl` or `cuda-cccl` instead, for compatibility with conda compilers.
-> See the [cccl conda-forge recipe](https://github.com/conda-forge/cccl-feedstock/blob/main/recipe/meta.yaml) for more information.
+> For more information, see the [cccl conda-forge recipe](https://github.com/conda-forge/cccl-feedstock/blob/main/recipe/meta.yaml).
 
 ##### CMake Integration
 
