@@ -25,7 +25,8 @@ template <typename Level, typename Dims>
 struct custom_level_dims : public cuda_next::level_dimensions<Level, Dims>
 {
   int dummy;
-  constexpr custom_level_dims() : cuda_next::level_dimensions<Level, Dims>() {};
+  constexpr custom_level_dims()
+      : cuda_next::level_dimensions<Level, Dims>(){};
 };
 
 template <typename Dims>

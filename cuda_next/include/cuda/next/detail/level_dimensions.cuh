@@ -94,7 +94,7 @@ struct level_dimensions
   constexpr _CCCL_HOST_DEVICE level_dimensions(Dimensions&& d)
       : dims(d)
   {}
-  constexpr level_dimensions() {};
+  constexpr level_dimensions(){};
 };
 
 template <size_t X, size_t Y = 1, size_t Z = 1>

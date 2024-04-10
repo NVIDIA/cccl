@@ -103,7 +103,6 @@ __device__ constexpr auto index_to_linear(const Index& index, const Dims& dims)
 {
   static_assert(dims.rank() == 3);
 
-  //printf("%d %d %d, %d %d %d:  %d %d %d, %d %d %d:  %d %d %d\n", blockDim.x, blockDim.y, blockDim.z, threadIdx.x, threadIdx.y, threadIdx.z, dims.extent(0), dims.extent(1), dims.extent(2), index.extent(0), index.extent(1), index.extent(2), dims.static_extent(0) == cuda::std::dynamic_extent, dims.static_extent(1) == cuda::std::dynamic_extent, dims.static_extent(2) == cuda::std::dynamic_extent);
   return (index.extent(2) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
 }
 

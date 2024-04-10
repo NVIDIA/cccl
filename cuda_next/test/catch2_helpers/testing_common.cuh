@@ -11,11 +11,12 @@
 #ifndef __TESTING_COMMON_H__
 #define __TESTING_COMMON_H__
 
+#include <cuda/next/hierarchy_dimensions.cuh>
+
 #include <exception>
 #include <iostream>
 
 #include <catch2/catch.hpp>
-#include <cuda/next/hierarchy_dimensions.cuh>
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 
