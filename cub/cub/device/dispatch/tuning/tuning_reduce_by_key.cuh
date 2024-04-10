@@ -108,23 +108,25 @@ constexpr primitive_op is_primitive_op()
 template <class KeyT>
 constexpr key_size classify_key_size()
 {
-  return sizeof(KeyT) == 1    ? key_size::_1
-         : sizeof(KeyT) == 2  ? key_size::_2
-         : sizeof(KeyT) == 4  ? key_size::_4
-         : sizeof(KeyT) == 8  ? key_size::_8
-         : sizeof(KeyT) == 16 ? key_size::_16
-                              : key_size::unknown;
+  return sizeof(KeyT) == 1 ? key_size::_1
+       : sizeof(KeyT) == 2 ? key_size::_2
+       : sizeof(KeyT) == 4 ? key_size::_4
+       : sizeof(KeyT) == 8 ? key_size::_8
+       : sizeof(KeyT) == 16
+         ? key_size::_16
+         : key_size::unknown;
 }
 
 template <class AccumT>
 constexpr accum_size classify_accum_size()
 {
-  return sizeof(AccumT) == 1    ? accum_size::_1
-         : sizeof(AccumT) == 2  ? accum_size::_2
-         : sizeof(AccumT) == 4  ? accum_size::_4
-         : sizeof(AccumT) == 8  ? accum_size::_8
-         : sizeof(AccumT) == 16 ? accum_size::_16
-                                : accum_size::unknown;
+  return sizeof(AccumT) == 1 ? accum_size::_1
+       : sizeof(AccumT) == 2 ? accum_size::_2
+       : sizeof(AccumT) == 4 ? accum_size::_4
+       : sizeof(AccumT) == 8 ? accum_size::_8
+       : sizeof(AccumT) == 16
+         ? accum_size::_16
+         : accum_size::unknown;
 }
 
 template <class KeyT,
@@ -146,9 +148,7 @@ struct sm90_tuning
     (max_input_bytes <= 8)
       ? 6
       : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1,
-                        ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) /
-                          combined_input_bytes));
+                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -157,13 +157,7 @@ struct sm90_tuning
 
 // 8-bit key
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_1>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_1>
 {
   static constexpr int threads = 256;
 
@@ -175,13 +169,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_2>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_2>
 {
   static constexpr int threads = 320;
 
@@ -193,13 +181,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_4>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_4>
 {
   static constexpr int threads = 192;
 
@@ -211,13 +193,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_8>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -229,13 +205,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_1,
-                   accum_size::_16>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_1, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -248,13 +218,7 @@ struct sm90_tuning<KeyT,
 
 // 16-bit key
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_1>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_1>
 {
   static constexpr int threads = 128;
 
@@ -266,13 +230,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_2>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_2>
 {
   static constexpr int threads = 256;
 
@@ -284,13 +242,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_4>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_4>
 {
   static constexpr int threads = 256;
 
@@ -302,13 +254,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_8>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -320,13 +266,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_2,
-                   accum_size::_16>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_2, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -339,13 +279,7 @@ struct sm90_tuning<KeyT,
 
 // 32-bit key
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_1>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_1>
 {
   static constexpr int threads = 256;
 
@@ -357,13 +291,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_2>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_2>
 {
   static constexpr int threads = 256;
 
@@ -375,13 +303,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_4>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_4>
 {
   static constexpr int threads = 256;
 
@@ -393,13 +315,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_8>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -411,13 +327,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_4,
-                   accum_size::_16>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_4, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -430,13 +340,7 @@ struct sm90_tuning<KeyT,
 
 // 64-bit key
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_1>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_1>
 {
   static constexpr int threads = 256;
 
@@ -448,13 +352,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_2>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_2>
 {
   static constexpr int threads = 256;
 
@@ -466,13 +364,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_4>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_4>
 {
   static constexpr int threads = 128;
 
@@ -484,13 +376,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_8>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -502,13 +388,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_8,
-                   accum_size::_16>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_8, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -521,13 +401,7 @@ struct sm90_tuning<KeyT,
 
 // 128-bit key
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_1>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_1>
 {
   static constexpr int threads = 128;
 
@@ -539,13 +413,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_2>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_2>
 {
   static constexpr int threads = 128;
 
@@ -557,13 +425,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_4>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_4>
 {
   static constexpr int threads = 128;
 
@@ -575,13 +437,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_8>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -593,13 +449,7 @@ struct sm90_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm90_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::no,
-                   key_size::_16,
-                   accum_size::_16>
+struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::no, key_size::_16, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -629,9 +479,7 @@ struct sm80_tuning
     (max_input_bytes <= 8)
       ? 6
       : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1,
-                        ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) /
-                          combined_input_bytes));
+                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
 
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
@@ -640,13 +488,7 @@ struct sm80_tuning
 
 // 8-bit key
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_1>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_1>
 {
   static constexpr int threads = 256;
 
@@ -658,13 +500,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_2>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_2>
 {
   static constexpr int threads = 224;
 
@@ -676,13 +512,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_4>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_4>
 {
   static constexpr int threads = 256;
 
@@ -694,13 +524,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_1,
-                   accum_size::_8>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_1, accum_size::_8>
 {
   static constexpr int threads = 224;
 
@@ -712,13 +536,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_1,
-                   accum_size::_16>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_1, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -731,13 +549,7 @@ struct sm80_tuning<KeyT,
 
 // 16-bit key
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_1>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_1>
 {
   static constexpr int threads = 256;
 
@@ -749,13 +561,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_2>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_2>
 {
   static constexpr int threads = 224;
 
@@ -767,13 +573,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_4>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_4>
 {
   static constexpr int threads = 256;
 
@@ -785,13 +585,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_2,
-                   accum_size::_8>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_2, accum_size::_8>
 {
   static constexpr int threads = 224;
 
@@ -803,13 +597,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_2,
-                   accum_size::_16>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_2, accum_size::_16>
 {
   static constexpr int threads = 160;
 
@@ -822,13 +610,7 @@ struct sm80_tuning<KeyT,
 
 // 32-bit key
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_1>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_1>
 {
   static constexpr int threads = 288;
 
@@ -840,13 +622,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_2>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_2>
 {
   static constexpr int threads = 192;
 
@@ -858,13 +634,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_4>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_4>
 {
   static constexpr int threads = 256;
 
@@ -876,13 +646,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_4,
-                   accum_size::_8>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_4, accum_size::_8>
 {
   static constexpr int threads = 224;
 
@@ -894,13 +658,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_4,
-                   accum_size::_16>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_4, accum_size::_16>
 {
   static constexpr int threads = 160;
 
@@ -913,13 +671,7 @@ struct sm80_tuning<KeyT,
 
 // 64-bit key
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_1>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_1>
 {
   static constexpr int threads = 192;
 
@@ -931,13 +683,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_2>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_2>
 {
   static constexpr int threads = 224;
 
@@ -949,13 +695,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_4>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_4>
 {
   static constexpr int threads = 384;
 
@@ -967,13 +707,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::yes,
-                   key_size::_8,
-                   accum_size::_8>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::yes, key_size::_8, accum_size::_8>
 {
   static constexpr int threads = 128;
 
@@ -985,13 +719,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::yes,
-                   primitive_accum::no,
-                   key_size::_8,
-                   accum_size::_16>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitive_accum::no, key_size::_8, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -1004,13 +732,7 @@ struct sm80_tuning<KeyT,
 
 // 128-bit key
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_1>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_1>
 {
   static constexpr int threads = 192;
 
@@ -1022,13 +744,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_2>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_2>
 {
   static constexpr int threads = 192;
 
@@ -1040,13 +756,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_4>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_4>
 {
   static constexpr int threads = 192;
 
@@ -1058,13 +768,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::yes,
-                   key_size::_16,
-                   accum_size::_8>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::yes, key_size::_16, accum_size::_8>
 {
   static constexpr int threads = 192;
 
@@ -1076,13 +780,7 @@ struct sm80_tuning<KeyT,
 };
 
 template <class KeyT, class AccumT>
-struct sm80_tuning<KeyT,
-                   AccumT,
-                   primitive_op::yes,
-                   primitive_key::no,
-                   primitive_accum::no,
-                   key_size::_16,
-                   accum_size::_16>
+struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive_accum::no, key_size::_16, accum_size::_16>
 {
   static constexpr int threads = 128;
 
@@ -1097,7 +795,7 @@ struct sm80_tuning<KeyT,
 template <class ReductionOpT, class AccumT, class KeyT>
 struct device_reduce_by_key_policy_hub
 {
-  static constexpr int MAX_INPUT_BYTES = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
+  static constexpr int MAX_INPUT_BYTES      = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(AccumT);
 
   struct DefaultTuning
@@ -1107,9 +805,7 @@ struct device_reduce_by_key_policy_hub
       (MAX_INPUT_BYTES <= 8)
         ? 6
         : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
-                  CUB_MAX(1,
-                          ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) /
-                            COMBINED_INPUT_BYTES));
+                  CUB_MAX(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
 
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
@@ -1129,15 +825,16 @@ struct device_reduce_by_key_policy_hub
   /// SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
-    using tuning = detail::reduce_by_key::
-      sm80_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
+    using tuning =
+      detail::reduce_by_key::sm80_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
 
-    using ReduceByKeyPolicyT = AgentReduceByKeyPolicy<tuning::threads,
-                                                      tuning::items,
-                                                      tuning::load_algorithm,
-                                                      LOAD_DEFAULT,
-                                                      BLOCK_SCAN_WARP_SCANS,
-                                                      typename tuning::delay_constructor>;
+    using ReduceByKeyPolicyT =
+      AgentReduceByKeyPolicy<tuning::threads,
+                             tuning::items,
+                             tuning::load_algorithm,
+                             LOAD_DEFAULT,
+                             BLOCK_SCAN_WARP_SCANS,
+                             typename tuning::delay_constructor>;
   };
 
   /// SM86
@@ -1149,15 +846,16 @@ struct device_reduce_by_key_policy_hub
   /// SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = detail::reduce_by_key::
-      sm90_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
+    using tuning =
+      detail::reduce_by_key::sm90_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
 
-    using ReduceByKeyPolicyT = AgentReduceByKeyPolicy<tuning::threads,
-                                                      tuning::items,
-                                                      tuning::load_algorithm,
-                                                      LOAD_DEFAULT,
-                                                      BLOCK_SCAN_WARP_SCANS,
-                                                      typename tuning::delay_constructor>;
+    using ReduceByKeyPolicyT =
+      AgentReduceByKeyPolicy<tuning::threads,
+                             tuning::items,
+                             tuning::load_algorithm,
+                             LOAD_DEFAULT,
+                             BLOCK_SCAN_WARP_SCANS,
+                             typename tuning::delay_constructor>;
   };
 
   using MaxPolicy = Policy900;

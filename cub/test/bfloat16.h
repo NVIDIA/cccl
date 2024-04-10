@@ -34,19 +34,17 @@
 
 #include <cub/util_type.cuh>
 
-#include <cuda_bf16.h>
-
 #include <cuda/std/type_traits>
+#include <cuda_bf16.h>
 
 #include <cstdint>
 #include <iosfwd>
 
 #ifdef __GNUC__
 // There's a ton of type-punning going on in this file.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
-
 
 /******************************************************************************
  * bfloat16_t
@@ -57,194 +55,177 @@
  */
 struct bfloat16_t
 {
-    uint16_t __x;
+  uint16_t __x;
 
-    /// Constructor from __nv_bfloat16
-    __host__ __device__ __forceinline__
-    explicit bfloat16_t(const __nv_bfloat16 &other)
+  /// Constructor from __nv_bfloat16
+  __host__ __device__ __forceinline__ explicit bfloat16_t(const __nv_bfloat16& other)
+  {
+    __x = reinterpret_cast<const uint16_t&>(other);
+  }
+
+  /// Constructor from integer
+  __host__ __device__ __forceinline__ explicit bfloat16_t(int a)
+  {
+    *this = bfloat16_t(float(a));
+  }
+
+  /// Constructor from std::size_t
+  __host__ __device__ __forceinline__ explicit bfloat16_t(std::size_t a)
+  {
+    *this = bfloat16_t(float(a));
+  }
+
+  /// Constructor from double
+  __host__ __device__ __forceinline__ explicit bfloat16_t(double a)
+  {
+    *this = bfloat16_t(float(a));
+  }
+
+  /// Constructor from unsigned long long int
+  template <typename T,
+            typename = typename ::cuda::std::enable_if<
+              ::cuda::std::is_same<T, unsigned long long int>::value
+              && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
+  __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
+  {
+    *this = bfloat16_t(float(a));
+  }
+
+  /// Default constructor
+  bfloat16_t() = default;
+
+  /// Constructor from float
+  __host__ __device__ __forceinline__ explicit bfloat16_t(float a)
+  {
+    // Refrence:
+    // https://github.com/pytorch/pytorch/blob/44cc873fba5e5ffc4d4d4eef3bd370b653ce1ce1/c10/util/BFloat16.h#L51
+    uint16_t ir;
+    if (a != a)
     {
-        __x = reinterpret_cast<const uint16_t&>(other);
+      ir = UINT16_C(0x7FFF);
     }
-
-    /// Constructor from integer
-    __host__ __device__ __forceinline__
-    explicit bfloat16_t(int a)
+    else
     {
-        *this = bfloat16_t(float(a));
+      union
+      {
+        uint32_t U32;
+        float F32;
+      };
+
+      F32                    = a;
+      uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
+      ir                     = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
     }
+    this->__x = ir;
+  }
 
-    /// Constructor from std::size_t
-    __host__ __device__ __forceinline__
-    explicit bfloat16_t(std::size_t a)
-    {
-        *this = bfloat16_t(float(a));
-    }
+  /// Cast to __nv_bfloat16
+  __host__ __device__ __forceinline__ operator __nv_bfloat16() const
+  {
+    return reinterpret_cast<const __nv_bfloat16&>(__x);
+  }
 
-    /// Constructor from double
-    __host__ __device__ __forceinline__
-    explicit bfloat16_t(double a)
-    {
-        *this = bfloat16_t(float(a));
-    }
+  /// Cast to float
+  __host__ __device__ __forceinline__ operator float() const
+  {
+    float f     = 0;
+    uint32_t* p = reinterpret_cast<uint32_t*>(&f);
+    *p          = uint32_t(__x) << 16;
+    return f;
+  }
 
-    /// Constructor from unsigned long long int
-    template < typename T,
-               typename = typename ::cuda::std::enable_if<
-                 ::cuda::std::is_same<T, unsigned long long int>::value
-                 && (!::cuda::std::is_same<std::size_t, unsigned long long int>::value)>::type>
-    __host__ __device__ __forceinline__ explicit bfloat16_t(T a)
-    {
-      *this = bfloat16_t(float(a));
-    }
+  /// Get raw storage
+  __host__ __device__ __forceinline__ uint16_t raw() const
+  {
+    return this->__x;
+  }
 
-    /// Default constructor
-    bfloat16_t() = default;
+  /// Equality
+  __host__ __device__ __forceinline__ friend bool operator==(const bfloat16_t& a, const bfloat16_t& b)
+  {
+    return (a.__x == b.__x);
+  }
 
-    /// Constructor from float
-    __host__ __device__ __forceinline__
-    explicit bfloat16_t(float a)
-    {
-        // Refrence:
-        // https://github.com/pytorch/pytorch/blob/44cc873fba5e5ffc4d4d4eef3bd370b653ce1ce1/c10/util/BFloat16.h#L51
-        uint16_t ir;
-        if (a != a) {
-            ir = UINT16_C(0x7FFF);
-        } else {
-            union {
-                uint32_t U32;
-                float F32;
-            };
+  /// Inequality
+  __host__ __device__ __forceinline__ friend bool operator!=(const bfloat16_t& a, const bfloat16_t& b)
+  {
+    return (a.__x != b.__x);
+  }
 
-            F32 = a;
-            uint32_t rounding_bias = ((U32 >> 16) & 1) + UINT32_C(0x7FFF);
-            ir = static_cast<uint16_t>((U32 + rounding_bias) >> 16);
-        }
-        this->__x = ir;
-    }
+  /// Assignment by sum
+  __host__ __device__ __forceinline__ bfloat16_t& operator+=(const bfloat16_t& rhs)
+  {
+    *this = bfloat16_t(float(*this) + float(rhs));
+    return *this;
+  }
 
-    /// Cast to __nv_bfloat16
-    __host__ __device__ __forceinline__
-    operator __nv_bfloat16() const
-    {
-        return reinterpret_cast<const __nv_bfloat16&>(__x);
-    }
+  /// Multiply
+  __host__ __device__ __forceinline__ bfloat16_t operator*(const bfloat16_t& other)
+  {
+    return bfloat16_t(float(*this) * float(other));
+  }
 
-    /// Cast to float
-    __host__ __device__ __forceinline__
-    operator float() const
-    {
-        float f = 0;
-        uint32_t *p = reinterpret_cast<uint32_t *>(&f);
-        *p = uint32_t(__x) << 16;
-        return f;
-    }
+  /// Add
+  __host__ __device__ __forceinline__ bfloat16_t operator+(const bfloat16_t& other)
+  {
+    return bfloat16_t(float(*this) + float(other));
+  }
 
+  /// Less-than
+  __host__ __device__ __forceinline__ bool operator<(const bfloat16_t& other) const
+  {
+    return float(*this) < float(other);
+  }
 
-    /// Get raw storage
-    __host__ __device__ __forceinline__
-    uint16_t raw() const
-    {
-        return this->__x;
-    }
+  /// Less-than-equal
+  __host__ __device__ __forceinline__ bool operator<=(const bfloat16_t& other) const
+  {
+    return float(*this) <= float(other);
+  }
 
-    /// Equality
-    __host__ __device__ __forceinline__
-    friend bool operator ==(const bfloat16_t &a, const bfloat16_t &b)
-    {
-        return (a.__x == b.__x);
-    }
+  /// Greater-than
+  __host__ __device__ __forceinline__ bool operator>(const bfloat16_t& other) const
+  {
+    return float(*this) > float(other);
+  }
 
-    /// Inequality
-    __host__ __device__ __forceinline__
-    friend bool operator !=(const bfloat16_t &a, const bfloat16_t &b)
-    {
-        return (a.__x != b.__x);
-    }
+  /// Greater-than-equal
+  __host__ __device__ __forceinline__ bool operator>=(const bfloat16_t& other) const
+  {
+    return float(*this) >= float(other);
+  }
 
-    /// Assignment by sum
-    __host__ __device__ __forceinline__
-    bfloat16_t& operator +=(const bfloat16_t &rhs)
-    {
-        *this = bfloat16_t(float(*this) + float(rhs));
-        return *this;
-    }
+  /// numeric_traits<bfloat16_t>::max
+  __host__ __device__ __forceinline__ static bfloat16_t(max)()
+  {
+    uint16_t max_word = 0x7F7F;
+    return reinterpret_cast<bfloat16_t&>(max_word);
+  }
 
-    /// Multiply
-    __host__ __device__ __forceinline__
-    bfloat16_t operator*(const bfloat16_t &other)
-    {
-        return bfloat16_t(float(*this) * float(other));
-    }
-
-    /// Add
-    __host__ __device__ __forceinline__
-    bfloat16_t operator+(const bfloat16_t &other)
-    {
-        return bfloat16_t(float(*this) + float(other));
-    }
-
-    /// Less-than
-    __host__ __device__ __forceinline__
-    bool operator<(const bfloat16_t &other) const
-    {
-        return float(*this) < float(other);
-    }
-
-    /// Less-than-equal
-    __host__ __device__ __forceinline__
-    bool operator<=(const bfloat16_t &other) const
-    {
-        return float(*this) <= float(other);
-    }
-
-    /// Greater-than
-    __host__ __device__ __forceinline__
-    bool operator>(const bfloat16_t &other) const
-    {
-        return float(*this) > float(other);
-    }
-
-    /// Greater-than-equal
-    __host__ __device__ __forceinline__
-    bool operator>=(const bfloat16_t &other) const
-    {
-        return float(*this) >= float(other);
-    }
-
-    /// numeric_traits<bfloat16_t>::max
-    __host__ __device__ __forceinline__
-    static bfloat16_t (max)() {
-        uint16_t max_word = 0x7F7F;
-        return reinterpret_cast<bfloat16_t&>(max_word);
-    }
-
-    /// numeric_traits<bfloat16_t>::lowest
-    __host__ __device__ __forceinline__
-    static bfloat16_t lowest() {
-        uint16_t lowest_word = 0xFF7F;
-        return reinterpret_cast<bfloat16_t&>(lowest_word);
-    }
+  /// numeric_traits<bfloat16_t>::lowest
+  __host__ __device__ __forceinline__ static bfloat16_t lowest()
+  {
+    uint16_t lowest_word = 0xFF7F;
+    return reinterpret_cast<bfloat16_t&>(lowest_word);
+  }
 };
-
 
 /******************************************************************************
  * I/O stream overloads
  ******************************************************************************/
 
 /// Insert formatted \p bfloat16_t into the output stream
-inline std::ostream& operator<<(std::ostream &out, const bfloat16_t &x)
+inline std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
 {
-    out << (float)x;
-    return out;
+  out << (float) x;
+  return out;
 }
-
 
 /// Insert formatted \p __nv_bfloat16 into the output stream
-inline std::ostream& operator<<(std::ostream &out, const __nv_bfloat16 &x)
+inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
 {
-    return out << bfloat16_t(x);
+  return out << bfloat16_t(x);
 }
-
 
 /******************************************************************************
  * Traits overloads
@@ -253,17 +234,22 @@ inline std::ostream& operator<<(std::ostream &out, const __nv_bfloat16 &x)
 template <>
 struct CUB_NS_QUALIFIER::FpLimits<bfloat16_t>
 {
-    static __host__ __device__ __forceinline__ bfloat16_t Max() { return bfloat16_t::max(); }
+  static __host__ __device__ __forceinline__ bfloat16_t Max()
+  {
+    return bfloat16_t::max();
+  }
 
-    static __host__ __device__ __forceinline__ bfloat16_t Lowest() { return bfloat16_t::lowest(); }
+  static __host__ __device__ __forceinline__ bfloat16_t Lowest()
+  {
+    return bfloat16_t::lowest();
+  }
 };
 
 template <>
 struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t>
-    : CUB_NS_QUALIFIER::
-        BaseTraits<FLOATING_POINT, true, false, unsigned short, bfloat16_t>
+    : CUB_NS_QUALIFIER::BaseTraits<FLOATING_POINT, true, false, unsigned short, bfloat16_t>
 {};
 
 #ifdef __GNUC__
-#pragma GCC diagnostic pop
+#  pragma GCC diagnostic pop
 #endif

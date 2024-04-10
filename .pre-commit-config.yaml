@@ -1,0 +1,26 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.
+ci:
+    autofix_commit_msg: |
+      [pre-commit.ci] auto code formatting
+    autofix_prs: false
+    autoupdate_branch: ''
+    autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+    autoupdate_schedule: quarterly
+    skip: []
+    submodules: false
+
+repos:
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v17.0.6
+    hooks:
+      - id: clang-format
+        types_or: [c, c++, cuda]
+        args: ["-fallback-style=none", "-style=file", "-i"]
+        exclude: |
+          (?x)^(
+            ^libcudacxx/.*|
+            ^thrust/.*
+          )
+
+default_language_version:
+  python: python3

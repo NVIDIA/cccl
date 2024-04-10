@@ -82,7 +82,10 @@ struct empty_problem_init_t
 {
   T init;
 
-  _CCCL_HOST_DEVICE operator T() const { return init; }
+  _CCCL_HOST_DEVICE operator T() const
+  {
+    return init;
+  }
 };
 
 /**
@@ -94,10 +97,8 @@ struct empty_problem_init_t
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-_CCCL_HOST_DEVICE void finalize_and_store_aggregate(OutputIteratorT d_out,
-                                                      ReductionOpT reduction_op,
-                                                      InitT init,
-                                                      AccumT block_aggregate)
+_CCCL_HOST_DEVICE void
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT reduction_op, InitT init, AccumT block_aggregate)
 {
   *d_out = reduction_op(init, block_aggregate);
 }
@@ -109,10 +110,8 @@ _CCCL_HOST_DEVICE void finalize_and_store_aggregate(OutputIteratorT d_out,
  * @param block_aggregate Aggregate value computed by the block
  */
 template <class OutputIteratorT, class ReductionOpT, class InitT, class AccumT>
-_CCCL_HOST_DEVICE void finalize_and_store_aggregate(OutputIteratorT d_out,
-                                                      ReductionOpT,
-                                                      empty_problem_init_t<InitT>,
-                                                      AccumT block_aggregate)
+_CCCL_HOST_DEVICE void
+finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_init_t<InitT>, AccumT block_aggregate)
 {
   *d_out = block_aggregate;
 }
@@ -168,22 +167,24 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename AccumT,
           typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS))
-  void DeviceReduceKernel(InputIteratorT d_in,
-                          AccumT *d_out,
-                          OffsetT num_items,
-                          GridEvenShare<OffsetT> even_share,
-                          ReductionOpT reduction_op,
-                          TransformOpT transform_op)
+CUB_DETAIL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceReduceKernel(
+  InputIteratorT d_in,
+  AccumT* d_out,
+  OffsetT num_items,
+  GridEvenShare<OffsetT> even_share,
+  ReductionOpT reduction_op,
+  TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                                   InputIteratorT,
-                                   AccumT *,
-                                   OffsetT,
-                                   ReductionOpT,
-                                   AccumT,
-                                   TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+                InputIteratorT,
+                AccumT*,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -248,22 +249,24 @@ template <typename ChainedPolicyT,
           typename InitT,
           typename AccumT,
           typename TransformOpT = ::cuda::std::__identity>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
-  void DeviceReduceSingleTileKernel(InputIteratorT d_in,
-                                    OutputIteratorT d_out,
-                                    OffsetT num_items,
-                                    ReductionOpT reduction_op,
-                                    InitT init,
-                                    TransformOpT transform_op)
+CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
+  int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS),
+  1) void DeviceReduceSingleTileKernel(InputIteratorT d_in,
+                                       OutputIteratorT d_out,
+                                       OffsetT num_items,
+                                       ReductionOpT reduction_op,
+                                       InitT init,
+                                       TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
-                                   InputIteratorT,
-                                   OutputIteratorT,
-                                   OffsetT,
-                                   ReductionOpT,
-                                   AccumT,
-                                   TransformOpT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
+                InputIteratorT,
+                OutputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT,
+                TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -292,17 +295,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy:
 
 /// Normalize input iterator to segment offset
 template <typename T, typename OffsetT, typename IteratorT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T & /*val*/,
-                                                         OffsetT /*base_offset*/,
-                                                         IteratorT /*itr*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(T& /*val*/, OffsetT /*base_offset*/, IteratorT /*itr*/)
 {}
 
 /// Normalize input iterator to segment offset (specialized for arg-index)
 template <typename KeyValuePairT, typename OffsetT, typename WrappedIteratorT, typename OutputValueT>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-NormalizeReductionOutput(KeyValuePairT &val,
-                         OffsetT base_offset,
-                         ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE void NormalizeReductionOutput(
+  KeyValuePairT& val, OffsetT base_offset, ArgIndexInputIterator<WrappedIteratorT, OffsetT, OutputValueT> /*itr*/)
 {
   val.key -= base_offset;
 }
@@ -372,22 +371,24 @@ template <typename ChainedPolicyT,
           typename ReductionOpT,
           typename InitT,
           typename AccumT>
-CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS))
-  void DeviceSegmentedReduceKernel(InputIteratorT d_in,
-                                   OutputIteratorT d_out,
-                                   BeginOffsetIteratorT d_begin_offsets,
-                                   EndOffsetIteratorT d_end_offsets,
-                                   int /*num_segments*/,
-                                   ReductionOpT reduction_op,
-                                   InitT init)
+CUB_DETAIL_KERNEL_ATTRIBUTES
+__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)) void DeviceSegmentedReduceKernel(
+  InputIteratorT d_in,
+  OutputIteratorT d_out,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  int /*num_segments*/,
+  ReductionOpT reduction_op,
+  InitT init)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                                   InputIteratorT,
-                                   OutputIteratorT,
-                                   OffsetT,
-                                   ReductionOpT,
-                                   AccumT>;
+  using AgentReduceT =
+    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+                InputIteratorT,
+                OutputIteratorT,
+                OffsetT,
+                ReductionOpT,
+                AccumT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -406,18 +407,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(int(ChainedPolicyT::ActivePolicy:
   }
 
   // Consume input tiles
-  AccumT block_aggregate =
-    AgentReduceT(temp_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
+  AccumT block_aggregate = AgentReduceT(temp_storage, d_in, reduction_op).ConsumeRange(segment_begin, segment_end);
 
   // Normalize as needed
   NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
 
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out + blockIdx.x,
-                                                 reduction_op,
-                                                 init,
-                                                 block_aggregate);
+    detail::reduce::finalize_and_store_aggregate(d_out + blockIdx.x, reduction_op, init, block_aggregate);
   }
 }
 
@@ -451,12 +448,13 @@ struct DeviceReducePolicy
     static constexpr int items_per_vec_load = 2;
 
     // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using ReducePolicy = AgentReducePolicy<threads_per_block,
-                                           items_per_thread,
-                                           AccumT,
-                                           items_per_vec_load,
-                                           BLOCK_REDUCE_WARP_REDUCTIONS,
-                                           LOAD_DEFAULT>;
+    using ReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_DEFAULT>;
 
     // SingleTilePolicy
     using SingleTilePolicy = ReducePolicy;
@@ -474,12 +472,13 @@ struct DeviceReducePolicy
 
     // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
     // items)
-    using ReducePolicy = AgentReducePolicy<threads_per_block,
-                                           items_per_thread,
-                                           AccumT,
-                                           items_per_vec_load,
-                                           BLOCK_REDUCE_WARP_REDUCTIONS,
-                                           LOAD_LDG>;
+    using ReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_LDG>;
 
     // SingleTilePolicy
     using SingleTilePolicy = ReducePolicy;
@@ -496,12 +495,13 @@ struct DeviceReducePolicy
     static constexpr int items_per_vec_load = 4;
 
     // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-    using ReducePolicy = AgentReducePolicy<threads_per_block,
-                                           items_per_thread,
-                                           AccumT,
-                                           items_per_vec_load,
-                                           BLOCK_REDUCE_WARP_REDUCTIONS,
-                                           LOAD_LDG>;
+    using ReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_LDG>;
 
     // SingleTilePolicy
     using SingleTilePolicy = ReducePolicy;
@@ -541,12 +541,10 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT =
-            cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT =
-            detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT = detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
           typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>,
-          typename TransformOpT = ::cuda::std::__identity>
+          typename TransformOpT   = ::cuda::std::__identity>
 struct DispatchReduce : SelectedPolicy
 {
   //---------------------------------------------------------------------------
@@ -556,10 +554,10 @@ struct DispatchReduce : SelectedPolicy
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
   /// is done.
-  void *d_temp_storage;
+  void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
-  size_t &temp_storage_bytes;
+  size_t& temp_storage_bytes;
 
   /// Pointer to the input sequence of data items
   InputIteratorT d_in;
@@ -588,16 +586,17 @@ struct DispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(void *d_temp_storage,
-                                                      size_t &temp_storage_bytes,
-                                                      InputIteratorT d_in,
-                                                      OutputIteratorT d_out,
-                                                      OffsetT num_items,
-                                                      ReductionOpT reduction_op,
-                                                      InitT init,
-                                                      cudaStream_t stream,
-                                                      int ptx_version,
-                                                      TransformOpT transform_op = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    OffsetT num_items,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    int ptx_version,
+    TransformOpT transform_op = {})
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -611,16 +610,17 @@ struct DispatchReduce : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(void *d_temp_storage,
-                                                      size_t &temp_storage_bytes,
-                                                      InputIteratorT d_in,
-                                                      OutputIteratorT d_out,
-                                                      OffsetT num_items,
-                                                      ReductionOpT reduction_op,
-                                                      InitT init,
-                                                      cudaStream_t stream,
-                                                      bool debug_synchronous,
-                                                      int ptx_version)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    OffsetT num_items,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    bool debug_synchronous,
+    int ptx_version)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -671,16 +671,13 @@ struct DispatchReduce : SelectedPolicy
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-              (long long)stream,
+              (long long) stream,
               ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif
 
       // Invoke single_reduce_sweep_kernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1,
-        ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-        0,
-        stream)
+        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
       // Check for failure to launch
@@ -740,8 +737,7 @@ struct DispatchReduce : SelectedPolicy
 
       // Get SM count
       int sm_count;
-      error =
-        CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+      error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
       if (cudaSuccess != error)
       {
         break;
@@ -763,7 +759,7 @@ struct DispatchReduce : SelectedPolicy
       even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
 
       // Temporary storage allocation requirements
-      void *allocations[1]       = {};
+      void* allocations[1]       = {};
       size_t allocation_sizes[1] = {
         max_blocks * sizeof(AccumT) // bytes needed for privatized block
                                     // reductions
@@ -771,8 +767,7 @@ struct DispatchReduce : SelectedPolicy
 
       // Alias the temporary allocations from the single storage blob (or
       // compute the necessary size of the blob)
-      error = CubDebug(
-        AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -786,7 +781,7 @@ struct DispatchReduce : SelectedPolicy
       }
 
       // Alias the allocation for the privatized per-block reductions
-      AccumT *d_block_reductions = (AccumT *)allocations[0];
+      AccumT* d_block_reductions = (AccumT*) allocations[0];
 
       // Get grid size for device_reduce_sweep_kernel
       int reduce_grid_size = even_share.grid_size;
@@ -797,17 +792,14 @@ struct DispatchReduce : SelectedPolicy
               "per thread, %d SM occupancy\n",
               reduce_grid_size,
               ActivePolicyT::ReducePolicy::BLOCK_THREADS,
-              (long long)stream,
+              (long long) stream,
               ActivePolicyT::ReducePolicy::ITEMS_PER_THREAD,
               reduce_config.sm_occupancy);
 #endif
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        reduce_grid_size,
-        ActivePolicyT::ReducePolicy::BLOCK_THREADS,
-        0,
-        stream)
+        reduce_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
         .doit(reduce_kernel, d_in, d_block_reductions, num_items, even_share, reduction_op, transform_op);
 
       // Check for failure to launch
@@ -829,16 +821,13 @@ struct DispatchReduce : SelectedPolicy
       _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
               "%d items per thread\n",
               ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-              (long long)stream,
+              (long long) stream,
               ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif
 
       // Invoke DeviceReduceSingleTileKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1,
-        ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-        0,
-        stream)
+        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_block_reductions,
               d_out,
@@ -880,32 +869,29 @@ struct DispatchReduce : SelectedPolicy
     if (num_items <= (SingleTilePolicyT::BLOCK_THREADS * SingleTilePolicyT::ITEMS_PER_THREAD))
     {
       // Small, single tile size
-      return InvokeSingleTile<ActivePolicyT>(DeviceReduceSingleTileKernel<MaxPolicyT,
-                                                                          InputIteratorT,
-                                                                          OutputIteratorT,
-                                                                          OffsetT,
-                                                                          ReductionOpT,
-                                                                          InitT,
-                                                                          AccumT,
-                                                                          TransformOpT>);
+      return InvokeSingleTile<ActivePolicyT>(
+        DeviceReduceSingleTileKernel<MaxPolicyT,
+                                     InputIteratorT,
+                                     OutputIteratorT,
+                                     OffsetT,
+                                     ReductionOpT,
+                                     InitT,
+                                     AccumT,
+                                     TransformOpT>);
     }
     else
     {
       // Regular size
-      return InvokePasses<ActivePolicyT>(DeviceReduceKernel<typename DispatchReduce::MaxPolicy,
-                                                            InputIteratorT,
-                                                            OffsetT,
-                                                            ReductionOpT,
-                                                            AccumT,
-                                                            TransformOpT>,
-                                         DeviceReduceSingleTileKernel<MaxPolicyT,
-                                                                      AccumT *,
-                                                                      OutputIteratorT,
-                                                                      int, // Always used with int
-                                                                           // offsets
-                                                                      ReductionOpT,
-                                                                      InitT,
-                                                                      AccumT>);
+      return InvokePasses<ActivePolicyT>(
+        DeviceReduceKernel<typename DispatchReduce::MaxPolicy, InputIteratorT, OffsetT, ReductionOpT, AccumT, TransformOpT>,
+        DeviceReduceSingleTileKernel<MaxPolicyT,
+                                     AccumT*,
+                                     OutputIteratorT,
+                                     int, // Always used with int
+                                          // offsets
+                                     ReductionOpT,
+                                     InitT,
+                                     AccumT>);
     }
   }
 
@@ -943,15 +929,16 @@ struct DispatchReduce : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
-                                                                   size_t &temp_storage_bytes,
-                                                                   InputIteratorT d_in,
-                                                                   OutputIteratorT d_out,
-                                                                   OffsetT num_items,
-                                                                   ReductionOpT reduction_op,
-                                                                   InitT init,
-                                                                   cudaStream_t stream,
-                                                                   TransformOpT transform_op = {})
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    OffsetT num_items,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    TransformOpT transform_op = {})
   {
     typedef typename DispatchReduce::MaxPolicy MaxPolicyT;
 
@@ -967,16 +954,17 @@ struct DispatchReduce : SelectedPolicy
       }
 
       // Create dispatch functor
-      DispatchReduce dispatch(d_temp_storage,
-                              temp_storage_bytes,
-                              d_in,
-                              d_out,
-                              num_items,
-                              reduction_op,
-                              init,
-                              stream,
-                              ptx_version,
-                              transform_op);
+      DispatchReduce dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_items,
+        reduction_op,
+        init,
+        stream,
+        ptx_version,
+        transform_op);
 
       // Dispatch to chained policy
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
@@ -990,26 +978,20 @@ struct DispatchReduce : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(void *d_temp_storage,
-                                                                   size_t &temp_storage_bytes,
-                                                                   InputIteratorT d_in,
-                                                                   OutputIteratorT d_out,
-                                                                   OffsetT num_items,
-                                                                   ReductionOpT reduction_op,
-                                                                   InitT init,
-                                                                   cudaStream_t stream,
-                                                                   bool debug_synchronous)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    OffsetT num_items,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Dispatch(d_temp_storage,
-                    temp_storage_bytes,
-                    d_in,
-                    d_out,
-                    num_items,
-                    reduction_op,
-                    init,
-                    stream);
+    return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
 };
 
@@ -1037,17 +1019,17 @@ struct DispatchReduce : SelectedPolicy
  * @tparam InitT
  *   Initial value type
  */
-template < typename InputIteratorT,
-           typename OutputIteratorT,
-           typename OffsetT,
-           typename ReductionOpT,
-           typename TransformOpT,
-           typename InitT,
-           typename AccumT =
-             detail::accumulator_t<ReductionOpT, //
-                                   InitT,
-                                   cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>>,
-           typename SelectedPolicyT = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
+template <typename InputIteratorT,
+          typename OutputIteratorT,
+          typename OffsetT,
+          typename ReductionOpT,
+          typename TransformOpT,
+          typename InitT,
+          typename AccumT =
+            detail::accumulator_t<ReductionOpT, //
+                                  InitT,
+                                  cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>>,
+          typename SelectedPolicyT = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT, SelectedPolicyT, TransformOpT>;
 
@@ -1089,10 +1071,8 @@ template <typename InputIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT =
-            cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT =
-            detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
+          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT = detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>,
           typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
 struct DispatchSegmentedReduce : SelectedPolicy
 {
@@ -1103,10 +1083,10 @@ struct DispatchSegmentedReduce : SelectedPolicy
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
   /// is done.
-  void *d_temp_storage;
+  void* d_temp_storage;
 
   /// Reference to size in bytes of `d_temp_storage` allocation
-  size_t &temp_storage_bytes;
+  size_t& temp_storage_bytes;
 
   /// Pointer to the input sequence of data items
   InputIteratorT d_in;
@@ -1146,17 +1126,18 @@ struct DispatchSegmentedReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(void *d_temp_storage,
-                                                               size_t &temp_storage_bytes,
-                                                               InputIteratorT d_in,
-                                                               OutputIteratorT d_out,
-                                                               int num_segments,
-                                                               BeginOffsetIteratorT d_begin_offsets,
-                                                               EndOffsetIteratorT d_end_offsets,
-                                                               ReductionOpT reduction_op,
-                                                               InitT init,
-                                                               cudaStream_t stream,
-                                                               int ptx_version)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    int ptx_version)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -1171,18 +1152,19 @@ struct DispatchSegmentedReduce : SelectedPolicy
   {}
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(void *d_temp_storage,
-                                                               size_t &temp_storage_bytes,
-                                                               InputIteratorT d_in,
-                                                               OutputIteratorT d_out,
-                                                               int num_segments,
-                                                               BeginOffsetIteratorT d_begin_offsets,
-                                                               EndOffsetIteratorT d_end_offsets,
-                                                               ReductionOpT reduction_op,
-                                                               InitT init,
-                                                               cudaStream_t stream,
-                                                               bool debug_synchronous,
-                                                               int ptx_version)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedReduce(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    bool debug_synchronous,
+    int ptx_version)
       : d_temp_storage(d_temp_storage)
       , temp_storage_bytes(temp_storage_bytes)
       , d_in(d_in)
@@ -1233,8 +1215,8 @@ struct DispatchSegmentedReduce : SelectedPolicy
 
       // Init kernel configuration
       KernelConfig segmented_reduce_config;
-      error = CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(
-        segmented_reduce_kernel));
+      error =
+        CubDebug(segmented_reduce_config.Init<typename ActivePolicyT::SegmentedReducePolicy>(segmented_reduce_kernel));
       if (cudaSuccess != error)
       {
         break;
@@ -1246,25 +1228,15 @@ struct DispatchSegmentedReduce : SelectedPolicy
               "%d items per thread, %d SM occupancy\n",
               num_segments,
               ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
-              (long long)stream,
+              (long long) stream,
               ActivePolicyT::SegmentedReducePolicy::ITEMS_PER_THREAD,
               segmented_reduce_config.sm_occupancy);
 #endif
 
       // Invoke DeviceReduceKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        num_segments,
-        ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
-        0,
-        stream)
-        .doit(segmented_reduce_kernel,
-              d_in,
-              d_out,
-              d_begin_offsets,
-              d_end_offsets,
-              num_segments,
-              reduction_op,
-              init);
+        num_segments, ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS, 0, stream)
+        .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -1291,15 +1263,17 @@ struct DispatchSegmentedReduce : SelectedPolicy
     typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
 
     // Force kernel code-generation in all compiler passes
-    return InvokePasses<ActivePolicyT>(DeviceSegmentedReduceKernel<MaxPolicyT,
-                                                                   InputIteratorT,
-                                                                   OutputIteratorT,
-                                                                   BeginOffsetIteratorT,
-                                                                   EndOffsetIteratorT,
-                                                                   OffsetT,
-                                                                   ReductionOpT,
-                                                                   InitT,
-                                                                   AccumT>);
+    return InvokePasses<ActivePolicyT>(
+      DeviceSegmentedReduceKernel<
+        MaxPolicyT,
+        InputIteratorT,
+        OutputIteratorT,
+        BeginOffsetIteratorT,
+        EndOffsetIteratorT,
+        OffsetT,
+        ReductionOpT,
+        InitT,
+        AccumT>);
   }
 
   //---------------------------------------------------------------------------
@@ -1349,17 +1323,17 @@ struct DispatchSegmentedReduce : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           OutputIteratorT d_out,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           ReductionOpT reduction_op,
-           InitT init,
-           cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream)
   {
     typedef typename DispatchSegmentedReduce::MaxPolicy MaxPolicyT;
 
@@ -1381,17 +1355,18 @@ struct DispatchSegmentedReduce : SelectedPolicy
       }
 
       // Create dispatch functor
-      DispatchSegmentedReduce dispatch(d_temp_storage,
-                                       temp_storage_bytes,
-                                       d_in,
-                                       d_out,
-                                       num_segments,
-                                       d_begin_offsets,
-                                       d_end_offsets,
-                                       reduction_op,
-                                       init,
-                                       stream,
-                                       ptx_version);
+      DispatchSegmentedReduce dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        d_begin_offsets,
+        d_end_offsets,
+        reduction_op,
+        init,
+        stream,
+        ptx_version);
 
       // Dispatch to chained policy
       error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
@@ -1405,31 +1380,32 @@ struct DispatchSegmentedReduce : SelectedPolicy
   }
 
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Dispatch(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           InputIteratorT d_in,
-           OutputIteratorT d_out,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           ReductionOpT reduction_op,
-           InitT init,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    ReductionOpT reduction_op,
+    InitT init,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Dispatch(d_temp_storage,
-                    temp_storage_bytes,
-                    d_in,
-                    d_out,
-                    num_segments,
-                    d_begin_offsets,
-                    d_end_offsets,
-                    reduction_op,
-                    init,
-                    stream);
+    return Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      reduction_op,
+      init,
+      stream);
   }
 };
 

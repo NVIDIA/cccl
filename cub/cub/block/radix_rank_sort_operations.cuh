@@ -74,7 +74,7 @@ CUB_NAMESPACE_BEGIN
 template <typename KeyT, Category TypeCategory = Traits<KeyT>::CATEGORY>
 struct BaseDigitExtractor
 {
-  using TraitsT = Traits<KeyT>;
+  using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
@@ -86,13 +86,13 @@ struct BaseDigitExtractor
 template <typename KeyT>
 struct BaseDigitExtractor<KeyT, FLOATING_POINT>
 {
-  using TraitsT = Traits<KeyT>;
+  using TraitsT      = Traits<KeyT>;
   using UnsignedBits = typename TraitsT::UnsignedBits;
 
   static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE UnsignedBits ProcessFloatMinusZero(UnsignedBits key)
   {
     UnsignedBits TWIDDLED_MINUS_ZERO_BITS =
-        TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
+      TraitsT::TwiddleIn(UnsignedBits(1) << UnsignedBits(8 * sizeof(UnsignedBits) - 1));
     UnsignedBits TWIDDLED_ZERO_BITS = TraitsT::TwiddleIn(0);
     return key == TWIDDLED_MINUS_ZERO_BITS ? TWIDDLED_ZERO_BITS : key;
   }
@@ -103,22 +103,21 @@ struct BaseDigitExtractor<KeyT, FLOATING_POINT>
 template <typename KeyT>
 struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 {
-    using typename BaseDigitExtractor<KeyT>::UnsignedBits;
+  using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
-    ::cuda::std::uint32_t bit_start;
-    ::cuda::std::uint32_t num_bits;
+  ::cuda::std::uint32_t bit_start;
+  ::cuda::std::uint32_t num_bits;
 
-    explicit _CCCL_DEVICE _CCCL_FORCEINLINE BFEDigitExtractor(
-        ::cuda::std::uint32_t bit_start = 0,
-        ::cuda::std::uint32_t num_bits = 0)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
+  BFEDigitExtractor(::cuda::std::uint32_t bit_start = 0, ::cuda::std::uint32_t num_bits = 0)
       : bit_start(bit_start)
       , num_bits(num_bits)
-    { }
+  {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
-    {
-        return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
-    }
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
+  {
+    return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
+  }
 };
 
 /** \brief A wrapper type to extract digits. Uses a combination of shift and
@@ -126,25 +125,24 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 template <typename KeyT>
 struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
 {
-    using typename BaseDigitExtractor<KeyT>::UnsignedBits;
+  using typename BaseDigitExtractor<KeyT>::UnsignedBits;
 
-    ::cuda::std::uint32_t bit_start;
-    ::cuda::std::uint32_t mask;
+  ::cuda::std::uint32_t bit_start;
+  ::cuda::std::uint32_t mask;
 
-    explicit _CCCL_DEVICE _CCCL_FORCEINLINE ShiftDigitExtractor(
-        ::cuda::std::uint32_t bit_start = 0, ::cuda::std::uint32_t num_bits = 0)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
+  ShiftDigitExtractor(::cuda::std::uint32_t bit_start = 0, ::cuda::std::uint32_t num_bits = 0)
       : bit_start(bit_start)
       , mask((1 << num_bits) - 1)
-    { }
+  {}
 
-    _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
-    {
-        return ::cuda::std::uint32_t(this->ProcessFloatMinusZero(key) >> UnsignedBits(bit_start)) & mask;
-    }
+  _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
+  {
+    return ::cuda::std::uint32_t(this->ProcessFloatMinusZero(key) >> UnsignedBits(bit_start)) & mask;
+  }
 };
 
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS    // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 namespace detail
 {
 
@@ -158,31 +156,30 @@ struct true_t
 };
 
 template <bool... Bs>
-using all_t =            //
-  ::cuda::std::is_same<  //
+using all_t = //
+  ::cuda::std::is_same< //
     logic_helper_t<Bs...>, //
     logic_helper_t<true_t<Bs>::value...>>;
 
 struct identity_decomposer_t
 {
   template <class T>
-  _CCCL_HOST_DEVICE T& operator()(T &key) const
+  _CCCL_HOST_DEVICE T& operator()(T& key) const
   {
     return key;
   }
 };
 
-template<class F, class... Ts, ::cuda::std::size_t... Is>
+template <class F, class... Ts, ::cuda::std::size_t... Is>
 _CCCL_HOST_DEVICE void
 for_each_member_impl_helper(F f, const ::cuda::std::tuple<Ts&...>& tpl, THRUST_NS_QUALIFIER::index_sequence<Is...>)
 {
-  auto sink = { (f(::cuda::std::get<Is>(tpl)), 0)... };
-  (void)sink;
+  auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
+  (void) sink;
 }
 
-template<class F, class... Ts>
-_CCCL_HOST_DEVICE void
-for_each_member_impl(F f, const ::cuda::std::tuple<Ts&...>& tpl)
+template <class F, class... Ts>
+_CCCL_HOST_DEVICE void for_each_member_impl(F f, const ::cuda::std::tuple<Ts&...>& tpl)
 {
   static_assert(sizeof...(Ts), "Empty aggregates are not supported");
 
@@ -224,30 +221,27 @@ struct is_tuple_of_references_to_fundamental_types_t : ::cuda::std::false_type
 
 template <class... Ts>
 struct is_tuple_of_references_to_fundamental_types_t< //
-  ::cuda::std::tuple<Ts &...>,                        //
-  typename ::cuda::std::enable_if<                    //
-    all_t<is_fundamental_type<Ts>::value...>::value   //
-    >::type>                                          //
+  ::cuda::std::tuple<Ts&...>, //
+  typename ::cuda::std::enable_if< //
+    all_t<is_fundamental_type<Ts>::value...>::value //
+    >::type> //
     : ::cuda::std::true_type
 {};
 
 template <class KeyT, class DecomposerT>
-using decomposer_check_t =
-  is_tuple_of_references_to_fundamental_types_t<invoke_result_t<DecomposerT, KeyT &>>;
+using decomposer_check_t = is_tuple_of_references_to_fundamental_types_t<invoke_result_t<DecomposerT, KeyT&>>;
 
 template <class T>
 struct bit_ordered_conversion_policy_t
 {
   using bit_ordered_type = typename Traits<T>::UnsignedBits;
 
-  static _CCCL_HOST_DEVICE bit_ordered_type to_bit_ordered(detail::identity_decomposer_t,
-                                                             bit_ordered_type val)
+  static _CCCL_HOST_DEVICE bit_ordered_type to_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
     return Traits<T>::TwiddleIn(val);
   }
 
-  static _CCCL_HOST_DEVICE bit_ordered_type from_bit_ordered(detail::identity_decomposer_t,
-                                                               bit_ordered_type val)
+  static _CCCL_HOST_DEVICE bit_ordered_type from_bit_ordered(detail::identity_decomposer_t, bit_ordered_type val)
   {
     return Traits<T>::TwiddleOut(val);
   }
@@ -258,8 +252,7 @@ struct bit_ordered_inversion_policy_t
 {
   using bit_ordered_type = typename Traits<T>::UnsignedBits;
 
-  static _CCCL_HOST_DEVICE bit_ordered_type inverse(detail::identity_decomposer_t,
-                                                      bit_ordered_type val)
+  static _CCCL_HOST_DEVICE bit_ordered_type inverse(detail::identity_decomposer_t, bit_ordered_type val)
   {
     return ~val;
   }
@@ -292,7 +285,7 @@ struct traits_t
 
   template <class FundamentalExtractorT>
   static _CCCL_HOST_DEVICE digit_extractor_t<FundamentalExtractorT, detail::identity_decomposer_t>
-    digit_extractor(int begin_bit, int num_bits, detail::identity_decomposer_t)
+  digit_extractor(int begin_bit, int num_bits, detail::identity_decomposer_t)
   {
     return FundamentalExtractorT(begin_bit, num_bits);
   }
@@ -304,17 +297,16 @@ struct min_raw_binary_key_f
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
-    using bit_ordered_type = typename traits::bit_ordered_type;
-    reinterpret_cast<bit_ordered_type &>(field) =
-      traits::min_raw_binary_key(detail::identity_decomposer_t{});
+    using traits                               = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using bit_ordered_type                     = typename traits::bit_ordered_type;
+    reinterpret_cast<bit_ordered_type&>(field) = traits::min_raw_binary_key(detail::identity_decomposer_t{});
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void min_raw_binary_key(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE void min_raw_binary_key(DecomposerT decomposer, T& aggregate)
 {
   detail::for_each_member(min_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
@@ -325,17 +317,16 @@ struct max_raw_binary_key_f
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
-    using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
-    using bit_ordered_type = typename traits::bit_ordered_type;
-    reinterpret_cast<bit_ordered_type &>(field) =
-      traits::max_raw_binary_key(detail::identity_decomposer_t{});
+    using traits                               = traits_t<typename ::cuda::std::remove_cv<T>::type>;
+    using bit_ordered_type                     = typename traits::bit_ordered_type;
+    reinterpret_cast<bit_ordered_type&>(field) = traits::max_raw_binary_key(detail::identity_decomposer_t{});
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void max_raw_binary_key(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE void max_raw_binary_key(DecomposerT decomposer, T& aggregate)
 {
   detail::for_each_member(max_raw_binary_key_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
@@ -346,20 +337,19 @@ struct to_bit_ordered_f
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
     using traits                 = traits_t<typename ::cuda::std::remove_cv<T>::type>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-    auto &ordered_field = reinterpret_cast<bit_ordered_type &>(field);
-    ordered_field       = bit_ordered_conversion::to_bit_ordered(detail::identity_decomposer_t{},
-                                                           ordered_field);
+    auto& ordered_field = reinterpret_cast<bit_ordered_type&>(field);
+    ordered_field       = bit_ordered_conversion::to_bit_ordered(detail::identity_decomposer_t{}, ordered_field);
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void to_bit_ordered(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE void to_bit_ordered(DecomposerT decomposer, T& aggregate)
 {
   detail::for_each_member(to_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
@@ -370,20 +360,19 @@ struct from_bit_ordered_f
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
     using traits                 = traits_t<typename ::cuda::std::remove_cv<T>::type>;
     using bit_ordered_type       = typename traits::bit_ordered_type;
     using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
-    auto &ordered_field = reinterpret_cast<bit_ordered_type &>(field);
-    ordered_field = bit_ordered_conversion::from_bit_ordered(detail::identity_decomposer_t{},
-                                                             ordered_field);
+    auto& ordered_field = reinterpret_cast<bit_ordered_type&>(field);
+    ordered_field       = bit_ordered_conversion::from_bit_ordered(detail::identity_decomposer_t{}, ordered_field);
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void from_bit_ordered(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE void from_bit_ordered(DecomposerT decomposer, T& aggregate)
 {
   detail::for_each_member(from_bit_ordered_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
@@ -394,18 +383,18 @@ struct inverse_f
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
     using traits           = traits_t<typename ::cuda::std::remove_cv<T>::type>;
     using bit_ordered_type = typename traits::bit_ordered_type;
 
-    auto &ordered_field = reinterpret_cast<bit_ordered_type &>(field);
+    auto& ordered_field = reinterpret_cast<bit_ordered_type&>(field);
     ordered_field       = ~ordered_field;
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void inverse(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE void inverse(DecomposerT decomposer, T& aggregate)
 {
   detail::for_each_member(inverse_f<DecomposerT>{decomposer}, decomposer, aggregate);
 }
@@ -413,35 +402,33 @@ _CCCL_HOST_DEVICE void inverse(DecomposerT decomposer, T &aggregate)
 template <class DecomposerT>
 struct default_end_bit_f
 {
-  int &result;
+  int& result;
   DecomposerT decomposer;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &field)
+  _CCCL_HOST_DEVICE void operator()(T& field)
   {
     result += sizeof(field) * 8;
   }
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE int default_end_bit(DecomposerT decomposer, T &aggregate)
+_CCCL_HOST_DEVICE int default_end_bit(DecomposerT decomposer, T& aggregate)
 {
   int result{};
-  detail::for_each_member(default_end_bit_f<DecomposerT>{result, decomposer},
-                          decomposer,
-                          aggregate);
+  detail::for_each_member(default_end_bit_f<DecomposerT>{result, decomposer}, decomposer, aggregate);
   return result;
 }
 
 struct digit_f
 {
-  ::cuda::std::uint32_t &dst;
-  ::cuda::std::uint32_t &dst_bit_start;
-  ::cuda::std::uint32_t &src_bit_start;
-  ::cuda::std::uint32_t &num_bits;
+  ::cuda::std::uint32_t& dst;
+  ::cuda::std::uint32_t& dst_bit_start;
+  ::cuda::std::uint32_t& src_bit_start;
+  ::cuda::std::uint32_t& num_bits;
 
   template <class T>
-  _CCCL_HOST_DEVICE void operator()(T &src)
+  _CCCL_HOST_DEVICE void operator()(T& src)
   {
     constexpr ::cuda::std::uint32_t src_size = sizeof(T) * 8;
 
@@ -458,11 +445,11 @@ struct digit_f
 
       if (bits_to_copy)
       {
-        bit_ordered_type ordered_src = BaseDigitExtractor<T>::ProcessFloatMinusZero(
-          reinterpret_cast<bit_ordered_type &>(src));
+        bit_ordered_type ordered_src =
+          BaseDigitExtractor<T>::ProcessFloatMinusZero(reinterpret_cast<bit_ordered_type&>(src));
 
         const ::cuda::std::uint32_t mask = (1 << bits_to_copy) - 1;
-        dst = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
+        dst                              = dst | (((ordered_src >> src_bit_start) & mask) << dst_bit_start);
 
         num_bits -= bits_to_copy;
         dst_bit_start += bits_to_copy;
@@ -473,12 +460,13 @@ struct digit_f
 };
 
 template <class DecomposerT, class T>
-_CCCL_HOST_DEVICE void digit(DecomposerT decomposer,
-                               ::cuda::std::uint32_t &dst,
-                               T &src,
-                               ::cuda::std::uint32_t &dst_bit_start,
-                               ::cuda::std::uint32_t &src_bit_start,
-                               ::cuda::std::uint32_t &num_bits)
+_CCCL_HOST_DEVICE void
+digit(DecomposerT decomposer,
+      ::cuda::std::uint32_t& dst,
+      T& src,
+      ::cuda::std::uint32_t& dst_bit_start,
+      ::cuda::std::uint32_t& src_bit_start,
+      ::cuda::std::uint32_t& num_bits)
 {
   detail::for_each_member(digit_f{dst, dst_bit_start, src_bit_start, num_bits}, decomposer, src);
 }
@@ -490,16 +478,15 @@ struct custom_digit_extractor_t
   ::cuda::std::uint32_t bit_start;
   ::cuda::std::uint32_t num_bits;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE custom_digit_extractor_t(DecomposerT decomposer,
-                                                               ::cuda::std::uint32_t bit_start,
-                                                               ::cuda::std::uint32_t num_bits)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  custom_digit_extractor_t(DecomposerT decomposer, ::cuda::std::uint32_t bit_start, ::cuda::std::uint32_t num_bits)
       : decomposer(decomposer)
       , bit_start(bit_start)
       , num_bits(num_bits)
   {}
 
   template <class T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(T &key) const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(T& key) const
   {
     ::cuda::std::uint32_t result{};
     ::cuda::std::uint32_t dst_bit_start{};
@@ -600,7 +587,7 @@ public:
     In(bit_ordered_type key, DecomposerT decomposer = {})
   {
     key = bit_ordered_conversion_policy::to_bit_ordered(decomposer, key);
-    _CCCL_IF_CONSTEXPR(IS_DESCENDING)
+    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -612,7 +599,7 @@ public:
     bit_ordered_type
     Out(bit_ordered_type key, DecomposerT decomposer = {})
   {
-    _CCCL_IF_CONSTEXPR(IS_DESCENDING)
+    _CCCL_IF_CONSTEXPR (IS_DESCENDING)
     {
       key = bit_ordered_inversion_policy::inverse(decomposer, key);
     }
@@ -625,8 +612,7 @@ public:
     bit_ordered_type
     DefaultKey(DecomposerT decomposer = {})
   {
-    return IS_DESCENDING ? traits::min_raw_binary_key(decomposer)
-                         : traits::max_raw_binary_key(decomposer);
+    return IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
   }
 };
 

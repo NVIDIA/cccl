@@ -88,28 +88,28 @@ private:
   // Default fallback policy with a smaller tile size
   using fallback_policy_t = cub::detail::policy_wrapper_t<DefaultPolicyT, 64, 1>;
 
-  using default_block_sort_agent_t = AgentBlockSort<
-    DefaultPolicyT,
-    Stability,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
-  using fallback_block_sort_agent_t = AgentBlockSort<
-    fallback_policy_t,
-    Stability,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyIteratorT,
-    ValueIteratorT,
-    OffsetT,
-    CompareOpT,
-    KeyT,
-    ValueT>;
+  using default_block_sort_agent_t =
+    AgentBlockSort< DefaultPolicyT,
+                    Stability,
+                    KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    KeyT,
+                    ValueT>;
+  using fallback_block_sort_agent_t =
+    AgentBlockSort< fallback_policy_t,
+                    Stability,
+                    KeyInputIteratorT,
+                    ValueInputIteratorT,
+                    KeyIteratorT,
+                    ValueIteratorT,
+                    OffsetT,
+                    CompareOpT,
+                    KeyT,
+                    ValueT>;
   static constexpr auto block_sort_default_size  = sizeof(typename default_block_sort_agent_t::TempStorage);
   static constexpr auto block_sort_fallback_size = sizeof(typename fallback_block_sort_agent_t::TempStorage);
 
@@ -131,9 +131,8 @@ private:
   // Use fallback if either (a) the default block sort or (b) the block merge agent exceed the maximum shared memory
   // available per block and both (1) the fallback block sort and (2) the fallback merge agent would not exceed the
   // available shared memory
-  static constexpr auto max_default_size = (cub::max)(block_sort_default_size, merge_helper_t::default_size);
-  static constexpr auto max_fallback_size =
-    (cub::max)(block_sort_fallback_size, merge_helper_t::fallback_size);
+  static constexpr auto max_default_size  = (cub::max)(block_sort_default_size, merge_helper_t::default_size);
+  static constexpr auto max_fallback_size = (cub::max)(block_sort_fallback_size, merge_helper_t::fallback_size);
   static constexpr bool uses_fallback_policy =
     (max_default_size > max_smem_per_block) && (max_fallback_size <= max_smem_per_block);
 
@@ -392,7 +391,7 @@ template <typename KeyInputIteratorT,
           typename OffsetT,
           typename CompareOpT,
           typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>,
-          stability_t Stability = stability_t::stable>
+          stability_t Stability   = stability_t::stable>
 struct DispatchMergeSort : SelectedPolicy
 {
   using KeyT   = cub::detail::value_t<KeyIteratorT>;
@@ -665,16 +664,17 @@ struct DispatchMergeSort : SelectedPolicy
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream)
           .doit(
-            DeviceMergeSortMergeKernel<MaxPolicyT,
-                                       Stability,
-                                       KeyInputIteratorT,
-                                       ValueInputIteratorT,
-                                       KeyIteratorT,
-                                       ValueIteratorT,
-                                       OffsetT,
-                                       CompareOpT,
-                                       KeyT,
-                                       ValueT>,
+            DeviceMergeSortMergeKernel<
+              MaxPolicyT,
+              Stability,
+              KeyInputIteratorT,
+              ValueInputIteratorT,
+              KeyIteratorT,
+              ValueIteratorT,
+              OffsetT,
+              CompareOpT,
+              KeyT,
+              ValueT>,
             ping,
             d_output_keys,
             d_output_items,

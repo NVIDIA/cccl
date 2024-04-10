@@ -35,25 +35,25 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
 #ifndef TUNE_BASE
-#define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
+#  define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
 #endif
 
 #if !TUNE_BASE
-#if TUNE_TRANSPOSE == 0
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#else // TUNE_TRANSPOSE == 1
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#endif // TUNE_TRANSPOSE 
+#  if TUNE_TRANSPOSE == 0
+#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
+#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#  else // TUNE_TRANSPOSE == 1
+#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
+#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#  endif // TUNE_TRANSPOSE
 
-#if TUNE_LOAD == 0
-#define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#elif TUNE_LOAD == 1
-#define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#else // TUNE_LOAD == 2
-#define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#endif // TUNE_LOAD
+#  if TUNE_LOAD == 0
+#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#  elif TUNE_LOAD == 1
+#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
+#  else // TUNE_LOAD == 2
+#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#  endif // TUNE_LOAD
 
 template <typename KeyT>
 struct policy_hub_t
@@ -73,7 +73,7 @@ struct policy_hub_t
 #endif // TUNE_BASE
 
 template <typename KeyT, typename ValueT, typename OffsetT>
-void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
+void pairs(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using key_t            = KeyT;
   using value_t          = ValueT;
@@ -89,8 +89,8 @@ void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   using dispatch_t = cub::
     DispatchUnstableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::
-    DispatchUnstableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
+  using dispatch_t =
+    cub::DispatchUnstableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
@@ -102,10 +102,10 @@ void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
   thrust::device_vector<value_t> values_buffer_1(elements);
   thrust::device_vector<value_t> values_buffer_2(elements);
 
-  key_t *d_keys_buffer_1   = thrust::raw_pointer_cast(keys_buffer_1.data());
-  key_t *d_keys_buffer_2   = thrust::raw_pointer_cast(keys_buffer_2.data());
-  value_t *d_values_buffer_1 = thrust::raw_pointer_cast(values_buffer_1.data());
-  value_t *d_values_buffer_2 = thrust::raw_pointer_cast(values_buffer_2.data());
+  key_t* d_keys_buffer_1     = thrust::raw_pointer_cast(keys_buffer_1.data());
+  key_t* d_keys_buffer_2     = thrust::raw_pointer_cast(keys_buffer_2.data());
+  value_t* d_values_buffer_1 = thrust::raw_pointer_cast(values_buffer_1.data());
+  value_t* d_values_buffer_2 = thrust::raw_pointer_cast(values_buffer_2.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -116,29 +116,31 @@ void pairs(nvbench::state &state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size{};
-  dispatch_t::Dispatch(nullptr,
-                       temp_size,
-                       d_keys_buffer_1,
-                       d_values_buffer_1,
-                       d_keys_buffer_2,
-                       d_values_buffer_2,
-                       static_cast<offset_t>(elements),
-                       compare_op_t{},
-                       0 /* stream */);
+  dispatch_t::Dispatch(
+    nullptr,
+    temp_size,
+    d_keys_buffer_1,
+    d_values_buffer_1,
+    d_keys_buffer_2,
+    d_values_buffer_2,
+    static_cast<offset_t>(elements),
+    compare_op_t{},
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto *temp_storage = thrust::raw_pointer_cast(temp.data());
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
-    dispatch_t::Dispatch(temp_storage,
-                         temp_size,
-                         d_keys_buffer_1,
-                         d_values_buffer_1,
-                         d_keys_buffer_2,
-                         d_values_buffer_2,
-                         static_cast<offset_t>(elements),
-                         compare_op_t{},
-                         launch.get_stream());
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    dispatch_t::Dispatch(
+      temp_storage,
+      temp_size,
+      d_keys_buffer_1,
+      d_values_buffer_1,
+      d_keys_buffer_2,
+      d_values_buffer_2,
+      static_cast<offset_t>(elements),
+      compare_op_t{},
+      launch.get_stream());
   });
 }
 
@@ -151,17 +153,13 @@ using key_types = all_types;
 #ifdef TUNE_ValueT
 using value_types = nvbench::type_list<TUNE_ValueT>;
 #else // !defined(TUNE_ValueT)
-using value_types =
-  nvbench::type_list<int8_t,
-                     int16_t,
-                     int32_t,
-                     int64_t
-#if NVBENCH_HELPER_HAS_I128
+using value_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t
+#  if NVBENCH_HELPER_HAS_I128
 // nvcc currently hangs for __int128 value type with the fallback policy of {CTA: 64, IPT: 1}. NVBug 4384075
 //  ,
 //  int128_t
-#endif
-                     >;
+#  endif
+                                       >;
 #endif // TUNE_ValueT
 
 NVBENCH_BENCH_TYPES(pairs, NVBENCH_TYPE_AXES(key_types, value_types, offset_types))

@@ -61,6 +61,7 @@
 // Device
 #include <cub/device/device_adjacent_difference.cuh>
 #include <cub/device/device_copy.cuh>
+#include <cub/device/device_for.cuh>
 #include <cub/device/device_histogram.cuh>
 #include <cub/device/device_memcpy.cuh>
 #include <cub/device/device_merge_sort.cuh>
@@ -74,7 +75,6 @@
 #include <cub/device/device_segmented_sort.cuh>
 #include <cub/device/device_select.cuh>
 #include <cub/device/device_spmv.cuh>
-#include <cub/device/device_for.cuh>
 
 // Grid
 // #include <cub/grid/grid_barrier.cuh>

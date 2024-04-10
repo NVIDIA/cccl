@@ -48,9 +48,7 @@
 
 #include <cuda/std/type_traits>
 
-
 CUB_NAMESPACE_BEGIN
-
 
 //! @brief DeviceRadixSort provides device-wide, parallel operations for
 //!        computing a radix sort across a sequence of data items residing
@@ -126,88 +124,89 @@ struct DeviceRadixSort
 {
 private:
   template <bool IsDescending, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(::cuda::std::false_type,
-                                                            void *d_temp_storage,
-                                                            size_t &temp_storage_bytes,
-                                                            bool is_overwrite_okay,
-                                                            DoubleBuffer<KeyT> &d_keys,
-                                                            DoubleBuffer<ValueT> &d_values,
-                                                            NumItemsT num_items,
-                                                            DecomposerT decomposer,
-                                                            int begin_bit,
-                                                            int end_bit,
-                                                            cudaStream_t stream);
+  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+    ::cuda::std::false_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    bool is_overwrite_okay,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream);
 
   template <bool IsDescending, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(::cuda::std::true_type,
-                                                            void *d_temp_storage,
-                                                            size_t &temp_storage_bytes,
-                                                            bool is_overwrite_okay,
-                                                            DoubleBuffer<KeyT> &d_keys,
-                                                            DoubleBuffer<ValueT> &d_values,
-                                                            OffsetT num_items,
-                                                            DecomposerT decomposer,
-                                                            int begin_bit,
-                                                            int end_bit,
-                                                            cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+    ::cuda::std::true_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    bool is_overwrite_okay,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    OffsetT num_items,
+    DecomposerT decomposer,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream)
   {
-    return DispatchRadixSort<IsDescending,
-                             KeyT,
-                             ValueT,
-                             OffsetT,
-                             DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>,
-                             DecomposerT>::Dispatch(d_temp_storage,
-                                                    temp_storage_bytes,
-                                                    d_keys,
-                                                    d_values,
-                                                    static_cast<OffsetT>(num_items),
-                                                    begin_bit,
-                                                    end_bit,
-                                                    is_overwrite_okay,
-                                                    stream,
-                                                    decomposer);
+    return DispatchRadixSort<IsDescending, KeyT, ValueT, OffsetT, DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>, DecomposerT>::
+      Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_keys,
+        d_values,
+        static_cast<OffsetT>(num_items),
+        begin_bit,
+        end_bit,
+        is_overwrite_okay,
+        stream,
+        decomposer);
   }
 
   template <bool IsDescending, typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(::cuda::std::false_type,
-                                                            void *d_temp_storage,
-                                                            size_t &temp_storage_bytes,
-                                                            bool is_overwrite_okay,
-                                                            DoubleBuffer<KeyT> &d_keys,
-                                                            DoubleBuffer<ValueT> &d_values,
-                                                            NumItemsT num_items,
-                                                            DecomposerT decomposer,
-                                                            cudaStream_t stream);
+  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+    ::cuda::std::false_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    bool is_overwrite_okay,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    DecomposerT decomposer,
+    cudaStream_t stream);
 
   template <bool IsDescending, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(::cuda::std::true_type,
-                                                            void *d_temp_storage,
-                                                            size_t &temp_storage_bytes,
-                                                            bool is_overwrite_okay,
-                                                            DoubleBuffer<KeyT> &d_keys,
-                                                            DoubleBuffer<ValueT> &d_values,
-                                                            OffsetT num_items,
-                                                            DecomposerT decomposer,
-                                                            cudaStream_t stream)
+  CUB_RUNTIME_FUNCTION static cudaError_t custom_radix_sort(
+    ::cuda::std::true_type,
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    bool is_overwrite_okay,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    OffsetT num_items,
+    DecomposerT decomposer,
+    cudaStream_t stream)
   {
     constexpr int begin_bit = 0;
-    const int end_bit   = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
+    const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
-    return DeviceRadixSort::custom_radix_sort<IsDescending>(::cuda::std::true_type{},
-                                                            d_temp_storage,
-                                                            temp_storage_bytes,
-                                                            is_overwrite_okay,
-                                                            d_keys,
-                                                            d_values,
-                                                            num_items,
-                                                            decomposer,
-                                                            begin_bit,
-                                                            end_bit,
-                                                            stream);
+    return DeviceRadixSort::custom_radix_sort<IsDescending>(
+      ::cuda::std::true_type{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      num_items,
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
 public:
-
   //! @name KeyT-value pairs
   //@{
 
@@ -318,17 +317,17 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            const KeyT *d_keys_in,
-            KeyT *d_keys_out,
-            const ValueT *d_values_in,
-            ValueT *d_values_out,
-            NumItemsT num_items,
-            int begin_bit          = 0,
-            int end_bit            = sizeof(KeyT) * 8,
-            cudaStream_t stream    = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -341,9 +340,8 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in),
-                                  d_values_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return DispatchRadixSort<false, KeyT, ValueT, OffsetT>::Dispatch(
       d_temp_storage,
@@ -357,36 +355,36 @@ public:
       stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            const KeyT *d_keys_in,
-            KeyT *d_keys_out,
-            const ValueT *d_values_in,
-            ValueT *d_values_out,
-            NumItemsT num_items,
-            int begin_bit,
-            int end_bit,
-            cudaStream_t stream,
-            bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairs<KeyT, ValueT, NumItemsT>(d_temp_storage,
-                                              temp_storage_bytes,
-                                              d_keys_in,
-                                              d_keys_out,
-                                              d_values_in,
-                                              d_values_out,
-                                              num_items,
-                                              begin_bit,
-                                              end_bit,
-                                              stream);
+    return SortPairs<KeyT, ValueT, NumItemsT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      begin_bit,
+      end_bit,
+      stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx 2N` auxiliary storage.
@@ -492,24 +490,24 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-  SortPairs(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           const ValueT *d_values_in,
-           ValueT *d_values_out,
-           NumItemsT num_items,
-           DecomposerT decomposer,
-           int begin_bit,
-           int end_bit,
-           cudaStream_t stream = 0)
+    SortPairs(void* d_temp_storage,
+              size_t& temp_storage_bytes,
+              const KeyT* d_keys_in,
+              KeyT* d_keys_out,
+              const ValueT* d_values_in,
+              ValueT* d_values_out,
+              NumItemsT num_items,
+              DecomposerT decomposer,
+              int begin_bit,
+              int end_bit,
+              cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -521,21 +519,22 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+    constexpr bool is_descending     = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -631,22 +630,22 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairs(void *d_temp_storage,
-              size_t &temp_storage_bytes,
-              const KeyT *d_keys_in,
-              KeyT *d_keys_out,
-              const ValueT *d_values_in,
-              ValueT *d_values_out,
+    SortPairs(void* d_temp_storage,
+              size_t& temp_storage_bytes,
+              const KeyT* d_keys_in,
+              KeyT* d_keys_out,
+              const ValueT* d_values_in,
+              ValueT* d_values_out,
               NumItemsT num_items,
               DecomposerT decomposer,
               cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -658,19 +657,20 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+    constexpr bool is_descending     = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @brief Sorts key-value pairs into ascending order.
@@ -787,15 +787,15 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            DoubleBuffer<KeyT> &d_keys,
-            DoubleBuffer<ValueT> &d_values,
-            NumItemsT num_items,
-            int begin_bit          = 0,
-            int end_bit            = sizeof(KeyT) * 8,
-            cudaStream_t stream    = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -803,43 +803,28 @@ public:
     constexpr bool is_overwrite_okay = true;
 
     return DispatchRadixSort<false, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            DoubleBuffer<KeyT> &d_keys,
-            DoubleBuffer<ValueT> &d_values,
-            NumItemsT num_items,
-            int begin_bit,
-            int end_bit,
-            cudaStream_t stream,
-            bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairs<KeyT, ValueT, NumItemsT>(d_temp_storage,
-                                              temp_storage_bytes,
-                                              d_keys,
-                                              d_values,
-                                              num_items,
-                                              begin_bit,
-                                              end_bit,
-                                              stream);
+    return SortPairs<KeyT, ValueT, NumItemsT>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts key-value pairs into ascending order using :math:`\approx N` auxiliary storage.
@@ -937,14 +922,14 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairs(void *d_temp_storage,
-              size_t &temp_storage_bytes,
-              DoubleBuffer<KeyT> &d_keys,
-              DoubleBuffer<ValueT> &d_values,
+    SortPairs(void* d_temp_storage,
+              size_t& temp_storage_bytes,
+              DoubleBuffer<KeyT>& d_keys,
+              DoubleBuffer<ValueT>& d_values,
               NumItemsT num_items,
               DecomposerT decomposer,
               cudaStream_t stream = 0)
@@ -960,15 +945,16 @@ public:
     constexpr bool is_overwrite_okay = true;
     constexpr bool is_descending     = false;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -1078,14 +1064,14 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairs(void *d_temp_storage,
-              size_t &temp_storage_bytes,
-              DoubleBuffer<KeyT> &d_keys,
-              DoubleBuffer<ValueT> &d_values,
+    SortPairs(void* d_temp_storage,
+              size_t& temp_storage_bytes,
+              DoubleBuffer<KeyT>& d_keys,
+              DoubleBuffer<ValueT>& d_values,
               NumItemsT num_items,
               DecomposerT decomposer,
               int begin_bit,
@@ -1103,17 +1089,18 @@ public:
     constexpr bool is_overwrite_okay = true;
     constexpr bool is_descending     = false;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @brief Sorts key-value pairs into descending order.
@@ -1220,17 +1207,17 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      size_t &temp_storage_bytes,
-                      const KeyT *d_keys_in,
-                      KeyT *d_keys_out,
-                      const ValueT *d_values_in,
-                      ValueT *d_values_out,
-                      NumItemsT num_items,
-                      int begin_bit       = 0,
-                      int end_bit         = sizeof(KeyT) * 8,
-                      cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1240,52 +1227,43 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in),
-                                  d_values_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
     return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      size_t &temp_storage_bytes,
-                      const KeyT *d_keys_in,
-                      KeyT *d_keys_out,
-                      const ValueT *d_values_in,
-                      ValueT *d_values_out,
-                      NumItemsT num_items,
-                      int begin_bit,
-                      int end_bit,
-                      cudaStream_t stream,
-                      bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairsDescending<KeyT, ValueT, NumItemsT>(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys_in,
-                                                        d_keys_out,
-                                                        d_values_in,
-                                                        d_values_out,
-                                                        num_items,
-                                                        begin_bit,
-                                                        end_bit,
-                                                        stream);
+    return SortPairsDescending<KeyT, ValueT, NumItemsT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      begin_bit,
+      end_bit,
+      stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx 2N` auxiliary storage.
@@ -1391,21 +1369,22 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairsDescending(void *d_temp_storage,
-                        size_t &temp_storage_bytes,
-                        const KeyT *d_keys_in,
-                        KeyT *d_keys_out,
-                        const ValueT *d_values_in,
-                        ValueT *d_values_out,
-                        NumItemsT num_items,
-                        DecomposerT decomposer,
-                        int begin_bit,
-                        int end_bit,
-                        cudaStream_t stream = 0)
+    SortPairsDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      const KeyT* d_keys_in,
+      KeyT* d_keys_out,
+      const ValueT* d_values_in,
+      ValueT* d_values_out,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      int begin_bit,
+      int end_bit,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1421,20 +1400,21 @@ public:
     // is not set.
     constexpr bool is_overwrite_okay = false;
     constexpr bool is_descending     = true;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -1530,19 +1510,20 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairsDescending(void *d_temp_storage,
-                        size_t &temp_storage_bytes,
-                        const KeyT *d_keys_in,
-                        KeyT *d_keys_out,
-                        const ValueT *d_values_in,
-                        ValueT *d_values_out,
-                        NumItemsT num_items,
-                        DecomposerT decomposer,
-                        cudaStream_t stream = 0)
+    SortPairsDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      const KeyT* d_keys_in,
+      KeyT* d_keys_out,
+      const ValueT* d_values_in,
+      ValueT* d_values_out,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1558,18 +1539,19 @@ public:
     // is not set.
     constexpr bool is_overwrite_okay = false;
     constexpr bool is_descending     = true;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
-    DoubleBuffer<ValueT> d_values(const_cast<ValueT *>(d_values_in), d_values_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+    DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @brief Sorts key-value pairs into descending order.
@@ -1681,15 +1663,15 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      size_t &temp_storage_bytes,
-                      DoubleBuffer<KeyT> &d_keys,
-                      DoubleBuffer<ValueT> &d_values,
-                      NumItemsT num_items,
-                      int begin_bit          = 0,
-                      int end_bit            = sizeof(KeyT) * 8,
-                      cudaStream_t stream    = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -1697,43 +1679,28 @@ public:
     constexpr bool is_overwrite_okay = true;
 
     return DispatchRadixSort<true, KeyT, ValueT, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename ValueT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      size_t &temp_storage_bytes,
-                      DoubleBuffer<KeyT> &d_keys,
-                      DoubleBuffer<ValueT> &d_values,
-                      NumItemsT num_items,
-                      int begin_bit,
-                      int end_bit,
-                      cudaStream_t stream,
-                      bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairsDescending<KeyT, ValueT, NumItemsT>(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys,
-                                                        d_values,
-                                                        num_items,
-                                                        begin_bit,
-                                                        end_bit,
-                                                        stream);
+    return SortPairsDescending<KeyT, ValueT, NumItemsT>(
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts key-value pairs into descending order using :math:`\approx N` auxiliary storage.
@@ -1831,17 +1798,18 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairsDescending(void *d_temp_storage,
-                        size_t &temp_storage_bytes,
-                        DoubleBuffer<KeyT> &d_keys,
-                        DoubleBuffer<ValueT> &d_values,
-                        NumItemsT num_items,
-                        DecomposerT decomposer,
-                        cudaStream_t stream = 0)
+    SortPairsDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      DoubleBuffer<KeyT>& d_keys,
+      DoubleBuffer<ValueT>& d_values,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1854,15 +1822,16 @@ public:
     constexpr bool is_overwrite_okay = true;
     constexpr bool is_descending     = true;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -1972,19 +1941,20 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename ValueT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortPairsDescending(void *d_temp_storage,
-                        size_t &temp_storage_bytes,
-                        DoubleBuffer<KeyT> &d_keys,
-                        DoubleBuffer<ValueT> &d_values,
-                        NumItemsT num_items,
-                        DecomposerT decomposer,
-                        int begin_bit,
-                        int end_bit,
-                        cudaStream_t stream = 0)
+    SortPairsDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      DoubleBuffer<KeyT>& d_keys,
+      DoubleBuffer<ValueT>& d_values,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      int begin_bit,
+      int end_bit,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -1997,25 +1967,25 @@ public:
     constexpr bool is_overwrite_okay = true;
     constexpr bool is_descending     = true;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //@}  end member group
-  /******************************************************************//**
-   * @name Keys-only
-   *********************************************************************/
+  /******************************************************************/ /**
+                                                                        * @name Keys-only
+                                                                        *********************************************************************/
   //@{
-
 
   //! @brief Sorts keys into ascending order.
   //!        (`~2N` auxiliary storage required)
@@ -2112,15 +2082,15 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           NumItemsT num_items,
-           int begin_bit       = 0,
-           int end_bit         = sizeof(KeyT) * 8,
-           cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2130,7 +2100,7 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     // Null value type
     DoubleBuffer<NullType> d_values;
 
@@ -2238,22 +2208,22 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           NumItemsT num_items,
-           DecomposerT decomposer,
-           int begin_bit,
-           int end_bit,
-           cudaStream_t stream = 0)
+    SortKeys(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             const KeyT* d_keys_in,
+             KeyT* d_keys_out,
+             NumItemsT num_items,
+             DecomposerT decomposer,
+             int begin_bit,
+             int end_bit,
+             cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2265,21 +2235,22 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    constexpr bool is_descending     = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -2366,20 +2337,20 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortKeys(void *d_temp_storage,
-             size_t &temp_storage_bytes,
-             const KeyT *d_keys_in,
-             KeyT *d_keys_out,
+    SortKeys(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             const KeyT* d_keys_in,
+             KeyT* d_keys_out,
              NumItemsT num_items,
              DecomposerT decomposer,
              cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2391,48 +2362,41 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    constexpr bool is_descending = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    constexpr bool is_descending     = false;
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           NumItemsT num_items,
-           int begin_bit,
-           int end_bit,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeys<KeyT, NumItemsT>(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_keys_in,
-                                     d_keys_out,
-                                     num_items,
-                                     begin_bit,
-                                     end_bit,
-                                     stream);
+    return SortKeys<KeyT, NumItemsT>(
+      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream);
   }
-  #endif
-
+#endif
 
   //! @brief Sorts keys into ascending order. (`~N` auxiliary storage required).
   //!
@@ -2531,14 +2495,14 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           NumItemsT num_items,
-           int begin_bit       = 0,
-           int end_bit         = sizeof(KeyT) * 8,
-           cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2549,41 +2513,26 @@ public:
     DoubleBuffer<NullType> d_values;
 
     return DispatchRadixSort<false, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           NumItemsT num_items,
-           int begin_bit,
-           int end_bit,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeys<KeyT, NumItemsT>(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_keys,
-                                     num_items,
-                                     begin_bit,
-                                     end_bit,
-                                     stream);
+    return SortKeys<KeyT, NumItemsT>(d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts keys into ascending order using :math:`\approx N` auxiliary storage.
@@ -2669,19 +2618,19 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           NumItemsT num_items,
-           DecomposerT decomposer,
-           cudaStream_t stream = 0)
+    SortKeys(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             DoubleBuffer<KeyT>& d_keys,
+             NumItemsT num_items,
+             DecomposerT decomposer,
+             cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2689,18 +2638,19 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending = false;
+    constexpr bool is_descending     = false;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -2798,21 +2748,21 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-  SortKeys(void *d_temp_storage,
-           size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           NumItemsT num_items,
-           DecomposerT decomposer,
-           int begin_bit,
-           int end_bit,
-           cudaStream_t stream = 0)
+    SortKeys(void* d_temp_storage,
+             size_t& temp_storage_bytes,
+             DoubleBuffer<KeyT>& d_keys,
+             NumItemsT num_items,
+             DecomposerT decomposer,
+             int begin_bit,
+             int end_bit,
+             cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
-    using offset_t = detail::choose_offset_t<NumItemsT>;
+    using offset_t           = detail::choose_offset_t<NumItemsT>;
     using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
@@ -2820,20 +2770,21 @@ public:
                   "arithmetic types");
 
     constexpr bool is_overwrite_okay = true;
-    constexpr bool is_descending = false;
+    constexpr bool is_descending     = false;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @brief Sorts keys into descending order.
@@ -2927,15 +2878,15 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     size_t &temp_storage_bytes,
-                     const KeyT *d_keys_in,
-                     KeyT *d_keys_out,
-                     NumItemsT num_items,
-                     int begin_bit       = 0,
-                     int end_bit         = sizeof(KeyT) * 8,
-                     cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -2945,47 +2896,32 @@ public:
     // create a new double-buffer internally when the `is_overwrite_ok` flag
     // is not set.
     constexpr bool is_overwrite_okay = false;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
     return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     size_t &temp_storage_bytes,
-                     const KeyT *d_keys_in,
-                     KeyT *d_keys_out,
-                     NumItemsT num_items,
-                     int begin_bit,
-                     int end_bit,
-                     cudaStream_t stream,
-                     bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeysDescending<KeyT, NumItemsT>(d_temp_storage,
-                                               temp_storage_bytes,
-                                               d_keys_in,
-                                               d_keys_out,
-                                               num_items,
-                                               begin_bit,
-                                               end_bit,
-                                               stream);
+    return SortKeysDescending<KeyT, NumItemsT>(
+      d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, num_items, begin_bit, end_bit, stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx 2N` auxiliary storage.
@@ -3079,19 +3015,20 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortKeysDescending(void *d_temp_storage,
-                       size_t &temp_storage_bytes,
-                       const KeyT *d_keys_in,
-                       KeyT *d_keys_out,
-                       NumItemsT num_items,
-                       DecomposerT decomposer,
-                       int begin_bit,
-                       int end_bit,
-                       cudaStream_t stream = 0)
+    SortKeysDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      const KeyT* d_keys_in,
+      KeyT* d_keys_out,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      int begin_bit,
+      int end_bit,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3107,20 +3044,21 @@ public:
     // is not set.
     constexpr bool is_overwrite_okay = false;
     constexpr bool is_descending     = true;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @rst
@@ -3204,17 +3142,18 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortKeysDescending(void *d_temp_storage,
-                       size_t &temp_storage_bytes,
-                       const KeyT *d_keys_in,
-                       KeyT *d_keys_out,
-                       NumItemsT num_items,
-                       DecomposerT decomposer,
-                       cudaStream_t stream = 0)
+    SortKeysDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      const KeyT* d_keys_in,
+      KeyT* d_keys_out,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3230,18 +3169,19 @@ public:
     // is not set.
     constexpr bool is_overwrite_okay = false;
     constexpr bool is_descending     = true;
-    DoubleBuffer<KeyT> d_keys(const_cast<KeyT *>(d_keys_in), d_keys_out);
+    DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @brief Sorts keys into descending order.
@@ -3336,14 +3276,14 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     size_t &temp_storage_bytes,
-                     DoubleBuffer<KeyT> &d_keys,
-                     NumItemsT num_items,
-                     int begin_bit       = 0,
-                     int end_bit         = sizeof(KeyT) * 8,
-                     cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit       = 0,
+    int end_bit         = sizeof(KeyT) * 8,
+    cudaStream_t stream = 0)
   {
     // Unsigned integer type for global offsets.
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -3354,41 +3294,27 @@ public:
     DoubleBuffer<NullType> d_values;
 
     return DispatchRadixSort<true, KeyT, NullType, OffsetT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 
-  #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   template <typename KeyT, typename NumItemsT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     size_t &temp_storage_bytes,
-                     DoubleBuffer<KeyT> &d_keys,
-                     NumItemsT num_items,
-                     int begin_bit,
-                     int end_bit,
-                     cudaStream_t stream,
-                     bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    NumItemsT num_items,
+    int begin_bit,
+    int end_bit,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeysDescending<KeyT, NumItemsT>(d_temp_storage,
-                                               temp_storage_bytes,
-                                               d_keys,
-                                               num_items,
-                                               begin_bit,
-                                               end_bit,
-                                               stream);
+    return SortKeysDescending<KeyT, NumItemsT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, begin_bit, end_bit, stream);
   }
-  #endif
+#endif
 
   //! @rst
   //! Sorts keys into descending order using :math:`\approx N` auxiliary storage.
@@ -3474,16 +3400,17 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortKeysDescending(void *d_temp_storage,
-                       size_t &temp_storage_bytes,
-                       DoubleBuffer<KeyT> &d_keys,
-                       NumItemsT num_items,
-                       DecomposerT decomposer,
-                       cudaStream_t stream = 0)
+    SortKeysDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      DoubleBuffer<KeyT>& d_keys,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3497,15 +3424,16 @@ public:
     constexpr bool is_descending     = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      stream);
   }
 
   //! @rst
@@ -3603,18 +3531,19 @@ public:
   //!   **[optional]** CUDA stream to launch kernels within.
   //!   Default is stream<sub>0</sub>.
   template <typename KeyT, typename NumItemsT, typename DecomposerT>
-  CUB_RUNTIME_FUNCTION static                                //
-    typename ::cuda::std::enable_if<                         //
+  CUB_RUNTIME_FUNCTION static //
+    typename ::cuda::std::enable_if< //
       !::cuda::std::is_convertible<DecomposerT, int>::value, //
       cudaError_t>::type
-    SortKeysDescending(void *d_temp_storage,
-                       size_t &temp_storage_bytes,
-                       DoubleBuffer<KeyT> &d_keys,
-                       NumItemsT num_items,
-                       DecomposerT decomposer,
-                       int begin_bit,
-                       int end_bit,
-                       cudaStream_t stream = 0)
+    SortKeysDescending(
+      void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      DoubleBuffer<KeyT>& d_keys,
+      NumItemsT num_items,
+      DecomposerT decomposer,
+      int begin_bit,
+      int end_bit,
+      cudaStream_t stream = 0)
   {
     // unsigned integer type for global offsets
     using offset_t           = detail::choose_offset_t<NumItemsT>;
@@ -3628,17 +3557,18 @@ public:
     constexpr bool is_descending     = true;
     DoubleBuffer<NullType> d_values;
 
-    return DeviceRadixSort::custom_radix_sort<is_descending>(decomposer_check_t{},
-                                                             d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             is_overwrite_okay,
-                                                             d_keys,
-                                                             d_values,
-                                                             static_cast<offset_t>(num_items),
-                                                             decomposer,
-                                                             begin_bit,
-                                                             end_bit,
-                                                             stream);
+    return DeviceRadixSort::custom_radix_sort<is_descending>(
+      decomposer_check_t{},
+      d_temp_storage,
+      temp_storage_bytes,
+      is_overwrite_okay,
+      d_keys,
+      d_values,
+      static_cast<offset_t>(num_items),
+      decomposer,
+      begin_bit,
+      end_bit,
+      stream);
   }
 
   //! @}  end member group

@@ -93,9 +93,7 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockStoreAlgorithm _STORE_ALGORITHM,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename ScalingType = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B,
-                                                 NOMINAL_ITEMS_PER_THREAD_4B,
-                                                 ComputeT>,
+          typename ScalingType       = MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
           typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
@@ -158,10 +156,10 @@ struct AgentScan
   // Input iterator wrapper type (for applying cache modifier)
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
-  using WrappedInputIteratorT = cub::detail::conditional_t<
-    std::is_pointer<InputIteratorT>::value,
-    CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-    InputIteratorT>;
+  using WrappedInputIteratorT =
+    cub::detail::conditional_t< std::is_pointer<InputIteratorT>::value,
+                                CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                                InputIteratorT>;
 
   // Constants
   enum
@@ -188,15 +186,11 @@ struct AgentScan
     BlockStoreT;
 
   // Parameterized BlockScan type
-  typedef BlockScan<AccumT,
-                    AgentScanPolicyT::BLOCK_THREADS,
-                    AgentScanPolicyT::SCAN_ALGORITHM>
-    BlockScanT;
+  typedef BlockScan<AccumT, AgentScanPolicyT::BLOCK_THREADS, AgentScanPolicyT::SCAN_ALGORITHM> BlockScanT;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT = typename AgentScanPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT =
-    TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, 0 /* PTX */, DelayConstructorT>;
+  using DelayConstructorT     = typename AgentScanPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT = TilePrefixCallbackOp<AccumT, ScanOpT, ScanTileStateT, 0 /* PTX */, DelayConstructorT>;
 
   // Stateful BlockScan prefix callback type for managing a running total while
   // scanning consecutive tiles
@@ -229,11 +223,11 @@ struct AgentScan
   // Per-thread fields
   //---------------------------------------------------------------------
 
-  _TempStorage &temp_storage; ///< Reference to temp_storage
+  _TempStorage& temp_storage; ///< Reference to temp_storage
   WrappedInputIteratorT d_in; ///< Input data
-  OutputIteratorT d_out;      ///< Output data
-  ScanOpT scan_op;            ///< Binary scan operator
-  InitValueT init_value;      ///< The init_value element for ScanOpT
+  OutputIteratorT d_out; ///< Output data
+  ScanOpT scan_op; ///< Binary scan operator
+  InitValueT init_value; ///< The init_value element for ScanOpT
 
   //---------------------------------------------------------------------
   // Block scan utility methods
@@ -242,54 +236,48 @@ struct AgentScan
   /**
    * Exclusive scan specialization (first tile)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-                                           AccumT init_value,
-                                           ScanOpT scan_op,
-                                           AccumT &block_aggregate,
-                                           Int2Type<false> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    AccumT init_value,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<false> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan)
-      .ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
+    BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, init_value, scan_op, block_aggregate);
     block_aggregate = scan_op(init_value, block_aggregate);
   }
 
   /**
    * Inclusive scan specialization (first tile)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-                                           InitValueT /*init_value*/,
-                                           ScanOpT scan_op,
-                                           AccumT &block_aggregate,
-                                           Int2Type<true> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    AccumT (&items)[ITEMS_PER_THREAD],
+    InitValueT /*init_value*/,
+    ScanOpT scan_op,
+    AccumT& block_aggregate,
+    Int2Type<true> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan)
-      .InclusiveScan(items, items, scan_op, block_aggregate);
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, block_aggregate);
   }
 
   /**
    * Exclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-                                           ScanOpT scan_op,
-                                           PrefixCallback &prefix_op,
-                                           Int2Type<false> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<false> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan)
-      .ExclusiveScan(items, items, scan_op, prefix_op);
+    BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(items, items, scan_op, prefix_op);
   }
 
   /**
    * Inclusive scan specialization (subsequent tiles)
    */
   template <typename PrefixCallback>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(AccumT (&items)[ITEMS_PER_THREAD],
-                                           ScanOpT scan_op,
-                                           PrefixCallback &prefix_op,
-                                           Int2Type<true> /*is_inclusive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    AccumT (&items)[ITEMS_PER_THREAD], ScanOpT scan_op, PrefixCallback& prefix_op, Int2Type<true> /*is_inclusive*/)
   {
-    BlockScanT(temp_storage.scan_storage.scan)
-      .InclusiveScan(items, items, scan_op, prefix_op);
+    BlockScanT(temp_storage.scan_storage.scan).InclusiveScan(items, items, scan_op, prefix_op);
   }
 
   //---------------------------------------------------------------------
@@ -312,11 +300,8 @@ struct AgentScan
    * @param init_value
    *   Initial value to seed the exclusive scan
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScan(TempStorage &temp_storage,
-                                       InputIteratorT d_in,
-                                       OutputIteratorT d_out,
-                                       ScanOpT scan_op,
-                                       InitValueT init_value)
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScan(
+    TempStorage& temp_storage, InputIteratorT d_in, OutputIteratorT d_out, ScanOpT scan_op, InitValueT init_value)
       : temp_storage(temp_storage.Alias())
       , d_in(d_in)
       , d_out(d_out)
@@ -346,10 +331,8 @@ struct AgentScan
    *   Global tile state descriptor
    */
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT num_remaining,
-                                              int tile_idx,
-                                              OffsetT tile_offset,
-                                              ScanTileStateT &tile_state)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ConsumeTile(OffsetT num_remaining, int tile_idx, OffsetT tile_offset, ScanTileStateT& tile_state)
   {
     // Load items
     AccumT items[ITEMS_PER_THREAD];
@@ -358,8 +341,7 @@ struct AgentScan
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
-      BlockLoadT(temp_storage.load)
-        .Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
+      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, num_remaining, *(d_in + tile_offset));
     }
     else
     {
@@ -373,11 +355,7 @@ struct AgentScan
     {
       // Scan first tile
       AccumT block_aggregate;
-      ScanTile(items,
-               init_value,
-               scan_op,
-               block_aggregate,
-               Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
 
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
       {
@@ -387,10 +365,7 @@ struct AgentScan
     else
     {
       // Scan non-first tile
-      TilePrefixCallbackOpT prefix_op(tile_state,
-                                      temp_storage.scan_storage.prefix,
-                                      scan_op,
-                                      tile_idx);
+      TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, scan_op, tile_idx);
       ScanTile(items, scan_op, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
@@ -399,8 +374,7 @@ struct AgentScan
     // Store items
     if (IS_LAST_TILE)
     {
-      BlockStoreT(temp_storage.store)
-        .Store(d_out + tile_offset, items, num_remaining);
+      BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, num_remaining);
     }
     else
     {
@@ -420,9 +394,7 @@ struct AgentScan
    * @param start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
-                                               ScanTileStateT &tile_state,
-                                               int start_tile)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
     // Blocks are launched in increasing order, so just assign one tile per
     // block
@@ -465,9 +437,8 @@ struct AgentScan
    *   Number of valid items in the tile
    */
   template <bool IS_FIRST_TILE, bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT tile_offset,
-                                              RunningPrefixCallbackOp &prefix_op,
-                                              int valid_items = TILE_ITEMS)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ConsumeTile(OffsetT tile_offset, RunningPrefixCallbackOp& prefix_op, int valid_items = TILE_ITEMS)
   {
     // Load items
     AccumT items[ITEMS_PER_THREAD];
@@ -476,8 +447,7 @@ struct AgentScan
     {
       // Fill last element with the first element because collectives are
       // not suffix guarded.
-      BlockLoadT(temp_storage.load)
-        .Load(d_in + tile_offset, items, valid_items, *(d_in + tile_offset));
+      BlockLoadT(temp_storage.load).Load(d_in + tile_offset, items, valid_items, *(d_in + tile_offset));
     }
     else
     {
@@ -490,11 +460,7 @@ struct AgentScan
     if (IS_FIRST_TILE)
     {
       AccumT block_aggregate;
-      ScanTile(items,
-               init_value,
-               scan_op,
-               block_aggregate,
-               Int2Type<IS_INCLUSIVE>());
+      ScanTile(items, init_value, scan_op, block_aggregate, Int2Type<IS_INCLUSIVE>());
       prefix_op.running_total = block_aggregate;
     }
     else
@@ -507,8 +473,7 @@ struct AgentScan
     // Store items
     if (IS_LAST_TILE)
     {
-      BlockStoreT(temp_storage.store)
-        .Store(d_out + tile_offset, items, valid_items);
+      BlockStoreT(temp_storage.store).Store(d_out + tile_offset, items, valid_items);
     }
     else
     {
@@ -525,8 +490,7 @@ struct AgentScan
    * @param[in] range_end
    *   Threadblock end offset (exclusive)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset,
-                                               OffsetT range_end)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end)
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(scan_op);
 
@@ -570,9 +534,7 @@ struct AgentScan
    * @param[in] prefix
    *   The prefix to apply to the scan segment
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset,
-                                               OffsetT range_end,
-                                               AccumT prefix)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT range_offset, OffsetT range_end, AccumT prefix)
   {
     BlockScanRunningPrefixOp<AccumT, ScanOpT> prefix_op(prefix, scan_op);
 
@@ -593,4 +555,3 @@ struct AgentScan
 };
 
 CUB_NAMESPACE_END
-

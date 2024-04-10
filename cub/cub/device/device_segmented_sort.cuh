@@ -47,12 +47,11 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 //! @rst
 //! DeviceSegmentedSort provides device-wide, parallel operations for
 //! computing a batched sort across multiple, non-overlapping sequences of
 //! data items residing within device-accessible memory.
-//! 
+//!
 //! Overview
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -60,7 +59,7 @@ CUB_NAMESPACE_BEGIN
 //! The underlying sorting algorithm is undefined. Depending on the segment size,
 //! it might be radix sort, merge sort or something else. Therefore, no
 //! assumptions on the underlying implementation should be made.
-//! 
+//!
 //! Differences from DeviceSegmentedRadixSort
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -72,7 +71,7 @@ CUB_NAMESPACE_BEGIN
 //! moderate segment sizes (up to thousands of items).
 //! This algorithm is more complex and consists of multiple kernels. This fact
 //! leads to longer compilation times as well as larger binaries sizes.
-//! 
+//!
 //! Supported Types
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -81,10 +80,10 @@ CUB_NAMESPACE_BEGIN
 //! DeviceSegmentedSort can sort all of the built-in C++ numeric primitive types
 //! (``unsigned char``, ``int``, ``double``, etc.) as well as CUDA's ``__half`` and
 //! ``__nv_bfloat16`` 16-bit floating-point types.
-//! 
+//!
 //! Segments are not required to be contiguous. Any element of input(s) or
 //! output(s) outside the specified segments will not be accessed nor modified.
-//! 
+//!
 //! A simple example
 //! +++++++++++++++++++++++++++++++++++++++++++++
 //!
@@ -92,7 +91,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //!    #include <cub/cub.cuh>
 //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-//! 
+//!
 //!    // Declare, allocate, and initialize device-accessible pointers
 //!    // for sorting data
 //!    int  num_items;          // e.g., 7
@@ -103,7 +102,7 @@ CUB_NAMESPACE_BEGIN
 //!    int  *d_values_in;       // e.g., [0, 1, 2, 3, 4, 5, 6]
 //!    int  *d_values_out;      // e.g., [-, -, -, -, -, -, -]
 //!    ...
-//! 
+//!
 //!    // Determine temporary device storage requirements
 //!    void     *d_temp_storage = NULL;
 //!    size_t   temp_storage_bytes = 0;
@@ -111,19 +110,19 @@ CUB_NAMESPACE_BEGIN
 //!        d_temp_storage, temp_storage_bytes,
 //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
 //!        num_items, num_segments, d_offsets, d_offsets + 1);
-//! 
+//!
 //!    // Allocate temporary storage
 //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-//! 
+//!
 //!    // Run sorting operation
 //!    cub::DeviceSegmentedSort::SortPairs(
 //!        d_temp_storage, temp_storage_bytes,
 //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
 //!        num_items, num_segments, d_offsets, d_offsets + 1);
-//! 
+//!
 //!    // d_keys_out            <-- [6, 7, 8, 0, 3, 5, 9]
 //!    // d_values_out          <-- [1, 2, 0, 5, 4, 3, 6]
-//! 
+//!
 //! @endrst
 struct DeviceSegmentedSort
 {
@@ -131,9 +130,9 @@ struct DeviceSegmentedSort
   //! @{
 
   //! @rst
-  //! Sorts segments of keys into ascending order. 
+  //! Sorts segments of keys into ascending order.
   //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -150,17 +149,17 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the batched sorting of three segments
   //! (with one zero-length segment) of ``int`` keys.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible
   //!    // pointers for sorting data
   //!    int  num_items;          // e.g., 7
@@ -169,64 +168,64 @@ struct DeviceSegmentedSort
   //!    int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_keys_out;        // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void    *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [6, 7, 8, 0, 3, 5, 9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -234,24 +233,22 @@ struct DeviceSegmentedSort
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the i-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
@@ -274,21 +271,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -307,7 +301,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -324,7 +318,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -335,7 +329,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -344,61 +338,61 @@ struct DeviceSegmentedSort
   //!    int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_keys_out;        // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void    *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [8, 7, 6, 9, 5, 3, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -406,24 +400,22 @@ struct DeviceSegmentedSort
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     std::size_t &temp_storage_bytes,
-                     const KeyT *d_keys_in,
-                     KeyT *d_keys_out,
-                     int num_items,
-                     int num_segments,
-                     BeginOffsetIteratorT d_begin_offsets,
-                     EndOffsetIteratorT d_end_offsets,
-                     cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
@@ -446,21 +438,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     std::size_t &temp_storage_bytes,
-                     const KeyT *d_keys_in,
-                     KeyT *d_keys_out,
-                     int num_items,
-                     int num_segments,
-                     BeginOffsetIteratorT d_begin_offsets,
-                     EndOffsetIteratorT d_end_offsets,
-                     cudaStream_t stream,
-                     bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -478,7 +467,7 @@ struct DeviceSegmentedSort
 
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -503,18 +492,18 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the batched sorting of three segments
   //! (with one zero-length segment) of ``i`` nt keys.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible
   //!    // pointers for sorting data
   //!    int  num_items;          // e.g., 7
@@ -523,66 +512,66 @@ struct DeviceSegmentedSort
   //!    int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_key_alt_buf;     // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a DoubleBuffer to wrap the pair of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [6, 7, 8, 0, 3, 5, 9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no
   //!   work is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -590,23 +579,21 @@ struct DeviceSegmentedSort
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
@@ -629,38 +616,28 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           DoubleBuffer<KeyT> &d_keys,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return SortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   //! @rst
   //! Sorts segments of keys into descending order. Approximately
   //! ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -685,7 +662,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -696,7 +673,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // sorting data
   //!    int  num_items;          // e.g., 7
@@ -705,66 +682,66 @@ struct DeviceSegmentedSort
   //!    int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_key_alt_buf;     // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a DoubleBuffer to wrap the pair of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [8, 7, 6, 9, 5, 3, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -772,23 +749,21 @@ struct DeviceSegmentedSort
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1<= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     std::size_t &temp_storage_bytes,
-                     DoubleBuffer<KeyT> &d_keys,
-                     int num_items,
-                     int num_segments,
-                     BeginOffsetIteratorT d_begin_offsets,
-                     EndOffsetIteratorT d_end_offsets,
-                     cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
@@ -811,38 +786,28 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysDescending(void *d_temp_storage,
-                     std::size_t &temp_storage_bytes,
-                     DoubleBuffer<KeyT> &d_keys,
-                     int num_items,
-                     int num_segments,
-                     BeginOffsetIteratorT d_begin_offsets,
-                     EndOffsetIteratorT d_end_offsets,
-                     cudaStream_t stream,
-                     bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return SortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   //! @rst
   //! Sorts segments of keys into ascending order. Approximately
   //! ``num_items +  2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -860,7 +825,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -871,7 +836,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -880,64 +845,64 @@ struct DeviceSegmentedSort
   //!    int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_keys_out;        // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void    *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [6, 7, 8, 0, 3, 5, 9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -945,24 +910,22 @@ struct DeviceSegmentedSort
   //!   the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``.
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 const KeyT *d_keys_in,
-                 KeyT *d_keys_out,
-                 int num_items,
-                 int num_segments,
-                 BeginOffsetIteratorT d_begin_offsets,
-                 EndOffsetIteratorT d_end_offsets,
-                 cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
@@ -985,21 +948,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 const KeyT *d_keys_in,
-                 KeyT *d_keys_out,
-                 int num_items,
-                 int num_segments,
-                 BeginOffsetIteratorT d_begin_offsets,
-                 EndOffsetIteratorT d_end_offsets,
-                 cudaStream_t stream,
-                 bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1016,9 +976,9 @@ struct DeviceSegmentedSort
   }
 
   //! @rst
-  //! Sorts segments of keys into descending order. 
+  //! Sorts segments of keys into descending order.
   //! Approximately ``num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -1026,7 +986,7 @@ struct DeviceSegmentedSort
   //!   the latter is specified as ``segment_offsets + 1``).
   //! - StableSortKeysDescending is stable: it preserves the relative ordering of
   //!   equivalent elements. That is, if ``x`` and ``y`` are elements such that
-  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither ``x < y`` nor ``y < x``) 
+  //!   ``x`` precedes ``y``, and if the two elements are equivalent (neither ``x < y`` nor ``y < x``)
   //!   then a postcondition of stable sort is that ``x`` still precedes ``y``.
   //! - The range ``[d_keys_out, d_keys_out + num_items)`` shall not overlap
   //!   ``[d_keys_in, d_keys_in + num_items)``,
@@ -1035,7 +995,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1045,7 +1005,7 @@ struct DeviceSegmentedSort
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -1054,57 +1014,57 @@ struct DeviceSegmentedSort
   //!    int  *d_keys_in;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_keys_out;        // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void    *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [8, 7, 6, 9, 5, 3, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
@@ -1112,7 +1072,7 @@ struct DeviceSegmentedSort
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and
   //!   ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1121,24 +1081,22 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeysDescending(void *d_temp_storage,
-                           std::size_t &temp_storage_bytes,
-                           const KeyT *d_keys_in,
-                           KeyT *d_keys_out,
-                           int num_items,
-                           int num_segments,
-                           BeginOffsetIteratorT d_begin_offsets,
-                           EndOffsetIteratorT d_end_offsets,
-                           cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
@@ -1161,41 +1119,37 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeysDescending(void *d_temp_storage,
-                           std::size_t &temp_storage_bytes,
-                           const KeyT *d_keys_in,
-                           KeyT *d_keys_out,
-                           int num_items,
-                           int num_segments,
-                           BeginOffsetIteratorT d_begin_offsets,
-                           EndOffsetIteratorT d_end_offsets,
-                           cudaStream_t stream,
-                           bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return StableSortKeysDescending<KeyT,
-                                    BeginOffsetIteratorT,
-                                    EndOffsetIteratorT>(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys_in,
-                                                        d_keys_out,
-                                                        num_items,
-                                                        num_segments,
-                                                        d_begin_offsets,
-                                                        d_end_offsets,
-                                                        stream);
+    return StableSortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of keys into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -1221,18 +1175,18 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the batched sorting of three segments
   //! (with one zero-length segment) of ``i`` nt keys.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -1241,66 +1195,66 @@ struct DeviceSegmentedSort
   //!    int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_key_alt_buf;     // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a DoubleBuffer to wrap the pair of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortKeys(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [6, 7, 8, 0, 3, 5, 9]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1309,23 +1263,21 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 DoubleBuffer<KeyT> &d_keys,
-                 int num_items,
-                 int num_segments,
-                 BeginOffsetIteratorT d_begin_offsets,
-                 EndOffsetIteratorT d_end_offsets,
-                 cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
@@ -1348,38 +1300,28 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 DoubleBuffer<KeyT> &d_keys,
-                 int num_items,
-                 int num_segments,
-                 BeginOffsetIteratorT d_begin_offsets,
-                 EndOffsetIteratorT d_end_offsets,
-                 cudaStream_t stream,
-                 bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return StableSortKeys<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   //! @rst
-  //! Sorts segments of keys into descending order. 
+  //! Sorts segments of keys into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers managed by a
   //!   DoubleBuffer structure that indicates which of the two buffers is
   //!   "current" (and thus contains the input data to be sorted).
@@ -1405,17 +1347,17 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ```i`
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
   //! The code snippet below illustrates the batched sorting of three segments
   //! (with one zero-length segment) of ``i`` nt keys.
-  //! 
+  //!
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -1424,66 +1366,66 @@ struct DeviceSegmentedSort
   //!    int  *d_key_buf;         // e.g., [8, 6, 7, 5, 3, 0, 9]
   //!    int  *d_key_alt_buf;     // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a DoubleBuffer to wrap the pair of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortKeysDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [8, 7, 6, 9, 5, 3, 0]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1492,23 +1434,21 @@ struct DeviceSegmentedSort
   //!   ``d_values_*``. If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the
   //!   ``i``-th segment is considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeysDescending(void *d_temp_storage,
-                           std::size_t &temp_storage_bytes,
-                           DoubleBuffer<KeyT> &d_keys,
-                           int num_items,
-                           int num_segments,
-                           BeginOffsetIteratorT d_begin_offsets,
-                           EndOffsetIteratorT d_end_offsets,
-                           cudaStream_t stream = 0)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
@@ -1531,33 +1471,22 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeysDescending(void *d_temp_storage,
-                           std::size_t &temp_storage_bytes,
-                           DoubleBuffer<KeyT> &d_keys,
-                           int num_items,
-                           int num_segments,
-                           BeginOffsetIteratorT d_begin_offsets,
-                           EndOffsetIteratorT d_end_offsets,
-                           cudaStream_t stream,
-                           bool debug_synchronous)
+  template <typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return StableSortKeysDescending<KeyT,
-                                    BeginOffsetIteratorT,
-                                    EndOffsetIteratorT>(d_temp_storage,
-                                                        temp_storage_bytes,
-                                                        d_keys,
-                                                        num_items,
-                                                        num_segments,
-                                                        d_begin_offsets,
-                                                        d_end_offsets,
-                                                        stream);
+    return StableSortKeysDescending<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
 
   //! @}  end member group
@@ -1567,7 +1496,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -1585,7 +1514,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1597,7 +1526,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //!    
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -1608,7 +1537,7 @@ struct DeviceSegmentedSort
   //!    int  *d_values_in;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_values_out;      // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //!    
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
@@ -1616,70 +1545,70 @@ struct DeviceSegmentedSort
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //!    
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //!    
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //!    
+  //!
   //!    // d_keys_out            <-- [6, 7, 8, 0, 3, 5, 9]
   //!    // d_values_out          <-- [1, 2, 0, 5, 4, 3, 6]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Device-accessible pointer to the corresponding input sequence of
   //!   associated value items
-  //! 
+  //!
   //! @param[out] d_values_out
   //!   Device-accessible pointer to the correspondingly-reordered output
   //!   sequence of associated value items
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1688,27 +1617,24 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i]-1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           const ValueT *d_values_in,
-           ValueT *d_values_out,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
@@ -1731,24 +1657,20 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           const KeyT *d_keys_in,
-           KeyT *d_keys_out,
-           const ValueT *d_values_in,
-           ValueT *d_values_out,
-           int num_items,
-           int num_segments,
-           BeginOffsetIteratorT d_begin_offsets,
-           EndOffsetIteratorT d_end_offsets,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -1767,9 +1689,9 @@ struct DeviceSegmentedSort
   }
 
   //! @rst
-  //! Sorts segments of key-value pairs into descending order. 
+  //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -1787,7 +1709,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -1799,7 +1721,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // sorting data
   //!    int  num_items;          // e.g., 7
@@ -1810,7 +1732,7 @@ struct DeviceSegmentedSort
   //!    int  *d_values_in;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_values_out;      // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void    *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
@@ -1818,70 +1740,70 @@ struct DeviceSegmentedSort
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [8, 7, 6, 9, 5, 3, 0]
   //!    // d_values_out          <-- [0, 2, 1, 6, 3, 4, 5]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Device-accessible pointer to the corresponding input sequence of
   //!   associated value items
-  //! 
+  //!
   //! @param[out] d_values_out
   //!   Device-accessible pointer to the correspondingly-reordered output
   //!   sequence of associated value items
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -1890,27 +1812,24 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the i-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      std::size_t &temp_storage_bytes,
-                      const KeyT *d_keys_in,
-                      KeyT *d_keys_out,
-                      const ValueT *d_values_in,
-                      ValueT *d_values_out,
-                      int num_items,
-                      int num_segments,
-                      BeginOffsetIteratorT d_begin_offsets,
-                      EndOffsetIteratorT d_end_offsets,
-                      cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
@@ -1933,47 +1852,41 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      std::size_t &temp_storage_bytes,
-                      const KeyT *d_keys_in,
-                      KeyT *d_keys_out,
-                      const ValueT *d_values_in,
-                      ValueT *d_values_out,
-                      int num_items,
-                      int num_segments,
-                      BeginOffsetIteratorT d_begin_offsets,
-                      EndOffsetIteratorT d_end_offsets,
-                      cudaStream_t stream,
-                      bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairsDescending<KeyT,
-                               ValueT,
-                               BeginOffsetIteratorT,
-                               EndOffsetIteratorT>(d_temp_storage,
-                                                   temp_storage_bytes,
-                                                   d_keys_in,
-                                                   d_keys_out,
-                                                   d_values_in,
-                                                   d_values_out,
-                                                   num_items,
-                                                   num_segments,
-                                                   d_begin_offsets,
-                                                   d_end_offsets,
-                                                   stream);
+    return SortPairsDescending<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys_in,
+      d_keys_out,
+      d_values_in,
+      d_values_out,
+      num_items,
+      num_segments,
+      d_begin_offsets,
+      d_end_offsets,
+      stream);
   }
 
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -2002,7 +1915,7 @@ struct DeviceSegmentedSort
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -2014,7 +1927,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -2025,76 +1938,76 @@ struct DeviceSegmentedSort
   //!    int  *d_value_buf;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_value_alt_buf;   // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a set of DoubleBuffers to wrap pairs of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [6, 7, 8, 0, 3, 5, 9]
   //!    // d_values.Current()    <-- [5, 4, 3, 1, 2, 0, 6]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in,out] d_values
   //!   Double-buffer of values whose "current" device-accessible buffer contains
   //!   the unsorted input values and, upon return, is updated to point to the
   //!   sorted output values
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -2103,25 +2016,22 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the i-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            std::size_t &temp_storage_bytes,
-            DoubleBuffer<KeyT> &d_keys,
-            DoubleBuffer<ValueT> &d_values,
-            int num_items,
-            int num_segments,
-            BeginOffsetIteratorT d_begin_offsets,
-            EndOffsetIteratorT d_end_offsets,
-            cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
@@ -2141,22 +2051,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            std::size_t &temp_storage_bytes,
-            DoubleBuffer<KeyT> &d_keys,
-            DoubleBuffer<ValueT> &d_values,
-            int num_items,
-            int num_segments,
-            BeginOffsetIteratorT d_begin_offsets,
-            EndOffsetIteratorT d_end_offsets,
-            cudaStream_t stream,
-            bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -2175,7 +2081,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -2204,7 +2110,7 @@ struct DeviceSegmentedSort
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -2215,7 +2121,7 @@ struct DeviceSegmentedSort
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers for
   //!    // sorting data
   //!    int  num_items;          // e.g., 7
@@ -2226,76 +2132,76 @@ struct DeviceSegmentedSort
   //!    int  *d_value_buf;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_value_alt_buf;   // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a set of DoubleBuffers to wrap pairs of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::SortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [8, 7, 6, 9, 5, 3, 0]
   //!    // d_values.Current()    <-- [0, 2, 1, 6, 3, 4, 5]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in,out] d_values
   //!   Double-buffer of values whose "current" device-accessible buffer contains
   //!   the unsorted input values and, upon return, is updated to point to the
   //!   sorted output values
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -2304,25 +2210,22 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      std::size_t &temp_storage_bytes,
-                      DoubleBuffer<KeyT> &d_keys,
-                      DoubleBuffer<ValueT> &d_values,
-                      int num_items,
-                      int num_segments,
-                      BeginOffsetIteratorT d_begin_offsets,
-                      EndOffsetIteratorT d_end_offsets,
-                      cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
@@ -2342,22 +2245,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsDescending(void *d_temp_storage,
-                      std::size_t &temp_storage_bytes,
-                      DoubleBuffer<KeyT> &d_keys,
-                      DoubleBuffer<ValueT> &d_values,
-                      int num_items,
-                      int num_segments,
-                      BeginOffsetIteratorT d_begin_offsets,
-                      EndOffsetIteratorT d_end_offsets,
-                      cudaStream_t stream,
-                      bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -2374,9 +2273,9 @@ struct DeviceSegmentedSort
   }
 
   //! @rst
-  //! Sorts segments of key-value pairs into ascending order. 
+  //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -2395,7 +2294,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -2407,7 +2306,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -2418,7 +2317,7 @@ struct DeviceSegmentedSort
   //!    int  *d_values_in;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_values_out;      // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
@@ -2426,69 +2325,69 @@ struct DeviceSegmentedSort
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortPairs(
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [6, 7, 8, 0, 3, 5, 9]
   //!    // d_values_out          <-- [1, 2, 0, 5, 4, 3, 6]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When nullptr, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Device-accessible pointer to the corresponding input sequence of
   //!   associated value items
-  //! 
+  //!
   //! @param[out] d_values_out
   //!   Device-accessible pointer to the correspondingly-reordered output
   //!   sequence of associated value items
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -2497,27 +2396,24 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  const KeyT *d_keys_in,
-                  KeyT *d_keys_out,
-                  const ValueT *d_values_in,
-                  ValueT *d_values_out,
-                  int num_items,
-                  int num_segments,
-                  BeginOffsetIteratorT d_begin_offsets,
-                  EndOffsetIteratorT d_end_offsets,
-                  cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = false;
@@ -2540,24 +2436,20 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  const KeyT *d_keys_in,
-                  KeyT *d_keys_out,
-                  const ValueT *d_values_in,
-                  ValueT *d_values_out,
-                  int num_items,
-                  int num_segments,
-                  BeginOffsetIteratorT d_begin_offsets,
-                  EndOffsetIteratorT d_end_offsets,
-                  cudaStream_t stream,
-                  bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -2578,7 +2470,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_items + 2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The contents of the input data are not altered by the sorting operation.
   //! - When the input is a contiguous sequence of segments, a single sequence
   //!   ``segment_offsets`` (of length ``num_segments + 1``) can be aliased
@@ -2597,7 +2489,7 @@ struct DeviceSegmentedSort
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -2608,7 +2500,7 @@ struct DeviceSegmentedSort
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -2619,7 +2511,7 @@ struct DeviceSegmentedSort
   //!    int  *d_values_in;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_values_out;      // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
@@ -2627,70 +2519,70 @@ struct DeviceSegmentedSort
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes,
   //!        d_keys_in, d_keys_out, d_values_in, d_values_out,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys_out            <-- [8, 7, 6, 9, 5, 3, 0]
   //!    // d_values_out          <-- [0, 2, 1, 6, 3, 4, 5]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in] d_keys_in
   //!   Device-accessible pointer to the input data of key data to sort
-  //! 
+  //!
   //! @param[out] d_keys_out
   //!   Device-accessible pointer to the sorted output sequence of key data
-  //! 
+  //!
   //! @param[in] d_values_in
   //!   Device-accessible pointer to the corresponding input sequence of
   //!   associated value items
-  //! 
+  //!
   //! @param[out] d_values_out
   //!   Device-accessible pointer to the correspondingly-reordered output
   //!   sequence of associated value items
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -2699,27 +2591,24 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairsDescending(void *d_temp_storage,
-                            std::size_t &temp_storage_bytes,
-                            const KeyT *d_keys_in,
-                            KeyT *d_keys_out,
-                            const ValueT *d_values_in,
-                            ValueT *d_values_out,
-                            int num_items,
-                            int num_segments,
-                            BeginOffsetIteratorT d_begin_offsets,
-                            EndOffsetIteratorT d_end_offsets,
-                            cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = false;
@@ -2742,24 +2631,20 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairsDescending(void *d_temp_storage,
-                            std::size_t &temp_storage_bytes,
-                            const KeyT *d_keys_in,
-                            KeyT *d_keys_out,
-                            const ValueT *d_values_in,
-                            ValueT *d_values_out,
-                            int num_items,
-                            int num_segments,
-                            BeginOffsetIteratorT d_begin_offsets,
-                            EndOffsetIteratorT d_end_offsets,
-                            cudaStream_t stream,
-                            bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    const KeyT* d_keys_in,
+    KeyT* d_keys_out,
+    const ValueT* d_values_in,
+    ValueT* d_values_out,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -2780,7 +2665,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of key-value pairs into ascending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers. Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -2810,7 +2695,7 @@ struct DeviceSegmentedSort
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -2822,7 +2707,7 @@ struct DeviceSegmentedSort
   //!
   //!    #include <cub/cub.cuh>
   //!    // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -2833,76 +2718,76 @@ struct DeviceSegmentedSort
   //!    int  *d_value_buf;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_value_alt_buf;   // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a set of DoubleBuffers to wrap pairs of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortPairs(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [6, 7, 8, 0, 3, 5, 9]
   //!    // d_values.Current()    <-- [5, 4, 3, 1, 2, 0, 6]
-  //! 
+  //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in,out] d_values
   //!   Double-buffer of values whose "current" device-accessible buffer contains
   //!   the unsorted input values and, upon return, is updated to point to the
   //!   sorted output values
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -2911,25 +2796,22 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i]-1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  DoubleBuffer<KeyT> &d_keys,
-                  DoubleBuffer<ValueT> &d_values,
-                  int num_items,
-                  int num_segments,
-                  BeginOffsetIteratorT d_begin_offsets,
-                  EndOffsetIteratorT d_end_offsets,
-                  cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = false;
     constexpr bool is_overwrite_okay = true;
@@ -2949,22 +2831,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  DoubleBuffer<KeyT> &d_keys,
-                  DoubleBuffer<ValueT> &d_values,
-                  int num_items,
-                  int num_segments,
-                  BeginOffsetIteratorT d_begin_offsets,
-                  EndOffsetIteratorT d_end_offsets,
-                  cudaStream_t stream,
-                  bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -2983,7 +2861,7 @@ struct DeviceSegmentedSort
   //! @rst
   //! Sorts segments of key-value pairs into descending order.
   //! Approximately ``2 * num_segments`` auxiliary storage required.
-  //! 
+  //!
   //! - The sorting operation is given a pair of key buffers and a corresponding
   //!   pair of associated value buffers.  Each pair is managed by a DoubleBuffer
   //!   structure that indicates which of the two buffers is "current" (and thus
@@ -3013,7 +2891,7 @@ struct DeviceSegmentedSort
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
-  //! 
+  //!
   //! Snippet
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -3024,7 +2902,7 @@ struct DeviceSegmentedSort
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_segmented_sort.cuh>
-  //! 
+  //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for sorting data
   //!    int  num_items;          // e.g., 7
@@ -3035,76 +2913,76 @@ struct DeviceSegmentedSort
   //!    int  *d_value_buf;       // e.g., [0, 1, 2, 3, 4, 5, 6]
   //!    int  *d_value_alt_buf;   // e.g., [-, -, -, -, -, -, -]
   //!    ...
-  //! 
+  //!
   //!    // Create a set of DoubleBuffers to wrap pairs of device pointers
   //!    cub::DoubleBuffer<int> d_keys(d_key_buf, d_key_alt_buf);
   //!    cub::DoubleBuffer<int> d_values(d_value_buf, d_value_alt_buf);
-  //! 
+  //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = NULL;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceSegmentedSort::StableSortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
-  //! 
+  //!
   //!    // Run sorting operation
   //!    cub::DeviceSegmentedSort::StableSortPairsDescending(
   //!        d_temp_storage, temp_storage_bytes, d_keys, d_values,
   //!        num_items, num_segments, d_offsets, d_offsets + 1);
-  //! 
+  //!
   //!    // d_keys.Current()      <-- [8, 7, 6, 9, 5, 3, 0]
   //!    // d_values.Current()    <-- [0, 2, 1, 6, 3, 4, 5]
   //!
   //! @endrst
-  //! 
+  //!
   //! @tparam KeyT
   //!   **[inferred]** Key type
-  //! 
+  //!
   //! @tparam ValueT
   //!   **[inferred]** Value type
-  //! 
+  //!
   //! @tparam BeginOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   beginning offsets @iterator
-  //! 
+  //!
   //! @tparam EndOffsetIteratorT
   //!   **[inferred]** Random-access input iterator type for reading segment
   //!   ending offsets @iterator
-  //! 
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work
   //!   is done
-  //! 
+  //!
   //! @param[in,out] temp_storage_bytes
   //!   Reference to size in bytes of `d_temp_storage` allocation
-  //! 
+  //!
   //! @param[in,out] d_keys
   //!   Reference to the double-buffer of keys whose "current" device-accessible
   //!   buffer contains the unsorted input keys and, upon return, is updated to
   //!   point to the sorted output keys
-  //! 
+  //!
   //! @param[in,out] d_values
   //!   Double-buffer of values whose "current" device-accessible buffer contains
   //!   the unsorted input values and, upon return, is updated to point to the
   //!   sorted output values
-  //! 
+  //!
   //! @param[in] num_items
   //!   The total number of items to sort (across all segments)
-  //! 
+  //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the sorting data
-  //! 
+  //!
   //! @param[in] d_begin_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of beginning offsets of
   //!   length ``num_segments``, such that ``d_begin_offsets[i]`` is the first
   //!   element of the *i*\ :sup:`th` data segment in ``d_keys_*`` and ``d_values_*``
   //!   @endrst
-  //! 
+  //!
   //! @param[in] d_end_offsets
   //!   @rst
   //!   Random-access input iterator to the sequence of ending offsets of length
@@ -3113,25 +2991,22 @@ struct DeviceSegmentedSort
   //!   If ``d_end_offsets[i] - 1 <= d_begin_offsets[i]``, the ``i``-th segment is
   //!   considered empty.
   //!   @endrst
-  //! 
+  //!
   //! @param[in] stream
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairsDescending(void *d_temp_storage,
-                            std::size_t &temp_storage_bytes,
-                            DoubleBuffer<KeyT> &d_keys,
-                            DoubleBuffer<ValueT> &d_values,
-                            int num_items,
-                            int num_segments,
-                            BeginOffsetIteratorT d_begin_offsets,
-                            EndOffsetIteratorT d_end_offsets,
-                            cudaStream_t stream = 0)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream = 0)
   {
     constexpr bool is_descending     = true;
     constexpr bool is_overwrite_okay = true;
@@ -3151,22 +3026,18 @@ struct DeviceSegmentedSort
       stream);
   }
 
-  template <typename KeyT,
-            typename ValueT,
-            typename BeginOffsetIteratorT,
-            typename EndOffsetIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairsDescending(void *d_temp_storage,
-                            std::size_t &temp_storage_bytes,
-                            DoubleBuffer<KeyT> &d_keys,
-                            DoubleBuffer<ValueT> &d_values,
-                            int num_items,
-                            int num_segments,
-                            BeginOffsetIteratorT d_begin_offsets,
-                            EndOffsetIteratorT d_end_offsets,
-                            cudaStream_t stream,
-                            bool debug_synchronous)
+  template <typename KeyT, typename ValueT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairsDescending(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    DoubleBuffer<KeyT>& d_keys,
+    DoubleBuffer<ValueT>& d_values,
+    int num_items,
+    int num_segments,
+    BeginOffsetIteratorT d_begin_offsets,
+    EndOffsetIteratorT d_end_offsets,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
@@ -3184,6 +3055,5 @@ struct DeviceSegmentedSort
 
   //! @}  end member group
 };
-
 
 CUB_NAMESPACE_END

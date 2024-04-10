@@ -39,7 +39,7 @@
 struct CustomLess
 {
   template <typename T>
-  __device__ __host__ inline bool operator()(const T &lhs, const T &rhs) const
+  __device__ __host__ inline bool operator()(const T& lhs, const T& rhs) const
   {
     return lhs < rhs;
   }
@@ -54,8 +54,7 @@ template <int ITEMS_PER_THREAD,
           typename T,
           typename SegmentSizeItT,
           typename ActionT>
-__global__ void
-warp_merge_sort_kernel(T *in, T *out, SegmentSizeItT segment_sizes, T oob_default, ActionT action)
+__global__ void warp_merge_sort_kernel(T* in, T* out, SegmentSizeItT segment_sizes, T oob_default, ActionT action)
 {
   using warp_merge_sort_t = cub::WarpMergeSort<T, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>;
   using storage_t         = typename warp_merge_sort_t::TempStorage;
@@ -111,17 +110,17 @@ template <int ITEMS_PER_THREAD,
           typename ValueT,
           typename SegmentSizeItT,
           typename ActionT>
-__global__ void warp_merge_sort_kernel(KeyT *keys_in,
-                                       KeyT *keys_out,
-                                       ValueT *values_in,
-                                       ValueT *values_out,
-                                       SegmentSizeItT segment_sizes,
-                                       KeyT oob_default,
-                                       ActionT action)
+__global__ void warp_merge_sort_kernel(
+  KeyT* keys_in,
+  KeyT* keys_out,
+  ValueT* values_in,
+  ValueT* values_out,
+  SegmentSizeItT segment_sizes,
+  KeyT oob_default,
+  ActionT action)
 {
-  using warp_merge_sort_t =
-    cub::WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>;
-  using storage_t = typename warp_merge_sort_t::TempStorage;
+  using warp_merge_sort_t = cub::WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>;
+  using storage_t         = typename warp_merge_sort_t::TempStorage;
 
   // Get linear thread and warp index
   const int tid     = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -178,10 +177,8 @@ template <class CompareOp>
 struct warp_stable_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             T (&thread_data)[ITEMS_PER_THREAD],
-                             int /*valid_items*/,
-                             T /*oob_default*/) const
+  __device__ void
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/, T /*oob_default*/) const
   {
     warp_sort.StableSort(thread_data, CompareOp{});
   }
@@ -194,10 +191,8 @@ template <class CompareOp>
 struct warp_partial_stable_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             T (&thread_data)[ITEMS_PER_THREAD],
-                             int valid_items,
-                             T oob_default) const
+  __device__ void
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int valid_items, T oob_default) const
   {
     warp_sort.StableSort(thread_data, CompareOp{}, valid_items, oob_default);
   }
@@ -210,10 +205,8 @@ template <class CompareOp>
 struct warp_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             T (&thread_data)[ITEMS_PER_THREAD],
-                             int /*valid_items*/,
-                             T /*oob_default*/) const
+  __device__ void
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int /*valid_items*/, T /*oob_default*/) const
   {
     warp_sort.Sort(thread_data, CompareOp{});
   }
@@ -226,10 +219,8 @@ template <class CompareOp>
 struct warp_partial_sort_keys_t
 {
   template <typename T, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             T (&thread_data)[ITEMS_PER_THREAD],
-                             int valid_items,
-                             T oob_default) const
+  __device__ void
+  operator()(WarpSortT& warp_sort, T (&thread_data)[ITEMS_PER_THREAD], int valid_items, T oob_default) const
   {
     warp_sort.Sort(thread_data, CompareOp{}, valid_items, oob_default);
   }
@@ -242,11 +233,12 @@ template <class CompareOp>
 struct warp_stable_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             KeyT (&keys)[ITEMS_PER_THREAD],
-                             ValueT (&values)[ITEMS_PER_THREAD],
-                             int /*valid_items*/,
-                             KeyT /*oob_default*/) const
+  __device__ void operator()(
+    WarpSortT& warp_sort,
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    int /*valid_items*/,
+    KeyT /*oob_default*/) const
   {
     warp_sort.StableSort(keys, values, CompareOp{});
   }
@@ -259,11 +251,12 @@ template <class CompareOp>
 struct warp_partial_stable_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             KeyT (&keys)[ITEMS_PER_THREAD],
-                             ValueT (&values)[ITEMS_PER_THREAD],
-                             int valid_items,
-                             KeyT oob_default) const
+  __device__ void operator()(
+    WarpSortT& warp_sort,
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    int valid_items,
+    KeyT oob_default) const
   {
     warp_sort.StableSort(keys, values, CompareOp{}, valid_items, oob_default);
   }
@@ -276,11 +269,12 @@ template <class CompareOp>
 struct warp_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             KeyT (&keys)[ITEMS_PER_THREAD],
-                             ValueT (&values)[ITEMS_PER_THREAD],
-                             int /*valid_items*/,
-                             KeyT /*oob_default*/) const
+  __device__ void operator()(
+    WarpSortT& warp_sort,
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    int /*valid_items*/,
+    KeyT /*oob_default*/) const
   {
     warp_sort.Sort(keys, values, CompareOp{});
   }
@@ -293,11 +287,12 @@ template <class CompareOp>
 struct warp_partial_sort_pairs_t
 {
   template <typename KeyT, typename ValueT, int ITEMS_PER_THREAD, typename WarpSortT>
-  __device__ void operator()(WarpSortT &warp_sort,
-                             KeyT (&keys)[ITEMS_PER_THREAD],
-                             ValueT (&values)[ITEMS_PER_THREAD],
-                             int valid_items,
-                             KeyT oob_default) const
+  __device__ void operator()(
+    WarpSortT& warp_sort,
+    KeyT (&keys)[ITEMS_PER_THREAD],
+    ValueT (&values)[ITEMS_PER_THREAD],
+    int valid_items,
+    KeyT oob_default) const
   {
     warp_sort.Sort(keys, values, CompareOp{}, valid_items, oob_default);
   }
@@ -312,18 +307,12 @@ template <int ITEMS_PER_THREAD,
           typename T,
           typename SegmentSizesItT,
           typename ActionT>
-void warp_merge_sort(c2h::device_vector<T> &in,
-                     c2h::device_vector<T> &out,
-                     SegmentSizesItT segment_sizes,
-                     T oob_default,
-                     ActionT action)
+void warp_merge_sort(
+  c2h::device_vector<T>& in, c2h::device_vector<T>& out, SegmentSizesItT segment_sizes, T oob_default, ActionT action)
 {
   warp_merge_sort_kernel<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, TOTAL_WARPS>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(in.data()),
-                                                thrust::raw_pointer_cast(out.data()),
-                                                segment_sizes,
-                                                oob_default,
-                                                action);
+    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+      thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), segment_sizes, oob_default, action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -339,22 +328,24 @@ template <int ITEMS_PER_THREAD,
           typename ValueT,
           typename SegmentSizesItT,
           typename ActionT>
-void warp_merge_sort(c2h::device_vector<KeyT> &keys_in,
-                     c2h::device_vector<KeyT> &keys_out,
-                     c2h::device_vector<ValueT> &values_in,
-                     c2h::device_vector<ValueT> &values_out,
-                     SegmentSizesItT segment_sizes,
-                     KeyT oob_default,
-                     ActionT action)
+void warp_merge_sort(
+  c2h::device_vector<KeyT>& keys_in,
+  c2h::device_vector<KeyT>& keys_out,
+  c2h::device_vector<ValueT>& values_in,
+  c2h::device_vector<ValueT>& values_out,
+  SegmentSizesItT segment_sizes,
+  KeyT oob_default,
+  ActionT action)
 {
   warp_merge_sort_kernel<ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, TOTAL_WARPS>
-    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(thrust::raw_pointer_cast(keys_in.data()),
-                                                thrust::raw_pointer_cast(keys_out.data()),
-                                                thrust::raw_pointer_cast(values_in.data()),
-                                                thrust::raw_pointer_cast(values_out.data()),
-                                                segment_sizes,
-                                                oob_default,
-                                                action);
+    <<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
+      thrust::raw_pointer_cast(keys_in.data()),
+      thrust::raw_pointer_cast(keys_out.data()),
+      thrust::raw_pointer_cast(values_in.data()),
+      thrust::raw_pointer_cast(values_out.data()),
+      segment_sizes,
+      oob_default,
+      action);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
@@ -365,12 +356,13 @@ void warp_merge_sort(c2h::device_vector<KeyT> &keys_in,
  * are out-of-bounds.
  */
 template <typename RandomItT, typename SegmentSizeItT, typename T, typename CompareOp>
-void compute_stable_host_reference(RandomItT h_data,
-                                   SegmentSizeItT segment_sizes,
-                                   unsigned int num_segments,
-                                   T oob_default,
-                                   int logical_warp_items,
-                                   CompareOp compare_op)
+void compute_stable_host_reference(
+  RandomItT h_data,
+  SegmentSizeItT segment_sizes,
+  unsigned int num_segments,
+  T oob_default,
+  int logical_warp_items,
+  CompareOp compare_op)
 {
   for (unsigned int segment_id = 0; segment_id < num_segments; segment_id++)
   {
@@ -391,8 +383,7 @@ enum class stability
 };
 
 // List of key types to test
-using custom_t =
-  c2h::custom_type_t<c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
+using custom_t  = c2h::custom_type_t<c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 using key_types = c2h::type_list<std::uint8_t, std::int32_t, std::int64_t, custom_t>;
 
 // List of value types
@@ -420,15 +411,11 @@ struct params_t
   static constexpr bool is_stable           = c2h::get<3, TestType>::value == stability::stable;
 };
 
-CUB_TEST("Warp sort on keys-only works",
-         "[sort][warp]",
-         key_types,
-         logical_warp_threads,
-         items_per_thread_list,
-         stability_list)
+CUB_TEST(
+  "Warp sort on keys-only works", "[sort][warp]", key_types, logical_warp_threads, items_per_thread_list, stability_list)
 {
-  using params = params_t<TestType>;
-  using type   = typename params::type;
+  using params    = params_t<TestType>;
+  using type      = typename params::type;
   using CompareOp = CustomLess;
   using warp_sort_delegate =
     cub::detail::conditional_t<params::is_stable, warp_stable_sort_keys_t<CompareOp>, warp_sort_keys_t<CompareOp>>;
@@ -442,11 +429,7 @@ CUB_TEST("Warp sort on keys-only works",
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
-    d_in,
-    d_out,
-    segment_sizes,
-    oob_default,
-    warp_sort_delegate{});
+    d_in, d_out, segment_sizes, oob_default, warp_sort_delegate{});
 
   if (params::is_stable)
   {
@@ -484,7 +467,7 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
 {
   using params             = params_t<TestType>;
   using type               = typename params::type;
-  using CompareOp = CustomLess;
+  using CompareOp          = CustomLess;
   using warp_sort_delegate = cub::detail::
     conditional_t<params::is_stable, warp_partial_stable_sort_keys_t<CompareOp>, warp_partial_sort_keys_t<CompareOp>>;
 
@@ -498,11 +481,7 @@ CUB_TEST("Warp sort keys-only on partial warp-tile works",
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
-    d_in,
-    d_out,
-    d_segment_sizes.cbegin(),
-    oob_default,
-    warp_sort_delegate{});
+    d_in, d_out, d_segment_sizes.cbegin(), oob_default, warp_sort_delegate{});
 
   c2h::host_vector<int> segment_sizes = d_segment_sizes;
 
@@ -550,7 +529,7 @@ CUB_TEST("Warp sort on keys-value pairs works",
   using params     = params_t<TestType>;
   using key_type   = typename params::type;
   using value_type = typename c2h::get<4, TestType>;
-  using CompareOp = CustomLess;
+  using CompareOp  = CustomLess;
   using warp_sort_delegate =
     cub::detail::conditional_t<params::is_stable, warp_stable_sort_pairs_t<CompareOp>, warp_sort_pairs_t<CompareOp>>;
 
@@ -566,13 +545,7 @@ CUB_TEST("Warp sort on keys-value pairs works",
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    segment_sizes,
-    oob_default,
-    warp_sort_delegate{});
+    d_keys_in, d_keys_out, d_values_in, d_values_out, segment_sizes, oob_default, warp_sort_delegate{});
 
   if (params::is_stable)
   {
@@ -637,7 +610,7 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
   using params             = params_t<TestType>;
   using key_type           = typename params::type;
   using value_type         = typename c2h::get<4, TestType>;
-  using CompareOp = CustomLess;
+  using CompareOp          = CustomLess;
   using warp_sort_delegate = cub::detail::
     conditional_t<params::is_stable, warp_partial_stable_sort_pairs_t<CompareOp>, warp_partial_sort_pairs_t<CompareOp>>;
 
@@ -654,15 +627,9 @@ CUB_TEST("Warp sort on key-value pairs of a partial warp-tile works",
 
   // Run test
   warp_merge_sort<params::items_per_thread, params::logical_warp_threads, params::total_warps>(
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    d_segment_sizes.cbegin(),
-    oob_default,
-    warp_sort_delegate{});
+    d_keys_in, d_keys_out, d_values_in, d_values_out, d_segment_sizes.cbegin(), oob_default, warp_sort_delegate{});
 
-  c2h::host_vector<int> segment_sizes          = d_segment_sizes;
+  c2h::host_vector<int> segment_sizes = d_segment_sizes;
 
   if (params::is_stable)
   {

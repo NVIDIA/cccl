@@ -70,7 +70,7 @@ int main() {
         { "bitwise", std::map<std::string, std::string>{ { "", ".b" } } },
         { "arithmetic", std::map<std::string, std::string>{ { "u", ".u" }, { "s", ".s" }, { "f", ".f" } } } };
 
-    std::vector<std::string> cv_qualifier{ "volatile "/*, ""*/ };
+    std::vector<std::string> cv_qualifier{ "volatile ", "" };
 
     std::ofstream out("atomic_cuda_generated.h");
 
@@ -107,9 +107,9 @@ int main() {
         out << "    NV_PROVIDES_SM_70, (\n";
         out << "      switch (__memorder) {\n";
         out << "        case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); break;\n";
-        out << "        case __ATOMIC_CONSUME:\n";
-        out << "        case __ATOMIC_ACQUIRE:\n";
-        out << "        case __ATOMIC_ACQ_REL:\n";
+        out << "        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
+        out << "        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();\n";
+        out << "        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();\n";
         out << "        case __ATOMIC_RELEASE: " << fencename("acq_rel"s, s.first) << "(); break;\n";
         out << "        case __ATOMIC_RELAXED: break;\n";
         out << "        default: assert(0);\n";
@@ -117,10 +117,10 @@ int main() {
         out << "    ),\n";
         out << "    NV_IS_DEVICE, (\n";
         out << "      switch (__memorder) {\n";
-        out << "        case __ATOMIC_SEQ_CST:\n";
-        out << "        case __ATOMIC_CONSUME:\n";
-        out << "        case __ATOMIC_ACQUIRE:\n";
-        out << "        case __ATOMIC_ACQ_REL:\n";
+        out << "        case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();\n";
+        out << "        case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
+        out << "        case __ATOMIC_ACQUIRE: _LIBCUDACXX_FALLTHROUGH();\n";
+        out << "        case __ATOMIC_ACQ_REL: _LIBCUDACXX_FALLTHROUGH();\n";
         out << "        case __ATOMIC_RELEASE: __cuda_membar_" << s.first << "(); break;\n";
         out << "        case __ATOMIC_RELAXED: break;\n";
         out << "        default: assert(0);\n";
@@ -146,8 +146,8 @@ int main() {
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__memorder) {\n";
-                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "();\n";
-                out << "          case __ATOMIC_CONSUME:\n";
+                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_load_acquire_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_load_relaxed_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
                 out << "          default: assert(0);\n";
@@ -155,8 +155,8 @@ int main() {
                 out << "      ),\n";
                 out << "      NV_IS_DEVICE, (\n";
                 out << "        switch (__memorder) {\n";
-                out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "();\n";
-                out << "          case __ATOMIC_CONSUME:\n";
+                out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_load_volatile_" << sz << "_" << s.first << "(__ptr, __tmp); __cuda_membar_" << s.first << "(); break;\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_load_volatile_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
                 out << "          default: assert(0);\n";
@@ -184,15 +184,15 @@ int main() {
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__memorder) {\n";
                 out << "          case __ATOMIC_RELEASE: __cuda_store_release_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
-                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "();\n";
+                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_store_relaxed_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
                 out << "          default: assert(0);\n";
                 out << "        }\n";
                 out << "      ),\n";
                 out << "      NV_IS_DEVICE, (\n";
                 out << "        switch (__memorder) {\n";
-                out << "          case __ATOMIC_RELEASE:\n";
-                out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "();\n";
+                out << "          case __ATOMIC_RELEASE: _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_SEQ_CST: __cuda_membar_" << s.first << "(); _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_store_volatile_" << sz << "_" << s.first << "(__ptr, __tmp); break;\n";
                 out << "          default: assert(0);\n";
                 out << "        }\n";
@@ -246,8 +246,8 @@ int main() {
                                 out << "    NV_DISPATCH_TARGET(\n";
                                 out << "      NV_PROVIDES_SM_70, (\n";
                                 out << "        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {\n";
-                                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "();\n";
-                                out << "          case __ATOMIC_CONSUME:\n";
+                                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                                 out << "          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_acquire_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_ACQ_REL: __cuda_compare_exchange_acq_rel_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_RELEASE: __cuda_compare_exchange_release_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
@@ -257,9 +257,9 @@ int main() {
                                 out << "      ),\n";
                                 out << "      NV_IS_DEVICE, (\n";
                                 out << "        switch (__stronger_order_cuda(__success_memorder, __failure_memorder)) {\n";
-                                out << "          case __ATOMIC_SEQ_CST:\n";
-                                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "();\n";
-                                out << "          case __ATOMIC_CONSUME:\n";
+                                out << "          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                                 out << "          case __ATOMIC_ACQUIRE: __cuda_compare_exchange_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); __cuda_membar_" << s.first << "(); break;\n";
                                 out << "          case __ATOMIC_RELEASE: __cuda_membar_" << s.first << "(); __cuda_compare_exchange_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_RELAXED: __cuda_compare_exchange_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __old, __old_tmp, __tmp); break;\n";
@@ -307,8 +307,8 @@ int main() {
                                 out << "    NV_DISPATCH_TARGET(\n";
                                 out << "      NV_PROVIDES_SM_70, (\n";
                                 out << "        switch (__memorder) {\n";
-                                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "();\n";
-                                out << "          case __ATOMIC_CONSUME:\n";
+                                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                                 out << "          case __ATOMIC_ACQUIRE: __cuda_" << rmw.first << "_acquire_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_ACQ_REL: __cuda_" << rmw.first << "_acq_rel_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_RELEASE: __cuda_" << rmw.first << "_release_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
@@ -318,9 +318,9 @@ int main() {
                                 out << "      ),\n";
                                 out << "      NV_IS_DEVICE, (\n";
                                 out << "        switch (__memorder) {\n";
-                                out << "          case __ATOMIC_SEQ_CST:\n";
-                                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "();\n";
-                                out << "          case __ATOMIC_CONSUME:\n";
+                                out << "          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                                 out << "          case __ATOMIC_ACQUIRE: __cuda_" << rmw.first << "_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); __cuda_membar_" << s.first << "(); break;\n";
                                 out << "          case __ATOMIC_RELEASE: __cuda_membar_" << s.first << "(); __cuda_" << rmw.first << "_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                                 out << "          case __ATOMIC_RELAXED: __cuda_" << rmw.first << "_volatile_" << type.first << sz << "_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
@@ -355,8 +355,8 @@ int main() {
                 out << "    NV_DISPATCH_TARGET(\n";
                 out << "      NV_PROVIDES_SM_70, (\n";
                 out << "        switch (__memorder) {\n";
-                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "();\n";
-                out << "          case __ATOMIC_CONSUME:\n";
+                out << "          case __ATOMIC_SEQ_CST: " << fencename("sc"s, s.first) << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_fetch_add_acquire_u64_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                 out << "          case __ATOMIC_ACQ_REL: __cuda_fetch_add_acq_rel_u64_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                 out << "          case __ATOMIC_RELEASE: __cuda_fetch_add_release_u64_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
@@ -365,9 +365,9 @@ int main() {
                 out << "      ),\n";
                 out << "      NV_IS_DEVICE, (\n";
                 out << "        switch (__memorder) {\n";
-                out << "          case __ATOMIC_SEQ_CST:\n";
-                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "();\n";
-                out << "          case __ATOMIC_CONSUME:\n";
+                out << "          case __ATOMIC_SEQ_CST: _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_ACQ_REL: __cuda_membar_" << s.first << "(); _LIBCUDACXX_FALLTHROUGH();\n";
+                out << "          case __ATOMIC_CONSUME: _LIBCUDACXX_FALLTHROUGH();\n";
                 out << "          case __ATOMIC_ACQUIRE: __cuda_fetch_add_volatile_u64_" << s.first << "(__ptr, __tmp, __tmp); __cuda_membar_" << s.first << "(); break;\n";
                 out << "          case __ATOMIC_RELEASE: __cuda_membar_" << s.first << "(); __cuda_fetch_add_volatile_u64_" << s.first << "(__ptr, __tmp, __tmp); break;\n";
                 out << "          case __ATOMIC_RELAXED: __cuda_fetch_add_volatile_u64_" << s.first << "(__ptr, __tmp, __tmp); break;\n";

@@ -47,10 +47,9 @@ using types = nvbench::type_list<uint32_t, uint64_t>;
 
 TEMPLATE_LIST_TEST_CASE("Generators produce power law distributed data", "[gen][power-law]", types)
 {
-  const std::size_t elements = 1 << 28;
-  const std::size_t segments = 4 * 1024;
-  const thrust::device_vector<TestType> d_segment_offsets =
-    generate.power_law.segment_offsets(elements, segments);
+  const std::size_t elements                              = 1 << 28;
+  const std::size_t segments                              = 4 * 1024;
+  const thrust::device_vector<TestType> d_segment_offsets = generate.power_law.segment_offsets(elements, segments);
   REQUIRE(d_segment_offsets.size() == segments + 1);
 
   std::size_t actual_elements = 0;
@@ -58,8 +57,8 @@ TEMPLATE_LIST_TEST_CASE("Generators produce power law distributed data", "[gen][
   const thrust::host_vector<TestType> h_segment_offsets = d_segment_offsets;
   for (int i = 0; i < segments; ++i)
   {
-    const TestType begin   = h_segment_offsets[i];
-    const TestType end     = h_segment_offsets[i + 1];
+    const TestType begin = h_segment_offsets[i];
+    const TestType end   = h_segment_offsets[i + 1];
     REQUIRE(begin <= end);
 
     const std::size_t size = end - begin;

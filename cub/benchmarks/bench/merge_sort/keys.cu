@@ -35,28 +35,28 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK_POW2 tpb 6:10:1
 
 #ifndef TUNE_BASE
-#define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
+#  define TUNE_THREADS_PER_BLOCK (1 << TUNE_THREADS_PER_BLOCK_POW2)
 #endif // TUNE_BASE
 
 using value_t = cub::NullType;
 
 #if !TUNE_BASE
 
-#if TUNE_TRANSPOSE == 0
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
-#else // TUNE_TRANSPOSE == 1
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
-#endif // TUNE_TRANSPOSE
+#  if TUNE_TRANSPOSE == 0
+#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_DIRECT
+#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_DIRECT
+#  else // TUNE_TRANSPOSE == 1
+#    define TUNE_LOAD_ALGORITHM  cub::BLOCK_LOAD_WARP_TRANSPOSE
+#    define TUNE_STORE_ALGORITHM cub::BLOCK_STORE_WARP_TRANSPOSE
+#  endif // TUNE_TRANSPOSE
 
-#if TUNE_LOAD == 0
-#define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#elif TUNE_LOAD == 1
-#define TUNE_LOAD_MODIFIER cub::LOAD_LDG
-#else // TUNE_LOAD == 2
-#define TUNE_LOAD_MODIFIER cub::LOAD_CA
-#endif // TUNE_LOAD 
+#  if TUNE_LOAD == 0
+#    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
+#  elif TUNE_LOAD == 1
+#    define TUNE_LOAD_MODIFIER cub::LOAD_LDG
+#  else // TUNE_LOAD == 2
+#    define TUNE_LOAD_MODIFIER cub::LOAD_CA
+#  endif // TUNE_LOAD
 
 template <typename KeyT>
 struct policy_hub_t
@@ -76,7 +76,7 @@ struct policy_hub_t
 #endif // !TUNE_BASE
 
 template <typename T, typename OffsetT>
-void keys(nvbench::state &state, nvbench::type_list<T, OffsetT>)
+void keys(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using key_t            = T;
   using value_t          = cub::NullType;
@@ -92,8 +92,8 @@ void keys(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   using dispatch_t = cub::
     DispatchStableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::
-    DispatchStableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
+  using dispatch_t =
+    cub::DispatchStableMergeSort<key_input_it_t, value_input_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
@@ -103,8 +103,8 @@ void keys(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> buffer_1 = generate(elements, entropy);
   thrust::device_vector<T> buffer_2(elements);
 
-  key_t *d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
-  key_t *d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
+  key_t* d_buffer_1 = thrust::raw_pointer_cast(buffer_1.data());
+  key_t* d_buffer_2 = thrust::raw_pointer_cast(buffer_2.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -113,29 +113,31 @@ void keys(nvbench::state &state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size{};
-  dispatch_t::Dispatch(nullptr,
-                       temp_size,
-                       d_buffer_1,
-                       nullptr,
-                       d_buffer_2,
-                       nullptr,
-                       static_cast<offset_t>(elements),
-                       compare_op_t{},
-                       0 /* stream */);
+  dispatch_t::Dispatch(
+    nullptr,
+    temp_size,
+    d_buffer_1,
+    nullptr,
+    d_buffer_2,
+    nullptr,
+    static_cast<offset_t>(elements),
+    compare_op_t{},
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto *temp_storage = thrust::raw_pointer_cast(temp.data());
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
-    dispatch_t::Dispatch(temp_storage,
-                         temp_size,
-                         d_buffer_1,
-                         nullptr,
-                         d_buffer_2,
-                         nullptr,
-                         static_cast<offset_t>(elements),
-                         compare_op_t{},
-                         launch.get_stream());
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    dispatch_t::Dispatch(
+      temp_storage,
+      temp_size,
+      d_buffer_1,
+      nullptr,
+      d_buffer_2,
+      nullptr,
+      static_cast<offset_t>(elements),
+      compare_op_t{},
+      launch.get_stream());
   });
 }
 
