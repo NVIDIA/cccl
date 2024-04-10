@@ -50,11 +50,10 @@
 #include <iterator>
 
 #if (THRUST_VERSION >= 100700)
-    // This iterator is compatible with Thrust API 1.7 and newer
-    #include <thrust/iterator/iterator_facade.h>
-    #include <thrust/iterator/iterator_traits.h>
+// This iterator is compatible with Thrust API 1.7 and newer
+#  include <thrust/iterator/iterator_facade.h>
+#  include <thrust/iterator/iterator_traits.h>
 #endif // THRUST_VERSION
-
 
 CUB_NAMESPACE_BEGIN
 
@@ -91,158 +90,152 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template <
-    typename ValueType,
-    typename OffsetT = ptrdiff_t>
+template <typename ValueType, typename OffsetT = ptrdiff_t>
 class ConstantInputIterator
 {
 public:
+  // Required iterator traits
 
-    // Required iterator traits
+  /// My own type
+  typedef ConstantInputIterator self_type;
 
-    /// My own type
-    typedef ConstantInputIterator self_type;
+  /// Type to express the result of subtracting one iterator from another
+  typedef OffsetT difference_type;
 
-    /// Type to express the result of subtracting one iterator from another
-    typedef OffsetT difference_type;
+  /// The type of the element the iterator can point to
+  typedef ValueType value_type;
 
-    /// The type of the element the iterator can point to
-    typedef ValueType value_type;
+  /// The type of a pointer to an element the iterator can point to
+  typedef ValueType* pointer;
 
-    /// The type of a pointer to an element the iterator can point to
-    typedef ValueType *pointer;
-
-    /// The type of a reference to an element the iterator can point to
-    typedef ValueType reference;
+  /// The type of a reference to an element the iterator can point to
+  typedef ValueType reference;
 
 #if (THRUST_VERSION >= 100700)
-    // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
 
-    /// The iterator category
-    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-        THRUST_NS_QUALIFIER::any_system_tag,
-        THRUST_NS_QUALIFIER::random_access_traversal_tag,
-        value_type,
-        reference
-      >::type iterator_category;
+  /// The iterator category
+  typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+    THRUST_NS_QUALIFIER::any_system_tag,
+    THRUST_NS_QUALIFIER::random_access_traversal_tag,
+    value_type,
+    reference >::type iterator_category;
 #else
-    /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;
-#endif  // THRUST_VERSION
+  /// The iterator category
+  typedef std::random_access_iterator_tag iterator_category;
+#endif // THRUST_VERSION
 
 private:
-
-    ValueType   val;
-    OffsetT     offset;
+  ValueType val;
+  OffsetT offset;
 #ifdef _WIN32
-    // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
-    OffsetT     pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
+  // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
+  OffsetT pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
 #endif
 
 public:
-    /**
-     * @param val
-     *   Starting value for the iterator instance to report
-     *
-     * @param offset
-     *   Base offset
-     */
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ConstantInputIterator(ValueType val, OffsetT offset = 0)
-        : val(val)
-        , offset(offset)
-    {}
+  /**
+   * @param val
+   *   Starting value for the iterator instance to report
+   *
+   * @param offset
+   *   Base offset
+   */
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ConstantInputIterator(ValueType val, OffsetT offset = 0)
+      : val(val)
+      , offset(offset)
+  {}
 
-    /// Postfix increment
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
-    {
-      self_type retval = *this;
-      offset++;
-      return retval;
-    }
+  /// Postfix increment
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  {
+    self_type retval = *this;
+    offset++;
+    return retval;
+  }
 
-    /// Prefix increment
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
-    {
-        offset++;
-        return *this;
-    }
+  /// Prefix increment
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  {
+    offset++;
+    return *this;
+  }
 
-    /// Indirection
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-    {
-        return val;
-    }
+  /// Indirection
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  {
+    return val;
+  }
 
-    /// Addition
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
-    {
-        self_type retval(val, offset + n);
-        return retval;
-    }
+  /// Addition
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  {
+    self_type retval(val, offset + n);
+    return retval;
+  }
 
-    /// Addition assignment
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
-    {
-        offset += n;
-        return *this;
-    }
+  /// Addition assignment
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  {
+    offset += n;
+    return *this;
+  }
 
-    /// Subtraction
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
-    {
-        self_type retval(val, offset - n);
-        return retval;
-    }
+  /// Subtraction
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  {
+    self_type retval(val, offset - n);
+    return retval;
+  }
 
-    /// Subtraction assignment
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
-    {
-        offset -= n;
-        return *this;
-    }
+  /// Subtraction assignment
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  {
+    offset -= n;
+    return *this;
+  }
 
-    /// Distance
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
-    {
-        return offset - other.offset;
-    }
+  /// Distance
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  {
+    return offset - other.offset;
+  }
 
-    /// Array subscript
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance /*n*/) const
-    {
-        return val;
-    }
+  /// Array subscript
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance /*n*/) const
+  {
+    return val;
+  }
 
-    /// Structure dereference
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
-    {
-        return &val;
-    }
+  /// Structure dereference
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE pointer operator->()
+  {
+    return &val;
+  }
 
-    /// Equal to
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
-    {
-        return (offset == rhs.offset) && ((val == rhs.val));
-    }
+  /// Equal to
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs) const
+  {
+    return (offset == rhs.offset) && ((val == rhs.val));
+  }
 
-    /// Not equal to
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
-    {
-        return (offset != rhs.offset) || (val!= rhs.val);
-    }
+  /// Not equal to
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs) const
+  {
+    return (offset != rhs.offset) || (val != rhs.val);
+  }
 
-    /// ostream operator
-    friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
-    {
-        os << "[" << itr.val << "," << itr.offset << "]";
-        return os;
-    }
-
+  /// ostream operator
+  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+  {
+    os << "[" << itr.val << "," << itr.offset << "]";
+    return os;
+  }
 };
 
 CUB_NAMESPACE_END

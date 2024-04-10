@@ -44,7 +44,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 /**
  * @brief DeviceMergeSort provides device-wide, parallel operations for
  *        computing a merge sort across a sequence of data items residing within
@@ -112,7 +111,6 @@ CUB_NAMESPACE_BEGIN
  */
 struct DeviceMergeSort
 {
-
   /**
    * @brief Sorts items using a merge sorting method.
    *
@@ -205,64 +203,40 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyIteratorT,
-            typename ValueIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            std::size_t &temp_storage_bytes,
-            KeyIteratorT d_keys,
-            ValueIteratorT d_items,
-            OffsetT num_items,
-            CompareOpT compare_op,
-            cudaStream_t stream = 0)
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    ValueIteratorT d_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 PromotedOffsetT,
-                                                 CompareOpT>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, ValueIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        d_items,
-                                        d_keys,
-                                        d_items,
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, d_keys, d_items, num_items, compare_op, stream);
   }
 
-  template <typename KeyIteratorT,
-            typename ValueIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairs(void *d_temp_storage,
-            std::size_t &temp_storage_bytes,
-            KeyIteratorT d_keys,
-            ValueIteratorT d_items,
-            OffsetT num_items,
-            CompareOpT compare_op,
-            cudaStream_t stream,
-            bool debug_synchronous)
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    ValueIteratorT d_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return SortPairs<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_items,
-      num_items,
-      compare_op,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
   /**
@@ -382,35 +356,32 @@ struct DeviceMergeSort
             typename ValueIteratorT,
             typename OffsetT,
             typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsCopy(void *d_temp_storage,
-                std::size_t &temp_storage_bytes,
-                KeyInputIteratorT d_input_keys,
-                ValueInputIteratorT d_input_items,
-                KeyIteratorT d_output_keys,
-                ValueIteratorT d_output_items,
-                OffsetT num_items,
-                CompareOpT compare_op,
-                cudaStream_t stream = 0)
+  CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    ValueInputIteratorT d_input_items,
+    KeyIteratorT d_output_keys,
+    ValueIteratorT d_output_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
-                                                 ValueInputIteratorT,
-                                                 KeyIteratorT,
-                                                 ValueIteratorT,
-                                                 PromotedOffsetT,
-                                                 CompareOpT>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_input_keys,
-                                        d_input_items,
-                                        d_output_keys,
-                                        d_output_items,
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_items,
+      d_output_keys,
+      d_output_items,
+      num_items,
+      compare_op,
+      stream);
   }
 
   template <typename KeyInputIteratorT,
@@ -419,35 +390,30 @@ struct DeviceMergeSort
             typename ValueIteratorT,
             typename OffsetT,
             typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortPairsCopy(void *d_temp_storage,
-                std::size_t &temp_storage_bytes,
-                KeyInputIteratorT d_input_keys,
-                ValueInputIteratorT d_input_items,
-                KeyIteratorT d_output_keys,
-                ValueIteratorT d_output_items,
-                OffsetT num_items,
-                CompareOpT compare_op,
-                cudaStream_t stream,
-                bool debug_synchronous)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortPairsCopy(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    ValueInputIteratorT d_input_items,
+    KeyIteratorT d_output_keys,
+    ValueIteratorT d_output_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortPairsCopy<KeyInputIteratorT,
-                         ValueInputIteratorT,
-                         KeyIteratorT,
-                         ValueIteratorT,
-                         OffsetT,
-                         CompareOpT>(d_temp_storage,
-                                     temp_storage_bytes,
-                                     d_input_keys,
-                                     d_input_items,
-                                     d_output_keys,
-                                     d_output_items,
-                                     num_items,
-                                     compare_op,
-                                     stream);
+    return SortPairsCopy<KeyInputIteratorT, ValueInputIteratorT, KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      d_input_items,
+      d_output_keys,
+      d_output_items,
+      num_items,
+      compare_op,
+      stream);
   }
 
   /**
@@ -533,58 +499,46 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           KeyIteratorT d_keys,
-           OffsetT num_items,
-           CompareOpT compare_op,
-           cudaStream_t stream = 0)
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      d_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
-  template <typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeys(void *d_temp_storage,
-           std::size_t &temp_storage_bytes,
-           KeyIteratorT d_keys,
-           OffsetT num_items,
-           CompareOpT compare_op,
-           cudaStream_t stream,
-           bool debug_synchronous)
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return SortKeys<KeyIteratorT, OffsetT, CompareOpT>(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_keys,
-                                                       num_items,
-                                                       compare_op,
-                                                       stream);
+    return SortKeys<KeyIteratorT, OffsetT, CompareOpT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
   /**
@@ -683,64 +637,48 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyInputIteratorT,
-            typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysCopy(void *d_temp_storage,
-               std::size_t &temp_storage_bytes,
-               KeyInputIteratorT d_input_keys,
-               KeyIteratorT d_output_keys,
-               OffsetT num_items,
-               CompareOpT compare_op,
-               cudaStream_t stream = 0)
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    using DispatchMergeSortT = DispatchMergeSort<KeyInputIteratorT,
-                                                 NullType *,
-                                                 KeyIteratorT,
-                                                 NullType *,
-                                                 PromotedOffsetT,
-                                                 CompareOpT>;
+    using DispatchMergeSortT =
+      DispatchMergeSort<KeyInputIteratorT, NullType*, KeyIteratorT, NullType*, PromotedOffsetT, CompareOpT>;
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        d_input_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        d_output_keys,
-                                        static_cast<NullType *>(nullptr),
-                                        num_items,
-                                        compare_op,
-                                        stream);
+    return DispatchMergeSortT::Dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_input_keys,
+      static_cast<NullType*>(nullptr),
+      d_output_keys,
+      static_cast<NullType*>(nullptr),
+      num_items,
+      compare_op,
+      stream);
   }
 
-  template <typename KeyInputIteratorT,
-            typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  SortKeysCopy(void *d_temp_storage,
-               std::size_t &temp_storage_bytes,
-               KeyInputIteratorT d_input_keys,
-               KeyIteratorT d_output_keys,
-               OffsetT num_items,
-               CompareOpT compare_op,
-               cudaStream_t stream,
-               bool debug_synchronous)
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t SortKeysCopy(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_keys,
-      d_output_keys,
-      num_items,
-      compare_op,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 
   /**
@@ -835,56 +773,37 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyIteratorT,
-            typename ValueIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  KeyIteratorT d_keys,
-                  ValueIteratorT d_items,
-                  OffsetT num_items,
-                  CompareOpT compare_op,
-                  cudaStream_t stream = 0)
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    ValueIteratorT d_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
     return SortPairs<KeyIteratorT, ValueIteratorT, PromotedOffsetT, CompareOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_items,
-      num_items,
-      compare_op,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
-  template <typename KeyIteratorT,
-            typename ValueIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortPairs(void *d_temp_storage,
-                  std::size_t &temp_storage_bytes,
-                  KeyIteratorT d_keys,
-                  ValueIteratorT d_items,
-                  OffsetT num_items,
-                  CompareOpT compare_op,
-                  cudaStream_t stream,
-                  bool debug_synchronous)
+  template <typename KeyIteratorT, typename ValueIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortPairs(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    ValueIteratorT d_items,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return StableSortPairs<KeyIteratorT, ValueIteratorT, OffsetT, CompareOpT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_items,
-      num_items,
-      compare_op,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_keys, d_items, num_items, compare_op, stream);
   }
 
   /**
@@ -971,48 +890,35 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 KeyIteratorT d_keys,
-                 OffsetT num_items,
-                 CompareOpT compare_op,
-                 cudaStream_t stream = 0)
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeys<KeyIteratorT, PromotedOffsetT, CompareOpT>(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       d_keys,
-                                                       num_items,
-                                                       compare_op,
-                                                       stream);
+    return SortKeys<KeyIteratorT, PromotedOffsetT, CompareOpT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
-  template <typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeys(void *d_temp_storage,
-                 std::size_t &temp_storage_bytes,
-                 KeyIteratorT d_keys,
-                 OffsetT num_items,
-                 CompareOpT compare_op,
-                 cudaStream_t stream,
-                 bool debug_synchronous)
+  template <typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeys(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyIteratorT d_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return StableSortKeys<KeyIteratorT, OffsetT, CompareOpT>(d_temp_storage,
-                                                             temp_storage_bytes,
-                                                             d_keys,
-                                                             num_items,
-                                                             compare_op,
-                                                             stream);
+    return StableSortKeys<KeyIteratorT, OffsetT, CompareOpT>(
+      d_temp_storage, temp_storage_bytes, d_keys, num_items, compare_op, stream);
   }
 
   /**
@@ -1112,28 +1018,20 @@ struct DeviceMergeSort
    * [Strict Weak Ordering]: https://en.cppreference.com/w/cpp/concepts/strict_weak_order
    * [LessThan Comparable]: https://en.cppreference.com/w/cpp/named_req/LessThanComparable
    */
-  template <typename KeyInputIteratorT,
-            typename KeyIteratorT,
-            typename OffsetT,
-            typename CompareOpT>
-  CUB_RUNTIME_FUNCTION static cudaError_t
-  StableSortKeysCopy(void *d_temp_storage,
-                     std::size_t &temp_storage_bytes,
-                     KeyInputIteratorT d_input_keys,
-                     KeyIteratorT d_output_keys,
-                     OffsetT num_items,
-                     CompareOpT compare_op,
-                     cudaStream_t stream = 0)
+  template <typename KeyInputIteratorT, typename KeyIteratorT, typename OffsetT, typename CompareOpT>
+  CUB_RUNTIME_FUNCTION static cudaError_t StableSortKeysCopy(
+    void* d_temp_storage,
+    std::size_t& temp_storage_bytes,
+    KeyInputIteratorT d_input_keys,
+    KeyIteratorT d_output_keys,
+    OffsetT num_items,
+    CompareOpT compare_op,
+    cudaStream_t stream = 0)
   {
-    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>; 
+    using PromotedOffsetT = detail::promote_small_offset_t<OffsetT>;
 
-    return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(d_temp_storage,
-                                                                              temp_storage_bytes,
-                                                                              d_input_keys,
-                                                                              d_output_keys,
-                                                                              num_items,
-                                                                              compare_op,
-                                                                              stream);
+    return SortKeysCopy<KeyInputIteratorT, KeyIteratorT, PromotedOffsetT, CompareOpT>(
+      d_temp_storage, temp_storage_bytes, d_input_keys, d_output_keys, num_items, compare_op, stream);
   }
 };
 

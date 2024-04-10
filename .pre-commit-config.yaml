@@ -18,7 +18,6 @@ repos:
         args: ["-fallback-style=none", "-style=file", "-i"]
         exclude: |
           (?x)^(
-            ^cub/.*|
             ^libcudacxx/.*|
             ^thrust/.*
           )

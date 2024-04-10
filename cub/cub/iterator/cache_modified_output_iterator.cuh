@@ -50,14 +50,12 @@
 #include <iterator>
 
 #if (THRUST_VERSION >= 100700)
-    // This iterator is compatible with Thrust API 1.7 and newer
-    #include <thrust/iterator/iterator_facade.h>
-    #include <thrust/iterator/iterator_traits.h>
+// This iterator is compatible with Thrust API 1.7 and newer
+#  include <thrust/iterator/iterator_facade.h>
+#  include <thrust/iterator/iterator_traits.h>
 #endif // THRUST_VERSION
 
-
 CUB_NAMESPACE_BEGIN
-
 
 /**
  * @brief A random-access output wrapper for storing array values using a PTX cache-modifier.
@@ -105,162 +103,156 @@ CUB_NAMESPACE_BEGIN
  * @tparam OffsetT
  *   The difference type of this iterator (Default: @p ptrdiff_t)
  */
-template <
-    CacheStoreModifier  MODIFIER,
-    typename            ValueType,
-    typename            OffsetT = ptrdiff_t>
+template <CacheStoreModifier MODIFIER, typename ValueType, typename OffsetT = ptrdiff_t>
 class CacheModifiedOutputIterator
 {
 private:
-
-    // Proxy object
-    struct Reference
-    {
-        ValueType* ptr;
-
-        /// Constructor
-        _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Reference(ValueType* ptr) : ptr(ptr) {}
-
-        /// Assignment
-        _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator =(ValueType val)
-        {
-            ThreadStore<MODIFIER>(ptr, val);
-            return val;
-        }
-    };
-
-public:
-
-    // Required iterator traits
-
-    /// My own type
-    typedef CacheModifiedOutputIterator self_type;
-
-    /// Type to express the result of subtracting one iterator from another
-    typedef OffsetT difference_type;
-
-    /// The type of the element the iterator can point to
-    typedef void value_type;
-
-    /// The type of a pointer to an element the iterator can point to
-    typedef void pointer;
-
-    /// The type of a reference to an element the iterator can point to
-    typedef Reference reference;
-
-#if (THRUST_VERSION >= 100700)
-    // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
-    /// The iterator category
-    typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
-        THRUST_NS_QUALIFIER::device_system_tag,
-        THRUST_NS_QUALIFIER::random_access_traversal_tag,
-        value_type,
-        reference
-      >::type iterator_category;
-#else
-    /// The iterator category
-    typedef std::random_access_iterator_tag     iterator_category;
-#endif  // THRUST_VERSION
-
-private:
-
+  // Proxy object
+  struct Reference
+  {
     ValueType* ptr;
 
-public:
-    /**
-     * @param ptr
-     *   Native pointer to wrap
-     */
-    template <typename QualifiedValueType>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType *ptr)
-        : ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type *>(ptr))
+    /// Constructor
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE Reference(ValueType* ptr)
+        : ptr(ptr)
     {}
 
-    /// Postfix increment
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+    /// Assignment
+    _CCCL_DEVICE _CCCL_FORCEINLINE ValueType operator=(ValueType val)
     {
-        self_type retval = *this;
-        ptr++;
-        return retval;
+      ThreadStore<MODIFIER>(ptr, val);
+      return val;
     }
+  };
 
+public:
+  // Required iterator traits
 
-    /// Prefix increment
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
-    {
-        ptr++;
-        return *this;
-    }
+  /// My own type
+  typedef CacheModifiedOutputIterator self_type;
 
-    /// Indirection
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-    {
-        return Reference(ptr);
-    }
+  /// Type to express the result of subtracting one iterator from another
+  typedef OffsetT difference_type;
 
-    /// Addition
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
-    {
-        self_type retval(ptr + n);
-        return retval;
-    }
+  /// The type of the element the iterator can point to
+  typedef void value_type;
 
-    /// Addition assignment
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
-    {
-        ptr += n;
-        return *this;
-    }
+  /// The type of a pointer to an element the iterator can point to
+  typedef void pointer;
 
-    /// Subtraction
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
-    {
-        self_type retval(ptr - n);
-        return retval;
-    }
+  /// The type of a reference to an element the iterator can point to
+  typedef Reference reference;
 
-    /// Subtraction assignment
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
-    {
-        ptr -= n;
-        return *this;
-    }
+#if (THRUST_VERSION >= 100700)
+  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
 
-    /// Distance
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
-    {
-        return ptr - other.ptr;
-    }
+  /// The iterator category
+  typedef typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
+    THRUST_NS_QUALIFIER::device_system_tag,
+    THRUST_NS_QUALIFIER::random_access_traversal_tag,
+    value_type,
+    reference >::type iterator_category;
+#else
+  /// The iterator category
+  typedef std::random_access_iterator_tag iterator_category;
+#endif // THRUST_VERSION
 
-    /// Array subscript
-    template <typename Distance>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
-    {
-        return Reference(ptr + n);
-    }
+private:
+  ValueType* ptr;
 
-    /// Equal to
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
-    {
-        return (ptr == rhs.ptr);
-    }
+public:
+  /**
+   * @param ptr
+   *   Native pointer to wrap
+   */
+  template <typename QualifiedValueType>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE CacheModifiedOutputIterator(QualifiedValueType* ptr)
+      : ptr(const_cast<typename std::remove_cv<QualifiedValueType>::type*>(ptr))
+  {}
 
-    /// Not equal to
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
-    {
-        return (ptr != rhs.ptr);
-    }
+  /// Postfix increment
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
+  {
+    self_type retval = *this;
+    ptr++;
+    return retval;
+  }
 
-    /// ostream operator
-    friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
-    {
-        return os;
-    }
+  /// Prefix increment
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++()
+  {
+    ptr++;
+    return *this;
+  }
+
+  /// Indirection
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  {
+    return Reference(ptr);
+  }
+
+  /// Addition
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator+(Distance n) const
+  {
+    self_type retval(ptr + n);
+    return retval;
+  }
+
+  /// Addition assignment
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator+=(Distance n)
+  {
+    ptr += n;
+    return *this;
+  }
+
+  /// Subtraction
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator-(Distance n) const
+  {
+    self_type retval(ptr - n);
+    return retval;
+  }
+
+  /// Subtraction assignment
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type& operator-=(Distance n)
+  {
+    ptr -= n;
+    return *this;
+  }
+
+  /// Distance
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_type other) const
+  {
+    return ptr - other.ptr;
+  }
+
+  /// Array subscript
+  template <typename Distance>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](Distance n) const
+  {
+    return Reference(ptr + n);
+  }
+
+  /// Equal to
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_type& rhs)
+  {
+    return (ptr == rhs.ptr);
+  }
+
+  /// Not equal to
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_type& rhs)
+  {
+    return (ptr != rhs.ptr);
+  }
+
+  /// ostream operator
+  friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
+  {
+    return os;
+  }
 };
 
 CUB_NAMESPACE_END
