@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___UTILITY_CMP_H
 #define _LIBCUDACXX___UTILITY_CMP_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -31,9 +29,7 @@
 #include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -115,8 +111,6 @@ bool in_range(_Up __u) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop>
 
 #endif // _LIBCUDACXX___UTILITY_CMP_H

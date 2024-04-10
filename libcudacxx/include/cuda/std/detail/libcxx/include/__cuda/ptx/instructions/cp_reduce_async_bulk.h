@@ -12,9 +12,7 @@
 #ifndef _CUDA_PTX_CP_REDUCE_ASYNC_BULK_H_
 #define _CUDA_PTX_CP_REDUCE_ASYNC_BULK_H_
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

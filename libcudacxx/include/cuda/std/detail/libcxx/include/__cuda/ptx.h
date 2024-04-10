@@ -12,9 +12,7 @@
 #ifndef _LIBCUDACXX___CUDA_PTX_H
 #define _LIBCUDACXX___CUDA_PTX_H
 
-#ifndef __cuda_std__
-#error "<__cuda/ptx.h> should only be included in from <cuda/ptx>"
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

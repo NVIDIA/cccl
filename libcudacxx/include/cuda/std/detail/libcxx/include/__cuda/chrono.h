@@ -11,11 +11,7 @@
 #ifndef _LIBCUDACXX___CUDA_CHRONO_H
 #define _LIBCUDACXX___CUDA_CHRONO_H
 
-#ifndef __cuda_std__
-#error "<__cuda/chrono> should only be included in from <cuda/std/chrono>"
-#endif // __cuda_std__
-
-#include <nv/target>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -24,6 +20,16 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

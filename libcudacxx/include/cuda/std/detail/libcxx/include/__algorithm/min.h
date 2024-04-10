@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_MIN_H
 #define _LIBCUDACXX___ALGORITHM_MIN_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,9 +25,7 @@
 #include <cuda/std/detail/libcxx/include/__algorithm/min_element.h>
 #include <cuda/std/initializer_list>
 
-#ifndef __cuda_std__
-#  include <__pragma_pushp>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -62,8 +58,6 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#  include <__pragma_pop>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_H

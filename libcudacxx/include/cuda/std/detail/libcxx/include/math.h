@@ -291,7 +291,7 @@ long double    truncl(long double x);
 
 */
 
-#include <__config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -304,7 +304,7 @@ long double    truncl(long double x);
 #define _LIBCUDACXX_STDLIB_INCLUDE_NEXT
 #include <stdlib.h>
 
-#include_next <math.h>
+#include <math.h>
 
 #ifdef __cplusplus
 

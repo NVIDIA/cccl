@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_CONFIG_HPP
 #define _LIBCUDACXX___MDSPAN_CONFIG_HPP
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -60,15 +58,6 @@
 
 #ifndef __has_include
 #  define __has_include(x) 0
-#endif
-
-#ifndef __cuda_std__
-#if __has_include(<version>)
-#  include <version>
-#else
-#  include <type_traits>
-#  include <utility>
-#endif
 #endif
 
 #ifdef _MSVC_LANG
