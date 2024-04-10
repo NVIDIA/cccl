@@ -35,56 +35,101 @@ template <class _Tp>
 using __make_signed_t = _LIBCUDACXX_MAKE_SIGNED(_Tp);
 
 #else
-typedef
-    __type_list<signed char,
-    __type_list<signed short,
-    __type_list<signed int,
-    __type_list<signed long,
-    __type_list<signed long long,
+typedef __type_list<signed char,
+                    __type_list<signed short,
+                                __type_list<signed int,
+                                            __type_list<signed long,
+                                                        __type_list<signed long long,
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-    __type_list<__int128_t,
+                                                                    __type_list<__int128_t,
 #  endif
-    __nat
+                                                                                __nat
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-    >
+                                                                                >
 #  endif
-    > > > > > __signed_types;
+                                                                    >>>>>
+  __signed_types;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
-struct __make_signed_impl {};
+struct __make_signed_impl
+{};
 
 template <class _Tp>
 struct __make_signed_impl<_Tp, true>
 {
-    typedef typename __find_first<__signed_types, sizeof(_Tp)>::type type;
+  typedef typename __find_first<__signed_types, sizeof(_Tp)>::type type;
 };
 
-template <> struct __make_signed_impl<bool,               true> {};
-template <> struct __make_signed_impl<  signed short,     true> {typedef short     type;};
-template <> struct __make_signed_impl<unsigned short,     true> {typedef short     type;};
-template <> struct __make_signed_impl<  signed int,       true> {typedef int       type;};
-template <> struct __make_signed_impl<unsigned int,       true> {typedef int       type;};
-template <> struct __make_signed_impl<  signed long,      true> {typedef long      type;};
-template <> struct __make_signed_impl<unsigned long,      true> {typedef long      type;};
-template <> struct __make_signed_impl<  signed long long, true> {typedef long long type;};
-template <> struct __make_signed_impl<unsigned long long, true> {typedef long long type;};
+template <>
+struct __make_signed_impl<bool, true>
+{};
+template <>
+struct __make_signed_impl<signed short, true>
+{
+  typedef short type;
+};
+template <>
+struct __make_signed_impl<unsigned short, true>
+{
+  typedef short type;
+};
+template <>
+struct __make_signed_impl<signed int, true>
+{
+  typedef int type;
+};
+template <>
+struct __make_signed_impl<unsigned int, true>
+{
+  typedef int type;
+};
+template <>
+struct __make_signed_impl<signed long, true>
+{
+  typedef long type;
+};
+template <>
+struct __make_signed_impl<unsigned long, true>
+{
+  typedef long type;
+};
+template <>
+struct __make_signed_impl<signed long long, true>
+{
+  typedef long long type;
+};
+template <>
+struct __make_signed_impl<unsigned long long, true>
+{
+  typedef long long type;
+};
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-template <> struct __make_signed_impl<__int128_t,         true> {typedef __int128_t type;};
-template <> struct __make_signed_impl<__uint128_t,        true> {typedef __int128_t type;};
+template <>
+struct __make_signed_impl<__int128_t, true>
+{
+  typedef __int128_t type;
+};
+template <>
+struct __make_signed_impl<__uint128_t, true>
+{
+  typedef __int128_t type;
+};
 #  endif
 
 template <class _Tp>
-using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp> >::type>::type;
+using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>::type;
 
 #endif // defined(_LIBCUDACXX_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 
 template <class _Tp>
-struct make_signed {
+struct make_signed
+{
   using type _LIBCUDACXX_NODEBUG_TYPE = __make_signed_t<_Tp>;
 };
 
 #if _CCCL_STD_VER > 2011
-template <class _Tp> using make_signed_t = __make_signed_t<_Tp>;
+template <class _Tp>
+using make_signed_t = __make_signed_t<_Tp>;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

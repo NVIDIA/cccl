@@ -115,7 +115,7 @@ private:
     OffsetT,
     CompareOpT,
     KeyT,
-    ValueT >;
+    ValueT>;
   using default_merge_agent_t  = typename merge_helper_t::default_agent_t;
   using fallback_merge_agent_t = typename merge_helper_t::fallback_agent_t;
 

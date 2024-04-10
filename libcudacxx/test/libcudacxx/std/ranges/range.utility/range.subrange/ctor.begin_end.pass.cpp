@@ -12,12 +12,12 @@
 
 // class cuda::std::ranges::subrange;
 
+#include <cuda/std/cassert>
 #include <cuda/std/ranges>
 
-#include "types.h"
-#include <cuda/std/cassert>
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
+#include "types.h"
 
 // convertible-to-non-slicing cases:
 //   1. Not convertible (fail)
@@ -27,13 +27,14 @@
 //   5. Pointer elements are same type (succeed)
 
 // !StoreSize ctor.
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // Default case.
+static_assert(cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // Default case.
 static_assert(!cuda::std::is_constructible_v<ForwardSubrange, Empty, ForwardIter>); // 1.
-static_assert( cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardIter, int*>); // 2.
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // 3. (Same as default case.)
+static_assert(cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardIter, int*>); // 2.
+static_assert(cuda::std::is_constructible_v<ForwardSubrange, ForwardIter, ForwardIter>); // 3. (Same as default case.)
 // 4. and 5. must be sized.
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   ForwardSubrange a(ForwardIter(globalBuff), ForwardIter(globalBuff + 8));
   assert(base(a.begin()) == globalBuff);
   assert(base(a.end()) == globalBuff + 8);
@@ -45,7 +46,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

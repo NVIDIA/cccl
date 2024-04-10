@@ -12,14 +12,14 @@
 // struct default_sentinel_t;
 // inline constexpr default_sentinel_t default_sentinel;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   static_assert(cuda::std::is_empty_v<cuda::std::default_sentinel_t>);
   static_assert(cuda::std::semiregular<cuda::std::default_sentinel_t>);
 
@@ -27,7 +27,7 @@ int main(int, char**) {
 
   cuda::std::default_sentinel_t s1;
   auto s2 = cuda::std::default_sentinel_t{};
-  s2 = s1;
+  s2      = s1;
   unused(s2);
 
   return 0;

@@ -33,10 +33,11 @@
  * Utilities for interacting with the opaque CUDA __half type
  */
 
+#include <cuda_fp16.h>
+
 #include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>
-#include <cuda_fp16.h>
 
 #include <cstdint>
 #include <cstring>

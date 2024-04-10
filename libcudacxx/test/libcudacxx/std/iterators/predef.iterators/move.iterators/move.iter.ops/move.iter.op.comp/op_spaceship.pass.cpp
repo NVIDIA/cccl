@@ -19,39 +19,48 @@
 //   constexpr auto operator<=>(const move_iterator<Iter1>& x, const move_iterator<Iter2>& y)
 //     -> compare_three_way_result_t<Iter1, Iter2>;
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-
-template<class T, class U> concept HasEquals = requires (T t, U u) { t == u; };
-template<class T, class U> concept HasSpaceship = requires (T t, U u) { t <=> u; };
+template <class T, class U>
+concept HasEquals = requires(T t, U u) { t == u; };
+template <class T, class U>
+concept HasSpaceship = requires(T t, U u) { t <=> u; };
 
 static_assert(!HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_iterator<char*>>);
-static_assert( HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_iterator<int*>>);
-static_assert( HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_iterator<const int*>>);
-static_assert( HasSpaceship<cuda::std::move_iterator<const int*>, cuda::std::move_iterator<const int*>>);
-static_assert(!HasSpaceship<cuda::std::move_iterator<forward_iterator<int*>>, cuda::std::move_iterator<forward_iterator<int*>>>);
-static_assert(!HasSpaceship<cuda::std::move_iterator<random_access_iterator<int*>>, cuda::std::move_iterator<random_access_iterator<int*>>>);
-static_assert(!HasSpaceship<cuda::std::move_iterator<contiguous_iterator<int*>>, cuda::std::move_iterator<contiguous_iterator<int*>>>);
-static_assert( HasSpaceship<cuda::std::move_iterator<three_way_contiguous_iterator<int*>>, cuda::std::move_iterator<three_way_contiguous_iterator<int*>>>);
+static_assert(HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_iterator<int*>>);
+static_assert(HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_iterator<const int*>>);
+static_assert(HasSpaceship<cuda::std::move_iterator<const int*>, cuda::std::move_iterator<const int*>>);
+static_assert(
+  !HasSpaceship<cuda::std::move_iterator<forward_iterator<int*>>, cuda::std::move_iterator<forward_iterator<int*>>>);
+static_assert(!HasSpaceship<cuda::std::move_iterator<random_access_iterator<int*>>,
+                            cuda::std::move_iterator<random_access_iterator<int*>>>);
+static_assert(!HasSpaceship<cuda::std::move_iterator<contiguous_iterator<int*>>,
+                            cuda::std::move_iterator<contiguous_iterator<int*>>>);
+static_assert(HasSpaceship<cuda::std::move_iterator<three_way_contiguous_iterator<int*>>,
+                           cuda::std::move_iterator<three_way_contiguous_iterator<int*>>>);
 
 static_assert(!HasSpaceship<cuda::std::move_iterator<int*>, cuda::std::move_sentinel<int*>>);
-static_assert(!HasSpaceship<cuda::std::move_iterator<three_way_contiguous_iterator<int*>>, cuda::std::move_sentinel<three_way_contiguous_iterator<int*>>>);
+static_assert(!HasSpaceship<cuda::std::move_iterator<three_way_contiguous_iterator<int*>>,
+                            cuda::std::move_sentinel<three_way_contiguous_iterator<int*>>>);
 
-__host__ __device__ void test_spaceshippable_but_not_three_way_comparable() {
-  struct A {
-    using value_type = int;
+__host__ __device__ void test_spaceshippable_but_not_three_way_comparable()
+{
+  struct A
+  {
+    using value_type      = int;
     using difference_type = int;
     __host__ __device__ int& operator*() const;
     __host__ __device__ A& operator++();
     __host__ __device__ A operator++(int);
     __host__ __device__ cuda::std::strong_ordering operator<=>(const A&) const;
   };
-  struct B {
-    using value_type = int;
+  struct B
+  {
+    using value_type      = int;
     using difference_type = int;
     __host__ __device__ int& operator*() const;
     __host__ __device__ B& operator++();
@@ -60,19 +69,19 @@ __host__ __device__ void test_spaceshippable_but_not_three_way_comparable() {
     __host__ __device__ bool operator==(const A&) const;
     __host__ __device__ cuda::std::strong_ordering operator<=>(const A&) const;
   };
-  static_assert( cuda::std::input_iterator<A>);
-  static_assert( cuda::std::input_iterator<B>);
-  static_assert( HasEquals<A, B>);
-  static_assert( HasSpaceship<A, B>);
+  static_assert(cuda::std::input_iterator<A>);
+  static_assert(cuda::std::input_iterator<B>);
+  static_assert(HasEquals<A, B>);
+  static_assert(HasSpaceship<A, B>);
   static_assert(!cuda::std::three_way_comparable_with<A, B>);
-  static_assert( HasEquals<cuda::std::move_iterator<A>, cuda::std::move_iterator<B>>);
+  static_assert(HasEquals<cuda::std::move_iterator<A>, cuda::std::move_iterator<B>>);
   static_assert(!HasSpaceship<cuda::std::move_iterator<A>, cuda::std::move_iterator<B>>);
 }
 
 template <class It, class Jt>
 __host__ __device__ constexpr void test_two()
 {
-  int a[] = {3, 1, 4};
+  int a[]                               = {3, 1, 4};
   const cuda::std::move_iterator<It> i1 = cuda::std::move_iterator<It>(It(a));
   const cuda::std::move_iterator<It> i2 = cuda::std::move_iterator<It>(It(a + 2));
   const cuda::std::move_iterator<Jt> j1 = cuda::std::move_iterator<Jt>(Jt(a));

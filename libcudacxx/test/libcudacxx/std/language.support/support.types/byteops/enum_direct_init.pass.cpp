@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/cstddef>
+
 #include <test_macros.h>
 
 // UNSUPPORTED: c++98, c++03, c++11, c++14
@@ -15,7 +16,8 @@
 // XFAIL: apple-clang-6, apple-clang-7, apple-clang-8.0
 // UNSUPPORTED: gcc-6
 
-int main(int, char**) {
+int main(int, char**)
+{
   constexpr cuda::std::byte b{42};
   static_assert(cuda::std::to_integer<int>(b) == 42, "");
 

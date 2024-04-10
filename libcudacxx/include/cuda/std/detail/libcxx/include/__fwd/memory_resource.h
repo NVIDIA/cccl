@@ -22,7 +22,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace pmr {
+namespace pmr
+{
 template <class _ValueType>
 class _LIBCUDACXX_TEMPLATE_VIS polymorphic_allocator;
 } // namespace pmr

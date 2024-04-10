@@ -13,20 +13,26 @@
 
 // XFAIL: c++03
 
-
 // test move
 
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
-struct move_only {
-    __host__ __device__ move_only() {}
-    move_only(move_only&&) = default;
-    move_only& operator=(move_only&&) = default;
+struct move_only
+{
+  __host__ __device__ move_only() {}
+  move_only(move_only&&)            = default;
+  move_only& operator=(move_only&&) = default;
 };
 
-__host__ __device__ move_only source() {return move_only();}
-__host__ __device__ const move_only csource() {return move_only();}
+__host__ __device__ move_only source()
+{
+  return move_only();
+}
+__host__ __device__ const move_only csource()
+{
+  return move_only();
+}
 
 __host__ __device__ void test(move_only) {}
 

@@ -17,7 +17,8 @@ template <class VType, class BaseType, size_t Index>
 using expected_type = cuda::std::is_same<typename cuda::std::tuple_element<Index, VType>::type, BaseType>;
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index < VSize), int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   static_assert((expected_type<VType, BaseType, Index>::value), "");
   static_assert((expected_type<const VType, const BaseType, Index>::value), "");
   static_assert((expected_type<volatile VType, volatile BaseType, Index>::value), "");
@@ -25,10 +26,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
 }
 
 template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index >= VSize), int> = 0>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {}
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{}
 
 template <class VType, class BaseType, size_t VSize>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   test<VType, BaseType, VSize, 0>();
   test<VType, BaseType, VSize, 1>();
   test<VType, BaseType, VSize, 2>();
@@ -36,13 +39,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
 }
 
 #define EXPAND_VECTOR_TYPE(Type, BaseType) \
-  test<Type##1, BaseType, 1>();      \
-  test<Type##2, BaseType, 2>();      \
-  test<Type##3, BaseType, 3>();      \
-  test<Type##4, BaseType, 4>();      \
+  test<Type##1, BaseType, 1>();            \
+  test<Type##2, BaseType, 2>();            \
+  test<Type##3, BaseType, 3>();            \
+  test<Type##4, BaseType, 4>();
 
-
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
   EXPAND_VECTOR_TYPE(short, short);
@@ -61,23 +64,26 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
 
 __host__ __device__
 #if !defined(TEST_COMPILER_MSVC)
-TEST_CONSTEXPR_CXX14
+  TEST_CONSTEXPR_CXX14
 #endif // !TEST_COMPILER_MSVC
-bool test_dim3() {
+  bool
+  test_dim3()
+{
   test<dim3, unsigned int, 3, 0>();
   test<dim3, unsigned int, 3, 1>();
   test<dim3, unsigned int, 3, 2>();
   return true;
 }
 
-int main(int arg, char** argv) {
+int main(int arg, char** argv)
+{
   test();
   test_dim3();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#if !defined(TEST_COMPILER_MSVC)
+#  if !defined(TEST_COMPILER_MSVC)
   static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER_MSVC
+#  endif // !TEST_COMPILER_MSVC
 #endif // TEST_STD_VER >= 2014
 
   return 0;

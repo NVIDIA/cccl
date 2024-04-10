@@ -27,7 +27,8 @@ template <class T, class = void>
 constexpr bool ErrorNoexcept = false;
 
 template <class T>
-constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().error())>> = noexcept(cuda::std::declval<T>().error());
+constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().error())>> =
+  noexcept(cuda::std::declval<T>().error());
 
 static_assert(!ErrorNoexcept<int>, "");
 
@@ -36,7 +37,8 @@ static_assert(ErrorNoexcept<const cuda::std::expected<int, int>&>, "");
 static_assert(ErrorNoexcept<cuda::std::expected<int, int>&&>, "");
 static_assert(ErrorNoexcept<const cuda::std::expected<int, int>&&>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // non-const &
   {
     cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
@@ -72,7 +74,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

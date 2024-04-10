@@ -260,7 +260,7 @@ public:
 
 private:
   /// BlockScan type
-  typedef BlockScan< PackedCounter, BLOCK_DIM_X, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockScan;
+  typedef BlockScan<PackedCounter, BLOCK_DIM_X, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockScan;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   struct __align__(16) _TempStorage
@@ -594,7 +594,7 @@ public:
 
 private:
   /// BlockScan type
-  typedef BlockScan< DigitCounterT, BLOCK_THREADS, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockScanT;
+  typedef BlockScan<DigitCounterT, BLOCK_THREADS, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockScanT;
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
   struct __align__(16) _TempStorage
@@ -731,7 +731,7 @@ public:
 
       // Mask of peers who have same digit as me
       uint32_t peer_mask =
-        detail::warp_in_block_matcher_t< RADIX_BITS, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
+        detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
 
       // Pointer to smem digit counter for this key
       digit_counters[ITEM] = &temp_storage.aliasable.warp_digit_counters[digit][warp_id];
@@ -782,7 +782,7 @@ public:
     }
 
     CTA_SYNC();
-    if (!::cuda::std::is_same< CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
+    if (!::cuda::std::is_same<CountsCallback, BlockRadixRankEmptyCallback<BINS_TRACKED_PER_THREAD>>::value)
     {
       CallBack<KEYS_PER_THREAD>(callback);
     }

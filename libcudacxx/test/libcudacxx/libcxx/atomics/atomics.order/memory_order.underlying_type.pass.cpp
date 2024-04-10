@@ -21,17 +21,22 @@
 
 #include "test_macros.h"
 
-
-enum cpp17_memory_order {
-  cpp17_memory_order_relaxed, cpp17_memory_order_consume, cpp17_memory_order_acquire,
-  cpp17_memory_order_release, cpp17_memory_order_acq_rel, cpp17_memory_order_seq_cst
+enum cpp17_memory_order
+{
+  cpp17_memory_order_relaxed,
+  cpp17_memory_order_consume,
+  cpp17_memory_order_acquire,
+  cpp17_memory_order_release,
+  cpp17_memory_order_acq_rel,
+  cpp17_memory_order_seq_cst
 };
 
 static_assert((cuda::std::is_same<cuda::std::underlying_type<cpp17_memory_order>::type,
-                            cuda::std::underlying_type<cuda::std::memory_order>::type>::value),
-  "cuda::std::memory_order should have the same underlying type as a corresponding "
-  "unscoped enumeration would. Otherwise, our ABI changes from C++17 to C++20.");
+                                  cuda::std::underlying_type<cuda::std::memory_order>::type>::value),
+              "cuda::std::memory_order should have the same underlying type as a corresponding "
+              "unscoped enumeration would. Otherwise, our ABI changes from C++17 to C++20.");
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

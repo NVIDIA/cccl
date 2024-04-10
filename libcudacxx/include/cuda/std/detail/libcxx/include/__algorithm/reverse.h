@@ -56,8 +56,7 @@ __reverse_impl(_RandomAccessIterator __first, _RandomAccessIterator __last, rand
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
-__reverse(_BidirectionalIterator __first, _Sentinel __last)
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void __reverse(_BidirectionalIterator __first, _Sentinel __last)
 {
   using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_BidirectionalIterator>;
   _CUDA_VSTD::__reverse_impl<_AlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _IterCategory());

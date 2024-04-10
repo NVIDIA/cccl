@@ -15,51 +15,56 @@
 //   find_first_of(Iter1 first1, Iter1 last1, Iter2 first2, Iter2 last2, Pred pred);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-    int ia[] = {0, 1, 2, 3, 0, 1, 2, 3};
-    const unsigned sa = sizeof(ia)/sizeof(ia[0]);
-    int ib[] = {1, 3, 5, 7};
-    const unsigned sb = sizeof(ib)/sizeof(ib[0]);
-    assert(cuda::std::find_first_of(cpp17_input_iterator<const int*>(ia),
-                                    cpp17_input_iterator<const int*>(ia + sa),
-                                    forward_iterator<const int*>(ib),
-                                    forward_iterator<const int*>(ib + sb),
-                                    cuda::std::equal_to<int>()) ==
-                                    cpp17_input_iterator<const int*>(ia+1));
-    int ic[] = {7};
-    assert(cuda::std::find_first_of(cpp17_input_iterator<const int*>(ia),
-                                    cpp17_input_iterator<const int*>(ia + sa),
-                                    forward_iterator<const int*>(ic),
-                                    forward_iterator<const int*>(ic + 1),
-                                    cuda::std::equal_to<int>()) ==
-                                    cpp17_input_iterator<const int*>(ia+sa));
-    assert(cuda::std::find_first_of(cpp17_input_iterator<const int*>(ia),
-                                    cpp17_input_iterator<const int*>(ia + sa),
-                                    forward_iterator<const int*>(ic),
-                                    forward_iterator<const int*>(ic),
-                                    cuda::std::equal_to<int>()) ==
-                              cpp17_input_iterator<const int*>(ia+sa));
-    assert(cuda::std::find_first_of(cpp17_input_iterator<const int*>(ia),
-                                    cpp17_input_iterator<const int*>(ia),
-                                    forward_iterator<const int*>(ic),
-                                    forward_iterator<const int*>(ic+1),
-                                    cuda::std::equal_to<int>()) ==
-                                    cpp17_input_iterator<const int*>(ia));
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  int ia[]          = {0, 1, 2, 3, 0, 1, 2, 3};
+  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
+  int ib[]          = {1, 3, 5, 7};
+  const unsigned sb = sizeof(ib) / sizeof(ib[0]);
+  assert(cuda::std::find_first_of(
+           cpp17_input_iterator<const int*>(ia),
+           cpp17_input_iterator<const int*>(ia + sa),
+           forward_iterator<const int*>(ib),
+           forward_iterator<const int*>(ib + sb),
+           cuda::std::equal_to<int>())
+         == cpp17_input_iterator<const int*>(ia + 1));
+  int ic[] = {7};
+  assert(cuda::std::find_first_of(
+           cpp17_input_iterator<const int*>(ia),
+           cpp17_input_iterator<const int*>(ia + sa),
+           forward_iterator<const int*>(ic),
+           forward_iterator<const int*>(ic + 1),
+           cuda::std::equal_to<int>())
+         == cpp17_input_iterator<const int*>(ia + sa));
+  assert(cuda::std::find_first_of(
+           cpp17_input_iterator<const int*>(ia),
+           cpp17_input_iterator<const int*>(ia + sa),
+           forward_iterator<const int*>(ic),
+           forward_iterator<const int*>(ic),
+           cuda::std::equal_to<int>())
+         == cpp17_input_iterator<const int*>(ia + sa));
+  assert(cuda::std::find_first_of(
+           cpp17_input_iterator<const int*>(ia),
+           cpp17_input_iterator<const int*>(ia),
+           forward_iterator<const int*>(ic),
+           forward_iterator<const int*>(ic + 1),
+           cuda::std::equal_to<int>())
+         == cpp17_input_iterator<const int*>(ia));
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 #if TEST_STD_VER > 2011
-    static_assert(test(), "");
+  static_assert(test(), "");
 #endif
 
   return 0;

@@ -26,13 +26,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS
-is_aggregate : public integral_constant<bool, _LIBCUDACXX_IS_AGGREGATE(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_aggregate : public integral_constant<bool, _LIBCUDACXX_IS_AGGREGATE(_Tp)>
+{};
 
-#if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_aggregate_v = _LIBCUDACXX_IS_AGGREGATE(_Tp);
-#endif
+#  endif
 
 #endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
 

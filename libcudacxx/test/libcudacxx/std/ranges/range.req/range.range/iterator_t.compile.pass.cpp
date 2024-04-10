@@ -13,22 +13,28 @@
 // template<class T>
 // using iterator_t = decltype(ranges::begin(declval<T&>()));
 
-#include <cuda/std/ranges>
-
 #include <cuda/std/concepts>
+#include <cuda/std/ranges>
 
 #include "test_range.h"
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator> >, cpp17_input_iterator<int*> >);
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator> const>, cpp17_input_iterator<int const*> >);
+static_assert(
+  cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator>>, cpp17_input_iterator<int*>>);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator> const>,
+                                 cpp17_input_iterator<int const*>>);
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_range<cpp17_input_iterator> >, cpp17_input_iterator<int*> >);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_range<cpp17_input_iterator>>,
+                                 cpp17_input_iterator<int*>>);
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator> >, cpp17_input_iterator<int*> >);
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator> const>, cpp17_input_iterator<int const*> >);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator>>,
+                                 cpp17_input_iterator<int*>>);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator> const>,
+                                 cpp17_input_iterator<int const*>>);
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_common_range<cpp17_input_iterator> >, cpp17_input_iterator<int*> >);
+static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_common_range<cpp17_input_iterator>>,
+                                 cpp17_input_iterator<int*>>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

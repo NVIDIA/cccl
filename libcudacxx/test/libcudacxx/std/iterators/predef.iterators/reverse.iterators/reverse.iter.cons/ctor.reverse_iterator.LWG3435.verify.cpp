@@ -17,14 +17,19 @@
 
 #include <cuda/std/iterator>
 
-struct Base { };
-struct Derived : Base { };
+struct Base
+{};
+struct Derived : Base
+{};
 
-__host__ __device__ void test() {
-    cuda::std::reverse_iterator<Base*> base;
-    cuda::std::reverse_iterator<Derived*> derived(base); // expected-error {{no matching constructor for initialization of 'cuda::std::reverse_iterator<Derived *>'}}
+__host__ __device__ void test()
+{
+  cuda::std::reverse_iterator<Base*> base;
+  cuda::std::reverse_iterator<Derived*> derived(base); // expected-error {{no matching constructor for initialization of
+                                                       // 'cuda::std::reverse_iterator<Derived *>'}}
 }
 
-int main(int, char**) {
-    return 0;
+int main(int, char**)
+{
+  return 0;
 }

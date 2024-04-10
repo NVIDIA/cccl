@@ -13,30 +13,30 @@
 // constexpr chrono::month month() const noexcept;
 //  Returns: wd_
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using year                    = cuda::std::chrono::year;
-    using month                   = cuda::std::chrono::month;
-    using weekday                 = cuda::std::chrono::weekday;
-    using weekday_last            = cuda::std::chrono::weekday_last;
-    using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
+  using year                    = cuda::std::chrono::year;
+  using month                   = cuda::std::chrono::month;
+  using weekday                 = cuda::std::chrono::weekday;
+  using weekday_last            = cuda::std::chrono::weekday_last;
+  using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
 
-    ASSERT_NOEXCEPT(                 cuda::std::declval<const year_month_weekday_last>().month());
-    ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const year_month_weekday_last>().month()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_weekday_last>().month());
+  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const year_month_weekday_last>().month()));
 
-    static_assert( year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.month() == month{}, "");
+  static_assert(year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.month() == month{}, "");
 
-    for (unsigned i = 1; i <= 50; ++i)
-    {
-        year_month_weekday_last ymd(year{1234}, month{i}, weekday_last{weekday{}});
-        assert( static_cast<unsigned>(ymd.month()) == i);
-    }
+  for (unsigned i = 1; i <= 50; ++i)
+  {
+    year_month_weekday_last ymd(year{1234}, month{i}, weekday_last{weekday{}});
+    assert(static_cast<unsigned>(ymd.month()) == i);
+  }
 
   return 0;
 }

@@ -200,7 +200,7 @@ _CCCL_HOST_DEVICE void for_each_member(F f, DecomposerT decomposer, T& aggregate
 namespace radix
 {
 
-template <class... >
+template <class...>
 using void_t = void;
 
 template <class T, class = void>

@@ -22,11 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
-
+#include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
-#include <cuda/std/cstdint>
+
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -41,23 +41,18 @@ __device__ static inline void mbarrier_init(
 */
 #if __cccl_ptx_isa >= 700
 extern "C" _CCCL_DEVICE void __cuda_ptx_mbarrier_init_is_not_supported_before_SM_80__();
-template <typename=void>
-_CCCL_DEVICE static inline void mbarrier_init(
-  _CUDA_VSTD::uint64_t* __addr,
-  const _CUDA_VSTD::uint32_t& __count)
+template <typename = void>
+_CCCL_DEVICE static inline void mbarrier_init(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __count)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,(
-    asm (
-      "mbarrier.init.b64 [%0], %1;"
-      :
-      : "r"(__as_ptr_smem(__addr)),
-        "r"(__count)
-      : "memory"
-    );
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_mbarrier_init_is_not_supported_before_SM_80__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_80,
+    (asm("mbarrier.init.b64 [%0], %1;"
+         :
+         : "r"(__as_ptr_smem(__addr)), "r"(__count)
+         : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_mbarrier_init_is_not_supported_before_SM_80__();));
 }
 #endif // __cccl_ptx_isa >= 700
 

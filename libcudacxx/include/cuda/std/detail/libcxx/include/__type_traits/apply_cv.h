@@ -20,60 +20,62 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_const.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_volatile.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp, class _Up, bool = is_const<__libcpp_remove_reference_t<_Tp> >::value,
-                             bool = is_volatile<__libcpp_remove_reference_t<_Tp> >::value>
+template <class _Tp,
+          class _Up,
+          bool = is_const<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = is_volatile<__libcpp_remove_reference_t<_Tp>>::value>
 struct __apply_cv
 {
-    typedef _LIBCUDACXX_NODEBUG_TYPE _Up type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE _Up type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp, _Up, true, false>
 {
-    typedef _LIBCUDACXX_NODEBUG_TYPE const _Up type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE const _Up type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp, _Up, false, true>
 {
-    typedef volatile _Up type;
+  typedef volatile _Up type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp, _Up, true, true>
 {
-    typedef const volatile _Up type;
+  typedef const volatile _Up type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp&, _Up, false, false>
 {
-    typedef _Up& type;
+  typedef _Up& type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp&, _Up, true, false>
 {
-    typedef const _Up& type;
+  typedef const _Up& type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp&, _Up, false, true>
 {
-    typedef volatile _Up& type;
+  typedef volatile _Up& type;
 };
 
 template <class _Tp, class _Up>
 struct __apply_cv<_Tp&, _Up, true, true>
 {
-    typedef const volatile _Up& type;
+  typedef const volatile _Up& type;
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

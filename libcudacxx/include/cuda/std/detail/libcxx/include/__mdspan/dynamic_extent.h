@@ -54,9 +54,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__fwd/span.h> // dynamic_extent
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/limits> // numeric_limits
 
 #ifdef _LIBCUDACXX_IMPLICIT_SYSTEM_HEADER
@@ -66,15 +66,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-namespace __detail {
+namespace __detail
+{
 
 template <class>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent()
+{
   return dynamic_extent;
 }
 
 template <size_t>
-_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral() {
+_LIBCUDACXX_HOST_DEVICE constexpr auto __make_dynamic_extent_integral()
+{
   return dynamic_extent;
 }
 

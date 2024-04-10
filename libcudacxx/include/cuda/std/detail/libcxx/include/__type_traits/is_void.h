@@ -29,24 +29,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_VOID) && !defined(_LIBCUDACXX_USE_IS_VOID_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_void
-    : integral_constant<bool, _LIBCUDACXX_IS_VOID(_Tp)>
-    {};
+struct _LIBCUDACXX_TEMPLATE_VIS is_void : integral_constant<bool, _LIBCUDACXX_IS_VOID(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_void_v = __is_void(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_void
-    : public is_same<__remove_cv_t<_Tp>, void> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_void : public is_same<__remove_cv_t<_Tp>, void>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_void_v = is_void<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_VOID) && !defined(_LIBCUDACXX_USE_IS_VOID_FALLBACK)
 

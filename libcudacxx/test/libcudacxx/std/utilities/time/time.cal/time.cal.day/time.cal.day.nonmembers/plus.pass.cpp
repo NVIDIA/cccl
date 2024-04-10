@@ -16,46 +16,50 @@
 // constexpr day operator+(const days& x, const day& y) noexcept;
 //   Returns: y + x.
 
-
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 template <typename D, typename Ds>
-__host__ __device__
-constexpr bool testConstexpr()
+__host__ __device__ constexpr bool testConstexpr()
 {
-    D d{1};
-    Ds offset{23};
-    if (d + offset != D{24}) return false;
-    if (offset + d != D{24}) return false;
-    return true;
+  D d{1};
+  Ds offset{23};
+  if (d + offset != D{24})
+  {
+    return false;
+  }
+  if (offset + d != D{24})
+  {
+    return false;
+  }
+  return true;
 }
 
 int main(int, char**)
 {
-    using day  = cuda::std::chrono::day;
-    using days = cuda::std::chrono::days;
+  using day  = cuda::std::chrono::day;
+  using days = cuda::std::chrono::days;
 
-    ASSERT_NOEXCEPT(cuda::std::declval<day>() + cuda::std::declval<days>());
-    ASSERT_NOEXCEPT(cuda::std::declval<days>() + cuda::std::declval<day>());
+  ASSERT_NOEXCEPT(cuda::std::declval<day>() + cuda::std::declval<days>());
+  ASSERT_NOEXCEPT(cuda::std::declval<days>() + cuda::std::declval<day>());
 
-    ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<day>() + cuda::std::declval<days>()));
-    ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<days>() + cuda::std::declval<day>()));
+  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<day>() + cuda::std::declval<days>()));
+  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<days>() + cuda::std::declval<day>()));
 
-    static_assert(testConstexpr<day, days>(), "");
+  static_assert(testConstexpr<day, days>(), "");
 
-    day dy{12};
-    for (unsigned i = 0; i <= 10; ++i)
-    {
-        day d1 = dy + days{i};
-        day d2 = days{i} + dy;
-        assert(d1 == d2);
-        assert(static_cast<unsigned>(d1) == i + 12);
-        assert(static_cast<unsigned>(d2) == i + 12);
-    }
+  day dy{12};
+  for (unsigned i = 0; i <= 10; ++i)
+  {
+    day d1 = dy + days{i};
+    day d2 = days{i} + dy;
+    assert(d1 == d2);
+    assert(static_cast<unsigned>(d1) == i + 12);
+    assert(static_cast<unsigned>(d2) == i + 12);
+  }
 
   return 0;
 }

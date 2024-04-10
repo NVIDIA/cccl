@@ -1,10 +1,12 @@
 #include <cuda/atomic>
 
-__global__ void add_relaxed_device_non_volatile(int* data, int n) {
-    if (n) {
-        auto ref = cuda::atomic_ref<int, cuda::thread_scope_device>{*(data)};
-        ref.fetch_add(n, cuda::std::memory_order_relaxed);
-    }
+__global__ void add_relaxed_device_non_volatile(int* data, int n)
+{
+  if (n)
+  {
+    auto ref = cuda::atomic_ref<int, cuda::thread_scope_device>{*(data)};
+    ref.fetch_add(n, cuda::std::memory_order_relaxed);
+  }
 }
 
 /*

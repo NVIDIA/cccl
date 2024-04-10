@@ -16,29 +16,31 @@
 
 // Ignore error about requesting a large alignment not being ABI compatible with older AIX systems.
 #if defined(_AIX)
-# pragma clang diagnostic ignored "-Waix-compat"
+#  pragma clang diagnostic ignored "-Waix-compat"
 #endif
 
 #include <cuda/std/array>
+#include <cuda/std/cstddef>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 #if defined(TEST_COMPILER_MSVC)
-#pragma warning(disable: 4324)
+#  pragma warning(disable : 4324)
 #endif // TEST_COMPILER_MSVC
 
 template <class T, cuda::std::size_t Size>
-struct MyArray {
+struct MyArray
+{
   T elems[Size];
 };
 
 template <class T, cuda::std::size_t Size>
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   typedef T CArrayT[Size == 0 ? 1 : Size];
   typedef cuda::std::array<T, Size> ArrayT;
   typedef MyArray<T, Size == 0 ? 1 : Size> MyArrayT;
@@ -48,25 +50,28 @@ __host__ __device__ void test() {
 }
 
 template <class T>
-__host__ __device__ void test_type() {
+__host__ __device__ void test_type()
+{
   test<T, 1>();
   test<T, 42>();
   test<T, 0>();
 }
 
-struct alignas(alignof(cuda::std::max_align_t) * 2) TestType1 {
+struct alignas(alignof(cuda::std::max_align_t) * 2) TestType1
+{};
 
-};
-
-struct alignas(alignof(cuda::std::max_align_t) * 2) TestType2 {
+struct alignas(alignof(cuda::std::max_align_t) * 2) TestType2
+{
   char data[1000];
 };
 
-struct alignas(alignof(cuda::std::max_align_t)) TestType3 {
+struct alignas(alignof(cuda::std::max_align_t)) TestType3
+{
   char data[1000];
 };
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_type<char>();
   test_type<int>();
   test_type<double>();

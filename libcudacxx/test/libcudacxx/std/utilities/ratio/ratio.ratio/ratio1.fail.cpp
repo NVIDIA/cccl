@@ -8,13 +8,12 @@
 
 // test ratio:  The template argument D shall not be zero
 
-
-#include <cuda/std/ratio>
 #include <cuda/std/cstdint>
+#include <cuda/std/ratio>
 
 int main(int, char**)
 {
-    const cuda::std::intmax_t t1 = cuda::std::ratio<1, 0>::num;
+  const cuda::std::intmax_t t1 = cuda::std::ratio<1, 0>::num;
 
   return 0;
 }

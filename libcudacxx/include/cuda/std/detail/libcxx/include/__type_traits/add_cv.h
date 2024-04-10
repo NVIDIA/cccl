@@ -22,12 +22,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS add_cv {
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS add_cv
+{
   typedef _LIBCUDACXX_NODEBUG_TYPE const volatile _Tp type;
 };
 
 #if _CCCL_STD_VER > 2011
-template <class _Tp> using add_cv_t = typename add_cv<_Tp>::type;
+template <class _Tp>
+using add_cv_t = typename add_cv<_Tp>::type;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

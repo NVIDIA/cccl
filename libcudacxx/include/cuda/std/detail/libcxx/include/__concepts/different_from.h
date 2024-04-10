@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT __different_from = !same_as<remove_cvref_t<_Tp>, remove_cvref_t<_Up>>;
 
 #endif // _CCCL_STD_VER > 2011

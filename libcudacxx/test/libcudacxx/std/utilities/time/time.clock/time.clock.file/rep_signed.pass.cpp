@@ -18,14 +18,13 @@
 
 // rep should be signed
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
 int main(int, char**)
 {
-    static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value, "");
-    assert(cuda::std::chrono::file_clock::duration::min() <
-           cuda::std::chrono::file_clock::duration::zero());
+  static_assert(cuda::std::is_signed<cuda::std::chrono::file_clock::rep>::value, "");
+  assert(cuda::std::chrono::file_clock::duration::min() < cuda::std::chrono::file_clock::duration::zero());
 
   return 0;
 }

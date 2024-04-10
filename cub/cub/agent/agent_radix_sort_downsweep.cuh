@@ -183,7 +183,7 @@ struct AgentRadixSortDownsweep
 
   // Radix ranking type to use
   using BlockRadixRankT =
-    cub::detail::block_radix_rank_t< RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
+    cub::detail::block_radix_rank_t<RANK_ALGORITHM, BLOCK_THREADS, RADIX_BITS, IS_DESCENDING, SCAN_ALGORITHM>;
 
   // Digit extractor type
   using fundamental_digit_extractor_t = BFEDigitExtractor<KeyT>;

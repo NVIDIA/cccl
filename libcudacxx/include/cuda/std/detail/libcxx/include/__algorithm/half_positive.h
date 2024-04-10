@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Integral, __enable_if_t<_LIBCUDACXX_TRAIT(is_integral, _Integral), int> = 0>
 _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY constexpr _Integral __half_positive(_Integral __value)
 {
-  return static_cast<_Integral>(static_cast<__make_unsigned_t<_Integral> >(__value) / 2);
+  return static_cast<_Integral>(static_cast<__make_unsigned_t<_Integral>>(__value) / 2);
 }
 
 template <class _Tp, __enable_if_t<!_LIBCUDACXX_TRAIT(is_integral, _Tp), int> = 0>

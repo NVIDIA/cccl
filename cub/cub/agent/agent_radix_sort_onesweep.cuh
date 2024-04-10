@@ -81,7 +81,7 @@ template <int NOMINAL_BLOCK_THREADS_4B,
           BlockScanAlgorithm _SCAN_ALGORITHM,
           RadixSortStoreAlgorithm _STORE_ALGORITHM,
           int _RADIX_BITS,
-          typename ScalingType = RegBoundScaling< NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT> >
+          typename ScalingType = RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum

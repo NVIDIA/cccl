@@ -32,110 +32,100 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, class... _Args>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class ..._Args>
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...);
-#endif
+#  endif
 
 #else
 
-#if !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
+#  if !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-template <bool, bool, class _Tp, class... _Args> struct __libcpp_is_nothrow_constructible;
+template <bool, bool, class _Tp, class... _Args>
+struct __libcpp_is_nothrow_constructible;
 
 template <class _Tp, class... _Args>
-struct __libcpp_is_nothrow_constructible</*is constructible*/true, /*is reference*/false, _Tp, _Args...>
+struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ false, _Tp, _Args...>
     : public integral_constant<bool, noexcept(_Tp(_CUDA_VSTD::declval<_Args>()...))>
-{
-};
+{};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY void __implicit_conversion_to(_Tp) noexcept { }
+_LIBCUDACXX_INLINE_VISIBILITY void __implicit_conversion_to(_Tp) noexcept
+{}
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_constructible</*is constructible*/true, /*is reference*/true, _Tp, _Arg>
+struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ true, _Tp, _Arg>
     : public integral_constant<bool, noexcept(__implicit_conversion_to<_Tp>(_CUDA_VSTD::declval<_Arg>()))>
-{
-};
+{};
 
 template <class _Tp, bool _IsReference, class... _Args>
-struct __libcpp_is_nothrow_constructible</*is constructible*/false, _IsReference, _Tp, _Args...>
-    : public false_type
-{
-};
+struct __libcpp_is_nothrow_constructible</*is constructible*/ false, _IsReference, _Tp, _Args...> : public false_type
+{};
 
 template <class _Tp, class... _Args>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible
     : __libcpp_is_nothrow_constructible<is_constructible<_Tp, _Args...>::value, is_reference<_Tp>::value, _Tp, _Args...>
-{
-};
+{};
 
 template <class _Tp, size_t _Ns>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp[_Ns]>
     : __libcpp_is_nothrow_constructible<is_constructible<_Tp>::value, is_reference<_Tp>::value, _Tp>
-{
-};
+{};
 
-#else
+#  else
 
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible
-    : false_type
-{
-};
+struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible : false_type
+{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
+#    if defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(_Tp)>
-#else
+#    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
-{
-};
+#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
+{};
 
 template <class _Tp>
-#ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
+#    ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp, _Tp&&>
-#else
+#    else
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp, _Tp>
-#endif
-#if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    endif
+#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
-#else
+#    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-{
-};
+#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp, const _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
-#else
+#    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-{
-};
+#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_constructible<_Tp, _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
-#else
+#    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-{
-};
+#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+{};
 
-#endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
+#  endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class ..._Args>
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_Tp, _Args...>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 

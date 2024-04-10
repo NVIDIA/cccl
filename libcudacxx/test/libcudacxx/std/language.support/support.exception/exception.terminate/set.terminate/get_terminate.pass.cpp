@@ -12,8 +12,8 @@
 // test get_terminate
 
 #include <cuda/std/__exception>
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -22,10 +22,10 @@ __host__ __device__ void f2() {}
 
 int main(int, char**)
 {
-    cuda::std::set_terminate(f1);
-    assert(cuda::std::get_terminate() == f1);
-    cuda::std::set_terminate(f2);
-    assert(cuda::std::get_terminate() == f2);
+  cuda::std::set_terminate(f1);
+  assert(cuda::std::get_terminate() == f1);
+  cuda::std::set_terminate(f2);
+  assert(cuda::std::get_terminate() == f2);
 
   return 0;
 }

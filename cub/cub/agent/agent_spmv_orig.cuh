@@ -228,17 +228,17 @@ struct AgentSpmv
 
   /// Input iterator wrapper types (for applying cache modifiers)
 
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
     RowOffsetsSearchIteratorT;
 
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER, OffsetT, OffsetT> RowOffsetsIteratorT;
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::ROW_OFFSETS_LOAD_MODIFIER, OffsetT, OffsetT> RowOffsetsIteratorT;
 
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER, OffsetT, OffsetT>
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::COLUMN_INDICES_LOAD_MODIFIER, OffsetT, OffsetT>
     ColumnIndicesIteratorT;
 
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::VALUES_LOAD_MODIFIER, ValueT, OffsetT> ValueIteratorT;
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VALUES_LOAD_MODIFIER, ValueT, OffsetT> ValueIteratorT;
 
-  typedef CacheModifiedInputIterator< AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
+  typedef CacheModifiedInputIterator<AgentSpmvPolicyT::VECTOR_VALUES_LOAD_MODIFIER, ValueT, OffsetT>
     VectorValueIteratorT;
 
   // Tuple type for scanning (pairs accumulated segment-value with segment-index)
@@ -248,23 +248,23 @@ struct AgentSpmv
   typedef ReduceByKeyOp<cub::Sum> ReduceBySegmentOpT;
 
   // BlockReduce specialization
-  typedef BlockReduce< ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS> BlockReduceT;
+  typedef BlockReduce<ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS> BlockReduceT;
 
   // BlockScan specialization
-  typedef BlockScan< KeyValuePairT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockScanT;
+  typedef BlockScan<KeyValuePairT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockScanT;
 
   // BlockScan specialization
-  typedef BlockScan< ValueT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockPrefixSumT;
+  typedef BlockScan<ValueT, BLOCK_THREADS, AgentSpmvPolicyT::SCAN_ALGORITHM> BlockPrefixSumT;
 
   // BlockExchange specialization
-  typedef BlockExchange< ValueT, BLOCK_THREADS, ITEMS_PER_THREAD> BlockExchangeT;
+  typedef BlockExchange<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD> BlockExchangeT;
 
   /// Merge item type (either a non-zero value or a row-end offset)
   union MergeItem
   {
     // Value type to pair with index type OffsetT
     // (NullType if loading values directly during merge)
-    using MergeValueT = cub::detail::conditional_t< AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
+    using MergeValueT = cub::detail::conditional_t<AgentSpmvPolicyT::DIRECT_LOAD_NONZEROS, NullType, ValueT>;
 
     OffsetT row_end_offset;
     MergeValueT nonzero;

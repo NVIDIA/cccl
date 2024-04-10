@@ -20,92 +20,104 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__utility/forward.h>
-#include <cuda/std/detail/libcxx/include/__utility/move.h>
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 #include <cuda/std/detail/libcxx/include/__type_traits/disjunction.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_integral.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_signed.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
+#include <cuda/std/detail/libcxx/include/__utility/move.h>
 #include <cuda/std/limits>
-
-#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2017
-template<class _Tp, class... _Up>
-struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...> {};
+template <class _Tp, class... _Up>
+struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...>
+{};
 
-template<class _Tp>
-concept __is_safe_integral_cmp = is_integral_v<_Tp> &&
-                      !_IsSameAsAny<_Tp, bool, char, char16_t, char32_t
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
-                                    , char8_t
-#endif
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
-                                    , wchar_t
-#endif
-                                    >::value;
+template <class _Tp>
+concept __is_safe_integral_cmp =
+  is_integral_v<_Tp>
+  && !_IsSameAsAny<_Tp,
+                   bool,
+                   char,
+                   char16_t,
+                   char32_t
+#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+                   ,
+                   char8_t
+#  endif
+#  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
+                   ,
+                   wchar_t
+#  endif
+                   >::value;
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_equal(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
   if constexpr (is_signed_v<_Tp> == is_signed_v<_Up>)
+  {
     return __t == __u;
+  }
   else if constexpr (is_signed_v<_Tp>)
+  {
     return __t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u;
+  }
   else
+  {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
+  }
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_not_equal(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_less(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
   if constexpr (is_signed_v<_Tp> == is_signed_v<_Up>)
+  {
     return __t < __u;
+  }
   else if constexpr (is_signed_v<_Tp>)
+  {
     return __t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u;
+  }
   else
+  {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
+  }
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_greater(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less(__u, __t);
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_less_equal(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_greater(__t, __u);
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_less(__t, __u);
 }
 
-template<__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr
-bool in_range(_Up __u) noexcept
+template <__is_safe_integral_cmp _Tp, __is_safe_integral_cmp _Up>
+_LIBCUDACXX_INLINE_VISIBILITY constexpr bool in_range(_Up __u) noexcept
 {
-  return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max()) &&
-         _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
+  return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
+      && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
 #endif // _CCCL_STD_VER > 2017
 

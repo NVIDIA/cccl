@@ -18,20 +18,20 @@
 
 // static time_point now() noexcept;
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    typedef cuda::std::chrono::file_clock C;
-    ASSERT_NOEXCEPT(C::now());
+  typedef cuda::std::chrono::file_clock C;
+  ASSERT_NOEXCEPT(C::now());
 
-    C::time_point t1 = C::now();
-    assert(t1.time_since_epoch().count() != 0);
-    assert(C::time_point::min() < t1);
-    assert(C::time_point::max() > t1);
+  C::time_point t1 = C::now();
+  assert(t1.time_since_epoch().count() != 0);
+  assert(C::time_point::min() < t1);
+  assert(C::time_point::max() > t1);
 
   return 0;
 }

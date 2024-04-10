@@ -133,20 +133,20 @@ using a_block_size          = c2h::enum_type_list<int, 256>;
 
 using items_per_thread = c2h::enum_type_list<int, IPT>;
 using load_algorithm =
-  c2h::enum_type_list< cub::BlockLoadAlgorithm,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED>;
 
 using odd_load_algorithm =
-  c2h::enum_type_list< cub::BlockLoadAlgorithm,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
-                       cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
+  c2h::enum_type_list<cub::BlockLoadAlgorithm,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_DIRECT,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_STRIPED,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_VECTORIZE,
+                      cub::BlockLoadAlgorithm::BLOCK_LOAD_TRANSPOSE>;
 
 template <class TestType>
 struct params_t

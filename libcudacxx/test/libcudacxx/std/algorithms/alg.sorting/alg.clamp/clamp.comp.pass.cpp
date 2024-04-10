@@ -15,33 +15,43 @@
 //   clamp(const T& v, const T& lo, const T& hi, Compare comp);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 #include "test_macros.h"
 
-struct Tag {
-  __host__ __device__ constexpr Tag() : val(0), tag("Default") {}
-  __host__ __device__ constexpr Tag(int a, const char* b) : val(a), tag(b) {}
+struct Tag
+{
+  __host__ __device__ constexpr Tag()
+      : val(0)
+      , tag("Default")
+  {}
+  __host__ __device__ constexpr Tag(int a, const char* b)
+      : val(a)
+      , tag(b)
+  {}
 
   int val;
   const char* tag;
 };
 
-__host__ __device__ constexpr bool eq(const Tag& rhs, const Tag& lhs) {
+__host__ __device__ constexpr bool eq(const Tag& rhs, const Tag& lhs)
+{
   return rhs.val == lhs.val && rhs.tag == lhs.tag;
 }
-__host__ __device__ constexpr bool comp(const Tag& rhs, const Tag& lhs) {
+__host__ __device__ constexpr bool comp(const Tag& rhs, const Tag& lhs)
+{
   return rhs.val < lhs.val;
 }
 
 template <class T, class C>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void
-test(const T& v, const T& lo, const T& hi, C c, const T& x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& v, const T& lo, const T& hi, C c, const T& x)
+{
   assert(&cuda::std::clamp(v, lo, hi, c) == &x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   {
     int x = 0;
     int y = 0;
@@ -120,7 +130,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

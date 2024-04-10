@@ -15,21 +15,21 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    cuda::std::istringstream inf(" 1 23");
-    cuda::std::istream_iterator<int> i(inf);
-    assert(i != cuda::std::istream_iterator<int>());
-    assert(inf.peek() == ' ');
-    assert(inf.good());
-    int j = 0;
-    inf >> j;
-    assert(j == 23);
+  cuda::std::istringstream inf(" 1 23");
+  cuda::std::istream_iterator<int> i(inf);
+  assert(i != cuda::std::istream_iterator<int>());
+  assert(inf.peek() == ' ');
+  assert(inf.good());
+  int j = 0;
+  inf >> j;
+  assert(j == 23);
 
   return 0;
 }

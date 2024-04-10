@@ -25,12 +25,14 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Pred>
-struct _Not : _BoolConstant<!_Pred::value> {};
+struct _Not : _BoolConstant<!_Pred::value>
+{};
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-struct negation : _Not<_Tp> {};
-template<class _Tp>
+struct negation : _Not<_Tp>
+{};
+template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool negation_v = !_Tp::value;
 #endif // _CCCL_STD_VER > 2014
 

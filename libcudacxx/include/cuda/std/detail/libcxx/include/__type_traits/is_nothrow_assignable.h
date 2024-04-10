@@ -31,83 +31,96 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Arg>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
-    : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)> {};
+    : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = _LIBCUDACXX_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
-#endif
+#  endif
 
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT) && !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
 
-template <bool, class _Tp, class _Arg> struct __libcpp_is_nothrow_assignable;
+template <bool, class _Tp, class _Arg>
+struct __libcpp_is_nothrow_assignable;
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<false, _Tp, _Arg>
-    : public false_type
-{ };
+struct __libcpp_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
+{};
 
 template <class _Tp, class _Arg>
 struct __libcpp_is_nothrow_assignable<true, _Tp, _Arg>
-    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>()) >
-{ };
+    : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())>
+{};
 
 template <class _Tp, class _Arg>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
     : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
-{ };
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#endif
+#  endif
 
 #else
 
 template <class _Tp, class _Arg>
-struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable
-    : public false_type {};
+struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable : public false_type
+{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+#  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
+{};
+#  else
+    : integral_constant<bool, is_scalar<_Tp>::value>
+{
+};
+#  endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+#  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
+{};
+#  else
+    : integral_constant<bool, is_scalar<_Tp>::value>
+{
+};
+#  endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_assignable<_Tp&, const _Tp&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+#  if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
+{};
+#  else
+    : integral_constant<bool, is_scalar<_Tp>::value>
+{
+};
+#  endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
-#ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
+#  ifndef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
 template <class _Tp>
 struct is_nothrow_assignable<_Tp&, _Tp&&>
-#if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)> {};
-#else
-    : integral_constant<bool, is_scalar<_Tp>::value> {};
-#endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+#    if defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
+    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_ASSIGN(_Tp)>
+{};
+#    else
+    : integral_constant<bool, is_scalar<_Tp>::value>
+{
+};
+#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_ASSIGN) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_ASSIGN_FALLBACK)
 
-#endif // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
+#  endif // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#endif
+#  endif
 
 #endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 

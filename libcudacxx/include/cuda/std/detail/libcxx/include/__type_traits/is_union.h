@@ -27,24 +27,28 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_union
-    : public integral_constant<bool, _LIBCUDACXX_IS_UNION(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_union : public integral_constant<bool, _LIBCUDACXX_IS_UNION(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_union_v = _LIBCUDACXX_IS_UNION(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct __libcpp_union : public false_type {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_union
-    : public __libcpp_union<__remove_cv_t<_Tp>> {};
+template <class _Tp>
+struct __libcpp_union : public false_type
+{};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_union : public __libcpp_union<__remove_cv_t<_Tp>>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_union_v = is_union<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 

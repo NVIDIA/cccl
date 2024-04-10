@@ -25,9 +25,11 @@ template <class T1, class T2, class = void>
 constexpr bool CanCompare = false;
 
 template <class T1, class T2>
-constexpr bool CanCompare<T1, T2, cuda::std::void_t<decltype(cuda::std::declval<T1>() == cuda::std::declval<T2>())>> = true;
+constexpr bool CanCompare<T1, T2, cuda::std::void_t<decltype(cuda::std::declval<T1>() == cuda::std::declval<T2>())>> =
+  true;
 
-struct Foo{};
+struct Foo
+{};
 static_assert(!CanCompare<Foo, Foo>, "");
 
 static_assert(CanCompare<cuda::std::expected<int, int>, cuda::std::expected<int, int>>, "");
@@ -36,7 +38,8 @@ static_assert(CanCompare<cuda::std::expected<int, int>, cuda::std::expected<shor
 // Note this is true because other overloads are unconstrained
 static_assert(CanCompare<cuda::std::expected<int, int>, cuda::std::expected<void, int>>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // x.has_value() && y.has_value()
   {
     const cuda::std::expected<int, int> e1(5);
@@ -76,7 +79,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

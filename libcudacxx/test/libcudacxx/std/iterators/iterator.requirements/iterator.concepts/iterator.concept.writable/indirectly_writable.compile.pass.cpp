@@ -12,15 +12,14 @@
 // template<class In>
 // concept indirectly_writable;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 #include "read_write.h"
 
 template <class Out, class T>
-__host__ __device__
-constexpr bool check_indirectly_writable() {
+__host__ __device__ constexpr bool check_indirectly_writable()
+{
   constexpr bool result = cuda::std::indirectly_writable<Out, T>;
   static_assert(cuda::std::indirectly_writable<Out const, T> == result);
   return result;

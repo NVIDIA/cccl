@@ -30,7 +30,7 @@
 #include <cuda/std/utility>
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-#include <cuda/std/vector>
+#  include <cuda/std/vector>
 #endif
 
 #include "MoveOnly.h"
@@ -38,61 +38,71 @@
 
 // Test Constraints:
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(
-    cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::vector<int>>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
+static_assert(cuda::std::is_constructible_v<cuda::std::expected<int, cuda::std::vector<int>>,
+                                            cuda::std::unexpect_t,
+                                            cuda::std::initializer_list<int>>,
+              "");
 #endif
 
 // !is_constructible_v<T, initializer_list<U>&, Args...>
-static_assert(!cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
+static_assert(
+  !cuda::std::is_constructible_v<cuda::std::expected<int, int>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>,
+  "");
 
 // test explicit
 template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  ImplicitlyConstructible_,
-  requires(Args&&... args)(
-    (conversion_test<T>({cuda::std::forward<Args>(args)...}))
-  ));
+_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
+                             requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
 
 template <class T, class... Args>
 constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-static_assert(
-    !ImplicitlyConstructible<cuda::std::expected<int, cuda::std::vector<int>>, cuda::std::unexpect_t, cuda::std::initializer_list<int>>, "");
+static_assert(!ImplicitlyConstructible<cuda::std::expected<int, cuda::std::vector<int>>,
+                                       cuda::std::unexpect_t,
+                                       cuda::std::initializer_list<int>>,
+              "");
 #endif
 
 template <size_t N, class... Ts>
-struct Data {
+struct Data
+{
   int vec_[N]{};
   cuda::std::tuple<Ts...> tuple_;
 
   _LIBCUDACXX_TEMPLATE(class... Us)
-    _LIBCUDACXX_REQUIRES( cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
-  __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us) : tuple_(cuda::std::forward<Us>(us)...) {
+  _LIBCUDACXX_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+  __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us)
+      : tuple_(cuda::std::forward<Us>(us)...)
+  {
     auto ibegin = il.begin();
-    for (cuda::std::size_t i = 0; ibegin != il.end(); ++ibegin, ++i) {
+    for (cuda::std::size_t i = 0; ibegin != il.end(); ++ibegin, ++i)
+    {
       vec_[i] = *ibegin;
     }
   }
 };
 
-template<class Range1, class Range2>
-__host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs) {
-  auto* left = lhs + 0;
+template <class Range1, class Range2>
+__host__ __device__ constexpr bool equal(Range1&& lhs, Range2&& rhs)
+{
+  auto* left  = lhs + 0;
   auto* right = rhs.begin();
 
-  for (; right != rhs.end(); ++left, ++right) {
+  for (; right != rhs.end(); ++left, ++right)
+  {
     assert(*left == *right);
   }
   assert(right == rhs.end());
   return true;
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // no arg
   {
     cuda::std::expected<int, Data<3>> e(cuda::std::unexpect, {1, 2, 3});
@@ -115,7 +125,8 @@ __host__ __device__ constexpr bool test() {
     int i = 5;
     int j = 6;
     MoveOnly m(7);
-    cuda::std::expected<int, Data<2, int&, int&&, MoveOnly>> e(cuda::std::unexpect, {1, 2}, i, cuda::std::move(j), cuda::std::move(m));
+    cuda::std::expected<int, Data<2, int&, int&&, MoveOnly>> e(
+      cuda::std::unexpect, {1, 2}, i, cuda::std::move(j), cuda::std::move(m));
     assert(!e.has_value());
     auto expectedList = {1, 2};
     assert((equal(e.error().vec_, expectedList)));
@@ -128,28 +139,37 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+__host__ __device__ void testException()
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
+  struct Except
+  {};
 
-  struct Throwing {
-    Throwing(cuda::std::initializer_list<int>, int) { throw Except{}; };
+  struct Throwing
+  {
+    Throwing(cuda::std::initializer_list<int>, int)
+    {
+      throw Except{};
+    };
   };
 
-  try {
+  try
+  {
     cuda::std::expected<int, Throwing> u(cuda::std::unexpect, {1, 2}, 5);
     assert(false);
-  } catch (Except) {
   }
+  catch (Except)
+  {}
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if defined(_LIBCUDACXX_ADDRESSOF)
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
   testException();
   return 0;

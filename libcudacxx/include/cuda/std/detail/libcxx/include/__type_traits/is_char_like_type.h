@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT>
-using _IsCharLikeType = _And<is_standard_layout<_CharT>, is_trivial<_CharT> >;
+using _IsCharLikeType = _And<is_standard_layout<_CharT>, is_trivial<_CharT>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

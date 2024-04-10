@@ -28,7 +28,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_copy_constructible
-    : public is_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>> {};
+    : public is_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
+{};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

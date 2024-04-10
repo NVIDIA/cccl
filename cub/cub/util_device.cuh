@@ -265,7 +265,7 @@ using vsmem_helper_fallback_policy_t =
   vsmem_helper_with_fallback_impl<DefaultPolicyT,
                                   AgentT<DefaultPolicyT, AgentParamsT...>,
                                   FallbackPolicyT,
-                                  AgentT<FallbackPolicyT, AgentParamsT...> >;
+                                  AgentT<FallbackPolicyT, AgentParamsT...>>;
 
 /**
  * @brief Alias template for the `vsmem_helper_t` by using a simple fallback policy that uses `DefaultPolicyT` as basis,

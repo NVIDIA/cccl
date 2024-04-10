@@ -28,15 +28,19 @@ int main(int, char**)
   static_assert(!cuda::std::is_constructible<cuda::std::variant<int, int>, int>::value, "");
 #endif // !gcc-6
   static_assert(!cuda::std::is_constructible<cuda::std::variant<long, long long>, int>::value, "");
-  static_assert(cuda::std::is_constructible<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions, "");
+  static_assert(cuda::std::is_constructible<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions,
+                "");
 
-  // static_assert(cuda::std::is_constructible<cuda::std::variant<cuda::std::string, float>, int>::value == VariantAllowsNarrowingConversions, "");
-  // static_assert(cuda::std::is_constructible<cuda::std::variant<cuda::std::string, double>, int>::value == VariantAllowsNarrowingConversions, "");
+  // static_assert(cuda::std::is_constructible<cuda::std::variant<cuda::std::string, float>, int>::value ==
+  // VariantAllowsNarrowingConversions, "");
+  // static_assert(cuda::std::is_constructible<cuda::std::variant<cuda::std::string, double>, int>::value ==
+  // VariantAllowsNarrowingConversions, "");
   // static_assert(!cuda::std::is_constructible<cuda::std::variant<cuda::std::string, bool>, int>::value, "");
 
   static_assert(!cuda::std::is_constructible<cuda::std::variant<int, bool>, decltype("meow")>::value, "");
   static_assert(!cuda::std::is_constructible<cuda::std::variant<int, const bool>, decltype("meow")>::value, "");
-  static_assert(!cuda::std::is_constructible<cuda::std::variant<int, const volatile bool>, decltype("meow")>::value, "");
+  static_assert(!cuda::std::is_constructible<cuda::std::variant<int, const volatile bool>, decltype("meow")>::value,
+                "");
 
   static_assert(!cuda::std::is_constructible<cuda::std::variant<bool>, cuda::std::true_type>::value, "");
   // static_assert(!cuda::std::is_constructible<cuda::std::variant<bool>, cuda::std::unique_ptr<char> >::value, "");

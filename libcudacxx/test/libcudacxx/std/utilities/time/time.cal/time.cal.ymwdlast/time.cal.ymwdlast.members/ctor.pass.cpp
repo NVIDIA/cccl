@@ -22,32 +22,31 @@
 //  constexpr chrono::weekday_last weekday_last() const noexcept;
 //  constexpr bool                           ok() const noexcept;
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using year                    = cuda::std::chrono::year;
-    using month                   = cuda::std::chrono::month;
-    using weekday                 = cuda::std::chrono::weekday;
-    using weekday_last            = cuda::std::chrono::weekday_last;
-    using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
+  using year                    = cuda::std::chrono::year;
+  using month                   = cuda::std::chrono::month;
+  using weekday                 = cuda::std::chrono::weekday;
+  using weekday_last            = cuda::std::chrono::weekday_last;
+  using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
 
-    constexpr month January = cuda::std::chrono::January;
-    constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
+  constexpr month January   = cuda::std::chrono::January;
+  constexpr weekday Tuesday = cuda::std::chrono::Tuesday;
 
-    ASSERT_NOEXCEPT(year_month_weekday_last{year{1}, month{1}, weekday_last{Tuesday}});
+  ASSERT_NOEXCEPT(year_month_weekday_last{year{1}, month{1}, weekday_last{Tuesday}});
 
-    constexpr year_month_weekday_last ym1{year{2019}, January, weekday_last{Tuesday}};
-    static_assert( ym1.year()         == year{2019},            "");
-    static_assert( ym1.month()        == January,               "");
-    static_assert( ym1.weekday()      == Tuesday,               "");
-    static_assert( ym1.weekday_last() == weekday_last{Tuesday}, "");
-    static_assert( ym1.ok(),                                    "");
-
+  constexpr year_month_weekday_last ym1{year{2019}, January, weekday_last{Tuesday}};
+  static_assert(ym1.year() == year{2019}, "");
+  static_assert(ym1.month() == January, "");
+  static_assert(ym1.weekday() == Tuesday, "");
+  static_assert(ym1.weekday_last() == weekday_last{Tuesday}, "");
+  static_assert(ym1.ok(), "");
 
   return 0;
 }

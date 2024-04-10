@@ -10,22 +10,22 @@
 // UNSUPPORTED: c++11
 // UNSUPPORTED: msvc && c++14, msvc && c++17
 
-#include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+#include <cuda/std/mdspan>
 
 int main(int, char**)
 {
-    {
-        using  element_t = int;
-        cuda::std::array<element_t, 2> d{42,43};
-        cuda::std::default_accessor<element_t> a0;
-        cuda::std::default_accessor<element_t> a(a0);
+  {
+    using element_t = int;
+    cuda::std::array<element_t, 2> d{42, 43};
+    cuda::std::default_accessor<element_t> a0;
+    cuda::std::default_accessor<element_t> a(a0);
 
-        assert( a.access( d.data(), 0 ) == 42 );
-        assert( a.access( d.data(), 1 ) == 43 );
-        assert( a.offset( d.data(), 0 ) == d.data()     );
-        assert( a.offset( d.data(), 1 ) == d.data() + 1 );
-    }
+    assert(a.access(d.data(), 0) == 42);
+    assert(a.access(d.data(), 1) == 43);
+    assert(a.offset(d.data(), 0) == d.data());
+    assert(a.offset(d.data(), 1) == d.data() + 1);
+  }
 
-    return 0;
+  return 0;
 }
