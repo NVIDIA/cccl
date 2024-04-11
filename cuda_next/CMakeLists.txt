@@ -30,6 +30,7 @@ option(CudaNext_ENABLE_HEADER_TESTING "Test that all public headers compile." ON
 option(CudaNext_ENABLE_TESTING "Build CUDA Next tests." ON)
 
 include(cmake/CudaNextBuildTargetList.cmake)
+include(cmake/CudaNextCudaConfig.cmake)
 
 CudaNext_build_target_list()
 

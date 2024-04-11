@@ -88,8 +88,6 @@ pull_request:
     - {cuda: *cuda_curr,     os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [14, 17, 20],     jobs: ['build']}
     - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *oneapi,   std: [11, 14, 17],     jobs: ['build']}
   nvcc-cuda-next:
-    - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [17],     jobs: ['build']}
-    - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [17],     jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [17],     jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [17, 20], jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [17, 20], jobs: ['build']}
@@ -102,12 +100,8 @@ pull_request:
     - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm12,   std: [17, 20], jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm13,   std: [17, 20], jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'ubuntu20.04', cpu: 'amd64', compiler: *llvm14,   std: [17, 20], jobs: ['build']}
-    - {cuda: *cuda_next_min, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm15,   std: [17, 20], jobs: ['build']}
-    - {cuda: *cuda_next_min, os: 'ubuntu22.04', cpu: 'amd64', compiler: *llvm16,   std: [17, 20], jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'windows2022', cpu: 'amd64', compiler: *msvc2019, std: [17],     jobs: ['build']}
     - {cuda: *cuda_next_min, os: 'windows2022', cpu: 'amd64', compiler: *msvc2022, std: [17, 20], jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc7,     std: [17],     jobs: ['build']}
-    - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc8,     std: [17],     jobs: ['build']}
     - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc9,     std: [17],     jobs: ['build']}
     - {cuda: *cuda_curr,     os: 'ubuntu20.04', cpu: 'amd64', compiler: *gcc10,    std: [17, 20], jobs: ['build']}
     - {cuda: *cuda_curr,     os: 'ubuntu22.04', cpu: 'amd64', compiler: *gcc11,    std: [17, 20], jobs: ['build']}

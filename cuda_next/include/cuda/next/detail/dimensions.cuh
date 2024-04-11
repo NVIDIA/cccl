@@ -74,14 +74,14 @@ template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t
 _CCCL_HOST_DEVICE constexpr auto
 dims_product(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::multiplies(), h1, h2);
+  return dims_op<DstType>(::cuda::std::multiplies<DstType>(), h1, h2);
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
 _CCCL_HOST_DEVICE constexpr auto
 dims_sum(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
-  return dims_op<DstType>(::cuda::std::plus(), h1, h2);
+  return dims_op<DstType>(::cuda::std::plus<DstType>(), h1, h2);
 }
 
 template <typename T, size_t... Extents>
@@ -101,7 +101,7 @@ _CCCL_HOST_DEVICE constexpr auto dim3_to_query_result(const dim3& dims)
 template <typename TyTrunc, typename Index, typename Dims>
 __device__ constexpr auto index_to_linear(const Index& index, const Dims& dims)
 {
-  static_assert(dims.rank() == 3);
+  static_assert(Dims::rank() == 3);
 
   return (index.extent(2) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
 }
