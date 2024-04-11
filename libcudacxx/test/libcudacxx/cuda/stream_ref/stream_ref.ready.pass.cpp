@@ -15,7 +15,7 @@
 
 void test_ready(cuda::stream_ref& ref)
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef TEST_HAS_NO_EXCEPTIONS
   try
   {
     assert(ref.ready());
@@ -26,7 +26,7 @@ void test_ready(cuda::stream_ref& ref)
   }
 #else
   assert(ref.ready());
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 }
 
 int main(int argc, char** argv)

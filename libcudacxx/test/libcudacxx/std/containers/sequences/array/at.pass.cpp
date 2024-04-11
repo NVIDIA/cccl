@@ -17,8 +17,8 @@
 #include "test_macros.h"
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  include <cuda/std/stdexcept>
-#endif // TEST_HAS_NO_EXCEPTIONS
+#  include <cuda/std/detail/libcxx/include/stdexcept>
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
@@ -40,7 +40,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-__host__ __device__ void test_exceptions()
+void test_exceptions()
 {
   {
     cuda::std::array<int, 4> array = {1, 2, 3, 4};
@@ -121,14 +121,14 @@ __host__ __device__ void test_exceptions()
     }
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
   tests();
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  test_exceptions();
-#endif // TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 #if TEST_STD_VER >= 2014
   static_assert(tests(), "");

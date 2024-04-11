@@ -46,24 +46,25 @@ __host__ __device__ constexpr bool constexpr_test(InitArgs&&... args)
   return (lhs.has_value() == orig.has_value()) && (lhs.has_value() ? *lhs == *orig : true);
 }
 
-__host__ __device__ void test_throwing_ctor()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Z
+struct Z
+{
+  Z()
+      : count(0)
+  {}
+  Z(Z&& o)
+      : count(o.count + 1)
   {
-    Z()
-        : count(0)
-    {}
-    Z(Z&& o)
-        : count(o.count + 1)
+    if (count == 2)
     {
-      if (count == 2)
-      {
-        throw 6;
-      }
+      TEST_THROW(6);
     }
-    int count;
-  };
+  }
+  int count;
+};
+
+void test_throwing_ctor()
+{
   Z z;
   optional<Z> rhs(cuda::std::move(z));
   try
@@ -75,8 +76,8 @@ __host__ __device__ void test_throwing_ctor()
   {
     assert(i == 6);
   }
-#endif
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class T, class... InitArgs>
 __host__ __device__ void test_ref(InitArgs&&... args)
@@ -206,9 +207,11 @@ int main(int, char**)
     test<TestType>();
     test<TestType>(42);
   }
+#ifndef TEST_HAS_NO_EXCEPTIONS
   {
-    test_throwing_ctor();
+    NV_IF_TARGET(NV_IS_HOST, (test_throwing_ctor();))
   }
+#endif // !TEST_HAS_NO_EXCEPTIONS
   {
 #ifndef TEST_COMPILER_ICC
     struct ThrowsMove

@@ -70,29 +70,6 @@ public:
   }
 };
 
-class Z
-{
-  int i_;
-
-public:
-  __host__ __device__ Z(int i)
-      : i_(i)
-  {}
-  __host__ __device__ Z(Z&&)
-  {
-    TEST_THROW(7);
-  }
-
-  __host__ __device__ friend constexpr bool operator==(const Z& x, const Z& y)
-  {
-    return x.i_ == y.i_;
-  }
-  __host__ __device__ friend void swap(Z&, Z&)
-  {
-    TEST_THROW(6);
-  }
-};
-
 class W
 {
   int i_;
@@ -165,6 +142,116 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool check_swap()
   }
   return true;
 }
+
+class TerminatesOnMoveAssignmentAndSwap
+{
+public:
+  __host__ __device__ TerminatesOnMoveAssignmentAndSwap(int) {}
+  __host__ __device__ TerminatesOnMoveAssignmentAndSwap(TerminatesOnMoveAssignmentAndSwap&&)
+  {
+    cuda::std::terminate();
+  }
+
+  __host__ __device__ friend void swap(TerminatesOnMoveAssignmentAndSwap&, TerminatesOnMoveAssignmentAndSwap&)
+  {
+    cuda::std::terminate();
+  }
+};
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+class Z
+{
+  int i_;
+
+public:
+  Z(int i)
+      : i_(i)
+  {}
+  Z(Z&&)
+  {
+    TEST_THROW(7);
+  }
+
+  friend constexpr bool operator==(const Z& x, const Z& y)
+  {
+    return x.i_ == y.i_;
+  }
+  friend void swap(Z&, Z&)
+  {
+    TEST_THROW(6);
+  }
+};
+
+void test_exceptions()
+{
+  {
+    optional<Z> opt1;
+    opt1.emplace(1);
+    optional<Z> opt2;
+    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    assert(static_cast<bool>(opt1) == true);
+    assert(*opt1 == 1);
+    assert(static_cast<bool>(opt2) == false);
+    try
+    {
+      opt1.swap(opt2);
+      assert(false);
+    }
+    catch (int i)
+    {
+      assert(i == 7);
+    }
+    assert(static_cast<bool>(opt1) == true);
+    assert(*opt1 == 1);
+    assert(static_cast<bool>(opt2) == false);
+  }
+  {
+    optional<Z> opt1;
+    optional<Z> opt2;
+    opt2.emplace(2);
+    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    assert(static_cast<bool>(opt1) == false);
+    assert(static_cast<bool>(opt2) == true);
+    assert(*opt2 == 2);
+    try
+    {
+      opt1.swap(opt2);
+      assert(false);
+    }
+    catch (int i)
+    {
+      assert(i == 7);
+    }
+    assert(static_cast<bool>(opt1) == false);
+    assert(static_cast<bool>(opt2) == true);
+    assert(*opt2 == 2);
+  }
+  {
+    optional<Z> opt1;
+    opt1.emplace(1);
+    optional<Z> opt2;
+    opt2.emplace(2);
+    static_assert(noexcept(opt1.swap(opt2)) == false, "");
+    assert(static_cast<bool>(opt1) == true);
+    assert(*opt1 == 1);
+    assert(static_cast<bool>(opt2) == true);
+    assert(*opt2 == 2);
+    try
+    {
+      opt1.swap(opt2);
+      assert(false);
+    }
+    catch (int i)
+    {
+      assert(i == 6);
+    }
+    assert(static_cast<bool>(opt1) == true);
+    assert(*opt1 == 1);
+    assert(static_cast<bool>(opt2) == true);
+    assert(*opt2 == 2);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -293,8 +380,8 @@ int main(int, char**)
     assert(*opt2 == 1);
   }
   {
-    optional<Z> opt1;
-    optional<Z> opt2;
+    optional<TerminatesOnMoveAssignmentAndSwap> opt1;
+    optional<TerminatesOnMoveAssignmentAndSwap> opt2;
 #ifndef TEST_COMPILER_ICC
     static_assert(noexcept(opt1.swap(opt2)) == false, "");
 #endif // TEST_COMPILER_ICC
@@ -304,74 +391,10 @@ int main(int, char**)
     assert(static_cast<bool>(opt1) == false);
     assert(static_cast<bool>(opt2) == false);
   }
+
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    optional<Z> opt1;
-    opt1.emplace(1);
-    optional<Z> opt2;
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
-    assert(static_cast<bool>(opt1) == true);
-    assert(*opt1 == 1);
-    assert(static_cast<bool>(opt2) == false);
-    try
-    {
-      opt1.swap(opt2);
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 7);
-    }
-    assert(static_cast<bool>(opt1) == true);
-    assert(*opt1 == 1);
-    assert(static_cast<bool>(opt2) == false);
-  }
-  {
-    optional<Z> opt1;
-    optional<Z> opt2;
-    opt2.emplace(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
-    assert(static_cast<bool>(opt1) == false);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-    try
-    {
-      opt1.swap(opt2);
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 7);
-    }
-    assert(static_cast<bool>(opt1) == false);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-  }
-  {
-    optional<Z> opt1;
-    opt1.emplace(1);
-    optional<Z> opt2;
-    opt2.emplace(2);
-    static_assert(noexcept(opt1.swap(opt2)) == false, "");
-    assert(static_cast<bool>(opt1) == true);
-    assert(*opt1 == 1);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-    try
-    {
-      opt1.swap(opt2);
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 6);
-    }
-    assert(static_cast<bool>(opt1) == true);
-    assert(*opt1 == 1);
-    assert(static_cast<bool>(opt2) == true);
-    assert(*opt2 == 2);
-  }
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

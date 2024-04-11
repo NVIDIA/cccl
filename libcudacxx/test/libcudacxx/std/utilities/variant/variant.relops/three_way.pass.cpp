@@ -94,7 +94,7 @@ void test_empty()
     assert(testOrder(v1, v2, cuda::std::weak_ordering::equivalent));
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class T1, class T2, class Order>
 constexpr bool test_with_types()
@@ -211,7 +211,7 @@ int main(int, char**)
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
   test_empty();
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

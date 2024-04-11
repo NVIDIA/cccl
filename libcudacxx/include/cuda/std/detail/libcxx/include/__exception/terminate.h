@@ -62,21 +62,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler get_terminate() noexcept
 
 _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void terminate() noexcept
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  try
-  {
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
-    __cccl_terminate();
-    // handler should not return
-    // NV_IF_ELSE_TARGET(NV_IS_HOST, (::abort();), (__trap();))
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  }
-  catch (...)
-  {
-    // handler should not throw exception
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (::abort();), (__trap();))
-  }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+  __cccl_terminate();
   _LIBCUDACXX_UNREACHABLE();
 }
 

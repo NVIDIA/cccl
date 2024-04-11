@@ -23,20 +23,6 @@
 
 using cuda::std::optional;
 
-struct X
-{
-  STATIC_MEMBER_VAR(throw_now, bool);
-
-  X() = default;
-  __host__ __device__ X(int)
-  {
-    if (throw_now())
-    {
-      TEST_THROW(6);
-    }
-  }
-};
-
 struct Y1
 {
   Y1() = default;
@@ -212,6 +198,40 @@ __host__ __device__ __noinline__ void test_ambiguous_assign()
   }
 }
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct X
+{
+  STATIC_MEMBER_VAR(throw_now, bool);
+
+  X() = default;
+  X(int)
+  {
+    if (throw_now())
+    {
+      TEST_THROW(6);
+    }
+  }
+};
+
+void throws_exception()
+{
+  optional<X> opt;
+  optional<int> opt2(42);
+  assert(static_cast<bool>(opt2) == true);
+  try
+  {
+    X::throw_now() = true;
+    opt            = opt2;
+    assert(false);
+  }
+  catch (int i)
+  {
+    assert(i == 6);
+    assert(static_cast<bool>(opt) == false);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
 int main(int, char**)
 {
   test_with_test_type();
@@ -251,23 +271,8 @@ int main(int, char**)
   }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    optional<X> opt;
-    optional<int> opt2(42);
-    assert(static_cast<bool>(opt2) == true);
-    try
-    {
-      X::throw_now() = true;
-      opt            = opt2;
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 6);
-      assert(static_cast<bool>(opt) == false);
-    }
-  }
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (throws_exception();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }
