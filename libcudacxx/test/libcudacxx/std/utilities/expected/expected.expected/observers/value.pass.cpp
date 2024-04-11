@@ -23,7 +23,8 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // non-const &
   {
     cuda::std::expected<int, int> e(5);
@@ -63,16 +64,20 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+__host__ __device__ void testException()
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
 
   // int
   {
     const cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
-    try {
+    try
+    {
       (void) e.value();
       assert(false);
-    } catch (const cuda::std::bad_expected_access<int>& ex) {
+    }
+    catch (const cuda::std::bad_expected_access<int>& ex)
+    {
       assert(ex.error() == 5);
     }
   }
@@ -80,10 +85,13 @@ __host__ __device__ void testException() {
   // MoveOnly
   {
     cuda::std::expected<int, MoveOnly> e(cuda::std::unexpect, 5);
-    try {
+    try
+    {
       (void) cuda::std::move(e).value();
       assert(false);
-    } catch (const cuda::std::bad_expected_access<MoveOnly>& ex) {
+    }
+    catch (const cuda::std::bad_expected_access<MoveOnly>& ex)
+    {
       assert(ex.error() == 5);
     }
   }
@@ -91,7 +99,8 @@ __host__ __device__ void testException() {
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

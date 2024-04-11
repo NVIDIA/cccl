@@ -19,34 +19,44 @@
 #include "test_macros.h"
 
 struct Incomplete;
-template<class T> struct Holder { T t; };
-
-struct empty_visitor {
-    template<class T>
-    __host__ __device__ constexpr void operator()(T)const noexcept {}
-};
-
-struct holder_visitor {
-    template<class T>
-    __host__ __device__ constexpr Holder<Incomplete>* operator()(T)const noexcept { return nullptr; }
-};
-
-__host__ __device__
-constexpr bool test(bool do_it)
+template <class T>
+struct Holder
 {
-    if (do_it) {
-        cuda::std::variant<Holder<Incomplete>*, int> v = nullptr;
-        cuda::std::visit(empty_visitor{}, v);
-        cuda::std::visit(holder_visitor{}, v);
-        cuda::std::visit<void>(empty_visitor{}, v);
-        cuda::std::visit<void*>(holder_visitor{}, v);
-    }
-    return true;
+  T t;
+};
+
+struct empty_visitor
+{
+  template <class T>
+  __host__ __device__ constexpr void operator()(T) const noexcept
+  {}
+};
+
+struct holder_visitor
+{
+  template <class T>
+  __host__ __device__ constexpr Holder<Incomplete>* operator()(T) const noexcept
+  {
+    return nullptr;
+  }
+};
+
+__host__ __device__ constexpr bool test(bool do_it)
+{
+  if (do_it)
+  {
+    cuda::std::variant<Holder<Incomplete>*, int> v = nullptr;
+    cuda::std::visit(empty_visitor{}, v);
+    cuda::std::visit(holder_visitor{}, v);
+    cuda::std::visit<void>(empty_visitor{}, v);
+    cuda::std::visit<void*>(holder_visitor{}, v);
+  }
+  return true;
 }
 
 int main(int, char**)
 {
-    test(true);
-    static_assert(test(true), "");
-    return 0;
+  test(true);
+  static_assert(test(true), "");
+  return 0;
 }

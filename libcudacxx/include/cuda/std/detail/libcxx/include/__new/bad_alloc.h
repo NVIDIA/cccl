@@ -12,9 +12,7 @@
 #ifndef _LIBCUDACXX___NEW_BAD_ALLOC_H
 #define _LIBCUDACXX___NEW_BAD_ALLOC_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -40,7 +38,8 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc() {
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_alloc()
+{
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_alloc();
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS
@@ -58,7 +57,8 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_array_new_length() {
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_array_new_length()
+{
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   throw bad_array_new_length();
 #endif // !_LIBCUDACXX_NO_EXCEPTIONS

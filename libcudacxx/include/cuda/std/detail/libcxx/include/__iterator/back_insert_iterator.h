@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_BACK_INSERT_ITERATOR_H
 #define _LIBCUDACXX___ITERATOR_BACK_INSERT_ITERATOR_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__iterator/iterator.h>
 #include <cuda/std/detail/libcxx/include/__iterator/iterator_traits.h>
 #include <cuda/std/detail/libcxx/include/__memory/addressof.h>
 #include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,40 +36,63 @@ class _LIBCUDACXX_TEMPLATE_VIS back_insert_iterator
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
 {
-_CCCL_SUPPRESS_DEPRECATED_POP
+  _CCCL_SUPPRESS_DEPRECATED_POP
+
 protected:
-    _Container* container;
+  _Container* container;
+
 public:
-    typedef output_iterator_tag iterator_category;
-    typedef void value_type;
+  typedef output_iterator_tag iterator_category;
+  typedef void value_type;
 #if _CCCL_STD_VER > 2017
-    typedef ptrdiff_t difference_type;
+  typedef ptrdiff_t difference_type;
 #else
-    typedef void difference_type;
+  typedef void difference_type;
 #endif
-    typedef void pointer;
-    typedef void reference;
-    typedef _Container container_type;
+  typedef void pointer;
+  typedef void reference;
+  typedef _Container container_type;
 
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit back_insert_iterator(_Container& __x) : container(_CUDA_VSTD::addressof(__x)) {}
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator=(const typename _Container::value_type& __value)
-        {container->push_back(__value); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator=(typename _Container::value_type&& __value)
-        {container->push_back(_CUDA_VSTD::move(__value)); return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator*()     {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator++()    {return *this;}
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator  operator++(int) {return *this;}
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit back_insert_iterator(_Container& __x)
+      : container(_CUDA_VSTD::addressof(__x))
+  {}
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
+  operator=(const typename _Container::value_type& __value)
+  {
+    container->push_back(__value);
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator&
+  operator=(typename _Container::value_type&& __value)
+  {
+    container->push_back(_CUDA_VSTD::move(__value));
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator*()
+  {
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator& operator++()
+  {
+    return *this;
+  }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator operator++(int)
+  {
+    return *this;
+  }
 
-    _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Container* __get_container() const { return container; }
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _Container* __get_container() const
+  {
+    return container;
+  }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(back_insert_iterator);
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-back_insert_iterator<_Container>
+inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 back_insert_iterator<_Container>
 back_inserter(_Container& __x)
 {
-    return back_insert_iterator<_Container>(__x);
+  return back_insert_iterator<_Container>(__x);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

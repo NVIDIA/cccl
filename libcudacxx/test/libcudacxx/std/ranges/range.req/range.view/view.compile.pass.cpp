@@ -20,9 +20,10 @@
 #include "test_macros.h"
 
 // The type would be a view, but it's not moveable.
-struct NotMoveable : cuda::std::ranges::view_base {
-  NotMoveable() = default;
-  NotMoveable(NotMoveable&&) = delete;
+struct NotMoveable : cuda::std::ranges::view_base
+{
+  NotMoveable()                         = default;
+  NotMoveable(NotMoveable&&)            = delete;
   NotMoveable& operator=(NotMoveable&&) = delete;
   __host__ __device__ friend int* begin(NotMoveable&);
   __host__ __device__ friend int* begin(NotMoveable const&);
@@ -36,7 +37,8 @@ static_assert(cuda::std::ranges::enable_view<NotMoveable>);
 static_assert(!cuda::std::ranges::view<NotMoveable>);
 
 // The type would be a view, but it's not default initializable
-struct NotDefaultInit : cuda::std::ranges::view_base {
+struct NotDefaultInit : cuda::std::ranges::view_base
+{
   NotDefaultInit() = delete;
   __host__ __device__ friend int* begin(NotDefaultInit&);
   __host__ __device__ friend int* begin(NotDefaultInit const&);
@@ -50,9 +52,10 @@ static_assert(cuda::std::ranges::enable_view<NotDefaultInit>);
 static_assert(cuda::std::ranges::view<NotDefaultInit>);
 
 // The type would be a view, but it doesn't enable it with enable_view
-struct NotExplicitlyEnabled {
-  NotExplicitlyEnabled() = default;
-  NotExplicitlyEnabled(NotExplicitlyEnabled&&) = default;
+struct NotExplicitlyEnabled
+{
+  NotExplicitlyEnabled()                                  = default;
+  NotExplicitlyEnabled(NotExplicitlyEnabled&&)            = default;
   NotExplicitlyEnabled& operator=(NotExplicitlyEnabled&&) = default;
   __host__ __device__ friend int* begin(NotExplicitlyEnabled&);
   __host__ __device__ friend int* begin(NotExplicitlyEnabled const&);
@@ -66,9 +69,10 @@ static_assert(!cuda::std::ranges::enable_view<NotExplicitlyEnabled>);
 static_assert(!cuda::std::ranges::view<NotExplicitlyEnabled>);
 
 // The type has everything else, but it's not a range
-struct NotARange : cuda::std::ranges::view_base {
-  NotARange() = default;
-  NotARange(NotARange&&) = default;
+struct NotARange : cuda::std::ranges::view_base
+{
+  NotARange()                       = default;
+  NotARange(NotARange&&)            = default;
   NotARange& operator=(NotARange&&) = default;
 };
 static_assert(!cuda::std::ranges::range<NotARange>);
@@ -78,9 +82,10 @@ static_assert(cuda::std::ranges::enable_view<NotARange>);
 static_assert(!cuda::std::ranges::view<NotARange>);
 
 // The type satisfies all requirements
-struct View : cuda::std::ranges::view_base {
-  View() = default;
-  View(View&&) = default;
+struct View : cuda::std::ranges::view_base
+{
+  View()                  = default;
+  View(View&&)            = default;
   View& operator=(View&&) = default;
   __host__ __device__ friend int* begin(View&);
   __host__ __device__ friend int* begin(View const&);
@@ -93,6 +98,7 @@ static_assert(cuda::std::default_initializable<View>);
 static_assert(cuda::std::ranges::enable_view<View>);
 static_assert(cuda::std::ranges::view<View>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

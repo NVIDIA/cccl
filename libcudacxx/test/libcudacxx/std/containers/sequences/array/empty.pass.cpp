@@ -20,34 +20,34 @@
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
-    {
-        typedef cuda::std::array<int, 2> C;
-        C c = {};
-        ASSERT_NOEXCEPT(c.empty());
-        assert(!c.empty());
-    }
-    {
-        typedef cuda::std::array<int, 0> C;
-        C c = {};
-        ASSERT_NOEXCEPT(c.empty());
-        assert(c.empty());
-    }
+  {
+    typedef cuda::std::array<int, 2> C;
+    C c = {};
+    ASSERT_NOEXCEPT(c.empty());
+    assert(!c.empty());
+  }
+  {
+    typedef cuda::std::array<int, 0> C;
+    C c = {};
+    ASSERT_NOEXCEPT(c.empty());
+    assert(c.empty());
+  }
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    tests();
+  tests();
 #if TEST_STD_VER >= 2014
-    static_assert(tests(), "");
+  static_assert(tests(), "");
 #endif
 
-    // Sanity check for constexpr in C++11
-    {
-        constexpr cuda::std::array<int, 3> array = {};
-        static_assert(!array.empty(), "");
-    }
+  // Sanity check for constexpr in C++11
+  {
+    constexpr cuda::std::array<int, 3> array = {};
+    static_assert(!array.empty(), "");
+  }
 
-    return 0;
+  return 0;
 }

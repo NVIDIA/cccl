@@ -17,8 +17,6 @@
 // against libstdc++.
 // XFAIL: gcc-5, gcc-6, gcc-7, gcc-10
 
-
-
 // Currently broken with Clang + NVCC.
 // XFAIL: clang-6, clang-7
 
@@ -28,11 +26,11 @@
 // so they're compatible with implicit deduction guides, or if that's not
 // possible that they provide explicit guides to make it work.
 
-#include <cuda/std/tuple>
 #include <cuda/std/cassert>
+#include <cuda/std/tuple>
 
-#include "test_macros.h"
 #include "archetypes.h"
+#include "test_macros.h"
 
 // Overloads
 //  using A = Allocator
@@ -68,7 +66,8 @@ __host__ __device__ void test_primary_template()
     cuda::std::tuple t1(p1);
     ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int, char>);
 
-    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
+    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(
+      1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
     cuda::std::tuple t2(p2);
     ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>);
 
@@ -124,9 +123,9 @@ __host__ __device__ void test_primary_template()
     cuda::std::tuple t1(AT, A, p1);
     ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int, char>);
 
-    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
-    cuda::std::tuple t2(AT, A, p2);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>);
+    cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l,
+  nullptr)); cuda::std::tuple t2(AT, A, p2); ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char,
+  long, void*>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
@@ -227,7 +226,8 @@ __host__ __device__ void test_empty_specialization()
   */
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_primary_template();
   test_empty_specialization();
 

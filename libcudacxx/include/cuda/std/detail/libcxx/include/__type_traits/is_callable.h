@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_IS_CALLABLE_H
 #define _LIBCUDACXX___TYPE_TRAITS_IS_CALLABLE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -27,13 +25,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<class _Func, class... _Args, class = decltype(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...))>
+template <class _Func, class... _Args, class = decltype(_CUDA_VSTD::declval<_Func>()(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_INLINE_VISIBILITY true_type __is_callable_helper(int);
-template<class...>
+template <class...>
 _LIBCUDACXX_INLINE_VISIBILITY false_type __is_callable_helper(...);
 
-template<class _Func, class... _Args>
-struct __is_callable : decltype(__is_callable_helper<_Func, _Args...>(0)) {};
+template <class _Func, class... _Args>
+struct __is_callable : decltype(__is_callable_helper<_Func, _Args...>(0))
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

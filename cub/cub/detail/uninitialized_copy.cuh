@@ -42,13 +42,12 @@
 
 CUB_NAMESPACE_BEGIN
 
-
 namespace detail
 {
 
 #if defined(_NVHPC_CUDA)
 template <typename T, typename U>
-_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
+_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 {
   // NVBug 3384810
   new (ptr) T(::cuda::std::forward<U>(val));
@@ -56,22 +55,16 @@ _CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 #else
 template <typename T,
           typename U,
-          typename ::cuda::std::enable_if<
-            ::cuda::std::is_trivially_copyable<T>::value,
-            int
-          >::type = 0>
-_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
+          typename ::cuda::std::enable_if<::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
+_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 {
   *ptr = ::cuda::std::forward<U>(val);
 }
 
 template <typename T,
-         typename U,
-         typename ::cuda::std::enable_if<
-           !::cuda::std::is_trivially_copyable<T>::value,
-           int
-         >::type = 0>
-_CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
+          typename U,
+          typename ::cuda::std::enable_if<!::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
+_CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 {
   new (ptr) T(::cuda::std::forward<U>(val));
 }
@@ -79,6 +72,4 @@ _CCCL_HOST_DEVICE void uninitialized_copy(T *ptr, U &&val)
 
 } // namespace detail
 
-
 CUB_NAMESPACE_END
-

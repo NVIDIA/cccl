@@ -21,10 +21,10 @@
 
 int main(int, char**)
 {
-    // expected-error-re@variant:* 3 {{{{(static_assert|static assertion)}} failed}}
-    cuda::std::variant<int, int&> v; // expected-note {{requested here}}
-    cuda::std::variant<int, const int &> v2; // expected-note {{requested here}}
-    cuda::std::variant<int, int&&> v3; // expected-note {{requested here}}
+  // expected-error-re@variant:* 3 {{{{(static_assert|static assertion)}} failed}}
+  cuda::std::variant<int, int&> v; // expected-note {{requested here}}
+  cuda::std::variant<int, const int&> v2; // expected-note {{requested here}}
+  cuda::std::variant<int, int&&> v3; // expected-note {{requested here}}
 
   return 0;
 }

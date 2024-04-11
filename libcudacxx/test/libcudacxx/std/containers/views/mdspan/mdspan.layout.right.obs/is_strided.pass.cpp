@@ -10,20 +10,20 @@
 // UNSUPPORTED: c++11
 // UNSUPPORTED: msvc && c++14, msvc && c++17
 
-#include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+#include <cuda/std/mdspan>
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
 int main(int, char**)
 {
-    {
-        cuda::std::extents<int,dyn,dyn> e{64, 128};
-        cuda::std::layout_right::mapping<cuda::std::extents<int,dyn, dyn>> m{ e };
+  {
+    cuda::std::extents<int, dyn, dyn> e{64, 128};
+    cuda::std::layout_right::mapping<cuda::std::extents<int, dyn, dyn>> m{e};
 
-        static_assert( m.is_always_strided() == true, "" );
-        assert       ( m.is_strided       () == true );
-    }
+    static_assert(m.is_always_strided() == true, "");
+    assert(m.is_strided() == true);
+  }
 
-    return 0;
+  return 0;
 }

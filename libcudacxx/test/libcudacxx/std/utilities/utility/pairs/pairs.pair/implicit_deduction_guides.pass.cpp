@@ -33,8 +33,8 @@
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "archetypes.h"
+#include "test_macros.h"
 
 // Overloads
 // ---------------

@@ -17,40 +17,47 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-struct gen_test {
-  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept {
+struct gen_test
+{
+  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept
+  {
     return 1;
   }
 };
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+{
   constexpr int N = 5;
-  int ia[N + 1] = {0};
+  int ia[N + 1]   = {0};
   cuda::std::generate(Iter(ia), Iter(ia + N), gen_test());
-  for (int i = 0; i < N; ++i) {
+  for (int i = 0; i < N; ++i)
+  {
     assert(ia[i] == 1);
   }
 
-  for (int i = N; i < N + 1; ++i) {
+  for (int i = N; i < N + 1; ++i)
+  {
     assert(ia[i] == 0);
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
-  test<cpp17_input_iterator<int*> >();
-  test<forward_iterator<int*> >();
-  test<bidirectional_iterator<int*> >();
-  test<random_access_iterator<int*> >();
+TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+{
+  test<cpp17_input_iterator<int*>>();
+  test<forward_iterator<int*>>();
+  test<bidirectional_iterator<int*>>();
+  test<random_access_iterator<int*>>();
   test<int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 
 #if TEST_STD_VER >= 2014

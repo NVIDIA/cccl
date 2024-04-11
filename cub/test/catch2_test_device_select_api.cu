@@ -94,7 +94,7 @@ CUB_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
   // example-begin segmented-select-flaggedif-inplace
   constexpr int num_items            = 8;
   thrust::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
-  thrust::device_vector<int> d_flags   = {8, 6, 7, 5, 3, 0, 9, 3};
+  thrust::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
   thrust::device_vector<int> d_num_selected_out(num_items);
   is_even_t is_even{};
 

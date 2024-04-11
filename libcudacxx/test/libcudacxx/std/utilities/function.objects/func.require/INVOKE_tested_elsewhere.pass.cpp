@@ -12,6 +12,7 @@
 // since they require calling the implementation specific "__invoke" and
 // "__invoke" functions.
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

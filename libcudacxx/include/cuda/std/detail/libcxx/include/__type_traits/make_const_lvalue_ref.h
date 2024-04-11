@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_MAKE_CONST_LVALUE_REF_H
 #define _LIBCUDACXX___TYPE_TRAITS_MAKE_CONST_LVALUE_REF_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -26,7 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template<class _Tp>
+template <class _Tp>
 using __make_const_lvalue_ref = const __libcpp_remove_reference_t<_Tp>&;
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -12,18 +12,23 @@
 // template<class I, class R = ranges::less, class P = identity>
 //   concept sortable = see below;                            // since C++20
 
+#include <cuda/std/functional>
 #include <cuda/std/iterator>
 
-#include <cuda/std/functional>
+template <class I, class R, class P>
+__host__ __device__ void test_subsumption()
+  requires cuda::std::permutable<I>;
 
 template <class I, class R, class P>
-__host__ __device__ void test_subsumption() requires cuda::std::permutable<I>;
+__host__ __device__ void test_subsumption()
+  requires cuda::std::indirect_strict_weak_order<R, cuda::std::projected<I, P>>;
 
 template <class I, class R, class P>
-__host__ __device__ void test_subsumption() requires cuda::std::indirect_strict_weak_order<R, cuda::std::projected<I, P>>;
-
-template <class I, class R, class P>
-__host__ __device__ constexpr bool test_subsumption() requires cuda::std::sortable<I, R, P> { return true; }
+__host__ __device__ constexpr bool test_subsumption()
+  requires cuda::std::sortable<I, R, P>
+{
+  return true;
+}
 
 static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
 

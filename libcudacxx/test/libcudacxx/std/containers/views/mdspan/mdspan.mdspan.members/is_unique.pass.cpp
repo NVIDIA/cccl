@@ -10,36 +10,36 @@
 // UNSUPPORTED: c++11
 // UNSUPPORTED: msvc && c++14, msvc && c++17
 
-#include <cuda/std/mdspan>
 #include <cuda/std/cassert>
+#include <cuda/std/mdspan>
 
 constexpr auto dyn = cuda::std::dynamic_extent;
 
 int main(int, char**)
 {
-    {
-        cuda::std::mdspan<int, cuda::std::dextents<size_t,1>> m;
+  {
+    cuda::std::mdspan<int, cuda::std::dextents<size_t, 1>> m;
 
-        static_assert( m.is_always_unique() == true, "" );
-        assert       ( m.is_unique       () == true );
-    }
+    static_assert(m.is_always_unique() == true, "");
+    assert(m.is_unique() == true);
+  }
 
-    cuda::std::array<int, 1> d{42};
-    cuda::std::extents<int,dyn,dyn> e{64, 128};
+  cuda::std::array<int, 1> d{42};
+  cuda::std::extents<int, dyn, dyn> e{64, 128};
 
-    {
-        cuda::std::mdspan<int, cuda::std::extents<int,dyn,dyn>> m{ d.data(), e };
+  {
+    cuda::std::mdspan<int, cuda::std::extents<int, dyn, dyn>> m{d.data(), e};
 
-        static_assert( m.is_always_unique() == true, "" );
-        assert       ( m.is_unique       () == true );
-    }
+    static_assert(m.is_always_unique() == true, "");
+    assert(m.is_unique() == true);
+  }
 
-    {
-        cuda::std::mdspan<int, cuda::std::extents<size_t,dyn, dyn>, cuda::std::layout_left> m{ d.data(), e };
+  {
+    cuda::std::mdspan<int, cuda::std::extents<size_t, dyn, dyn>, cuda::std::layout_left> m{d.data(), e};
 
-        static_assert( m.is_always_unique() == true, "" );
-        assert       ( m.is_unique       () == true );
-    }
+    static_assert(m.is_always_unique() == true, "");
+    assert(m.is_unique() == true);
+  }
 
-    return 0;
+  return 0;
 }

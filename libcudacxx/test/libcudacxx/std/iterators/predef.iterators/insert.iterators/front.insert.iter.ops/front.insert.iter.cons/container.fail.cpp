@@ -9,8 +9,6 @@
 
 // <cuda/std/iterator>
 
-
-
 // front_insert_iterator
 
 // explicit front_insert_iterator(Cont& x);
@@ -19,13 +17,13 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_LIST)
-#include <cuda/std/list>
+#  include <cuda/std/list>
 #endif
 
 int main(int, char**)
 {
 #if defined(_LIBCUDACXX_HAS_LIST)
-    cuda::std::front_insert_iterator<cuda::std::list<int> > i = cuda::std::list<int>();
+  cuda::std::front_insert_iterator<cuda::std::list<int>> i = cuda::std::list<int>();
 #else
 #  error list not yet supported
 #endif

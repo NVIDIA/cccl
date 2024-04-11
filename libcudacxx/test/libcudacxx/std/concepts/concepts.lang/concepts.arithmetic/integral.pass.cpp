@@ -15,13 +15,14 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include "arithmetic.h"
+#include "test_macros.h"
 
 using cuda::std::integral;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckIntegralQualifiers() {
+__host__ __device__ constexpr bool CheckIntegralQualifiers()
+{
   constexpr bool result = integral<T>;
   static_assert(integral<const T> == result, "");
   static_assert(integral<volatile T> == result, "");
@@ -44,7 +45,7 @@ __host__ __device__ constexpr bool CheckIntegralQualifiers() {
 
   static_assert(!integral<T (*)()>, "");
   static_assert(!integral<T (&)()>, "");
-  static_assert(!integral<T(&&)()>, "");
+  static_assert(!integral<T (&&)()>, "");
 
   return result;
 }
@@ -96,4 +97,7 @@ static_assert(CheckSubsumption(0), "");
 static_assert(CheckSubsumption(0U), "");
 #endif // TEST_STD_VER > 2017
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

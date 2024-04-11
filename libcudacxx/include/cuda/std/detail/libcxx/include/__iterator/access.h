@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___ITERATOR_ACCESS_H
 #define _LIBCUDACXX___ITERATOR_ACCESS_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,15 +64,13 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto end(const _Cp& __c) -> 
 #if _CCCL_STD_VER > 2011
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cbegin(const _Cp& __c)
-  -> decltype(_CUDA_VSTD::begin(__c))
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::begin(__c))
 {
   return _CUDA_VSTD::begin(__c);
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cend(const _Cp& __c)
-  -> decltype(_CUDA_VSTD::end(__c))
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
 {
   return _CUDA_VSTD::end(__c);
 }

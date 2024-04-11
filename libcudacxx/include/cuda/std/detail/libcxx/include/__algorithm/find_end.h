@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_FIND_END_H
 #define _LIBCUDACXX___ALGORITHM_FIND_END_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -29,14 +27,14 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
-__find_end(_ForwardIterator1 __first1,
-           _ForwardIterator1 __last1,
-           _ForwardIterator2 __first2,
-           _ForwardIterator2 __last2,
-           _BinaryPredicate __pred,
-           forward_iterator_tag,
-           forward_iterator_tag)
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 __find_end(
+  _ForwardIterator1 __first1,
+  _ForwardIterator1 __last1,
+  _ForwardIterator2 __first2,
+  _ForwardIterator2 __last2,
+  _BinaryPredicate __pred,
+  forward_iterator_tag,
+  forward_iterator_tag)
 {
   // modeled after search algorithm
   _ForwardIterator1 __r = __last1; // __last1 is the "default" answer
@@ -83,14 +81,14 @@ __find_end(_ForwardIterator1 __first1,
 }
 
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator1
-__find_end(_BidirectionalIterator1 __first1,
-           _BidirectionalIterator1 __last1,
-           _BidirectionalIterator2 __first2,
-           _BidirectionalIterator2 __last2,
-           _BinaryPredicate __pred,
-           bidirectional_iterator_tag,
-           bidirectional_iterator_tag)
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator1 __find_end(
+  _BidirectionalIterator1 __first1,
+  _BidirectionalIterator1 __last1,
+  _BidirectionalIterator2 __first2,
+  _BidirectionalIterator2 __last2,
+  _BinaryPredicate __pred,
+  bidirectional_iterator_tag,
+  bidirectional_iterator_tag)
 {
   // modeled after search algorithm (in reverse)
   if (__first2 == __last2)
@@ -136,14 +134,14 @@ __find_end(_BidirectionalIterator1 __first1,
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator1
-__find_end(_RandomAccessIterator1 __first1,
-           _RandomAccessIterator1 __last1,
-           _RandomAccessIterator2 __first2,
-           _RandomAccessIterator2 __last2,
-           _BinaryPredicate __pred,
-           random_access_iterator_tag,
-           random_access_iterator_tag)
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator1 __find_end(
+  _RandomAccessIterator1 __first1,
+  _RandomAccessIterator1 __last1,
+  _RandomAccessIterator2 __first2,
+  _RandomAccessIterator2 __last2,
+  _BinaryPredicate __pred,
+  random_access_iterator_tag,
+  random_access_iterator_tag)
 {
   // Take advantage of knowing source and pattern lengths.  Stop short when source is smaller than pattern
   __iter_diff_t<_RandomAccessIterator2> __len2 = __last2 - __first2;
@@ -191,12 +189,12 @@ __find_end(_RandomAccessIterator1 __first1,
 }
 
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator1
-find_end(_ForwardIterator1 __first1,
-         _ForwardIterator1 __last1,
-         _ForwardIterator2 __first2,
-         _ForwardIterator2 __last2,
-         _BinaryPredicate __pred)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator1 find_end(
+  _ForwardIterator1 __first1,
+  _ForwardIterator1 __last1,
+  _ForwardIterator2 __first2,
+  _ForwardIterator2 __last2,
+  _BinaryPredicate __pred)
 {
   return _CUDA_VSTD::__find_end<__add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,

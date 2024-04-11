@@ -24,52 +24,42 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-__host__ __device__
-void test_ctor_sfinae() {
+__host__ __device__ void test_ctor_sfinae()
+{
   {
     using V = cuda::std::variant<int>;
-    static_assert(
-        cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int>::value, "");
+    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int>::value, "");
     static_assert(!test_convertible<V, cuda::std::in_place_type_t<int>, int>(), "");
   }
   {
     using V = cuda::std::variant<int, long, long long>;
-    static_assert(
-        cuda::std::is_constructible<V, cuda::std::in_place_type_t<long>, int>::value, "");
+    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_type_t<long>, int>::value, "");
     static_assert(!test_convertible<V, cuda::std::in_place_type_t<long>, int>(), "");
   }
   {
-    using V = cuda::std::variant<int, long, int *>;
-    static_assert(
-        cuda::std::is_constructible<V, cuda::std::in_place_type_t<int *>, int *>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_type_t<int *>, int *>(),
-                  "");
+    using V = cuda::std::variant<int, long, int*>;
+    static_assert(cuda::std::is_constructible<V, cuda::std::in_place_type_t<int*>, int*>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_type_t<int*>, int*>(), "");
   }
   { // duplicate type
     using V = cuda::std::variant<int, long, int>;
-    static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int>::value, "");
+    static_assert(!cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int>::value, "");
     static_assert(!test_convertible<V, cuda::std::in_place_type_t<int>, int>(), "");
   }
   { // args not convertible to type
-    using V = cuda::std::variant<int, long, int *>;
-    static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int *>::value, "");
-    static_assert(!test_convertible<V, cuda::std::in_place_type_t<int>, int *>(), "");
+    using V = cuda::std::variant<int, long, int*>;
+    static_assert(!cuda::std::is_constructible<V, cuda::std::in_place_type_t<int>, int*>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_type_t<int>, int*>(), "");
   }
   { // type not in variant
-    using V = cuda::std::variant<int, long, int *>;
-    static_assert(
-        !cuda::std::is_constructible<V, cuda::std::in_place_type_t<long long>, int>::value,
-        "");
-    static_assert(!test_convertible<V, cuda::std::in_place_type_t<long long>, int>(),
-                  "");
+    using V = cuda::std::variant<int, long, int*>;
+    static_assert(!cuda::std::is_constructible<V, cuda::std::in_place_type_t<long long>, int>::value, "");
+    static_assert(!test_convertible<V, cuda::std::in_place_type_t<long long>, int>(), "");
   }
 }
 
-__host__ __device__
-void test_ctor_basic() {
+__host__ __device__ void test_ctor_basic()
+{
   {
     constexpr cuda::std::variant<int> v(cuda::std::in_place_type<int>, 42);
     static_assert(v.index() == 0, "");
@@ -81,35 +71,35 @@ void test_ctor_basic() {
     static_assert(cuda::std::get<1>(v) == 42, "");
   }
   {
-    constexpr cuda::std::variant<int, const int, long> v(
-        cuda::std::in_place_type<const int>, 42);
+    constexpr cuda::std::variant<int, const int, long> v(cuda::std::in_place_type<const int>, 42);
     static_assert(v.index() == 1, "");
     static_assert(cuda::std::get<1>(v) == 42, "");
   }
   {
     using V = cuda::std::variant<const int, volatile int, int>;
-    int x = 42;
+    int x   = 42;
     V v(cuda::std::in_place_type<const int>, x);
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v) == x);
   }
   {
     using V = cuda::std::variant<const int, volatile int, int>;
-    int x = 42;
+    int x   = 42;
     V v(cuda::std::in_place_type<volatile int>, x);
     assert(v.index() == 1);
     assert(cuda::std::get<1>(v) == x);
   }
   {
     using V = cuda::std::variant<const int, volatile int, int>;
-    int x = 42;
+    int x   = 42;
     V v(cuda::std::in_place_type<int>, x);
     assert(v.index() == 2);
     assert(cuda::std::get<2>(v) == x);
   }
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_ctor_basic();
   test_ctor_sfinae();
 

@@ -15,30 +15,30 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 struct A
 {
-    double d_;
-    int i_;
+  double d_;
+  int i_;
 };
 
 void operator&(A const&) {}
 
 cuda::std::istream& operator>>(cuda::std::istream& is, A& a)
 {
-    return is >> a.d_ >> a.i_;
+  return is >> a.d_ >> a.i_;
 }
 
 int main(int, char**)
 {
-    cuda::std::istringstream inf("1.5  23 ");
-    cuda::std::istream_iterator<A> i(inf);
-    assert(i->d_ == 1.5);
-    assert(i->i_ == 23);
+  cuda::std::istringstream inf("1.5  23 ");
+  cuda::std::istream_iterator<A> i(inf);
+  assert(i->d_ == 1.5);
+  assert(i->i_ == 23);
 
   return 0;
 }

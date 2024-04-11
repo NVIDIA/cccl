@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_SEMIREGULAR_H
 #define _LIBCUDACXX___CONCEPTS_SEMIREGULAR_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,22 +30,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.object]
 
-template<class _Tp>
+template <class _Tp>
 concept semiregular = copyable<_Tp> && default_initializable<_Tp>;
 
 #elif _CCCL_STD_VER > 2011
 
 // [concept.object]
 
-template<class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __semiregular_,
-  requires()(
-    requires(copyable<_Tp>),
-    requires(default_initializable<_Tp>)
-  ));
+template <class _Tp>
+_LIBCUDACXX_CONCEPT_FRAGMENT(__semiregular_, requires()(requires(copyable<_Tp>), requires(default_initializable<_Tp>)));
 
-template<class _Tp>
+template <class _Tp>
 _LIBCUDACXX_CONCEPT semiregular = _LIBCUDACXX_FRAGMENT(__semiregular_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011

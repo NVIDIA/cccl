@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___RANGES_SIZE_H
 #define _LIBCUDACXX___RANGES_SIZE_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__concepts/arithmetic.h>
 #include <cuda/std/detail/libcxx/include/__concepts/class_or_enum.h>
 #include <cuda/std/detail/libcxx/include/__iterator/concepts.h>
@@ -29,12 +28,11 @@
 #include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
 #include <cuda/std/detail/libcxx/include/__ranges/access.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_unbounded_array.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/make_signed.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/make_unsigned.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 #include <cuda/std/detail/libcxx/include/__utility/auto_cast.h>
 #include <cuda/std/detail/libcxx/include/__utility/declval.h>
-#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES

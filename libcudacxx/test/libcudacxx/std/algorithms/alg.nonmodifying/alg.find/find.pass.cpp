@@ -17,63 +17,71 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-struct Comparable {
-    int val_;
-    __host__ __device__ constexpr Comparable(const int val) noexcept : val_(val) {}
-    __host__ __device__ constexpr operator int() const noexcept { return val_; }
+struct Comparable
+{
+  int val_;
+  __host__ __device__ constexpr Comparable(const int val) noexcept
+      : val_(val)
+  {}
+  __host__ __device__ constexpr operator int() const noexcept
+  {
+    return val_;
+  }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-    constexpr int arr[] = {2, 4, 6, 8};
-    using Iter = cpp17_input_iterator<const int*>;
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  constexpr int arr[] = {2, 4, 6, 8};
+  using Iter          = cpp17_input_iterator<const int*>;
 
-    { // first element matches
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(2));
-      assert(*iter == 2);
-      assert(base(iter) == arr);
-    }
+  { // first element matches
+    Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(2));
+    assert(*iter == 2);
+    assert(base(iter) == arr);
+  }
 
-    { // range is empty; return last
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::begin(arr)), Comparable(2));
-      assert(base(iter) == arr);
-    }
+  { // range is empty; return last
+    Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::begin(arr)), Comparable(2));
+    assert(base(iter) == arr);
+  }
 
-    { // if multiple elements match, return the first match
-      constexpr int arr_multiple[] = {2, 4, 4, 8};
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr_multiple)), Iter(cuda::std::end(arr_multiple)), Comparable(4));
-      assert(*iter == 4);
-      assert(base(iter) == arr_multiple + 1);
-    }
+  { // if multiple elements match, return the first match
+    constexpr int arr_multiple[] = {2, 4, 4, 8};
+    Iter iter =
+      cuda::std::find(Iter(cuda::std::begin(arr_multiple)), Iter(cuda::std::end(arr_multiple)), Comparable(4));
+    assert(*iter == 4);
+    assert(base(iter) == arr_multiple + 1);
+  }
 
-    { // some element matches
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(6));
-      assert(*iter == 6);
-      assert(base(iter) == arr + 2);
-    }
+  { // some element matches
+    Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(6));
+    assert(*iter == 6);
+    assert(base(iter) == arr + 2);
+  }
 
-    { // last element matches
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(8));
-      assert(*iter == 8);
-      assert(base(iter) == arr + 3);
-    }
+  { // last element matches
+    Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(8));
+    assert(*iter == 8);
+    assert(base(iter) == arr + 3);
+  }
 
-    { // if no element matches, last is returned
-      Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(10));
-      assert(base(iter) == arr + 4);
-    }
+  { // if no element matches, last is returned
+    Iter iter = cuda::std::find(Iter(cuda::std::begin(arr)), Iter(cuda::std::end(arr)), Comparable(10));
+    assert(base(iter) == arr + 4);
+  }
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 
 #if TEST_STD_VER > 2011
-    static_assert(test(), "");
+  static_assert(test(), "");
 #endif
 
   return 0;

@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_IS_HEAP_H
 #define _LIBCUDACXX___ALGORITHM_IS_HEAP_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -33,7 +31,7 @@ template <class _RandomAccessIterator, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 is_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
-  return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare> >(__comp)) == __last;
+  return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp)) == __last;
 }
 
 template <class _RandomAccessIterator>

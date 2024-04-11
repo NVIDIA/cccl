@@ -15,341 +15,218 @@
 // transform(InIter1 first1, InIter1 last1, InIter2 first2, OutIter result, BinaryOp binary_op);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class InIter1, class InIter2, class OutIter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+{
   {
-    constexpr int N = 5;
-    constexpr int ia[N] = {0, 1, 2, 3, 4};
-    constexpr int ib[N] = {1, 2, 3, 4, 5};
+    constexpr int N           = 5;
+    constexpr int ia[N]       = {0, 1, 2, 3, 4};
+    constexpr int ib[N]       = {1, 2, 3, 4, 5};
     constexpr int expected[N] = {1, 3, 5, 7, 9};
-    int ic[N + 1] = {0, 0, 0, 0, 0, 0};
+    int ic[N + 1]             = {0, 0, 0, 0, 0, 0};
 
-    OutIter r = cuda::std::transform(InIter1(ia), InIter1(ia + N), InIter2(ib),
-                                     OutIter(ic), cuda::std::plus<int>{});
+    OutIter r = cuda::std::transform(InIter1(ia), InIter1(ia + N), InIter2(ib), OutIter(ic), cuda::std::plus<int>{});
     assert(base(r) == ic + N);
-    for (int i = 0; i < N; ++i) {
+    for (int i = 0; i < N; ++i)
+    {
       assert(ic[i] == expected[i]);
     }
 
-    for (unsigned i = N; i < N + 1; ++i) {
+    for (unsigned i = N; i < N + 1; ++i)
+    {
       assert(ic[i] == 0);
     }
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>,
-       int*>();
+TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+{
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, forward_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>, int*>();
 
-  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, forward_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, random_access_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>, int*>();
 
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>,
-       int*>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, random_access_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, bidirectional_iterator<const int*>, int*>();
 
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>,
-       int*>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, random_access_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, random_access_iterator<const int*>, int*>();
 
-  test<cpp17_input_iterator<const int*>, const int*,
-       cpp17_output_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, const int*,
-       cpp17_input_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, const int*, forward_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, const int*,
-       bidirectional_iterator<int*> >();
-  test<cpp17_input_iterator<const int*>, const int*,
-       random_access_iterator<int*> >();
+  test<cpp17_input_iterator<const int*>, const int*, cpp17_output_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, const int*, cpp17_input_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, const int*, forward_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, const int*, bidirectional_iterator<int*>>();
+  test<cpp17_input_iterator<const int*>, const int*, random_access_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, const int*, int*>();
 
-  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, forward_iterator<int*>>();
+  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
   test<forward_iterator<const int*>, cpp17_input_iterator<const int*>, int*>();
 
-  test<forward_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<forward_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<forward_iterator<const int*>, forward_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<forward_iterator<const int*>, forward_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<forward_iterator<const int*>, forward_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<forward_iterator<const int*>, forward_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<forward_iterator<const int*>, forward_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<forward_iterator<const int*>, forward_iterator<const int*>, forward_iterator<int*>>();
+  test<forward_iterator<const int*>, forward_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<forward_iterator<const int*>, forward_iterator<const int*>, random_access_iterator<int*>>();
   test<forward_iterator<const int*>, forward_iterator<const int*>, int*>();
 
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<forward_iterator<const int*>, bidirectional_iterator<const int*>,
-       int*>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, random_access_iterator<int*>>();
+  test<forward_iterator<const int*>, bidirectional_iterator<const int*>, int*>();
 
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<forward_iterator<const int*>, random_access_iterator<const int*>,
-       int*>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, random_access_iterator<int*>>();
+  test<forward_iterator<const int*>, random_access_iterator<const int*>, int*>();
 
-  test<forward_iterator<const int*>, const int*,
-       cpp17_output_iterator<int*> >();
-  test<forward_iterator<const int*>, const int*, cpp17_input_iterator<int*> >();
-  test<forward_iterator<const int*>, const int*, forward_iterator<int*> >();
-  test<forward_iterator<const int*>, const int*,
-       bidirectional_iterator<int*> >();
-  test<forward_iterator<const int*>, const int*,
-       random_access_iterator<int*> >();
+  test<forward_iterator<const int*>, const int*, cpp17_output_iterator<int*>>();
+  test<forward_iterator<const int*>, const int*, cpp17_input_iterator<int*>>();
+  test<forward_iterator<const int*>, const int*, forward_iterator<int*>>();
+  test<forward_iterator<const int*>, const int*, bidirectional_iterator<int*>>();
+  test<forward_iterator<const int*>, const int*, random_access_iterator<int*>>();
   test<forward_iterator<const int*>, const int*, int*>();
 
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>,
-       int*>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, cpp17_input_iterator<const int*>, int*>();
 
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, forward_iterator<const int*>,
-       int*>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, random_access_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, forward_iterator<const int*>, int*>();
 
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>,
-       int*>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, random_access_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, bidirectional_iterator<const int*>, int*>();
 
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>,
-       int*>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, random_access_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, random_access_iterator<const int*>, int*>();
 
-  test<bidirectional_iterator<const int*>, const int*,
-       cpp17_output_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, const int*,
-       cpp17_input_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, const int*,
-       forward_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, const int*,
-       bidirectional_iterator<int*> >();
-  test<bidirectional_iterator<const int*>, const int*,
-       random_access_iterator<int*> >();
+  test<bidirectional_iterator<const int*>, const int*, cpp17_output_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, const int*, cpp17_input_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, const int*, forward_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, const int*, bidirectional_iterator<int*>>();
+  test<bidirectional_iterator<const int*>, const int*, random_access_iterator<int*>>();
   test<bidirectional_iterator<const int*>, const int*, int*>();
 
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>,
-       int*>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
+  test<random_access_iterator<const int*>, cpp17_input_iterator<const int*>, int*>();
 
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<random_access_iterator<const int*>, forward_iterator<const int*>,
-       int*>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, random_access_iterator<int*>>();
+  test<random_access_iterator<const int*>, forward_iterator<const int*>, int*>();
 
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>,
-       int*>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, random_access_iterator<int*>>();
+  test<random_access_iterator<const int*>, bidirectional_iterator<const int*>, int*>();
 
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       random_access_iterator<int*> >();
-  test<random_access_iterator<const int*>, random_access_iterator<const int*>,
-       int*>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, random_access_iterator<int*>>();
+  test<random_access_iterator<const int*>, random_access_iterator<const int*>, int*>();
 
-  test<random_access_iterator<const int*>, const int*,
-       cpp17_output_iterator<int*> >();
-  test<random_access_iterator<const int*>, const int*,
-       cpp17_input_iterator<int*> >();
-  test<random_access_iterator<const int*>, const int*,
-       forward_iterator<int*> >();
-  test<random_access_iterator<const int*>, const int*,
-       bidirectional_iterator<int*> >();
-  test<random_access_iterator<const int*>, const int*,
-       random_access_iterator<int*> >();
+  test<random_access_iterator<const int*>, const int*, cpp17_output_iterator<int*>>();
+  test<random_access_iterator<const int*>, const int*, cpp17_input_iterator<int*>>();
+  test<random_access_iterator<const int*>, const int*, forward_iterator<int*>>();
+  test<random_access_iterator<const int*>, const int*, bidirectional_iterator<int*>>();
+  test<random_access_iterator<const int*>, const int*, random_access_iterator<int*>>();
   test<random_access_iterator<const int*>, const int*, int*>();
 
-  test<const int*, cpp17_input_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<const int*, cpp17_input_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<const int*, cpp17_input_iterator<const int*>, forward_iterator<int*> >();
-  test<const int*, cpp17_input_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<const int*, cpp17_input_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<const int*, cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<const int*, cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<const int*, cpp17_input_iterator<const int*>, forward_iterator<int*>>();
+  test<const int*, cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<const int*, cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
   test<const int*, cpp17_input_iterator<const int*>, int*>();
 
-  test<const int*, forward_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<const int*, forward_iterator<const int*>, cpp17_input_iterator<int*> >();
-  test<const int*, forward_iterator<const int*>, forward_iterator<int*> >();
-  test<const int*, forward_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<const int*, forward_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<const int*, forward_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<const int*, forward_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<const int*, forward_iterator<const int*>, forward_iterator<int*>>();
+  test<const int*, forward_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<const int*, forward_iterator<const int*>, random_access_iterator<int*>>();
   test<const int*, forward_iterator<const int*>, int*>();
 
-  test<const int*, bidirectional_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<const int*, bidirectional_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<const int*, bidirectional_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<const int*, bidirectional_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<const int*, bidirectional_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<const int*, bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<const int*, bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<const int*, bidirectional_iterator<const int*>, forward_iterator<int*>>();
+  test<const int*, bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<const int*, bidirectional_iterator<const int*>, random_access_iterator<int*>>();
   test<const int*, bidirectional_iterator<const int*>, int*>();
 
-  test<const int*, random_access_iterator<const int*>,
-       cpp17_output_iterator<int*> >();
-  test<const int*, random_access_iterator<const int*>,
-       cpp17_input_iterator<int*> >();
-  test<const int*, random_access_iterator<const int*>,
-       forward_iterator<int*> >();
-  test<const int*, random_access_iterator<const int*>,
-       bidirectional_iterator<int*> >();
-  test<const int*, random_access_iterator<const int*>,
-       random_access_iterator<int*> >();
+  test<const int*, random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
+  test<const int*, random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
+  test<const int*, random_access_iterator<const int*>, forward_iterator<int*>>();
+  test<const int*, random_access_iterator<const int*>, bidirectional_iterator<int*>>();
+  test<const int*, random_access_iterator<const int*>, random_access_iterator<int*>>();
   test<const int*, random_access_iterator<const int*>, int*>();
 
-  test<const int*, const int*, cpp17_output_iterator<int*> >();
-  test<const int*, const int*, cpp17_input_iterator<int*> >();
-  test<const int*, const int*, forward_iterator<int*> >();
-  test<const int*, const int*, bidirectional_iterator<int*> >();
-  test<const int*, const int*, random_access_iterator<int*> >();
+  test<const int*, const int*, cpp17_output_iterator<int*>>();
+  test<const int*, const int*, cpp17_input_iterator<int*>>();
+  test<const int*, const int*, forward_iterator<int*>>();
+  test<const int*, const int*, bidirectional_iterator<int*>>();
+  test<const int*, const int*, random_access_iterator<int*>>();
   test<const int*, const int*, int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 
 #if TEST_STD_VER >= 2014

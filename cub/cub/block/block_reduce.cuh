@@ -50,8 +50,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-
-
 /******************************************************************************
  * Algorithmic variants
  ******************************************************************************/
@@ -60,92 +58,90 @@ CUB_NAMESPACE_BEGIN
 enum BlockReduceAlgorithm
 {
 
-    //! @rst
-    //! Overview
-    //! ++++++++++++++++++++++++++
-    //!
-    //! An efficient "raking" reduction algorithm that only supports commutative
-    //! reduction operators (true for most operations, e.g., addition).
-    //!
-    //! Execution is comprised of three phases:
-    //! #. Upsweep sequential reduction in registers (if threads contribute more
-    //!    than one input each). Threads in warps other than the first warp place
-    //!    their partial reductions into shared memory.
-    //! #. Upsweep sequential reduction in shared memory. Threads within the first
-    //!    warp continue to accumulate by raking across segments of shared partial reductions
-    //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
-    //!
-    //! Performance Considerations
-    //! ++++++++++++++++++++++++++
-    //!
-    //! - This variant performs less communication than BLOCK_REDUCE_RAKING_NON_COMMUTATIVE
-    //!   and is preferable when the reduction operator is commutative. This variant
-    //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
-    //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
-    //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
-    //!   when the GPU is under-occupied.
-    //!
-    //! @endrst
-    BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! An efficient "raking" reduction algorithm that only supports commutative
+  //! reduction operators (true for most operations, e.g., addition).
+  //!
+  //! Execution is comprised of three phases:
+  //! #. Upsweep sequential reduction in registers (if threads contribute more
+  //!    than one input each). Threads in warps other than the first warp place
+  //!    their partial reductions into shared memory.
+  //! #. Upsweep sequential reduction in shared memory. Threads within the first
+  //!    warp continue to accumulate by raking across segments of shared partial reductions
+  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - This variant performs less communication than BLOCK_REDUCE_RAKING_NON_COMMUTATIVE
+  //!   and is preferable when the reduction operator is commutative. This variant
+  //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
+  //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
+  //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
+  //!   when the GPU is under-occupied.
+  //!
+  //! @endrst
+  BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
 
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! An efficient "raking" reduction algorithm that supports commutative
+  //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
+  //! operators. @blocked.
+  //!
+  //! Execution is comprised of three phases:
+  //! #. Upsweep sequential reduction in registers (if threads contribute more
+  //!    than one input each). Each thread then places the partial reduction
+  //!    of its item(s) into shared memory.
+  //! #. Upsweep sequential reduction in shared memory. Threads within a
+  //!    single warp rake across segments of shared partial reductions.
+  //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - This variant performs more communication than BLOCK_REDUCE_RAKING
+  //!   and is only preferable when the reduction operator is non-commutative. This variant
+  //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
+  //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
+  //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
+  //!   when the GPU is under-occupied.
+  //!
+  //! @endrst
+  BLOCK_REDUCE_RAKING,
 
-    //! @rst
-    //! Overview
-    //! ++++++++++++++++++++++++++
-    //!
-    //! An efficient "raking" reduction algorithm that supports commutative
-    //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
-    //! operators. @blocked.
-    //!
-    //! Execution is comprised of three phases:
-    //! #. Upsweep sequential reduction in registers (if threads contribute more
-    //!    than one input each). Each thread then places the partial reduction
-    //!    of its item(s) into shared memory.
-    //! #. Upsweep sequential reduction in shared memory. Threads within a
-    //!    single warp rake across segments of shared partial reductions.
-    //! #. A warp-synchronous Kogge-Stone style reduction within the raking warp.
-    //!
-    //! Performance Considerations
-    //! ++++++++++++++++++++++++++
-    //!
-    //! - This variant performs more communication than BLOCK_REDUCE_RAKING
-    //!   and is only preferable when the reduction operator is non-commutative. This variant
-    //!   applies fewer reduction operators than BLOCK_REDUCE_WARP_REDUCTIONS, and can provide higher overall
-    //!   throughput across the GPU when suitably occupied. However, turn-around latency may be
-    //!   higher than to BLOCK_REDUCE_WARP_REDUCTIONS and thus less-desirable
-    //!   when the GPU is under-occupied.
-    //!
-    //! @endrst
-    BLOCK_REDUCE_RAKING,
-
-
-    //! @rst
-    //! Overview
-    //! ++++++++++++++++++++++++++
-    //!
-    //! A quick "tiled warp-reductions" reduction algorithm that supports commutative
-    //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
-    //! operators.
-    //!
-    //! Execution is comprised of four phases:
-    //! #. Upsweep sequential reduction in registers (if threads contribute more
-    //!    than one input each). Each thread then places the partial reduction
-    //!    of its item(s) into shared memory.
-    //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
-    //!    reduction within each warp.
-    //! #. A propagation phase where the warp reduction outputs in each warp are
-    //!    updated with the aggregate from each preceding warp.
-    //!
-    //! Performance Considerations
-    //! ++++++++++++++++++++++++++
-    //!
-    //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING
-    //!   or BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall
-    //!   throughput across the GPU. However turn-around latency may be lower and
-    //!   thus useful when the GPU is under-occupied.
-    //!
-    //! @endrst
-    BLOCK_REDUCE_WARP_REDUCTIONS,
+  //! @rst
+  //! Overview
+  //! ++++++++++++++++++++++++++
+  //!
+  //! A quick "tiled warp-reductions" reduction algorithm that supports commutative
+  //! (e.g., addition) and non-commutative (e.g., string concatenation) reduction
+  //! operators.
+  //!
+  //! Execution is comprised of four phases:
+  //! #. Upsweep sequential reduction in registers (if threads contribute more
+  //!    than one input each). Each thread then places the partial reduction
+  //!    of its item(s) into shared memory.
+  //! #. Compute a shallow, but inefficient warp-synchronous Kogge-Stone style
+  //!    reduction within each warp.
+  //! #. A propagation phase where the warp reduction outputs in each warp are
+  //!    updated with the aggregate from each preceding warp.
+  //!
+  //! Performance Considerations
+  //! ++++++++++++++++++++++++++
+  //!
+  //! - This variant applies more reduction operators than BLOCK_REDUCE_RAKING
+  //!   or BLOCK_REDUCE_RAKING_NON_COMMUTATIVE, which may result in lower overall
+  //!   throughput across the GPU. However turn-around latency may be lower and
+  //!   thus useful when the GPU is under-occupied.
+  //!
+  //! @endrst
+  BLOCK_REDUCE_WARP_REDUCTIONS,
 };
 
 //! @rst
@@ -244,391 +240,384 @@ template <typename T,
 class BlockReduce
 {
 private:
+  /// Constants
+  enum
+  {
+    /// The thread block size in threads
+    BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
+  };
 
-    /// Constants
-    enum
-    {
-        /// The thread block size in threads
-        BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
-    };
+  typedef BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> WarpReductions;
+  typedef BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> RakingCommutativeOnly;
+  typedef BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> Raking;
 
-    typedef BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>           WarpReductions;
-    typedef BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>    RakingCommutativeOnly;
-    typedef BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>                   Raking;
+  /// Internal specialization type
+  using InternalBlockReduce =
+    cub::detail::conditional_t<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+                               WarpReductions,
+                               cub::detail::conditional_t<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                          RakingCommutativeOnly,
+                                                          Raking>>; // BlockReduceRaking
 
-    /// Internal specialization type
-    using InternalBlockReduce = cub::detail::conditional_t<
-      ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
-      WarpReductions,
-      cub::detail::conditional_t<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                 RakingCommutativeOnly,
-                                 Raking>>; // BlockReduceRaking
+  /// Shared memory storage layout type for BlockReduce
+  typedef typename InternalBlockReduce::TempStorage _TempStorage;
 
-    /// Shared memory storage layout type for BlockReduce
-    typedef typename InternalBlockReduce::TempStorage _TempStorage;
+  /// Internal storage allocator
+  _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
+  {
+    __shared__ _TempStorage private_storage;
+    return private_storage;
+  }
 
-    /// Internal storage allocator
-    _CCCL_DEVICE _CCCL_FORCEINLINE _TempStorage& PrivateStorage()
-    {
-        __shared__ _TempStorage private_storage;
-        return private_storage;
-    }
+  /// Shared storage reference
+  _TempStorage& temp_storage;
 
-    /// Shared storage reference
-    _TempStorage &temp_storage;
-
-    /// Linear thread-id
-    unsigned int linear_tid;
-
+  /// Linear thread-id
+  unsigned int linear_tid;
 
 public:
+  /// @smemstorage{BlockReduce}
+  struct TempStorage : Uninitialized<_TempStorage>
+  {};
 
-    /// @smemstorage{BlockReduce}
-    struct TempStorage : Uninitialized<_TempStorage> {};
+  //! @name Collective constructors
+  //! @{
 
+  //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
+      : temp_storage(PrivateStorage())
+      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+  {}
 
-    //! @name Collective constructors
-    //! @{
+  /**
+   * @brief Collective constructor using the specified memory allocation as temporary storage.
+   *
+   * @param[in] temp_storage
+   *   Reference to memory allocation having layout type TempStorage
+   */
+  _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage& temp_storage)
+      : temp_storage(temp_storage.Alias())
+      , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
+  {}
 
-    //! @brief Collective constructor using a private static allocation of shared memory as temporary storage.
-    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce()
-    :
-        temp_storage(PrivateStorage()),
-        linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-    {}
+  //! @}  end member group
+  //! @name Generic reductions
+  //! @{
 
-    /**
-     * @brief Collective constructor using the specified memory allocation as temporary storage.
-     *
-     * @param[in] temp_storage
-     *   Reference to memory allocation having layout type TempStorage
-     */
-    _CCCL_DEVICE _CCCL_FORCEINLINE BlockReduce(TempStorage &temp_storage)
-        : temp_storage(temp_storage.Alias())
-        , linear_tid(RowMajorTid(BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z))
-    {}
+  //! @rst
+  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
+  //! Each thread contributes one input element.
+  //!
+  //! - The return value is undefined in threads other than thread\ :sub:`0`.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a max reduction of 128 integer items that
+  //! are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Each thread obtains an input item
+  //!        int thread_data;
+  //!        ...
+  //!
+  //!        // Compute the block-wide max for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  template <typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  {
+    return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
+  }
 
+  //! @rst
+  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
+  //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! - The return value is undefined in threads other than thread\ :sub:`0`.
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a max reduction of 512 integer items that are partitioned in a
+  //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
+  //! 4 consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!
+  //!        // Compute the block-wide max for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] inputs
+  //!   Calling thread's input segment
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  template <int ITEMS_PER_THREAD, typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+  {
+    // Reduce partials
+    T partial = internal::ThreadReduce(inputs, reduction_op);
+    return Reduce(partial, reduction_op);
+  }
 
-    //! @}  end member group
-    //! @name Generic reductions
-    //! @{
-
-    //! @rst
-    //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
-    //! Each thread contributes one input element.
-    //!
-    //! - The return value is undefined in threads other than thread\ :sub:`0`.
-    //! - @rowmajor
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a max reduction of 128 integer items that
-    //! are partitioned across 128 threads.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Each thread obtains an input item
-    //!        int thread_data;
-    //!        ...
-    //!
-    //!        // Compute the block-wide max for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
-    //!
-    //! @endrst
-    //!
-    //! @tparam ReductionOp
-    //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-    //!
-    //! @param[in] input
-    //!   Calling thread's input
-    //!
-    //! @param[in] reduction_op
-    //!   Binary reduction functor
-    template <typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  //! @rst
+  //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
+  //! The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! - The return value is undefined in threads other than thread<sub>0</sub>.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a max reduction of a partially-full tile of integer items
+  //! that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(int num_valid, ...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Each thread obtains an input item
+  //!        int thread_data;
+  //!        if (threadIdx.x < num_valid) thread_data = ...
+  //!
+  //!        // Compute the block-wide max for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max(), num_valid);
+  //!
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction functor
+  //!
+  //! @param[in] num_valid
+  //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
+  template <typename ReductionOp>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+  {
+    // Determine if we skip bounds checking
+    if (num_valid >= BLOCK_THREADS)
     {
-        return InternalBlockReduce(temp_storage).template Reduce<true>(input, BLOCK_THREADS, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
     }
-
-    //! @rst
-    //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
-    //! Each thread contributes an array of consecutive input elements.
-    //!
-    //! - The return value is undefined in threads other than thread\ :sub:`0`.
-    //! - @granularity
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a max reduction of 512 integer items that are partitioned in a
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
-    //! 4 consecutive items.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Obtain a segment of consecutive items that are blocked across threads
-    //!        int thread_data[4];
-    //!        ...
-    //!
-    //!        // Compute the block-wide max for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
-    //!
-    //! @endrst
-    //!
-    //! @tparam ITEMS_PER_THREAD
-    //!   **[inferred]** The number of consecutive items partitioned onto each thread.
-    //!
-    //! @tparam ReductionOp
-    //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-    //!
-    //! @param[in] inputs
-    //!   Calling thread's input segment
-    //!
-    //! @param[in] reduction_op
-    //!   Binary reduction functor
-    template <int ITEMS_PER_THREAD, typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
+    else
     {
-        // Reduce partials
-        T partial = internal::ThreadReduce(inputs, reduction_op);
-        return Reduce(partial, reduction_op);
+      return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
     }
+  }
 
-    //! @rst
-    //! Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
-    //! The first ``num_valid`` threads each contribute one input element.
-    //!
-    //! - The return value is undefined in threads other than thread<sub>0</sub>.
-    //! - @rowmajor
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a max reduction of a partially-full tile of integer items
-    //! that are partitioned across 128 threads.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(int num_valid, ...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Each thread obtains an input item
-    //!        int thread_data;
-    //!        if (threadIdx.x < num_valid) thread_data = ...
-    //!
-    //!        // Compute the block-wide max for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max(), num_valid);
-    //!
-    //! @endrst
-    //!
-    //! @tparam ReductionOp
-    //!   **[inferred]** Binary reduction functor type having member `T operator()(const T &a, const T &b)`
-    //!
-    //! @param[in] input
-    //!   Calling thread's input
-    //!
-    //! @param[in] reduction_op
-    //!   Binary reduction functor
-    //!
-    //! @param[in] num_valid
-    //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
-    template <typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int num_valid)
+  //! @}  end member group
+  //! @name Summation reductions
+  //! @{
+
+  //! @rst
+  //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
+  //! Each thread contributes one input element.
+  //!
+  //! - The return value is undefined in threads other than thread\ :sub:`0`.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a sum reduction of 128 integer items that
+  //! are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Each thread obtains an input item
+  //!        int thread_data;
+  //!        ...
+  //!
+  //!        // Compute the block-wide sum for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!
+  //! @endrst
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  {
+    return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
+  }
+
+  //! @rst
+  //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.
+  //! Each thread contributes an array of consecutive input elements.
+  //!
+  //! - The return value is undefined in threads other than thread\ :sub:`0`.
+  //! - @granularity
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a sum reduction of 512 integer items that are partitioned in a
+  //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
+  //! 4 consecutive items.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain a segment of consecutive items that are blocked across threads
+  //!        int thread_data[4];
+  //!        ...
+  //!
+  //!        // Compute the block-wide sum for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!
+  //! @endrst
+  //!
+  //! @tparam ITEMS_PER_THREAD
+  //!   **[inferred]** The number of consecutive items partitioned onto each thread.
+  //!
+  //! @param[in] inputs
+  //!   Calling thread's input segment
+  template <int ITEMS_PER_THREAD>
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
+  {
+    // Reduce partials
+    T partial = internal::ThreadReduce(inputs, cub::Sum());
+    return Sum(partial);
+  }
+
+  //! @rst
+  //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
+  //! The first ``num_valid`` threads each contribute one input element.
+  //!
+  //! - The return value is undefined in threads other than thread\ :sub:`0`.
+  //! - @rowmajor
+  //! - @smemreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a sum reduction of a partially-full tile of integer items
+  //! that are partitioned across 128 threads.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
+  //!
+  //!    __global__ void ExampleKernel(int num_valid, ...)
+  //!    {
+  //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
+  //!        typedef cub::BlockReduce<int, 128> BlockReduce;
+  //!
+  //!        // Allocate shared memory for BlockReduce
+  //!        __shared__ typename BlockReduce::TempStorage temp_storage;
+  //!
+  //!        // Each thread obtains an input item (up to num_items)
+  //!        int thread_data;
+  //!        if (threadIdx.x < num_valid)
+  //!            thread_data = ...
+  //!
+  //!        // Compute the block-wide sum for thread0
+  //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
+  //!
+  //! @endrst
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] num_valid
+  //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
+  _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
+  {
+    // Determine if we skip bounds checking
+    if (num_valid >= BLOCK_THREADS)
     {
-        // Determine if we skip bounds checking
-        if (num_valid >= BLOCK_THREADS)
-        {
-            return InternalBlockReduce(temp_storage).template Reduce<true>(input, num_valid, reduction_op);
-        }
-        else
-        {
-            return InternalBlockReduce(temp_storage).template Reduce<false>(input, num_valid, reduction_op);
-        }
+      return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
     }
-
-    //! @}  end member group
-    //! @name Summation reductions
-    //! @{
-
-    //! @rst
-    //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
-    //! Each thread contributes one input element.
-    //!
-    //! - The return value is undefined in threads other than thread\ :sub:`0`.
-    //! - @rowmajor
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a sum reduction of 128 integer items that
-    //! are partitioned across 128 threads.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Each thread obtains an input item
-    //!        int thread_data;
-    //!        ...
-    //!
-    //!        // Compute the block-wide sum for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
-    //!
-    //! @endrst
-    //!
-    //! @param[in] input
-    //!   Calling thread's input
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+    else
     {
-        return InternalBlockReduce(temp_storage).template Sum<true>(input, BLOCK_THREADS);
+      return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
     }
+  }
 
-    //! @rst
-    //! Computes a block-wide reduction for thread<sub>0</sub> using addition (+) as the reduction operator.
-    //! Each thread contributes an array of consecutive input elements.
-    //!
-    //! - The return value is undefined in threads other than thread\ :sub:`0`.
-    //! - @granularity
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a sum reduction of 512 integer items that are partitioned in a
-    //! :ref:`blocked arrangement <flexible-data-arrangement>` across 128 threads where each thread owns
-    //! 4 consecutive items.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Obtain a segment of consecutive items that are blocked across threads
-    //!        int thread_data[4];
-    //!        ...
-    //!
-    //!        // Compute the block-wide sum for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
-    //!
-    //! @endrst
-    //!
-    //! @tparam ITEMS_PER_THREAD
-    //!   **[inferred]** The number of consecutive items partitioned onto each thread.
-    //!
-    //! @param[in] inputs
-    //!   Calling thread's input segment
-    template <int ITEMS_PER_THREAD>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
-    {
-        // Reduce partials
-        T partial = internal::ThreadReduce(inputs, cub::Sum());
-        return Sum(partial);
-    }
-
-    //! @rst
-    //! Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
-    //! The first ``num_valid`` threads each contribute one input element.
-    //!
-    //! - The return value is undefined in threads other than thread\ :sub:`0`.
-    //! - @rowmajor
-    //! - @smemreuse
-    //!
-    //! Snippet
-    //! +++++++
-    //!
-    //! The code snippet below illustrates a sum reduction of a partially-full tile of integer items
-    //! that are partitioned across 128 threads.
-    //!
-    //! .. code-block:: c++
-    //!
-    //!    #include <cub/cub.cuh>   // or equivalently <cub/block/block_reduce.cuh>
-    //!
-    //!    __global__ void ExampleKernel(int num_valid, ...)
-    //!    {
-    //!        // Specialize BlockReduce for a 1D block of 128 threads of type int
-    //!        typedef cub::BlockReduce<int, 128> BlockReduce;
-    //!
-    //!        // Allocate shared memory for BlockReduce
-    //!        __shared__ typename BlockReduce::TempStorage temp_storage;
-    //!
-    //!        // Each thread obtains an input item (up to num_items)
-    //!        int thread_data;
-    //!        if (threadIdx.x < num_valid)
-    //!            thread_data = ...
-    //!
-    //!        // Compute the block-wide sum for thread0
-    //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
-    //!
-    //! @endrst
-    //!
-    //! @param[in] input
-    //!   Calling thread's input
-    //!
-    //! @param[in] num_valid
-    //!   Number of threads containing valid elements (may be less than BLOCK_THREADS)
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
-    {
-        // Determine if we skip bounds checking
-        if (num_valid >= BLOCK_THREADS)
-        {
-            return InternalBlockReduce(temp_storage).template Sum<true>(input, num_valid);
-        }
-        else
-        {
-            return InternalBlockReduce(temp_storage).template Sum<false>(input, num_valid);
-        }
-    }
-
-
-    //! @}  end member group
+  //! @}  end member group
 };
 
 CUB_NAMESPACE_END
-

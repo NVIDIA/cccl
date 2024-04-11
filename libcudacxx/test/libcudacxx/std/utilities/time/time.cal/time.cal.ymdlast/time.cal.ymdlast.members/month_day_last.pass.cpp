@@ -13,27 +13,27 @@
 // constexpr chrono::day day() const noexcept;
 //  Returns: wd_
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using year                = cuda::std::chrono::year;
-    using month               = cuda::std::chrono::month;
-    using month_day_last      = cuda::std::chrono::month_day_last;
-    using year_month_day_last = cuda::std::chrono::year_month_day_last;
+  using year                = cuda::std::chrono::year;
+  using month               = cuda::std::chrono::month;
+  using month_day_last      = cuda::std::chrono::month_day_last;
+  using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
-    ASSERT_NOEXCEPT(                          cuda::std::declval<const year_month_day_last>().month_day_last());
-    ASSERT_SAME_TYPE(month_day_last, decltype(cuda::std::declval<const year_month_day_last>().month_day_last()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_day_last>().month_day_last());
+  ASSERT_SAME_TYPE(month_day_last, decltype(cuda::std::declval<const year_month_day_last>().month_day_last()));
 
-    for (unsigned i = 1; i <= 50; ++i)
-    {
-        year_month_day_last ymdl(year{1234}, month_day_last{month{i}});
-        assert( static_cast<unsigned>(ymdl.month_day_last().month()) == i);
-    }
+  for (unsigned i = 1; i <= 50; ++i)
+  {
+    year_month_day_last ymdl(year{1234}, month_day_last{month{i}});
+    assert(static_cast<unsigned>(ymdl.month_day_last().month()) == i);
+  }
 
   return 0;
 }

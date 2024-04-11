@@ -22,14 +22,15 @@
 #include <cuda/std/atomic>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
-template <class T, template<typename, typename> typename, cuda::thread_scope>
-struct TestFn {
-  __host__ __device__
-  void operator()() const {
+template <class T, template <typename, typename> typename, cuda::thread_scope>
+struct TestFn
+{
+  __host__ __device__ void operator()() const
+  {
     typedef cuda::std::atomic<T> A;
     A t{};
     bool b1 = cuda::std::atomic_is_lock_free(static_cast<const A*>(&t));
@@ -41,13 +42,13 @@ struct TestFn {
 
 struct A
 {
-    char _[4];
+  char _[4];
 };
 
 int main(int, char**)
 {
-    TestFn<A, local_memory_selector, cuda::thread_scope_system>()();
-    TestEachAtomicType<TestFn, local_memory_selector>()();
+  TestFn<A, local_memory_selector, cuda::thread_scope_system>()();
+  TestEachAtomicType<TestFn, local_memory_selector>()();
 
   return 0;
 }

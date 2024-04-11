@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H
 #define _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__fwd/array.h>
 #include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
 #include <cuda/std/detail/libcxx/include/__tuple_dir/apply_cv.h>
@@ -31,7 +30,6 @@
 #include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_types.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_cv.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -49,7 +47,7 @@ struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
   // Specialization for pair, tuple, and __tuple_types
   template <class _Tp, class _ApplyFn = __apply_cv_t<_Tp>>
   using __apply_quals _LIBCUDACXX_NODEBUG_TYPE =
-      __tuple_types< typename _ApplyFn::template __apply<__type_pack_element<_Idx, _Types...>>... >;
+    __tuple_types<typename _ApplyFn::template __apply<__type_pack_element<_Idx, _Types...>>...>;
 };
 
 template <class _Vt, size_t _Np, size_t... _Idx>
@@ -58,11 +56,13 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
   template <size_t>
   using __value_type = _Vt;
   template <class _Tp, class _ApplyFn = __apply_cv_t<_Tp>>
-  using __apply_quals = __tuple_types< typename _ApplyFn::template __apply<__value_type<_Idx>>... >;
+  using __apply_quals = __tuple_types<typename _ApplyFn::template __apply<__value_type<_Idx>>...>;
 };
 
-template <class _Tp, size_t _Ep = tuple_size<__libcpp_remove_reference_t<_Tp>>::value, size_t _Sp = 0,
-    bool _SameSize = (_Ep == tuple_size<__libcpp_remove_reference_t<_Tp>>::value)>
+template <class _Tp,
+          size_t _Ep     = tuple_size<__libcpp_remove_reference_t<_Tp>>::value,
+          size_t _Sp     = 0,
+          bool _SameSize = (_Ep == tuple_size<__libcpp_remove_reference_t<_Tp>>::value)>
 struct __make_tuple_types
 {
   static_assert(_Sp <= _Ep, "__make_tuple_types input error");

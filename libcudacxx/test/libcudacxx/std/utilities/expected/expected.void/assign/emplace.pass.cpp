@@ -24,17 +24,19 @@
 #include "../../types.h"
 #include "test_macros.h"
 
-template<class T, class = void>
+template <class T, class = void>
 constexpr bool EmplaceNoexcept = false;
 
-template<class T>
-constexpr bool EmplaceNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().emplace())>> = noexcept(cuda::std::declval<T>().emplace());
+template <class T>
+constexpr bool EmplaceNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T>().emplace())>> =
+  noexcept(cuda::std::declval<T>().emplace());
 
 static_assert(!EmplaceNoexcept<int>, "");
 
 static_assert(EmplaceNoexcept<cuda::std::expected<void, int>>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // has_value
   {
     cuda::std::expected<void, int> e;
@@ -55,7 +57,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());

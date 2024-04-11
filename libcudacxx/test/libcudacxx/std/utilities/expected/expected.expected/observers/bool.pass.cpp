@@ -24,9 +24,11 @@ template <class T, class = void>
 constexpr bool OpBoolNoexcept = false;
 
 template <class T>
-constexpr bool OpBoolNoexcept<T, cuda::std::void_t<decltype(static_cast<bool>(cuda::std::declval<T>()))>> = noexcept(static_cast<bool>(cuda::std::declval<T>()));
+constexpr bool OpBoolNoexcept<T, cuda::std::void_t<decltype(static_cast<bool>(cuda::std::declval<T>()))>> =
+  noexcept(static_cast<bool>(cuda::std::declval<T>()));
 
-struct Foo {};
+struct Foo
+{};
 static_assert(!OpBoolNoexcept<Foo>, "");
 
 static_assert(OpBoolNoexcept<cuda::std::expected<int, int>>, "");
@@ -35,7 +37,8 @@ static_assert(OpBoolNoexcept<const cuda::std::expected<int, int>>, "");
 // Test explicit
 static_assert(!cuda::std::is_convertible_v<cuda::std::expected<int, int>, bool>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // has_value
   {
     const cuda::std::expected<int, int> e(5);
@@ -51,7 +54,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

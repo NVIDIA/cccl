@@ -8,7 +8,6 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 // <cuda/std/tuple>
 
 // template <class... Types>
@@ -21,9 +20,11 @@
 
 int main(int, char**)
 {
-    (void)cuda::std::tuple_size<cuda::std::tuple<> &>::value; // expected-error {{implicit instantiation of undefined template}}
-    (void)cuda::std::tuple_size<int>::value; // expected-error {{implicit instantiation of undefined template}}
-    (void)cuda::std::tuple_size<cuda::std::tuple<>*>::value; // expected-error {{implicit instantiation of undefined template}}
+  (void) cuda::std::tuple_size<cuda::std::tuple<>&>::value; // expected-error {{implicit instantiation of undefined
+                                                            // template}}
+  (void) cuda::std::tuple_size<int>::value; // expected-error {{implicit instantiation of undefined template}}
+  (void) cuda::std::tuple_size<cuda::std::tuple<>*>::value; // expected-error {{implicit instantiation of undefined
+                                                            // template}}
 
   return 0;
 }

@@ -16,23 +16,26 @@
 
 #include <cuda/std/iterator>
 
-template<class T, class = void>
+template <class T, class = void>
 constexpr bool HasMoveSentinel = false;
 
-template<class T>
+template <class T>
 constexpr bool HasMoveSentinel<T, cuda::std::void_t<typename cuda::std::move_sentinel<T>>> = true;
 
-struct Semiregular {};
+struct Semiregular
+{};
 
-struct NotSemiregular {
+struct NotSemiregular
+{
   __host__ __device__ NotSemiregular(int);
 };
 
-static_assert( HasMoveSentinel<int>);
-static_assert( HasMoveSentinel<int*>);
-static_assert( HasMoveSentinel<Semiregular>);
+static_assert(HasMoveSentinel<int>);
+static_assert(HasMoveSentinel<int*>);
+static_assert(HasMoveSentinel<Semiregular>);
 static_assert(!HasMoveSentinel<NotSemiregular>);
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

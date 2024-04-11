@@ -11,19 +11,25 @@
 
 #include "copyable.h"
 
-struct no_default_ctor {
+struct no_default_ctor
+{
   __host__ __device__ no_default_ctor(int);
 };
-struct derived_from_non_default_initializable : no_default_ctor {};
-struct has_non_default_initializable {
+struct derived_from_non_default_initializable : no_default_ctor
+{};
+struct has_non_default_initializable
+{
   no_default_ctor x;
 };
 
-struct deleted_default_ctor {
+struct deleted_default_ctor
+{
   deleted_default_ctor() = delete;
 };
-struct derived_from_deleted_default_ctor : deleted_default_ctor {};
-struct has_deleted_default_ctor {
+struct derived_from_deleted_default_ctor : deleted_default_ctor
+{};
+struct has_deleted_default_ctor
+{
   deleted_default_ctor x;
 };
 

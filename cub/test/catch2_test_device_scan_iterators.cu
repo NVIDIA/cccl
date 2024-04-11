@@ -32,13 +32,12 @@
 
 #include <cstdint>
 
-#include "catch2_test_device_reduce.cuh"
-#include "catch2_test_device_scan.cuh"
-
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
-#include "catch2_test_launch_helper.h"
+#include "catch2_test_device_reduce.cuh"
+#include "catch2_test_device_scan.cuh"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
@@ -48,13 +47,13 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScan, device_inclusive_scan);
 // %PARAM% TEST_LAUNCH lid 0:1
 
 // List of types to test
-using custom_t = c2h::custom_type_t<c2h::accumulateable_t,
-                                    c2h::equal_comparable_t,
-                                    c2h::lexicographical_less_comparable_t,
-                                    c2h::lexicographical_greater_comparable_t>;
+using custom_t =
+  c2h::custom_type_t<c2h::accumulateable_t,
+                     c2h::equal_comparable_t,
+                     c2h::lexicographical_less_comparable_t,
+                     c2h::lexicographical_greater_comparable_t>;
 
-using iterator_type_list =
-  c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
+using iterator_type_list = c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
 
 CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
 {
@@ -67,11 +66,12 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
-  const offset_t num_items = GENERATE_COPY(take(3, random(min_items, max_items)),
-                                           values({
-                                             min_items,
-                                             max_items,
-                                           }));
+  const offset_t num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
 
   // Prepare input iterator
   input_t default_constant{};
@@ -85,11 +85,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_reference(in_it,
-                                     in_it + num_items,
-                                     expected_result.begin(),
-                                     op_t{},
-                                     accum_t{});
+    compute_inclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), op_t{}, accum_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -107,11 +103,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_exclusive_scan_reference(in_it,
-                                     in_it + num_items,
-                                     expected_result.begin(),
-                                     accum_t{},
-                                     op_t{});
+    compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), accum_t{}, op_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -129,11 +121,8 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_reference(in_it,
-                                     in_it + num_items,
-                                     expected_result.begin(),
-                                     op_t{},
-                                     cub::NumericTraits<accum_t>::Max());
+    compute_inclusive_scan_reference(
+      in_it, in_it + num_items, expected_result.begin(), op_t{}, cub::NumericTraits<accum_t>::Max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -151,11 +140,7 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_exclusive_scan_reference(in_it,
-                                     in_it + num_items,
-                                     expected_result.begin(),
-                                     accum_t{},
-                                     op_t{});
+    compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), accum_t{}, op_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -175,20 +160,15 @@ CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_lis
     accum_t init_value{};
     init_default_constant(init_value);
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_exclusive_scan_reference(in_it,
-                                     in_it + num_items,
-                                     expected_result.begin(),
-                                     init_value,
-                                     op_t{});
+    compute_exclusive_scan_reference(in_it, in_it + num_items, expected_result.begin(), init_value, op_t{});
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
     using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
     c2h::device_vector<init_t> d_initial_value(1);
-    d_initial_value[0] = static_cast<init_t>(init_value);
-    auto future_init_value =
-      cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
+    d_initial_value[0]     = static_cast<init_t>(init_value);
+    auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
     device_exclusive_scan(in_it, d_out_it, op_t{}, future_init_value, num_items);
 
     // Verify result
@@ -205,7 +185,10 @@ public:
       : m_val(val)
   {}
 
-  __host__ __device__ int get() const { return static_cast<int>(m_val); }
+  __host__ __device__ int get() const
+  {
+    return static_cast<int>(m_val);
+  }
 };
 
 class custom_accumulator_t
@@ -220,17 +203,17 @@ class custom_accumulator_t
 public:
   __host__ __device__ custom_accumulator_t() {}
 
-  __host__ __device__ custom_accumulator_t(const custom_accumulator_t &in)
+  __host__ __device__ custom_accumulator_t(const custom_accumulator_t& in)
       : m_val(in.is_valid() * in.get())
       , m_magic_value(in.is_valid() * 42)
   {}
 
-  __host__ __device__ custom_accumulator_t(const custom_input_t &in)
+  __host__ __device__ custom_accumulator_t(const custom_input_t& in)
       : m_val(in.get())
       , m_magic_value(42)
   {}
 
-  __host__ __device__ void operator=(const custom_input_t &in)
+  __host__ __device__ void operator=(const custom_input_t& in)
   {
     if (this->is_valid())
     {
@@ -238,7 +221,7 @@ public:
     }
   }
 
-  __host__ __device__ void operator=(const custom_accumulator_t &in)
+  __host__ __device__ void operator=(const custom_accumulator_t& in)
   {
     if (this->is_valid() && in.is_valid())
     {
@@ -246,35 +229,41 @@ public:
     }
   }
 
-  __host__ __device__ custom_accumulator_t operator+(const custom_input_t &in) const
+  __host__ __device__ custom_accumulator_t operator+(const custom_input_t& in) const
   {
     const int multiplier = this->is_valid();
     return {(m_val + in.get()) * multiplier};
   }
 
-  __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t &in) const
+  __host__ __device__ custom_accumulator_t operator+(const custom_accumulator_t& in) const
   {
     const int multiplier = this->is_valid() && in.is_valid();
     return {(m_val + in.get()) * multiplier};
   }
 
-  __host__ __device__ int get() const { return m_val; }
+  __host__ __device__ int get() const
+  {
+    return m_val;
+  }
 
-  __host__ __device__ bool is_valid() const { return m_magic_value == 42; }
+  __host__ __device__ bool is_valid() const
+  {
+    return m_magic_value == 42;
+  }
 };
 
 class custom_output_t
 {
-  int *m_d_ok_count{};
+  int* m_d_ok_count{};
   int m_expected{};
 
 public:
-  __host__ __device__ custom_output_t(int *d_ok_count, int expected)
+  __host__ __device__ custom_output_t(int* d_ok_count, int expected)
       : m_d_ok_count(d_ok_count)
       , m_expected(expected)
   {}
 
-  __device__ void operator=(const custom_accumulator_t &accum) const
+  __device__ void operator=(const custom_accumulator_t& accum) const
   {
     const int ok = accum.is_valid() && (accum.get() == m_expected);
     atomicAdd(m_d_ok_count, ok);
@@ -283,7 +272,7 @@ public:
 
 struct index_to_custom_output_op
 {
-  int *d_ok_count;
+  int* d_ok_count;
 
   __host__ __device__ __forceinline__ custom_output_t operator()(int index)
   {
@@ -302,11 +291,12 @@ CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
   c2h::device_vector<int> d_ok_count(1);
 
   auto index_it = thrust::make_counting_iterator(0);
-  thrust::transform(c2h::device_policy,
-                    index_it,
-                    index_it + num_items,
-                    d_output.begin(),
-                    index_to_custom_output_op{thrust::raw_pointer_cast(d_ok_count.data())});
+  thrust::transform(
+    c2h::device_policy,
+    index_it,
+    index_it + num_items,
+    d_output.begin(),
+    index_to_custom_output_op{thrust::raw_pointer_cast(d_ok_count.data())});
 
   auto d_in_it  = thrust::raw_pointer_cast(d_input.data());
   auto d_out_it = thrust::raw_pointer_cast(d_output.data());

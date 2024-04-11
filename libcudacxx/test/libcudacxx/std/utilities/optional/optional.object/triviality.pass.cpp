@@ -19,94 +19,98 @@
 // constexpr optional<T>& operator=(const optional& rhs);
 // constexpr optional<T>& operator=(optional&& rhs) noexcept(see below);
 
-
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
 
 #if !defined(_LIBCUDACXX_ADDRESSOF)
-#define TEST_WORKAROUND_NO_ADDRESSOF
+#  define TEST_WORKAROUND_NO_ADDRESSOF
 #endif
 
 #include "archetypes.h"
-
 #include "test_macros.h"
 
-
-__host__ __device__
-constexpr bool implies(bool p, bool q) {
-    return !p || q;
+__host__ __device__ constexpr bool implies(bool p, bool q)
+{
+  return !p || q;
 }
 
 template <class T>
-struct SpecialMemberTest {
-    using O = cuda::std::optional<T>;
+struct SpecialMemberTest
+{
+  using O = cuda::std::optional<T>;
 
 #ifndef TEST_COMPILER_ICC
-    static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T>,
-                          cuda::std::is_trivially_copy_constructible_v<O>),
-        "optional<T> is trivially copy constructible if T is trivially copy constructible.");
+  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T>,
+                        cuda::std::is_trivially_copy_constructible_v<O>),
+                "optional<T> is trivially copy constructible if T is trivially copy constructible.");
 
-    static_assert(implies(cuda::std::is_trivially_move_constructible_v<T>,
-                          cuda::std::is_trivially_move_constructible_v<O>),
-        "optional<T> is trivially move constructible if T is trivially move constructible");
+  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T>,
+                        cuda::std::is_trivially_move_constructible_v<O>),
+                "optional<T> is trivially move constructible if T is trivially move constructible");
 #endif // TEST_COMPILER_ICC
 
-    static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T> &&
-                          cuda::std::is_trivially_copy_assignable_v<T> &&
-                          cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_copy_constructible_v<T> && cuda::std::is_trivially_copy_assignable_v<T>
+                          && cuda::std::is_trivially_destructible_v<T>,
 
-                          cuda::std::is_trivially_copy_assignable_v<O>),
-        "optional<T> is trivially copy assignable if T is "
-        "trivially copy constructible, "
-        "trivially copy assignable, and "
-        "trivially destructible");
+                        cuda::std::is_trivially_copy_assignable_v<O>),
+                "optional<T> is trivially copy assignable if T is "
+                "trivially copy constructible, "
+                "trivially copy assignable, and "
+                "trivially destructible");
 
-    static_assert(implies(cuda::std::is_trivially_move_constructible_v<T> &&
-                          cuda::std::is_trivially_move_assignable_v<T> &&
-                          cuda::std::is_trivially_destructible_v<T>,
+  static_assert(implies(cuda::std::is_trivially_move_constructible_v<T> && cuda::std::is_trivially_move_assignable_v<T>
+                          && cuda::std::is_trivially_destructible_v<T>,
 
-                          cuda::std::is_trivially_move_assignable_v<O>),
-        "optional<T> is trivially move assignable if T is "
-        "trivially move constructible, "
-        "trivially move assignable, and"
-        "trivially destructible.");
+                        cuda::std::is_trivially_move_assignable_v<O>),
+                "optional<T> is trivially move assignable if T is "
+                "trivially move constructible, "
+                "trivially move assignable, and"
+                "trivially destructible.");
 };
 
-template <class ...Args> __host__ __device__ static void sink(Args&&...) {}
+template <class... Args>
+__host__ __device__ static void sink(Args&&...)
+{}
 
-template <class ...TestTypes>
-struct DoTestsMetafunction {
-    __host__ __device__
-    DoTestsMetafunction() { sink(SpecialMemberTest<TestTypes>{}...); }
+template <class... TestTypes>
+struct DoTestsMetafunction
+{
+  __host__ __device__ DoTestsMetafunction()
+  {
+    sink(SpecialMemberTest<TestTypes>{}...);
+  }
 };
 
-struct TrivialMoveNonTrivialCopy {
-    TrivialMoveNonTrivialCopy() = default;
-    __host__ __device__
-    TrivialMoveNonTrivialCopy(const TrivialMoveNonTrivialCopy&) {}
-    TrivialMoveNonTrivialCopy(TrivialMoveNonTrivialCopy&&) = default;
-    __host__ __device__
-    TrivialMoveNonTrivialCopy& operator=(const TrivialMoveNonTrivialCopy&) { return *this; }
-    TrivialMoveNonTrivialCopy& operator=(TrivialMoveNonTrivialCopy&&) = default;
+struct TrivialMoveNonTrivialCopy
+{
+  TrivialMoveNonTrivialCopy() = default;
+  __host__ __device__ TrivialMoveNonTrivialCopy(const TrivialMoveNonTrivialCopy&) {}
+  TrivialMoveNonTrivialCopy(TrivialMoveNonTrivialCopy&&) = default;
+  __host__ __device__ TrivialMoveNonTrivialCopy& operator=(const TrivialMoveNonTrivialCopy&)
+  {
+    return *this;
+  }
+  TrivialMoveNonTrivialCopy& operator=(TrivialMoveNonTrivialCopy&&) = default;
 };
 
-struct TrivialCopyNonTrivialMove {
-    TrivialCopyNonTrivialMove() = default;
-    TrivialCopyNonTrivialMove(const TrivialCopyNonTrivialMove&) = default;
-    __host__ __device__
-    TrivialCopyNonTrivialMove(TrivialCopyNonTrivialMove&&) {}
-    TrivialCopyNonTrivialMove& operator=(const TrivialCopyNonTrivialMove&) = default;
-    __host__ __device__
-    TrivialCopyNonTrivialMove& operator=(TrivialCopyNonTrivialMove&&) { return *this; }
+struct TrivialCopyNonTrivialMove
+{
+  TrivialCopyNonTrivialMove()                                 = default;
+  TrivialCopyNonTrivialMove(const TrivialCopyNonTrivialMove&) = default;
+  __host__ __device__ TrivialCopyNonTrivialMove(TrivialCopyNonTrivialMove&&) {}
+  TrivialCopyNonTrivialMove& operator=(const TrivialCopyNonTrivialMove&) = default;
+  __host__ __device__ TrivialCopyNonTrivialMove& operator=(TrivialCopyNonTrivialMove&&)
+  {
+    return *this;
+  }
 };
 
-int main(int, char**) {
-    sink(
-        ImplicitTypes::ApplyTypes<DoTestsMetafunction>{},
-        ExplicitTypes::ApplyTypes<DoTestsMetafunction>{},
-        NonLiteralTypes::ApplyTypes<DoTestsMetafunction>{},
-        NonTrivialTypes::ApplyTypes<DoTestsMetafunction>{},
-        DoTestsMetafunction<TrivialMoveNonTrivialCopy, TrivialCopyNonTrivialMove>{}
-    );
-    return 0;
+int main(int, char**)
+{
+  sink(ImplicitTypes::ApplyTypes<DoTestsMetafunction>{},
+       ExplicitTypes::ApplyTypes<DoTestsMetafunction>{},
+       NonLiteralTypes::ApplyTypes<DoTestsMetafunction>{},
+       NonTrivialTypes::ApplyTypes<DoTestsMetafunction>{},
+       DoTestsMetafunction<TrivialMoveNonTrivialCopy, TrivialCopyNonTrivialMove>{});
+  return 0;
 }

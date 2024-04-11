@@ -12,15 +12,12 @@
 // template<class T>
 // struct indirectly_readable_traits;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 #if TEST_STD_VER > 2017
 template <class T>
-concept has_no_value_type = !requires {
-  typename cuda::std::indirectly_readable_traits<T>::value_type;
-};
+concept has_no_value_type = !requires { typename cuda::std::indirectly_readable_traits<T>::value_type; };
 
 template <class T, class Expected>
 concept value_type_matches =
@@ -28,10 +25,9 @@ concept value_type_matches =
 
 #else
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  has_no_value_type_,
-  requires() //
-  (typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
+_LIBCUDACXX_CONCEPT_FRAGMENT(has_no_value_type_,
+                             requires() //
+                             (typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
 
 template <class T>
 _LIBCUDACXX_CONCEPT has_no_value_type = !_LIBCUDACXX_FRAGMENT(has_no_value_type_, T);
@@ -39,17 +35,16 @@ _LIBCUDACXX_CONCEPT has_no_value_type = !_LIBCUDACXX_FRAGMENT(has_no_value_type_
 template <class T, class Expected>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   value_type_matches_,
-  requires()(
-    typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
-    requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>)
-  ));
+  requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
+             requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>)));
 
 template <class T, class Expected>
 _LIBCUDACXX_CONCEPT value_type_matches = _LIBCUDACXX_FRAGMENT(value_type_matches_, T, Expected);
 #endif
 
 template <class T>
-__host__ __device__ constexpr bool check_pointer() {
+__host__ __device__ constexpr bool check_pointer()
+{
   constexpr bool result = value_type_matches<T*, T>;
   static_assert(value_type_matches<T const*, T> == result);
   static_assert(value_type_matches<T volatile*, T> == result);
@@ -64,7 +59,8 @@ __host__ __device__ constexpr bool check_pointer() {
 }
 
 template <class T>
-__host__ __device__ constexpr bool check_array() {
+__host__ __device__ constexpr bool check_array()
+{
   static_assert(value_type_matches<T[], T>);
   static_assert(value_type_matches<T const[], T>);
   static_assert(value_type_matches<T volatile[], T>);
@@ -77,7 +73,8 @@ __host__ __device__ constexpr bool check_array() {
 }
 
 template <class T, class Expected>
-__host__ __device__ constexpr bool check_member() {
+__host__ __device__ constexpr bool check_member()
+{
   static_assert(value_type_matches<T, Expected>);
   static_assert(value_type_matches<T const, Expected>);
   static_assert(value_type_matches<T volatile, Expected>);
@@ -94,19 +91,22 @@ static_assert(check_array<int>());
 static_assert(check_array<int*>());
 static_assert(check_array<int[10]>());
 
-template<class T>
-struct ValueOf {
+template <class T>
+struct ValueOf
+{
   using value_type = T;
 };
 
-template<class U>
-struct ElementOf {
+template <class U>
+struct ElementOf
+{
   using element_type = U;
 };
 
-template<class T, class U>
-struct TwoTypes {
-  using value_type = T;
+template <class T, class U>
+struct TwoTypes
+{
+  using value_type   = T;
   using element_type = U;
 };
 
@@ -146,9 +146,11 @@ static_assert(has_no_value_type<TwoTypes<int, long>>);
 static_assert(has_no_value_type<TwoTypes<int, int&>>);
 static_assert(has_no_value_type<TwoTypes<int&, int>>);
 
-struct S2 {};
+struct S2
+{};
 template <>
-struct cuda::std::indirectly_readable_traits<S2> {
+struct cuda::std::indirectly_readable_traits<S2>
+{
   using value_type = int;
 };
 static_assert(value_type_matches<S2, int>);

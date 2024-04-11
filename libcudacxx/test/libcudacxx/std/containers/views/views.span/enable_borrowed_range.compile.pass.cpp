@@ -22,9 +22,9 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 0> >);
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42> >);
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, cuda::std::dynamic_extent> >);
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 0>>);
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>>);
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, cuda::std::dynamic_extent>>);
   static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>&>);
   static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42> const>);
 

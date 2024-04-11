@@ -50,10 +50,10 @@
 #include <cuda/std/type_traits>
 
 #include <iterator>
+
 #include <stdio.h>
 
 CUB_NAMESPACE_BEGIN
-
 
 //! @rst
 //! DeviceSelect provides device-wide, parallel operations for compacting
@@ -165,72 +165,57 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename FlagIterator,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Flagged(void *d_temp_storage,
-          size_t &temp_storage_bytes,
-          InputIteratorT d_in,
-          FlagIterator d_flags,
-          OutputIteratorT d_out,
-          NumSelectedIteratorT d_num_selected_out,
-          int num_items,
-          cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
-    using OffsetT    = int;      // Signed integer type for global offsets
+    using OffsetT    = int; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<InputIteratorT,
-                            FlagIterator,
-                            OutputIteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            EqualityOp,
-                            OffsetT,
-                            false>::Dispatch(d_temp_storage,
-                                             temp_storage_bytes,
-                                             d_in,
-                                             d_flags,
-                                             d_out,
-                                             d_num_selected_out,
-                                             SelectOp(),
-                                             EqualityOp(),
-                                             num_items,
-                                             stream);
+    return DispatchSelectIf<
+      InputIteratorT,
+      FlagIterator,
+      OutputIteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       d_flags,
+                       d_out,
+                       d_num_selected_out,
+                       SelectOp(),
+                       EqualityOp(),
+                       num_items,
+                       stream);
   }
 
-  template <typename InputIteratorT,
-            typename FlagIterator,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Flagged(void *d_temp_storage,
-          size_t &temp_storage_bytes,
-          InputIteratorT d_in,
-          FlagIterator d_flags,
-          OutputIteratorT d_out,
-          NumSelectedIteratorT d_num_selected_out,
-          int num_items,
-          cudaStream_t stream,
-          bool debug_synchronous)
+  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    FlagIterator d_flags,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Flagged<InputIteratorT,
-                   FlagIterator,
-                   OutputIteratorT,
-                   NumSelectedIteratorT>(d_temp_storage,
-                                         temp_storage_bytes,
-                                         d_in,
-                                         d_flags,
-                                         d_out,
-                                         d_num_selected_out,
-                                         num_items,
-                                         stream);
+    return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
+      d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
 
   //! @rst
@@ -312,68 +297,58 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT,
-            typename FlagIterator,
-            typename NumSelectedIteratorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Flagged(void *d_temp_storage,
-          size_t &temp_storage_bytes,
-          IteratorT d_data,
-          FlagIterator d_flags,
-          NumSelectedIteratorT d_num_selected_out,
-          int num_items,
-          cudaStream_t stream = 0)
+  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    FlagIterator d_flags,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
-    using OffsetT    = int;      // Signed integer type for global offsets
+    using OffsetT    = int; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
     constexpr bool may_alias = true;
 
-    return DispatchSelectIf<IteratorT,
-                            FlagIterator,
-                            IteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            EqualityOp,
-                            OffsetT,
-                            false,
-                            may_alias>::Dispatch(d_temp_storage,
-                                                 temp_storage_bytes,
-                                                 d_data, // in
-                                                 d_flags,
-                                                 d_data, // out
-                                                 d_num_selected_out,
-                                                 SelectOp(),
-                                                 EqualityOp(),
-                                                 num_items,
-                                                 stream);
+    return DispatchSelectIf<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false,
+      may_alias>::Dispatch(d_temp_storage,
+                           temp_storage_bytes,
+                           d_data, // in
+                           d_flags,
+                           d_data, // out
+                           d_num_selected_out,
+                           SelectOp(),
+                           EqualityOp(),
+                           num_items,
+                           stream);
   }
 
-  template <typename IteratorT,
-            typename FlagIterator,
-            typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Flagged(void *d_temp_storage,
-          size_t &temp_storage_bytes,
-          IteratorT d_data,
-          FlagIterator d_flags,
-          NumSelectedIteratorT d_num_selected_out,
-          int num_items,
-          cudaStream_t stream,
-          bool debug_synchronous)
+  template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    IteratorT d_data,
+    FlagIterator d_flags,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Flagged<IteratorT, FlagIterator, NumSelectedIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_data,
-      d_flags,
-      d_num_selected_out,
-      num_items,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, stream);
   }
 
   //! @rst
@@ -477,13 +452,10 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void *d_temp_storage,
-     size_t &temp_storage_bytes,
+  If(void* d_temp_storage,
+     size_t& temp_storage_bytes,
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
@@ -491,37 +463,34 @@ struct DeviceSelect
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    using OffsetT      = int;        // Signed integer type for global offsets
-    using FlagIterator = NullType *; // FlagT iterator type (not used)
-    using EqualityOp   = NullType;   // Equality operator (not used)
+    using OffsetT      = int; // Signed integer type for global offsets
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using EqualityOp   = NullType; // Equality operator (not used)
 
-    return DispatchSelectIf<InputIteratorT,
-                            FlagIterator,
-                            OutputIteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            EqualityOp,
-                            OffsetT,
-                            false>::Dispatch(d_temp_storage,
-                                             temp_storage_bytes,
-                                             d_in,
-                                             NULL,
-                                             d_out,
-                                             d_num_selected_out,
-                                             select_op,
-                                             EqualityOp(),
-                                             num_items,
-                                             stream);
+    return DispatchSelectIf<
+      InputIteratorT,
+      FlagIterator,
+      OutputIteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       NULL,
+                       d_out,
+                       d_num_selected_out,
+                       select_op,
+                       EqualityOp(),
+                       num_items,
+                       stream);
   }
 
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void *d_temp_storage,
-     size_t &temp_storage_bytes,
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  If(void* d_temp_storage,
+     size_t& temp_storage_bytes,
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
@@ -533,14 +502,7 @@ struct DeviceSelect
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      d_num_selected_out,
-      num_items,
-      select_op,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
 
   //! @rst
@@ -634,51 +596,47 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename IteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp>
+  template <typename IteratorT, typename NumSelectedIteratorT, typename SelectOp>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void *d_temp_storage,
-     size_t &temp_storage_bytes,
+  If(void* d_temp_storage,
+     size_t& temp_storage_bytes,
      IteratorT d_data,
      NumSelectedIteratorT d_num_selected_out,
      int num_items,
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
-    using OffsetT      = int;        // Signed integer type for global offsets
-    using FlagIterator = NullType *; // FlagT iterator type (not used)
-    using EqualityOp   = NullType;   // Equality operator (not used)
+    using OffsetT      = int; // Signed integer type for global offsets
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using EqualityOp   = NullType; // Equality operator (not used)
 
     constexpr bool may_alias = true;
 
-    return DispatchSelectIf<IteratorT,
-                            FlagIterator,
-                            IteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            EqualityOp,
-                            OffsetT,
-                            false,
-                            may_alias>::Dispatch(d_temp_storage,
-                                                 temp_storage_bytes,
-                                                 d_data, // in
-                                                 NULL,
-                                                 d_data, // out
-                                                 d_num_selected_out,
-                                                 select_op,
-                                                 EqualityOp(),
-                                                 num_items,
-                                                 stream);
+    return DispatchSelectIf<
+      IteratorT,
+      FlagIterator,
+      IteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false,
+      may_alias>::Dispatch(d_temp_storage,
+                           temp_storage_bytes,
+                           d_data, // in
+                           NULL,
+                           d_data, // out
+                           d_num_selected_out,
+                           select_op,
+                           EqualityOp(),
+                           num_items,
+                           stream);
   }
 
-  template <typename IteratorT,
-            typename NumSelectedIteratorT,
-            typename SelectOp>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  If(void *d_temp_storage,
-     size_t &temp_storage_bytes,
+  template <typename IteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  If(void* d_temp_storage,
+     size_t& temp_storage_bytes,
      IteratorT d_data,
      NumSelectedIteratorT d_num_selected_out,
      int num_items,
@@ -688,13 +646,8 @@ struct DeviceSelect
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return If<IteratorT, NumSelectedIteratorT, SelectOp>(d_temp_storage,
-                                                         temp_storage_bytes,
-                                                         d_data,
-                                                         d_num_selected_out,
-                                                         num_items,
-                                                         select_op,
-                                                         stream);
+    return If<IteratorT, NumSelectedIteratorT, SelectOp>(
+      d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream);
   }
 
   //! @rst
@@ -1000,66 +953,56 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Unique(void *d_temp_storage,
-         size_t &temp_storage_bytes,
-         InputIteratorT d_in,
-         OutputIteratorT d_out,
-         NumSelectedIteratorT d_num_selected_out,
-         int num_items,
-         cudaStream_t stream = 0)
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream = 0)
   {
-    using OffsetT      = int;        // Signed integer type for global offsets
-    using FlagIterator = NullType *; // FlagT iterator type (not used)
-    using SelectOp     = NullType;   // Selection op (not used)
-    using EqualityOp   = Equality;   // Default == operator
+    using OffsetT      = int; // Signed integer type for global offsets
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using SelectOp     = NullType; // Selection op (not used)
+    using EqualityOp   = Equality; // Default == operator
 
-    return DispatchSelectIf<InputIteratorT,
-                            FlagIterator,
-                            OutputIteratorT,
-                            NumSelectedIteratorT,
-                            SelectOp,
-                            EqualityOp,
-                            OffsetT,
-                            false>::Dispatch(d_temp_storage,
-                                             temp_storage_bytes,
-                                             d_in,
-                                             NULL,
-                                             d_out,
-                                             d_num_selected_out,
-                                             SelectOp(),
-                                             EqualityOp(),
-                                             num_items,
-                                             stream);
+    return DispatchSelectIf<
+      InputIteratorT,
+      FlagIterator,
+      OutputIteratorT,
+      NumSelectedIteratorT,
+      SelectOp,
+      EqualityOp,
+      OffsetT,
+      false>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       NULL,
+                       d_out,
+                       d_num_selected_out,
+                       SelectOp(),
+                       EqualityOp(),
+                       num_items,
+                       stream);
   }
 
-  template <typename InputIteratorT,
-            typename OutputIteratorT,
-            typename NumSelectedIteratorT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
-  Unique(void *d_temp_storage,
-         size_t &temp_storage_bytes,
-         InputIteratorT d_in,
-         OutputIteratorT d_out,
-         NumSelectedIteratorT d_num_selected_out,
-         int num_items,
-         cudaStream_t stream,
-         bool debug_synchronous)
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    NumSelectedIteratorT d_num_selected_out,
+    int num_items,
+    cudaStream_t stream,
+    bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
     return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      d_num_selected_out,
-      num_items,
-      stream);
+      d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
   }
 
   //! @rst

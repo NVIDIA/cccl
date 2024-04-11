@@ -43,13 +43,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <mutex>
-
 #include <cub/util_deprecated.cuh>
 
+#include <mutex>
 
 CUB_NAMESPACE_BEGIN
-
 
 /**
  * Wraps std::mutex
@@ -58,18 +56,17 @@ CUB_NAMESPACE_BEGIN
  */
 struct CUB_DEPRECATED Mutex
 {
-    std::mutex mtx;
+  std::mutex mtx;
 
-    void Lock()
-    {
-        mtx.lock();
-    }
+  void Lock()
+  {
+    mtx.lock();
+  }
 
-    void Unlock()
-    {
-        mtx.unlock();
-    }
+  void Unlock()
+  {
+    mtx.unlock();
+  }
 };
-
 
 CUB_NAMESPACE_END

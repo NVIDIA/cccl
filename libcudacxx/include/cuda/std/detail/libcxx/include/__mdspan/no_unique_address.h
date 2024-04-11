@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX__LIBCUDACXX_NO_UNIQUE_ADDRESS_HPP
 #define _LIBCUDACXX__LIBCUDACXX_NO_UNIQUE_ADDRESS_HPP
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -66,18 +64,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-namespace __detail {
+namespace __detail
+{
 
 //==============================================================================
 
 template <class _Tp, size_t _Disambiguator = 0, class _Enable = void>
-struct __no_unique_address_emulation {
+struct __no_unique_address_emulation
+{
   using __stored_type = _Tp;
   _Tp __v;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__ref() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __ref() const noexcept
+  {
     return __v;
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__ref() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __ref() noexcept
+  {
     return __v;
   }
 };
@@ -87,55 +89,62 @@ struct __no_unique_address_emulation {
 // like that currently. That kind of thing could be added pretty easily though
 template <class _Tp, size_t _Disambiguator>
 struct __no_unique_address_emulation<
-    _Tp, _Disambiguator,
-    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
-                // If the type isn't trivially destructible, its destructor
-                // won't be called at the right time, so don't use this
-                // specialization
-                _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>> :
-#ifdef __MDSPAN_COMPILER_MSVC
+  _Tp,
+  _Disambiguator,
+  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) &&
+                          // If the type isn't trivially destructible, its destructor
+                          // won't be called at the right time, so don't use this
+                          // specialization
+                          _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_trivially_destructible, _Tp)>>
+    :
+#  ifdef __MDSPAN_COMPILER_MSVC
     // MSVC doesn't allow you to access public static member functions of a type
     // when you *happen* to privately inherit from that type.
     protected
-#else
+#  else
     // But we still want this to be private if possible so that we don't accidentally
     // access members of _Tp directly rather than calling __ref() first, which wouldn't
     // work if _Tp happens to be stateful and thus we're using the unspecialized definition
     // of __no_unique_address_emulation above.
     private
-#endif
-    _Tp {
+#  endif
+    _Tp
+{
   using __stored_type = _Tp;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__ref() const noexcept {
-    return *static_cast<_Tp const *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __ref() const noexcept
+  {
+    return *static_cast<_Tp const*>(this);
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__ref() noexcept {
-    return *static_cast<_Tp *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __ref() noexcept
+  {
+    return *static_cast<_Tp*>(this);
   }
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __no_unique_address_emulation() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __no_unique_address_emulation(
-      __no_unique_address_emulation const &) noexcept = default;
+  constexpr __no_unique_address_emulation(__no_unique_address_emulation const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __no_unique_address_emulation(
-      __no_unique_address_emulation &&) noexcept = default;
+  constexpr __no_unique_address_emulation(__no_unique_address_emulation&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation &
-  operator=(__no_unique_address_emulation const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
+  operator=(__no_unique_address_emulation const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation &
-  operator=(__no_unique_address_emulation &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __no_unique_address_emulation&
+  operator=(__no_unique_address_emulation&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__no_unique_address_emulation() noexcept = default;
 
   // Explicitly make this not a reference so that the copy or move
   // constructor still gets called.
   __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept : _Tp(__v) {}
+  explicit constexpr __no_unique_address_emulation(_Tp const& __v) noexcept
+      : _Tp(__v)
+  {}
   __MDSPAN_INLINE_FUNCTION
-  explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept : _Tp(_CUDA_VSTD::move(__v)) {}
+  explicit constexpr __no_unique_address_emulation(_Tp&& __v) noexcept
+      : _Tp(_CUDA_VSTD::move(__v))
+  {}
 };
 
 //==============================================================================

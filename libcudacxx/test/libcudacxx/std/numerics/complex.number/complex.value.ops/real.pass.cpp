@@ -13,30 +13,29 @@
 //   T
 //   real(const complex<T>& x);
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
-test()
+__host__ __device__ void test()
 {
-    cuda::std::complex<T> z(1.5, 2.5);
-    assert(real(z) == T(1.5));
+  cuda::std::complex<T> z(1.5, 2.5);
+  assert(real(z) == T(1.5));
 }
 
 int main(int, char**)
 {
-    test<float>();
-    test<double>();
+  test<float>();
+  test<double>();
 // CUDA treats long double as double
 //  test<long double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test<__half>();
+  test<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test<__nv_bfloat16>();
+  test<__nv_bfloat16>();
 #endif
 
   return 0;

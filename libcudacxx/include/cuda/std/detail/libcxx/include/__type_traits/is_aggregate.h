@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H
 #define _LIBCUDACXX___TYPE_TRAITS_IS_AGGREGATE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -28,13 +26,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS
-is_aggregate : public integral_constant<bool, _LIBCUDACXX_IS_AGGREGATE(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_aggregate : public integral_constant<bool, _LIBCUDACXX_IS_AGGREGATE(_Tp)>
+{};
 
-#if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_aggregate_v = _LIBCUDACXX_IS_AGGREGATE(_Tp);
-#endif
+#  endif
 
 #endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
 

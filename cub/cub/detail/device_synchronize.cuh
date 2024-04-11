@@ -26,11 +26,13 @@
 #  pragma system_header
 #endif // no system header
 
+// clang-format off
 #include <cub/detail/detect_cuda_runtime.cuh>
 
-#include <nv/target>
-
 #include <cuda_runtime_api.h>
+// clang-format on
+
+#include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
@@ -49,24 +51,20 @@ CUB_RUNTIME_FUNCTION inline cudaError_t device_synchronize()
   // Device-side sync is only available under CDPv1:
 #if defined(CUB_DETAIL_CDPv1)
 
-#if ((__CUDACC_VER_MAJOR__ > 11) ||                                            \
-     ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ >= 6)))
+#  if ((__CUDACC_VER_MAJOR__ > 11) || ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ >= 6)))
   // CUDA >= 11.6
-#define CUB_TMP_DEVICE_SYNC_IMPL                                               \
-  result = __cudaDeviceSynchronizeDeprecationAvoidance();
-#else // CUDA < 11.6:
-#define CUB_TMP_DEVICE_SYNC_IMPL result = cudaDeviceSynchronize();
-#endif
+#    define CUB_TMP_DEVICE_SYNC_IMPL result = __cudaDeviceSynchronizeDeprecationAvoidance();
+#  else // CUDA < 11.6:
+#    define CUB_TMP_DEVICE_SYNC_IMPL result = cudaDeviceSynchronize();
+#  endif
 
 #else // CDPv2 or no CDP:
 
-#define CUB_TMP_DEVICE_SYNC_IMPL /* unavailable */
+#  define CUB_TMP_DEVICE_SYNC_IMPL /* unavailable */
 
 #endif // CDP version
 
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = cudaDeviceSynchronize();),
-               (CUB_TMP_DEVICE_SYNC_IMPL));
+  NV_IF_TARGET(NV_IS_HOST, (result = cudaDeviceSynchronize();), (CUB_TMP_DEVICE_SYNC_IMPL));
 
 #undef CUB_TMP_DEVICE_SYNC_IMPL
 

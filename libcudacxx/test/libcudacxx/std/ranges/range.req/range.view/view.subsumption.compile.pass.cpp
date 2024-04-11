@@ -21,9 +21,10 @@
 
 #include "test_macros.h"
 
-struct View : cuda::std::ranges::view_base {
-  View() = default;
-  View(View&&) = default;
+struct View : cuda::std::ranges::view_base
+{
+  View()                  = default;
+  View(View&&)            = default;
   View& operator=(View&&) = default;
   __host__ __device__ friend int* begin(View&);
   __host__ __device__ friend int* begin(View const&);
@@ -31,24 +32,39 @@ struct View : cuda::std::ranges::view_base {
   __host__ __device__ friend int* end(View const&);
 };
 
-namespace subsume_range {
-  template <cuda::std::ranges::view>
-  __host__ __device__ constexpr bool test() { return true; }
-  template <cuda::std::ranges::range>
-  __host__ __device__ constexpr bool test() { return false; }
-  static_assert(test<View>(), "");
+namespace subsume_range
+{
+template <cuda::std::ranges::view>
+__host__ __device__ constexpr bool test()
+{
+  return true;
 }
+template <cuda::std::ranges::range>
+__host__ __device__ constexpr bool test()
+{
+  return false;
+}
+static_assert(test<View>(), "");
+} // namespace subsume_range
 
 #ifndef __NVCOMPILER // nvbug 3885350
-namespace subsume_movable {
-  template <cuda::std::ranges::view>
-  __host__ __device__ constexpr bool test() { return true; }
-  template <cuda::std::movable>
-  __host__ __device__ constexpr bool test() { return false; }
-  static_assert(test<View>(), "");
+namespace subsume_movable
+{
+template <cuda::std::ranges::view>
+__host__ __device__ constexpr bool test()
+{
+  return true;
 }
+template <cuda::std::movable>
+__host__ __device__ constexpr bool test()
+{
+  return false;
+}
+static_assert(test<View>(), "");
+} // namespace subsume_movable
 #endif
 
-int main(int, char**) {
+int main(int, char**)
+{
   return 0;
 }

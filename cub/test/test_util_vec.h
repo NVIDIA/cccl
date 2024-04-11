@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cub/config.cuh>
+
 #include <cub/util_type.cuh>
 
 #include <iostream>
@@ -40,13 +41,25 @@
  * Helper for casting character types to integers for cout printing
  */
 template <typename T>
-T CoutCast(T val) { return val; }
+T CoutCast(T val)
+{
+  return val;
+}
 
-inline int CoutCast(char val) { return val; }
+inline int CoutCast(char val)
+{
+  return val;
+}
 
-inline int CoutCast(unsigned char val) { return val; }
+inline int CoutCast(unsigned char val)
+{
+  return val;
+}
 
-inline int CoutCast(signed char val) { return val; }
+inline int CoutCast(signed char val)
+{
+  return val;
+}
 
 /******************************************************************************
  * Comparison and ostream operators for CUDA vector types
@@ -55,254 +68,207 @@ inline int CoutCast(signed char val) { return val; }
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1(T, BaseT)                        \
-    /* Ostream output */                                    \
-    inline std::ostream& operator<<(                        \
-        std::ostream& os,                                   \
-        const T& val)                                       \
-    {                                                       \
-        os << '(' << CoutCast(val.x) << ')';                \
-        return os;                                          \
-    }                                                       \
-    /* Inequality */                                        \
-    inline __host__ __device__ bool operator!=(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x != b.x);                                \
-    }                                                       \
-    /* Equality */                                          \
-    inline __host__ __device__ bool operator==(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x == b.x);                                \
-    }                                                       \
-    /* Max */                                               \
-    inline __host__ __device__ bool operator>(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x > b.x);                                 \
-    }                                                       \
-    /* Min */                                               \
-    inline __host__ __device__ bool operator<(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x < b.x);                                 \
-    }                                                       \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                       \
-    inline __host__ __device__ T operator+(                 \
-        T a,                                                \
-        T b)                                                \
-    {                                                       \
-        T retval = make_##T(a.x + b.x);                     \
-        return retval;                                      \
-    }
-
-
+#define CUB_VEC_OVERLOAD_1(T, BaseT)                                        \
+  /* Ostream output */                                                      \
+  inline std::ostream& operator<<(std::ostream& os, const T& val)           \
+  {                                                                         \
+    os << '(' << CoutCast(val.x) << ')';                                    \
+    return os;                                                              \
+  }                                                                         \
+  /* Inequality */                                                          \
+  inline __host__ __device__ bool operator!=(const T& a, const T& b)        \
+  {                                                                         \
+    return (a.x != b.x);                                                    \
+  }                                                                         \
+  /* Equality */                                                            \
+  inline __host__ __device__ bool operator==(const T& a, const T& b)        \
+  {                                                                         \
+    return (a.x == b.x);                                                    \
+  }                                                                         \
+  /* Max */                                                                 \
+  inline __host__ __device__ bool operator>(const T& a, const T& b)         \
+  {                                                                         \
+    return (a.x > b.x);                                                     \
+  }                                                                         \
+  /* Min */                                                                 \
+  inline __host__ __device__ bool operator<(const T& a, const T& b)         \
+  {                                                                         \
+    return (a.x < b.x);                                                     \
+  }                                                                         \
+  /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */ \
+  inline __host__ __device__ T operator+(T a, T b)                          \
+  {                                                                         \
+    T retval = make_##T(a.x + b.x);                                         \
+    return retval;                                                          \
+  }
 
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2(T, BaseT)                        \
-    /* Ostream output */                                    \
-    inline std::ostream& operator<<(                        \
-        std::ostream& os,                                   \
-        const T& val)                                       \
-    {                                                       \
-        os << '('                                           \
-            << CoutCast(val.x) << ','                       \
-            << CoutCast(val.y) << ')';                      \
-        return os;                                          \
-    }                                                       \
-    /* Inequality */                                        \
-    inline __host__ __device__ bool operator!=(  \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x != b.x) ||                              \
-            (a.y != b.y);                                   \
-    }                                                       \
-    /* Equality */                                          \
-    inline __host__ __device__ bool operator==(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x == b.x) &&                              \
-            (a.y == b.y);                                   \
-    }                                                       \
-    /* Max */                                               \
-    inline __host__ __device__ bool operator>(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x > b.x) return true; else if (b.x > a.x) return false;   \
-        return a.y > b.y;                                               \
-    }                                                       \
-    /* Min */                                               \
-    inline __host__ __device__ bool operator<(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x < b.x) return true; else if (b.x < a.x) return false;   \
-        return a.y < b.y;                                               \
-    }                                                       \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                         \
-    inline __host__ __device__ T operator+(                 \
-               T a,                                         \
-               T b)                                         \
-    {                                                       \
-        T retval = make_##T(                                \
-            a.x + b.x,                                      \
-            a.y + b.y);                                     \
-        return retval;                                      \
-    }                                                       \
-
-
+#define CUB_VEC_OVERLOAD_2(T, BaseT)                                        \
+  /* Ostream output */                                                      \
+  inline std::ostream& operator<<(std::ostream& os, const T& val)           \
+  {                                                                         \
+    os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ')';          \
+    return os;                                                              \
+  }                                                                         \
+  /* Inequality */                                                          \
+  inline __host__ __device__ bool operator!=(const T& a, const T& b)        \
+  {                                                                         \
+    return (a.x != b.x) || (a.y != b.y);                                    \
+  }                                                                         \
+  /* Equality */                                                            \
+  inline __host__ __device__ bool operator==(const T& a, const T& b)        \
+  {                                                                         \
+    return (a.x == b.x) && (a.y == b.y);                                    \
+  }                                                                         \
+  /* Max */                                                                 \
+  inline __host__ __device__ bool operator>(const T& a, const T& b)         \
+  {                                                                         \
+    if (a.x > b.x)                                                          \
+      return true;                                                          \
+    else if (b.x > a.x)                                                     \
+      return false;                                                         \
+    return a.y > b.y;                                                       \
+  }                                                                         \
+  /* Min */                                                                 \
+  inline __host__ __device__ bool operator<(const T& a, const T& b)         \
+  {                                                                         \
+    if (a.x < b.x)                                                          \
+      return true;                                                          \
+    else if (b.x < a.x)                                                     \
+      return false;                                                         \
+    return a.y < b.y;                                                       \
+  }                                                                         \
+  /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */ \
+  inline __host__ __device__ T operator+(T a, T b)                          \
+  {                                                                         \
+    T retval = make_##T(a.x + b.x, a.y + b.y);                              \
+    return retval;                                                          \
+  }
 
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3(T, BaseT)                        \
-    /* Ostream output */                                    \
-    inline std::ostream& operator<<(                        \
-        std::ostream& os,                                   \
-        const T& val)                                       \
-    {                                                       \
-        os << '('                                           \
-            << CoutCast(val.x) << ','                       \
-            << CoutCast(val.y) << ','                       \
-            << CoutCast(val.z) << ')';                      \
-        return os;                                          \
-    }                                                       \
-    /* Inequality */                                        \
-    inline __host__ __device__ bool operator!=(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x != b.x) ||                              \
-            (a.y != b.y) ||                                 \
-            (a.z != b.z);                                   \
-    }                                                       \
-    /* Equality */                                          \
-    inline __host__ __device__ bool operator==(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x == b.x) &&                              \
-            (a.y == b.y) &&                                 \
-            (a.z == b.z);                                   \
-    }                                                       \
-    /* Max */                                               \
-    inline __host__ __device__ bool operator>(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x > b.x) return true; else if (b.x > a.x) return false;   \
-        if (a.y > b.y) return true; else if (b.y > a.y) return false;   \
-        return a.z > b.z;                                               \
-    }                                                       \
-    /* Min */                                               \
-    inline __host__ __device__ bool operator<(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x < b.x) return true; else if (b.x < a.x) return false;   \
-        if (a.y < b.y) return true; else if (b.y < a.y) return false;   \
-        return a.z < b.z;                                               \
-    }                                                       \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                         \
-    inline __host__ __device__ T operator+(                 \
-        T a,                                                \
-        T b)                                                \
-    {                                                       \
-        T retval = make_##T(                                \
-            a.x + b.x,                                      \
-            a.y + b.y,                                      \
-            a.z + b.z);                                     \
-        return retval;                                      \
-    }
-
+#define CUB_VEC_OVERLOAD_3(T, BaseT)                                                         \
+  /* Ostream output */                                                                       \
+  inline std::ostream& operator<<(std::ostream& os, const T& val)                            \
+  {                                                                                          \
+    os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ')'; \
+    return os;                                                                               \
+  }                                                                                          \
+  /* Inequality */                                                                           \
+  inline __host__ __device__ bool operator!=(const T& a, const T& b)                         \
+  {                                                                                          \
+    return (a.x != b.x) || (a.y != b.y) || (a.z != b.z);                                     \
+  }                                                                                          \
+  /* Equality */                                                                             \
+  inline __host__ __device__ bool operator==(const T& a, const T& b)                         \
+  {                                                                                          \
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);                                     \
+  }                                                                                          \
+  /* Max */                                                                                  \
+  inline __host__ __device__ bool operator>(const T& a, const T& b)                          \
+  {                                                                                          \
+    if (a.x > b.x)                                                                           \
+      return true;                                                                           \
+    else if (b.x > a.x)                                                                      \
+      return false;                                                                          \
+    if (a.y > b.y)                                                                           \
+      return true;                                                                           \
+    else if (b.y > a.y)                                                                      \
+      return false;                                                                          \
+    return a.z > b.z;                                                                        \
+  }                                                                                          \
+  /* Min */                                                                                  \
+  inline __host__ __device__ bool operator<(const T& a, const T& b)                          \
+  {                                                                                          \
+    if (a.x < b.x)                                                                           \
+      return true;                                                                           \
+    else if (b.x < a.x)                                                                      \
+      return false;                                                                          \
+    if (a.y < b.y)                                                                           \
+      return true;                                                                           \
+    else if (b.y < a.y)                                                                      \
+      return false;                                                                          \
+    return a.z < b.z;                                                                        \
+  }                                                                                          \
+  /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                  \
+  inline __host__ __device__ T operator+(T a, T b)                                           \
+  {                                                                                          \
+    T retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z);                                    \
+    return retval;                                                                           \
+  }
 
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4(T, BaseT)                        \
-    /* Ostream output */                                    \
-    inline std::ostream& operator<<(                        \
-        std::ostream& os,                                   \
-        const T& val)                                       \
-    {                                                       \
-        os << '('                                           \
-            << CoutCast(val.x) << ','                       \
-            << CoutCast(val.y) << ','                       \
-            << CoutCast(val.z) << ','                       \
-            << CoutCast(val.w) << ')';                      \
-        return os;                                          \
-    }                                                       \
-    /* Inequality */                                        \
-    inline __host__ __device__ bool operator!=(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x != b.x) ||                              \
-            (a.y != b.y) ||                                 \
-            (a.z != b.z) ||                                 \
-            (a.w != b.w);                                   \
-    }                                                       \
-    /* Equality */                                          \
-    inline __host__ __device__ bool operator==(             \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        return (a.x == b.x) &&                              \
-            (a.y == b.y) &&                                 \
-            (a.z == b.z) &&                                 \
-            (a.w == b.w);                                   \
-    }                                                       \
-    /* Max */                                               \
-    inline __host__ __device__ bool operator>(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x > b.x) return true; else if (b.x > a.x) return false;   \
-        if (a.y > b.y) return true; else if (b.y > a.y) return false;   \
-        if (a.z > b.z) return true; else if (b.z > a.z) return false;   \
-        return a.w > b.w;                                               \
-    }                                                       \
-    /* Min */                                               \
-    inline __host__ __device__ bool operator<(              \
-        const T &a,                                         \
-        const T &b)                                         \
-    {                                                       \
-        if (a.x < b.x) return true; else if (b.x < a.x) return false;   \
-        if (a.y < b.y) return true; else if (b.y < a.y) return false;   \
-        if (a.z < b.z) return true; else if (b.z < a.z) return false;   \
-        return a.w < b.w;                                               \
-    }                                                       \
-    /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                         \
-    inline __host__ __device__ T operator+(                 \
-        T a,                                                \
-        T b)                                                \
-    {                                                       \
-        T retval = make_##T(                                        \
-            a.x + b.x,                                      \
-            a.y + b.y,                                      \
-            a.z + b.z,                                      \
-            a.w + b.w);                                     \
-        return retval;                                      \
-    }
+#define CUB_VEC_OVERLOAD_4(T, BaseT)                                                                                   \
+  /* Ostream output */                                                                                                 \
+  inline std::ostream& operator<<(std::ostream& os, const T& val)                                                      \
+  {                                                                                                                    \
+    os << '(' << CoutCast(val.x) << ',' << CoutCast(val.y) << ',' << CoutCast(val.z) << ',' << CoutCast(val.w) << ')'; \
+    return os;                                                                                                         \
+  }                                                                                                                    \
+  /* Inequality */                                                                                                     \
+  inline __host__ __device__ bool operator!=(const T& a, const T& b)                                                   \
+  {                                                                                                                    \
+    return (a.x != b.x) || (a.y != b.y) || (a.z != b.z) || (a.w != b.w);                                               \
+  }                                                                                                                    \
+  /* Equality */                                                                                                       \
+  inline __host__ __device__ bool operator==(const T& a, const T& b)                                                   \
+  {                                                                                                                    \
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z) && (a.w == b.w);                                               \
+  }                                                                                                                    \
+  /* Max */                                                                                                            \
+  inline __host__ __device__ bool operator>(const T& a, const T& b)                                                    \
+  {                                                                                                                    \
+    if (a.x > b.x)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.x > a.x)                                                                                                \
+      return false;                                                                                                    \
+    if (a.y > b.y)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.y > a.y)                                                                                                \
+      return false;                                                                                                    \
+    if (a.z > b.z)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.z > a.z)                                                                                                \
+      return false;                                                                                                    \
+    return a.w > b.w;                                                                                                  \
+  }                                                                                                                    \
+  /* Min */                                                                                                            \
+  inline __host__ __device__ bool operator<(const T& a, const T& b)                                                    \
+  {                                                                                                                    \
+    if (a.x < b.x)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.x < a.x)                                                                                                \
+      return false;                                                                                                    \
+    if (a.y < b.y)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.y < a.y)                                                                                                \
+      return false;                                                                                                    \
+    if (a.z < b.z)                                                                                                     \
+      return true;                                                                                                     \
+    else if (b.z < a.z)                                                                                                \
+      return false;                                                                                                    \
+    return a.w < b.w;                                                                                                  \
+  }                                                                                                                    \
+  /* Summation (non-reference addends for VS2003 -O3 warpscan workaround */                                            \
+  inline __host__ __device__ T operator+(T a, T b)                                                                     \
+  {                                                                                                                    \
+    T retval = make_##T(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);                                                   \
+    return retval;                                                                                                     \
+  }
 
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD(COMPONENT_T, BaseT)                    \
-    CUB_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)                   \
-    CUB_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)                   \
-    CUB_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)                   \
-    CUB_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
+#define CUB_VEC_OVERLOAD(COMPONENT_T, BaseT) \
+  CUB_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)  \
+  CUB_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)  \
+  CUB_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)  \
+  CUB_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
 
 /**
  * Define for types
@@ -328,128 +294,124 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_1_TRAITS_OVERLOAD(T, BaseT)                                                        \
-  CUB_NAMESPACE_BEGIN                                                                              \
-  template <>                                                                                      \
-  struct NumericTraits<T>                                                                          \
-  {                                                                                                \
-    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
-    enum                                                                                           \
-    {                                                                                              \
-      PRIMITIVE = false,                                                                           \
-      NULL_TYPE = false,                                                                           \
-    };                                                                                             \
-    static __host__ __device__ T Max()                                                             \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Max()};                                                    \
-      return retval;                                                                               \
-    }                                                                                              \
-    static __host__ __device__ T Lowest()                                                          \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Lowest()};                                                 \
-      return retval;                                                                               \
-    }                                                                                              \
-  };                                                                                               \
+#define CUB_VEC_1_TRAITS_OVERLOAD(T, BaseT)            \
+  CUB_NAMESPACE_BEGIN                                  \
+  template <>                                          \
+  struct NumericTraits<T>                              \
+  {                                                    \
+    static constexpr Category CATEGORY = NOT_A_NUMBER; \
+    enum                                               \
+    {                                                  \
+      PRIMITIVE = false,                               \
+      NULL_TYPE = false,                               \
+    };                                                 \
+    static __host__ __device__ T Max()                 \
+    {                                                  \
+      T retval = {NumericTraits<BaseT>::Max()};        \
+      return retval;                                   \
+    }                                                  \
+    static __host__ __device__ T Lowest()              \
+    {                                                  \
+      T retval = {NumericTraits<BaseT>::Lowest()};     \
+      return retval;                                   \
+    }                                                  \
+  };                                                   \
   CUB_NAMESPACE_END
 
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                                        \
-  CUB_NAMESPACE_BEGIN                                                                              \
-  template <>                                                                                      \
-  struct NumericTraits<T>                                                                          \
-  {                                                                                                \
-    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
-    enum                                                                                           \
-    {                                                                                              \
-      PRIMITIVE = false,                                                                           \
-      NULL_TYPE = false,                                                                           \
-    };                                                                                             \
-    static __host__ __device__ T Max()                                                             \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};                       \
-      return retval;                                                                               \
-    }                                                                                              \
-    static __host__ __device__ T Lowest()                                                          \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()};                 \
-      return retval;                                                                               \
-    }                                                                                              \
-  };                                                                                               \
+#define CUB_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                        \
+  CUB_NAMESPACE_BEGIN                                                              \
+  template <>                                                                      \
+  struct NumericTraits<T>                                                          \
+  {                                                                                \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                             \
+    enum                                                                           \
+    {                                                                              \
+      PRIMITIVE = false,                                                           \
+      NULL_TYPE = false,                                                           \
+    };                                                                             \
+    static __host__ __device__ T Max()                                             \
+    {                                                                              \
+      T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};       \
+      return retval;                                                               \
+    }                                                                              \
+    static __host__ __device__ T Lowest()                                          \
+    {                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()}; \
+      return retval;                                                               \
+    }                                                                              \
+  };                                                                               \
   CUB_NAMESPACE_END
 
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                        \
-  CUB_NAMESPACE_BEGIN                                                                              \
-  template <>                                                                                      \
-  struct NumericTraits<T>                                                                          \
-  {                                                                                                \
-    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
-    enum                                                                                           \
-    {                                                                                              \
-      PRIMITIVE = false,                                                                           \
-      NULL_TYPE = false,                                                                           \
-    };                                                                                             \
-    static __host__ __device__ T Max()                                                             \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Max(),                                                     \
-                  NumericTraits<BaseT>::Max(),                                                     \
-                  NumericTraits<BaseT>::Max()};                                                    \
-      return retval;                                                                               \
-    }                                                                                              \
-    static __host__ __device__ T Lowest()                                                          \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Lowest(),                                                  \
-                  NumericTraits<BaseT>::Lowest(),                                                  \
-                  NumericTraits<BaseT>::Lowest()};                                                 \
-      return retval;                                                                               \
-    }                                                                                              \
-  };                                                                                               \
+#define CUB_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                                        \
+  CUB_NAMESPACE_BEGIN                                                                                              \
+  template <>                                                                                                      \
+  struct NumericTraits<T>                                                                                          \
+  {                                                                                                                \
+    static constexpr Category CATEGORY = NOT_A_NUMBER;                                                             \
+    enum                                                                                                           \
+    {                                                                                                              \
+      PRIMITIVE = false,                                                                                           \
+      NULL_TYPE = false,                                                                                           \
+    };                                                                                                             \
+    static __host__ __device__ T Max()                                                                             \
+    {                                                                                                              \
+      T retval = {NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max(), NumericTraits<BaseT>::Max()};          \
+      return retval;                                                                                               \
+    }                                                                                                              \
+    static __host__ __device__ T Lowest()                                                                          \
+    {                                                                                                              \
+      T retval = {NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest(), NumericTraits<BaseT>::Lowest()}; \
+      return retval;                                                                                               \
+    }                                                                                                              \
+  };                                                                                                               \
   CUB_NAMESPACE_END
 
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_4_TRAITS_OVERLOAD(T, BaseT)                                                        \
-  CUB_NAMESPACE_BEGIN                                                                              \
-  template <>                                                                                      \
-  struct NumericTraits<T>                                                                          \
-  {                                                                                                \
-    static constexpr Category CATEGORY = NOT_A_NUMBER;                                             \
-    enum                                                                                           \
-    {                                                                                              \
-      PRIMITIVE = false,                                                                           \
-      NULL_TYPE = false,                                                                           \
-    };                                                                                             \
-    static __host__ __device__ T Max()                                                             \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Max(),                                                     \
-                  NumericTraits<BaseT>::Max(),                                                     \
-                  NumericTraits<BaseT>::Max(),                                                     \
-                  NumericTraits<BaseT>::Max()};                                                    \
-      return retval;                                                                               \
-    }                                                                                              \
-    static __host__ __device__ T Lowest()                                                          \
-    {                                                                                              \
-      T retval = {NumericTraits<BaseT>::Lowest(),                                                  \
-                  NumericTraits<BaseT>::Lowest(),                                                  \
-                  NumericTraits<BaseT>::Lowest(),                                                  \
-                  NumericTraits<BaseT>::Lowest()};                                                 \
-      return retval;                                                                               \
-    }                                                                                              \
-  };                                                                                               \
+#define CUB_VEC_4_TRAITS_OVERLOAD(T, BaseT)            \
+  CUB_NAMESPACE_BEGIN                                  \
+  template <>                                          \
+  struct NumericTraits<T>                              \
+  {                                                    \
+    static constexpr Category CATEGORY = NOT_A_NUMBER; \
+    enum                                               \
+    {                                                  \
+      PRIMITIVE = false,                               \
+      NULL_TYPE = false,                               \
+    };                                                 \
+    static __host__ __device__ T Max()                 \
+    {                                                  \
+      T retval = {NumericTraits<BaseT>::Max(),         \
+                  NumericTraits<BaseT>::Max(),         \
+                  NumericTraits<BaseT>::Max(),         \
+                  NumericTraits<BaseT>::Max()};        \
+      return retval;                                   \
+    }                                                  \
+    static __host__ __device__ T Lowest()              \
+    {                                                  \
+      T retval = {NumericTraits<BaseT>::Lowest(),      \
+                  NumericTraits<BaseT>::Lowest(),      \
+                  NumericTraits<BaseT>::Lowest(),      \
+                  NumericTraits<BaseT>::Lowest()};     \
+      return retval;                                   \
+    }                                                  \
+  };                                                   \
   CUB_NAMESPACE_END
 
 /**
  * All vector overloads
  */
-#define CUB_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT)                                                \
-  CUB_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)                                                 \
-  CUB_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)                                                 \
-  CUB_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)                                                 \
+#define CUB_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT) \
+  CUB_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)  \
+  CUB_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)  \
+  CUB_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)  \
   CUB_VEC_4_TRAITS_OVERLOAD(COMPONENT_T##4, BaseT)
 
 /**
