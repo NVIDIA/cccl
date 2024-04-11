@@ -73,19 +73,7 @@ struct Pair
 
     bool operator<(const Pair &b) const
     {
-        if (key < b.key)
-            return true;
-
-        if (key > b.key)
-            return false;
-
-        // Return false if key and b_key are any combination of positive and negative zero
-        auto key_bits   = SafeBitCast<unsigned int>(key);
-        auto b_key_bits = SafeBitCast<unsigned int>(b.key);
-        unsigned int HIGH_BIT   = 1u << 31;
-
-        return !((((key_bits & HIGH_BIT) != 0) || ((key_bits & HIGH_BIT) == 0)) &&
-                 (((b_key_bits & HIGH_BIT) != 0) || ((b_key_bits & HIGH_BIT) == 0)));
+        return key < b.key;
     }
 };
 
