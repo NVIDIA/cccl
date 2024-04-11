@@ -135,7 +135,41 @@ git clone https://github.com/NVIDIA/cccl.git
 nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 ```
 > **Note**
-> Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information. 
+> Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information.
+
+#### Conda
+
+CCCL also provides conda packages of each release via the `conda-forge` channel:
+
+```bash
+conda config --add channels conda-forge
+conda install cccl
+```
+
+This will install the latest CCCL to the conda environment's `$CONDA_PREFIX/include/` and `$CONDA_PREFIX/lib/cmake/` directories.
+It is discoverable by CMake via `find_package(CCCL)` and can be used by any compilers in the conda environment.
+For more information, see [this introduction to conda-forge](https://conda-forge.org/docs/user/introduction/).
+
+If you want to use the same CCCL version that shipped with a particular CUDA Toolkit, e.g. CUDA 12.4, you can install CCCL with:
+
+```bash
+conda config --add channels conda-forge
+conda install cuda-cccl cuda-version=12.4
+```
+
+The `cuda-cccl` metapackage installs the `cccl` version that shipped with the CUDA Toolkit corresponding to `cuda-version`.
+If you wish to update to the latest `cccl` after installing `cuda-cccl`, uninstall `cuda-cccl` before updating `cccl`:
+
+```bash
+conda uninstall cuda-cccl
+conda install -c conda-forge cccl
+```
+
+> **Note**
+> There are also conda packages with names like `cuda-cccl_linux-64`.
+> Those packages contain the CCCL versions shipped as part of the CUDA Toolkit, but are designed for internal use by the CUDA Toolkit.
+> Install `cccl` or `cuda-cccl` instead, for compatibility with conda compilers.
+> For more information, see the [cccl conda-forge recipe](https://github.com/conda-forge/cccl-feedstock/blob/main/recipe/meta.yaml).
 
 ##### CMake Integration
 
