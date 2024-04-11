@@ -13,7 +13,7 @@
 
 #include <cuda/std/array>
 #include <cuda/std/cassert>
-//#include <cuda/std/memory>
+// #include <cuda/std/memory>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
@@ -21,30 +21,32 @@
 template <class Container>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void assert_contiguous(Container const& c)
 {
-    for (cuda::std::size_t i = 0; i < c.size(); ++i)
-        assert(*(c.begin() + i) == *(cuda::std::addressof(*c.begin()) + i));
+  for (cuda::std::size_t i = 0; i < c.size(); ++i)
+  {
+    assert(*(c.begin() + i) == *(cuda::std::addressof(*c.begin()) + i));
+  }
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
-    assert_contiguous(cuda::std::array<double, 0>());
-    assert_contiguous(cuda::std::array<double, 1>());
-    assert_contiguous(cuda::std::array<double, 2>());
-    assert_contiguous(cuda::std::array<double, 3>());
+  assert_contiguous(cuda::std::array<double, 0>());
+  assert_contiguous(cuda::std::array<double, 1>());
+  assert_contiguous(cuda::std::array<double, 2>());
+  assert_contiguous(cuda::std::array<double, 3>());
 
-    assert_contiguous(cuda::std::array<char, 0>());
-    assert_contiguous(cuda::std::array<char, 1>());
-    assert_contiguous(cuda::std::array<char, 2>());
-    assert_contiguous(cuda::std::array<char, 3>());
+  assert_contiguous(cuda::std::array<char, 0>());
+  assert_contiguous(cuda::std::array<char, 1>());
+  assert_contiguous(cuda::std::array<char, 2>());
+  assert_contiguous(cuda::std::array<char, 3>());
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    tests();
+  tests();
 #if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_ADDRESSOF) // begin() & friends are constexpr in >= C++17 only
-    static_assert(tests(), "");
+  static_assert(tests(), "");
 #endif // TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_ADDRESSOF)
-    return 0;
+  return 0;
 }

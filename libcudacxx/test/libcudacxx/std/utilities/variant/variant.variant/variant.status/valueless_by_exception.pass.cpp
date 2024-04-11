@@ -18,7 +18,7 @@
 
 #include <cuda/std/cassert>
 #if defined(_LIBCUDACXX_HAS_STRING)
-#include <cuda/std/string>
+#  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
@@ -38,7 +38,8 @@ void test_exceptions()
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;

@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___CONCEPTS_COMMON_WITH_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif //__cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -35,64 +35,43 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.common]
 
-template<class _Tp, class _Up>
-concept common_with =
-  same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>> &&
-  requires {
-    static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>());
-    static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>());
-  } &&
-  common_reference_with<
-    add_lvalue_reference_t<const _Tp>,
-    add_lvalue_reference_t<const _Up>> &&
-  common_reference_with<
-    add_lvalue_reference_t<common_type_t<_Tp, _Up>>,
-    common_reference_t<
-      add_lvalue_reference_t<const _Tp>,
-      add_lvalue_reference_t<const _Up>>>;
+template <class _Tp, class _Up>
+concept common_with = same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>> && requires {
+  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>());
+  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>());
+} && common_reference_with<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>> && common_reference_with<add_lvalue_reference_t<common_type_t<_Tp, _Up>>, common_reference_t<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>>;
 
 #elif _CCCL_STD_VER > 2011
 
-template<class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __common_type_exists_,
-  requires()(
-    typename(common_type_t<_Tp, _Up>),
-    typename(common_type_t<_Up, _Tp>)
-  ));
+template <class _Tp, class _Up>
+_LIBCUDACXX_CONCEPT_FRAGMENT(__common_type_exists_,
+                             requires()(typename(common_type_t<_Tp, _Up>), typename(common_type_t<_Up, _Tp>)));
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT _Common_type_exists = _LIBCUDACXX_FRAGMENT(__common_type_exists_, _Tp, _Up);
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __common_type_constructible_,
-  requires()(
-    requires(_Common_type_exists<_Tp, _Up>),
-    static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
-    static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())
-  ));
+  requires()(requires(_Common_type_exists<_Tp, _Up>),
+             static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
+             static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())));
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT _Common_type_constructible = _LIBCUDACXX_FRAGMENT(__common_type_constructible_, _Tp, _Up);
 
-
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __common_with_,
   requires()(
     requires(_Common_type_constructible<_Tp, _Up>),
     requires(same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>>),
-    requires(common_reference_with<
-              add_lvalue_reference_t<const _Tp>,
-              add_lvalue_reference_t<const _Up>>),
-    requires(common_reference_with<
-              add_lvalue_reference_t<common_type_t<_Tp, _Up>>,
-              common_reference_t<
-                add_lvalue_reference_t<const _Tp>,
-                add_lvalue_reference_t<const _Up>>>)));
+    requires(common_reference_with<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>),
+    requires(
+      common_reference_with<add_lvalue_reference_t<common_type_t<_Tp, _Up>>,
+                            common_reference_t<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>>)));
 
-template<class _Tp, class _Up>
+template <class _Tp, class _Up>
 _LIBCUDACXX_CONCEPT common_with = _LIBCUDACXX_FRAGMENT(__common_with_, _Tp, _Up);
 
 #endif // _CCCL_STD_VER > 2011

@@ -14,12 +14,12 @@
 // reference_wrapper(T&&) = delete;
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 int main(int, char**)
 {
-    cuda::std::reference_wrapper<const int> r(3);
+  cuda::std::reference_wrapper<const int> r(3);
 
   return 0;
 }

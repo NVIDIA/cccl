@@ -23,16 +23,16 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/resource.h>
-#include <cuda/std/detail/libcxx/include/__concepts/_One_of.h>
-#include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
-#include <cuda/std/detail/libcxx/include/__memory/addressof.h>
-#include <cuda/std/cstddef>
-#include <cuda/stream_ref>
+#  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/cstddef>
+#  include <cuda/std/detail/libcxx/include/__concepts/_One_of.h>
+#  include <cuda/std/detail/libcxx/include/__concepts/all_of.h>
+#  include <cuda/std/detail/libcxx/include/__memory/addressof.h>
+#  include <cuda/std/detail/libcxx/include/__type_traits/is_base_of.h>
+#  include <cuda/stream_ref>
 
-#if _CCCL_STD_VER >= 2014
+#  if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -295,8 +295,9 @@ private:
 
   using __vtable = _Filtered_vtable<_Properties...>;
 
-  template<class... _OtherProperties>
-  static constexpr bool __properties_match = _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
+  template <class... _OtherProperties>
+  static constexpr bool __properties_match =
+    _CUDA_VSTD::__all_of<_CUDA_VSTD::_One_of<_Properties, _OtherProperties...>...>;
 
 public:
   _LIBCUDACXX_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
@@ -363,7 +364,7 @@ public:
     return !(*this == __right);
   }
 
-    _LIBCUDACXX_TEMPLATE(class _Property)
+  _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(
     (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>) //
   friend void get_property(const basic_resource_ref&, _Property) noexcept {}
@@ -387,7 +388,7 @@ using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#endif // _CCCL_STD_VER >= 2014
+#  endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER_MSVC_2017
 

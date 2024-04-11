@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___FWD_PAIR_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

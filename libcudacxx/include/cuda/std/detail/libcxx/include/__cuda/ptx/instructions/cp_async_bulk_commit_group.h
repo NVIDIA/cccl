@@ -24,11 +24,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
-
+#include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_dot_variants.h>
 #include <cuda/std/detail/libcxx/include/__cuda/ptx/ptx_helper_functions.h>
-#include <cuda/std/cstdint>
+
+#include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -41,20 +41,18 @@ __device__ static inline void cp_async_bulk_commit_group();
 */
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
-template <typename=void>
+template <typename = void>
 _CCCL_DEVICE static inline void cp_async_bulk_commit_group()
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,(
-    asm volatile (
-      "cp.async.bulk.commit_group;"
-      :
-      :
-      :
-    );
-  ),(
-    // Unsupported architectures will have a linker error with a semi-decent error message
-    __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();
-  ));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (asm volatile("cp.async.bulk.commit_group;"
+                  :
+                  :
+                  :);),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 

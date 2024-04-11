@@ -39,10 +39,10 @@ void longjmp(jmp_buf env, int val);
 
 #ifdef __cplusplus
 
-#ifndef setjmp
-#define setjmp(env) setjmp(env)
-#endif
+#  ifndef setjmp
+#    define setjmp(env) setjmp(env)
+#  endif
 
 #endif // __cplusplus
 
-#endif  // _LIBCUDACXX_SETJMP_H
+#endif // _LIBCUDACXX_SETJMP_H

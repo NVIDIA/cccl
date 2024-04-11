@@ -13,22 +13,24 @@
 //  constexpr chrono::weekday weekday() const noexcept;
 //  Returns: wd_
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using weekday      = cuda::std::chrono::weekday;
-    using weekday_last = cuda::std::chrono::weekday_last;
+  using weekday      = cuda::std::chrono::weekday;
+  using weekday_last = cuda::std::chrono::weekday_last;
 
-    ASSERT_NOEXCEPT(                   cuda::std::declval<const weekday_last>().weekday());
-    ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<const weekday_last>().weekday()));
+  ASSERT_NOEXCEPT(cuda::std::declval<const weekday_last>().weekday());
+  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<const weekday_last>().weekday()));
 
-    for (unsigned i = 0; i <= 255; ++i)
-        assert(weekday_last{weekday{i}}.weekday() == weekday{i});
+  for (unsigned i = 0; i <= 255; ++i)
+  {
+    assert(weekday_last{weekday{i}}.weekday() == weekday{i});
+  }
 
   return 0;
 }

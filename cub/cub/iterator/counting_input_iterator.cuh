@@ -123,7 +123,7 @@ public:
     THRUST_NS_QUALIFIER::any_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
-    reference >::type;
+    reference>::type;
 #  else // THRUST_VERSION < 100700
   using iterator_category = std::random_access_iterator_tag;
 #  endif // THRUST_VERSION

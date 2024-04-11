@@ -26,10 +26,10 @@
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
 
-#include <nv/target>
-
 #include <cuda/std/detail/libcxx/include/__exception/terminate.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
+
+#include <nv/target>
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <cstdio>
 #endif // !_CCCL_COMPILER_NVRTC
@@ -50,7 +50,8 @@ public:
   }
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void
+__throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST,

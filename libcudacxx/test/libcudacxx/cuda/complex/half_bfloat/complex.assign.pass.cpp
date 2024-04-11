@@ -7,24 +7,21 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__ void test_assignment() {
-  cuda::std::complex<T> from_only_real{static_cast<T>(-1.0),
-                                       static_cast<T>(1.0)};
-  cuda::std::complex<T> from_only_imag{static_cast<T>(-1.0),
-                                       static_cast<T>(1.0)};
-  cuda::std::complex<T> from_real_imag{static_cast<T>(-1.0),
-                                       static_cast<T>(1.0)};
+__host__ __device__ void test_assignment()
+{
+  cuda::std::complex<T> from_only_real{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  cuda::std::complex<T> from_only_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  cuda::std::complex<T> from_real_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
   const cuda::std::complex<U> only_real{static_cast<U>(42.0), static_cast<U>(0.0)};
   const cuda::std::complex<U> only_imag{static_cast<U>(0.0), static_cast<U>(42.0)};
-  const cuda::std::complex<U> real_imag{static_cast<U>(42.0),
-                                        static_cast<U>(112.0)};
+  const cuda::std::complex<U> real_imag{static_cast<U>(42.0), static_cast<U>(112.0)};
 
   from_only_real = only_real;
   from_only_imag = only_imag;
@@ -38,7 +35,8 @@ __host__ __device__ void test_assignment() {
   assert(from_real_imag.imag() == static_cast<T>(112.0));
 }
 
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
 #ifdef _LIBCUDACXX_HAS_NVFP16
   test_assignment<__half, float>();
   test_assignment<__half, double>();
@@ -53,7 +51,8 @@ __host__ __device__ void test() {
 #endif // _LIBCUDACXX_HAS_NVBF16
 }
 
-int main(int arg, char** argv) {
+int main(int arg, char** argv)
+{
   test();
   return 0;
 }

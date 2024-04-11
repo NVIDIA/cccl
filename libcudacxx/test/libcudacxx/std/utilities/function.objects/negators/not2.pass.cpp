@@ -13,16 +13,16 @@
 
 #define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 int main(int, char**)
 {
-    typedef cuda::std::logical_and<int> F;
-    assert(!cuda::std::not2(F())(36, 36));
-    assert( cuda::std::not2(F())(36, 0));
-    assert( cuda::std::not2(F())(0, 36));
-    assert( cuda::std::not2(F())(0, 0));
+  typedef cuda::std::logical_and<int> F;
+  assert(!cuda::std::not2(F())(36, 36));
+  assert(cuda::std::not2(F())(36, 0));
+  assert(cuda::std::not2(F())(0, 36));
+  assert(cuda::std::not2(F())(0, 0));
 
   return 0;
 }

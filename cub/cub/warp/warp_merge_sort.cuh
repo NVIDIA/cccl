@@ -130,11 +130,11 @@ template <typename KeyT,
           typename ValueT          = NullType,
           int LEGACY_PTX_ARCH      = 0>
 class WarpMergeSort
-    : public BlockMergeSortStrategy< KeyT,
-                                     ValueT,
-                                     LOGICAL_WARP_THREADS,
-                                     ITEMS_PER_THREAD,
-                                     WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
+    : public BlockMergeSortStrategy<KeyT,
+                                    ValueT,
+                                    LOGICAL_WARP_THREADS,
+                                    ITEMS_PER_THREAD,
+                                    WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);

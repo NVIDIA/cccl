@@ -23,8 +23,8 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "MoveOnly.h"
+#include "test_macros.h"
 
 __host__ __device__ constexpr bool tests()
 {
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool tests()
 #if !defined(TEST_COMPILER_MSVC_2017)
   {
     const long l1 = 42;
-    auto arr = cuda::std::to_array({1L, 4L, 9L, l1});
+    auto arr      = cuda::std::to_array({1L, 4L, 9L, l1});
     ASSERT_SAME_TYPE(decltype(arr)::value_type, long);
     static_assert(arr.size() == 4, "");
     assert(arr[0] == 1);
@@ -62,7 +62,7 @@ __host__ __device__ constexpr bool tests()
 
   {
     double source[3] = {4.0, 5.0, 6.0};
-    auto arr = cuda::std::to_array(source);
+    auto arr         = cuda::std::to_array(source);
     ASSERT_SAME_TYPE(decltype(arr), cuda::std::array<double, 3>);
     assert(arr[0] == 4.0);
     assert(arr[1] == 5.0);
@@ -71,7 +71,7 @@ __host__ __device__ constexpr bool tests()
 
   {
     double source[3] = {4.0, 5.0, 6.0};
-    auto arr = cuda::std::to_array(cuda::std::move(source));
+    auto arr         = cuda::std::to_array(cuda::std::move(source));
     ASSERT_SAME_TYPE(decltype(arr), cuda::std::array<double, 3>);
     assert(arr[0] == 4.0);
     assert(arr[1] == 5.0);
@@ -85,12 +85,13 @@ __host__ __device__ constexpr bool tests()
     auto arr = cuda::std::to_array(cuda::std::move(source));
     ASSERT_SAME_TYPE(decltype(arr), cuda::std::array<MoveOnly, 3>);
     for (int i = 0; i < 3; ++i)
+    {
       assert(arr[i].get() == i && source[i].get() == 0);
+    }
   }
 #endif // !TEST_COMPILER_MSVC_2017
 
-#if defined(TEST_COMPILER_NVRTC) \
- && defined(TEST_COMPILER_MSVC)
+#if defined(TEST_COMPILER_NVRTC) && defined(TEST_COMPILER_MSVC)
   // Test C99 compound literal.
   {
     auto arr = cuda::std::to_array((int[]){3, 4});
@@ -110,7 +111,8 @@ __host__ __device__ constexpr bool tests()
   }
 
   {
-    struct A {
+    struct A
+    {
       int a;
       double b;
     };

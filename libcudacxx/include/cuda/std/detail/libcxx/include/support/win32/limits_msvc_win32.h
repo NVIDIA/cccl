@@ -11,18 +11,18 @@
 #define _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
 
 #if !defined(_LIBCUDACXX_MSVCRT)
-#error "This header complements the Microsoft C Runtime library, and should not be included otherwise."
+#  error "This header complements the Microsoft C Runtime library, and should not be included otherwise."
 #endif
 #if defined(__clang__)
-#error "This header should only be included when using Microsofts C1XX frontend"
+#  error "This header should only be included when using Microsofts C1XX frontend"
 #endif
 
-#include <limits.h> // CHAR_BIT
 #include <float.h> // limit constants
+#include <limits.h> // CHAR_BIT
 #include <math.h> // HUGE_VAL
 #include <ymath.h> // internal MSVC header providing the needed functionality
 
-#define __CHAR_BIT__       CHAR_BIT
+#define __CHAR_BIT__ CHAR_BIT
 
 #define __FLT_MANT_DIG__   FLT_MANT_DIG
 #define __FLT_DIG__        FLT_DIG
@@ -65,13 +65,13 @@
 
 // __builtin replacements/workarounds
 #if _MSC_VER < 1934
-#define __builtin_huge_vall()    _LInf._Long_double
-#define __builtin_nanl(__dummmy) _LNan._Long_double
-#define __builtin_nansl(__dummy) _LSnan._Long_double
+#  define __builtin_huge_vall()    _LInf._Long_double
+#  define __builtin_nanl(__dummmy) _LNan._Long_double
+#  define __builtin_nansl(__dummy) _LSnan._Long_double
 #else
-#define __builtin_huge_vall()    __builtin_huge_val()
-#define __builtin_nanl(__v)      __builtin_nan(__v)
-#define __builtin_nansl(__v)     __builtin_nans(__v)
+#  define __builtin_huge_vall() __builtin_huge_val()
+#  define __builtin_nanl(__v)   __builtin_nan(__v)
+#  define __builtin_nansl(__v)  __builtin_nans(__v)
 #endif
 
 #endif // _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H

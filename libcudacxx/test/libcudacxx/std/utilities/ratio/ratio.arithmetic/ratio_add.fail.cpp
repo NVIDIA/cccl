@@ -12,9 +12,9 @@
 
 int main(int, char**)
 {
-    typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
-    typedef cuda::std::ratio<1, 1> R2;
-    typedef cuda::std::ratio_add<R1, R2>::type R;
+  typedef cuda::std::ratio<0x7FFFFFFFFFFFFFFFLL, 1> R1;
+  typedef cuda::std::ratio<1, 1> R2;
+  typedef cuda::std::ratio_add<R1, R2>::type R;
 
   return 0;
 }

@@ -15,13 +15,14 @@
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include "arithmetic.h"
+#include "test_macros.h"
 
 using cuda::std::floating_point;
 
 template <typename T>
-__host__ __device__ constexpr bool CheckFloatingPointQualifiers() {
+__host__ __device__ constexpr bool CheckFloatingPointQualifiers()
+{
   constexpr bool result = floating_point<T>;
   static_assert(floating_point<const T> == result, "");
   static_assert(floating_point<volatile T> == result, "");
@@ -44,7 +45,7 @@ __host__ __device__ constexpr bool CheckFloatingPointQualifiers() {
 
   static_assert(!floating_point<T (*)()>, "");
   static_assert(!floating_point<T (&)()>, "");
-  static_assert(!floating_point<T(&&)()>, "");
+  static_assert(!floating_point<T (&&)()>, "");
 
   return result;
 }
@@ -81,4 +82,7 @@ static_assert(!CheckFloatingPointQualifiers<EmptyStruct>(), "");
 static_assert(!CheckFloatingPointQualifiers<int EmptyStruct::*>(), "");
 static_assert(!CheckFloatingPointQualifiers<int (EmptyStruct::*)()>(), "");
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

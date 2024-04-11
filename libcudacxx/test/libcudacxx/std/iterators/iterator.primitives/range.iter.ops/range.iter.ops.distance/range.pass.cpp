@@ -13,19 +13,27 @@
 // template<range R>
 //   constexpr range_difference_t<R> ranges::distance(R&& r);
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 #include <cuda/std/ranges>
 
 #include "test_iterators.h"
 #include "test_macros.h"
 
-template<class It, class Sent>
-__host__ __device__ constexpr void test_ordinary() {
-  struct R {
+template <class It, class Sent>
+__host__ __device__ constexpr void test_ordinary()
+{
+  struct R
+  {
     mutable int a[3] = {1, 2, 3};
-    __host__ __device__ constexpr It begin() const { return It(a); }
-    __host__ __device__ constexpr Sent end() const { return Sent(It(a + 3)); }
+    __host__ __device__ constexpr It begin() const
+    {
+      return It(a);
+    }
+    __host__ __device__ constexpr Sent end() const
+    {
+      return Sent(It(a + 3));
+    }
   };
   R r;
   assert(cuda::std::ranges::distance(r) == 3);
@@ -35,7 +43,8 @@ __host__ __device__ constexpr void test_ordinary() {
   ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(r)), cuda::std::ranges::range_difference_t<R>);
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   {
     using R = int[3];
     int a[] = {1, 2, 3};
@@ -48,12 +57,12 @@ __host__ __device__ constexpr bool test() {
   }
   {
     // Unsized range, non-copyable iterator type, rvalue-ref-qualified begin()
-    using It = cpp20_input_iterator<int*>;
+    using It   = cpp20_input_iterator<int*>;
     using Sent = sentinel_wrapper<cpp20_input_iterator<int*>>;
-    using R = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::unsized>;
+    using R    = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::unsized>;
 
     int a[] = {1, 2, 3};
-    auto r = R(It(a), Sent(It(a + 3)));
+    auto r  = R(It(a), Sent(It(a + 3)));
     assert(cuda::std::ranges::distance(r) == 3);
     assert(cuda::std::ranges::distance(static_cast<R&&>(r)) == 3);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&>);
@@ -61,12 +70,12 @@ __host__ __device__ constexpr bool test() {
   }
   {
     // Sized range (unsized sentinel type), non-copyable iterator type, rvalue-ref-qualified begin()
-    using It = cpp20_input_iterator<int*>;
+    using It   = cpp20_input_iterator<int*>;
     using Sent = sentinel_wrapper<cpp20_input_iterator<int*>>;
-    using R = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::sized>;
+    using R    = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::sized>;
 
     int a[] = {1, 2, 3};
-    auto r = R(It(a), Sent(It(a + 3)), 3);
+    auto r  = R(It(a), Sent(It(a + 3)), 3);
     assert(cuda::std::ranges::distance(r) == 3);
     assert(cuda::std::ranges::distance(static_cast<R&&>(r)) == 3);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::ranges::distance), const R&>);
@@ -102,7 +111,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

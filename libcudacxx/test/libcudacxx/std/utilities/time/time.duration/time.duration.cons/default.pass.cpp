@@ -14,26 +14,24 @@
 
 // Rep must be default initialized, not initialized with 0
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
-#include "test_macros.h"
 #include "../../rep.h"
+#include "test_macros.h"
 
 template <class D>
-__host__ __device__
-void
-test()
+__host__ __device__ void test()
 {
-    D d;
-    assert(d.count() == typename D::rep());
-    constexpr D d2 = D();
-    static_assert(d2.count() == typename D::rep(), "");
+  D d;
+  assert(d.count() == typename D::rep());
+  constexpr D d2 = D();
+  static_assert(d2.count() == typename D::rep(), "");
 }
 
 int main(int, char**)
 {
-    test<cuda::std::chrono::duration<Rep> >();
+  test<cuda::std::chrono::duration<Rep>>();
 
   return 0;
 }

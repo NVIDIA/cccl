@@ -13,25 +13,25 @@
 
 // class cuda::std::ranges::subrange;
 
-#include <cuda/std/ranges>
-
 #include <cuda/std/cassert>
+#include <cuda/std/ranges>
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
-#include "types.h"
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
+#include "types.h"
 
-static_assert( cuda::std::is_convertible_v<ForwardSubrange, cuda::std::pair<ForwardIter, ForwardIter>>);
-static_assert( cuda::std::is_convertible_v<ForwardSubrange, cuda::std::tuple<ForwardIter, ForwardIter>>);
+static_assert(cuda::std::is_convertible_v<ForwardSubrange, cuda::std::pair<ForwardIter, ForwardIter>>);
+static_assert(cuda::std::is_convertible_v<ForwardSubrange, cuda::std::tuple<ForwardIter, ForwardIter>>);
 static_assert(!cuda::std::is_convertible_v<ForwardSubrange, cuda::std::tuple<ForwardIter, ForwardIter>&>);
 static_assert(!cuda::std::is_convertible_v<ForwardSubrange, cuda::std::tuple<ForwardIter, ForwardIter, ForwardIter>>);
-static_assert( cuda::std::is_convertible_v<ConvertibleForwardSubrange, cuda::std::tuple<ConvertibleForwardIter, int*>>);
+static_assert(cuda::std::is_convertible_v<ConvertibleForwardSubrange, cuda::std::tuple<ConvertibleForwardIter, int*>>);
 static_assert(!cuda::std::is_convertible_v<SizedIntPtrSubrange, cuda::std::tuple<long*, int*>>);
-static_assert( cuda::std::is_convertible_v<SizedIntPtrSubrange, cuda::std::tuple<int*, int*>>);
+static_assert(cuda::std::is_convertible_v<SizedIntPtrSubrange, cuda::std::tuple<int*, int*>>);
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   ForwardSubrange a(ForwardIter(globalBuff), ForwardIter(globalBuff + 8));
   cuda::std::pair<ForwardIter, ForwardIter> aPair = a;
   assert(base(aPair.first) == globalBuff);
@@ -43,7 +43,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

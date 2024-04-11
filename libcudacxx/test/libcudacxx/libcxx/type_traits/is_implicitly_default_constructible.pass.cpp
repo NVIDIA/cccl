@@ -19,57 +19,66 @@
 
 #include "test_macros.h"
 
-struct ExplicitlyDefaultConstructible1 {
-    explicit ExplicitlyDefaultConstructible1() = default;
+struct ExplicitlyDefaultConstructible1
+{
+  explicit ExplicitlyDefaultConstructible1() = default;
 };
 
-struct ExplicitlyDefaultConstructible2 {
-    __host__ __device__
-    explicit ExplicitlyDefaultConstructible2() { }
+struct ExplicitlyDefaultConstructible2
+{
+  __host__ __device__ explicit ExplicitlyDefaultConstructible2() {}
 };
 
-struct ImplicitlyDefaultConstructible1 {
-    __host__ __device__
-    ImplicitlyDefaultConstructible1() { }
+struct ImplicitlyDefaultConstructible1
+{
+  __host__ __device__ ImplicitlyDefaultConstructible1() {}
 };
 
-struct ImplicitlyDefaultConstructible2 {
-    ImplicitlyDefaultConstructible2() = default;
+struct ImplicitlyDefaultConstructible2
+{
+  ImplicitlyDefaultConstructible2() = default;
 };
 
-struct NonDefaultConstructible1 {
-    NonDefaultConstructible1() = delete;
+struct NonDefaultConstructible1
+{
+  NonDefaultConstructible1() = delete;
 };
 
-struct NonDefaultConstructible2 {
-    explicit NonDefaultConstructible2() = delete;
+struct NonDefaultConstructible2
+{
+  explicit NonDefaultConstructible2() = delete;
 };
 
-struct NonDefaultConstructible3 {
-    __host__ __device__
-    NonDefaultConstructible3(NonDefaultConstructible3&&) { }
+struct NonDefaultConstructible3
+{
+  __host__ __device__ NonDefaultConstructible3(NonDefaultConstructible3&&) {}
 };
 
-struct ProtectedDefaultConstructible {
+struct ProtectedDefaultConstructible
+{
 protected:
-    ProtectedDefaultConstructible() = default;
+  ProtectedDefaultConstructible() = default;
 };
 
-struct PrivateDefaultConstructible {
+struct PrivateDefaultConstructible
+{
 private:
-    PrivateDefaultConstructible() = default;
+  PrivateDefaultConstructible() = default;
 };
 
-struct Base { };
+struct Base
+{};
 
-struct ProtectedDefaultConstructibleWithBase : Base {
+struct ProtectedDefaultConstructibleWithBase : Base
+{
 protected:
-    ProtectedDefaultConstructibleWithBase() = default;
+  ProtectedDefaultConstructibleWithBase() = default;
 };
 
-struct PrivateDefaultConstructibleWithBase : Base {
+struct PrivateDefaultConstructibleWithBase : Base
+{
 private:
-    PrivateDefaultConstructibleWithBase() = default;
+  PrivateDefaultConstructibleWithBase() = default;
 };
 
 static_assert(!cuda::std::__is_implicitly_default_constructible<ExplicitlyDefaultConstructible1>::value, "");
@@ -86,6 +95,7 @@ static_assert(!cuda::std::__is_implicitly_default_constructible<ProtectedDefault
 static_assert(!cuda::std::__is_implicitly_default_constructible<PrivateDefaultConstructibleWithBase>::value, "");
 #endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 7
 
-int main(int, char**) {
-    return 0;
+int main(int, char**)
+{
+  return 0;
 }

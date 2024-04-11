@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11
 
-
 // <span>
 
 // constexpr span() noexcept;
@@ -16,9 +15,8 @@
 //  Remarks: This constructor shall not participate in overload resolution
 //          unless Extent == 0 || Extent == dynamic_extent is true.
 
-
-#include <cuda/std/span>
 #include <cuda/std/cassert>
+#include <cuda/std/span>
 
 #include "test_macros.h"
 

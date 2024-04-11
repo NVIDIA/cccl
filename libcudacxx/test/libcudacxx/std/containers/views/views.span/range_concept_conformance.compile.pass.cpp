@@ -12,10 +12,9 @@
 
 // span
 
-#include <cuda/std/span>
-
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
+#include <cuda/std/span>
 
 using range = cuda::std::span<int>;
 
@@ -39,5 +38,5 @@ static_assert(cuda::std::ranges::viewable_range<range const>);
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

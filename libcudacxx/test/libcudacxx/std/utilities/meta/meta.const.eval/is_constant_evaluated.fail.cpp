@@ -10,9 +10,8 @@
 
 // <cuda/std/type_traits>
 
-
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 

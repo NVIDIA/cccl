@@ -18,55 +18,61 @@
 // UNSUPPORTED: libcpp-no-structured-bindings
 // UNSUPPORTED: msvc
 
-#include <cuda/std/tuple>
 #include <cuda/std/array>
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/tuple>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
-struct S { int x; };
+struct S
+{
+  int x;
+};
 
-__host__ __device__ void test_decomp_user_type() {
+__host__ __device__ void test_decomp_user_type()
+{
   {
     S s{99};
-    auto [m1] = s;
+    auto [m1]  = s;
     auto& [r1] = s;
     assert(m1 == 99);
     assert(&r1 == &s.x);
   }
   {
     S const s{99};
-    auto [m1] = s;
+    auto [m1]  = s;
     auto& [r1] = s;
     assert(m1 == 99);
     assert(&r1 == &s.x);
   }
 }
 
-__host__ __device__ void test_decomp_tuple() {
+__host__ __device__ void test_decomp_tuple()
+{
   typedef cuda::std::tuple<int> T;
   {
     T s{99};
-    auto [m1] = s;
+    auto [m1]  = s;
     auto& [r1] = s;
     assert(m1 == 99);
     assert(&r1 == &cuda::std::get<0>(s));
   }
   {
     T const s{99};
-    auto [m1] = s;
+    auto [m1]  = s;
     auto& [r1] = s;
     assert(m1 == 99);
     assert(&r1 == &cuda::std::get<0>(s));
   }
 }
 
-__host__ __device__ void test_decomp_pair() {
+__host__ __device__ void test_decomp_pair()
+{
   typedef cuda::std::pair<int, double> T;
   {
     T s{99, 42.5};
-    auto [m1, m2] = s;
+    auto [m1, m2]  = s;
     auto& [r1, r2] = s;
     assert(m1 == 99);
     assert(m2 == 42.5);
@@ -75,7 +81,7 @@ __host__ __device__ void test_decomp_pair() {
   }
   {
     T const s{99, 42.5};
-    auto [m1, m2] = s;
+    auto [m1, m2]  = s;
     auto& [r1, r2] = s;
     assert(m1 == 99);
     assert(m2 == 42.5);
@@ -84,11 +90,12 @@ __host__ __device__ void test_decomp_pair() {
   }
 }
 
-__host__ __device__ void test_decomp_array() {
+__host__ __device__ void test_decomp_array()
+{
   typedef cuda::std::array<int, 3> T;
   {
     T s{{99, 42, -1}};
-    auto [m1, m2, m3] = s;
+    auto [m1, m2, m3]  = s;
     auto& [r1, r2, r3] = s;
     assert(m1 == 99);
     assert(m2 == 42);
@@ -99,7 +106,7 @@ __host__ __device__ void test_decomp_array() {
   }
   {
     T const s{{99, 42, -1}};
-    auto [m1, m2, m3] = s;
+    auto [m1, m2, m3]  = s;
     auto& [r1, r2, r3] = s;
     assert(m1 == 99);
     assert(m2 == 42);
@@ -110,31 +117,40 @@ __host__ __device__ void test_decomp_array() {
   }
 }
 
-struct Test {
+struct Test
+{
   int x;
 };
 
 template <size_t N>
-__host__ __device__ int get(Test const&) { static_assert(N == 0, ""); return -1; }
+__host__ __device__ int get(Test const&)
+{
+  static_assert(N == 0, "");
+  return -1;
+}
 
 template <>
-struct std::tuple_element<0, Test> {
+struct std::tuple_element<0, Test>
+{
   typedef int type;
 };
 
-__host__ __device__ void test_before_tuple_size_specialization() {
+__host__ __device__ void test_before_tuple_size_specialization()
+{
   Test const t{99};
   auto& [p] = t;
   assert(p == 99);
 }
 
 template <>
-struct std::tuple_size<Test> {
+struct std::tuple_size<Test>
+{
 public:
   static const size_t value = 1;
 };
 
-__host__ __device__ void test_after_tuple_size_specialization() {
+__host__ __device__ void test_after_tuple_size_specialization()
+{
   Test const t{99};
   auto& [p] = t;
 #if !(defined(_CCCL_COMPILER_NVRTC) && defined(__CUDA_ARCH__)) // nvbug4053842
@@ -142,7 +158,8 @@ __host__ __device__ void test_after_tuple_size_specialization() {
 #endif
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_decomp_user_type();
   test_decomp_tuple();
   test_decomp_pair();

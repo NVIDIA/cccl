@@ -12,12 +12,11 @@
 // template<class In>
 // concept cuda::std::weakly_incrementable;
 
+#include <cuda/std/concepts>
 #include <cuda/std/iterator>
 
-#include <cuda/std/concepts>
-
-#include "test_macros.h"
 #include "../incrementable.h"
+#include "test_macros.h"
 
 static_assert(cuda::std::weakly_incrementable<int>);
 static_assert(cuda::std::weakly_incrementable<int*>);
@@ -33,16 +32,17 @@ static_assert(!cuda::std::weakly_incrementable<int (&)()>);
 static_assert(!cuda::std::weakly_incrementable<bool>);
 #endif
 
-struct S {};
+struct S
+{};
 static_assert(!cuda::std::weakly_incrementable<int S::*>);
 
-#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                                                   \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>);                                         \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>);                                \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>);                                        \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier & noexcept>);                              \
-  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>);                                       \
-  static_assert(!cuda::std::weakly_incrementable < int (S::*)() qualifier&& noexcept >);
+#define CHECK_POINTER_TO_MEMBER_FUNCTIONS(qualifier)                                  \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier>);            \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier noexcept>);   \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&>);           \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier & noexcept>); \
+  static_assert(!cuda::std::weakly_incrementable<int (S::*)() qualifier&&>);          \
+  static_assert(!cuda::std::weakly_incrementable < int(S::*)() qualifier&& noexcept >);
 
 #define NO_QUALIFIER
 CHECK_POINTER_TO_MEMBER_FUNCTIONS(NO_QUALIFIER);

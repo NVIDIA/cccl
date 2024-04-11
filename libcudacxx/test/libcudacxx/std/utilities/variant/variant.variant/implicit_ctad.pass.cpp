@@ -25,7 +25,8 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   // This is the motivating example from P0739R0
   {
     cuda::std::variant<int, double> v1(3);

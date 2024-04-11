@@ -73,7 +73,7 @@ enum class dot_space
 {
   global,
   cluster, // The PTX spelling is shared::cluster
-  shared,  // The PTX spelling is shared::cta
+  shared, // The PTX spelling is shared::cta
 
   // The following state spaces are unlikely to be used in cuda::ptx in the near
   // future, so they are not exposed:

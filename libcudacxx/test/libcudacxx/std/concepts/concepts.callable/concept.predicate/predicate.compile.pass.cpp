@@ -12,7 +12,6 @@
 // template<class F, class... Args>
 // concept predicate;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -28,7 +27,8 @@ static_assert(!predicate<void()>, "");
 static_assert(!predicate<void (*)()>, "");
 static_assert(!predicate<void (&)()>, "");
 
-struct S {};
+struct S
+{};
 
 static_assert(!predicate<S(int), int>, "");
 static_assert(!predicate<S(double), double>, "");
@@ -46,7 +46,8 @@ static_assert(!predicate<bool(S&), S>, "");
 static_assert(!predicate<bool(S&), S const&>, "");
 static_assert(predicate<bool(S&), S&>, "");
 
-struct Predicate {
+struct Predicate
+{
   __host__ __device__ bool operator()(int, double, char);
 };
 static_assert(predicate<Predicate, int, double, char>, "");
@@ -55,22 +56,41 @@ static_assert(!predicate<const Predicate, int, double, char>, "");
 static_assert(!predicate<const Predicate&, int, double, char>, "");
 
 #if TEST_STD_VER > 2014 && !defined(TEST_COMPILER_NVRTC) // lambdas are not allowed in a constexpr expression
-template<class Fun>
-__host__ __device__
-constexpr bool check_lambda(Fun) { return predicate<Fun>; }
+template <class Fun>
+__host__ __device__ constexpr bool check_lambda(Fun)
+{
+  return predicate<Fun>;
+}
 
-static_assert(check_lambda([] { return cuda::std::true_type(); }), "");
-static_assert(check_lambda([]() -> int* { return nullptr; }), "");
+static_assert(check_lambda([] {
+                return cuda::std::true_type();
+              }),
+              "");
+static_assert(check_lambda([]() -> int* {
+                return nullptr;
+              }),
+              "");
 
-struct boolean {
+struct boolean
+{
   __host__ __device__ operator bool() const noexcept;
 };
-static_assert(check_lambda([] { return boolean(); }), "");
+static_assert(check_lambda([] {
+                return boolean();
+              }),
+              "");
 
-struct explicit_bool {
+struct explicit_bool
+{
   __host__ __device__ explicit operator bool() const noexcept;
 };
-static_assert(!check_lambda([] { return explicit_bool(); }), "");
+static_assert(!check_lambda([] {
+  return explicit_bool();
+}),
+              "");
 #endif // TEST_STD_VER > 2014
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

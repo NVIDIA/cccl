@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_COPY_CONSTRUCTIBLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,28 +32,31 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_constructible
-    : public integral_constant<bool,
+    : public integral_constant<
+        bool,
         _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_copy_constructible_v =
-    _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>);
-#endif
+  _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>);
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_constructible
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_copy_constructible
     : public is_trivially_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_copy_constructible_v = is_trivially_copy_constructible<_Tp>::value;
-#endif
+#  endif
 
-#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
+#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) &&
+       // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

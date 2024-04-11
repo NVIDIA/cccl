@@ -162,10 +162,10 @@ struct AgentUniqueByKey
     ValueInputIteratorT>::type; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
-  using BlockLoadKeys = BlockLoad< KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockLoad type for flags
-  using BlockLoadValues = BlockLoad< ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValues = BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for items
   using BlockDiscontinuityKeys = cub::BlockDiscontinuity<KeyT, BLOCK_THREADS>;

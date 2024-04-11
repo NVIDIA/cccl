@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target>
-
 #include <cuda/std/detail/libcxx/include/__exception/exception.h>
 #include <cuda/std/detail/libcxx/include/__exception/terminate.h>
 #include <cuda/std/detail/libcxx/include/__utility/forward.h>
 #include <cuda/std/detail/libcxx/include/__utility/move.h>
+
+#include <nv/target>
 
 #if _CCCL_STD_VER > 2011
 

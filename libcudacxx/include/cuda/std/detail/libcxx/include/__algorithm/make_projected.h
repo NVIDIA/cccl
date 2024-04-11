@@ -48,7 +48,7 @@ struct _ProjectedPred
 
   template <class _Tp>
   typename __invoke_of<_Pred&,
-                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>())) >::
+                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_Tp>()))>::
     type constexpr _LIBCUDACXX_INLINE_VISIBILITY
     operator()(_Tp&& __v) const
   {
@@ -58,7 +58,7 @@ struct _ProjectedPred
   template <class _T1, class _T2>
   typename __invoke_of<_Pred&,
                        decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T1>())),
-                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>())) >::
+                       decltype(_CUDA_VSTD::__invoke(_CUDA_VSTD::declval<_Proj&>(), _CUDA_VSTD::declval<_T2>()))>::
     type constexpr _LIBCUDACXX_INLINE_VISIBILITY
     operator()(_T1&& __lhs, _T2&& __rhs) const
   {
@@ -71,7 +71,7 @@ struct _ProjectedPred
 template <
   class _Pred,
   class _Proj,
-  __enable_if_t<!(!is_member_pointer<__decay_t<_Pred> >::value && __is_identity<__decay_t<_Proj> >::value), int> = 0>
+  __enable_if_t<!(!is_member_pointer<__decay_t<_Pred>>::value && __is_identity<__decay_t<_Proj>>::value), int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr _ProjectedPred<_Pred, _Proj> __make_projected(_Pred& __pred, _Proj& __proj)
 {
   return _ProjectedPred<_Pred, _Proj>(__pred, __proj);
@@ -80,10 +80,9 @@ _LIBCUDACXX_INLINE_VISIBILITY constexpr _ProjectedPred<_Pred, _Proj> __make_proj
 // Avoid creating the functor and just use the pristine comparator -- for certain algorithms, this would enable
 // optimizations that rely on the type of the comparator. Additionally, this results in less layers of indirection in
 // the call stack when the comparator is invoked, even in an unoptimized build.
-template <
-  class _Pred,
-  class _Proj,
-  __enable_if_t<!is_member_pointer<__decay_t<_Pred> >::value && __is_identity<__decay_t<_Proj> >::value, int> = 0>
+template <class _Pred,
+          class _Proj,
+          __enable_if_t<!is_member_pointer<__decay_t<_Pred>>::value && __is_identity<__decay_t<_Proj>>::value, int> = 0>
 _LIBCUDACXX_INLINE_VISIBILITY constexpr _Pred& __make_projected(_Pred& __pred, _Proj&)
 {
   return __pred;

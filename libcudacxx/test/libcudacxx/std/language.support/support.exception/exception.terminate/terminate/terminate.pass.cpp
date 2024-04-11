@@ -16,8 +16,8 @@
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_MSVC)
-#pragma warning(disable: 4702) // unreachable code
-#endif //TEST_COMPILER_MSVC
+#  pragma warning(disable : 4702) // unreachable code
+#endif // TEST_COMPILER_MSVC
 
 #if 0 // Wait until terminate handler is available
 __host__ __device__ void f1()
@@ -26,8 +26,9 @@ __host__ __device__ void f1()
 }
 #endif //
 
-int main(int, char**) {
-  //cuda::std::set_terminate(f1);
+int main(int, char**)
+{
+  // cuda::std::set_terminate(f1);
   cuda::std::terminate();
   assert(false);
   return 0;

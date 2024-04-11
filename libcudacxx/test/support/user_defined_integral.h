@@ -11,10 +11,17 @@
 template <class T>
 struct UserDefinedIntegral
 {
-    __host__ __device__ constexpr UserDefinedIntegral() : value(0) {}
-    __host__ __device__ constexpr UserDefinedIntegral(T v) : value(v) {}
-    __host__ __device__ constexpr operator T() const { return value; }
-    T value;
+  __host__ __device__ constexpr UserDefinedIntegral()
+      : value(0)
+  {}
+  __host__ __device__ constexpr UserDefinedIntegral(T v)
+      : value(v)
+  {}
+  __host__ __device__ constexpr operator T() const
+  {
+    return value;
+  }
+  T value;
 };
 
 // Poison the arithmetic and comparison operations

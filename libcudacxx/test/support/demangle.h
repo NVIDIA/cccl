@@ -9,32 +9,37 @@
 #ifndef SUPPORT_DEMANGLE_H
 #define SUPPORT_DEMANGLE_H
 
-#include "test_macros.h"
-#include <string>
 #include <cstdlib>
+#include <string>
+
+#include "test_macros.h"
 
 #if !defined(TEST_HAS_NO_DEMANGLE)
-# if defined(__GNUC__) || defined(__clang__)
-#   if __has_include("cxxabi.h") && !defined(_LIBCUDACXX_ABI_MICROSOFT)
-#     include "cxxabi.h"
-#   else
-#     define TEST_HAS_NO_DEMANGLE
-#   endif
-# else
-#   define TEST_HAS_NO_DEMANGLE
-# endif
+#  if defined(__GNUC__) || defined(__clang__)
+#    if __has_include("cxxabi.h") && !defined(_LIBCUDACXX_ABI_MICROSOFT)
+#      include "cxxabi.h"
+#    else
+#      define TEST_HAS_NO_DEMANGLE
+#    endif
+#  else
+#    define TEST_HAS_NO_DEMANGLE
+#  endif
 #endif
 
 #if defined(TEST_HAS_NO_DEMANGLE)
-inline std::string demangle(const char* mangled_name) {
+inline std::string demangle(const char* mangled_name)
+{
   return mangled_name;
 }
 #else
-template <size_t N> struct Printer;
-inline std::string demangle(const char* mangled_name) {
+template <size_t N>
+struct Printer;
+inline std::string demangle(const char* mangled_name)
+{
   int status = 0;
-  char* out = __cxxabiv1::__cxa_demangle(mangled_name, nullptr, nullptr, &status);
-  if (out != nullptr) {
+  char* out  = __cxxabiv1::__cxa_demangle(mangled_name, nullptr, nullptr, &status);
+  if (out != nullptr)
+  {
     std::string res(out);
     std::free(out);
     return res;

@@ -17,41 +17,44 @@
 // cuda::std::_IsSame:    689.634 ms     356 K
 // cuda::std::is_same:  8,129.180 ms     560 K
 //
-// RUN: %cxx %flags %compile_flags -c %s -o %S/orig.o -ggdb  -ggnu-pubnames -ftemplate-depth=5000 -ftime-trace -std=c++17
-// RUN: %cxx %flags %compile_flags -c %s -o %S/new.o -ggdb  -ggnu-pubnames -ftemplate-depth=5000 -ftime-trace -std=c++17 -DTEST_NEW
+// RUN: %cxx %flags %compile_flags -c %s -o %S/orig.o -ggdb  -ggnu-pubnames -ftemplate-depth=5000 -ftime-trace
+// -std=c++17 RUN: %cxx %flags %compile_flags -c %s -o %S/new.o -ggdb  -ggnu-pubnames -ftemplate-depth=5000 -ftime-trace
+// -std=c++17 -DTEST_NEW
 
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include "template_cost_testing.h"
+#include "test_macros.h"
 
-template <int N> struct Arg { enum { value = 1 }; };
+template <int N>
+struct Arg
+{
+  enum
+  {
+    value = 1
+  };
+};
 
 #ifdef TEST_NEW
-#define IS_SAME  cuda::std::_IsSame
+#  define IS_SAME cuda::std::_IsSame
 #else
-#define IS_SAME cuda::std::is_same
+#  define IS_SAME cuda::std::is_same
 #endif
 
-#define TEST_CASE_NOP() IS_SAME < Arg< __COUNTER__ >, Arg < __COUNTER__ > >::value,
-#define TEST_CASE_TYPE() IS_SAME < Arg< __COUNTER__ >, Arg < __COUNTER__ > >,
+#define TEST_CASE_NOP()  IS_SAME<Arg<__COUNTER__>, Arg<__COUNTER__>>::value,
+#define TEST_CASE_TYPE() IS_SAME<Arg<__COUNTER__>, Arg<__COUNTER__>>,
 
 int sink(...);
 
-int x = sink(
-  REPEAT_10000(TEST_CASE_NOP)
-  REPEAT_10000(TEST_CASE_NOP) 42
-);
+int x = sink(REPEAT_10000(TEST_CASE_NOP) REPEAT_10000(TEST_CASE_NOP) 42);
 
-void Foo( REPEAT_1000(TEST_CASE_TYPE) int) { }
+void Foo(REPEAT_1000(TEST_CASE_TYPE) int) {}
 
 static_assert(__COUNTER__ > 10000, "");
 
-void escape() {
-
-sink(&x);
-sink(&Foo);
+void escape()
+{
+  sink(&x);
+  sink(&Foo);
 }
-
-

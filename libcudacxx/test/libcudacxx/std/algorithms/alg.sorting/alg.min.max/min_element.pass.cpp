@@ -18,26 +18,32 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "cases.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int(&input_data)[num_elements]) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const int (&input_data)[num_elements])
+{
   Iter first{cuda::std::begin(input_data)};
   Iter last{cuda::std::end(input_data)};
 
-    Iter i = cuda::std::min_element(first, last);
-    if (first != last)
+  Iter i = cuda::std::min_element(first, last);
+  if (first != last)
+  {
+    for (Iter j = first; j != last; ++j)
     {
-        for (Iter j = first; j != last; ++j)
-            assert(!(*j < *i));
+      assert(!(*j < *i));
     }
-    else
-        assert(i == last);
+  }
+  else
+  {
+    assert(i == last);
+  }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   constexpr int input_data[num_elements] = INPUT_DATA;
   test<forward_iterator<const int*>>(input_data);
   test<bidirectional_iterator<const int*>>(input_data);
@@ -47,7 +53,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

@@ -10,12 +10,12 @@
 
 // template <class Duration> class hh_mm_ss;
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

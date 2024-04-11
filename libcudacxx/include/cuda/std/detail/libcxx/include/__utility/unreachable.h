@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___UTILITY_UNREACHABLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -26,16 +26,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_NORETURN _LIBCUDACXX_INLINE_VISIBILITY
-inline void __libcpp_unreachable()
+_LIBCUDACXX_NORETURN _LIBCUDACXX_INLINE_VISIBILITY inline void __libcpp_unreachable()
 {
   _LIBCUDACXX_UNREACHABLE();
 }
 
 #if _CCCL_STD_VER > 2020
 
-[[noreturn]] _LIBCUDACXX_INLINE_VISIBILITY
-inline void unreachable() { _LIBCUDACXX_UNREACHABLE(); }
+[[noreturn]] _LIBCUDACXX_INLINE_VISIBILITY inline void unreachable()
+{
+  _LIBCUDACXX_UNREACHABLE();
+}
 
 #endif // _CCCL_STD_VER > 2020
 

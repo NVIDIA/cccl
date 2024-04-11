@@ -28,9 +28,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // generic implementation
 template <class _Iter, class _Sent, class _Tp, class _Proj>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  _Iter
-  __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter
+__find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
 {
   for (; __first != __last; ++__first)
   {

@@ -20,44 +20,40 @@
 //     atomic_store(atomic<T>* obj, T desr);
 
 #include <cuda/std/atomic>
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
-template <class T, template<typename, typename> typename Selector, cuda::thread_scope>
-struct TestFn {
-  __host__ __device__
-  void operator()() const {
+template <class T, template <typename, typename> typename Selector, cuda::thread_scope>
+struct TestFn
+{
+  __host__ __device__ void operator()() const
+  {
     typedef cuda::std::atomic<T> A;
     Selector<A, constructor_initializer> sel;
-    A & t = *sel.construct();
+    A& t = *sel.construct();
     cuda::std::atomic_store(&t, T(1));
     assert(t == T(1));
     Selector<volatile A, constructor_initializer> vsel;
-    volatile A & vt = *vsel.construct();
+    volatile A& vt = *vsel.construct();
     cuda::std::atomic_store(&vt, T(2));
     assert(vt == T(2));
   }
 };
 
-
 int main(int, char**)
 {
-    NV_DISPATCH_TARGET(
-    NV_IS_HOST,(
-        TestEachAtomicType<TestFn, local_memory_selector>()();
-    ),
-    NV_PROVIDES_SM_70,(
-        TestEachAtomicType<TestFn, local_memory_selector>()();
-    ))
+  NV_DISPATCH_TARGET(NV_IS_HOST,
+                     (TestEachAtomicType<TestFn, local_memory_selector>()();),
+                     NV_PROVIDES_SM_70,
+                     (TestEachAtomicType<TestFn, local_memory_selector>()();))
 
-    NV_IF_TARGET(NV_IS_DEVICE,(
-        TestEachAtomicType<TestFn, shared_memory_selector>()();
-        TestEachAtomicType<TestFn, global_memory_selector>()();
-    ))
+  NV_IF_TARGET(
+    NV_IS_DEVICE,
+    (TestEachAtomicType<TestFn, shared_memory_selector>()(); TestEachAtomicType<TestFn, global_memory_selector>()();))
 
-    return 0;
+  return 0;
 }

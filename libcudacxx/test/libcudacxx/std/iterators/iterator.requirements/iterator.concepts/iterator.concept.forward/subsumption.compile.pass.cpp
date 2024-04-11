@@ -13,9 +13,8 @@
 
 // cuda::std::forward_iterator;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 // clang-format off
 template<cuda::std::input_iterator>

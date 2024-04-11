@@ -15,7 +15,8 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-struct U {}; // class type so const-qualification is not stripped from a prvalue
+struct U
+{}; // class type so const-qualification is not stripped from a prvalue
 using CU = const U;
 using T  = int;
 using CT = const T;
@@ -72,20 +73,26 @@ static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CU&>(cu)), C
 static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<U&&>(cuda::std::move(u))), U&&>);
 static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CU&&>(cuda::std::move(cu))), CU&&>);
 
-struct NoCtorCopyMove {
-  NoCtorCopyMove() = delete;
+struct NoCtorCopyMove
+{
+  NoCtorCopyMove()                      = delete;
   NoCtorCopyMove(const NoCtorCopyMove&) = delete;
-  NoCtorCopyMove(NoCtorCopyMove&&) = delete;
+  NoCtorCopyMove(NoCtorCopyMove&&)      = delete;
 };
 
-static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CT&&>(cuda::std::declval<NoCtorCopyMove>())), const NoCtorCopyMove&&>);
-static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CT&>(cuda::std::declval<NoCtorCopyMove>())), const NoCtorCopyMove&>);
-static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<T&&>(cuda::std::declval<NoCtorCopyMove>())), NoCtorCopyMove&&>);
-static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<T&>(cuda::std::declval<NoCtorCopyMove>())), NoCtorCopyMove&>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CT&&>(cuda::std::declval<NoCtorCopyMove>())),
+                                   const NoCtorCopyMove&&>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::forward_like<CT&>(cuda::std::declval<NoCtorCopyMove>())),
+                                   const NoCtorCopyMove&>);
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::std::forward_like<T&&>(cuda::std::declval<NoCtorCopyMove>())), NoCtorCopyMove&&>);
+static_assert(
+  cuda::std::is_same_v<decltype(cuda::std::forward_like<T&>(cuda::std::declval<NoCtorCopyMove>())), NoCtorCopyMove&>);
 
 static_assert(noexcept(cuda::std::forward_like<T>(cuda::std::declval<NoCtorCopyMove>())));
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   {
     int val       = 1729;
     auto&& result = cuda::std::forward_like<const double&>(val);
@@ -113,7 +120,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

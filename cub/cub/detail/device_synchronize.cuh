@@ -26,9 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/detect_cuda_runtime.cuh>
-
 #include <cuda_runtime_api.h>
+
+#include <cub/detail/detect_cuda_runtime.cuh>
 
 #include <nv/target>
 

@@ -15,27 +15,30 @@
 
 #include <cuda/std/iterator>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-    cuda::std::reverse_iterator<It> r;
-    unused(r);
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
+  cuda::std::reverse_iterator<It> r;
+  unused(r);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-    test<bidirectional_iterator<const char*> >();
-    test<random_access_iterator<char*> >();
-    test<char*>();
-    test<const char*>();
-    return true;
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+  test<bidirectional_iterator<const char*>>();
+  test<random_access_iterator<char*>>();
+  test<char*>();
+  test<const char*>();
+  return true;
 }
 
-int main(int, char**) {
-    tests();
+int main(int, char**)
+{
+  tests();
 #if TEST_STD_VER > 2011
-    static_assert(tests(), "");
+  static_assert(tests(), "");
 #endif
-    return 0;
+  return 0;
 }

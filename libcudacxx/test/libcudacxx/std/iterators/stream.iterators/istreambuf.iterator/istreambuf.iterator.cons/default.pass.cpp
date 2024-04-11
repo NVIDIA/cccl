@@ -18,27 +18,27 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    {
-        typedef cuda::std::istreambuf_iterator<char> T;
-        T it;
-        assert(it == T());
-        constexpr T it2;
-        (void)it2;
-    }
-    {
-        typedef cuda::std::istreambuf_iterator<wchar_t> T;
-        T it;
-        assert(it == T());
-        constexpr T it2;
-        (void)it2;
-    }
+  {
+    typedef cuda::std::istreambuf_iterator<char> T;
+    T it;
+    assert(it == T());
+    constexpr T it2;
+    (void) it2;
+  }
+  {
+    typedef cuda::std::istreambuf_iterator<wchar_t> T;
+    T it;
+    assert(it == T());
+    constexpr T it2;
+    (void) it2;
+  }
 
   return 0;
 }

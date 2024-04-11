@@ -15,67 +15,66 @@
 //   shall name T&&; otherwise, type shall name T.
 
 #include <cuda/std/type_traits>
+
 #include "test_macros.h"
 
 template <class T, class U>
-__host__ __device__
-void test_add_rvalue_reference()
+__host__ __device__ void test_add_rvalue_reference()
 {
-    ASSERT_SAME_TYPE(U, typename cuda::std::add_rvalue_reference<T>::type);
+  ASSERT_SAME_TYPE(U, typename cuda::std::add_rvalue_reference<T>::type);
 #if TEST_STD_VER > 2011
-    ASSERT_SAME_TYPE(U, cuda::std::add_rvalue_reference_t<T>);
+  ASSERT_SAME_TYPE(U, cuda::std::add_rvalue_reference_t<T>);
 #endif
 }
 
 template <class F>
-__host__ __device__
-void test_function0()
+__host__ __device__ void test_function0()
 {
-    ASSERT_SAME_TYPE(F&&, typename cuda::std::add_rvalue_reference<F>::type);
+  ASSERT_SAME_TYPE(F&&, typename cuda::std::add_rvalue_reference<F>::type);
 #if TEST_STD_VER > 2011
-    ASSERT_SAME_TYPE(F&&, cuda::std::add_rvalue_reference_t<F>);
+  ASSERT_SAME_TYPE(F&&, cuda::std::add_rvalue_reference_t<F>);
 #endif
 }
 
 template <class F>
-__host__ __device__
-void test_function1()
+__host__ __device__ void test_function1()
 {
-    ASSERT_SAME_TYPE(F, typename cuda::std::add_rvalue_reference<F>::type);
+  ASSERT_SAME_TYPE(F, typename cuda::std::add_rvalue_reference<F>::type);
 #if TEST_STD_VER > 2011
-    ASSERT_SAME_TYPE(F, cuda::std::add_rvalue_reference_t<F>);
+  ASSERT_SAME_TYPE(F, cuda::std::add_rvalue_reference_t<F>);
 #endif
 }
 
-struct Foo {};
+struct Foo
+{};
 
 int main(int, char**)
 {
-    test_add_rvalue_reference<void, void>();
-    test_add_rvalue_reference<int, int&&>();
-    test_add_rvalue_reference<int[3], int(&&)[3]>();
-    test_add_rvalue_reference<int&, int&>();
-    test_add_rvalue_reference<const int&, const int&>();
-    test_add_rvalue_reference<int*, int*&&>();
-    test_add_rvalue_reference<const int*, const int*&&>();
-    test_add_rvalue_reference<Foo, Foo&&>();
+  test_add_rvalue_reference<void, void>();
+  test_add_rvalue_reference<int, int&&>();
+  test_add_rvalue_reference<int[3], int(&&)[3]>();
+  test_add_rvalue_reference<int&, int&>();
+  test_add_rvalue_reference<const int&, const int&>();
+  test_add_rvalue_reference<int*, int*&&>();
+  test_add_rvalue_reference<const int*, const int*&&>();
+  test_add_rvalue_reference<Foo, Foo&&>();
 
-//  LWG 2101 specifically talks about add_rvalue_reference and functions.
-//  The term of art is "a referenceable type", which a cv- or ref-qualified function is not.
-    test_function0<void()>();
-    test_function1<void() const>();
-    test_function1<void() &>();
-    test_function1<void() &&>();
-    test_function1<void() const &>();
-    test_function1<void() const &&>();
+  //  LWG 2101 specifically talks about add_rvalue_reference and functions.
+  //  The term of art is "a referenceable type", which a cv- or ref-qualified function is not.
+  test_function0<void()>();
+  test_function1<void() const>();
+  test_function1<void()&>();
+  test_function1<void() &&>();
+  test_function1<void() const&>();
+  test_function1<void() const&&>();
 
-//  But a cv- or ref-qualified member function *is* "a referenceable type"
-    test_function0<void (Foo::*)()>();
-    test_function0<void (Foo::*)() const>();
-    test_function0<void (Foo::*)() &>();
-    test_function0<void (Foo::*)() &&>();
-    test_function0<void (Foo::*)() const &>();
-    test_function0<void (Foo::*)() const &&>();
+  //  But a cv- or ref-qualified member function *is* "a referenceable type"
+  test_function0<void (Foo::*)()>();
+  test_function0<void (Foo::*)() const>();
+  test_function0<void (Foo::*)()&>();
+  test_function0<void (Foo::*)() &&>();
+  test_function0<void (Foo::*)() const&>();
+  test_function0<void (Foo::*)() const&&>();
 
   return 0;
 }

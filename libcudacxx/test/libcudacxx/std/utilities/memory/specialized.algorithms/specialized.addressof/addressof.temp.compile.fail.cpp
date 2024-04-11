@@ -13,14 +13,14 @@
 
 // template <ObjectType T> T* addressof(T&& r) = delete;
 
-#include <cuda/std/type_traits>
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-  const int *p = cuda::std::addressof<const int>(0);
+  const int* p = cuda::std::addressof<const int>(0);
 
   return 0;
 }

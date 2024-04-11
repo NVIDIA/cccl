@@ -23,99 +23,129 @@
 #include "test_macros.h"
 #include "test_workarounds.h"
 
-struct NonT {
-  __host__ __device__
-  NonT(int v) : value(v) {}
-  __host__ __device__
-  NonT(const NonT &o) : value(o.value) {}
+struct NonT
+{
+  __host__ __device__ NonT(int v)
+      : value(v)
+  {}
+  __host__ __device__ NonT(const NonT& o)
+      : value(o.value)
+  {}
   int value;
 };
 static_assert(!cuda::std::is_trivially_copy_constructible<NonT>::value, "");
 
-struct NoCopy {
-  NoCopy(const NoCopy &) = delete;
+struct NoCopy
+{
+  NoCopy(const NoCopy&) = delete;
 };
 
-struct MoveOnly {
-  MoveOnly(const MoveOnly &) = delete;
-  MoveOnly(MoveOnly &&) = default;
+struct MoveOnly
+{
+  MoveOnly(const MoveOnly&) = delete;
+  MoveOnly(MoveOnly&&)      = default;
 };
 
-struct MoveOnlyNT {
-  MoveOnlyNT(const MoveOnlyNT &) = delete;
-  __host__ __device__
-  MoveOnlyNT(MoveOnlyNT &&) {}
+struct MoveOnlyNT
+{
+  MoveOnlyNT(const MoveOnlyNT&) = delete;
+  __host__ __device__ MoveOnlyNT(MoveOnlyNT&&) {}
 };
 
-struct NTCopy {
-  __host__ __device__
-  constexpr NTCopy(int v) : value(v) {}
-  __host__ __device__
-  NTCopy(const NTCopy &that) : value(that.value) {}
-  NTCopy(NTCopy &&) = delete;
+struct NTCopy
+{
+  __host__ __device__ constexpr NTCopy(int v)
+      : value(v)
+  {}
+  __host__ __device__ NTCopy(const NTCopy& that)
+      : value(that.value)
+  {}
+  NTCopy(NTCopy&&) = delete;
   int value;
 };
 
 static_assert(!cuda::std::is_trivially_copy_constructible<NTCopy>::value, "");
 static_assert(cuda::std::is_copy_constructible<NTCopy>::value, "");
 
-struct TCopy {
-  __host__ __device__
-  constexpr TCopy(int v) : value(v) {}
-  TCopy(TCopy const &) = default;
-  TCopy(TCopy &&) = delete;
+struct TCopy
+{
+  __host__ __device__ constexpr TCopy(int v)
+      : value(v)
+  {}
+  TCopy(TCopy const&) = default;
+  TCopy(TCopy&&)      = delete;
   int value;
 };
 
 static_assert(cuda::std::is_trivially_copy_constructible<TCopy>::value, "");
 
-struct TCopyNTMove {
-  __host__ __device__
-  constexpr TCopyNTMove(int v) : value(v) {}
+struct TCopyNTMove
+{
+  __host__ __device__ constexpr TCopyNTMove(int v)
+      : value(v)
+  {}
   TCopyNTMove(const TCopyNTMove&) = default;
-  __host__ __device__
-  TCopyNTMove(TCopyNTMove&& that) : value(that.value) { that.value = -1; }
+  __host__ __device__ TCopyNTMove(TCopyNTMove&& that)
+      : value(that.value)
+  {
+    that.value = -1;
+  }
   int value;
 };
 
 static_assert(cuda::std::is_trivially_copy_constructible<TCopyNTMove>::value, "");
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-struct MakeEmptyT {
+struct MakeEmptyT
+{
   static int alive;
-  __host__ __device__
-  MakeEmptyT() { ++alive; }
-  __host__ __device__
-  MakeEmptyT(const MakeEmptyT &) {
+  __host__ __device__ MakeEmptyT()
+  {
+    ++alive;
+  }
+  __host__ __device__ MakeEmptyT(const MakeEmptyT&)
+  {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__
-  MakeEmptyT(MakeEmptyT &&) { throw 42; }
-  __host__ __device__
-  MakeEmptyT &operator=(const MakeEmptyT &) { throw 42; }
-  __host__ __device__
-  MakeEmptyT &operator=(MakeEmptyT &&) { throw 42; }
-  __host__ __device__
-  ~MakeEmptyT() { --alive; }
+  __host__ __device__ MakeEmptyT(MakeEmptyT&&)
+  {
+    throw 42;
+  }
+  __host__ __device__ MakeEmptyT& operator=(const MakeEmptyT&)
+  {
+    throw 42;
+  }
+  __host__ __device__ MakeEmptyT& operator=(MakeEmptyT&&)
+  {
+    throw 42;
+  }
+  __host__ __device__ ~MakeEmptyT()
+  {
+    --alive;
+  }
 };
 
 int MakeEmptyT::alive = 0;
 template <class Variant>
-__host__ __device__ void makeEmpty(Variant &v) {
+__host__ __device__ void makeEmpty(Variant& v)
+{
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
-  try {
+  try
+  {
     v = cuda::std::move(v2);
     assert(false);
-  } catch (...) {
+  }
+  catch (...)
+  {
     assert(v.valueless_by_exception());
   }
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__
-void test_copy_ctor_sfinae() {
+__host__ __device__ void test_copy_ctor_sfinae()
+{
   {
     using V = cuda::std::variant<int, long>;
     static_assert(cuda::std::is_copy_constructible<V>::value, "");
@@ -153,8 +183,8 @@ void test_copy_ctor_sfinae() {
   }
 }
 
-__host__ __device__
-void test_copy_ctor_basic() {
+__host__ __device__ void test_copy_ctor_basic()
+{
   {
     cuda::std::variant<int> v(cuda::std::in_place_index<0>, 42);
     cuda::std::variant<int> v2 = v;
@@ -171,16 +201,16 @@ void test_copy_ctor_basic() {
     cuda::std::variant<NonT> v(cuda::std::in_place_index<0>, 42);
     assert(v.index() == 0);
     cuda::std::variant<NonT> v2(v);
-    printf("%d\n", (int)v2.index());
+    printf("%d\n", (int) v2.index());
     assert(v2.index() == 0);
-    //assert(cuda::std::get<0>(v2).value == 42);
+    // assert(cuda::std::get<0>(v2).value == 42);
   }
   {
     cuda::std::variant<int, NonT> v(cuda::std::in_place_index<1>, 42);
     assert(v.index() == 1);
     cuda::std::variant<int, NonT> v2(v);
-    //assert(v2.index() == 1);
-    //assert(cuda::std::get<1>(v2).value == 42);
+    // assert(v2.index() == 1);
+    // assert(cuda::std::get<1>(v2).value == 42);
   }
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
@@ -229,27 +259,26 @@ void test_copy_ctor_basic() {
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-void test_copy_ctor_valueless_by_exception() {
+void test_copy_ctor_valueless_by_exception()
+{
   using V = cuda::std::variant<int, MakeEmptyT>;
   V v1;
   makeEmpty(v1);
-  const V &cv1 = v1;
+  const V& cv1 = v1;
   V v(cv1);
   assert(v.valueless_by_exception());
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <size_t Idx>
-__host__ __device__
-constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, const int> const& v) {
+__host__ __device__ constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
+{
   auto v2 = v;
-  return v2.index() == v.index() &&
-         v2.index() == Idx &&
-         cuda::std::get<Idx>(v2) == cuda::std::get<Idx>(v);
+  return v2.index() == v.index() && v2.index() == Idx && cuda::std::get<Idx>(v2) == cuda::std::get<Idx>(v);
 }
 
-__host__ __device__
-void test_constexpr_copy_ctor() {
+__host__ __device__ void test_constexpr_copy_ctor()
+{
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   using V = cuda::std::variant<long, void*, const int>;
 #ifdef TEST_WORKAROUND_MSVC_BROKEN_IS_TRIVIALLY_COPYABLE
@@ -266,7 +295,8 @@ void test_constexpr_copy_ctor() {
   static_assert(test_constexpr_copy_ctor_imp<2>(V(101)), "");
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_copy_ctor_basic();
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_copy_ctor_valueless_by_exception();))

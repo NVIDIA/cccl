@@ -12,35 +12,34 @@
 
 // duration& operator%=(const duration& rhs)
 
-#include <cuda/std/chrono>
 #include <cuda/std/cassert>
+#include <cuda/std/chrono>
 
 #include "test_macros.h"
 
 #if TEST_STD_VER > 2014
-__host__ __device__
-constexpr bool test_constexpr()
+__host__ __device__ constexpr bool test_constexpr()
 {
-    cuda::std::chrono::microseconds us1(11);
-    cuda::std::chrono::microseconds us2(3);
-    us1 %= us2;
-    return us1.count() == 2;
+  cuda::std::chrono::microseconds us1(11);
+  cuda::std::chrono::microseconds us2(3);
+  us1 %= us2;
+  return us1.count() == 2;
 }
 #endif
 
 int main(int, char**)
 {
-    {
+  {
     cuda::std::chrono::microseconds us1(11);
     cuda::std::chrono::microseconds us2(3);
     us1 %= us2;
     assert(us1.count() == 2);
     us1 %= cuda::std::chrono::milliseconds(3);
     assert(us1.count() == 2);
-    }
+  }
 
 #if TEST_STD_VER > 2014
-    static_assert(test_constexpr(), "");
+  static_assert(test_constexpr(), "");
 #endif
 
   return 0;

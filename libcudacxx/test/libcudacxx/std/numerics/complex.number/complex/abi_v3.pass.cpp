@@ -24,19 +24,18 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ void
-test()
+__host__ __device__ void test()
 {
-    typedef cuda::std::complex<T> C;
+  typedef cuda::std::complex<T> C;
 
-    static_assert(sizeof(C) == (sizeof(T)*2), "wrong size");
-    static_assert(alignof(C) == (alignof(T)), "misaligned");
+  static_assert(sizeof(C) == (sizeof(T) * 2), "wrong size");
+  static_assert(alignof(C) == (alignof(T)), "misaligned");
 }
 
 int main(int, char**)
 {
-    test<float>();
-    test<double>();
+  test<float>();
+  test<double>();
 // CUDA treats long double as double
 //  test<long double>();
 // These specializations didn't exist at the time of ABI v3:

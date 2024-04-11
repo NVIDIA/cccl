@@ -12,29 +12,30 @@
 
 // constexpr explicit optional<T>::operator bool() const noexcept;
 
+#include <cuda/std/cassert>
 #include <cuda/std/optional>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using cuda::std::optional;
-    {
-        const optional<int> opt; ((void)opt);
-        ASSERT_NOEXCEPT(bool(opt));
-        static_assert(!cuda::std::is_convertible<optional<int>, bool>::value, "");
-    }
+  using cuda::std::optional;
+  {
+    const optional<int> opt;
+    ((void) opt);
+    ASSERT_NOEXCEPT(bool(opt));
+    static_assert(!cuda::std::is_convertible<optional<int>, bool>::value, "");
+  }
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-    {
-        constexpr optional<int> opt;
-        static_assert(!opt, "");
-    }
-    {
-        constexpr optional<int> opt(0);
-        static_assert(opt, "");
-    }
+  {
+    constexpr optional<int> opt;
+    static_assert(!opt, "");
+  }
+  {
+    constexpr optional<int> opt(0);
+    static_assert(opt, "");
+  }
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;

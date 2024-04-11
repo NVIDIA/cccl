@@ -19,35 +19,35 @@
 //  constexpr chrono::month month() const noexcept;
 //  constexpr bool             ok() const noexcept;
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using year       = cuda::std::chrono::year;
-    using month      = cuda::std::chrono::month;
-    using year_month = cuda::std::chrono::year_month;
+  using year       = cuda::std::chrono::year;
+  using month      = cuda::std::chrono::month;
+  using year_month = cuda::std::chrono::year_month;
 
-    ASSERT_NOEXCEPT(year_month{});
-    ASSERT_NOEXCEPT(year_month{year{1}, month{1}});
+  ASSERT_NOEXCEPT(year_month{});
+  ASSERT_NOEXCEPT(year_month{year{1}, month{1}});
 
-    constexpr year_month ym0{};
-    static_assert( ym0.year()  == year{},  "");
-    static_assert( ym0.month() == month{}, "");
-    static_assert(!ym0.ok(),               "");
+  constexpr year_month ym0{};
+  static_assert(ym0.year() == year{}, "");
+  static_assert(ym0.month() == month{}, "");
+  static_assert(!ym0.ok(), "");
 
-    constexpr year_month ym1{year{2018}, cuda::std::chrono::January};
-    static_assert( ym1.year()  == year{2018},           "");
-    static_assert( ym1.month() == cuda::std::chrono::January, "");
-    static_assert( ym1.ok(),                            "");
+  constexpr year_month ym1{year{2018}, cuda::std::chrono::January};
+  static_assert(ym1.year() == year{2018}, "");
+  static_assert(ym1.month() == cuda::std::chrono::January, "");
+  static_assert(ym1.ok(), "");
 
-    constexpr year_month ym2{year{2018}, month{}};
-    static_assert( ym2.year()  == year{2018}, "");
-    static_assert( ym2.month() == month{},    "");
-    static_assert(!ym2.ok(),                  "");
+  constexpr year_month ym2{year{2018}, month{}};
+  static_assert(ym2.year() == year{2018}, "");
+  static_assert(ym2.month() == month{}, "");
+  static_assert(!ym2.ok(), "");
 
   return 0;
 }

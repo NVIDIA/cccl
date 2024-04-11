@@ -12,13 +12,11 @@
 
 #include "group_memcpy_async.h"
 
-int main(int argc, char ** argv)
+int main(int argc, char** argv)
 {
-    NV_IF_TARGET(NV_IS_HOST,
-        cuda_thread_count = 4;
-    )
+  NV_IF_TARGET(NV_IS_HOST, cuda_thread_count = 4;)
 
-    test_select_source<storage<int32_t>>();
+  test_select_source<storage<int32_t>>();
 
-    return 0;
+  return 0;
 }

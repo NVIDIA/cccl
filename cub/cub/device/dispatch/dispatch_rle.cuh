@@ -189,8 +189,8 @@ template <typename InputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           typename SelectedPolicy =
-            detail::device_non_trivial_runs_policy_hub< cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                        cub::detail::value_t<InputIteratorT>>>
+            detail::device_non_trivial_runs_policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                       cub::detail::value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************

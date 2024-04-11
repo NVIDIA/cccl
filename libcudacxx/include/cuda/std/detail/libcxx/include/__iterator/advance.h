@@ -72,10 +72,10 @@ __advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type _
   __i += __n;
 }
 
-template < class _InputIter,
-           class _Distance,
-           class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
-           class                   = __enable_if_t<is_integral<_IntegralDistance>::value> >
+template <class _InputIter,
+          class _Distance,
+          class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
+          class                   = __enable_if_t<is_integral<_IntegralDistance>::value>>
 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _Distance __orig_n)
 {
   typedef typename iterator_traits<_InputIter>::difference_type _Difference;

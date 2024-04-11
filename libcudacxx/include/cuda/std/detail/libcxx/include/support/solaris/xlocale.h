@@ -19,55 +19,46 @@
 extern "C" {
 #endif
 
+int snprintf_l(char* __s, size_t __n, locale_t __l, const char* __format, ...);
+int asprintf_l(char** __s, locale_t __l, const char* __format, ...);
 
-int snprintf_l(char *__s, size_t __n, locale_t __l, const char *__format, ...);
-int asprintf_l(char **__s, locale_t __l, const char *__format, ...);
-
-int sscanf_l(const char *__s, locale_t __l, const char *__format, ...);
+int sscanf_l(const char* __s, locale_t __l, const char* __format, ...);
 
 int toupper_l(int __c, locale_t __l);
 int tolower_l(int __c, locale_t __l);
 
-struct lconv *localeconv(void);
-struct lconv *localeconv_l(locale_t __l);
+struct lconv* localeconv(void);
+struct lconv* localeconv_l(locale_t __l);
 
 // FIXME: These are quick-and-dirty hacks to make things pretend to work
-static inline
-long long strtoll_l(const char *__nptr, char **__endptr,
-    int __base, locale_t __loc) {
+static inline long long strtoll_l(const char* __nptr, char** __endptr, int __base, locale_t __loc)
+{
   return strtoll(__nptr, __endptr, __base);
 }
-static inline
-long strtol_l(const char *__nptr, char **__endptr,
-    int __base, locale_t __loc) {
+static inline long strtol_l(const char* __nptr, char** __endptr, int __base, locale_t __loc)
+{
   return strtol(__nptr, __endptr, __base);
 }
-static inline
-unsigned long long strtoull_l(const char *__nptr, char **__endptr,
-    int __base, locale_t __loc) {
+static inline unsigned long long strtoull_l(const char* __nptr, char** __endptr, int __base, locale_t __loc)
+{
   return strtoull(__nptr, __endptr, __base);
 }
-static inline
-unsigned long strtoul_l(const char *__nptr, char **__endptr,
-    int __base, locale_t __loc) {
+static inline unsigned long strtoul_l(const char* __nptr, char** __endptr, int __base, locale_t __loc)
+{
   return strtoul(__nptr, __endptr, __base);
 }
-static inline
-float strtof_l(const char *__nptr, char **__endptr,
-    locale_t __loc) {
+static inline float strtof_l(const char* __nptr, char** __endptr, locale_t __loc)
+{
   return strtof(__nptr, __endptr);
 }
-static inline
-double strtod_l(const char *__nptr, char **__endptr,
-    locale_t __loc) {
+static inline double strtod_l(const char* __nptr, char** __endptr, locale_t __loc)
+{
   return strtod(__nptr, __endptr);
 }
-static inline
-long double strtold_l(const char *__nptr, char **__endptr,
-    locale_t __loc) {
+static inline long double strtold_l(const char* __nptr, char** __endptr, locale_t __loc)
+{
   return strtold(__nptr, __endptr);
 }
-
 
 #ifdef __cplusplus
 }

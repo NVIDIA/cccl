@@ -17,35 +17,37 @@
 
 #include <cuda/std/iterator>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 #if TEST_STD_VER > 2014
-struct NoDefaultCtr : forward_iterator<int*> {
+struct NoDefaultCtr : forward_iterator<int*>
+{
   NoDefaultCtr() = delete;
 };
 
-static_assert( cuda::std::is_default_constructible_v<cuda::std::move_iterator<forward_iterator<int*>>>, "");
+static_assert(cuda::std::is_default_constructible_v<cuda::std::move_iterator<forward_iterator<int*>>>, "");
 static_assert(!cuda::std::is_default_constructible_v<cuda::std::move_iterator<NoDefaultCtr>>, "");
 #endif // TEST_STD_VER > 2014
 
 template <class It>
-__host__ __device__
-void test() {
-    cuda::std::move_iterator<It> r;
-    unused(r);
+__host__ __device__ void test()
+{
+  cuda::std::move_iterator<It> r;
+  unused(r);
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   // we don't have a test iterator that is both input and default-constructible, so not testing that case
-  test<forward_iterator<char*> >();
-  test<bidirectional_iterator<char*> >();
-  test<random_access_iterator<char*> >();
+  test<forward_iterator<char*>>();
+  test<bidirectional_iterator<char*>>();
+  test<random_access_iterator<char*>>();
   test<char*>();
 
 #if TEST_STD_VER > 2011
   {
-    constexpr cuda::std::move_iterator<const char *> it;
+    constexpr cuda::std::move_iterator<const char*> it;
     unused(it);
   }
 #endif

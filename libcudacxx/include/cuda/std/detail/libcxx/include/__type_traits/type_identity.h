@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_TYPE_IDENTITY_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,14 +25,22 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __type_identity { typedef _Tp type; };
+struct __type_identity
+{
+  typedef _Tp type;
+};
 
 template <class _Tp>
 using __type_identity_t _LIBCUDACXX_NODEBUG_TYPE = typename __type_identity<_Tp>::type;
 
 #if _CCCL_STD_VER > 2011
-template<class _Tp> struct type_identity { typedef _Tp type; };
-template<class _Tp> using type_identity_t = typename type_identity<_Tp>::type;
+template <class _Tp>
+struct type_identity
+{
+  typedef _Tp type;
+};
+template <class _Tp>
+using type_identity_t = typename type_identity<_Tp>::type;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

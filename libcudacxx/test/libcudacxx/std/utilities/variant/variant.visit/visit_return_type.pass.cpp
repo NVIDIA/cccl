@@ -24,23 +24,25 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-struct almost_string {
-    const char * ptr;
+struct almost_string
+{
+  const char* ptr;
 
-    __host__ __device__
-    almost_string(const char * ptr) : ptr(ptr) {}
+  __host__ __device__ almost_string(const char* ptr)
+      : ptr(ptr)
+  {}
 
-    __host__ __device__
-    friend bool operator==(const almost_string & lhs, const almost_string & rhs) {
-        return lhs.ptr == rhs.ptr;
-    }
+  __host__ __device__ friend bool operator==(const almost_string& lhs, const almost_string& rhs)
+  {
+    return lhs.ptr == rhs.ptr;
+  }
 };
 
-__host__ __device__
-void test_return_type() {
+__host__ __device__ void test_return_type()
+{
   using Fn = ForwardingCallObject;
   Fn obj{};
-  const Fn &cobj = obj;
+  const Fn& cobj = obj;
   unused(cobj);
   { // test call operator forwarding - no variant
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj)), Fn&>, "");
@@ -67,8 +69,8 @@ void test_return_type() {
     unused(v);
   }
   { // test call operator forwarding - multi variant, multi arg
-    using V = cuda::std::variant<int, long, double>;
-    using V2 = cuda::std::variant<int *, almost_string>;
+    using V  = cuda::std::variant<int, long, double>;
+    using V2 = cuda::std::variant<int*, almost_string>;
     V v(42l);
     V2 v2("hello");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v, v2)), Fn&>, "");
@@ -83,7 +85,8 @@ void test_return_type() {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v1, v2, v3, v4)), Fn&>, "");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v1, v2, v3, v4)), const Fn&>, "");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v1, v2, v3, v4)), Fn&&>, "");
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4)), const Fn&&>, "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4)), const Fn&&>,
+                  "");
     unused(v1, v2, v3, v4);
   }
   {
@@ -93,11 +96,13 @@ void test_return_type() {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(obj, v1, v2, v3, v4)), Fn&>, "");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cobj, v1, v2, v3, v4)), const Fn&>, "");
     static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(obj), v1, v2, v3, v4)), Fn&&>, "");
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4)), const Fn&&>, "");
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::visit(cuda::std::move(cobj), v1, v2, v3, v4)), const Fn&&>,
+                  "");
   }
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_return_type();
 
   return 0;

@@ -23,52 +23,51 @@
 //  If dp represents 1970-01-01, the constructed weekday represents Thursday by storing 4 in wd_.
 // —end example]
 
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using local_days = cuda::std::chrono::local_days;
-    using days       = cuda::std::chrono::days;
-    using weekday    = cuda::std::chrono::weekday;
+  using local_days = cuda::std::chrono::local_days;
+  using days       = cuda::std::chrono::days;
+  using weekday    = cuda::std::chrono::weekday;
 
-    ASSERT_NOEXCEPT(weekday{cuda::std::declval<local_days>()});
+  ASSERT_NOEXCEPT(weekday{cuda::std::declval<local_days>()});
 
-    {
+  {
     constexpr local_days sd{}; // 1-Jan-1970 was a Thursday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 4, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 4, "");
+  }
 
-    {
-    constexpr local_days sd{days{10957+32}}; // 2-Feb-2000 was a Wednesday
+  {
+    constexpr local_days sd{days{10957 + 32}}; // 2-Feb-2000 was a Wednesday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 3, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 3, "");
+  }
 
-
-    {
+  {
     constexpr local_days sd{days{-10957}}; // 2-Jan-1940 was a Tuesday
     constexpr weekday wd{sd};
 
-    static_assert( wd.ok(), "");
-    static_assert( wd.c_encoding() == 2, "");
-    }
+    static_assert(wd.ok(), "");
+    static_assert(wd.c_encoding() == 2, "");
+  }
 
-    {
-    local_days sd{days{-(10957+34)}}; // 29-Nov-1939 was a Wednesday
+  {
+    local_days sd{days{-(10957 + 34)}}; // 29-Nov-1939 was a Wednesday
     weekday wd{sd};
 
-    assert( wd.ok());
-    assert( wd.c_encoding() == 3);
-    }
+    assert(wd.ok());
+    assert(wd.c_encoding() == 3);
+  }
 
-    return 0;
+  return 0;
 }

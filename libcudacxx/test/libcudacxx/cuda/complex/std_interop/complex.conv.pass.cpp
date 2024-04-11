@@ -9,44 +9,42 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <nv/target>
+#include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 #include <complex>
 
-#include <cuda/std/complex>
-#include <cuda/std/cassert>
-
 #include "test_macros.h"
+#include <nv/target>
 
 template <class T>
-void test_conversion() {
-    const ::cuda::std::complex<T> only_real{static_cast<T>(42.0), 0 };
-    const ::cuda::std::complex<T> only_imag{0, static_cast<T>(42.0)};
-    const ::cuda::std::complex<T> real_imag{static_cast<T>(42.0), static_cast<T>(1337.0)};
-
-    const ::std::complex<T> from_only_real{only_real};
-    const ::std::complex<T> from_only_imag{only_imag};
-    const ::std::complex<T> from_real_imag{real_imag};
-
-    assert(from_only_real.real() == static_cast<T>(42.0));
-    assert(from_only_real.imag() == 0);
-    assert(from_only_imag.real() == 0);
-    assert(from_only_imag.imag() == static_cast<T>(42.0));
-    assert(from_real_imag.real() == static_cast<T>(42.0));
-    assert(from_real_imag.imag() == static_cast<T>(1337.0));
-}
-
-void test() {
-    test_conversion<float>();
-    test_conversion<double>();
-}
-
-int main(int arg, char ** argv)
+void test_conversion()
 {
-NV_IF_TARGET(
-NV_IS_HOST, (
-    test();
-));
+  const ::cuda::std::complex<T> only_real{static_cast<T>(42.0), 0};
+  const ::cuda::std::complex<T> only_imag{0, static_cast<T>(42.0)};
+  const ::cuda::std::complex<T> real_imag{static_cast<T>(42.0), static_cast<T>(1337.0)};
 
-    return 0;
+  const ::std::complex<T> from_only_real{only_real};
+  const ::std::complex<T> from_only_imag{only_imag};
+  const ::std::complex<T> from_real_imag{real_imag};
+
+  assert(from_only_real.real() == static_cast<T>(42.0));
+  assert(from_only_real.imag() == 0);
+  assert(from_only_imag.real() == 0);
+  assert(from_only_imag.imag() == static_cast<T>(42.0));
+  assert(from_real_imag.real() == static_cast<T>(42.0));
+  assert(from_real_imag.imag() == static_cast<T>(1337.0));
+}
+
+void test()
+{
+  test_conversion<float>();
+  test_conversion<double>();
+}
+
+int main(int arg, char** argv)
+{
+  NV_IF_TARGET(NV_IS_HOST, (test();));
+
+  return 0;
 }

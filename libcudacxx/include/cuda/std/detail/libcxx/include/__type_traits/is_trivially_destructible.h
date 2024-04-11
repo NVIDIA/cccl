@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_DESTRUCTIBLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,8 +32,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_DESTRUCTIBLE_FALLBACK)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
-    : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
+    : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_DESTRUCTIBLE(_Tp)>
+{};
 
 #elif defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
 
@@ -46,15 +48,18 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #else
 
-template <class _Tp> struct __libcpp_trivial_destructor
-    : public integral_constant<bool, is_scalar<_Tp>::value ||
-                                     is_reference<_Tp>::value> {};
+template <class _Tp>
+struct __libcpp_trivial_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
+{};
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
-    : public __libcpp_trivial_destructor<__remove_all_extents_t<_Tp>> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible
+    : public __libcpp_trivial_destructor<__remove_all_extents_t<_Tp>>
+{};
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible<_Tp[]>
-    : public false_type {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_destructible<_Tp[]> : public false_type
+{};
 
 #endif // defined(_LIBCUDACXX_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
 

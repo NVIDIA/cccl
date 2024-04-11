@@ -145,8 +145,7 @@ public:
     --(*this);
     return __tmp;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator+(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator+(difference_type __n) const noexcept
   {
     __wrap_iter __w(*this);
     __w += __n;
@@ -159,8 +158,7 @@ public:
     __i_ += __n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter
-  operator-(difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __wrap_iter operator-(difference_type __n) const noexcept
   {
     return *this + (-__n);
   }
@@ -169,8 +167,7 @@ public:
     *this += -__n;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
-  operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
     _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__subscriptable(this, __n),
                              "Attempted to subscript an iterator outside its valid range");
@@ -317,12 +314,12 @@ operator+(typename __wrap_iter<_Iter1>::difference_type __n, __wrap_iter<_Iter1>
 
 #if _CCCL_STD_VER <= 2017
 template <class _It>
-struct __is_cpp17_contiguous_iterator<__wrap_iter<_It> > : true_type
+struct __is_cpp17_contiguous_iterator<__wrap_iter<_It>> : true_type
 {};
 #endif
 
 template <class _It>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It> >
+struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<__wrap_iter<_It>>
 {
   typedef __wrap_iter<_It> pointer;
   typedef typename pointer_traits<_It>::element_type element_type;

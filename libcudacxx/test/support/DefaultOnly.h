@@ -13,20 +13,33 @@
 
 class DefaultOnly
 {
-    int data_;
+  int data_;
 
-    __host__ __device__ DefaultOnly(const DefaultOnly&);
-    __host__ __device__ DefaultOnly& operator=(const DefaultOnly&);
+  __host__ __device__ DefaultOnly(const DefaultOnly&);
+  __host__ __device__ DefaultOnly& operator=(const DefaultOnly&);
+
 public:
-    STATIC_MEMBER_VAR(count, int);
+  STATIC_MEMBER_VAR(count, int);
 
-    __host__ __device__ DefaultOnly() : data_(-1) {++count();}
-    __host__ __device__ ~DefaultOnly() {data_ = 0; --count();}
+  __host__ __device__ DefaultOnly()
+      : data_(-1)
+  {
+    ++count();
+  }
+  __host__ __device__ ~DefaultOnly()
+  {
+    data_ = 0;
+    --count();
+  }
 
-    __host__ __device__ friend bool operator==(const DefaultOnly& x, const DefaultOnly& y)
-        {return x.data_ == y.data_;}
-    __host__ __device__ friend bool operator< (const DefaultOnly& x, const DefaultOnly& y)
-        {return x.data_ < y.data_;}
+  __host__ __device__ friend bool operator==(const DefaultOnly& x, const DefaultOnly& y)
+  {
+    return x.data_ == y.data_;
+  }
+  __host__ __device__ friend bool operator<(const DefaultOnly& x, const DefaultOnly& y)
+  {
+    return x.data_ < y.data_;
+  }
 };
 
-#endif  // DEFAULTONLY_H
+#endif // DEFAULTONLY_H

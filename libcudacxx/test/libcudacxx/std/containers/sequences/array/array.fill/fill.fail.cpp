@@ -14,12 +14,14 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     typedef double T;
     typedef cuda::std::array<const T, 0> C;
     C c = {};
-    // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}}cannot fill zero-sized array of type 'const T'}}
+    // expected-error-re@array:* {{{{(static_assert|static assertion)}} failed{{.*}}cannot fill zero-sized array of type
+    // 'const T'}}
     c.fill(5.5); // expected-note {{requested here}}
   }
 

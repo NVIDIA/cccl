@@ -12,22 +12,23 @@
 
 // class cuda::std::ranges::subrange;
 
+#include <cuda/std/cassert>
 #include <cuda/std/ranges>
 
-#include "types.h"
-#include <cuda/std/cassert>
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
+#include "types.h"
 
-static_assert( cuda::std::is_constructible_v<ForwardSubrange, ForwardBorrowedRange>); // Default case.
+static_assert(cuda::std::is_constructible_v<ForwardSubrange, ForwardBorrowedRange>); // Default case.
 static_assert(!cuda::std::is_constructible_v<ForwardSubrange, ForwardRange>); // Not borrowed.
 // Iter convertible to sentinel (pointer) type.
-static_assert( cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardBorrowedRange>);
+static_assert(cuda::std::is_constructible_v<ConvertibleForwardSubrange, ConvertibleForwardBorrowedRange>);
 // Where neither iter or sentinel are pointers, but they are different.
-static_assert( cuda::std::is_constructible_v<DifferentSentinelSubrange, ForwardBorrowedRangeDifferentSentinel>);
-static_assert( cuda::std::is_constructible_v<DifferentSentinelWithSizeMemberSubrange, DifferentSentinelWithSizeMember>);
+static_assert(cuda::std::is_constructible_v<DifferentSentinelSubrange, ForwardBorrowedRangeDifferentSentinel>);
+static_assert(cuda::std::is_constructible_v<DifferentSentinelWithSizeMemberSubrange, DifferentSentinelWithSizeMember>);
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   ForwardSubrange a{ForwardBorrowedRange()};
   assert(base(a.begin()) == globalBuff);
   assert(base(a.end()) == globalBuff + 8);
@@ -43,7 +44,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

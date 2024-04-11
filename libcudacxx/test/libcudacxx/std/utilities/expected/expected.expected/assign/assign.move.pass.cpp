@@ -44,17 +44,20 @@
 #include "../../types.h"
 #include "test_macros.h"
 
-struct NotMoveConstructible {
+struct NotMoveConstructible
+{
   NotMoveConstructible(NotMoveConstructible&&)            = delete;
   NotMoveConstructible& operator=(NotMoveConstructible&&) = default;
 };
 
-struct NotMoveAssignable {
+struct NotMoveAssignable
+{
   NotMoveAssignable(NotMoveAssignable&&)            = default;
   NotMoveAssignable& operator=(NotMoveAssignable&&) = delete;
 };
 
-struct MoveCtorMayThrow {
+struct MoveCtorMayThrow
+{
   __host__ __device__ MoveCtorMayThrow(MoveCtorMayThrow&&) noexcept(false) {}
   MoveCtorMayThrow& operator=(MoveCtorMayThrow&&) noexcept = default;
 };
@@ -85,9 +88,13 @@ static_assert(cuda::std::is_move_assignable_v<cuda::std::expected<int, MoveCtorM
 static_assert(!cuda::std::is_move_assignable_v<cuda::std::expected<MoveCtorMayThrow, MoveCtorMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-struct MoveAssignMayThrow {
+struct MoveAssignMayThrow
+{
   MoveAssignMayThrow(MoveAssignMayThrow&&) noexcept = default;
-  __host__ __device__ MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false) { return *this; }
+  __host__ __device__ MoveAssignMayThrow& operator=(MoveAssignMayThrow&&) noexcept(false)
+  {
+    return *this;
+  }
 };
 
 // Test noexcept
@@ -107,7 +114,8 @@ static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, 
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, MoveCtorMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // If this->has_value() && rhs.has_value() is true, equivalent to val = cuda::std::move(*rhs).
   {
     Traced::state oldState{};
@@ -270,15 +278,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-void test_exceptions() {
+void test_exceptions()
+{
   // assign value throw on move
   {
     cuda::std::expected<ThrowOnMoveConstruct, int> e1(cuda::std::unexpect, 5);
     cuda::std::expected<ThrowOnMoveConstruct, int> e2(cuda::std::in_place);
-    try {
+    try
+    {
       e1 = cuda::std::move(e2);
       assert(false);
-    } catch (Except) {
+    }
+    catch (Except)
+    {
       assert(!e1.has_value());
       assert(e1.error() == 5);
     }
@@ -288,10 +300,13 @@ void test_exceptions() {
   {
     cuda::std::expected<int, ThrowOnMoveConstruct> e1(5);
     cuda::std::expected<int, ThrowOnMoveConstruct> e2(cuda::std::unexpect);
-    try {
+    try
+    {
       e1 = cuda::std::move(e2);
       assert(false);
-    } catch (Except) {
+    }
+    catch (Except)
+    {
       assert(e1.has_value());
       assert(*e1 == 5);
     }
@@ -299,13 +314,14 @@ void test_exceptions() {
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    NV_IF_TARGET(NV_IS_HOST,(test_exceptions();))
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

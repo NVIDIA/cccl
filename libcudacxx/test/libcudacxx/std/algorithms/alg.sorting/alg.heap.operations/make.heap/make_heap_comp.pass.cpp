@@ -19,15 +19,17 @@
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "MoveOnly.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class T, class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   int orig[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
-  T work[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
-  for (int n = 0; n < 15; ++n) {
+  T work[15]   = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
+  for (int n = 0; n < 15; ++n)
+  {
     cuda::std::make_heap(Iter(work), Iter(work + n), cuda::std::greater<T>());
     assert(cuda::std::is_heap(work, work + n, cuda::std::greater<T>()));
     assert(cuda::std::is_permutation(work, work + n, orig));
@@ -51,16 +53,18 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<int, random_access_iterator<int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<int, random_access_iterator<int*>>();
   test<int, int*>();
-  test<MoveOnly, random_access_iterator<MoveOnly*> >();
+  test<MoveOnly, random_access_iterator<MoveOnly*>>();
   test<MoveOnly, MoveOnly*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");

@@ -13,10 +13,10 @@
 
 // check that cuda::std::__unwrap_iter() returns the correct type
 
-//#include <cuda/std/algorithm>
+// #include <cuda/std/algorithm>
 #include <cuda/std/cassert>
 #ifdef _LIBCUDACXX_HAS_STRING
-#include <cuda/std/string>
+#  include <cuda/std/string>
 #endif
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -31,24 +31,32 @@ template <class Iter>
 using rev_iter = cuda::std::reverse_iterator<Iter>;
 
 template <class Iter>
-using rev_rev_iter = rev_iter<rev_iter<Iter> >;
+using rev_rev_iter = rev_iter<rev_iter<Iter>>;
 
 static_assert(cuda::std::is_same<UnwrapT<int*>, int*>::value, "");
-static_assert(cuda::std::is_same<UnwrapT<cuda::std::__wrap_iter<int*> >, int*>::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_iter<int*> >, cuda::std::reverse_iterator<int*> >::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<int*> >, int*>::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<cuda::std::__wrap_iter<int*> > >, int*>::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<cuda::std::__wrap_iter<int*> > > >, rev_iter<cuda::std::__wrap_iter<int*> > >::value, "");
+static_assert(cuda::std::is_same<UnwrapT<cuda::std::__wrap_iter<int*>>, int*>::value, "");
+static_assert(cuda::std::is_same<UnwrapT<rev_iter<int*>>, cuda::std::reverse_iterator<int*>>::value, "");
+static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<int*>>, int*>::value, "");
+static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<cuda::std::__wrap_iter<int*>>>, int*>::value, "");
+static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<cuda::std::__wrap_iter<int*>>>>,
+                                 rev_iter<cuda::std::__wrap_iter<int*>>>::value,
+              "");
 
-static_assert(cuda::std::is_same<UnwrapT<random_access_iterator<int*> >, random_access_iterator<int*> >::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_iter<random_access_iterator<int*> > >, rev_iter<random_access_iterator<int*> > >::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<random_access_iterator<int*> > >, random_access_iterator<int*> >::value, "");
-static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<random_access_iterator<int*> > > >, rev_iter<random_access_iterator<int*> > >::value, "");
+static_assert(cuda::std::is_same<UnwrapT<random_access_iterator<int*>>, random_access_iterator<int*>>::value, "");
+static_assert(
+  cuda::std::is_same<UnwrapT<rev_iter<random_access_iterator<int*>>>, rev_iter<random_access_iterator<int*>>>::value,
+  "");
+static_assert(
+  cuda::std::is_same<UnwrapT<rev_rev_iter<random_access_iterator<int*>>>, random_access_iterator<int*>>::value, "");
+static_assert(cuda::std::is_same<UnwrapT<rev_rev_iter<rev_iter<random_access_iterator<int*>>>>,
+                                 rev_iter<random_access_iterator<int*>>>::value,
+              "");
 
 #ifdef _LIBCUDACXX_HAS_STRING
-TEST_CONSTEXPR_CXX20 bool test() {
+TEST_CONSTEXPR_CXX20 bool test()
+{
   cuda::std::string str = "Banane";
-  using Iter = cuda::std::string::iterator;
+  using Iter            = cuda::std::string::iterator;
 
   assert(cuda::std::__unwrap_iter(str.begin()) == str.data());
   assert(cuda::std::__unwrap_iter(str.end()) == str.data() + str.size());
@@ -59,12 +67,13 @@ TEST_CONSTEXPR_CXX20 bool test() {
 }
 #endif
 
-int main(int, char**) {
+int main(int, char**)
+{
 #ifdef _LIBCUDACXX_HAS_STRING
   test();
-#if TEST_STD_VER > 2017
+#  if TEST_STD_VER > 2017
   static_assert(test());
-#endif
+#  endif
 #endif
 
   return 0;

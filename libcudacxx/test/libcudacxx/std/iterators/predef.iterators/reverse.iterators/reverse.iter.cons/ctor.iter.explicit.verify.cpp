@@ -17,8 +17,10 @@
 
 #include <cuda/std/iterator>
 
-int main(int, char**) {
-    char const* it = "";
-    cuda::std::reverse_iterator<char const*> r = it; // expected-error{{no viable conversion from 'const char *' to 'cuda::std::reverse_iterator<const char *>'}}
-    return 0;
+int main(int, char**)
+{
+  char const* it                             = "";
+  cuda::std::reverse_iterator<char const*> r = it; // expected-error{{no viable conversion from 'const char *' to
+                                                   // 'cuda::std::reverse_iterator<const char *>'}}
+  return 0;
 }

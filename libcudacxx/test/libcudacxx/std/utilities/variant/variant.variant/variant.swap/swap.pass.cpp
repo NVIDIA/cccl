@@ -25,95 +25,104 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-struct NotSwappable {};
-__host__ __device__
-void swap(NotSwappable &, NotSwappable &) = delete;
+struct NotSwappable
+{};
+__host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
 
-struct NotCopyable {
-  NotCopyable() = default;
-  NotCopyable(const NotCopyable &) = delete;
-  NotCopyable &operator=(const NotCopyable &) = delete;
+struct NotCopyable
+{
+  NotCopyable()                              = default;
+  NotCopyable(const NotCopyable&)            = delete;
+  NotCopyable& operator=(const NotCopyable&) = delete;
 };
 
-struct NotCopyableWithSwap {
-  NotCopyableWithSwap() = default;
-  NotCopyableWithSwap(const NotCopyableWithSwap &) = delete;
-  NotCopyableWithSwap &operator=(const NotCopyableWithSwap &) = delete;
+struct NotCopyableWithSwap
+{
+  NotCopyableWithSwap()                                      = default;
+  NotCopyableWithSwap(const NotCopyableWithSwap&)            = delete;
+  NotCopyableWithSwap& operator=(const NotCopyableWithSwap&) = delete;
 };
-__host__ __device__
-void swap(NotCopyableWithSwap &, NotCopyableWithSwap) {}
+__host__ __device__ void swap(NotCopyableWithSwap&, NotCopyableWithSwap) {}
 
-struct NotMoveAssignable {
-  NotMoveAssignable() = default;
-  NotMoveAssignable(NotMoveAssignable &&) = default;
-  NotMoveAssignable &operator=(NotMoveAssignable &&) = delete;
+struct NotMoveAssignable
+{
+  NotMoveAssignable()                               = default;
+  NotMoveAssignable(NotMoveAssignable&&)            = default;
+  NotMoveAssignable& operator=(NotMoveAssignable&&) = delete;
 };
 
-struct NotMoveAssignableWithSwap {
-  NotMoveAssignableWithSwap() = default;
-  NotMoveAssignableWithSwap(NotMoveAssignableWithSwap &&) = default;
-  NotMoveAssignableWithSwap &operator=(NotMoveAssignableWithSwap &&) = delete;
+struct NotMoveAssignableWithSwap
+{
+  NotMoveAssignableWithSwap()                                       = default;
+  NotMoveAssignableWithSwap(NotMoveAssignableWithSwap&&)            = default;
+  NotMoveAssignableWithSwap& operator=(NotMoveAssignableWithSwap&&) = delete;
 };
-__host__ __device__
-void swap(NotMoveAssignableWithSwap &, NotMoveAssignableWithSwap &) noexcept {}
+__host__ __device__ void swap(NotMoveAssignableWithSwap&, NotMoveAssignableWithSwap&) noexcept {}
 
-template <bool Throws> __host__ __device__ void do_throw() {}
+template <bool Throws>
+__host__ __device__ void do_throw()
+{}
 
-template <> __host__ __device__ void do_throw<true>() {
+template <>
+__host__ __device__ void do_throw<true>()
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw 42;),(cuda::std::terminate();))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (throw 42;), (cuda::std::terminate();))
 #else
   cuda::std::terminate();
 #endif
 }
 
-template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign,
-          bool NT_Swap, bool EnableSwap = true>
-struct NothrowTypeImp {
+template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign, bool NT_Swap, bool EnableSwap = true>
+struct NothrowTypeImp
+{
   STATIC_MEMBER_VAR(move_called, int);
   STATIC_MEMBER_VAR(move_assign_called, int);
   STATIC_MEMBER_VAR(swap_called, int);
-  __host__ __device__
-  static void reset() { move_called() = move_assign_called() = swap_called() = 0; }
+  __host__ __device__ static void reset()
+  {
+    move_called() = move_assign_called() = swap_called() = 0;
+  }
   NothrowTypeImp() = default;
-  __host__ __device__
-  explicit NothrowTypeImp(int v) : value(v) {}
-  __host__ __device__
-  NothrowTypeImp(const NothrowTypeImp &o) noexcept(NT_Copy) : value(o.value) {
+  __host__ __device__ explicit NothrowTypeImp(int v)
+      : value(v)
+  {}
+  __host__ __device__ NothrowTypeImp(const NothrowTypeImp& o) noexcept(NT_Copy)
+      : value(o.value)
+  {
     assert(false);
   } // never called by test
-  __host__ __device__
-  NothrowTypeImp(NothrowTypeImp &&o) noexcept(NT_Move) : value(o.value) {
+  __host__ __device__ NothrowTypeImp(NothrowTypeImp&& o) noexcept(NT_Move)
+      : value(o.value)
+  {
     ++move_called();
     do_throw<!NT_Move>();
     o.value = -1;
   }
-  __host__ __device__
-  NothrowTypeImp &operator=(const NothrowTypeImp &) noexcept(NT_CopyAssign) {
+  __host__ __device__ NothrowTypeImp& operator=(const NothrowTypeImp&) noexcept(NT_CopyAssign)
+  {
     assert(false);
     return *this;
   } // never called by the tests
-  __host__ __device__
-  NothrowTypeImp &operator=(NothrowTypeImp &&o) noexcept(NT_MoveAssign) {
+  __host__ __device__ NothrowTypeImp& operator=(NothrowTypeImp&& o) noexcept(NT_MoveAssign)
+  {
     ++move_assign_called();
     do_throw<!NT_MoveAssign>();
-    value = o.value;
+    value   = o.value;
     o.value = -1;
     return *this;
   }
   int value;
 };
 
-template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign,
-          bool NT_Swap>
-__host__ __device__
-void swap(NothrowTypeImp<NT_Copy, NT_Move, NT_CopyAssign, NT_MoveAssign,
-                         NT_Swap, true> &lhs,
-          NothrowTypeImp<NT_Copy, NT_Move, NT_CopyAssign, NT_MoveAssign,
-                         NT_Swap, true> &rhs) noexcept(NT_Swap) {
+template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign, bool NT_Swap>
+__host__ __device__ void
+swap(NothrowTypeImp<NT_Copy, NT_Move, NT_CopyAssign, NT_MoveAssign, NT_Swap, true>& lhs,
+     NothrowTypeImp<NT_Copy, NT_Move, NT_CopyAssign, NT_MoveAssign, NT_Swap, true>& rhs) noexcept(NT_Swap)
+{
   lhs.swap_called()++;
   do_throw<!NT_Swap>();
-  int tmp = lhs.value;
+  int tmp   = lhs.value;
   lhs.value = rhs.value;
   rhs.value = tmp;
 }
@@ -123,39 +132,36 @@ using NothrowMoveable = NothrowTypeImp<false, true, false, true, false, false>;
 // throwing copy and move assign, nothrow move ctor, no swap provided
 using NothrowMoveCtor = NothrowTypeImp<false, true, false, false, false, false>;
 // nothrow move ctor, throwing move assignment, swap provided
-using NothrowMoveCtorWithThrowingSwap =
-    NothrowTypeImp<false, true, false, false, false, true>;
+using NothrowMoveCtorWithThrowingSwap = NothrowTypeImp<false, true, false, false, false, true>;
 // throwing move ctor, nothrow move assignment, no swap provided
-using ThrowingMoveCtor =
-    NothrowTypeImp<false, false, false, true, false, false>;
+using ThrowingMoveCtor = NothrowTypeImp<false, false, false, true, false, false>;
 // throwing special members, nothrowing swap
-using ThrowingTypeWithNothrowSwap =
-    NothrowTypeImp<false, false, false, false, true, true>;
-using NothrowTypeWithThrowingSwap =
-    NothrowTypeImp<true, true, true, true, false, true>;
+using ThrowingTypeWithNothrowSwap = NothrowTypeImp<false, false, false, false, true, true>;
+using NothrowTypeWithThrowingSwap = NothrowTypeImp<true, true, true, true, false, true>;
 // throwing move assign with nothrow move and nothrow swap
-using ThrowingMoveAssignNothrowMoveCtorWithSwap =
-    NothrowTypeImp<false, true, false, false, true, true>;
+using ThrowingMoveAssignNothrowMoveCtorWithSwap = NothrowTypeImp<false, true, false, false, true, true>;
 // throwing move assign with nothrow move but no swap.
-using ThrowingMoveAssignNothrowMoveCtor =
-    NothrowTypeImp<false, true, false, false, false, false>;
+using ThrowingMoveAssignNothrowMoveCtor = NothrowTypeImp<false, true, false, false, false, false>;
 
-struct NonThrowingNonNoexceptType {
+struct NonThrowingNonNoexceptType
+{
   STATIC_MEMBER_VAR(move_called, int);
-  __host__ __device__
-  static void reset() { move_called() = 0; }
+  __host__ __device__ static void reset()
+  {
+    move_called() = 0;
+  }
   NonThrowingNonNoexceptType() = default;
-  __host__ __device__
-  NonThrowingNonNoexceptType(int v) : value(v) {}
-  __host__ __device__
-  NonThrowingNonNoexceptType(NonThrowingNonNoexceptType &&o) noexcept(false)
-      : value(o.value) {
+  __host__ __device__ NonThrowingNonNoexceptType(int v)
+      : value(v)
+  {}
+  __host__ __device__ NonThrowingNonNoexceptType(NonThrowingNonNoexceptType&& o) noexcept(false)
+      : value(o.value)
+  {
     ++move_called();
     o.value = -1;
   }
-  __host__ __device__
-  NonThrowingNonNoexceptType &
-  operator=(NonThrowingNonNoexceptType &&) noexcept(false) {
+  __host__ __device__ NonThrowingNonNoexceptType& operator=(NonThrowingNonNoexceptType&&) noexcept(false)
+  {
     assert(false); // never called by the tests.
     return *this;
   }
@@ -163,23 +169,33 @@ struct NonThrowingNonNoexceptType {
 };
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-struct ThrowsOnSecondMove {
+struct ThrowsOnSecondMove
+{
   int value;
   int move_count;
-  ThrowsOnSecondMove(int v) : value(v), move_count(0) {}
-  ThrowsOnSecondMove(ThrowsOnSecondMove &&o) noexcept(false)
-      : value(o.value), move_count(o.move_count + 1) {
+  ThrowsOnSecondMove(int v)
+      : value(v)
+      , move_count(0)
+  {}
+  ThrowsOnSecondMove(ThrowsOnSecondMove&& o) noexcept(false)
+      : value(o.value)
+      , move_count(o.move_count + 1)
+  {
     if (move_count == 2)
+    {
       do_throw<true>();
+    }
     o.value = -1;
   }
-  ThrowsOnSecondMove &operator=(ThrowsOnSecondMove &&) {
+  ThrowsOnSecondMove& operator=(ThrowsOnSecondMove&&)
+  {
     assert(false); // not called by test
     return *this;
   }
 };
 
-void test_swap_valueless_by_exception() {
+void test_swap_valueless_by_exception()
+{
   using V = cuda::std::variant<int, MakeEmptyT>;
   { // both empty
     V v1;
@@ -226,8 +242,8 @@ void test_swap_valueless_by_exception() {
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__
-void test_swap_same_alternative() {
+__host__ __device__ void test_swap_same_alternative()
+{
   {
     using T = ThrowingTypeWithNothrowSwap;
     using V = cuda::std::variant<T, int>;
@@ -266,18 +282,21 @@ void test_swap_same_alternative() {
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-void test_exceptions_same_alternative() {
+void test_exceptions_same_alternative()
+{
   {
     using T = NothrowTypeWithThrowingSwap;
     using V = cuda::std::variant<T, int>;
     T::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<0>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     assert(T::swap_called() == 1);
     assert(T::move_called() == 0);
     assert(T::move_assign_called() == 0);
@@ -290,15 +309,16 @@ void test_exceptions_same_alternative() {
     T::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<0>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     assert(T::move_called() == 1); // call threw
     assert(T::move_assign_called() == 0);
-    assert(cuda::std::get<0>(v1).value ==
-           42); // throw happened before v1 was moved from
+    assert(cuda::std::get<0>(v1).value == 42); // throw happened before v1 was moved from
     assert(cuda::std::get<0>(v2).value == 100);
   }
   {
@@ -307,21 +327,23 @@ void test_exceptions_same_alternative() {
     T::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<0>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     assert(T::move_called() == 1);
-    assert(T::move_assign_called() == 1);      // call threw and didn't complete
+    assert(T::move_assign_called() == 1); // call threw and didn't complete
     assert(cuda::std::get<0>(v1).value == -1); // v1 was moved from
     assert(cuda::std::get<0>(v2).value == 100);
   }
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__
-void test_swap_different_alternatives() {
+__host__ __device__ void test_swap_different_alternatives()
+{
   {
     using T = NothrowMoveCtorWithThrowingSwap;
     using V = cuda::std::variant<T, int>;
@@ -349,20 +371,23 @@ void test_swap_different_alternatives() {
 }
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-void test_exceptions_different_alternatives() {
+void test_exceptions_different_alternatives()
+{
   {
     using T1 = ThrowingTypeWithNothrowSwap;
     using T2 = NonThrowingNonNoexceptType;
-    using V = cuda::std::variant<T1, T2>;
+    using V  = cuda::std::variant<T1, T2>;
     T1::reset();
     T2::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<1>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     assert(T1::swap_called() == 0);
     assert(T1::move_called() == 1); // throws
     assert(T1::move_assign_called() == 0);
@@ -371,40 +396,50 @@ void test_exceptions_different_alternatives() {
     assert(T2::move_called() <= 1);
     assert(cuda::std::get<0>(v1).value == 42);
     if (T2::move_called() != 0)
+    {
       assert(v2.valueless_by_exception());
+    }
     else
+    {
       assert(cuda::std::get<1>(v2).value == 100);
+    }
   }
   {
     using T1 = NonThrowingNonNoexceptType;
     using T2 = ThrowingTypeWithNothrowSwap;
-    using V = cuda::std::variant<T1, T2>;
+    using V  = cuda::std::variant<T1, T2>;
     T1::reset();
     T2::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<1>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     LIBCPP_ASSERT(T1::move_called() == 0);
     assert(T1::move_called() <= 1);
     assert(T2::swap_called() == 0);
     assert(T2::move_called() == 1); // throws
     assert(T2::move_assign_called() == 0);
     if (T1::move_called() != 0)
+    {
       assert(v1.valueless_by_exception());
+    }
     else
+    {
       assert(cuda::std::get<0>(v1).value == 42);
+    }
     assert(cuda::std::get<1>(v2).value == 100);
   }
 // FIXME: The tests below are just very libc++ specific
-#ifdef _LIBCUDACXX_VERSION
+#  ifdef _LIBCUDACXX_VERSION
   {
     using T1 = ThrowsOnSecondMove;
     using T2 = NonThrowingNonNoexceptType;
-    using V = cuda::std::variant<T1, T2>;
+    using V  = cuda::std::variant<T1, T2>;
     T2::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<1>, 100);
@@ -417,40 +452,46 @@ void test_exceptions_different_alternatives() {
   {
     using T1 = NonThrowingNonNoexceptType;
     using T2 = ThrowsOnSecondMove;
-    using V = cuda::std::variant<T1, T2>;
+    using V  = cuda::std::variant<T1, T2>;
     T1::reset();
     V v1(cuda::std::in_place_index<0>, 42);
     V v2(cuda::std::in_place_index<1>, 100);
-    try {
+    try
+    {
       v1.swap(v2);
       assert(false);
-    } catch (int) {
     }
+    catch (int)
+    {}
     assert(T1::move_called() == 1);
     assert(v1.valueless_by_exception());
     assert(cuda::std::get<0>(v2).value == 42);
   }
-#endif // _LIBCUDACXX_VERSION
+#  endif // _LIBCUDACXX_VERSION
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <class Var>
-__host__ __device__
-constexpr auto has_swap_member_imp(int)
-    -> decltype(cuda::std::declval<Var &>().swap(cuda::std::declval<Var &>()), true) {
+__host__ __device__ constexpr auto has_swap_member_imp(int)
+  -> decltype(cuda::std::declval<Var&>().swap(cuda::std::declval<Var&>()), true)
+{
   return true;
 }
 
-template <class Var> __host__ __device__ constexpr auto has_swap_member_imp(long) -> bool {
+template <class Var>
+__host__ __device__ constexpr auto has_swap_member_imp(long) -> bool
+{
   return false;
 }
 
-template <class Var> __host__ __device__ constexpr bool has_swap_member() {
+template <class Var>
+__host__ __device__ constexpr bool has_swap_member()
+{
   return has_swap_member_imp<Var>(0);
 }
 
-__host__ __device__
-void test_swap_sfinae() {
+__host__ __device__ void test_swap_sfinae()
+{
   {
     // This variant type does not provide either a member or non-member swap
     // but is still swappable via the generic swap algorithm, since the
@@ -476,8 +517,8 @@ void test_swap_sfinae() {
   }
 }
 
-__host__ __device__
-void test_swap_noexcept() {
+__host__ __device__ void test_swap_noexcept()
+{
   {
     using V = cuda::std::variant<int, NothrowMoveable>;
     static_assert(cuda::std::is_swappable_v<V> && has_swap_member<V>(), "");
@@ -556,7 +597,8 @@ void test_swap_noexcept() {
 template class cuda::std::variant<int, NotSwappable>;
 #endif // _LIBCUDACXX_VERSION
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_swap_same_alternative();
   test_swap_different_alternatives();
   test_swap_sfinae();

@@ -13,12 +13,10 @@
 // array
 
 #include <cuda/std/array>
-
 #include <cuda/std/concepts>
 #include <cuda/std/ranges>
 
 using range = cuda::std::array<int, 10>;
-
 
 static_assert(!cuda::std::ranges::view<range>);
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<range>, range::iterator>);

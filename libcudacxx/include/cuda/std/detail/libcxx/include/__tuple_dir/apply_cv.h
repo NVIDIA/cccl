@@ -79,11 +79,11 @@ struct __apply_cv_mf<true, true, true>
   template <class _Tp>
   using __apply _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
 };
-template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp> >
+template <class _Tp, class _RawTp = __libcpp_remove_reference_t<_Tp>>
 using __apply_cv_t _LIBCUDACXX_NODEBUG_TYPE =
-    __apply_cv_mf<_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tp),
-                  _LIBCUDACXX_TRAIT(is_const, _RawTp),
-                  _LIBCUDACXX_TRAIT(is_volatile, _RawTp)>;
+  __apply_cv_mf<_LIBCUDACXX_TRAIT(is_lvalue_reference, _Tp),
+                _LIBCUDACXX_TRAIT(is_const, _RawTp),
+                _LIBCUDACXX_TRAIT(is_volatile, _RawTp)>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

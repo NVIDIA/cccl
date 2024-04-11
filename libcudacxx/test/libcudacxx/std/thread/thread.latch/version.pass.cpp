@@ -16,7 +16,7 @@
 #include "test_macros.h"
 
 #ifndef _LIBCUDACXX_VERSION
-#error _LIBCUDACXX_VERSION not defined
+#  error _LIBCUDACXX_VERSION not defined
 #endif
 
 int main(int, char**)

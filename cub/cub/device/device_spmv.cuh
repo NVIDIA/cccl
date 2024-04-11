@@ -43,6 +43,7 @@
 #endif // no system header
 
 #include <cub/config.cuh>
+
 #include <cub/device/dispatch/dispatch_spmv_orig.cuh>
 #include <cub/util_deprecated.cuh>
 
