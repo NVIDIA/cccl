@@ -9,24 +9,27 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc, nvcc-11, nvcc-12.0, nvcc-12.1
 
-#include "host_device_comparison.h"
-
 #include <cuda/std/cmath>
 
-struct func {
-  __host__ __device__
-  __nv_bfloat16 operator()(cuda::std::size_t i) const {
+#include "host_device_comparison.h"
+
+struct func
+{
+  __host__ __device__ __nv_bfloat16 operator()(cuda::std::size_t i) const
+  {
     auto raw = __nv_bfloat16_raw();
-    raw.x = (unsigned short)i;
+    raw.x    = (unsigned short) i;
     return cuda::std::cos(__nv_bfloat16(raw));
   }
 };
 
-void test() {
+void test()
+{
   compare_host_device<__nv_bfloat16>(func());
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
   NV_IF_TARGET(NV_IS_HOST, { test(); })
 
   return 0;

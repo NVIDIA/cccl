@@ -30,10 +30,10 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
-#  include <nv/target>
-
 #  include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #  include <cuda/std/detail/libcxx/include/cmath>
+
+#  include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

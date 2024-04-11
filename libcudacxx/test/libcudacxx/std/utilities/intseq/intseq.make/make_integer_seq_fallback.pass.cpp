@@ -16,5 +16,4 @@
 
 #define _LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE
 #include "make_integer_seq.pass.cpp"
-
 #include "test_macros.h"

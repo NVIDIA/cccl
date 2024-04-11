@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_CLASS_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -27,33 +27,41 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct __two {char __lx[2];};
+struct __two
+{
+  char __lx[2];
+};
 
 #if defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_class
-    : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_class : public integral_constant<bool, _LIBCUDACXX_IS_CLASS(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = _LIBCUDACXX_IS_CLASS(_Tp);
-#endif
+#  endif
 
 #else
 
 namespace __is_class_imp
 {
-template <class _Tp> _LIBCUDACXX_HOST_DEVICE char  __test(int _Tp::*);
-template <class _Tp> _LIBCUDACXX_HOST_DEVICE __two __test(...);
-}
+template <class _Tp>
+_LIBCUDACXX_HOST_DEVICE char __test(int _Tp::*);
+template <class _Tp>
+_LIBCUDACXX_HOST_DEVICE __two __test(...);
+} // namespace __is_class_imp
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_class
-    : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_class
+    : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_class_v = is_class<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 

@@ -21,8 +21,8 @@ __host__ __device__ void f2() {}
 
 int main(int, char**)
 {
-    cuda::std::set_terminate(f1);
-    assert(cuda::std::set_terminate(f2) == f1);
+  cuda::std::set_terminate(f1);
+  assert(cuda::std::set_terminate(f2) == f1);
 
   return 0;
 }

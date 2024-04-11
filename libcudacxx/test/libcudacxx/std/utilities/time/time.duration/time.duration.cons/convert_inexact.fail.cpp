@@ -17,13 +17,12 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 
 int main(int, char**)
 {
-    cuda::std::chrono::microseconds us(1);
-    cuda::std::chrono::milliseconds ms = us;
+  cuda::std::chrono::microseconds us(1);
+  cuda::std::chrono::milliseconds ms = us;
 
   return 0;
 }

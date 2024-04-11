@@ -13,17 +13,17 @@
 #include "test_macros.h"
 
 #ifndef offsetof
-#error offsetof not defined
+#  error offsetof not defined
 #endif
 
 struct A
 {
-    int x;
+  int x;
 };
 
 int main(int, char**)
 {
-    static_assert(noexcept(offsetof(A, x)), "");
+  static_assert(noexcept(offsetof(A, x)), "");
 
   return 0;
 }

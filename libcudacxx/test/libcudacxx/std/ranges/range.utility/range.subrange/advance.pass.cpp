@@ -12,14 +12,15 @@
 
 // class cuda::std::ranges::subrange;
 
+#include <cuda/std/cassert>
 #include <cuda/std/ranges>
 
-#include <cuda/std/cassert>
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "types.h"
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   int buff[8] = {};
   cuda::std::ranges::subrange<int*> a(buff, buff + 8, 8);
   auto a1 = a.next();
@@ -32,7 +33,8 @@ __host__ __device__ constexpr bool test() {
   assert(a4.begin() == buff + 4);
   assert(a4.size() == 4);
 
-  cuda::std::ranges::subrange<InputIter, sentinel_wrapper<InputIter>> b(InputIter(buff), sentinel_wrapper<InputIter>(InputIter(buff + 8)));
+  cuda::std::ranges::subrange<InputIter, sentinel_wrapper<InputIter>> b(
+    InputIter(buff), sentinel_wrapper<InputIter>(InputIter(buff + 8)));
   auto b1 = cuda::std::move(b).next();
   assert(base(b1.begin()) == buff + 1);
 
@@ -52,7 +54,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

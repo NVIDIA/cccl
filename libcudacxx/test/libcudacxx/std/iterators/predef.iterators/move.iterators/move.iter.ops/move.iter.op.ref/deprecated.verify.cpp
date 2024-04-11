@@ -13,8 +13,9 @@
 
 #include <cuda/std/iterator>
 
-int main(int, char**) {
-  (void)cuda::std::move_iterator<int*>().operator->();
+int main(int, char**)
+{
+  (void) cuda::std::move_iterator<int*>().operator->();
   // expected-warning@-1{{'operator->' is deprecated}}
 
   return 0;

@@ -25,32 +25,39 @@
 template <class T>
 struct A
 {
-    typedef T value_type;
-    typedef cuda::std::true_type is_always_equal;
+  typedef T value_type;
+  typedef cuda::std::true_type is_always_equal;
 };
 
 template <class T>
 struct B
 {
-    typedef T value_type;
+  typedef T value_type;
 };
 
 template <class T>
 struct C
 {
-    typedef T value_type;
-    int not_empty_;  // some random member variable
+  typedef T value_type;
+  int not_empty_; // some random member variable
 };
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::is_always_equal, cuda::std::true_type>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<char> >::is_always_equal, cuda::std::true_type>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<char> >::is_always_equal, cuda::std::false_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<A<char>>::is_always_equal, cuda::std::true_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<B<char>>::is_always_equal, cuda::std::true_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<C<char>>::is_always_equal, cuda::std::false_type>::value), "");
 
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<const char> >::is_always_equal, cuda::std::true_type>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<B<const char> >::is_always_equal, cuda::std::true_type>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<C<const char> >::is_always_equal, cuda::std::false_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<A<const char>>::is_always_equal, cuda::std::true_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<B<const char>>::is_always_equal, cuda::std::true_type>::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::allocator_traits<C<const char>>::is_always_equal, cuda::std::false_type>::value),
+    "");
 
   return 0;
 }

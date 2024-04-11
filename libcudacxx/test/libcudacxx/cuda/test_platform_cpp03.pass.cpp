@@ -13,52 +13,47 @@
 #include <nv/target>
 
 #if !defined(__CUDACC_RTC__)
-#include <assert.h>
-#include <stdio.h>
+#  include <assert.h>
+#  include <stdio.h>
 #endif
 
 #ifdef __CUDACC__
-# define HD_ANNO __host__ __device__
+#  define HD_ANNO __host__ __device__
 #else
-# define HD_ANNO
+#  define HD_ANNO
 #endif
 
 template <typename T>
-HD_ANNO bool unused(T) {return true;}
+HD_ANNO bool unused(T)
+{
+  return true;
+}
 
 // Assert macro interferes with preprocessing, wrap it in a function
-HD_ANNO inline void check_v(bool result) {
+HD_ANNO inline void check_v(bool result)
+{
   assert(result);
 }
 
-HD_ANNO void test() {
-#  if defined(__CUDA_ARCH__)
+HD_ANNO void test()
+{
+#if defined(__CUDA_ARCH__)
   int arch_val = __CUDA_ARCH__;
-#  else
+#else
   int arch_val = 0;
-#  endif
+#endif
 
   unused(arch_val);
 
-  NV_IF_TARGET(
-    NV_IS_HOST,
-      check_v(arch_val == 0);
-  )
+  NV_IF_TARGET(NV_IS_HOST, check_v(arch_val == 0);)
 
-  NV_IF_TARGET(
-    NV_IS_DEVICE,
-      check_v(arch_val == __CUDA_ARCH__);
-  )
+  NV_IF_TARGET(NV_IS_DEVICE, check_v(arch_val == __CUDA_ARCH__);)
 
-  NV_IF_ELSE_TARGET(
-    NV_IS_HOST,
-      check_v(arch_val == 0);,
-      check_v(arch_val == __CUDA_ARCH__);
-  )
+  NV_IF_ELSE_TARGET(NV_IS_HOST, check_v(arch_val == 0);, check_v(arch_val == __CUDA_ARCH__);)
 }
 
-int main(int argc, char ** argv)
+int main(int argc, char** argv)
 {
-    test();
-    return 0;
+  test();
+  return 0;
 }

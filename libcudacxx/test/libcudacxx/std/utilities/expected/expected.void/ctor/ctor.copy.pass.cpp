@@ -28,19 +28,33 @@
 
 #include "test_macros.h"
 
-struct NonCopyable {
+struct NonCopyable
+{
   NonCopyable(const NonCopyable&) = delete;
 };
 
-struct CopyableNonTrivial {
+struct CopyableNonTrivial
+{
   int i;
-  __host__ __device__ constexpr CopyableNonTrivial(int ii) : i(ii) {}
-  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o) : i(o.i) {}
+  __host__ __device__ constexpr CopyableNonTrivial(int ii)
+      : i(ii)
+  {}
+  __host__ __device__ constexpr CopyableNonTrivial(const CopyableNonTrivial& o)
+      : i(o.i)
+  {}
 #if TEST_STD_VER > 2017
   __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial&, const CopyableNonTrivial&) = default;
 #else
-  __host__ __device__ friend constexpr bool operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i == rhs.i; }
-  __host__ __device__ friend constexpr bool operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept { return lhs.i != rhs.i; }
+  __host__ __device__ friend constexpr bool
+  operator==(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
+  {
+    return lhs.i == rhs.i;
+  }
+  __host__ __device__ friend constexpr bool
+  operator!=(const CopyableNonTrivial& lhs, const CopyableNonTrivial& rhs) noexcept
+  {
+    return lhs.i != rhs.i;
+  }
 #endif // TEST_STD_VER > 2017
 };
 
@@ -53,7 +67,8 @@ static_assert(!cuda::std::is_copy_constructible_v<cuda::std::expected<void, NonC
 static_assert(cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_trivially_copy_constructible_v<cuda::std::expected<void, CopyableNonTrivial>>, "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // copy the error non-trivial
   {
     const cuda::std::expected<void, CopyableNonTrivial> e1(cuda::std::unexpect, 5);
@@ -72,30 +87,39 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+__host__ __device__ void testException()
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
+  struct Except
+  {};
 
-  struct Throwing {
+  struct Throwing
+  {
     Throwing() = default;
-    __host__ __device__ Throwing(const Throwing&) { throw Except{}; }
+    __host__ __device__ Throwing(const Throwing&)
+    {
+      throw Except{};
+    }
   };
 
   // throw on copying error
   {
     const cuda::std::expected<void, Throwing> e1(cuda::std::unexpect);
-    try {
+    try
+    {
       auto e2 = e1;
       unused(e2);
       assert(false);
-    } catch (Except) {
     }
+    catch (Except)
+    {}
   }
 
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

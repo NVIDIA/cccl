@@ -15,15 +15,15 @@
 //     explicit constexpr complex(const complex<double>&);
 // };
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 int main(int, char**)
 {
-    const cuda::std::complex<double> cd(2.5, 3.5);
-    cuda::std::complex<float> cf = cd;
-    assert(cf.real() == cd.real());
-    assert(cf.imag() == cd.imag());
+  const cuda::std::complex<double> cd(2.5, 3.5);
+  cuda::std::complex<float> cf = cd;
+  assert(cf.real() == cd.real());
+  assert(cf.imag() == cd.imag());
 
   return 0;
 }

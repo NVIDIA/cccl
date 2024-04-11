@@ -17,14 +17,15 @@
 //    requires convertible_to<const S2&, S>
 //      constexpr move_sentinel(const move_sentinel<S2>& s);
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
-struct NonConvertible {
-    __host__ __device__ explicit NonConvertible();
-    __host__ __device__ NonConvertible(int i);
-    __host__ __device__ explicit NonConvertible(long i) = delete;
+struct NonConvertible
+{
+  __host__ __device__ explicit NonConvertible();
+  __host__ __device__ NonConvertible(int i);
+  __host__ __device__ explicit NonConvertible(long i) = delete;
 };
 static_assert(cuda::std::semiregular<NonConvertible>);
 static_assert(cuda::std::is_convertible_v<long, NonConvertible>);
@@ -47,11 +48,12 @@ __host__ __device__ constexpr bool test()
 
   // SFINAE checks.
   {
-    static_assert( cuda::std::is_convertible_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<long>>);
-    static_assert( cuda::std::is_convertible_v<cuda::std::move_sentinel<int*>, cuda::std::move_sentinel<const int*>>);
+    static_assert(cuda::std::is_convertible_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<long>>);
+    static_assert(cuda::std::is_convertible_v<cuda::std::move_sentinel<int*>, cuda::std::move_sentinel<const int*>>);
     static_assert(!cuda::std::is_convertible_v<cuda::std::move_sentinel<const int*>, cuda::std::move_sentinel<int*>>);
-    static_assert( cuda::std::is_convertible_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<NonConvertible>>);
-    static_assert(!cuda::std::is_convertible_v<cuda::std::move_sentinel<long>, cuda::std::move_sentinel<NonConvertible>>);
+    static_assert(cuda::std::is_convertible_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<NonConvertible>>);
+    static_assert(
+      !cuda::std::is_convertible_v<cuda::std::move_sentinel<long>, cuda::std::move_sentinel<NonConvertible>>);
   }
   return true;
 }

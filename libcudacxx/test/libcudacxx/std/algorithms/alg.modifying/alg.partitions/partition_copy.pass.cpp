@@ -20,25 +20,30 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-struct is_odd {
-  __host__ __device__ constexpr bool operator()(const int& i) const {
+struct is_odd
+{
+  __host__ __device__ constexpr bool operator()(const int& i) const
+  {
     return i & 1;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   {
     const int ia[] = {1, 2, 3, 4, 6, 8, 5, 7};
-    int r1[10] = {0};
-    int r2[10] = {0};
+    int r1[10]     = {0};
+    int r2[10]     = {0};
     typedef cuda::std::pair<cpp17_output_iterator<int*>, int*> P;
     P p = cuda::std::partition_copy(
-        cpp17_input_iterator<const int*>(cuda::std::begin(ia)),
-        cpp17_input_iterator<const int*>(cuda::std::end(ia)),
-        cpp17_output_iterator<int*>(r1), r2, is_odd());
+      cpp17_input_iterator<const int*>(cuda::std::begin(ia)),
+      cpp17_input_iterator<const int*>(cuda::std::end(ia)),
+      cpp17_output_iterator<int*>(r1),
+      r2,
+      is_odd());
     assert(base(p.first) == r1 + 4);
     assert(r1[0] == 1);
     assert(r1[1] == 3);
@@ -54,7 +59,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

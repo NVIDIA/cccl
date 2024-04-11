@@ -15,37 +15,47 @@
 // [[nodiscard]] constexpr allocation_result<typename allocator_traits<Allocator>::pointer>
 //   allocate_at_least(Allocator& a, size_t n);
 
+#include <cuda/std/__memory>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
-#include <cuda/std/__memory>
 
 // check that cuda::std::allocation_result exists and isn't restricted to pointers
 using AllocResult = cuda::std::allocation_result<int>;
 
 template <class T>
-struct no_allocate_at_least {
+struct no_allocate_at_least
+{
   using value_type = T;
   T t;
 
-  constexpr T* allocate(cuda::std::size_t) { return &t; }
+  constexpr T* allocate(cuda::std::size_t)
+  {
+    return &t;
+  }
   constexpr void deallocate(T*, cuda::std::size_t) {}
 };
 
 template <class T>
-struct has_allocate_at_least {
+struct has_allocate_at_least
+{
   using value_type = T;
   T t1;
   T t2;
 
-  constexpr T* allocate(cuda::std::size_t) { return &t1; }
+  constexpr T* allocate(cuda::std::size_t)
+  {
+    return &t1;
+  }
   constexpr void deallocate(T*, cuda::std::size_t) {}
-  constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t) {
+  constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
+  {
     return {&t2, 2};
   }
 };
 
-constexpr bool test() {
+constexpr bool test()
+{
   { // check that cuda::std::allocate_at_least forwards to allocator::allocate if no allocate_at_least exists
     no_allocate_at_least<int> alloc;
     cuda::std::same_as<cuda::std::allocation_result<int*>> decltype(auto) ret = cuda::std::allocate_at_least(alloc, 1);
@@ -63,7 +73,8 @@ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

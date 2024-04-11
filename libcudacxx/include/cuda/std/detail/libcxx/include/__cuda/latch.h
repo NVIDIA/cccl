@@ -12,18 +12,18 @@
 #define _LIBCUDACXX___CUDA_LATCH_H
 
 #ifndef __cuda_std__
-#error "<__cuda/latch> should only be included in from <cuda/std/latch>"
+#  error "<__cuda/latch> should only be included in from <cuda/std/latch>"
 #endif // __cuda_std__
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template<thread_scope _Sco>
-class latch : public _CUDA_VSTD::__latch_base<_Sco> {
+template <thread_scope _Sco>
+class latch : public _CUDA_VSTD::__latch_base<_Sco>
+{
 public:
-    _LIBCUDACXX_INLINE_VISIBILITY constexpr
-    latch(_CUDA_VSTD::ptrdiff_t __count)
-        : _CUDA_VSTD::__latch_base<_Sco>(__count) {
-    }
+  _LIBCUDACXX_INLINE_VISIBILITY constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
+      : _CUDA_VSTD::__latch_base<_Sco>(__count)
+  {}
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

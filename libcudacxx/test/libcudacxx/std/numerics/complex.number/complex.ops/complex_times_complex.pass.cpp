@@ -13,22 +13,21 @@
 //   complex<T>
 //   operator*(const complex<T>& lhs, const complex<T>& rhs);
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
-#include "test_macros.h"
 #include "../cases.h"
+#include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool
-test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    cuda::std::complex<T> lhs(1.5, 2.5);
-    cuda::std::complex<T> rhs(1.5, 2.5);
-    cuda::std::complex<T>   x(-4.0, 7.5);
-    assert(lhs * rhs == x);
+  cuda::std::complex<T> lhs(1.5, 2.5);
+  cuda::std::complex<T> rhs(1.5, 2.5);
+  cuda::std::complex<T> x(-4.0, 7.5);
+  assert(lhs * rhs == x);
 
-    return true;
+  return true;
 }
 
 // test edges
@@ -36,147 +35,147 @@ test()
 template <class T>
 __host__ __device__ void test_edges()
 {
-    auto testcases = get_testcases<T>();
-    const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
-    for (unsigned i = 0; i < N; ++i)
+  auto testcases   = get_testcases<T>();
+  const unsigned N = sizeof(testcases) / sizeof(testcases[0]);
+  for (unsigned i = 0; i < N; ++i)
+  {
+    for (unsigned j = 0; j < N; ++j)
     {
-        for (unsigned j = 0; j < N; ++j)
-        {
-            cuda::std::complex<T> r = testcases[i] * testcases[j];
-            switch (classify(testcases[i]))
-            {
+      cuda::std::complex<T> r = testcases[i] * testcases[j];
+      switch (classify(testcases[i]))
+      {
+        case zero:
+          switch (classify(testcases[j]))
+          {
             case zero:
-                switch (classify(testcases[j]))
-                {
-                case zero:
-                    assert(classify(r) == zero);
-                    break;
-                case non_zero:
-                    assert(classify(r) == zero);
-                    break;
-                case inf:
-                    assert(classify(r) == NaN);
-                    break;
-                case NaN:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero_nan:
-                    assert(classify(r) == NaN);
-                    break;
-                }
-                break;
+              assert(classify(r) == zero);
+              break;
             case non_zero:
-                switch (classify(testcases[j]))
-                {
-                case zero:
-                    assert(classify(r) == zero);
-                    break;
-                case non_zero:
-                    assert(classify(r) == non_zero);
-                    break;
-                case inf:
-                    assert(classify(r) == inf);
-                    break;
-                case NaN:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero_nan:
-                    assert(classify(r) == NaN);
-                    break;
-                }
-                break;
+              assert(classify(r) == zero);
+              break;
             case inf:
-                switch (classify(testcases[j]))
-                {
-                case zero:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero:
-                    assert(classify(r) == inf);
-                    break;
-                case inf:
-                    assert(classify(r) == inf);
-                    break;
-                case NaN:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero_nan:
-                    assert(classify(r) == inf);
-                    break;
-                }
-                break;
+              assert(classify(r) == NaN);
+              break;
             case NaN:
-                switch (classify(testcases[j]))
-                {
-                case zero:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero:
-                    assert(classify(r) == NaN);
-                    break;
-                case inf:
-                    assert(classify(r) == NaN);
-                    break;
-                case NaN:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero_nan:
-                    assert(classify(r) == NaN);
-                    break;
-                }
-                break;
+              assert(classify(r) == NaN);
+              break;
             case non_zero_nan:
-                switch (classify(testcases[j]))
-                {
-                case zero:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero:
-                    assert(classify(r) == NaN);
-                    break;
-                case inf:
-                    assert(classify(r) == inf);
-                    break;
-                case NaN:
-                    assert(classify(r) == NaN);
-                    break;
-                case non_zero_nan:
-                    assert(classify(r) == NaN);
-                    break;
-                }
-                break;
-            }
-        }
+              assert(classify(r) == NaN);
+              break;
+          }
+          break;
+        case non_zero:
+          switch (classify(testcases[j]))
+          {
+            case zero:
+              assert(classify(r) == zero);
+              break;
+            case non_zero:
+              assert(classify(r) == non_zero);
+              break;
+            case inf:
+              assert(classify(r) == inf);
+              break;
+            case NaN:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero_nan:
+              assert(classify(r) == NaN);
+              break;
+          }
+          break;
+        case inf:
+          switch (classify(testcases[j]))
+          {
+            case zero:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero:
+              assert(classify(r) == inf);
+              break;
+            case inf:
+              assert(classify(r) == inf);
+              break;
+            case NaN:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero_nan:
+              assert(classify(r) == inf);
+              break;
+          }
+          break;
+        case NaN:
+          switch (classify(testcases[j]))
+          {
+            case zero:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero:
+              assert(classify(r) == NaN);
+              break;
+            case inf:
+              assert(classify(r) == NaN);
+              break;
+            case NaN:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero_nan:
+              assert(classify(r) == NaN);
+              break;
+          }
+          break;
+        case non_zero_nan:
+          switch (classify(testcases[j]))
+          {
+            case zero:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero:
+              assert(classify(r) == NaN);
+              break;
+            case inf:
+              assert(classify(r) == inf);
+              break;
+            case NaN:
+              assert(classify(r) == NaN);
+              break;
+            case non_zero_nan:
+              assert(classify(r) == NaN);
+              break;
+          }
+          break;
+      }
     }
+  }
 }
 
 int main(int, char**)
 {
-    test<float>();
-    test<double>();
+  test<float>();
+  test<double>();
 // CUDA treats long double as double
 //  test<long double>();
 #if TEST_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-#if !defined(__GNUC__) || (__GNUC__ > 7) // GCC 7 does not support constexpr is_nan and friends
-    static_assert(test<float>(), "");
-    static_assert(test<double>(), "");
+#  if !defined(__GNUC__) || (__GNUC__ > 7) // GCC 7 does not support constexpr is_nan and friends
+  static_assert(test<float>(), "");
+  static_assert(test<double>(), "");
 // CUDA treats long double as double
 //  static_assert(test<long double>(), "");
-#endif
+#  endif
 #endif
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test<__half>();
+  test<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test<__nv_bfloat16>();
+  test<__nv_bfloat16>();
 #endif
 
-    test_edges<double>();
+  test_edges<double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
-    test_edges<__half>();
+  test_edges<__half>();
 #endif
 #ifdef _LIBCUDACXX_HAS_NVBF16
-    test_edges<__nv_bfloat16>();
+  test_edges<__nv_bfloat16>();
 #endif
 
   return 0;

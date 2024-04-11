@@ -90,7 +90,8 @@ CUB_TEST("Device for each works", "[for_copy][device]")
 
   device_for_each_copy(input.begin(), input.end(), incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items =
+    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -118,7 +119,8 @@ CUB_TEST("Device for each works with unaligned vectors", "[for_copy][device]")
 
   device_for_each_copy(d_input, d_input + num_items, incrementer_t{d_counts});
 
-  const int num_of_once_marked_items = static_cast<int>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  const int num_of_once_marked_items =
+    static_cast<int>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -145,7 +147,8 @@ CUB_TEST("Device for each n works", "[for_copy][device]", offset_type)
 
   device_for_each_copy_n(input.begin(), num_items, incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items =
+    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }
@@ -175,7 +178,8 @@ CUB_TEST("Device for each n works with unaligned vectors", "[for_copy][device]",
 
   device_for_each_copy_n(d_input, num_items, incrementer_t{d_counts});
 
-  const auto num_of_once_marked_items = static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  const auto num_of_once_marked_items =
+    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
 
   REQUIRE(num_of_once_marked_items == num_items);
 }

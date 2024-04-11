@@ -37,10 +37,11 @@ inline _LIBCUDACXX_INLINE_VISIBILITY void* align(size_t __alignment, size_t __si
     return nullptr;
   }
 
-  const auto __intptr = reinterpret_cast<uintptr_t>(__ptr);
+  const auto __intptr  = reinterpret_cast<uintptr_t>(__ptr);
   const auto __aligned = (__intptr - 1u + __alignment) & -__alignment;
-  const auto __diff = __aligned - __intptr;
-  if (__diff > (__space - __size)) {
+  const auto __diff    = __aligned - __intptr;
+  if (__diff > (__space - __size))
+  {
     return nullptr;
   }
   __space -= __diff;

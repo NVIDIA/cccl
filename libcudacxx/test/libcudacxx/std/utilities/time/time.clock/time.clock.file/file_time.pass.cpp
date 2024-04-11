@@ -17,12 +17,14 @@
 #include "test_macros.h"
 
 template <class Dur>
-__host__ __device__
-void test() {
-  ASSERT_SAME_TYPE(cuda::std::chrono::file_time<Dur>, cuda::std::chrono::time_point<cuda::std::chrono::file_clock, Dur>);
+__host__ __device__ void test()
+{
+  ASSERT_SAME_TYPE(cuda::std::chrono::file_time<Dur>,
+                   cuda::std::chrono::time_point<cuda::std::chrono::file_clock, Dur>);
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test<cuda::std::chrono::nanoseconds>();
   test<cuda::std::chrono::minutes>();
   test<cuda::std::chrono::hours>();

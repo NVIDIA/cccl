@@ -15,8 +15,8 @@
 //   LWG 3146 "Excessive unwrapping in cuda::std::ref/cref"
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -25,33 +25,33 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> > rri(ri);
+    cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>>);
     assert(&rrj.get() == &ri);
   }
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(ri);
+    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::ref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
     assert(&rrj.get() == &ri);
   }
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<cuda::std::reference_wrapper<int> > rri(ri);
+    cuda::std::reference_wrapper<cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
     assert(&rrj.get() == &ri);
   }
   {
     int i = 0;
     cuda::std::reference_wrapper<int> ri(i);
-    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> > rri(ri);
+    cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>> rri(ri);
     auto rrj = cuda::std::cref(rri);
-    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int> >);
+    ASSERT_SAME_TYPE(decltype(rrj), cuda::std::reference_wrapper<const cuda::std::reference_wrapper<int>>);
     assert(&rrj.get() == &ri);
   }
   return true;

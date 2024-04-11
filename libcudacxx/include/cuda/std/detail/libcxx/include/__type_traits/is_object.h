@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_OBJECT_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,28 +32,28 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
 
-template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_object
-    : public integral_constant<bool, _LIBCUDACXX_IS_OBJECT(_Tp)>
-    {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_object : public integral_constant<bool, _LIBCUDACXX_IS_OBJECT(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = _LIBCUDACXX_IS_OBJECT(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_object
-    : public integral_constant<bool, is_scalar<_Tp>::value ||
-                                     is_array<_Tp>::value  ||
-                                     is_union<_Tp>::value  ||
-                                     is_class<_Tp>::value  > {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_object
+    : public integral_constant<bool,
+                               is_scalar<_Tp>::value || is_array<_Tp>::value || is_union<_Tp>::value
+                                 || is_class<_Tp>::value>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_object_v = is_object<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_OBJECT) && !defined(_LIBCUDACXX_USE_IS_OBJECT_FALLBACK)
 

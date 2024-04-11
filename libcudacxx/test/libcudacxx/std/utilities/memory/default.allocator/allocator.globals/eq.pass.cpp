@@ -27,21 +27,21 @@
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-    cuda::std::allocator<int> a1;
-    cuda::std::allocator<int> a2;
-    assert(a1 == a2);
-    assert(!(a1 != a2));
+  cuda::std::allocator<int> a1;
+  cuda::std::allocator<int> a2;
+  assert(a1 == a2);
+  assert(!(a1 != a2));
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 
 #if TEST_STD_VER >= 2020
-    static_assert(test());
+  static_assert(test());
 #endif // TEST_STD_VER >= 2020
 
-    return 0;
+  return 0;
 }

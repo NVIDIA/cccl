@@ -222,7 +222,7 @@ is_permutation(_ForwardIterator1 __first1,
                _ForwardIterator2 __last2,
                _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__is_permutation< __add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__is_permutation<__add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,

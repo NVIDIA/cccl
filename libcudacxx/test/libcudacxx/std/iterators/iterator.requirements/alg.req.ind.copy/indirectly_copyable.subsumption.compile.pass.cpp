@@ -16,14 +16,16 @@
 
 #include <cuda/std/iterator>
 
-template<cuda::std::indirectly_readable I, class O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption() {
+template <cuda::std::indirectly_readable I, class O>
+__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+{
   return false;
 }
 
-template<class I, class O>
+template <class I, class O>
   requires cuda::std::indirectly_copyable<I, O>
-__host__ __device__ constexpr bool indirectly_copyable_subsumption() {
+__host__ __device__ constexpr bool indirectly_copyable_subsumption()
+{
   return true;
 }
 

@@ -33,10 +33,10 @@
 static_assert((cuda::std::is_same<cuda::std::allocator<void>::pointer, void*>::value), "");
 static_assert((cuda::std::is_same<cuda::std::allocator<void>::const_pointer, const void*>::value), "");
 static_assert((cuda::std::is_same<cuda::std::allocator<void>::value_type, void>::value), "");
-static_assert((cuda::std::is_same<cuda::std::allocator<void>::rebind<int>::other,
-                            cuda::std::allocator<int> >::value), "");
+static_assert((cuda::std::is_same<cuda::std::allocator<void>::rebind<int>::other, cuda::std::allocator<int>>::value),
+              "");
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

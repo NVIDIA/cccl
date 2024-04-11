@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___ITERATOR_PERMUTABLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -31,21 +31,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER > 2017
 
 template <class _Iterator>
-concept permutable =
-    forward_iterator<_Iterator> &&
-    indirectly_movable_storable<_Iterator, _Iterator> &&
-    indirectly_swappable<_Iterator, _Iterator>;
+concept permutable = forward_iterator<_Iterator> && indirectly_movable_storable<_Iterator, _Iterator>
+                  && indirectly_swappable<_Iterator, _Iterator>;
 
 #elif _CCCL_STD_VER > 2014
 
-template<class _Iterator>
+template <class _Iterator>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __permutable_,
-  requires()(
-    requires(forward_iterator<_Iterator>),
-    requires(indirectly_movable_storable<_Iterator, _Iterator>),
-    requires(indirectly_swappable<_Iterator, _Iterator>)
-  ));
+  requires()(requires(forward_iterator<_Iterator>),
+             requires(indirectly_movable_storable<_Iterator, _Iterator>),
+             requires(indirectly_swappable<_Iterator, _Iterator>)));
 
 template <class _Iterator>
 _LIBCUDACXX_CONCEPT permutable = _LIBCUDACXX_FRAGMENT(__permutable_, _Iterator);

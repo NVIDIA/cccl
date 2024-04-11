@@ -18,8 +18,8 @@
 // RUN: %cxx -o %t.exe %t.first.o %t.second.o %flags %link_flags -g
 // RUN: %run
 
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 typedef cuda::std::function<void(int)> Func;
 
@@ -30,15 +30,18 @@ Func CreateFunc();
 // is defined as 'void operator()(int)', but in C++11 it's
 // void operator()(int&&)'. So when the C++03 version is passed to C++11 code
 // the value of the integer is interpreted as its address.
-void test(int x) {
+void test(int x)
+{
   assert(x == 42);
 }
-Func CreateFunc() {
+Func CreateFunc()
+{
   Func f(&test);
   return f;
 }
 #else
-int main() {
+int main()
+{
   Func f = CreateFunc();
   f(42);
 }

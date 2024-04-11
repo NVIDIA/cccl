@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,23 +30,21 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_COMPILER_MSVC)
-template<class _Tp, class = void>
-struct __is_primary_template : false_type {};
+template <class _Tp, class = void>
+struct __is_primary_template : false_type
+{};
 
-template<class _Tp>
+template <class _Tp>
 struct __is_primary_template<_Tp, void_t<typename _Tp::__primary_template>>
-  : public is_same<_Tp, typename _Tp::__primary_template> {};
+    : public is_same<_Tp, typename _Tp::__primary_template>
+{};
 
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 
 template <class _Tp>
-using __test_for_primary_template = __enable_if_t<
-    _IsSame<_Tp, typename _Tp::__primary_template>::value
-  >;
+using __test_for_primary_template = __enable_if_t<_IsSame<_Tp, typename _Tp::__primary_template>::value>;
 template <class _Tp>
-using __is_primary_template = _IsValidExpansion<
-    __test_for_primary_template, _Tp
-  >;
+using __is_primary_template = _IsValidExpansion<__test_for_primary_template, _Tp>;
 #endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_STD

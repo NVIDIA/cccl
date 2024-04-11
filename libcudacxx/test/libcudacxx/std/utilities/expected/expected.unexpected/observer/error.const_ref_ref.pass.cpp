@@ -18,16 +18,18 @@
 
 #include "test_macros.h"
 
-template<class T, class = void>
+template <class T, class = void>
 constexpr bool ErrorNoexcept = false;
 
-template<class T>
-constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<const T&&>().error())>> = noexcept(cuda::std::declval<const T&&>().error());
+template <class T>
+constexpr bool ErrorNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<const T&&>().error())>> =
+  noexcept(cuda::std::declval<const T&&>().error());
 
 static_assert(!ErrorNoexcept<int>, "");
 static_assert(ErrorNoexcept<cuda::std::unexpected<int>>, "");
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   const cuda::std::unexpected<int> unex(5);
   decltype(auto) i = cuda::std::move(unex).error();
   static_assert(cuda::std::same_as<decltype(i), const int&&>, "");
@@ -35,7 +37,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
   return 0;

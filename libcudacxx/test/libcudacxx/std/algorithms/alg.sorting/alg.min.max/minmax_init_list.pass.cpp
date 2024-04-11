@@ -22,18 +22,20 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-    assert((cuda::std::minmax({1, 2, 3}) == cuda::std::pair<int, int>(1, 3)));
-    assert((cuda::std::minmax({1, 3, 2}) == cuda::std::pair<int, int>(1, 3)));
-    assert((cuda::std::minmax({2, 1, 3}) == cuda::std::pair<int, int>(1, 3)));
-    assert((cuda::std::minmax({2, 3, 1}) == cuda::std::pair<int, int>(1, 3)));
-    assert((cuda::std::minmax({3, 1, 2}) == cuda::std::pair<int, int>(1, 3)));
-    assert((cuda::std::minmax({3, 2, 1}) == cuda::std::pair<int, int>(1, 3)));
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  assert((cuda::std::minmax({1, 2, 3}) == cuda::std::pair<int, int>(1, 3)));
+  assert((cuda::std::minmax({1, 3, 2}) == cuda::std::pair<int, int>(1, 3)));
+  assert((cuda::std::minmax({2, 1, 3}) == cuda::std::pair<int, int>(1, 3)));
+  assert((cuda::std::minmax({2, 3, 1}) == cuda::std::pair<int, int>(1, 3)));
+  assert((cuda::std::minmax({3, 1, 2}) == cuda::std::pair<int, int>(1, 3)));
+  assert((cuda::std::minmax({3, 2, 1}) == cuda::std::pair<int, int>(1, 3)));
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");

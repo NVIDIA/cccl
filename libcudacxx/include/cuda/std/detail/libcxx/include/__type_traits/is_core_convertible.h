@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_CORE_CONVERTIBLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,12 +32,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // and __is_core_convertible<immovable-type,immovable-type> is true in C++17 and later.
 
 template <class _Tp, class _Up, class = void>
-struct __is_core_convertible : public false_type {};
+struct __is_core_convertible : public false_type
+{};
 
 template <class _Tp, class _Up>
-struct __is_core_convertible<_Tp, _Up, decltype(
-    static_cast<void(*)(_Up)>(0) ( static_cast<_Tp(*)()>(0)() )
-)> : public true_type {};
+struct __is_core_convertible<_Tp, _Up, decltype(static_cast<void (*)(_Up)>(0)(static_cast<_Tp (*)()>(0)()))>
+    : public true_type
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -14,9 +14,8 @@
 // template<class T>
 // concept incrementable;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 // clang-format off
 template<cuda::std::weakly_incrementable I>

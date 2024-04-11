@@ -146,38 +146,26 @@ struct AgentScanByKey
 
   // Constants
   // Inclusive scan if no init_value type is provided
-  static constexpr int IS_INCLUSIVE = std::is_same<InitValueT, NullType>::value;
-  static constexpr int BLOCK_THREADS  = AgentScanByKeyPolicyT::BLOCK_THREADS;
-  static constexpr int ITEMS_PER_THREAD =
-    AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
-  static constexpr int ITEMS_PER_TILE = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int IS_INCLUSIVE     = std::is_same<InitValueT, NullType>::value;
+  static constexpr int BLOCK_THREADS    = AgentScanByKeyPolicyT::BLOCK_THREADS;
+  static constexpr int ITEMS_PER_THREAD = AgentScanByKeyPolicyT::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
-  using WrappedKeysInputIteratorT = cub::detail::conditional_t<
-    std::is_pointer<KeysInputIteratorT>::value,
-    CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
-    KeysInputIteratorT>;
+  using WrappedKeysInputIteratorT =
+    cub::detail::conditional_t<std::is_pointer<KeysInputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
+                               KeysInputIteratorT>;
 
-  using WrappedValuesInputIteratorT = cub::detail::conditional_t<
-    std::is_pointer<ValuesInputIteratorT>::value,
-    CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER,
-                               InputT,
-                               OffsetT>,
-    ValuesInputIteratorT>;
+  using WrappedValuesInputIteratorT =
+    cub::detail::conditional_t<std::is_pointer<ValuesInputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                               ValuesInputIteratorT>;
 
-  using BlockLoadKeysT = BlockLoad<KeyT,
-                                   BLOCK_THREADS,
-                                   ITEMS_PER_THREAD,
-                                   AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadKeysT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
-  using BlockLoadValuesT = BlockLoad<AccumT,
-                                     BLOCK_THREADS,
-                                     ITEMS_PER_THREAD,
-                                     AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
+  using BlockLoadValuesT = BlockLoad<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
-  using BlockStoreValuesT = BlockStore<AccumT,
-                                       BLOCK_THREADS,
-                                       ITEMS_PER_THREAD,
-                                       AgentScanByKeyPolicyT::STORE_ALGORITHM>;
+  using BlockStoreValuesT = BlockStore<AccumT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::STORE_ALGORITHM>;
 
   using BlockDiscontinuityKeysT = BlockDiscontinuity<KeyT, BLOCK_THREADS, 1, 1>;
 
@@ -185,11 +173,7 @@ struct AgentScanByKey
   using TilePrefixCallbackT =
     TilePrefixCallbackOp<SizeValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
 
-  using BlockScanT = BlockScan<SizeValuePairT,
-                               BLOCK_THREADS,
-                               AgentScanByKeyPolicyT::SCAN_ALGORITHM,
-                               1,
-                               1>;
+  using BlockScanT = BlockScan<SizeValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
 
   union TempStorage_
   {
@@ -212,9 +196,9 @@ struct AgentScanByKey
   // Per-thread fields
   //---------------------------------------------------------------------
 
-  TempStorage_ &storage;
+  TempStorage_& storage;
   WrappedKeysInputIteratorT d_keys_in;
-  KeyT *d_keys_prev_in;
+  KeyT* d_keys_prev_in;
   WrappedValuesInputIteratorT d_values_in;
   ValuesOutputIteratorT d_values_out;
   InequalityWrapper<EqualityOp> inequality_op;
@@ -227,23 +211,17 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-           SizeValuePairT &tile_aggregate,
-           Int2Type<false> /* is_inclusive */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD], SizeValuePairT& tile_aggregate, Int2Type<false> /* is_inclusive */)
   {
-    BlockScanT(storage.scan_storage.scan)
-      .ExclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
+    BlockScanT(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
   }
 
   // Inclusive scan specialization
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-           SizeValuePairT &tile_aggregate,
-           Int2Type<true> /* is_inclusive */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD], SizeValuePairT& tile_aggregate, Int2Type<true> /* is_inclusive */)
   {
-    BlockScanT(storage.scan_storage.scan)
-      .InclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
+    BlockScanT(storage.scan_storage.scan).InclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
   }
 
   //---------------------------------------------------------------------
@@ -251,26 +229,24 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   // Exclusive scan specialization (with prefix from predecessors)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-           SizeValuePairT &tile_aggregate,
-           TilePrefixCallbackT &prefix_op,
-           Int2Type<false> /* is_incclusive */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
+    SizeValuePairT& tile_aggregate,
+    TilePrefixCallbackT& prefix_op,
+    Int2Type<false> /* is_incclusive */)
   {
-    BlockScanT(storage.scan_storage.scan)
-      .ExclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
+    BlockScanT(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
     tile_aggregate = prefix_op.GetBlockAggregate();
   }
 
   // Inclusive scan specialization (with prefix from predecessors)
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScanTile(SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-           SizeValuePairT &tile_aggregate,
-           TilePrefixCallbackT &prefix_op,
-           Int2Type<true> /* is_inclusive */)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
+    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
+    SizeValuePairT& tile_aggregate,
+    TilePrefixCallbackT& prefix_op,
+    Int2Type<true> /* is_inclusive */)
   {
-    BlockScanT(storage.scan_storage.scan)
-      .InclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
+    BlockScanT(storage.scan_storage.scan).InclusiveScan(scan_items, scan_items, pair_scan_op, prefix_op);
     tile_aggregate = prefix_op.GetBlockAggregate();
   }
 
@@ -279,19 +255,18 @@ struct AgentScanByKey
   //---------------------------------------------------------------------
 
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ZipValuesAndFlags(OffsetT num_remaining,
-                    AccumT  (&values)[ITEMS_PER_THREAD],
-                    OffsetT (&segment_flags)[ITEMS_PER_THREAD],
-                    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ZipValuesAndFlags(
+    OffsetT num_remaining,
+    AccumT (&values)[ITEMS_PER_THREAD],
+    OffsetT (&segment_flags)[ITEMS_PER_THREAD],
+    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
 // Zip values and segment_flags
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set segment_flags for first out-of-bounds item, zero for others
-      if (IS_LAST_TILE &&
-          OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
+      if (IS_LAST_TILE && OffsetT(threadIdx.x * ITEMS_PER_THREAD) + ITEM == num_remaining)
       {
         segment_flags[ITEM] = 1;
       }
@@ -302,8 +277,7 @@ struct AgentScanByKey
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  UnzipValues(AccumT         (&values)[ITEMS_PER_THREAD],
-              SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
+  UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
 // Zip values and segment_flags
 #pragma unroll
@@ -313,11 +287,9 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull = std::is_same<InitValueT, NullType>::value,
-            typename std::enable_if<!IsNull, int>::type = 0>
+  template <bool IsNull = std::is_same<InitValueT, NullType>::value, typename std::enable_if<!IsNull, int>::type = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  AddInitToScan(AccumT  (&items)[ITEMS_PER_THREAD],
-                OffsetT (&flags)[ITEMS_PER_THREAD])
+  AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
@@ -326,11 +298,9 @@ struct AgentScanByKey
     }
   }
 
-  template <bool IsNull = std::is_same<InitValueT, NullType>::value,
-            typename std::enable_if<IsNull, int>::type = 0>
+  template <bool IsNull = std::is_same<InitValueT, NullType>::value, typename std::enable_if<IsNull, int>::type = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  AddInitToScan(AccumT  (&/*items*/)[ITEMS_PER_THREAD],
-                OffsetT (&/*flags*/)[ITEMS_PER_THREAD])
+  AddInitToScan(AccumT (& /*items*/)[ITEMS_PER_THREAD], OffsetT (& /*flags*/)[ITEMS_PER_THREAD])
   {}
 
   //---------------------------------------------------------------------
@@ -340,15 +310,12 @@ struct AgentScanByKey
   // Process a tile of input (dynamic chained scan)
   //
   template <bool IS_LAST_TILE>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeTile(OffsetT /*num_items*/,
-                                              OffsetT num_remaining,
-                                              int tile_idx,
-                                              OffsetT tile_base,
-                                              ScanTileStateT &tile_state)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  ConsumeTile(OffsetT /*num_items*/, OffsetT num_remaining, int tile_idx, OffsetT tile_base, ScanTileStateT& tile_state)
   {
     // Load items
     KeyT keys[ITEMS_PER_THREAD];
-    AccumT  values[ITEMS_PER_THREAD];
+    AccumT values[ITEMS_PER_THREAD];
     OffsetT segment_flags[ITEMS_PER_THREAD];
     SizeValuePairT scan_items[ITEMS_PER_THREAD];
 
@@ -356,11 +323,7 @@ struct AgentScanByKey
     {
       // Fill last element with the first element
       // because collectives are not suffix guarded
-      BlockLoadKeysT(storage.load_keys)
-        .Load(d_keys_in + tile_base,
-              keys,
-              num_remaining,
-              *(d_keys_in + tile_base));
+      BlockLoadKeysT(storage.load_keys).Load(d_keys_in + tile_base, keys, num_remaining, *(d_keys_in + tile_base));
     }
     else
     {
@@ -374,15 +337,11 @@ struct AgentScanByKey
       // Fill last element with the first element
       // because collectives are not suffix guarded
       BlockLoadValuesT(storage.load_values)
-        .Load(d_values_in + tile_base,
-              values,
-              num_remaining,
-              *(d_values_in + tile_base));
+        .Load(d_values_in + tile_base, values, num_remaining, *(d_values_in + tile_base));
     }
     else
     {
-      BlockLoadValuesT(storage.load_values)
-        .Load(d_values_in + tile_base, values);
+      BlockLoadValuesT(storage.load_values).Load(d_values_in + tile_base, values);
     }
 
     CTA_SYNC();
@@ -390,14 +349,10 @@ struct AgentScanByKey
     // first tile
     if (tile_idx == 0)
     {
-      BlockDiscontinuityKeysT(storage.scan_storage.discontinuity)
-        .FlagHeads(segment_flags, keys, inequality_op);
+      BlockDiscontinuityKeysT(storage.scan_storage.discontinuity).FlagHeads(segment_flags, keys, inequality_op);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining,
-                                      values,
-                                      segment_flags,
-                                      scan_items);
+      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
       SizeValuePairT tile_aggregate;
@@ -415,23 +370,16 @@ struct AgentScanByKey
     }
     else
     {
-      KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx]
-                                              : KeyT();
+      KeyT tile_pred_key = (threadIdx.x == 0) ? d_keys_prev_in[tile_idx] : KeyT();
 
       BlockDiscontinuityKeysT(storage.scan_storage.discontinuity)
         .FlagHeads(segment_flags, keys, inequality_op, tile_pred_key);
 
       // Zip values and segment_flags
-      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining,
-                                      values,
-                                      segment_flags,
-                                      scan_items);
+      ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
 
       SizeValuePairT tile_aggregate;
-      TilePrefixCallbackT prefix_op(tile_state,
-                                    storage.scan_storage.prefix,
-                                    pair_scan_op,
-                                    tile_idx);
+      TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, pair_scan_op, tile_idx);
       ScanTile(scan_items, tile_aggregate, prefix_op, Int2Type<IS_INCLUSIVE>());
     }
 
@@ -444,13 +392,11 @@ struct AgentScanByKey
     // Store items
     if (IS_LAST_TILE)
     {
-      BlockStoreValuesT(storage.store_values)
-        .Store(d_values_out + tile_base, values, num_remaining);
+      BlockStoreValuesT(storage.store_values).Store(d_values_out + tile_base, values, num_remaining);
     }
     else
     {
-      BlockStoreValuesT(storage.store_values)
-        .Store(d_values_out + tile_base, values);
+      BlockStoreValuesT(storage.store_values).Store(d_values_out + tile_base, values);
     }
   }
 
@@ -460,14 +406,15 @@ struct AgentScanByKey
 
   // Dequeue and scan tiles of items as part of a dynamic chained scan
   // with Init functor
-  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScanByKey(TempStorage &storage,
-                                            KeysInputIteratorT d_keys_in,
-                                            KeyT *d_keys_prev_in,
-                                            ValuesInputIteratorT d_values_in,
-                                            ValuesOutputIteratorT d_values_out,
-                                            EqualityOp equality_op,
-                                            ScanOpT scan_op,
-                                            InitValueT init_value)
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentScanByKey(
+    TempStorage& storage,
+    KeysInputIteratorT d_keys_in,
+    KeyT* d_keys_prev_in,
+    ValuesInputIteratorT d_values_in,
+    ValuesOutputIteratorT d_values_out,
+    EqualityOp equality_op,
+    ScanOpT scan_op,
+    InitValueT init_value)
       : storage(storage.Alias())
       , d_keys_in(d_keys_in)
       , d_keys_prev_in(d_keys_prev_in)
@@ -491,9 +438,7 @@ struct AgentScanByKey
    * start_tile
    *   The starting tile for the current grid
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items,
-                                               ScanTileStateT &tile_state,
-                                               int start_tile)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ConsumeRange(OffsetT num_items, ScanTileStateT& tile_state, int start_tile)
   {
     int tile_idx          = blockIdx.x;
     OffsetT tile_base     = OffsetT(ITEMS_PER_TILE) * tile_idx;
@@ -502,23 +447,14 @@ struct AgentScanByKey
     if (num_remaining > ITEMS_PER_TILE)
     {
       // Not the last tile (full)
-      ConsumeTile<false>(num_items,
-                         num_remaining,
-                         tile_idx,
-                         tile_base,
-                         tile_state);
+      ConsumeTile<false>(num_items, num_remaining, tile_idx, tile_base, tile_state);
     }
     else if (num_remaining > 0)
     {
       // The last tile (possibly partially-full)
-      ConsumeTile<true>(num_items,
-                        num_remaining,
-                        tile_idx,
-                        tile_base,
-                        tile_state);
+      ConsumeTile<true>(num_items, num_remaining, tile_idx, tile_base, tile_state);
     }
   }
 };
 
 CUB_NAMESPACE_END
-

@@ -21,7 +21,7 @@ __host__ __device__ void test(cuda::std::allocator_arg_t) {}
 
 int main(int, char**)
 {
-    test(cuda::std::allocator_arg);
+  test(cuda::std::allocator_arg);
 
-    return 0;
+  return 0;
 }

@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/detail/__pragma_push>
 #include <cuda/std/detail/libcxx/include/__memory/construct_at.h>
 #include <cuda/std/detail/libcxx/include/__memory/pointer_traits.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
@@ -36,19 +37,17 @@
 #include <cuda/std/detail/libcxx/include/cstring>
 #include <cuda/std/limits>
 
-#include <cuda/std/detail/__pragma_push>
-
 _CCCL_NV_DIAG_SUPPRESS(1215)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER <= 2014
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)       \
-    template <class _Tp, class = void>                               \
-    struct NAME : false_type                                         \
-    {};                                                              \
-    template <class _Tp>                                             \
-    struct NAME<_Tp, __void_t<typename _Tp::PROPERTY > > : true_type \
+#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)     \
+    template <class _Tp, class = void>                             \
+    struct NAME : false_type                                       \
+    {};                                                            \
+    template <class _Tp>                                           \
+    struct NAME<_Tp, __void_t<typename _Tp::PROPERTY>> : true_type \
     {}
 
 #else // ^^^ _CCCL_STD_VER <= 2014 ^^^ / vvv _CCCL_STD_VER >= 2017 vvv
@@ -56,7 +55,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
     template <class _Tp, class = void>                         \
     inline constexpr bool NAME##_v = false;                    \
     template <class _Tp>                                       \
-    inline constexpr bool NAME##_v<_Tp, __void_t<typename _Tp::PROPERTY > > = true;
+    inline constexpr bool NAME##_v<_Tp, __void_t<typename _Tp::PROPERTY>> = true;
 #endif // _CCCL_STD_VER >= 2017
 
 // __pointer
@@ -190,7 +189,7 @@ template <class _Tp, class _Up, class = void>
 struct __has_rebind_other : false_type
 {};
 template <class _Tp, class _Up>
-struct __has_rebind_other<_Tp, _Up, __void_t<typename _Tp::template rebind<_Up>::other> > : true_type
+struct __has_rebind_other<_Tp, _Up, __void_t<typename _Tp::template rebind<_Up>::other>> : true_type
 {};
 
 template <class _Tp, class _Up, bool = __has_rebind_other<_Tp, _Up>::value>
@@ -222,11 +221,11 @@ struct __has_allocate_hint : false_type
 {};
 
 template <class _Alloc, class _SizeType, class _ConstVoidPtr>
-struct __has_allocate_hint< _Alloc,
-                            _SizeType,
-                            _ConstVoidPtr,
-                            decltype((void) _CUDA_VSTD::declval<_Alloc>().allocate(
-                              _CUDA_VSTD::declval<_SizeType>(), _CUDA_VSTD::declval<_ConstVoidPtr>()))> : true_type
+struct __has_allocate_hint<_Alloc,
+                           _SizeType,
+                           _ConstVoidPtr,
+                           decltype((void) _CUDA_VSTD::declval<_Alloc>().allocate(
+                             _CUDA_VSTD::declval<_SizeType>(), _CUDA_VSTD::declval<_ConstVoidPtr>()))> : true_type
 {};
 
 // __has_construct
@@ -315,7 +314,7 @@ template <class>
 class allocator;
 
 template <class _Tp>
-struct __is_default_allocator<allocator<_Tp> > : true_type
+struct __is_default_allocator<allocator<_Tp>> : true_type
 {};
 // __is_cpp17_move_insertable
 template <class _Alloc, class = void>
@@ -325,8 +324,8 @@ struct __is_cpp17_move_insertable : is_move_constructible<typename _Alloc::value
 template <class _Alloc>
 struct __is_cpp17_move_insertable<
   _Alloc,
-  __enable_if_t< !__is_default_allocator<_Alloc>::value
-                 && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>::value > >
+  __enable_if_t<!__is_default_allocator<_Alloc>::value
+                && __has_construct<_Alloc, typename _Alloc::value_type*, typename _Alloc::value_type&&>::value>>
     : true_type
 {};
 
@@ -335,14 +334,14 @@ template <class _Alloc, class = void>
 struct __is_cpp17_copy_insertable
     : integral_constant<bool,
                         is_copy_constructible<typename _Alloc::value_type>::value
-                          && __is_cpp17_move_insertable<_Alloc>::value >
+                          && __is_cpp17_move_insertable<_Alloc>::value>
 {};
 
 template <class _Alloc>
 struct __is_cpp17_copy_insertable<
   _Alloc,
-  __enable_if_t< !__is_default_allocator<_Alloc>::value
-                 && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>::value > >
+  __enable_if_t<!__is_default_allocator<_Alloc>::value
+                && __has_construct<_Alloc, typename _Alloc::value_type*, const typename _Alloc::value_type&>::value>>
     : __is_cpp17_move_insertable<_Alloc>
 {};
 
@@ -367,7 +366,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
   template <class _Tp>
   using rebind_alloc = __allocator_traits_rebind_t<allocator_type, _Tp>;
   template <class _Tp>
-  using rebind_traits = allocator_traits<rebind_alloc<_Tp> >;
+  using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
   _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n)
@@ -410,8 +409,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
             class... _Args,
             class                                                                       = void,
             __enable_if_t<!__has_construct<allocator_type, _Tp*, _Args...>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void
-  construct(allocator_type&, _Tp* __p, _Args&&... __args)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static void construct(allocator_type&, _Tp* __p, _Args&&... __args)
   {
 #if _CCCL_STD_VER >= 2020
     _CUDA_VSTD::construct_at(__p, _CUDA_VSTD::forward<_Args>(__args)...);
@@ -437,17 +435,15 @@ struct _LIBCUDACXX_TEMPLATE_VIS allocator_traits
 #endif
   }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Ap = _Alloc, __enable_if_t<__has_max_size<const _Ap>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type
-  max_size(const allocator_type& __a) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type& __a) noexcept
   {
     return __a.max_size();
   }
-_CCCL_SUPPRESS_DEPRECATED_POP
+  _CCCL_SUPPRESS_DEPRECATED_POP
   template <class _Ap = _Alloc, class = void, __enable_if_t<!__has_max_size<const _Ap>::value, int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type
-  max_size(const allocator_type&) noexcept
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static size_type max_size(const allocator_type&) noexcept
   {
     return numeric_limits<size_type>::max() / sizeof(value_type);
   }
@@ -490,7 +486,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   _LIBCUDACXX_INLINE_VISIBILITY static __enable_if_t<
     (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _Tp*, _Tp>::value)
       && is_trivially_move_constructible<_Tp>::value,
-    void >
+    void>
   __construct_forward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __begin2)
   {
     ptrdiff_t _Np = __end1 - __begin1;
@@ -518,7 +514,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   _LIBCUDACXX_INLINE_VISIBILITY static __enable_if_t<
     is_trivially_move_constructible<_DestTp>::value && is_same<_RawSourceTp, _RawDestTp>::value
       && (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _DestTp*, _SourceTp&>::value),
-    void >
+    void>
   __construct_range_forward(allocator_type&, _SourceTp* __begin1, _SourceTp* __end1, _DestTp*& __begin2)
   {
     ptrdiff_t _Np = __end1 - __begin1;
@@ -553,7 +549,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
   _LIBCUDACXX_INLINE_VISIBILITY static __enable_if_t<
     (__is_default_allocator<allocator_type>::value || !__has_construct<allocator_type, _Tp*, _Tp>::value)
       && is_trivially_move_constructible<_Tp>::value,
-    void >
+    void>
   __construct_backward_with_exception_guarantees(allocator_type&, _Tp* __begin1, _Tp* __end1, _Tp*& __end2)
   {
     ptrdiff_t _Np = __end1 - __begin1;
@@ -593,7 +589,7 @@ struct __asan_annotate_container_with_allocator
 #  endif
 
 template <class _Tp>
-struct __asan_annotate_container_with_allocator<allocator<_Tp> > : true_type
+struct __asan_annotate_container_with_allocator<allocator<_Tp>> : true_type
 {};
 #endif
 

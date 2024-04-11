@@ -24,12 +24,12 @@
 template <class T>
 struct A
 {
-    typedef T value_type;
+  typedef T value_type;
 };
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char> >::allocator_type, A<char> >::value), "");
+  static_assert((cuda::std::is_same<cuda::std::allocator_traits<A<char>>::allocator_type, A<char>>::value), "");
 
   return 0;
 }

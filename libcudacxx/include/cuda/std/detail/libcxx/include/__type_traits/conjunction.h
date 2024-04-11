@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_CONJUNCTION_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -48,13 +48,16 @@ using _And _LIBCUDACXX_NODEBUG_TYPE = decltype(__and_helper<_Pred...>(0));
 #if _CCCL_STD_VER > 2011
 
 template <class...>
-struct conjunction : true_type {};
+struct conjunction : true_type
+{};
 
 template <class _Arg>
-struct conjunction<_Arg> : _Arg {};
+struct conjunction<_Arg> : _Arg
+{};
 
 template <class _Arg, class... _Args>
-struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, conjunction<_Args...>> {};
+struct conjunction<_Arg, _Args...> : conditional_t<!bool(_Arg::value), _Arg, conjunction<_Args...>>
+{};
 
 template <class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;

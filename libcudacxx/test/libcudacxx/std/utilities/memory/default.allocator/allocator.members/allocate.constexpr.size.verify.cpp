@@ -15,30 +15,32 @@
 
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 
-#include <cuda/std/cstddef>
 #include <cuda/std/__memory>
+#include <cuda/std/cstddef>
 
 #include "test_macros.h"
 
 template <typename T>
 __host__ __device__ constexpr bool test()
 {
-    typedef cuda::std::allocator<T> A;
-    typedef cuda::std::allocator_traits<A> AT;
-    A a;
-    TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) + 1);           // just barely too large
-    TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) * 2);           // significantly too large
-    TEST_IGNORE_NODISCARD a.allocate(((cuda::std::size_t) -1) / sizeof(T) + 1); // multiply will overflow
-    TEST_IGNORE_NODISCARD a.allocate((cuda::std::size_t) -1);                   // way too large
+  typedef cuda::std::allocator<T> A;
+  typedef cuda::std::allocator_traits<A> AT;
+  A a;
+  TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) + 1); // just barely too large
+  TEST_IGNORE_NODISCARD a.allocate(AT::max_size(a) * 2); // significantly too large
+  TEST_IGNORE_NODISCARD a.allocate(((cuda::std::size_t) -1) / sizeof(T) + 1); // multiply will overflow
+  TEST_IGNORE_NODISCARD a.allocate((cuda::std::size_t) -1); // way too large
 
-    return true;
+  return true;
 }
 
-__host__ __device__ void f() {
-    static_assert(test<double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an integral constant expression}}
-    LIBCPP_STATIC_ASSERT(test<const double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an integral constant expression}}
+__host__ __device__ void f()
+{
+  static_assert(test<double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is not an
+                                 // integral constant expression}}
+  LIBCPP_STATIC_ASSERT(test<const double>()); // expected-error-re {{{{(static_assert|static assertion)}} expression is
+                                              // not an integral constant expression}}
 }
-
 
 int main(int, char**)
 {

@@ -9,18 +9,18 @@
 
 #if defined(__need_FILE) || defined(__need___FILE)
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#    pragma GCC system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#    pragma clang system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#    pragma system_header
+#  endif // no system header
 
-#include_next <stdio.h>
+#  include_next <stdio.h>
 
 #elif !defined(_LIBCUDACXX_STDIO_H)
-#define _LIBCUDACXX_STDIO_H
+#  define _LIBCUDACXX_STDIO_H
 
 /*
     stdio.h synopsis
@@ -102,26 +102,26 @@ int ferror(FILE* stream);
 void perror(const char* s);
 */
 
-#include <__config>
+#  include <__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#    pragma GCC system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#    pragma clang system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#    pragma system_header
+#  endif // no system header
 
-#include_next <stdio.h>
+#  include_next <stdio.h>
 
-#ifdef __cplusplus
+#  ifdef __cplusplus
 
-#undef getc
-#undef putc
-#undef clearerr
-#undef feof
-#undef ferror
+#    undef getc
+#    undef putc
+#    undef clearerr
+#    undef feof
+#    undef ferror
 
-#endif
+#  endif
 
-#endif  // _LIBCUDACXX_STDIO_H
+#endif // _LIBCUDACXX_STDIO_H

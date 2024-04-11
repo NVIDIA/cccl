@@ -25,19 +25,23 @@
 
 #include "test_macros.h"
 
-template<class T>
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+template <class T>
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   typedef cuda::std::allocator<T> A1;
   typedef cuda::std::allocator<long> A2;
 
   A1 a1;
-  A1 a1_copy = a1; unused(a1_copy);
-  A2 a2 = a1; unused(a2);
+  A1 a1_copy = a1;
+  unused(a1_copy);
+  A2 a2 = a1;
+  unused(a2);
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test<char>();
   test<char const>();
   test<void>();

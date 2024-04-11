@@ -27,13 +27,13 @@
 
 #pragma once
 
+#include <cuda_runtime_api.h>
+
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
 #include <thrust/system/cuda/memory.h>
 #include <thrust/system/cuda/memory_resource.h>
 #include <thrust/system/cuda/pointer.h>
-
-#include <cuda_runtime_api.h>
 
 #include <new>
 

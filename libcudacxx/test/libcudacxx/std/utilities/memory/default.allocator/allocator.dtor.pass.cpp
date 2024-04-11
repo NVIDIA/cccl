@@ -18,27 +18,28 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr bool test() {
-    cuda::std::allocator<T> alloc;
-    unused(alloc);
+__host__ __device__ constexpr bool test()
+{
+  cuda::std::allocator<T> alloc;
+  unused(alloc);
 
-    // destructor called here
-    return true;
+  // destructor called here
+  return true;
 }
 
 int main(int, char**)
 {
-    test<int>();
-    test<void>();
+  test<int>();
+  test<void>();
 #ifdef _LIBCUDACXX_VERSION // extension
-    test<int const>();
+  test<int const>();
 #endif // _LIBCUDACXX_VERSION
 
-    static_assert(test<int>());
-    static_assert(test<void>());
+  static_assert(test<int>());
+  static_assert(test<void>());
 #ifdef _LIBCUDACXX_VERSION // extension
-    static_assert(test<int const>());
+  static_assert(test<int const>());
 #endif // _LIBCUDACXX_VERSION
 
-    return 0;
+  return 0;
 }

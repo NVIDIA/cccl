@@ -25,34 +25,36 @@ template <typename T>
 __host__ __device__ void test_max(cuda::std::size_t count)
 {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-    cuda::std::allocator<T> a;
-    try {
-        TEST_IGNORE_NODISCARD a.allocate(count);
-        assert(false);
-    } catch (const cuda::std::bad_array_new_length &) {
-    }
+  cuda::std::allocator<T> a;
+  try
+  {
+    TEST_IGNORE_NODISCARD a.allocate(count);
+    assert(false);
+  }
+  catch (const cuda::std::bad_array_new_length&)
+  {}
 #else
-    unused(count);
+  unused(count);
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
 template <typename T>
 __host__ __device__ void test()
 {
-    // Bug 26812 -- allocating too large
-    typedef cuda::std::allocator<T> A;
-    typedef cuda::std::allocator_traits<A> AT;
-    A a;
-    test_max<T> (AT::max_size(a) + 1);             // just barely too large
-    test_max<T> (AT::max_size(a) * 2);             // significantly too large
-    test_max<T> (((cuda::std::size_t) -1) / sizeof(T) + 1);   // multiply will overflow
-    test_max<T> ((cuda::std::size_t) -1);                     // way too large
+  // Bug 26812 -- allocating too large
+  typedef cuda::std::allocator<T> A;
+  typedef cuda::std::allocator_traits<A> AT;
+  A a;
+  test_max<T>(AT::max_size(a) + 1); // just barely too large
+  test_max<T>(AT::max_size(a) * 2); // significantly too large
+  test_max<T>(((cuda::std::size_t) -1) / sizeof(T) + 1); // multiply will overflow
+  test_max<T>((cuda::std::size_t) -1); // way too large
 }
 
 int main(int, char**)
 {
-    test<double>();
-    test<const double>();
+  test<double>();
+  test<const double>();
 
-    return 0;
+  return 0;
 }

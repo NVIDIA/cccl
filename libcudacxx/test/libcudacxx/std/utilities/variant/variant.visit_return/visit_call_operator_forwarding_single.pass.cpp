@@ -26,11 +26,11 @@
 #include "variant_test_helpers.h"
 
 template <typename ReturnType>
-__host__ __device__
-void test_call_operator_forwarding() {
+__host__ __device__ void test_call_operator_forwarding()
+{
   using Fn = ForwardingCallObject;
   Fn obj{};
-  const Fn &cobj = obj;
+  const Fn& cobj = obj;
   { // test call operator forwarding - no variant
     cuda::std::visit<ReturnType>(obj);
     assert(Fn::check_call<>(CT_NonConst | CT_LValue));
@@ -45,29 +45,30 @@ void test_call_operator_forwarding() {
     using V = cuda::std::variant<int>;
     V v(42);
     cuda::std::visit<ReturnType>(obj, v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_LValue));
+    assert(Fn::check_call<int&>(CT_NonConst | CT_LValue));
     cuda::std::visit<ReturnType>(cobj, v);
-    assert(Fn::check_call<int &>(CT_Const | CT_LValue));
+    assert(Fn::check_call<int&>(CT_Const | CT_LValue));
     cuda::std::visit<ReturnType>(cuda::std::move(obj), v);
-    assert(Fn::check_call<int &>(CT_NonConst | CT_RValue));
+    assert(Fn::check_call<int&>(CT_NonConst | CT_RValue));
     cuda::std::visit<ReturnType>(cuda::std::move(cobj), v);
-    assert(Fn::check_call<int &>(CT_Const | CT_RValue));
+    assert(Fn::check_call<int&>(CT_Const | CT_RValue));
   }
   { // test call operator forwarding - single variant, multi arg
     using V = cuda::std::variant<int, long, double>;
     V v(42l);
     cuda::std::visit<ReturnType>(obj, v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_LValue));
+    assert(Fn::check_call<long&>(CT_NonConst | CT_LValue));
     cuda::std::visit<ReturnType>(cobj, v);
-    assert(Fn::check_call<long &>(CT_Const | CT_LValue));
+    assert(Fn::check_call<long&>(CT_Const | CT_LValue));
     cuda::std::visit<ReturnType>(cuda::std::move(obj), v);
-    assert(Fn::check_call<long &>(CT_NonConst | CT_RValue));
+    assert(Fn::check_call<long&>(CT_NonConst | CT_RValue));
     cuda::std::visit<ReturnType>(cuda::std::move(cobj), v);
-    assert(Fn::check_call<long &>(CT_Const | CT_RValue));
+    assert(Fn::check_call<long&>(CT_Const | CT_RValue));
   }
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_call_operator_forwarding<void>();
   test_call_operator_forwarding<int>();
 

@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_DEPENDENT_TYPE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,7 +25,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, bool>
-struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp {};
+struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

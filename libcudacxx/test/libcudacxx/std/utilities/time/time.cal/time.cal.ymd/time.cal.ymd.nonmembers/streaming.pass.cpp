@@ -22,7 +22,8 @@
 //     basic_ostream<charT, traits>&
 //     to_stream(basic_ostream<charT, traits>& os, const charT* fmt, const year_month_day& ym);
 //
-// Effects: Streams ym into os using the format specified by the NTCTS fmt. fmt encoding follows the rules specified in 25.11.
+// Effects: Streams ym into os using the format specified by the NTCTS fmt. fmt encoding follows the rules specified
+// in 25.11.
 //
 // template<class charT, class traits, class Alloc = allocator<charT>>
 //     basic_istream<charT, traits>&
@@ -37,23 +38,22 @@
 //         to *abbrev if abbrev is non-null. If %z (or a modified variant) is used and
 //         successfully parsed, that value will be assigned to *offset if offset is non-null.
 
-
-
+#include <cuda/std/cassert>
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
+
 #include <iostream>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using year_month_day = cuda::std::chrono::year_month_day;
-    using year           = cuda::std::chrono::year;
-    using month          = cuda::std::chrono::month;
-    using day            = cuda::std::chrono::day;
+  using year_month_day = cuda::std::chrono::year_month_day;
+  using year           = cuda::std::chrono::year;
+  using month          = cuda::std::chrono::month;
+  using day            = cuda::std::chrono::day;
 
-    std::cout << year_month_day{year{2018}, month{3}, day{12}};
+  std::cout << year_month_day{year{2018}, month{3}, day{12}};
 
   return 0;
 }

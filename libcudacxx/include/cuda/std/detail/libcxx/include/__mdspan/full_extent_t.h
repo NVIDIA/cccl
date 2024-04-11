@@ -45,7 +45,7 @@
 #define _LIBCUDACXX___MDSPAN_FULL_EXTENT_T_HPP
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -62,9 +62,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-struct full_extent_t { explicit full_extent_t() = default; };
+struct full_extent_t
+{
+  explicit full_extent_t() = default;
+};
 
-_LIBCUDACXX_INLINE_VAR constexpr auto full_extent = full_extent_t{ };
+_LIBCUDACXX_INLINE_VAR constexpr auto full_extent = full_extent_t{};
 
 #endif // _CCCL_STD_VER > 2011
 

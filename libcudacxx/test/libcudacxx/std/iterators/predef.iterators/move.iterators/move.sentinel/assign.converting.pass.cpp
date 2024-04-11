@@ -17,13 +17,14 @@
 //   requires assignable_from<S&, const S2&>
 //     constexpr move_sentinel& operator=(const move_sentinel<S2>& s);
 
-#include <cuda/std/iterator>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 #include "test_macros.h"
 
-struct NonAssignable {
+struct NonAssignable
+{
   __host__ __device__ NonAssignable& operator=(int i);
 };
 static_assert(cuda::std::semiregular<NonAssignable>);
@@ -49,9 +50,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
   // SFINAE checks.
   {
-    static_assert( cuda::std::is_assignable_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<long>>);
+    static_assert(cuda::std::is_assignable_v<cuda::std::move_sentinel<int>, cuda::std::move_sentinel<long>>);
     static_assert(!cuda::std::is_assignable_v<cuda::std::move_sentinel<int*>, cuda::std::move_sentinel<const int*>>);
-    static_assert( cuda::std::is_assignable_v<cuda::std::move_sentinel<const int*>, cuda::std::move_sentinel<int*>>);
+    static_assert(cuda::std::is_assignable_v<cuda::std::move_sentinel<const int*>, cuda::std::move_sentinel<int*>>);
     static_assert(!cuda::std::is_assignable_v<cuda::std::move_sentinel<NonAssignable>, cuda::std::move_sentinel<int>>);
   }
   return true;

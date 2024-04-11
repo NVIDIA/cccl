@@ -15,29 +15,29 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    {
-        cuda::std::istringstream inf("abc");
-        cuda::std::istreambuf_iterator<char> i(inf);
-        assert(*i++ == 'a');
-        assert(*i++ == 'b');
-        assert(*i++ == 'c');
-        assert(i == cuda::std::istreambuf_iterator<char>());
-    }
-    {
-        cuda::std::wistringstream inf(L"abc");
-        cuda::std::istreambuf_iterator<wchar_t> i(inf);
-        assert(*i++ == L'a');
-        assert(*i++ == L'b');
-        assert(*i++ == L'c');
-        assert(i == cuda::std::istreambuf_iterator<wchar_t>());
-    }
+  {
+    cuda::std::istringstream inf("abc");
+    cuda::std::istreambuf_iterator<char> i(inf);
+    assert(*i++ == 'a');
+    assert(*i++ == 'b');
+    assert(*i++ == 'c');
+    assert(i == cuda::std::istreambuf_iterator<char>());
+  }
+  {
+    cuda::std::wistringstream inf(L"abc");
+    cuda::std::istreambuf_iterator<wchar_t> i(inf);
+    assert(*i++ == L'a');
+    assert(*i++ == L'b');
+    assert(*i++ == L'c');
+    assert(i == cuda::std::istreambuf_iterator<wchar_t>());
+  }
 
   return 0;
 }

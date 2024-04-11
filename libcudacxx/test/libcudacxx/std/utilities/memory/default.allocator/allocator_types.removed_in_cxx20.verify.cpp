@@ -32,20 +32,22 @@
 template <typename T>
 __host__ __device__ void check()
 {
-    typedef typename cuda::std::allocator<T>::pointer AP;                      // expected-error 3 {{no type named 'pointer'}}
-    typedef typename cuda::std::allocator<T>::const_pointer ACP;               // expected-error 3 {{no type named 'const_pointer'}}
-    typedef typename cuda::std::allocator<T>::reference AR;                    // expected-error 3 {{no type named 'reference'}}
-    typedef typename cuda::std::allocator<T>::const_reference ACR;             // expected-error 3 {{no type named 'const_reference'}}
-    typedef typename cuda::std::allocator<T>::template rebind<int>::other ARO; // expected-error 3 {{no member named 'rebind'}}
+  typedef typename cuda::std::allocator<T>::pointer AP; // expected-error 3 {{no type named 'pointer'}}
+  typedef typename cuda::std::allocator<T>::const_pointer ACP; // expected-error 3 {{no type named 'const_pointer'}}
+  typedef typename cuda::std::allocator<T>::reference AR; // expected-error 3 {{no type named 'reference'}}
+  typedef typename cuda::std::allocator<T>::const_reference ACR; // expected-error 3 {{no type named 'const_reference'}}
+  typedef typename cuda::std::allocator<T>::template rebind<int>::other ARO; // expected-error 3 {{no member named
+                                                                             // 'rebind'}}
 }
 
-__host__ __device__ void f() {
-    check<char>();
-    check<char const>();
-    check<void>();
+__host__ __device__ void f()
+{
+  check<char>();
+  check<char const>();
+  check<void>();
 }
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

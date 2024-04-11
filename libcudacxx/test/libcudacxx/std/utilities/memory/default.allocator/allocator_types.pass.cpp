@@ -34,35 +34,38 @@
 // ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/__memory>
-#include <cuda/std/type_traits>
 #include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 struct U;
 
 template <typename T>
-__host__ __device__ void test() {
-    typedef cuda::std::allocator<T> Alloc;
-    static_assert((cuda::std::is_same<typename Alloc::size_type, cuda::std::size_t>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::difference_type, cuda::std::ptrdiff_t>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::value_type, T>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::propagate_on_container_move_assignment, cuda::std::true_type>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::is_always_equal, cuda::std::true_type>::value), "");
+__host__ __device__ void test()
+{
+  typedef cuda::std::allocator<T> Alloc;
+  static_assert((cuda::std::is_same<typename Alloc::size_type, cuda::std::size_t>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::difference_type, cuda::std::ptrdiff_t>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::value_type, T>::value), "");
+  static_assert(
+    (cuda::std::is_same<typename Alloc::propagate_on_container_move_assignment, cuda::std::true_type>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::is_always_equal, cuda::std::true_type>::value), "");
 
 #if TEST_STD_VER <= 2017
-    static_assert((cuda::std::is_same<typename Alloc::pointer, T*>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::const_pointer, T const*>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::reference, T&>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::const_reference, T const&>::value), "");
-    static_assert((cuda::std::is_same<typename Alloc::template rebind<U>::other, cuda::std::allocator<U> >::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::pointer, T*>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::const_pointer, T const*>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::reference, T&>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::const_reference, T const&>::value), "");
+  static_assert((cuda::std::is_same<typename Alloc::template rebind<U>::other, cuda::std::allocator<U>>::value), "");
 #endif // TEST_STD_VER <= 2017
 }
 
-int main(int, char**) {
-    test<char>();
+int main(int, char**)
+{
+  test<char>();
 #ifdef _LIBCUDACXX_VERSION
-    test<char const>(); // extension
+  test<char const>(); // extension
 #endif
-    return 0;
+  return 0;
 }

@@ -29,30 +29,37 @@
 
 #include <cuda/std/__memory>
 
-__host__ __device__ void f() {
-    {
-        typedef cuda::std::allocator<char>::pointer Pointer;                  // expected-warning {{'pointer' is deprecated}}
-        typedef cuda::std::allocator<char>::const_pointer ConstPointer;       // expected-warning {{'const_pointer' is deprecated}}
-        typedef cuda::std::allocator<char>::reference Reference;              // expected-warning {{'reference' is deprecated}}
-        typedef cuda::std::allocator<char>::const_reference ConstReference;   // expected-warning {{'const_reference' is deprecated}}
-        typedef cuda::std::allocator<char>::rebind<int>::other Rebind;        // expected-warning {{'rebind<int>' is deprecated}}
-    }
-    {
-        typedef cuda::std::allocator<char const>::pointer Pointer;                  // expected-warning {{'pointer' is deprecated}}
-        typedef cuda::std::allocator<char const>::const_pointer ConstPointer;       // expected-warning {{'const_pointer' is deprecated}}
-        typedef cuda::std::allocator<char const>::reference Reference;              // expected-warning {{'reference' is deprecated}}
-        typedef cuda::std::allocator<char const>::const_reference ConstReference;   // expected-warning {{'const_reference' is deprecated}}
-        typedef cuda::std::allocator<char const>::rebind<int>::other Rebind;        // expected-warning {{'rebind<int>' is deprecated}}
-    }
-    {
-        typedef cuda::std::allocator<void>::pointer Pointer;                  // expected-warning {{'pointer' is deprecated}}
-        typedef cuda::std::allocator<void>::const_pointer ConstPointer;       // expected-warning {{'const_pointer' is deprecated}}
-        // reference and const_reference are not provided by cuda::std::allocator<void>
-        typedef cuda::std::allocator<void>::rebind<int>::other Rebind;        // expected-warning {{'rebind<int>' is deprecated}}
-    }
+__host__ __device__ void f()
+{
+  {
+    typedef cuda::std::allocator<char>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
+    typedef cuda::std::allocator<char>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+                                                                    // deprecated}}
+    typedef cuda::std::allocator<char>::reference Reference; // expected-warning {{'reference' is deprecated}}
+    typedef cuda::std::allocator<char>::const_reference ConstReference; // expected-warning {{'const_reference' is
+                                                                        // deprecated}}
+    typedef cuda::std::allocator<char>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is deprecated}}
+  }
+  {
+    typedef cuda::std::allocator<char const>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
+    typedef cuda::std::allocator<char const>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+                                                                          // deprecated}}
+    typedef cuda::std::allocator<char const>::reference Reference; // expected-warning {{'reference' is deprecated}}
+    typedef cuda::std::allocator<char const>::const_reference ConstReference; // expected-warning {{'const_reference' is
+                                                                              // deprecated}}
+    typedef cuda::std::allocator<char const>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is
+                                                                         // deprecated}}
+  }
+  {
+    typedef cuda::std::allocator<void>::pointer Pointer; // expected-warning {{'pointer' is deprecated}}
+    typedef cuda::std::allocator<void>::const_pointer ConstPointer; // expected-warning {{'const_pointer' is
+                                                                    // deprecated}}
+    // reference and const_reference are not provided by cuda::std::allocator<void>
+    typedef cuda::std::allocator<void>::rebind<int>::other Rebind; // expected-warning {{'rebind<int>' is deprecated}}
+  }
 }
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

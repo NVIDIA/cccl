@@ -25,15 +25,16 @@
  *
  ******************************************************************************/
 
+#include <cub/config.cuh>
+
 #include <cub/block/block_load.cuh>
 #include <cub/block/block_store.cuh>
-#include <cub/config.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_launch_helper.h"
 #include "catch2_test_helper.h"
+#include "catch2_test_launch_helper.h"
 
 //----------------------------------------------------------------------------
 // Helper section
@@ -405,7 +406,7 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using type_list = c2h::type_list< large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
+using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
 CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
 {

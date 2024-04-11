@@ -39,88 +39,91 @@
 template <typename Alloc>
 __host__ __device__ void test_pointer()
 {
-     typename cuda::std::allocator_traits<Alloc>::pointer        vp;
-     typename cuda::std::allocator_traits<Alloc>::const_pointer cvp;
+  typename cuda::std::allocator_traits<Alloc>::pointer vp;
+  typename cuda::std::allocator_traits<Alloc>::const_pointer cvp;
 
-     unused(vp); // Prevent unused warning
-     unused(cvp); // Prevent unused warning
+  unused(vp); // Prevent unused warning
+  unused(cvp); // Prevent unused warning
 
-     static_assert(cuda::std::is_same<bool, decltype( vp ==  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp !=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <=  vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp == vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp != vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp > vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp >= vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp < vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp <= vp)>::value, "");
 
-     static_assert(cuda::std::is_same<bool, decltype( vp == cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp ==  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp != cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp !=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <=  vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp == cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp == vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp != cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp != vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp > cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp > vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp >= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp >= vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp < cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp < vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp <= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp <= vp)>::value, "");
 
-     static_assert(cuda::std::is_same<bool, decltype(cvp == cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp != cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp == cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp != cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp > cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp >= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp < cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp <= cvp)>::value, "");
 }
 
 template <typename Alloc>
 __host__ __device__ void test_void_pointer()
 {
-     typename cuda::std::allocator_traits<Alloc>::void_pointer        vp;
-     typename cuda::std::allocator_traits<Alloc>::const_void_pointer cvp;
+  typename cuda::std::allocator_traits<Alloc>::void_pointer vp;
+  typename cuda::std::allocator_traits<Alloc>::const_void_pointer cvp;
 
-     unused(vp); // Prevent unused warning
-     unused(cvp); // Prevent unused warning
+  unused(vp); // Prevent unused warning
+  unused(cvp); // Prevent unused warning
 
-     static_assert(cuda::std::is_same<bool, decltype( vp ==  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp !=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <=  vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp == vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp != vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp > vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp >= vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp < vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp <= vp)>::value, "");
 
-     static_assert(cuda::std::is_same<bool, decltype( vp == cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp ==  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp != cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp !=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp >= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >=  vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <   vp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype( vp <= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <=  vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp == cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp == vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp != cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp != vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp > cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp > vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp >= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp >= vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp < cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp < vp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(vp <= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp <= vp)>::value, "");
 
-     static_assert(cuda::std::is_same<bool, decltype(cvp == cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp != cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp >= cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <  cvp)>::value, "");
-     static_assert(cuda::std::is_same<bool, decltype(cvp <= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp == cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp != cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp > cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp >= cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp < cvp)>::value, "");
+  static_assert(cuda::std::is_same<bool, decltype(cvp <= cvp)>::value, "");
 }
 
-struct Foo { int x; };
+struct Foo
+{
+  int x;
+};
 
 int main(int, char**)
 {
-    test_pointer<cuda::std::allocator<char>> ();
-    test_pointer<cuda::std::allocator<int>> ();
-    test_pointer<cuda::std::allocator<Foo>> ();
+  test_pointer<cuda::std::allocator<char>>();
+  test_pointer<cuda::std::allocator<int>>();
+  test_pointer<cuda::std::allocator<Foo>>();
 
-    test_void_pointer<cuda::std::allocator<char>> ();
-    test_void_pointer<cuda::std::allocator<int>> ();
-    test_void_pointer<cuda::std::allocator<Foo>> ();
+  test_void_pointer<cuda::std::allocator<char>>();
+  test_void_pointer<cuda::std::allocator<int>>();
+  test_void_pointer<cuda::std::allocator<Foo>>();
 
   return 0;
 }

@@ -38,15 +38,14 @@
 #include <nvbench_helper.cuh>
 
 template <typename T>
-bool is_uniform(thrust::host_vector<T> data, T min, T max) 
+bool is_uniform(thrust::host_vector<T> data, T min, T max)
 {
   const double value_range = static_cast<double>(max) - min;
   const bool exact_binning = value_range < (1 << 20);
-  const int number_of_bins = exact_binning ? static_cast<int>(max - min + 1)
-                                           : static_cast<int>(std::sqrt(data.size()));
+  const int number_of_bins = exact_binning ? static_cast<int>(max - min + 1) : static_cast<int>(std::sqrt(data.size()));
   thrust::host_vector<int> bins(number_of_bins, 0);
 
-  const double interval = value_range / static_cast<double>(number_of_bins);
+  const double interval       = value_range / static_cast<double>(number_of_bins);
   const double expected_count = static_cast<double>(data.size()) / number_of_bins;
 
   for (T val : data)
@@ -60,28 +59,29 @@ bool is_uniform(thrust::host_vector<T> data, T min, T max)
   }
 
   double chi_square = 0.0;
-  for (const auto& count : bins) 
+  for (const auto& count : bins)
   {
     chi_square += std::pow(count - expected_count, 2) / expected_count;
   }
 
   boost::math::chi_squared_distribution<double> chi_squared_dist(number_of_bins - 1);
 
-  const double confidence = 0.95;
+  const double confidence     = 0.95;
   const double critical_value = boost::math::quantile(chi_squared_dist, confidence);
 
   return chi_square <= critical_value;
 }
 
-using types = nvbench::type_list<int8_t,
-                                 int16_t,
-                                 int32_t,
-                                 int64_t,
+using types =
+  nvbench::type_list<int8_t,
+                     int16_t,
+                     int32_t,
+                     int64_t,
 #if NVBENCH_HELPER_HAS_I128
-                                 int128_t,
+                     int128_t,
 #endif
-                                 float,
-                                 double>;
+                     float,
+                     double>;
 
 TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed data", "[gen][uniform]", types)
 {
@@ -94,7 +94,7 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed data", "[gen][
   REQUIRE(is_uniform<TestType>(data, min, max));
 }
 
-struct complex_to_real_t 
+struct complex_to_real_t
 {
   __host__ __device__ float operator()(const complex& c) const
   {
@@ -102,7 +102,7 @@ struct complex_to_real_t
   }
 };
 
-struct complex_to_imag_t 
+struct complex_to_imag_t
 {
   __host__ __device__ float operator()(const complex& c) const
   {
@@ -146,18 +146,18 @@ TEMPLATE_LIST_TEST_CASE("Generators produce uniformly distributed offsets", "[ge
 {
   const std::size_t min_segment_size = 1;
   const std::size_t max_segment_size = 256;
-  const std::size_t elements = 1 << GENERATE_COPY(16, 20, 24, 28);
+  const std::size_t elements         = 1 << GENERATE_COPY(16, 20, 24, 28);
   const thrust::device_vector<TestType> d_segments =
     generate.uniform.segment_offsets(elements, min_segment_size, max_segment_size);
   const thrust::host_vector<TestType> h_segments = d_segments;
-  const std::size_t num_segments = h_segments.size() - 1;
+  const std::size_t num_segments                 = h_segments.size() - 1;
 
   std::size_t actual_elements = 0;
   thrust::host_vector<int> segment_sizes(num_segments);
   for (std::size_t sid = 0; sid < num_segments; sid++)
   {
     const TestType begin = h_segments[sid];
-    const TestType end = h_segments[sid + 1];
+    const TestType end   = h_segments[sid + 1];
     REQUIRE(begin <= end);
 
     const TestType size = end - begin;

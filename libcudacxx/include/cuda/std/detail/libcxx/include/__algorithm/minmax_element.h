@@ -115,9 +115,8 @@ __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)
 }
 
 template <class _ForwardIterator, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<_ForwardIterator, _ForwardIterator>
-  minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
+_LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
+minmax_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value,
                 "_CUDA_VSTD::minmax_element requires a ForwardIterator");

@@ -14,9 +14,9 @@
 
 // allocation_result<T*> allocate_at_least(size_t n)
 
+#include <cuda/std/__memory>
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
-#include <cuda/std/__memory>
 
 #include "count_new.h"
 
@@ -35,30 +35,40 @@ static const cuda::std::size_t MaxAligned = cuda::std::alignment_of<cuda::std::m
 static const cuda::std::size_t OverAligned = MaxAligned * 2;
 
 template <cuda::std::size_t Align>
-struct alignas(Align) AlignedType {
+struct alignas(Align) AlignedType
+{
   char data;
   static int constructed;
-  __host__ __device__ AlignedType() { ++constructed; }
-  __host__ __device__ AlignedType(AlignedType const&) { ++constructed; }
-  __host__ __device__ ~AlignedType() { --constructed; }
+  __host__ __device__ AlignedType()
+  {
+    ++constructed;
+  }
+  __host__ __device__ AlignedType(AlignedType const&)
+  {
+    ++constructed;
+  }
+  __host__ __device__ ~AlignedType()
+  {
+    --constructed;
+  }
 };
 template <cuda::std::size_t Align>
 int AlignedType<Align>::constructed = 0;
 
-
 template <cuda::std::size_t Align>
-__host__ __device__ void test_aligned() {
+__host__ __device__ void test_aligned()
+{
   typedef AlignedType<Align> T;
   T::constructed = 0;
   globalMemCounter.reset();
   cuda::std::allocator<T> a;
   const bool IsOverAlignedType = Align > MaxAligned;
-  const bool ExpectAligned = IsOverAlignedType && UsingAlignedNew;
+  const bool ExpectAligned     = IsOverAlignedType && UsingAlignedNew;
   {
     assert(globalMemCounter.checkOutstandingNewEq(0));
     assert(T::constructed == 0);
-    globalMemCounter.last_new_size = 0;
-    globalMemCounter.last_new_align = 0;
+    globalMemCounter.last_new_size                                         = 0;
+    globalMemCounter.last_new_align                                        = 0;
     cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
     assert(ap.count >= 3);
     DoNotOptimize(ap);
@@ -79,33 +89,35 @@ __host__ __device__ void test_aligned() {
 }
 
 template <cuda::std::size_t Align>
-__host__ __device__ constexpr bool test_aligned_constexpr() {
-    typedef AlignedType<Align> T;
-    cuda::std::allocator<T> a;
-    cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
-    assert(ap.count >= 3);
-    a.deallocate(ap.ptr, 3);
+__host__ __device__ constexpr bool test_aligned_constexpr()
+{
+  typedef AlignedType<Align> T;
+  cuda::std::allocator<T> a;
+  cuda::std::same_as<cuda::std::allocation_result<T*>> decltype(auto) ap = a.allocate_at_least(3);
+  assert(ap.count >= 3);
+  a.deallocate(ap.ptr, 3);
 
-    return true;
+  return true;
 }
 
-int main(int, char**) {
-    test_aligned<1>();
-    test_aligned<2>();
-    test_aligned<4>();
-    test_aligned<8>();
-    test_aligned<16>();
-    test_aligned<MaxAligned>();
-    test_aligned<OverAligned>();
-    test_aligned<OverAligned * 2>();
+int main(int, char**)
+{
+  test_aligned<1>();
+  test_aligned<2>();
+  test_aligned<4>();
+  test_aligned<8>();
+  test_aligned<16>();
+  test_aligned<MaxAligned>();
+  test_aligned<OverAligned>();
+  test_aligned<OverAligned * 2>();
 
-    static_assert(test_aligned_constexpr<1>());
-    static_assert(test_aligned_constexpr<2>());
-    static_assert(test_aligned_constexpr<4>());
-    static_assert(test_aligned_constexpr<8>());
-    static_assert(test_aligned_constexpr<16>());
-    static_assert(test_aligned_constexpr<MaxAligned>());
-    static_assert(test_aligned_constexpr<OverAligned>());
-    static_assert(test_aligned_constexpr<OverAligned * 2>());
+  static_assert(test_aligned_constexpr<1>());
+  static_assert(test_aligned_constexpr<2>());
+  static_assert(test_aligned_constexpr<4>());
+  static_assert(test_aligned_constexpr<8>());
+  static_assert(test_aligned_constexpr<16>());
+  static_assert(test_aligned_constexpr<MaxAligned>());
+  static_assert(test_aligned_constexpr<OverAligned>());
+  static_assert(test_aligned_constexpr<OverAligned * 2>());
   return 0;
 }

@@ -48,9 +48,7 @@
 #include <cub/warp/specializations/warp_exchange_shfl.cuh>
 #include <cub/warp/specializations/warp_exchange_smem.cuh>
 
-
 CUB_NAMESPACE_BEGIN
-
 
 enum WarpExchangeAlgorithm
 {
@@ -60,10 +58,7 @@ enum WarpExchangeAlgorithm
 
 namespace detail
 {
-template <typename InputT,
-          int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS,
-          WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
+template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
 using InternalWarpExchangeImpl =
   cub::detail::conditional_t<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
                              WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
@@ -141,29 +136,22 @@ using InternalWarpExchangeImpl =
  */
 template <typename InputT,
           int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS  = CUB_PTX_WARP_THREADS,
-          int LEGACY_PTX_ARCH       = 0,
+          int LOGICAL_WARP_THREADS                      = CUB_PTX_WARP_THREADS,
+          int LEGACY_PTX_ARCH                           = 0,
           WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
-class WarpExchange : private detail::InternalWarpExchangeImpl<
-    InputT,
-    ITEMS_PER_THREAD,
-    LOGICAL_WARP_THREADS,
-    WARP_EXCHANGE_ALGORITHM>
+class WarpExchange
+    : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
 {
-  using InternalWarpExchange = detail::InternalWarpExchangeImpl<
-    InputT,
-    ITEMS_PER_THREAD,
-    LOGICAL_WARP_THREADS,
-    WARP_EXCHANGE_ALGORITHM>;
+  using InternalWarpExchange =
+    detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
 
 public:
-
   /// \smemstorage{WarpExchange}
   using TempStorage = typename InternalWarpExchange::TempStorage;
 
-  /*************************************************************************//**
-   * @name Collective constructors
-   ****************************************************************************/
+  /*************************************************************************/ /**
+                                                                               * @name Collective constructors
+                                                                               ****************************************************************************/
   //@{
 
   WarpExchange() = delete;
@@ -172,17 +160,14 @@ public:
    * @brief Collective constructor using the specified memory allocation as
    *        temporary storage.
    */
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE
-  WarpExchange(TempStorage &temp_storage)
+  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpExchange(TempStorage& temp_storage)
       : InternalWarpExchange(temp_storage)
-  {
-
-  }
+  {}
 
   //@}  end member group
-  /*************************************************************************//**
-   * @name Data movement
-   ****************************************************************************/
+  /*************************************************************************/ /**
+                                                                               * @name Data movement
+                                                                               ****************************************************************************/
   //@{
 
   /**
@@ -237,8 +222,7 @@ public:
    */
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
-                   OutputT (&output_items)[ITEMS_PER_THREAD])
+  BlockedToStriped(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     InternalWarpExchange::BlockedToStriped(input_items, output_items);
   }
@@ -293,8 +277,7 @@ public:
    */
   template <typename OutputT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD],
-                   OutputT (&output_items)[ITEMS_PER_THREAD])
+  StripedToBlocked(const InputT (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
     InternalWarpExchange::StripedToBlocked(input_items, output_items);
   }
@@ -351,8 +334,7 @@ public:
    */
   template <typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD],
-                   OffsetT (&ranks)[ITEMS_PER_THREAD])
+  ScatterToStriped(InputT (&items)[ITEMS_PER_THREAD], OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
     InternalWarpExchange::ScatterToStriped(items, ranks);
   }
@@ -414,18 +396,16 @@ public:
    * @param[in] ranks
    *   Corresponding scatter ranks
    */
-  template <typename OutputT,
-            typename OffsetT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  ScatterToStriped(const InputT (&input_items)[ITEMS_PER_THREAD],
-                   OutputT (&output_items)[ITEMS_PER_THREAD],
-                   OffsetT (&ranks)[ITEMS_PER_THREAD])
+  template <typename OutputT, typename OffsetT>
+  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterToStriped(
+    const InputT (&input_items)[ITEMS_PER_THREAD],
+    OutputT (&output_items)[ITEMS_PER_THREAD],
+    OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
     InternalWarpExchange::ScatterToStriped(input_items, output_items, ranks);
   }
 
   //@}  end member group
 };
-
 
 CUB_NAMESPACE_END

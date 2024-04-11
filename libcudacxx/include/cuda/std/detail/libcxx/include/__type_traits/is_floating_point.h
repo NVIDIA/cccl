@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_FLOATING_POINT_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -27,13 +27,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct __libcpp_is_floating_point              : public false_type {};
-template <>          struct __libcpp_is_floating_point<float>       : public true_type {};
-template <>          struct __libcpp_is_floating_point<double>      : public true_type {};
-template <>          struct __libcpp_is_floating_point<long double> : public true_type {};
+template <class _Tp>
+struct __libcpp_is_floating_point : public false_type
+{};
+template <>
+struct __libcpp_is_floating_point<float> : public true_type
+{};
+template <>
+struct __libcpp_is_floating_point<double> : public true_type
+{};
+template <>
+struct __libcpp_is_floating_point<long double> : public true_type
+{};
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_floating_point
-    : public __libcpp_is_floating_point<__remove_cv_t<_Tp> > {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_floating_point : public __libcpp_is_floating_point<__remove_cv_t<_Tp>>
+{};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

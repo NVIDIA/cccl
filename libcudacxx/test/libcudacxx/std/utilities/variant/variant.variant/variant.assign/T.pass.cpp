@@ -26,99 +26,133 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-namespace MetaHelpers {
+namespace MetaHelpers
+{
 
-struct Dummy {
+struct Dummy
+{
   Dummy() = default;
 };
 
-struct ThrowsCtorT {
-  __host__ __device__
-  ThrowsCtorT(int) noexcept(false) {}
-  __host__ __device__
-  ThrowsCtorT &operator=(int) noexcept { return *this; }
+struct ThrowsCtorT
+{
+  __host__ __device__ ThrowsCtorT(int) noexcept(false) {}
+  __host__ __device__ ThrowsCtorT& operator=(int) noexcept
+  {
+    return *this;
+  }
 };
 
-struct ThrowsAssignT {
-  __host__ __device__
-  ThrowsAssignT(int) noexcept {}
-  __host__ __device__
-  ThrowsAssignT &operator=(int) noexcept(false) { return *this; }
+struct ThrowsAssignT
+{
+  __host__ __device__ ThrowsAssignT(int) noexcept {}
+  __host__ __device__ ThrowsAssignT& operator=(int) noexcept(false)
+  {
+    return *this;
+  }
 };
 
-struct NoThrowT {
-  __host__ __device__
-  NoThrowT(int) noexcept {}
-  __host__ __device__
-  NoThrowT &operator=(int) noexcept { return *this; }
+struct NoThrowT
+{
+  __host__ __device__ NoThrowT(int) noexcept {}
+  __host__ __device__ NoThrowT& operator=(int) noexcept
+  {
+    return *this;
+  }
 };
 
 } // namespace MetaHelpers
 
-namespace RuntimeHelpers {
+namespace RuntimeHelpers
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
 
-struct ThrowsCtorT {
+struct ThrowsCtorT
+{
   int value;
-  __host__ __device__
-  ThrowsCtorT() : value(0) {}
-  __host__ __device__
-  ThrowsCtorT(int) noexcept(false) { throw 42; }
-  __host__ __device__
-  ThrowsCtorT &operator=(int v) noexcept {
+  __host__ __device__ ThrowsCtorT()
+      : value(0)
+  {}
+  __host__ __device__ ThrowsCtorT(int) noexcept(false)
+  {
+    throw 42;
+  }
+  __host__ __device__ ThrowsCtorT& operator=(int v) noexcept
+  {
     value = v;
     return *this;
   }
 };
 
-struct MoveCrashes {
+struct MoveCrashes
+{
   int value;
-  __host__ __device__
-  MoveCrashes(int v = 0) noexcept : value{v} {}
-  __host__ __device__
-  MoveCrashes(MoveCrashes &&) noexcept { assert(false); }
-  __host__ __device__
-  MoveCrashes &operator=(MoveCrashes &&) noexcept { assert(false); return *this; }
-  __host__ __device__
-  MoveCrashes &operator=(int v) noexcept {
+  __host__ __device__ MoveCrashes(int v = 0) noexcept
+      : value{v}
+  {}
+  __host__ __device__ MoveCrashes(MoveCrashes&&) noexcept
+  {
+    assert(false);
+  }
+  __host__ __device__ MoveCrashes& operator=(MoveCrashes&&) noexcept
+  {
+    assert(false);
+    return *this;
+  }
+  __host__ __device__ MoveCrashes& operator=(int v) noexcept
+  {
     value = v;
     return *this;
   }
 };
 
-struct ThrowsCtorTandMove {
+struct ThrowsCtorTandMove
+{
   int value;
-  __host__ __device__
-  ThrowsCtorTandMove() : value(0) {}
-  __host__ __device__
-  ThrowsCtorTandMove(int) noexcept(false) { throw 42; }
-  __host__ __device__
-  ThrowsCtorTandMove(ThrowsCtorTandMove &&) noexcept(false) { assert(false); }
-  __host__ __device__
-  ThrowsCtorTandMove &operator=(int v) noexcept {
+  __host__ __device__ ThrowsCtorTandMove()
+      : value(0)
+  {}
+  __host__ __device__ ThrowsCtorTandMove(int) noexcept(false)
+  {
+    throw 42;
+  }
+  __host__ __device__ ThrowsCtorTandMove(ThrowsCtorTandMove&&) noexcept(false)
+  {
+    assert(false);
+  }
+  __host__ __device__ ThrowsCtorTandMove& operator=(int v) noexcept
+  {
     value = v;
     return *this;
   }
 };
 
-struct ThrowsAssignT {
+struct ThrowsAssignT
+{
   int value;
-  __host__ __device__
-  ThrowsAssignT() : value(0) {}
-  __host__ __device__
-  ThrowsAssignT(int v) noexcept : value(v) {}
-  __host__ __device__
-  ThrowsAssignT &operator=(int) noexcept(false) { throw 42; }
+  __host__ __device__ ThrowsAssignT()
+      : value(0)
+  {}
+  __host__ __device__ ThrowsAssignT(int v) noexcept
+      : value(v)
+  {}
+  __host__ __device__ ThrowsAssignT& operator=(int) noexcept(false)
+  {
+    throw 42;
+  }
 };
 
-struct NoThrowT {
+struct NoThrowT
+{
   int value;
-  __host__ __device__
-  NoThrowT() : value(0) {}
-  __host__ __device__
-  NoThrowT(int v) noexcept : value(v) {}
-  __host__ __device__
-  NoThrowT &operator=(int v) noexcept {
+  __host__ __device__ NoThrowT()
+      : value(0)
+  {}
+  __host__ __device__ NoThrowT(int v) noexcept
+      : value(v)
+  {}
+  __host__ __device__ NoThrowT& operator=(int v) noexcept
+  {
     value = v;
     return *this;
   }
@@ -127,8 +161,8 @@ struct NoThrowT {
 #endif // !defined(TEST_HAS_NO_EXCEPTIONS)
 } // namespace RuntimeHelpers
 
-__host__ __device__
-void test_T_assignment_noexcept() {
+__host__ __device__ void test_T_assignment_noexcept()
+{
   using namespace MetaHelpers;
   {
     using V = cuda::std::variant<Dummy, NoThrowT>;
@@ -146,8 +180,8 @@ void test_T_assignment_noexcept() {
 #endif // !TEST_COMPILER_ICC
 }
 
-__host__ __device__
-void test_T_assignment_sfinae() {
+__host__ __device__ void test_T_assignment_sfinae()
+{
   {
     using V = cuda::std::variant<long, long long>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
@@ -180,28 +214,31 @@ void test_T_assignment_sfinae() {
   {
     // mdominiak: this was originally not an aggregate and we should probably bring that back
     // eventually, except... https://www.godbolt.org/z/oanheq7bv
-    struct X { X() = default; };
-    struct Y {
+    struct X
+    {
+      X() = default;
+    };
+    struct Y
+    {
       __host__ __device__ operator X();
     };
     using V = cuda::std::variant<X>;
-    static_assert(cuda::std::is_assignable<V, Y>::value,
-                  "regression on user-defined conversions in operator=");
+    static_assert(cuda::std::is_assignable<V, Y>::value, "regression on user-defined conversions in operator=");
   }
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int, int &&>;
+    using V = cuda::std::variant<int, int&&>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
   }
   {
-    using V = cuda::std::variant<int, const int &>;
+    using V = cuda::std::variant<int, const int&>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
   }
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__
-void test_T_assignment_basic() {
+__host__ __device__ void test_T_assignment_basic()
+{
   {
     cuda::std::variant<int> v(43);
     v = 42;
@@ -242,8 +279,8 @@ void test_T_assignment_basic() {
   }*/
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
-    using V = cuda::std::variant<int &, int &&, long>;
-    int x = 42;
+    using V = cuda::std::variant<int&, int&&, long>;
+    int x   = 42;
     V v(43l);
     v = x;
     assert(v.index() == 0);
@@ -253,16 +290,16 @@ void test_T_assignment_basic() {
     assert(&cuda::std::get<1>(v) == &x);
     // 'long' is selected by FUN(const int &) since 'const int &' cannot bind
     // to 'int&'.
-    const int &cx = x;
-    v = cx;
+    const int& cx = x;
+    v             = cx;
     assert(v.index() == 2);
     assert(cuda::std::get<2>(v) == 42);
   }
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__
-void test_T_assignment_performs_construction() {
+__host__ __device__ void test_T_assignment_performs_construction()
+{
   using namespace RuntimeHelpers;
 #ifndef TEST_HAS_NO_EXCEPTIONS
   /*{
@@ -286,8 +323,8 @@ void test_T_assignment_performs_construction() {
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__
-void test_T_assignment_performs_assignment() {
+__host__ __device__ void test_T_assignment_performs_assignment()
+{
   using namespace RuntimeHelpers;
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {
@@ -307,10 +344,13 @@ void test_T_assignment_performs_assignment() {
   {
     using V = cuda::std::variant<ThrowsAssignT>;
     V v(100);
-    try {
+    try
+    {
       v = 42;
       assert(false);
-    } catch (...) { /* ... */
+    }
+    catch (...)
+    { /* ... */
     }
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 100);
@@ -318,10 +358,13 @@ void test_T_assignment_performs_assignment() {
   {
     using V = cuda::std::variant<cuda::std::string, ThrowsAssignT>;
     V v(100);
-    try {
+    try
+    {
       v = 42;
       assert(false);
-    } catch (...) { /* ... */
+    }
+    catch (...)
+    { /* ... */
     }
     assert(v.index() == 1);
     assert(cuda::std::get<1>(v).value == 100);
@@ -329,7 +372,8 @@ void test_T_assignment_performs_assignment() {
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test_T_assignment_basic();
   test_T_assignment_performs_construction();
   test_T_assignment_performs_assignment();

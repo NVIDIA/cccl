@@ -27,25 +27,24 @@
 #include <cuda/std/cstddef>
 
 #if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
-#include <new> // for ::std::std::align_val_t
+#  include <new> // for ::std::std::align_val_t
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER_NVRTC
 
-#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation  < 201309L
-#define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
+#if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
+#  define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
 #endif
 
-#if !defined(_LIBCUDACXX_BUILDING_LIBRARY) && _CCCL_STD_VER < 2014 && \
-    defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
-# define _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
+#if !defined(_LIBCUDACXX_BUILDING_LIBRARY) && _CCCL_STD_VER < 2014 \
+  && defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
+#  define _LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION
 #endif
 
-#if defined(_LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION) || \
-    defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
-# define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
+#if defined(_LIBCUDACXX_HAS_NO_LIBRARY_SIZED_DEALLOCATION) || defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
+#  define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
 #endif
 
 #if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
-#include <new> // for ::std::align_val_t
+#  include <new> // for ::std::align_val_t
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

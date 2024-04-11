@@ -22,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__memory/allocator_traits.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__memory/allocator_traits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

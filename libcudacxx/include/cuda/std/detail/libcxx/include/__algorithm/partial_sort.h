@@ -71,7 +71,7 @@ __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _S
   }
 
   return _CUDA_VSTD::__partial_sort_impl<_AlgPolicy>(
-    __first, __middle, __last, static_cast<__comp_ref_type<_Compare> >(__comp));
+    __first, __middle, __last, static_cast<__comp_ref_type<_Compare>>(__comp));
 }
 
 template <class _RandomAccessIterator, class _Compare>

@@ -22,30 +22,38 @@
 
 #include "test_macros.h"
 
-struct NonTDtor {
+struct NonTDtor
+{
   STATIC_MEMBER_VAR(count, int);
   NonTDtor() = default;
-  __host__ __device__
-  ~NonTDtor() { ++count(); }
+  __host__ __device__ ~NonTDtor()
+  {
+    ++count();
+  }
 };
 static_assert(!cuda::std::is_trivially_destructible<NonTDtor>::value, "");
 
-struct NonTDtor1 {
+struct NonTDtor1
+{
   STATIC_MEMBER_VAR(count, int);
   NonTDtor1() = default;
-  __host__ __device__
-  ~NonTDtor1() { ++count(); }
+  __host__ __device__ ~NonTDtor1()
+  {
+    ++count();
+  }
 };
 static_assert(!cuda::std::is_trivially_destructible<NonTDtor1>::value, "");
 
-struct TDtor {
-  __host__ __device__ TDtor(const TDtor &) {} // non-trivial copy
+struct TDtor
+{
+  __host__ __device__ TDtor(const TDtor&) {} // non-trivial copy
   ~TDtor() = default;
 };
 static_assert(!cuda::std::is_trivially_copy_constructible<TDtor>::value, "");
 static_assert(cuda::std::is_trivially_destructible<TDtor>::value, "");
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     using V = cuda::std::variant<int, long, TDtor>;
     static_assert(cuda::std::is_trivially_destructible<V>::value, "");
@@ -61,7 +69,9 @@ int main(int, char**) {
     assert(NonTDtor::count() == 1);
     assert(NonTDtor1::count() == 0);
     NonTDtor::count() = 0;
-    { V v(cuda::std::in_place_index<1>); }
+    {
+      V v(cuda::std::in_place_index<1>);
+    }
     assert(NonTDtor::count() == 0);
     assert(NonTDtor1::count() == 0);
     {

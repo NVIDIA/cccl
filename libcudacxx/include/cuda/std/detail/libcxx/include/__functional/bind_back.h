@@ -12,7 +12,7 @@
 #define _LIBCUDACXX___FUNCTIONAL_BIND_BACK_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -33,7 +33,6 @@
 #include <cuda/std/detail/libcxx/include/__type_traits/is_move_constructible.h>
 #include <cuda/std/detail/libcxx/include/__utility/forward.h>
 #include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
-
 #include <cuda/std/tuple>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -43,34 +42,46 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <size_t _NBound, class = make_index_sequence<_NBound>>
 struct __bind_back_op;
 
-template <size_t _NBound, size_t ..._Ip>
-struct __bind_back_op<_NBound, index_sequence<_Ip...>> {
-    template <class _Fn, class _BoundArgs, class... _Args>
-    _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-    constexpr auto operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
-        noexcept(noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)..., _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...)))
-        -> decltype(      _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)..., _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...))
-        { return          _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)..., _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...); }
+template <size_t _NBound, size_t... _Ip>
+struct __bind_back_op<_NBound, index_sequence<_Ip...>>
+{
+  template <class _Fn, class _BoundArgs, class... _Args>
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+  operator()(_Fn&& __f, _BoundArgs&& __bound_args, _Args&&... __args) const
+    noexcept(noexcept(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f),
+                                         _CUDA_VSTD::forward<_Args>(__args)...,
+                                         _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...)))
+      -> decltype(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f),
+                                     _CUDA_VSTD::forward<_Args>(__args)...,
+                                     _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...))
+  {
+    return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fn>(__f),
+                              _CUDA_VSTD::forward<_Args>(__args)...,
+                              _CUDA_VSTD::get<_Ip>(_CUDA_VSTD::forward<_BoundArgs>(__bound_args))...);
+  }
 };
 
 template <class _Fn, class _BoundArgs>
-struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs> {
-    using __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>::__perfect_forward;
+struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>
+{
+  using __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>::__perfect_forward;
 };
 
-template <class _Fn, class ..._Args, class = enable_if_t<
-    _And<
-        is_constructible<decay_t<_Fn>, _Fn>,
-        is_move_constructible<decay_t<_Fn>>,
-        is_constructible<decay_t<_Args>, _Args>...,
-        is_move_constructible<decay_t<_Args>>...
-    >::value
->>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-constexpr auto __bind_back(_Fn&& __f, _Args&&... __args)
-    noexcept(noexcept(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...))))
-    -> decltype(      __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...)))
-    { return          __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...)); }
+template <class _Fn,
+          class... _Args,
+          class = enable_if_t<_And<is_constructible<decay_t<_Fn>, _Fn>,
+                                   is_move_constructible<decay_t<_Fn>>,
+                                   is_constructible<decay_t<_Args>, _Args>...,
+                                   is_move_constructible<decay_t<_Args>>...>::value>>
+_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+__bind_back(_Fn&& __f, _Args&&... __args) noexcept(noexcept(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(
+  _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...))))
+  -> decltype(__bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(
+    _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...)))
+{
+  return __bind_back_t<decay_t<_Fn>, tuple<decay_t<_Args>...>>(
+    _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Args>(__args)...));
+}
 
 #endif // _CCCL_STD_VER > 2014
 

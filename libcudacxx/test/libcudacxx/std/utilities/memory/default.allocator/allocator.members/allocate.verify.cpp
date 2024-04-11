@@ -18,9 +18,10 @@
 
 #include <cuda/std/__memory>
 
-__host__ __device__ void f() {
-    cuda::std::allocator<int> a;
-    a.allocate(3); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+__host__ __device__ void f()
+{
+  cuda::std::allocator<int> a;
+  a.allocate(3); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
 }
 
 int main(int, char**)

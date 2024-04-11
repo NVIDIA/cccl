@@ -45,9 +45,9 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __cccl_terminate(
 
 typedef void (*terminate_handler)();
 
-#ifdef __CUDA_ARCH__
+#  ifdef __CUDA_ARCH__
 __device__
-#endif // __CUDA_ARCH__
+#  endif // __CUDA_ARCH__
   static _LIBCUDACXX_SAFE_STATIC _CUDA_VSTD::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 

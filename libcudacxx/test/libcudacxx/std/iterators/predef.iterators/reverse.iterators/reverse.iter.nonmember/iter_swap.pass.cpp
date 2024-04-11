@@ -19,25 +19,30 @@
 //               const reverse_iterator<Iterator2>& y) noexcept(see below);
 
 #ifdef __clang__
-#pragma clang diagnostic ignored "-Wunevaluated-expression"
+#  pragma clang diagnostic ignored "-Wunevaluated-expression"
 #endif
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/cassert>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
+
 #include "test_iterators.h"
 #include "test_macros.h"
 
-struct ThrowingCopyNoexceptDecrement {
-  using value_type = int;
+struct ThrowingCopyNoexceptDecrement
+{
+  using value_type      = int;
   using difference_type = ptrdiff_t;
 
   __host__ __device__ ThrowingCopyNoexceptDecrement();
   __host__ __device__ ThrowingCopyNoexceptDecrement(const ThrowingCopyNoexceptDecrement&);
 
-  __host__ __device__ int& operator*() const noexcept { static int x; return x; }
+  __host__ __device__ int& operator*() const noexcept
+  {
+    static int x;
+    return x;
+  }
 
   __host__ __device__ ThrowingCopyNoexceptDecrement& operator++();
   __host__ __device__ ThrowingCopyNoexceptDecrement operator++(int);
@@ -52,14 +57,19 @@ struct ThrowingCopyNoexceptDecrement {
 #endif
 };
 
-struct NoexceptCopyThrowingDecrement {
-  using value_type = int;
+struct NoexceptCopyThrowingDecrement
+{
+  using value_type      = int;
   using difference_type = ptrdiff_t;
 
   __host__ __device__ NoexceptCopyThrowingDecrement();
   __host__ __device__ NoexceptCopyThrowingDecrement(const NoexceptCopyThrowingDecrement&) noexcept;
 
-  __host__ __device__ int& operator*() const { static int x; return x; }
+  __host__ __device__ int& operator*() const
+  {
+    static int x;
+    return x;
+  }
 
   __host__ __device__ NoexceptCopyThrowingDecrement& operator++();
   __host__ __device__ NoexceptCopyThrowingDecrement operator++(int);
@@ -74,14 +84,19 @@ struct NoexceptCopyThrowingDecrement {
 #endif
 };
 
-struct NoexceptCopyAndDecrement {
-  using value_type = int;
+struct NoexceptCopyAndDecrement
+{
+  using value_type      = int;
   using difference_type = ptrdiff_t;
 
   __host__ __device__ NoexceptCopyAndDecrement();
   __host__ __device__ NoexceptCopyAndDecrement(const NoexceptCopyAndDecrement&) noexcept;
 
-  __host__ __device__ int& operator*() const noexcept { static int x; return x; }
+  __host__ __device__ int& operator*() const noexcept
+  {
+    static int x;
+    return x;
+  }
 
   __host__ __device__ NoexceptCopyAndDecrement& operator++();
   __host__ __device__ NoexceptCopyAndDecrement operator++(int);
@@ -96,11 +111,12 @@ struct NoexceptCopyAndDecrement {
 #endif
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // Can use `iter_swap` with a regular array.
   {
     constexpr int N = 3;
-    int a[N] = {0, 1, 2};
+    int a[N]        = {0, 1, 2};
 
     cuda::std::reverse_iterator<int*> rb(a + N);
     cuda::std::reverse_iterator<int*> re(a + 1);
@@ -116,9 +132,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   // Check that the `iter_swap` customization point is being used.
   {
     int iter_swap_invocations = 0;
-    int a[] = {0, 1, 2};
-    adl::Iterator base1 = adl::Iterator::TrackSwaps(a + 1, iter_swap_invocations);
-    adl::Iterator base2 = adl::Iterator::TrackSwaps(a + 2, iter_swap_invocations);
+    int a[]                   = {0, 1, 2};
+    adl::Iterator base1       = adl::Iterator::TrackSwaps(a + 1, iter_swap_invocations);
+    adl::Iterator base2       = adl::Iterator::TrackSwaps(a + 2, iter_swap_invocations);
     cuda::std::reverse_iterator<adl::Iterator> ri1(base1), ri2(base2);
     iter_swap(ri1, ri2);
     assert(iter_swap_invocations == 1);
@@ -135,9 +151,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
 #ifndef TEST_COMPILER_ICC
       static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
 #endif // TEST_COMPILER_ICC
-      static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
+      static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<ThrowingCopyNoexceptDecrement&>(), --cuda::std::declval<int*&>()));
+      ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(
+        --cuda::std::declval<ThrowingCopyNoexceptDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
@@ -150,10 +167,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     {
       static_assert(cuda::std::bidirectional_iterator<NoexceptCopyThrowingDecrement>);
 
-      static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
-      static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
+      static_assert(cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
+      static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyThrowingDecrement&>(), --cuda::std::declval<int*&>()));
+      ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_swap(
+        --cuda::std::declval<NoexceptCopyThrowingDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
@@ -166,10 +184,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
     {
       static_assert(cuda::std::bidirectional_iterator<NoexceptCopyAndDecrement>);
 
-      static_assert( cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
-      static_assert( cuda::std::is_nothrow_copy_constructible_v<int*>);
+      static_assert(cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
+      static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyAndDecrement&>(), --cuda::std::declval<int*&>()));
+      ASSERT_NOEXCEPT(
+        cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyAndDecrement&>(), --cuda::std::declval<int*&>()));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyAndDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
@@ -181,7 +200,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017
   static_assert(test());

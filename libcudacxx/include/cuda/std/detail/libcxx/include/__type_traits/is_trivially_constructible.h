@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_CONSTRUCTIBLE_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -32,59 +32,51 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, class... _Args>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v =
-    _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
-#endif
+  _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
+#  endif
 
 #else
 
 template <class _Tp, class... _Args>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible
-    : false_type
-{
-};
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible : false_type
+{};
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp>
-#if defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
+#  if defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
     : integral_constant<bool, _LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR(_Tp)>
-#else
+#  else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#endif // defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
-{
-};
+#  endif // defined(_LIBCUDACXX_HAS_TRIVIAL_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_CONSTRUCTOR_FALLBACK)
+{};
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&&> : integral_constant<bool, is_scalar<_Tp>::value>
+{};
 
 template <class _Tp>
 struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, const _Tp&>
     : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
+{};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
-{
-};
+struct _LIBCUDACXX_TEMPLATE_VIS is_trivially_constructible<_Tp, _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v
-    = is_trivially_constructible<_Tp, _Args...>::value;
-#endif
+_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v = is_trivially_constructible<_Tp, _Args...>::value;
+#  endif
 
-#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
+#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) &&
+       // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

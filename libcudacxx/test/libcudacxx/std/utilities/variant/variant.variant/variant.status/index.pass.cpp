@@ -25,8 +25,8 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-
-int main(int, char**) {
+int main(int, char**)
+{
   {
     using V = cuda::std::variant<int, long>;
     constexpr V v;

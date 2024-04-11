@@ -23,8 +23,12 @@
 
 #include <cuda/std/__memory>
 
-cuda::std::allocator_arg_t f() { return {}; } // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
+cuda::std::allocator_arg_t f()
+{
+  return {};
+} // expected-error 1 {{chosen constructor is explicit in copy-initialization}}
 
-int main(int, char**) {
-    return 0;
+int main(int, char**)
+{
+  return 0;
 }

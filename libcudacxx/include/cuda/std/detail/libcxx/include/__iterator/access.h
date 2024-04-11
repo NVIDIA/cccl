@@ -66,15 +66,13 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto end(const _Cp& __c) -> 
 #if _CCCL_STD_VER > 2011
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cbegin(const _Cp& __c)
-  -> decltype(_CUDA_VSTD::begin(__c))
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cbegin(const _Cp& __c) -> decltype(_CUDA_VSTD::begin(__c))
 {
   return _CUDA_VSTD::begin(__c);
 }
 
 template <class _Cp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cend(const _Cp& __c)
-  -> decltype(_CUDA_VSTD::end(__c))
+_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 auto cend(const _Cp& __c) -> decltype(_CUDA_VSTD::end(__c))
 {
   return _CUDA_VSTD::end(__c);
 }

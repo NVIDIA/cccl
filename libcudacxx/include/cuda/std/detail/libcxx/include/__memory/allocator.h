@@ -105,7 +105,7 @@ struct __non_trivial_if<true, _Unique>
 //       allocator<void> trivial in C++20.
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator : private __non_trivial_if<!_LIBCUDACXX_TRAIT(is_void, _Tp), allocator<_Tp> >
+class _LIBCUDACXX_TEMPLATE_VIS allocator : private __non_trivial_if<!_LIBCUDACXX_TRAIT(is_void, _Tp), allocator<_Tp>>
 {
   static_assert(!_LIBCUDACXX_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
@@ -213,7 +213,7 @@ public:
 
 template <class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS allocator<const _Tp>
-    : private __non_trivial_if<!_LIBCUDACXX_TRAIT(is_void, _Tp), allocator<const _Tp> >
+    : private __non_trivial_if<!_LIBCUDACXX_TRAIT(is_void, _Tp), allocator<const _Tp>>
 {
   static_assert(!_LIBCUDACXX_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 
@@ -230,8 +230,7 @@ public:
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
   {}
 
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 const _Tp*
-  allocate(size_t __n)
+  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {

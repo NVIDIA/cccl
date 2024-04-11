@@ -11,7 +11,7 @@
 #define _LIBCUDACXX___TYPE_TRAITS_IS_CONST_H
 
 #ifndef __cuda_std__
-#include <__config>
+#  include <__config>
 #endif // __cuda_std__
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -29,24 +29,27 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_CONST) && !defined(_LIBCUDACXX_USE_IS_CONST_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_const
-    : public integral_constant<bool, _LIBCUDACXX_IS_CONST(_Tp)>
-    {};
+struct _LIBCUDACXX_TEMPLATE_VIS is_const : public integral_constant<bool, _LIBCUDACXX_IS_CONST(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_const_v = _LIBCUDACXX_IS_CONST(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_const            : public false_type {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_const<_Tp const> : public true_type {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_const : public false_type
+{};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_const<_Tp const> : public true_type
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_const_v = is_const<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_CONST) && !defined(_LIBCUDACXX_USE_IS_CONST_FALLBACK)
 

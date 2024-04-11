@@ -20,8 +20,9 @@
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::chrono::duration<int, cuda::std::ratio<1> >,
-                   cuda::std::chrono::duration<int> >::value), "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::chrono::duration<int, cuda::std::ratio<1>>, cuda::std::chrono::duration<int>>::value),
+    "");
 
   return 0;
 }

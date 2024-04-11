@@ -25,6 +25,6 @@ STATIC_TEST_GLOBAL_VAR cuda::std::allocator<void> alloc;
 
 int main(int, char**)
 {
-    unused(alloc);
-    return 0;
+  unused(alloc);
+  return 0;
 }

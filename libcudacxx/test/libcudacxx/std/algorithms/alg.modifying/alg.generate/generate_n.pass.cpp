@@ -17,37 +17,43 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 #include "user_defined_integral.h"
 
-struct gen_test {
-  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept {
+struct gen_test
+{
+  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept
+  {
     return 1;
   }
 };
 
 template <class Iter, class Size>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+{
   constexpr int N = 5;
-  int ia[N + 1] = {0};
+  int ia[N + 1]   = {0};
   assert(cuda::std::generate_n(Iter(ia), Size(N), gen_test()) == Iter(ia + N));
-  for (int i = 0; i < N; ++i) {
+  for (int i = 0; i < N; ++i)
+  {
     assert(ia[i] == 1);
   }
 
-  for (int i = N; i < N + 1; ++i) {
+  for (int i = N; i < N + 1; ++i)
+  {
     assert(ia[i] == 0);
   }
 }
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
+TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+{
   test<Iter, int>();
   test<Iter, unsigned int>();
   test<Iter, long>();
   test<Iter, unsigned long>();
-  test<Iter, UserDefinedIntegral<unsigned> >();
+  test<Iter, UserDefinedIntegral<unsigned>>();
   test<Iter, float>();
   test<Iter, double>();
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -55,17 +61,19 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test() {
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test() {
-  test<cpp17_input_iterator<int*> >();
-  test<forward_iterator<int*> >();
-  test<bidirectional_iterator<int*> >();
-  test<random_access_iterator<int*> >();
+TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+{
+  test<cpp17_input_iterator<int*>>();
+  test<forward_iterator<int*>>();
+  test<bidirectional_iterator<int*>>();
+  test<random_access_iterator<int*>>();
   test<int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 
 #if TEST_STD_VER >= 2014

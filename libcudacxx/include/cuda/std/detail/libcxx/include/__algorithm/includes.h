@@ -65,7 +65,7 @@ _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_C
     _CUDA_VSTD::move(__last1),
     _CUDA_VSTD::move(__first2),
     _CUDA_VSTD::move(__last2),
-    static_cast<__comp_ref_type<_Compare> >(__comp),
+    static_cast<__comp_ref_type<_Compare>>(__comp),
     __identity(),
     __identity());
 }

@@ -25,9 +25,10 @@
  *
  ******************************************************************************/
 
-#include <nvbench_helper.cuh>
-#include <look_back_helper.cuh>
 #include <cub/device/device_partition.cuh>
+
+#include <look_back_helper.cuh>
+#include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
@@ -37,11 +38,11 @@
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 
 #if !TUNE_BASE
-#if TUNE_TRANSPOSE == 0
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
-#else // TUNE_TRANSPOSE == 1
-#define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
-#endif // TUNE_TRANSPOSE
+#  if TUNE_TRANSPOSE == 0
+#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_DIRECT
+#  else // TUNE_TRANSPOSE == 1
+#    define TUNE_LOAD_ALGORITHM cub::BLOCK_LOAD_WARP_TRANSPOSE
+#  endif // TUNE_TRANSPOSE
 
 template <typename InputT>
 struct policy_hub_t
@@ -62,52 +63,57 @@ struct policy_hub_t
 #endif // !TUNE_BASE
 
 template <class T>
-struct less_then_t 
+struct less_then_t
 {
   T m_val;
 
-  __device__ bool operator()(const T &val) const { return val < m_val; }
+  __device__ bool operator()(const T& val) const
+  {
+    return val < m_val;
+  }
 };
 
 template <typename T, typename OffsetT>
-void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
+void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using input_it_t = const T*;
-  using output_it_t = T*;
+  using input_it_t        = const T*;
+  using output_it_t       = T*;
   using num_selected_it_t = OffsetT*;
-  using select_op_t = less_then_t<T>;
-  using offset_t = OffsetT;
+  using select_op_t       = less_then_t<T>;
+  using offset_t          = OffsetT;
 
-  #if !TUNE_BASE
-  using policy_t = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchThreeWayPartitionIf<input_it_t,
-                                                      output_it_t,
-                                                      output_it_t,
-                                                      output_it_t,
-                                                      num_selected_it_t,
-                                                      select_op_t,
-                                                      select_op_t,
-                                                      offset_t,
-                                                      policy_t>;
-  #else // TUNE_BASE
-  using dispatch_t = cub::DispatchThreeWayPartitionIf<input_it_t,
-                                                      output_it_t,
-                                                      output_it_t,
-                                                      output_it_t,
-                                                      num_selected_it_t,
-                                                      select_op_t,
-                                                      select_op_t,
-                                                      offset_t>;
-  #endif // !TUNE_BASE
+#if !TUNE_BASE
+  using policy_t   = policy_hub_t<T>;
+  using dispatch_t = cub::DispatchThreeWayPartitionIf<
+    input_it_t,
+    output_it_t,
+    output_it_t,
+    output_it_t,
+    num_selected_it_t,
+    select_op_t,
+    select_op_t,
+    offset_t,
+    policy_t>;
+#else // TUNE_BASE
+  using dispatch_t = cub::DispatchThreeWayPartitionIf<
+    input_it_t,
+    output_it_t,
+    output_it_t,
+    output_it_t,
+    num_selected_it_t,
+    select_op_t,
+    select_op_t,
+    offset_t>;
+#endif // !TUNE_BASE
 
   // Retrieve axis parameters
-  const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
+  const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));
 
   T min_val{};
   T max_val = std::numeric_limits<T>::max();
 
-  T left_border = max_val / 3;
+  T left_border  = max_val / 3;
   T right_border = left_border * 2;
 
   select_op_t select_op_1{left_border};
@@ -119,10 +125,10 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> out_2(elements);
   thrust::device_vector<T> out_3(elements);
 
-  input_it_t d_in = thrust::raw_pointer_cast(in.data());
-  output_it_t d_out_1 = thrust::raw_pointer_cast(out_1.data());
-  output_it_t d_out_2 = thrust::raw_pointer_cast(out_2.data());
-  output_it_t d_out_3 = thrust::raw_pointer_cast(out_3.data());
+  input_it_t d_in                  = thrust::raw_pointer_cast(in.data());
+  output_it_t d_out_1              = thrust::raw_pointer_cast(out_1.data());
+  output_it_t d_out_2              = thrust::raw_pointer_cast(out_2.data());
+  output_it_t d_out_3              = thrust::raw_pointer_cast(out_3.data());
   num_selected_it_t d_num_selected = thrust::raw_pointer_cast(num_selected.data());
 
   state.add_element_count(elements);
@@ -131,33 +137,25 @@ void partition(nvbench::state &state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<offset_t>(1);
 
   std::size_t temp_size{};
-  dispatch_t::Dispatch(nullptr,
-                       temp_size,
-                       d_in,
-                       d_out_1,
-                       d_out_2,
-                       d_out_3,
-                       d_num_selected,
-                       select_op_1,
-                       select_op_2,
-                       elements,
-                       0);
+  dispatch_t::Dispatch(
+    nullptr, temp_size, d_in, d_out_1, d_out_2, d_out_3, d_num_selected, select_op_1, select_op_2, elements, 0);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
-  auto *temp_storage = thrust::raw_pointer_cast(temp.data());
+  auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
-    dispatch_t::Dispatch(temp_storage,
-                         temp_size,
-                         d_in,
-                         d_out_1,
-                         d_out_2,
-                         d_out_3,
-                         d_num_selected,
-                         select_op_1,
-                         select_op_2,
-                         elements,
-                         launch.get_stream());
+  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+    dispatch_t::Dispatch(
+      temp_storage,
+      temp_size,
+      d_in,
+      d_out_1,
+      d_out_2,
+      d_out_3,
+      d_num_selected,
+      select_op_1,
+      select_op_2,
+      elements,
+      launch.get_stream());
   });
 }
 
