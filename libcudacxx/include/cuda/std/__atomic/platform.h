@@ -9,9 +9,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_ATOMIC_NVRTC_H
-#define _LIBCUDACXX_ATOMIC_NVRTC_H
-
-#include <cuda/std/detail/libcxx/include/support/atomic/cxx_atomic.h>
-
-#endif // _LIBCUDACXX_ATOMIC_NVRTC_H
+#if defined(_CCCL_COMPILER_MSVC)
+#include <cuda/std/__atomic/platform/msvc_to_builtins.h>
+#endif
