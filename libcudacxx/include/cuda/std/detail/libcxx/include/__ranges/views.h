@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___RANGES_VIEWS
 #define _LIBCUDACXX___RANGES_VIEWS
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

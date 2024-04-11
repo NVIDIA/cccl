@@ -193,18 +193,19 @@ void Test()
   // Copy problem to device
   cudaMemcpy(d_in, h_in, sizeof(int) * TILE_SIZE, cudaMemcpyHostToDevice);
 
-  printf("BlockScan algorithm %s on %d items (%d timing iterations, %d blocks, %d threads, %d items per thread, %d SM "
-         "occupancy):\n",
-         (ALGORITHM == BLOCK_SCAN_RAKING) ? "BLOCK_SCAN_RAKING"
-         : (ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)
-           ? "BLOCK_SCAN_RAKING_MEMOIZE"
-           : "BLOCK_SCAN_WARP_SCANS",
-         TILE_SIZE,
-         g_timing_iterations,
-         g_grid_size,
-         BLOCK_THREADS,
-         ITEMS_PER_THREAD,
-         max_sm_occupancy);
+  printf(
+    "BlockScan algorithm %s on %d items (%d timing iterations, %d blocks, %d threads, %d items per thread, %d SM "
+    "occupancy):\n",
+    (ALGORITHM == BLOCK_SCAN_RAKING) ? "BLOCK_SCAN_RAKING"
+    : (ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)
+      ? "BLOCK_SCAN_RAKING_MEMOIZE"
+      : "BLOCK_SCAN_WARP_SCANS",
+    TILE_SIZE,
+    g_timing_iterations,
+    g_grid_size,
+    BLOCK_THREADS,
+    ITEMS_PER_THREAD,
+    max_sm_occupancy);
 
   // Run aggregate/prefix kernel
   BlockPrefixSumKernel<BLOCK_THREADS, ITEMS_PER_THREAD, ALGORITHM>

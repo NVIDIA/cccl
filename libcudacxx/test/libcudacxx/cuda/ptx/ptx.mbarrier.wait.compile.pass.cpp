@@ -97,8 +97,8 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
     (
         // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    //
         // 5b.
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<bool (*)(uint64_t*, const uint64_t&, const uint32_t&)>(cuda::ptx::mbarrier_try_wait));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(uint64_t*, const uint64_t&, const uint32_t&)>(cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 780
 
 #if __cccl_ptx_isa >= 800
@@ -107,13 +107,13 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
     (
         // mbarrier.try_wait.acquire.cta.shared::cta.b64         waitComplete, [addr], state;                        //
         // 6a.
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint64_t&)>(
-              cuda::ptx::mbarrier_try_wait));
-            // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state; // 6a.
-              * fn_ptr++ = reinterpret_cast<void*>(
-                static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint64_t&)>(
-                  cuda::ptx::mbarrier_try_wait));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint64_t&)>(
+            cuda::ptx::mbarrier_try_wait));
+          // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state; // 6a.
+            * fn_ptr++ = reinterpret_cast<void*>(
+              static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint64_t&)>(
+                cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -122,16 +122,16 @@ __global__ void test_mbarrier_try_wait(void** fn_ptr)
     (
         // mbarrier.try_wait.acquire.cta.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;      //
         // 6b.
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<bool (*)(
-              cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint64_t&, const uint32_t&)>(
-              cuda::ptx::mbarrier_try_wait));
-            // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;
-            // // 6b.
-              * fn_ptr++ = reinterpret_cast<void*>(
-                static_cast<bool (*)(
-                  cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint64_t&, const uint32_t&)>(
-                  cuda::ptx::mbarrier_try_wait));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(
+            cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint64_t&, const uint32_t&)>(
+            cuda::ptx::mbarrier_try_wait));
+          // mbarrier.try_wait.acquire.cluster.shared::cta.b64         waitComplete, [addr], state , suspendTimeHint;
+          // // 6b.
+            * fn_ptr++ = reinterpret_cast<void*>(
+              static_cast<bool (*)(
+                cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint64_t&, const uint32_t&)>(
+                cuda::ptx::mbarrier_try_wait));));
 #endif // __cccl_ptx_isa >= 800
 }
 
@@ -160,13 +160,13 @@ __global__ void test_mbarrier_try_wait_parity(void** fn_ptr)
     (
         // mbarrier.try_wait.parity.acquire.cta.shared::cta.b64  waitComplete, [addr], phaseParity;                  //
         // 8a.
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&)>(
-              cuda::ptx::mbarrier_try_wait_parity));
-            // mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  waitComplete, [addr], phaseParity; // 8a.
-              * fn_ptr++ = reinterpret_cast<void*>(
-                static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&)>(
-                  cuda::ptx::mbarrier_try_wait_parity));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&)>(
+            cuda::ptx::mbarrier_try_wait_parity));
+          // mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  waitComplete, [addr], phaseParity; // 8a.
+            * fn_ptr++ = reinterpret_cast<void*>(
+              static_cast<bool (*)(cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&)>(
+                cuda::ptx::mbarrier_try_wait_parity));));
 #endif // __cccl_ptx_isa >= 800
 
 #if __cccl_ptx_isa >= 800
@@ -175,16 +175,16 @@ __global__ void test_mbarrier_try_wait_parity(void** fn_ptr)
     (
         // mbarrier.try_wait.parity.acquire.cta.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint; //
         // 8b.
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<bool (*)(
-              cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&, const uint32_t&)>(
-              cuda::ptx::mbarrier_try_wait_parity));
-            // mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  waitComplete, [addr], phaseParity,
-            // suspendTimeHint; // 8b.
-              * fn_ptr++ = reinterpret_cast<void*>(
-                static_cast<bool (*)(
-                  cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&, const uint32_t&)>(
-                  cuda::ptx::mbarrier_try_wait_parity));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<bool (*)(
+            cuda::ptx::sem_acquire_t, cuda::ptx::scope_cta_t, uint64_t*, const uint32_t&, const uint32_t&)>(
+            cuda::ptx::mbarrier_try_wait_parity));
+          // mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  waitComplete, [addr], phaseParity,
+          // suspendTimeHint; // 8b.
+            * fn_ptr++ = reinterpret_cast<void*>(
+              static_cast<bool (*)(
+                cuda::ptx::sem_acquire_t, cuda::ptx::scope_cluster_t, uint64_t*, const uint32_t&, const uint32_t&)>(
+                cuda::ptx::mbarrier_try_wait_parity));));
 #endif // __cccl_ptx_isa >= 800
 }
 

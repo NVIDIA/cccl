@@ -103,38 +103,42 @@ int main(int, char**)
   }
   // compare exchange weak
   {
-    x.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
-                                                                                                           // {{memory
-                                                                                                           // order
-                                                                                                           // argument
-                                                                                                           // to atomic
-                                                                                                           // operation
-                                                                                                           // is
-                                                                                                           // invalid}}
-    x.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
-                                                                                                           // {{memory
-                                                                                                           // order
-                                                                                                           // argument
-                                                                                                           // to atomic
-                                                                                                           // operation
-                                                                                                           // is
-                                                                                                           // invalid}}
-    vx.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
-                                                                                                            // {{memory
-                                                                                                            // order
-                                                                                                            // argument
-                                                                                                            // to atomic
-                                                                                                            // operation
-                                                                                                            // is
-                                                                                                            // invalid}}
-    vx.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
-                                                                                                            // {{memory
-                                                                                                            // order
-                                                                                                            // argument
-                                                                                                            // to atomic
-                                                                                                            // operation
-                                                                                                            // is
-                                                                                                            // invalid}}
+    x.compare_exchange_weak(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
+    x.compare_exchange_weak(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
+    vx.compare_exchange_weak(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
+    vx.compare_exchange_weak(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
     // valid memory orders
     x.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_relaxed);
     x.compare_exchange_weak(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_consume);
@@ -173,24 +177,26 @@ int main(int, char**)
   }
   // compare exchange strong
   {
-    x.compare_exchange_strong(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
-                                                                                                             // {{memory
-                                                                                                             // order
-                                                                                                             // argument
-                                                                                                             // to
-                                                                                                             // atomic
-                                                                                                             // operation
-                                                                                                             // is
-                                                                                                             // invalid}}
-    x.compare_exchange_strong(val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
-                                                                                                             // {{memory
-                                                                                                             // order
-                                                                                                             // argument
-                                                                                                             // to
-                                                                                                             // atomic
-                                                                                                             // operation
-                                                                                                             // is
-                                                                                                             // invalid}}
+    x.compare_exchange_strong(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to
+                                                                                     // atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
+    x.compare_exchange_strong(
+      val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_acq_rel); // expected-warning
+                                                                                     // {{memory
+                                                                                     // order
+                                                                                     // argument
+                                                                                     // to
+                                                                                     // atomic
+                                                                                     // operation
+                                                                                     // is
+                                                                                     // invalid}}
     vx.compare_exchange_strong(
       val1, val2, cuda::std::memory_order_seq_cst, cuda::std::memory_order_release); // expected-warning {{memory order
                                                                                      // argument to atomic operation is

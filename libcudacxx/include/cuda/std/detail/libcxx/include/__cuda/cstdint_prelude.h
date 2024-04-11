@@ -11,9 +11,15 @@
 #ifndef _LIBCUDACXX___CUDA_CSTDINT_PRELUDE_H
 #define _LIBCUDACXX___CUDA_CSTDINT_PRELUDE_H
 
-#ifndef __cuda_std__
-#  error "<__cuda/cstdint_prelude> should only be included in from <cuda/std/cstdint>"
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #ifndef _CCCL_COMPILER_NVRTC
 #  include <cstdint>

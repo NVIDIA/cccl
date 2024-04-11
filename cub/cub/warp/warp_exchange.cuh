@@ -149,10 +149,8 @@ public:
   /// \smemstorage{WarpExchange}
   using TempStorage = typename InternalWarpExchange::TempStorage;
 
-  /*************************************************************************/ /**
-                                                                               * @name Collective constructors
-                                                                               ****************************************************************************/
-  //@{
+  //! @name Collective constructors
+  //! @{
 
   WarpExchange() = delete;
 
@@ -164,11 +162,9 @@ public:
       : InternalWarpExchange(temp_storage)
   {}
 
-  //@}  end member group
-  /*************************************************************************/ /**
-                                                                               * @name Data movement
-                                                                               ****************************************************************************/
-  //@{
+  //! @}  end member group
+  //! @name Data movement
+  //! @{
 
   /**
    * @brief Transposes data items from <em>blocked</em> arrangement to

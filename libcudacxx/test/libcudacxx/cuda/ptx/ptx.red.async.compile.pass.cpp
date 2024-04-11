@@ -147,8 +147,8 @@ __global__ void test_red_async(void** fn_ptr)
     (
         // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64  [dest], value, [remote_bar];
         // // .u64 intentional
-          * fn_ptr++ = reinterpret_cast<void*>(
-            static_cast<void (*)(cuda::ptx::op_add_t, int64_t*, const int64_t&, int64_t*)>(cuda::ptx::red_async));));
+        * fn_ptr++ = reinterpret_cast<void*>(
+          static_cast<void (*)(cuda::ptx::op_add_t, int64_t*, const int64_t&, int64_t*)>(cuda::ptx::red_async));));
 #endif // __cccl_ptx_isa >= 810
 }
 

@@ -11,6 +11,8 @@
 
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 class DefaultOnly
 {
   int data_;

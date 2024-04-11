@@ -177,7 +177,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // TEST: Add i to buffer[i]
-  __shared__ alignas(128) int smem_buffer[smem_len];
+  alignas(128) __shared__ int smem_buffer[smem_len];
   __shared__ barrier bar;
   if (threadIdx.x == 0)
   {

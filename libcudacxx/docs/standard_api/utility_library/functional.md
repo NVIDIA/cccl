@@ -13,7 +13,6 @@ The following facilities in section [functional.syn] of ISO/IEC IS 14882 (the
 
 - [`std::function`] - Polymorphic function object wrapper.
 - [`std::bind`] - Generic function object binder / lambda facility.
-- [`std::reference_wrapper`] - Reference wrapper type.
 - [`std::hash`] - Hash function object.
 
 ### `std::function`
@@ -45,25 +44,6 @@ That implementation might be different from the default that the upstream
 Further research and investigation is required before we can provide this
   feature.
 
-### `std::reference_wrapper`
-
-[`std::reference_wrapper`] is a [*CopyConstructible*] and
-  [*CopyAssignable*] wrapper around a reference to an object or function of
-  type `T`.
-There is nothing that makes this facility difficult to implement heterogeneously
-  today.
-It is a value type that does not allocate memory, hold
-  pointers, have virtual functions, or make calls to platform specific APIs.
-
-No design or functional changes were required to port the upstream libc++
-  implementations of this facility.
-We just had to add execution space specifiers to port it.
-
-However, this feature failed tests involving function pointers with some of the
-  compilers we support.
-So, we've omitted this feature for now.
-
-
 [functional.syn]: https://eel.is/c++draft/functional.syn
 
 [*CopyConstructible*]: https://eel.is/c++draft/utility.arg.requirements#:requirements,Cpp17CopyConstructible
@@ -71,6 +51,5 @@ So, we've omitted this feature for now.
 
 [`std::function`]: https://en.cppreference.com/w/cpp/utility/functional/function
 [`std::bind`]: https://en.cppreference.com/w/cpp/utility/functional/bind
-[`std::reference_wrapper`]: https://en.cppreference.com/w/cpp/utility/functional/reference_wrapper
 [`std::hash`]: https://en.cppreference.com/w/cpp/utility/hash
 

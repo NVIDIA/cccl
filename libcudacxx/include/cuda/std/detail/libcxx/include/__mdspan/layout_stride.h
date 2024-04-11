@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_HPP
 #define _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_HPP
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -142,7 +140,7 @@ struct layout_stride
     //----------------------------------------------------------------------------
 
     using __strides_storage_t = _CUDA_VSTD::array<index_type, extents_type::rank()>; //_CUDA_VSTD::dextents<index_type,
-                                                                                     //extents_type::rank()>;
+                                                                                     // extents_type::rank()>;
     using __member_pair_t = __detail::__compressed_pair<extents_type, __strides_storage_t>;
 
 #  ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS

@@ -50,7 +50,7 @@ __device__ __host__ __noinline__ T* alloc(bool shared = false)
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (
-      if (!shared) { arr = (T*)  malloc(N * sizeof(T)); } else {
+      if (!shared) { arr = (T*) malloc(N * sizeof(T)); } else {
         __shared__ T data[N];
         arr = data;
       }),

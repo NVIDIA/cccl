@@ -79,7 +79,6 @@ template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ __noinline__ void test()
 {
   do_test<A, T, Selector>();
-  do_test<volatile A, T, Selector>();
 }
 
 template <template <typename, cuda::thread_scope> typename Atomic,

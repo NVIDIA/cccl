@@ -126,7 +126,6 @@ template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ void test()
 {
   do_test<A, T, Selector>();
-  do_test<volatile A, T, Selector>();
 }
 
 int main(int, char**)

@@ -12,6 +12,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
+#include "test_iterators.h"
 #include "test_macros.h"
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR

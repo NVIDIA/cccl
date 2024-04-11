@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___CUDA_ATOMIC_H
 #define _LIBCUDACXX___CUDA_ATOMIC_H
 
-#ifndef __cuda_std__
-#  error "<__cuda/atomic> should only be included in from <cuda/std/atomic>"
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -208,12 +206,6 @@ struct atomic_ref : public std::__atomic_base_ref<_Tp, _Sco>
   {}
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp operator=(_Tp __d) const volatile noexcept
-  {
-    __base::store(__d);
-    return __d;
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp operator=(_Tp __d) const noexcept
   {
     __base::store(__d);
@@ -221,13 +213,13 @@ struct atomic_ref : public std::__atomic_base_ref<_Tp, _Sco>
   }
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
+  _Tp fetch_max(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return std::__detail::__cxx_atomic_fetch_max(&this->__a_, __op, __m);
   }
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
+  _Tp fetch_min(const _Tp& __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return std::__detail::__cxx_atomic_fetch_min(&this->__a_, __op, __m);
   }
@@ -246,12 +238,6 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
   {}
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator=(_Tp* __d) const volatile noexcept
-  {
-    __base::store(__d);
-    return __d;
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp* operator=(_Tp* __d) const noexcept
   {
     __base::store(__d);
@@ -259,19 +245,9 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
   }
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
-  {
-    return __cxx_atomic_fetch_add(&this->__a_, __op, __m);
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp* fetch_add(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
   {
     return __cxx_atomic_fetch_add(&this->__a_, __op, __m);
-  }
-  _LIBCUDACXX_HOST_DEVICE
-  _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const volatile noexcept
-  {
-    return __cxx_atomic_fetch_sub(&this->__a_, __op, __m);
   }
   _LIBCUDACXX_HOST_DEVICE
   _Tp* fetch_sub(ptrdiff_t __op, memory_order __m = memory_order_seq_cst) const noexcept
@@ -280,19 +256,9 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
   }
 
   _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator++(int) const volatile noexcept
-  {
-    return fetch_add(1);
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp* operator++(int) const noexcept
   {
     return fetch_add(1);
-  }
-  _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator--(int) const volatile noexcept
-  {
-    return fetch_sub(1);
   }
   _LIBCUDACXX_HOST_DEVICE
   _Tp* operator--(int) const noexcept
@@ -300,19 +266,9 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
     return fetch_sub(1);
   }
   _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator++() const volatile noexcept
-  {
-    return fetch_add(1) + 1;
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp* operator++() const noexcept
   {
     return fetch_add(1) + 1;
-  }
-  _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator--() const volatile noexcept
-  {
-    return fetch_sub(1) - 1;
   }
   _LIBCUDACXX_HOST_DEVICE
   _Tp* operator--() const noexcept
@@ -320,19 +276,9 @@ struct atomic_ref<_Tp*, _Sco> : public std::__atomic_base_ref<_Tp*, _Sco>
     return fetch_sub(1) - 1;
   }
   _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator+=(ptrdiff_t __op) const volatile noexcept
-  {
-    return fetch_add(__op) + __op;
-  }
-  _LIBCUDACXX_HOST_DEVICE
   _Tp* operator+=(ptrdiff_t __op) const noexcept
   {
     return fetch_add(__op) + __op;
-  }
-  _LIBCUDACXX_HOST_DEVICE
-  _Tp* operator-=(ptrdiff_t __op) const volatile noexcept
-  {
-    return fetch_sub(__op) - __op;
   }
   _LIBCUDACXX_HOST_DEVICE
   _Tp* operator-=(ptrdiff_t __op) const noexcept

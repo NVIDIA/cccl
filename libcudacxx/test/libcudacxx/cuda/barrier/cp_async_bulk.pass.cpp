@@ -41,7 +41,7 @@ __device__ void test()
   __syncthreads();
 
   // TEST: Add i to buffer[i]
-  __shared__ alignas(16) int smem_buffer[buf_len];
+  alignas(16) __shared__ int smem_buffer[buf_len];
   __shared__ barrier bar;
   if (threadIdx.x == 0)
   {

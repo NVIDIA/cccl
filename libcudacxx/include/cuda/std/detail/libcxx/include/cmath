@@ -300,9 +300,7 @@ long double    truncl(long double x);
 
 */
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -332,9 +330,7 @@ long double    truncl(long double x);
 #include <cuda/std/detail/libcxx/include/__cuda/cmath_nvbf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifdef _CCCL_COMPILER_NVRTC
 #include <cuda/std/climits>
@@ -606,7 +602,7 @@ __enable_if_t
 >
 hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 {
-    typedef typename __promote<_A1, _A2, _A3>::type __result_type;
+    using __result_type = __promote_t<_A1, _A2, _A3>;
     static_assert((!(is_same<_A1, __result_type>::value &&
                      is_same<_A2, __result_type>::value &&
                      is_same<_A3, __result_type>::value)), "");
@@ -628,7 +624,8 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return __isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isnan)
-    return __builtin_isnan(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isnan(static_cast<double>(__lcpp_x));
 #else
     return ::isnan(__lcpp_x);
 #endif
@@ -650,7 +647,8 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return __isinf(__lcpp_x);
 #elif __has_builtin(__builtin_isinf)
-    return __builtin_isinf(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isinf(static_cast<double>(__lcpp_x));
 #else
     return ::isinf(__lcpp_x);
 #endif
@@ -672,7 +670,8 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 #if defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
     return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
 #elif __has_builtin(__builtin_isfinite)
-    return __builtin_isfinite(__lcpp_x);
+    // nvcc at times has issues determining the type of __lcpp_x
+    return __builtin_isfinite(static_cast<double>(__lcpp_x));
 #else
     return ::isfinite(__lcpp_x);
 #endif
@@ -711,10 +710,10 @@ _CCCL_CONSTEXPR_CXX14 long double __constexpr_copysign(long double __x, long dou
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 typename __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value,
-                                __promote<_A1, _A2> >::type
+_CCCL_CONSTEXPR_CXX14 __enable_if_t<is_arithmetic<_A1>::value && is_arithmetic<_A2>::value,
+                                __promote_t<_A1, _A2>>
     __constexpr_copysign(_A1 __x, _A2 __y) noexcept {
-    typedef typename __promote<_A1, _A2>::type __result_type;
+    using __result_type = __promote_t<_A1, _A2>;
     static_assert((!(_IsSame<_A1, __result_type>::value && _IsSame<_A2, __result_type>::value)), "");
     return __builtin_copysign((__result_type)__x, (__result_type)__y);
 }
@@ -802,9 +801,9 @@ _CCCL_CONSTEXPR_CXX14_COMPLEX long double __constexpr_fmax(long double __x, long
 
 template <class _Tp, class _Up, __enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
 inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14_COMPLEX typename __promote<_Tp, _Up>::type
+_CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up>
 __constexpr_fmax(_Tp __x, _Up __y) noexcept {
-  using __result_type = typename __promote<_Tp, _Up>::type;
+  using __result_type = __promote_t<_Tp, _Up>;
   return _CUDA_VSTD::__constexpr_fmax(static_cast<__result_type>(__x), static_cast<__result_type>(__y));
 }
 #endif // !_MSC_VER
@@ -982,8 +981,6 @@ _IntT __clamp_to_integral(_RealT __r) noexcept {
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif // __cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop>
 
 #endif  // _LIBCUDACXX_CMATH

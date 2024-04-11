@@ -111,6 +111,9 @@ mv "./temp_devcontainer.json" ${base_devcontainer_file}
 # Create an array to keep track of valid subdirectory names
 valid_subdirs=()
 
+# The img folder should not be removed:
+valid_subdirs+=("img")
+
 # For each unique combination
 for combination in $combinations; do
     cuda_version=$(echo "$combination" | jq -r '.cuda')
