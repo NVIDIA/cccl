@@ -16,28 +16,25 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
-    const unsigned sa = sizeof(ia)/sizeof(ia[0]);
-    assert(cuda::std::count(cpp17_input_iterator<const int*>(ia),
-                            cpp17_input_iterator<const int*>(ia + sa), 2) == 3);
-    assert(cuda::std::count(cpp17_input_iterator<const int*>(ia),
-                            cpp17_input_iterator<const int*>(ia + sa), 7) == 0);
-    assert(cuda::std::count(cpp17_input_iterator<const int*>(ia),
-                            cpp17_input_iterator<const int*>(ia), 2) == 0);
+  int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
+  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
+  assert(cuda::std::count(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia + sa), 2) == 3);
+  assert(cuda::std::count(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia + sa), 7) == 0);
+  assert(cuda::std::count(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia), 2) == 0);
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 #if TEST_STD_VER > 2011
-    static_assert(test(), "");
+  static_assert(test(), "");
 #endif
 
   return 0;

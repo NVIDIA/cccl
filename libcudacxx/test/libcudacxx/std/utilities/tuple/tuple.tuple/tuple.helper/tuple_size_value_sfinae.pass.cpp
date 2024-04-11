@@ -18,22 +18,32 @@
 
 // UNSUPPORTED: c++98, c++03
 
-
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
 template <class T, class = decltype(cuda::std::tuple_size<T>::value)>
-__host__ __device__ constexpr bool has_value(int) { return true; }
+__host__ __device__ constexpr bool has_value(int)
+{
+  return true;
+}
 template <class>
-__host__ __device__ constexpr bool has_value(long) { return false; }
+__host__ __device__ constexpr bool has_value(long)
+{
+  return false;
+}
 template <class T>
-__host__ __device__ constexpr bool has_value() { return has_value<T>(0); }
+__host__ __device__ constexpr bool has_value()
+{
+  return has_value<T>(0);
+}
 
-struct Dummy {};
+struct Dummy
+{};
 
-int main(int, char**) {
+int main(int, char**)
+{
   // Test that the ::value member does not exist
   static_assert(has_value<cuda::std::tuple<int> const>(), "");
   static_assert(has_value<cuda::std::pair<int, long> volatile>(), "");

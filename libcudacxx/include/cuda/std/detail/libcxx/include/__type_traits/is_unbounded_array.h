@@ -24,16 +24,24 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class>     struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array        : false_type {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array<_Tp[]> : true_type {};
+template <class>
+struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array : false_type
+{};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_unbounded_array<_Tp[]> : true_type
+{};
 
 #if _CCCL_STD_VER > 2011
 
-template <class>     struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array        : false_type {};
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array<_Tp[]> : true_type {};
+template <class>
+struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array : false_type
+{};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_unbounded_array<_Tp[]> : true_type
+{};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_unbounded_array_v  = is_unbounded_array<_Tp>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

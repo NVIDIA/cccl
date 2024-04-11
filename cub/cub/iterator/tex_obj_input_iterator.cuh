@@ -136,7 +136,7 @@ public:
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
-    reference >::type iterator_category;
+    reference>::type iterator_category;
 #else
   /// The iterator category
   typedef std::random_access_iterator_tag iterator_category;

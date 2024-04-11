@@ -14,21 +14,20 @@
 
 // .fail. expects compilation to fail, but this would only fail at runtime with NVRTC
 
-
 #include <cuda/std/chrono>
 
 template <int N, int D = 1>
 class Ratio
 {
 public:
-    static const int num = N;
-    static const int den = D;
+  static const int num = N;
+  static const int den = D;
 };
 
 int main(int, char**)
 {
-    typedef cuda::std::chrono::duration<int, Ratio<1> > D;
-    D d;
+  typedef cuda::std::chrono::duration<int, Ratio<1>> D;
+  D d;
 
   return 0;
 }

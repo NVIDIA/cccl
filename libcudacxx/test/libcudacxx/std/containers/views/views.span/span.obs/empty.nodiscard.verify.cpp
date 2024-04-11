@@ -8,14 +8,14 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: c++03, c++11, c++14, c++17
 
-
 // <span>
 
 // [[nodiscard]] constexpr bool empty() const noexcept;
 
 #include <cuda/std/span>
 
-void test() {
+void test()
+{
   cuda::std::span<int> s1;
   s1.empty(); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
 

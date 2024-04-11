@@ -19,14 +19,15 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   using M = cuda::std::monostate;
   static_assert(cuda::std::is_trivially_default_constructible<M>::value, "");
   static_assert(cuda::std::is_trivially_copy_constructible<M>::value, "");
   static_assert(cuda::std::is_trivially_copy_assignable<M>::value, "");
   static_assert(cuda::std::is_trivially_destructible<M>::value, "");
   constexpr M m{};
-  ((void)m);
+  ((void) m);
 
   return 0;
 }

@@ -14,17 +14,19 @@
 
 #include <cuda/std/ranges>
 
-struct NonBorrowedRange {
+struct NonBorrowedRange
+{
   __host__ __device__ int* begin() const;
   __host__ __device__ int* end() const;
 };
 static_assert(!cuda::std::ranges::enable_borrowed_range<NonBorrowedRange>);
 
 // Verify that if the expression is an rvalue and `enable_borrowed_range` is false, `ranges::end` is ill-formed.
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   cuda::std::ranges::end(NonBorrowedRange());
-  // expected-error-re@-1 {{{{call to deleted function call operator in type 'const (cuda::std::ranges::)?__end::__fn'}}}}
-  // expected-error@-2  {{attempt to use a deleted function}}
+  // expected-error-re@-1 {{{{call to deleted function call operator in type 'const
+  // (cuda::std::ranges::)?__end::__fn'}}}} expected-error@-2  {{attempt to use a deleted function}}
 }
 
 int main(int, char**)

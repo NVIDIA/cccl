@@ -19,7 +19,8 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
   int array[] = {40, 41, 42, 43, 44};
   int* b      = array + 0;
   int* e      = array + 5;
@@ -98,15 +99,16 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   tests<int*>();
 #if TEST_STD_VER > 2011
   static_assert(tests<int*>(), "");
 #endif
 
 #if TEST_STD_VER > 2017
-  tests<contiguous_iterator<int*> >();
-  static_assert(tests<contiguous_iterator<int*> >(), "");
+  tests<contiguous_iterator<int*>>();
+  static_assert(tests<contiguous_iterator<int*>>(), "");
 #endif
 
   return 0;

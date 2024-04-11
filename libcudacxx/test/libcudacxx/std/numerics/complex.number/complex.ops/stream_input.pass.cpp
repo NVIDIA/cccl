@@ -15,15 +15,16 @@
 //   basic_istream<charT, traits>&
 //   operator>>(basic_istream<charT, traits>& is, complex<T>& x);
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 #include <sstream>
 
 #include "test_macros.h"
 
 template <class T>
-void test() {
+void test()
+{
   {
     std::istringstream is("5");
     cuda::std::complex<T> c;
@@ -103,7 +104,8 @@ void test() {
   }
 }
 
-void test() {
+void test()
+{
   test<float>();
   test<double>();
 #ifdef _LIBCUDACXX_HAS_NVFP16
@@ -114,7 +116,8 @@ void test() {
 #endif // _LIBCUDACXX_HAS_NVBF16
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   NV_IF_TARGET(NV_IS_HOST, test();)
   return 0;
 }

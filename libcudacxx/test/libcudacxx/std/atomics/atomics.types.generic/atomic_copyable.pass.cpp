@@ -16,17 +16,17 @@
 // <cuda/std/atomic>
 
 #include <cuda/std/atomic>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 // #include <cuda/std/thread> // for thread_id
 // #include <cuda/std/chrono> // for nanoseconds
 
-#include "test_macros.h"
 #include "cuda_space_selector.h"
+#include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_not_copy_constructible() {
+__host__ __device__ void test_not_copy_constructible()
+{
   static_assert(!cuda::std::is_constructible<T, T&&>(), "");
   static_assert(!cuda::std::is_constructible<T, const T&>(), "");
   static_assert(!cuda::std::is_assignable<T, T&&>(), "");
@@ -34,8 +34,8 @@ void test_not_copy_constructible() {
 }
 
 template <class T>
-__host__ __device__
-void test_copy_constructible() {
+__host__ __device__ void test_copy_constructible()
+{
   static_assert(cuda::std::is_constructible<T, T&&>(), "");
   static_assert(cuda::std::is_constructible<T, const T&>(), "");
   static_assert(!cuda::std::is_assignable<T, T&&>(), "");
@@ -43,8 +43,8 @@ void test_copy_constructible() {
 }
 
 template <class T, class A>
-__host__ __device__
-void test_atomic_ref_copy_ctor() {
+__host__ __device__ void test_atomic_ref_copy_ctor()
+{
   SHARED A val;
   val = 0;
 
@@ -58,8 +58,8 @@ void test_atomic_ref_copy_ctor() {
 }
 
 template <class T, class A>
-__host__ __device__
-void test_atomic_ref_move_ctor() {
+__host__ __device__ void test_atomic_ref_move_ctor()
+{
   SHARED A val;
   val = 0;
 
@@ -74,23 +74,23 @@ void test_atomic_ref_move_ctor() {
 
 int main(int, char**)
 {
-    test_not_copy_constructible<cuda::std::atomic<int>>();
-    test_not_copy_constructible<cuda::atomic<int>>();
+  test_not_copy_constructible<cuda::std::atomic<int>>();
+  test_not_copy_constructible<cuda::atomic<int>>();
 
-    test_copy_constructible<cuda::std::atomic_ref<int>>();
-    test_copy_constructible<cuda::atomic_ref<int>>();
+  test_copy_constructible<cuda::std::atomic_ref<int>>();
+  test_copy_constructible<cuda::atomic_ref<int>>();
 
-    test_atomic_ref_copy_ctor<cuda::std::atomic_ref<int>, int>();
-    test_atomic_ref_copy_ctor<cuda::atomic_ref<int>, int>();
-    test_atomic_ref_copy_ctor<const cuda::std::atomic_ref<int>, int>();
-    test_atomic_ref_copy_ctor<const cuda::atomic_ref<int>, int>();
+  test_atomic_ref_copy_ctor<cuda::std::atomic_ref<int>, int>();
+  test_atomic_ref_copy_ctor<cuda::atomic_ref<int>, int>();
+  test_atomic_ref_copy_ctor<const cuda::std::atomic_ref<int>, int>();
+  test_atomic_ref_copy_ctor<const cuda::atomic_ref<int>, int>();
 
-    test_atomic_ref_move_ctor<cuda::std::atomic_ref<int>, int>();
-    test_atomic_ref_move_ctor<cuda::atomic_ref<int>, int>();
-    test_atomic_ref_move_ctor<const cuda::std::atomic_ref<int>, int>();
-    test_atomic_ref_move_ctor<const cuda::atomic_ref<int>, int>();
-    // test(cuda::std::this_thread::get_id());
-    // test(cuda::std::chrono::nanoseconds(2));
+  test_atomic_ref_move_ctor<cuda::std::atomic_ref<int>, int>();
+  test_atomic_ref_move_ctor<cuda::atomic_ref<int>, int>();
+  test_atomic_ref_move_ctor<const cuda::std::atomic_ref<int>, int>();
+  test_atomic_ref_move_ctor<const cuda::atomic_ref<int>, int>();
+  // test(cuda::std::this_thread::get_id());
+  // test(cuda::std::chrono::nanoseconds(2));
 
   return 0;
 }

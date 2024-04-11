@@ -92,21 +92,20 @@ struct BlockHistogramSort
   };
 
   // Parameterize BlockRadixSort type for our thread block
-  typedef BlockRadixSort<
-    T,
-    BLOCK_DIM_X,
-    ITEMS_PER_THREAD,
-    NullType,
-    4,
-    true,
-    BLOCK_SCAN_WARP_SCANS,
-    cudaSharedMemBankSizeFourByte,
-    BLOCK_DIM_Y,
-    BLOCK_DIM_Z>
+  typedef BlockRadixSort<T,
+                         BLOCK_DIM_X,
+                         ITEMS_PER_THREAD,
+                         NullType,
+                         4,
+                         true,
+                         BLOCK_SCAN_WARP_SCANS,
+                         cudaSharedMemBankSizeFourByte,
+                         BLOCK_DIM_Y,
+                         BLOCK_DIM_Z>
     BlockRadixSortT;
 
   // Parameterize BlockDiscontinuity type for our thread block
-  typedef BlockDiscontinuity< T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockDiscontinuityT;
+  typedef BlockDiscontinuity<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z> BlockDiscontinuityT;
 
   /// Shared memory
   union _TempStorage

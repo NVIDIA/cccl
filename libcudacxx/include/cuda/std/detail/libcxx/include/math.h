@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX_MATH_H
-#define _LIBCUDACXX_MATH_H
+#  define _LIBCUDACXX_MATH_H
 
 /*
     math.h synopsis
@@ -291,71 +291,68 @@ long double    truncl(long double x);
 
 */
 
-#include <cuda/std/detail/__config>
+#  include <cuda/std/detail/__config>
 
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#  if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#    pragma GCC system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#    pragma clang system_header
+#  elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#    pragma system_header
+#  endif // no system header
 
-#define _LIBCUDACXX_STDLIB_INCLUDE_NEXT
-#include <stdlib.h>
+#  define _LIBCUDACXX_STDLIB_INCLUDE_NEXT
+#  include <math.h>
+#  include <stdlib.h>
 
-#include <math.h>
-
-#ifdef __cplusplus
+#  ifdef __cplusplus
 
 // We support including .h headers inside 'extern "C"' contexts, so switch
 // back to C++ linkage before including these C++ headers.
 extern "C++" {
 
-#include <type_traits>
-#include <limits>
+#    include <limits>
+#    include <type_traits>
 
 // signbit
 
-#ifdef signbit
+#    ifdef signbit
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_signbit(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_signbit(_A1 __lcpp_x) noexcept
 {
-    return signbit(__lcpp_x);
+  return signbit(__lcpp_x);
 }
 
-#undef signbit
+#      undef signbit
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
 signbit(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_signbit((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_signbit((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_integral<_A1>::value && std::is_signed<_A1>::value, bool>::type
-signbit(_A1 __lcpp_x) noexcept
-{ return __lcpp_x < 0; }
+  typename std::enable_if<std::is_integral<_A1>::value && std::is_signed<_A1>::value, bool>::type
+  signbit(_A1 __lcpp_x) noexcept
+{
+  return __lcpp_x < 0;
+}
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_integral<_A1>::value && !std::is_signed<_A1>::value, bool>::type
-signbit(_A1) noexcept
-{ return false; }
+  typename std::enable_if<std::is_integral<_A1>::value && !std::is_signed<_A1>::value, bool>::type
+  signbit(_A1) noexcept
+{
+  return false;
+}
 
-#elif defined(_LIBCUDACXX_MSVCRT)
+#    elif defined(_LIBCUDACXX_MSVCRT)
 
 template <typename _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
 signbit(_A1 __lcpp_x) noexcept
 {
   return ::signbit(static_cast<typename std::__promote<_A1>::type>(__lcpp_x));
@@ -363,1203 +360,1506 @@ signbit(_A1 __lcpp_x) noexcept
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_integral<_A1>::value && std::is_signed<_A1>::value, bool>::type
-signbit(_A1 __lcpp_x) noexcept
-{ return __lcpp_x < 0; }
+  typename std::enable_if<std::is_integral<_A1>::value && std::is_signed<_A1>::value, bool>::type
+  signbit(_A1 __lcpp_x) noexcept
+{
+  return __lcpp_x < 0;
+}
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_integral<_A1>::value && !std::is_signed<_A1>::value, bool>::type
-signbit(_A1) noexcept
-{ return false; }
+  typename std::enable_if<std::is_integral<_A1>::value && !std::is_signed<_A1>::value, bool>::type
+  signbit(_A1) noexcept
+{
+  return false;
+}
 
-#endif  // signbit
+#    endif // signbit
 
 // fpclassify
 
-#ifdef fpclassify
+#    ifdef fpclassify
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-int
-__libcpp_fpclassify(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY int __libcpp_fpclassify(_A1 __lcpp_x) noexcept
 {
-    return fpclassify(__lcpp_x);
+  return fpclassify(__lcpp_x);
 }
 
-#undef fpclassify
+#      undef fpclassify
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, int>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, int>::type
 fpclassify(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_fpclassify((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_fpclassify((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, int>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, int>::type
 fpclassify(_A1 __lcpp_x) noexcept
-{ return __lcpp_x == 0 ? FP_ZERO : FP_NORMAL; }
+{
+  return __lcpp_x == 0 ? FP_ZERO : FP_NORMAL;
+}
 
-#elif defined(_LIBCUDACXX_MSVCRT)
+#    elif defined(_LIBCUDACXX_MSVCRT)
 
 template <typename _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
 fpclassify(_A1 __lcpp_x) noexcept
 {
   return ::fpclassify(static_cast<typename std::__promote<_A1>::type>(__lcpp_x));
 }
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, int>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, int>::type
 fpclassify(_A1 __lcpp_x) noexcept
-{ return __lcpp_x == 0 ? FP_ZERO : FP_NORMAL; }
+{
+  return __lcpp_x == 0 ? FP_ZERO : FP_NORMAL;
+}
 
-#endif  // fpclassify
+#    endif // fpclassify
 
 // isfinite
 
-#ifdef isfinite
+#    ifdef isfinite
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isfinite(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isfinite(_A1 __lcpp_x) noexcept
 {
-    return isfinite(__lcpp_x);
+  return isfinite(__lcpp_x);
 }
 
-#undef isfinite
+#      undef isfinite
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_arithmetic<_A1>::value && std::numeric_limits<_A1>::has_infinity,
-    bool>::type
-isfinite(_A1 __lcpp_x) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::numeric_limits<_A1>::has_infinity, bool>::type
+  isfinite(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_isfinite((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_isfinite((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_arithmetic<_A1>::value && !std::numeric_limits<_A1>::has_infinity,
-    bool>::type
-isfinite(_A1) noexcept
-{ return true; }
+  typename std::enable_if<std::is_arithmetic<_A1>::value && !std::numeric_limits<_A1>::has_infinity, bool>::type
+  isfinite(_A1) noexcept
+{
+  return true;
+}
 
-#endif  // isfinite
+#    endif // isfinite
 
 // isinf
 
-#ifdef isinf
+#    ifdef isinf
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isinf(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isinf(_A1 __lcpp_x) noexcept
 {
-    return isinf(__lcpp_x);
+  return isinf(__lcpp_x);
 }
 
-#undef isinf
+#      undef isinf
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_arithmetic<_A1>::value && std::numeric_limits<_A1>::has_infinity,
-    bool>::type
-isinf(_A1 __lcpp_x) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::numeric_limits<_A1>::has_infinity, bool>::type
+  isinf(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_isinf((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_isinf((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<
-    std::is_arithmetic<_A1>::value && !std::numeric_limits<_A1>::has_infinity,
-    bool>::type
-isinf(_A1) noexcept
-{ return false; }
+  typename std::enable_if<std::is_arithmetic<_A1>::value && !std::numeric_limits<_A1>::has_infinity, bool>::type
+  isinf(_A1) noexcept
+{
+  return false;
+}
 
-#ifdef _LIBCUDACXX_PREFERRED_OVERLOAD
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-isinf(float __lcpp_x) noexcept { return __libcpp_isinf(__lcpp_x); }
+#      ifdef _LIBCUDACXX_PREFERRED_OVERLOAD
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isinf(float __lcpp_x) noexcept
+{
+  return __libcpp_isinf(__lcpp_x);
+}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
-bool
-isinf(double __lcpp_x) noexcept { return __libcpp_isinf(__lcpp_x); }
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD bool isinf(double __lcpp_x) noexcept
+{
+  return __libcpp_isinf(__lcpp_x);
+}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-isinf(long double __lcpp_x) noexcept { return __libcpp_isinf(__lcpp_x); }
-#endif
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isinf(long double __lcpp_x) noexcept
+{
+  return __libcpp_isinf(__lcpp_x);
+}
+#      endif
 
-#endif  // isinf
+#    endif // isinf
 
 // isnan
 
-#ifdef isnan
+#    ifdef isnan
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isnan(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isnan(_A1 __lcpp_x) noexcept
 {
-    return isnan(__lcpp_x);
+  return isnan(__lcpp_x);
 }
 
-#undef isnan
+#      undef isnan
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
 isnan(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_isnan((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_isnan((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, bool>::type
 isnan(_A1) noexcept
-{ return false; }
+{
+  return false;
+}
 
-#ifdef _LIBCUDACXX_PREFERRED_OVERLOAD
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-isnan(float __lcpp_x) noexcept { return __libcpp_isnan(__lcpp_x); }
+#      ifdef _LIBCUDACXX_PREFERRED_OVERLOAD
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isnan(float __lcpp_x) noexcept
+{
+  return __libcpp_isnan(__lcpp_x);
+}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD
-bool
-isnan(double __lcpp_x) noexcept { return __libcpp_isnan(__lcpp_x); }
+inline _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_PREFERRED_OVERLOAD bool isnan(double __lcpp_x) noexcept
+{
+  return __libcpp_isnan(__lcpp_x);
+}
 
-inline _LIBCUDACXX_INLINE_VISIBILITY
-bool
-isnan(long double __lcpp_x) noexcept { return __libcpp_isnan(__lcpp_x); }
-#endif
+inline _LIBCUDACXX_INLINE_VISIBILITY bool isnan(long double __lcpp_x) noexcept
+{
+  return __libcpp_isnan(__lcpp_x);
+}
+#      endif
 
-#endif  // isnan
+#    endif // isnan
 
 // isnormal
 
-#ifdef isnormal
+#    ifdef isnormal
 
 template <class _A1>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isnormal(_A1 __lcpp_x) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isnormal(_A1 __lcpp_x) noexcept
 {
-    return isnormal(__lcpp_x);
+  return isnormal(__lcpp_x);
 }
 
-#undef isnormal
+#      undef isnormal
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_floating_point<_A1>::value, bool>::type
 isnormal(_A1 __lcpp_x) noexcept
 {
-    return __libcpp_isnormal((typename std::__promote<_A1>::type)__lcpp_x);
+  return __libcpp_isnormal((typename std::__promote<_A1>::type) __lcpp_x);
 }
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, bool>::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, bool>::type
 isnormal(_A1 __lcpp_x) noexcept
-{ return __lcpp_x != 0; }
+{
+  return __lcpp_x != 0;
+}
 
-#endif  // isnormal
+#    endif // isnormal
 
 // isgreater
 
-#ifdef isgreater
+#    ifdef isgreater
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return isgreater(__lcpp_x, __lcpp_y);
+  return isgreater(__lcpp_x, __lcpp_y);
 }
 
-#undef isgreater
+#      undef isgreater
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-isgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  isgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_isgreater((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_isgreater((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // isgreater
+#    endif // isgreater
 
 // isgreaterequal
 
-#ifdef isgreaterequal
+#    ifdef isgreaterequal
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isgreaterequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isgreaterequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return isgreaterequal(__lcpp_x, __lcpp_y);
+  return isgreaterequal(__lcpp_x, __lcpp_y);
 }
 
-#undef isgreaterequal
+#      undef isgreaterequal
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-isgreaterequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  isgreaterequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_isgreaterequal((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_isgreaterequal((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // isgreaterequal
+#    endif // isgreaterequal
 
 // isless
 
-#ifdef isless
+#    ifdef isless
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isless(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isless(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return isless(__lcpp_x, __lcpp_y);
+  return isless(__lcpp_x, __lcpp_y);
 }
 
-#undef isless
+#      undef isless
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-isless(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  isless(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_isless((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_isless((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // isless
+#    endif // isless
 
 // islessequal
 
-#ifdef islessequal
+#    ifdef islessequal
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_islessequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_islessequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return islessequal(__lcpp_x, __lcpp_y);
+  return islessequal(__lcpp_x, __lcpp_y);
 }
 
-#undef islessequal
+#      undef islessequal
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-islessequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  islessequal(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_islessequal((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_islessequal((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // islessequal
+#    endif // islessequal
 
 // islessgreater
 
-#ifdef islessgreater
+#    ifdef islessgreater
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_islessgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_islessgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return islessgreater(__lcpp_x, __lcpp_y);
+  return islessgreater(__lcpp_x, __lcpp_y);
 }
 
-#undef islessgreater
+#      undef islessgreater
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-islessgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  islessgreater(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_islessgreater((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_islessgreater((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // islessgreater
+#    endif // islessgreater
 
 // isunordered
 
-#ifdef isunordered
+#    ifdef isunordered
 
 template <class _A1, class _A2>
-_LIBCUDACXX_INLINE_VISIBILITY
-bool
-__libcpp_isunordered(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+_LIBCUDACXX_INLINE_VISIBILITY bool __libcpp_isunordered(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    return isunordered(__lcpp_x, __lcpp_y);
+  return isunordered(__lcpp_x, __lcpp_y);
 }
 
-#undef isunordered
+#      undef isunordered
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    bool
->::type
-isunordered(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::enable_if<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, bool>::type
+  isunordered(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type type;
-    return __libcpp_isunordered((type)__lcpp_x, (type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type type;
+  return __libcpp_isunordered((type) __lcpp_x, (type) __lcpp_y);
 }
 
-#endif  // isunordered
+#    endif // isunordered
 
 // abs
 
-#undef abs
-#undef labs
-#ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-#undef llabs
-#endif
+#    undef abs
+#    undef labs
+#    ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
+#      undef llabs
+#    endif
 
 // MSVCRT already has the correct prototype in <stdlib.h> if __cplusplus is defined
-#if !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
-inline _LIBCUDACXX_INLINE_VISIBILITY long abs(long __x) noexcept {
+#    if !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
+inline _LIBCUDACXX_INLINE_VISIBILITY long abs(long __x) noexcept
+{
   return ::labs(__x);
 }
-#ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-inline _LIBCUDACXX_INLINE_VISIBILITY long long abs(long long __x) noexcept {
+#      ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
+inline _LIBCUDACXX_INLINE_VISIBILITY long long abs(long long __x) noexcept
+{
   return ::llabs(__x);
 }
-#endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-#endif // !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
+#      endif // _LIBCUDACXX_HAS_NO_LONG_LONG
+#    endif // !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
 
-
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float abs(float __lcpp_x) noexcept {
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float abs(float __lcpp_x) noexcept
+{
   return ::fabsf(__lcpp_x);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY double abs(double __lcpp_x) noexcept {
+inline _LIBCUDACXX_INLINE_VISIBILITY double abs(double __lcpp_x) noexcept
+{
   return ::fabs(__lcpp_x);
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY long double
-abs(long double __lcpp_x) noexcept {
+inline _LIBCUDACXX_INLINE_VISIBILITY long double abs(long double __lcpp_x) noexcept
+{
   return ::fabsl(__lcpp_x);
 }
-#endif // !(defined(_AIX) || defined(__sun__))
+#    endif // !(defined(_AIX) || defined(__sun__))
 
 // div
 
-#undef div
-#undef ldiv
-#ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-#undef lldiv
-#endif
+#    undef div
+#    undef ldiv
+#    ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
+#      undef lldiv
+#    endif
 
 // MSVCRT already has the correct prototype in <stdlib.h> if __cplusplus is defined
-#if !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
-inline _LIBCUDACXX_INLINE_VISIBILITY ldiv_t div(long __x, long __y) noexcept {
+#    if !defined(_LIBCUDACXX_MSVCRT) && !defined(__sun__) && !defined(_AIX)
+inline _LIBCUDACXX_INLINE_VISIBILITY ldiv_t div(long __x, long __y) noexcept
+{
   return ::ldiv(__x, __y);
 }
-#ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-inline _LIBCUDACXX_INLINE_VISIBILITY lldiv_t div(long long __x,
-                                             long long __y) noexcept {
+#      ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
+inline _LIBCUDACXX_INLINE_VISIBILITY lldiv_t div(long long __x, long long __y) noexcept
+{
   return ::lldiv(__x, __y);
 }
-#endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-#endif // _LIBCUDACXX_MSVCRT / __sun__ / _AIX
+#      endif // _LIBCUDACXX_HAS_NO_LONG_LONG
+#    endif // _LIBCUDACXX_MSVCRT / __sun__ / _AIX
 
 // acos
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       acos(float __lcpp_x) noexcept       {return ::acosf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double acos(long double __lcpp_x) noexcept {return ::acosl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float acos(float __lcpp_x) noexcept
+{
+  return ::acosf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double acos(long double __lcpp_x) noexcept
+{
+  return ::acosl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-acos(_A1 __lcpp_x) noexcept {return ::acos((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+acos(_A1 __lcpp_x) noexcept
+{
+  return ::acos((double) __lcpp_x);
+}
 
 // asin
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       asin(float __lcpp_x) noexcept       {return ::asinf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double asin(long double __lcpp_x) noexcept {return ::asinl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float asin(float __lcpp_x) noexcept
+{
+  return ::asinf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double asin(long double __lcpp_x) noexcept
+{
+  return ::asinl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-asin(_A1 __lcpp_x) noexcept {return ::asin((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+asin(_A1 __lcpp_x) noexcept
+{
+  return ::asin((double) __lcpp_x);
+}
 
 // atan
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       atan(float __lcpp_x) noexcept       {return ::atanf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double atan(long double __lcpp_x) noexcept {return ::atanl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float atan(float __lcpp_x) noexcept
+{
+  return ::atanf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double atan(long double __lcpp_x) noexcept
+{
+  return ::atanl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-atan(_A1 __lcpp_x) noexcept {return ::atan((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+atan(_A1 __lcpp_x) noexcept
+{
+  return ::atan((double) __lcpp_x);
+}
 
 // atan2
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       atan2(float __lcpp_y, float __lcpp_x) noexcept             {return ::atan2f(__lcpp_y, __lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double atan2(long double __lcpp_y, long double __lcpp_x) noexcept {return ::atan2l(__lcpp_y, __lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float atan2(float __lcpp_y, float __lcpp_x) noexcept
+{
+  return ::atan2f(__lcpp_y, __lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double atan2(long double __lcpp_y, long double __lcpp_x) noexcept
+{
+  return ::atan2l(__lcpp_y, __lcpp_x);
+}
+#    endif
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-atan2(_A1 __lcpp_y, _A2 __lcpp_x) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  atan2(_A1 __lcpp_y, _A2 __lcpp_x) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::atan2((__result_type)__lcpp_y, (__result_type)__lcpp_x);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::atan2((__result_type) __lcpp_y, (__result_type) __lcpp_x);
 }
 
 // ceil
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       ceil(float __lcpp_x) noexcept       {return ::ceilf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double ceil(long double __lcpp_x) noexcept {return ::ceill(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float ceil(float __lcpp_x) noexcept
+{
+  return ::ceilf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double ceil(long double __lcpp_x) noexcept
+{
+  return ::ceill(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-ceil(_A1 __lcpp_x) noexcept {return ::ceil((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+ceil(_A1 __lcpp_x) noexcept
+{
+  return ::ceil((double) __lcpp_x);
+}
 
 // cos
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       cos(float __lcpp_x) noexcept       {return ::cosf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double cos(long double __lcpp_x) noexcept {return ::cosl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float cos(float __lcpp_x) noexcept
+{
+  return ::cosf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double cos(long double __lcpp_x) noexcept
+{
+  return ::cosl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-cos(_A1 __lcpp_x) noexcept {return ::cos((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+cos(_A1 __lcpp_x) noexcept
+{
+  return ::cos((double) __lcpp_x);
+}
 
 // cosh
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       cosh(float __lcpp_x) noexcept       {return ::coshf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double cosh(long double __lcpp_x) noexcept {return ::coshl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float cosh(float __lcpp_x) noexcept
+{
+  return ::coshf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double cosh(long double __lcpp_x) noexcept
+{
+  return ::coshl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-cosh(_A1 __lcpp_x) noexcept {return ::cosh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+cosh(_A1 __lcpp_x) noexcept
+{
+  return ::cosh((double) __lcpp_x);
+}
 
 // exp
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       exp(float __lcpp_x) noexcept       {return ::expf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double exp(long double __lcpp_x) noexcept {return ::expl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float exp(float __lcpp_x) noexcept
+{
+  return ::expf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double exp(long double __lcpp_x) noexcept
+{
+  return ::expl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-exp(_A1 __lcpp_x) noexcept {return ::exp((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+exp(_A1 __lcpp_x) noexcept
+{
+  return ::exp((double) __lcpp_x);
+}
 
 // fabs
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fabs(float __lcpp_x) noexcept       {return ::fabsf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fabs(long double __lcpp_x) noexcept {return ::fabsl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float fabs(float __lcpp_x) noexcept
+{
+  return ::fabsf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double fabs(long double __lcpp_x) noexcept
+{
+  return ::fabsl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-fabs(_A1 __lcpp_x) noexcept {return ::fabs((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+fabs(_A1 __lcpp_x) noexcept
+{
+  return ::fabs((double) __lcpp_x);
+}
 
 // floor
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       floor(float __lcpp_x) noexcept       {return ::floorf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double floor(long double __lcpp_x) noexcept {return ::floorl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float floor(float __lcpp_x) noexcept
+{
+  return ::floorf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double floor(long double __lcpp_x) noexcept
+{
+  return ::floorl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-floor(_A1 __lcpp_x) noexcept {return ::floor((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+floor(_A1 __lcpp_x) noexcept
+{
+  return ::floor((double) __lcpp_x);
+}
 
 // fmod
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fmod(float __lcpp_x, float __lcpp_y) noexcept             {return ::fmodf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fmod(long double __lcpp_x, long double __lcpp_y) noexcept {return ::fmodl(__lcpp_x, __lcpp_y);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float fmod(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::fmodf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double fmod(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::fmodl(__lcpp_x, __lcpp_y);
+}
+#    endif
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-fmod(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  fmod(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::fmod((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::fmod((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // frexp
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       frexp(float __lcpp_x, int* __lcpp_e) noexcept       {return ::frexpf(__lcpp_x, __lcpp_e);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double frexp(long double __lcpp_x, int* __lcpp_e) noexcept {return ::frexpl(__lcpp_x, __lcpp_e);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float frexp(float __lcpp_x, int* __lcpp_e) noexcept
+{
+  return ::frexpf(__lcpp_x, __lcpp_e);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double frexp(long double __lcpp_x, int* __lcpp_e) noexcept
+{
+  return ::frexpl(__lcpp_x, __lcpp_e);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-frexp(_A1 __lcpp_x, int* __lcpp_e) noexcept {return ::frexp((double)__lcpp_x, __lcpp_e);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+frexp(_A1 __lcpp_x, int* __lcpp_e) noexcept
+{
+  return ::frexp((double) __lcpp_x, __lcpp_e);
+}
 
 // ldexp
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       ldexp(float __lcpp_x, int __lcpp_e) noexcept       {return ::ldexpf(__lcpp_x, __lcpp_e);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double ldexp(long double __lcpp_x, int __lcpp_e) noexcept {return ::ldexpl(__lcpp_x, __lcpp_e);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float ldexp(float __lcpp_x, int __lcpp_e) noexcept
+{
+  return ::ldexpf(__lcpp_x, __lcpp_e);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double ldexp(long double __lcpp_x, int __lcpp_e) noexcept
+{
+  return ::ldexpl(__lcpp_x, __lcpp_e);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-ldexp(_A1 __lcpp_x, int __lcpp_e) noexcept {return ::ldexp((double)__lcpp_x, __lcpp_e);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+ldexp(_A1 __lcpp_x, int __lcpp_e) noexcept
+{
+  return ::ldexp((double) __lcpp_x, __lcpp_e);
+}
 
 // log
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       log(float __lcpp_x) noexcept       {return ::logf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double log(long double __lcpp_x) noexcept {return ::logl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float log(float __lcpp_x) noexcept
+{
+  return ::logf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double log(long double __lcpp_x) noexcept
+{
+  return ::logl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-log(_A1 __lcpp_x) noexcept {return ::log((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+log(_A1 __lcpp_x) noexcept
+{
+  return ::log((double) __lcpp_x);
+}
 
 // log10
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       log10(float __lcpp_x) noexcept       {return ::log10f(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double log10(long double __lcpp_x) noexcept {return ::log10l(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float log10(float __lcpp_x) noexcept
+{
+  return ::log10f(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double log10(long double __lcpp_x) noexcept
+{
+  return ::log10l(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-log10(_A1 __lcpp_x) noexcept {return ::log10((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+log10(_A1 __lcpp_x) noexcept
+{
+  return ::log10((double) __lcpp_x);
+}
 
 // modf
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       modf(float __lcpp_x, float* __lcpp_y) noexcept             {return ::modff(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double modf(long double __lcpp_x, long double* __lcpp_y) noexcept {return ::modfl(__lcpp_x, __lcpp_y);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float modf(float __lcpp_x, float* __lcpp_y) noexcept
+{
+  return ::modff(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double modf(long double __lcpp_x, long double* __lcpp_y) noexcept
+{
+  return ::modfl(__lcpp_x, __lcpp_y);
+}
+#    endif
 
 // pow
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       pow(float __lcpp_x, float __lcpp_y) noexcept             {return ::powf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double pow(long double __lcpp_x, long double __lcpp_y) noexcept {return ::powl(__lcpp_x, __lcpp_y);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float pow(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::powf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double pow(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::powl(__lcpp_x, __lcpp_y);
+}
+#    endif
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-pow(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  pow(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::pow((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::pow((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // sin
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       sin(float __lcpp_x) noexcept       {return ::sinf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double sin(long double __lcpp_x) noexcept {return ::sinl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float sin(float __lcpp_x) noexcept
+{
+  return ::sinf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double sin(long double __lcpp_x) noexcept
+{
+  return ::sinl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-sin(_A1 __lcpp_x) noexcept {return ::sin((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+sin(_A1 __lcpp_x) noexcept
+{
+  return ::sin((double) __lcpp_x);
+}
 
 // sinh
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       sinh(float __lcpp_x) noexcept       {return ::sinhf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double sinh(long double __lcpp_x) noexcept {return ::sinhl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float sinh(float __lcpp_x) noexcept
+{
+  return ::sinhf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double sinh(long double __lcpp_x) noexcept
+{
+  return ::sinhl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-sinh(_A1 __lcpp_x) noexcept {return ::sinh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+sinh(_A1 __lcpp_x) noexcept
+{
+  return ::sinh((double) __lcpp_x);
+}
 
 // sqrt
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       sqrt(float __lcpp_x) noexcept       {return ::sqrtf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double sqrt(long double __lcpp_x) noexcept {return ::sqrtl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float sqrt(float __lcpp_x) noexcept
+{
+  return ::sqrtf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double sqrt(long double __lcpp_x) noexcept
+{
+  return ::sqrtl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-sqrt(_A1 __lcpp_x) noexcept {return ::sqrt((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+sqrt(_A1 __lcpp_x) noexcept
+{
+  return ::sqrt((double) __lcpp_x);
+}
 
 // tan
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       tan(float __lcpp_x) noexcept       {return ::tanf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double tan(long double __lcpp_x) noexcept {return ::tanl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float tan(float __lcpp_x) noexcept
+{
+  return ::tanf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double tan(long double __lcpp_x) noexcept
+{
+  return ::tanl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-tan(_A1 __lcpp_x) noexcept {return ::tan((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+tan(_A1 __lcpp_x) noexcept
+{
+  return ::tan((double) __lcpp_x);
+}
 
 // tanh
 
-#if !(defined(_AIX) || defined(__sun__))
-inline _LIBCUDACXX_INLINE_VISIBILITY float       tanh(float __lcpp_x) noexcept       {return ::tanhf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double tanh(long double __lcpp_x) noexcept {return ::tanhl(__lcpp_x);}
-#endif
+#    if !(defined(_AIX) || defined(__sun__))
+inline _LIBCUDACXX_INLINE_VISIBILITY float tanh(float __lcpp_x) noexcept
+{
+  return ::tanhf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double tanh(long double __lcpp_x) noexcept
+{
+  return ::tanhl(__lcpp_x);
+}
+#    endif
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-tanh(_A1 __lcpp_x) noexcept {return ::tanh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+tanh(_A1 __lcpp_x) noexcept
+{
+  return ::tanh((double) __lcpp_x);
+}
 
 // acosh
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       acosh(float __lcpp_x) noexcept       {return ::acoshf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double acosh(long double __lcpp_x) noexcept {return ::acoshl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float acosh(float __lcpp_x) noexcept
+{
+  return ::acoshf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double acosh(long double __lcpp_x) noexcept
+{
+  return ::acoshl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-acosh(_A1 __lcpp_x) noexcept {return ::acosh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+acosh(_A1 __lcpp_x) noexcept
+{
+  return ::acosh((double) __lcpp_x);
+}
 
 // asinh
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       asinh(float __lcpp_x) noexcept       {return ::asinhf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double asinh(long double __lcpp_x) noexcept {return ::asinhl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float asinh(float __lcpp_x) noexcept
+{
+  return ::asinhf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double asinh(long double __lcpp_x) noexcept
+{
+  return ::asinhl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-asinh(_A1 __lcpp_x) noexcept {return ::asinh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+asinh(_A1 __lcpp_x) noexcept
+{
+  return ::asinh((double) __lcpp_x);
+}
 
 // atanh
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       atanh(float __lcpp_x) noexcept       {return ::atanhf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double atanh(long double __lcpp_x) noexcept {return ::atanhl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float atanh(float __lcpp_x) noexcept
+{
+  return ::atanhf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double atanh(long double __lcpp_x) noexcept
+{
+  return ::atanhl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-atanh(_A1 __lcpp_x) noexcept {return ::atanh((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+atanh(_A1 __lcpp_x) noexcept
+{
+  return ::atanh((double) __lcpp_x);
+}
 
 // cbrt
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       cbrt(float __lcpp_x) noexcept       {return ::cbrtf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double cbrt(long double __lcpp_x) noexcept {return ::cbrtl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float cbrt(float __lcpp_x) noexcept
+{
+  return ::cbrtf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double cbrt(long double __lcpp_x) noexcept
+{
+  return ::cbrtl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-cbrt(_A1 __lcpp_x) noexcept {return ::cbrt((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+cbrt(_A1 __lcpp_x) noexcept
+{
+  return ::cbrt((double) __lcpp_x);
+}
 
 // copysign
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float copysign(float __lcpp_x,
-                                                float __lcpp_y) noexcept {
+inline _LIBCUDACXX_INLINE_VISIBILITY float copysign(float __lcpp_x, float __lcpp_y) noexcept
+{
   return ::copysignf(__lcpp_x, __lcpp_y);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY long double
-copysign(long double __lcpp_x, long double __lcpp_y) noexcept {
+inline _LIBCUDACXX_INLINE_VISIBILITY long double copysign(long double __lcpp_x, long double __lcpp_y) noexcept
+{
   return ::copysignl(__lcpp_x, __lcpp_y);
 }
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-copysign(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  copysign(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::copysign((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::copysign((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // erf
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       erf(float __lcpp_x) noexcept       {return ::erff(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double erf(long double __lcpp_x) noexcept {return ::erfl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float erf(float __lcpp_x) noexcept
+{
+  return ::erff(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double erf(long double __lcpp_x) noexcept
+{
+  return ::erfl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-erf(_A1 __lcpp_x) noexcept {return ::erf((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+erf(_A1 __lcpp_x) noexcept
+{
+  return ::erf((double) __lcpp_x);
+}
 
 // erfc
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       erfc(float __lcpp_x) noexcept       {return ::erfcf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double erfc(long double __lcpp_x) noexcept {return ::erfcl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float erfc(float __lcpp_x) noexcept
+{
+  return ::erfcf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double erfc(long double __lcpp_x) noexcept
+{
+  return ::erfcl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-erfc(_A1 __lcpp_x) noexcept {return ::erfc((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+erfc(_A1 __lcpp_x) noexcept
+{
+  return ::erfc((double) __lcpp_x);
+}
 
 // exp2
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       exp2(float __lcpp_x) noexcept       {return ::exp2f(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double exp2(long double __lcpp_x) noexcept {return ::exp2l(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float exp2(float __lcpp_x) noexcept
+{
+  return ::exp2f(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double exp2(long double __lcpp_x) noexcept
+{
+  return ::exp2l(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-exp2(_A1 __lcpp_x) noexcept {return ::exp2((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+exp2(_A1 __lcpp_x) noexcept
+{
+  return ::exp2((double) __lcpp_x);
+}
 
 // expm1
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       expm1(float __lcpp_x) noexcept       {return ::expm1f(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double expm1(long double __lcpp_x) noexcept {return ::expm1l(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float expm1(float __lcpp_x) noexcept
+{
+  return ::expm1f(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double expm1(long double __lcpp_x) noexcept
+{
+  return ::expm1l(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-expm1(_A1 __lcpp_x) noexcept {return ::expm1((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+expm1(_A1 __lcpp_x) noexcept
+{
+  return ::expm1((double) __lcpp_x);
+}
 
 // fdim
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fdim(float __lcpp_x, float __lcpp_y) noexcept             {return ::fdimf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fdim(long double __lcpp_x, long double __lcpp_y) noexcept {return ::fdiml(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float fdim(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::fdimf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double fdim(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::fdiml(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-fdim(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  fdim(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::fdim((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::fdim((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // fma
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fma(float __lcpp_x, float __lcpp_y, float __lcpp_z) noexcept                   {return ::fmaf(__lcpp_x, __lcpp_y, __lcpp_z);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fma(long double __lcpp_x, long double __lcpp_y, long double __lcpp_z) noexcept {return ::fmal(__lcpp_x, __lcpp_y, __lcpp_z);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float fma(float __lcpp_x, float __lcpp_y, float __lcpp_z) noexcept
+{
+  return ::fmaf(__lcpp_x, __lcpp_y, __lcpp_z);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double
+fma(long double __lcpp_x, long double __lcpp_y, long double __lcpp_z) noexcept
+{
+  return ::fmal(__lcpp_x, __lcpp_y, __lcpp_z);
+}
 
 template <class _A1, class _A2, class _A3>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value &&
-    std::is_arithmetic<_A3>::value,
-    std::__promote<_A1, _A2, _A3>
->::type
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::_EnableIf<
+  std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value && std::is_arithmetic<_A3>::value,
+  std::__promote<_A1, _A2, _A3>>::type
 fma(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 {
-    typedef typename std::__promote<_A1, _A2, _A3>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value &&
-                     std::_IsSame<_A3, __result_type>::value)), "");
-    return ::fma((__result_type)__lcpp_x, (__result_type)__lcpp_y, (__result_type)__lcpp_z);
+  typedef typename std::__promote<_A1, _A2, _A3>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value
+                   && std::_IsSame<_A3, __result_type>::value)),
+                "");
+  return ::fma((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
 }
 
 // fmax
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fmax(float __lcpp_x, float __lcpp_y) noexcept             {return ::fmaxf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fmax(long double __lcpp_x, long double __lcpp_y) noexcept {return ::fmaxl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float fmax(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::fmaxf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double fmax(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::fmaxl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-fmax(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  fmax(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::fmax((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::fmax((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // fmin
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       fmin(float __lcpp_x, float __lcpp_y) noexcept             {return ::fminf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double fmin(long double __lcpp_x, long double __lcpp_y) noexcept {return ::fminl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float fmin(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::fminf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double fmin(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::fminl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-fmin(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  fmin(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::fmin((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::fmin((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // hypot
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       hypot(float __lcpp_x, float __lcpp_y) noexcept             {return ::hypotf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot(long double __lcpp_x, long double __lcpp_y) noexcept {return ::hypotl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float hypot(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::hypotf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double hypot(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::hypotl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-hypot(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  hypot(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::hypot((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // ilogb
 
-inline _LIBCUDACXX_INLINE_VISIBILITY int ilogb(float __lcpp_x) noexcept       {return ::ilogbf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY int ilogb(long double __lcpp_x) noexcept {return ::ilogbl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY int ilogb(float __lcpp_x) noexcept
+{
+  return ::ilogbf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY int ilogb(long double __lcpp_x) noexcept
+{
+  return ::ilogbl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, int>::type
-ilogb(_A1 __lcpp_x) noexcept {return ::ilogb((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, int>::type
+ilogb(_A1 __lcpp_x) noexcept
+{
+  return ::ilogb((double) __lcpp_x);
+}
 
 // lgamma
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       lgamma(float __lcpp_x) noexcept       {return ::lgammaf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double lgamma(long double __lcpp_x) noexcept {return ::lgammal(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float lgamma(float __lcpp_x) noexcept
+{
+  return ::lgammaf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double lgamma(long double __lcpp_x) noexcept
+{
+  return ::lgammal(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-lgamma(_A1 __lcpp_x) noexcept {return ::lgamma((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+lgamma(_A1 __lcpp_x) noexcept
+{
+  return ::lgamma((double) __lcpp_x);
+}
 
 // llrint
 
-inline _LIBCUDACXX_INLINE_VISIBILITY long long llrint(float __lcpp_x) noexcept       {return ::llrintf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long long llrint(long double __lcpp_x) noexcept {return ::llrintl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY long long llrint(float __lcpp_x) noexcept
+{
+  return ::llrintf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long long llrint(long double __lcpp_x) noexcept
+{
+  return ::llrintl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, long long>::type
-llrint(_A1 __lcpp_x) noexcept {return ::llrint((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, long long>::type
+llrint(_A1 __lcpp_x) noexcept
+{
+  return ::llrint((double) __lcpp_x);
+}
 
 // llround
 
-inline _LIBCUDACXX_INLINE_VISIBILITY long long llround(float __lcpp_x) noexcept       {return ::llroundf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long long llround(long double __lcpp_x) noexcept {return ::llroundl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY long long llround(float __lcpp_x) noexcept
+{
+  return ::llroundf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long long llround(long double __lcpp_x) noexcept
+{
+  return ::llroundl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, long long>::type
-llround(_A1 __lcpp_x) noexcept {return ::llround((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, long long>::type
+llround(_A1 __lcpp_x) noexcept
+{
+  return ::llround((double) __lcpp_x);
+}
 
 // log1p
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       log1p(float __lcpp_x) noexcept       {return ::log1pf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double log1p(long double __lcpp_x) noexcept {return ::log1pl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float log1p(float __lcpp_x) noexcept
+{
+  return ::log1pf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double log1p(long double __lcpp_x) noexcept
+{
+  return ::log1pl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-log1p(_A1 __lcpp_x) noexcept {return ::log1p((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+log1p(_A1 __lcpp_x) noexcept
+{
+  return ::log1p((double) __lcpp_x);
+}
 
 // log2
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       log2(float __lcpp_x) noexcept       {return ::log2f(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double log2(long double __lcpp_x) noexcept {return ::log2l(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float log2(float __lcpp_x) noexcept
+{
+  return ::log2f(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double log2(long double __lcpp_x) noexcept
+{
+  return ::log2l(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-log2(_A1 __lcpp_x) noexcept {return ::log2((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+log2(_A1 __lcpp_x) noexcept
+{
+  return ::log2((double) __lcpp_x);
+}
 
 // logb
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       logb(float __lcpp_x) noexcept       {return ::logbf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double logb(long double __lcpp_x) noexcept {return ::logbl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float logb(float __lcpp_x) noexcept
+{
+  return ::logbf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double logb(long double __lcpp_x) noexcept
+{
+  return ::logbl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-logb(_A1 __lcpp_x) noexcept {return ::logb((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+logb(_A1 __lcpp_x) noexcept
+{
+  return ::logb((double) __lcpp_x);
+}
 
 // lrint
 
-inline _LIBCUDACXX_INLINE_VISIBILITY long lrint(float __lcpp_x) noexcept       {return ::lrintf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long lrint(long double __lcpp_x) noexcept {return ::lrintl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY long lrint(float __lcpp_x) noexcept
+{
+  return ::lrintf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long lrint(long double __lcpp_x) noexcept
+{
+  return ::lrintl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, long>::type
-lrint(_A1 __lcpp_x) noexcept {return ::lrint((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, long>::type
+lrint(_A1 __lcpp_x) noexcept
+{
+  return ::lrint((double) __lcpp_x);
+}
 
 // lround
 
-inline _LIBCUDACXX_INLINE_VISIBILITY long lround(float __lcpp_x) noexcept       {return ::lroundf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long lround(long double __lcpp_x) noexcept {return ::lroundl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY long lround(float __lcpp_x) noexcept
+{
+  return ::lroundf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long lround(long double __lcpp_x) noexcept
+{
+  return ::lroundl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, long>::type
-lround(_A1 __lcpp_x) noexcept {return ::lround((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, long>::type
+lround(_A1 __lcpp_x) noexcept
+{
+  return ::lround((double) __lcpp_x);
+}
 
 // nan
 
 // nearbyint
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       nearbyint(float __lcpp_x) noexcept       {return ::nearbyintf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double nearbyint(long double __lcpp_x) noexcept {return ::nearbyintl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float nearbyint(float __lcpp_x) noexcept
+{
+  return ::nearbyintf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double nearbyint(long double __lcpp_x) noexcept
+{
+  return ::nearbyintl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-nearbyint(_A1 __lcpp_x) noexcept {return ::nearbyint((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+nearbyint(_A1 __lcpp_x) noexcept
+{
+  return ::nearbyint((double) __lcpp_x);
+}
 
 // nextafter
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       nextafter(float __lcpp_x, float __lcpp_y) noexcept             {return ::nextafterf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double nextafter(long double __lcpp_x, long double __lcpp_y) noexcept {return ::nextafterl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float nextafter(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::nextafterf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double nextafter(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::nextafterl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-nextafter(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  nextafter(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::nextafter((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::nextafter((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // nexttoward
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       nexttoward(float __lcpp_x, long double __lcpp_y) noexcept       {return ::nexttowardf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double nexttoward(long double __lcpp_x, long double __lcpp_y) noexcept {return ::nexttowardl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float nexttoward(float __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::nexttowardf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double nexttoward(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::nexttowardl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-nexttoward(_A1 __lcpp_x, long double __lcpp_y) noexcept {return ::nexttoward((double)__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+nexttoward(_A1 __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::nexttoward((double) __lcpp_x, __lcpp_y);
+}
 
 // remainder
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       remainder(float __lcpp_x, float __lcpp_y) noexcept             {return ::remainderf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double remainder(long double __lcpp_x, long double __lcpp_y) noexcept {return ::remainderl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float remainder(float __lcpp_x, float __lcpp_y) noexcept
+{
+  return ::remainderf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double remainder(long double __lcpp_x, long double __lcpp_y) noexcept
+{
+  return ::remainderl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-remainder(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  remainder(_A1 __lcpp_x, _A2 __lcpp_y) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::remainder((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::remainder((__result_type) __lcpp_x, (__result_type) __lcpp_y);
 }
 
 // remquo
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       remquo(float __lcpp_x, float __lcpp_y, int* __lcpp_z) noexcept             {return ::remquof(__lcpp_x, __lcpp_y, __lcpp_z);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double remquo(long double __lcpp_x, long double __lcpp_y, int* __lcpp_z) noexcept {return ::remquol(__lcpp_x, __lcpp_y, __lcpp_z);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float remquo(float __lcpp_x, float __lcpp_y, int* __lcpp_z) noexcept
+{
+  return ::remquof(__lcpp_x, __lcpp_y, __lcpp_z);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double
+remquo(long double __lcpp_x, long double __lcpp_y, int* __lcpp_z) noexcept
+{
+  return ::remquol(__lcpp_x, __lcpp_y, __lcpp_z);
+}
 
 template <class _A1, class _A2>
 inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::_EnableIf
-<
-    std::is_arithmetic<_A1>::value &&
-    std::is_arithmetic<_A2>::value,
-    std::__promote<_A1, _A2>
->::type
-remquo(_A1 __lcpp_x, _A2 __lcpp_y, int* __lcpp_z) noexcept
+  typename std::_EnableIf<std::is_arithmetic<_A1>::value && std::is_arithmetic<_A2>::value, std::__promote<_A1, _A2>>::type
+  remquo(_A1 __lcpp_x, _A2 __lcpp_y, int* __lcpp_z) noexcept
 {
-    typedef typename std::__promote<_A1, _A2>::type __result_type;
-    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
-                     std::_IsSame<_A2, __result_type>::value)), "");
-    return ::remquo((__result_type)__lcpp_x, (__result_type)__lcpp_y, __lcpp_z);
+  typedef typename std::__promote<_A1, _A2>::type __result_type;
+  static_assert((!(std::_IsSame<_A1, __result_type>::value && std::_IsSame<_A2, __result_type>::value)), "");
+  return ::remquo((__result_type) __lcpp_x, (__result_type) __lcpp_y, __lcpp_z);
 }
 
 // rint
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       rint(float __lcpp_x) noexcept       {return ::rintf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double rint(long double __lcpp_x) noexcept {return ::rintl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float rint(float __lcpp_x) noexcept
+{
+  return ::rintf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double rint(long double __lcpp_x) noexcept
+{
+  return ::rintl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-rint(_A1 __lcpp_x) noexcept {return ::rint((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+rint(_A1 __lcpp_x) noexcept
+{
+  return ::rint((double) __lcpp_x);
+}
 
 // round
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       round(float __lcpp_x) noexcept       {return ::roundf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double round(long double __lcpp_x) noexcept {return ::roundl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float round(float __lcpp_x) noexcept
+{
+  return ::roundf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double round(long double __lcpp_x) noexcept
+{
+  return ::roundl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-round(_A1 __lcpp_x) noexcept {return ::round((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+round(_A1 __lcpp_x) noexcept
+{
+  return ::round((double) __lcpp_x);
+}
 
 // scalbln
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       scalbln(float __lcpp_x, long __lcpp_y) noexcept       {return ::scalblnf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double scalbln(long double __lcpp_x, long __lcpp_y) noexcept {return ::scalblnl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float scalbln(float __lcpp_x, long __lcpp_y) noexcept
+{
+  return ::scalblnf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double scalbln(long double __lcpp_x, long __lcpp_y) noexcept
+{
+  return ::scalblnl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-scalbln(_A1 __lcpp_x, long __lcpp_y) noexcept {return ::scalbln((double)__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+scalbln(_A1 __lcpp_x, long __lcpp_y) noexcept
+{
+  return ::scalbln((double) __lcpp_x, __lcpp_y);
+}
 
 // scalbn
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       scalbn(float __lcpp_x, int __lcpp_y) noexcept       {return ::scalbnf(__lcpp_x, __lcpp_y);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double scalbn(long double __lcpp_x, int __lcpp_y) noexcept {return ::scalbnl(__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float scalbn(float __lcpp_x, int __lcpp_y) noexcept
+{
+  return ::scalbnf(__lcpp_x, __lcpp_y);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double scalbn(long double __lcpp_x, int __lcpp_y) noexcept
+{
+  return ::scalbnl(__lcpp_x, __lcpp_y);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-scalbn(_A1 __lcpp_x, int __lcpp_y) noexcept {return ::scalbn((double)__lcpp_x, __lcpp_y);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+scalbn(_A1 __lcpp_x, int __lcpp_y) noexcept
+{
+  return ::scalbn((double) __lcpp_x, __lcpp_y);
+}
 
 // tgamma
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       tgamma(float __lcpp_x) noexcept       {return ::tgammaf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double tgamma(long double __lcpp_x) noexcept {return ::tgammal(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float tgamma(float __lcpp_x) noexcept
+{
+  return ::tgammaf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double tgamma(long double __lcpp_x) noexcept
+{
+  return ::tgammal(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-tgamma(_A1 __lcpp_x) noexcept {return ::tgamma((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+tgamma(_A1 __lcpp_x) noexcept
+{
+  return ::tgamma((double) __lcpp_x);
+}
 
 // trunc
 
-inline _LIBCUDACXX_INLINE_VISIBILITY float       trunc(float __lcpp_x) noexcept       {return ::truncf(__lcpp_x);}
-inline _LIBCUDACXX_INLINE_VISIBILITY long double trunc(long double __lcpp_x) noexcept {return ::truncl(__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY float trunc(float __lcpp_x) noexcept
+{
+  return ::truncf(__lcpp_x);
+}
+inline _LIBCUDACXX_INLINE_VISIBILITY long double trunc(long double __lcpp_x) noexcept
+{
+  return ::truncl(__lcpp_x);
+}
 
 template <class _A1>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-typename std::enable_if<std::is_integral<_A1>::value, double>::type
-trunc(_A1 __lcpp_x) noexcept {return ::trunc((double)__lcpp_x);}
+inline _LIBCUDACXX_INLINE_VISIBILITY typename std::enable_if<std::is_integral<_A1>::value, double>::type
+trunc(_A1 __lcpp_x) noexcept
+{
+  return ::trunc((double) __lcpp_x);
+}
 
 } // extern "C++"
 
-#endif // __cplusplus
+#  endif // __cplusplus
 
 #else // _LIBCUDACXX_MATH_H
 
@@ -1571,8 +1871,8 @@ trunc(_A1 __lcpp_x) noexcept {return ::trunc((double)__lcpp_x);}
 //
 // and receive the definitions of mathematical constants, even if <math.h>
 // has previously been included.
-#if defined(_LIBCUDACXX_MSVCRT) && defined(_USE_MATH_DEFINES)
-#include_next <math.h>
-#endif
+#  if defined(_LIBCUDACXX_MSVCRT) && defined(_USE_MATH_DEFINES)
+#    include_next <math.h>
+#  endif
 
-#endif  // _LIBCUDACXX_MATH_H
+#endif // _LIBCUDACXX_MATH_H

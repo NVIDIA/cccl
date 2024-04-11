@@ -10,8 +10,8 @@
 
 // is_function
 
+#include <cuda/std/cstddef> // for cuda::std::nullptr_t
 #include <cuda/std/type_traits>
-#include <cuda/std/cstddef>        // for cuda::std::nullptr_t
 
 #include "test_macros.h"
 
@@ -21,68 +21,72 @@
 // structs do not have this problem.
 
 template <class T>
-struct test_is_function {
-    static_assert( cuda::std::is_function<T>::value, "");
-    static_assert( cuda::std::is_function<const T>::value, "");
-    static_assert( cuda::std::is_function<volatile T>::value, "");
-    static_assert( cuda::std::is_function<const volatile T>::value, "");
+struct test_is_function
+{
+  static_assert(cuda::std::is_function<T>::value, "");
+  static_assert(cuda::std::is_function<const T>::value, "");
+  static_assert(cuda::std::is_function<volatile T>::value, "");
+  static_assert(cuda::std::is_function<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert( cuda::std::is_function_v<T>, "");
-    static_assert( cuda::std::is_function_v<const T>, "");
-    static_assert( cuda::std::is_function_v<volatile T>, "");
-    static_assert( cuda::std::is_function_v<const volatile T>, "");
+  static_assert(cuda::std::is_function_v<T>, "");
+  static_assert(cuda::std::is_function_v<const T>, "");
+  static_assert(cuda::std::is_function_v<volatile T>, "");
+  static_assert(cuda::std::is_function_v<const volatile T>, "");
 #endif
 };
 
 template <class T>
-struct test_is_not_function {
-    static_assert(!cuda::std::is_function<T>::value, "");
-    static_assert(!cuda::std::is_function<const T>::value, "");
-    static_assert(!cuda::std::is_function<volatile T>::value, "");
-    static_assert(!cuda::std::is_function<const volatile T>::value, "");
+struct test_is_not_function
+{
+  static_assert(!cuda::std::is_function<T>::value, "");
+  static_assert(!cuda::std::is_function<const T>::value, "");
+  static_assert(!cuda::std::is_function<volatile T>::value, "");
+  static_assert(!cuda::std::is_function<const volatile T>::value, "");
 #if TEST_STD_VER > 2011
-    static_assert(!cuda::std::is_function_v<T>, "");
-    static_assert(!cuda::std::is_function_v<const T>, "");
-    static_assert(!cuda::std::is_function_v<volatile T>, "");
-    static_assert(!cuda::std::is_function_v<const volatile T>, "");
+  static_assert(!cuda::std::is_function_v<T>, "");
+  static_assert(!cuda::std::is_function_v<const T>, "");
+  static_assert(!cuda::std::is_function_v<volatile T>, "");
+  static_assert(!cuda::std::is_function_v<const volatile T>, "");
 #endif
 };
 
 class Empty
-{
-};
+{};
 
 class NotEmpty
 {
-    __host__ __device__
-    virtual ~NotEmpty();
+  __host__ __device__ virtual ~NotEmpty();
 };
 
-union Union {};
+union Union
+{};
 
 struct bit_zero
 {
-    int :  0;
+  int : 0;
 };
 
 class Abstract
 {
-    __host__ __device__
-    virtual ~Abstract() = 0;
+  __host__ __device__ virtual ~Abstract() = 0;
 };
 
-enum Enum {zero, one};
+enum Enum
+{
+  zero,
+  one
+};
 struct incomplete_type;
 
 typedef void (*FunctionPtr)();
 
 int main(int, char**)
 {
-    test_is_function<void(void)>();
-    test_is_function<int(int)>();
-    test_is_function<int(int, double)>();
-    test_is_function<int(Abstract *)>();
-    test_is_function<void(...)>();
+  test_is_function<void(void)>();
+  test_is_function<int(int)>();
+  test_is_function<int(int, double)>();
+  test_is_function<int(Abstract*)>();
+  test_is_function<void(...)>();
 
   test_is_not_function<cuda::std::nullptr_t>();
   test_is_not_function<void>();

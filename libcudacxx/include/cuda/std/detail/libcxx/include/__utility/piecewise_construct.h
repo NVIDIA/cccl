@@ -22,9 +22,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-struct _LIBCUDACXX_TEMPLATE_VIS piecewise_construct_t { explicit piecewise_construct_t() = default; };
+struct _LIBCUDACXX_TEMPLATE_VIS piecewise_construct_t
+{
+  explicit piecewise_construct_t() = default;
+};
 #if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-extern _LIBCUDACXX_EXPORTED_FROM_ABI const piecewise_construct_t piecewise_construct;// = piecewise_construct_t();
+extern _LIBCUDACXX_EXPORTED_FROM_ABI const piecewise_construct_t piecewise_construct; // = piecewise_construct_t();
 #else
 /* _LIBCUDACXX_INLINE_VAR */ constexpr piecewise_construct_t piecewise_construct = piecewise_construct_t();
 #endif

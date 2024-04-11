@@ -16,24 +16,26 @@
 //   If Extent is not equal to dynamic_extent, then last - first shall be equal to Extent.
 //
 
-#include <cuda/std/span>
 #include <cuda/std/cassert>
+#include <cuda/std/span>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
 template <class T, class Sentinel>
-__host__ __device__ constexpr bool test_ctor() {
+__host__ __device__ constexpr bool test_ctor()
+{
   T val[2] = {};
-  auto s1 = cuda::std::span<T>(cuda::std::begin(val), Sentinel(cuda::std::end(val)));
-  auto s2 = cuda::std::span<T, 2>(cuda::std::begin(val), Sentinel(cuda::std::end(val)));
+  auto s1  = cuda::std::span<T>(cuda::std::begin(val), Sentinel(cuda::std::end(val)));
+  auto s2  = cuda::std::span<T, 2>(cuda::std::begin(val), Sentinel(cuda::std::end(val)));
   assert(s1.data() == cuda::std::data(val) && s1.size() == cuda::std::size(val));
   assert(s2.data() == cuda::std::data(val) && s2.size() == cuda::std::size(val));
   return true;
 }
 
 template <size_t Extent>
-__host__ __device__ constexpr void test_constructibility() {
+__host__ __device__ constexpr void test_constructibility()
+{
   static_assert(cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, int*>, "");
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, const int*, const int*>, "");
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, volatile int*, volatile int*>, "");
@@ -46,18 +48,21 @@ __host__ __device__ constexpr void test_constructibility() {
   static_assert(!cuda::std::is_constructible_v<cuda::std::span<int, Extent>, int*, float*>, ""); // types wrong
 }
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   test_constructibility<cuda::std::dynamic_extent>();
   test_constructibility<3>();
-  struct A {};
+  struct A
+  {};
   assert((test_ctor<int, int*>()));
-  //assert((test_ctor<int, sized_sentinel<int*>>()));
+  // assert((test_ctor<int, sized_sentinel<int*>>()));
   assert((test_ctor<A, A*>()));
-  //assert((test_ctor<A, sized_sentinel<A*>>()));
+  // assert((test_ctor<A, sized_sentinel<A*>>()));
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
 

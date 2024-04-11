@@ -20,13 +20,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS alignment_of
-    : public integral_constant<size_t, _LIBCUDACXX_ALIGNOF(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS alignment_of : public integral_constant<size_t, _LIBCUDACXX_ALIGNOF(_Tp)>
+{};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

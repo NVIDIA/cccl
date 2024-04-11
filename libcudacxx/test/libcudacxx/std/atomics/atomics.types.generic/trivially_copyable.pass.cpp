@@ -60,24 +60,26 @@
 
 #include "test_macros.h"
 
-struct TriviallyCopyable {
-    __host__ __device__
-    TriviallyCopyable ( int i ) : i_(i) {}
-    int i_;
+struct TriviallyCopyable
+{
+  __host__ __device__ TriviallyCopyable(int i)
+      : i_(i)
+  {}
+  int i_;
 };
 
 template <class T>
-__host__ __device__
-void test ( T t ) {
-    cuda::std::atomic<T> t0(t);
-    cuda::std::atomic_ref<T> t1(t);
+__host__ __device__ void test(T t)
+{
+  cuda::std::atomic<T> t0(t);
+  cuda::std::atomic_ref<T> t1(t);
 }
 
 int main(int, char**)
 {
-    test(TriviallyCopyable(42));
-    // test(cuda::std::this_thread::get_id());
-    // test(cuda::std::chrono::nanoseconds(2));
+  test(TriviallyCopyable(42));
+  // test(cuda::std::this_thread::get_id());
+  // test(cuda::std::chrono::nanoseconds(2));
 
   return 0;
 }

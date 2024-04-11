@@ -21,21 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_reference.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&&
-forward(__libcpp_remove_reference_t<_Tp>& __t) noexcept {
+forward(__libcpp_remove_reference_t<_Tp>& __t) noexcept
+{
   return static_cast<_Tp&&>(__t);
 }
 
 template <class _Tp>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp&&
-forward(__libcpp_remove_reference_t<_Tp>&& __t) noexcept {
+forward(__libcpp_remove_reference_t<_Tp>&& __t) noexcept
+{
   static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);
 }

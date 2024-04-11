@@ -58,39 +58,46 @@
 #include <cuda/std/detail/libcxx/include/__mdspan/dynamic_extent.h>
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
+#  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
 #endif
-#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 #include <cuda/std/span>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-namespace __detail {
+namespace __detail
+{
 
 //==============================================================================
 
-struct __construct_psa_from_dynamic_exts_values_tag_t {};
-_LIBCUDACXX_CPO_ACCESSIBILITY __construct_psa_from_dynamic_exts_values_tag_t __construct_psa_from_dynamic_exts_values_tag;
+struct __construct_psa_from_dynamic_exts_values_tag_t
+{};
+_LIBCUDACXX_CPO_ACCESSIBILITY __construct_psa_from_dynamic_exts_values_tag_t
+  __construct_psa_from_dynamic_exts_values_tag;
 
-struct __construct_psa_from_all_exts_values_tag_t {};
+struct __construct_psa_from_all_exts_values_tag_t
+{};
 _LIBCUDACXX_CPO_ACCESSIBILITY __construct_psa_from_all_exts_values_tag_t __construct_psa_from_all_exts_values_tag;
 
-struct __construct_psa_from_all_exts_array_tag_t {};
+struct __construct_psa_from_all_exts_array_tag_t
+{};
 template <size_t _Np = 0>
-struct __construct_psa_from_dynamic_exts_array_tag_t {};
+struct __construct_psa_from_dynamic_exts_array_tag_t
+{};
 
 //==============================================================================
 
-template <size_t _Ip, class _Tp> using __repeated_with_idxs = _Tp;
+template <size_t _Ip, class _Tp>
+using __repeated_with_idxs = _Tp;
 
 //==============================================================================
 
-#if __MDSPAN_PRESERVE_STANDARD_LAYOUT
+#  if __MDSPAN_PRESERVE_STANDARD_LAYOUT
 
 /**
  *  PSA = "partially static array"
@@ -99,53 +106,74 @@ template <size_t _Ip, class _Tp> using __repeated_with_idxs = _Tp;
  * @tparam _ValsSeq
  * @tparam __sentinal
  */
-template <class _Tag, class _Tp, class _static_t, class _ValsSeq, _static_t __sentinal = static_cast<_static_t>(dynamic_extent),
-          class _IdxsSeq = _CUDA_VSTD::make_index_sequence<_ValsSeq::size()>>
+template <class _Tag,
+          class _Tp,
+          class _static_t,
+          class _ValsSeq,
+          _static_t __sentinal = static_cast<_static_t>(dynamic_extent),
+          class _IdxsSeq       = _CUDA_VSTD::make_index_sequence<_ValsSeq::size()>>
 struct __standard_layout_psa;
 
 //==============================================================================
 // Static case
-template <class _Tag, class _Tp, class _static_t, _static_t __value, _static_t... __values_or_sentinals,
-          _static_t __sentinal, size_t _Idx, size_t... _Idxs>
-struct __standard_layout_psa<
-    _Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __value, __values_or_sentinals...>,
-    __sentinal, _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>>
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-    : private __no_unique_address_emulation<__standard_layout_psa<
-          _Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>, __sentinal,
-          _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>>
-#endif
+template <class _Tag,
+          class _Tp,
+          class _static_t,
+          _static_t __value,
+          _static_t... __values_or_sentinals,
+          _static_t __sentinal,
+          size_t _Idx,
+          size_t... _Idxs>
+struct __standard_layout_psa<_Tag,
+                             _Tp,
+                             _static_t,
+                             _CUDA_VSTD::integer_sequence<_static_t, __value, __values_or_sentinals...>,
+                             __sentinal,
+                             _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>>
+#    ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    : private __no_unique_address_emulation<
+        __standard_layout_psa<_Tag,
+                              _Tp,
+                              _static_t,
+                              _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
+                              __sentinal,
+                              _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>>
+#    endif
 {
-
   //--------------------------------------------------------------------------
 
   using __next_t =
-      __standard_layout_psa<_Tag, _Tp, _static_t,
-                            _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
-                            __sentinal, _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
+    __standard_layout_psa<_Tag,
+                          _Tp,
+                          _static_t,
+                          _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
+                          __sentinal,
+                          _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
 
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
   _LIBCUDACXX_NO_UNIQUE_ADDRESS __next_t __next_;
-#else
+#    else
   using __base_t = __no_unique_address_emulation<__next_t>;
-#endif
+#    endif
 
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t &__next() noexcept {
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t& __next() noexcept
+  {
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
-#else
+#    else
     return this->__base_t::__ref();
-#endif
+#    endif
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const &__next() const noexcept {
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const& __next() const noexcept
+  {
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
     return __next_;
-#else
+#    else
     return this->__base_t::__ref();
-#endif
+#    endif
   }
 
-  static constexpr auto __size = sizeof...(_Idxs) + 1;
+  static constexpr auto __size         = sizeof...(_Idxs) + 1;
   static constexpr auto __size_dynamic = __next_t::__size_dynamic;
 
   //--------------------------------------------------------------------------
@@ -153,172 +181,161 @@ struct __standard_layout_psa<
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __standard_layout_psa() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const &) noexcept =
-      default;
+  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa &&) noexcept = default;
+  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
   __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(
-      __construct_psa_from_all_exts_values_tag_t, _Tp const & /*__val*/,
-      __repeated_with_idxs<_Idxs, _Tp> const &... __vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t,
+                                  _Tp const& /*__val*/,
+                                  __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __construct_psa_from_all_exts_values_tag, __vals...
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __construct_psa_from_all_exts_values_tag, __vals...
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class... _Ts>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_values_tag_t,
-      _Ts const &... __vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __construct_psa_from_dynamic_exts_values_tag_t, _Ts const&... __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __construct_psa_from_dynamic_exts_values_tag, __vals...
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __construct_psa_from_dynamic_exts_values_tag, __vals...
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      array<_Up, _Np> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t const & __tag,
-      array<_Up, _NStatic> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __construct_psa_from_all_exts_array_tag_t const& __tag, array<_Up, _NStatic> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __tag, __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __tag, __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
-      array<_Up, _NDynamic> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag, array<_Up, _NDynamic> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __tag, __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __tag, __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      _CUDA_VSTD::span<_Up, _Np> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t const & __tag,
-      _CUDA_VSTD::span<_Up, _NStatic> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __construct_psa_from_all_exts_array_tag_t const& __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __tag, __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __tag, __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
-      _CUDA_VSTD::span<_Up, _NDynamic> const &__vals) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
+    _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __tag, __vals
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
+#    endif
+        __tag, __vals
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
         )})
-#endif
-  { }
+#    endif
+  {}
 
-  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal,
-            class _IdxsSeq>
+  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _IdxsSeq>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _IdxsSeq> const
-          &__rhs) noexcept
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+    __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _IdxsSeq> const& __rhs) noexcept
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
-#else
+#    else
       : __base_t(__base_t{__next_t(
-#endif
-          __rhs.__next()
-#ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-        }
-#else
-        )})
-#endif
-  { }
+#    endif
+        __rhs.__next()
+#    ifndef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+      }
+#    else
+          )})
+#    endif
+  {}
 
   //--------------------------------------------------------------------------
 
@@ -327,39 +344,44 @@ struct __standard_layout_psa<
   // because we have to deduce __values_or_sentinals in several places, and
   // alias templates don't permit that in this context.
   __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr __standard_layout_psa const &__enable_psa_conversion() const
-      noexcept {
+  constexpr __standard_layout_psa const& __enable_psa_conversion() const noexcept
+  {
     return *this;
   }
 
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept
+  {
     return __next().template __get_n<_Ip>();
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, int> = 1>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept
+  {
     return __value;
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void
-  __set_n(_Tp const &__rhs) noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_n(_Tp const& __rhs) noexcept
+  {
     __next().__set_value(__rhs);
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, int> = 1>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void
-  __set_n(_Tp const &) noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_n(_Tp const&) noexcept
+  {
     // Don't assert here because that would break constexpr. This better
     // not change anything, though
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, _static_t> = __sentinal>
-  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept
+  {
     return __value;
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, _static_t> __default = __sentinal>
-  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept
+  {
     return __next_t::template __get_static_n<_Ip, __default>();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t __n) const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t __n) const noexcept
+  {
     return __value * (_Tp(_Idx == __n)) + __next().__get(__n);
   }
 
@@ -369,28 +391,42 @@ struct __standard_layout_psa<
 //==============================================================================
 
 // Dynamic case, __next_t may or may not be empty
-template <class _Tag, class _Tp, class _static_t, _static_t __sentinal, _static_t... __values_or_sentinals,
-          size_t _Idx, size_t... _Idxs>
-struct __standard_layout_psa<
-    _Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __sentinal, __values_or_sentinals...>,
-    __sentinal, _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>> {
+template <class _Tag,
+          class _Tp,
+          class _static_t,
+          _static_t __sentinal,
+          _static_t... __values_or_sentinals,
+          size_t _Idx,
+          size_t... _Idxs>
+struct __standard_layout_psa<_Tag,
+                             _Tp,
+                             _static_t,
+                             _CUDA_VSTD::integer_sequence<_static_t, __sentinal, __values_or_sentinals...>,
+                             __sentinal,
+                             _CUDA_VSTD::integer_sequence<size_t, _Idx, _Idxs...>>
+{
   //--------------------------------------------------------------------------
 
   using __next_t =
-      __standard_layout_psa<_Tag, _Tp, _static_t,
-                            _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
-                            __sentinal, _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
+    __standard_layout_psa<_Tag,
+                          _Tp,
+                          _static_t,
+                          _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>,
+                          __sentinal,
+                          _CUDA_VSTD::integer_sequence<size_t, _Idxs...>>;
 
   using __value_pair_t = __compressed_pair<_Tp, __next_t>;
   __value_pair_t __value_pair;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t &__next() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t& __next() noexcept
+  {
     return __value_pair.__second();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const &__next() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __next_t const& __next() const noexcept
+  {
     return __value_pair.__second();
   }
 
-  static constexpr auto __size = sizeof...(_Idxs) + 1;
+  static constexpr auto __size         = sizeof...(_Idxs) + 1;
   static constexpr auto __size_dynamic = 1 + __next_t::__size_dynamic;
 
   //--------------------------------------------------------------------------
@@ -398,127 +434,115 @@ struct __standard_layout_psa<
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __standard_layout_psa() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const &) noexcept =
-      default;
+  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa &&) noexcept = default;
+  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
   __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(
-      __construct_psa_from_all_exts_values_tag_t, _Tp const &__val,
-      __repeated_with_idxs<_Idxs, _Tp> const &... __vals) noexcept
-      : __value_pair(__val,
-                     __next_t(__construct_psa_from_all_exts_values_tag,
-                              __vals...)) {}
+  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t,
+                                  _Tp const& __val,
+                                  __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
+      : __value_pair(__val, __next_t(__construct_psa_from_all_exts_values_tag, __vals...))
+  {}
 
   template <class... _Ts>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_values_tag_t, _Tp const &__val,
-      _Ts const &... __vals) noexcept
-      : __value_pair(__val,
-                     __next_t(__construct_psa_from_dynamic_exts_values_tag,
-                              __vals...)) {}
+    __construct_psa_from_dynamic_exts_values_tag_t, _Tp const& __val, _Ts const&... __vals) noexcept
+      : __value_pair(__val, __next_t(__construct_psa_from_dynamic_exts_values_tag, __vals...))
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      array<_Up, _Np> const &__vals) noexcept
-      : __value_pair(_CUDA_VSTD::get<_Idx>(__vals), __vals) {}
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
+      : __value_pair(_CUDA_VSTD::get<_Idx>(__vals), __vals)
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t __tag,
-      array<_Up, _NStatic> const &__vals) noexcept
-      : __value_pair(
-            _CUDA_VSTD::get<_Idx>(__vals),
-            __next_t(__tag,
-                     __vals)) {}
+    __construct_psa_from_all_exts_array_tag_t __tag, array<_Up, _NStatic> const& __vals) noexcept
+      : __value_pair(_CUDA_VSTD::get<_Idx>(__vals), __next_t(__tag, __vals))
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>,
-      array<_Up, _NDynamic> const &__vals) noexcept
-      : __value_pair(
-            _CUDA_VSTD::get<_IDynamic>(__vals),
-            __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{},
-                     __vals)) {}
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, array<_Up, _NDynamic> const& __vals) noexcept
+      : __value_pair(_CUDA_VSTD::get<_IDynamic>(__vals),
+                     __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{}, __vals))
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      _CUDA_VSTD::span<_Up, _Np> const &__vals) noexcept
-      : __value_pair(__vals[_Idx], __vals) {}
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
+      : __value_pair(__vals[_Idx], __vals)
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t __tag,
-      _CUDA_VSTD::span<_Up, _NStatic> const &__vals) noexcept
-      : __value_pair(
-            __vals[_Idx],
-            __next_t(__tag,
-                     __vals)) {}
+    __construct_psa_from_all_exts_array_tag_t __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
+      : __value_pair(__vals[_Idx], __next_t(__tag, __vals))
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>,
-      _CUDA_VSTD::span<_Up, _NDynamic> const &__vals) noexcept
-      : __value_pair(
-            __vals[_IDynamic],
-            __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{},
-                     __vals)) {}
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
+      : __value_pair(__vals[_IDynamic],
+                     __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{}, __vals))
+  {}
 
-  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal,
-            class _UIdxsSeq>
+  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _UIdxsSeq>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const
-          &__rhs) noexcept
-      : __value_pair(__rhs.template __get_n<_Idx>(), __rhs.__next()) {}
+    __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const& __rhs) noexcept
+      : __value_pair(__rhs.template __get_n<_Idx>(), __rhs.__next())
+  {}
 
   //--------------------------------------------------------------------------
 
   // See comment in the previous partial specialization for why this is
   // necessary.  Or just trust me that it's messy.
   __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr __standard_layout_psa const &__enable_psa_conversion() const
-      noexcept {
+  constexpr __standard_layout_psa const& __enable_psa_conversion() const noexcept
+  {
     return *this;
   }
 
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept
+  {
     return __next().template __get_n<_Ip>();
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, int> = 1>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get_n() const noexcept
+  {
     return __value_pair.__first();
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void
-  __set_n(_Tp const &__rhs) noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_n(_Tp const& __rhs) noexcept
+  {
     __next().__set_value(__rhs);
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, int> = 1>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void
-  __set_n(_Tp const &__rhs) noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_n(_Tp const& __rhs) noexcept
+  {
     __value_pair.__first() = __rhs;
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip == _Idx, _static_t> __default = __sentinal>
-  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept
+  {
     return __default;
   }
   template <size_t _Ip, _CUDA_VSTD::enable_if_t<_Ip != _Idx, _static_t> __default = __sentinal>
-  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr _static_t __get_static_n() noexcept
+  {
     return __next_t::template __get_static_n<_Ip, __default>();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t __n) const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t __n) const noexcept
+  {
     return __value_pair.__first() * (_Tp(_Idx == __n)) + __next().__get(__n);
   }
 
@@ -527,11 +551,16 @@ struct __standard_layout_psa<
 
 // empty/terminal case
 template <class _Tag, class _Tp, class _static_t, _static_t __sentinal>
-struct __standard_layout_psa<_Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<_static_t>, __sentinal,
-                             _CUDA_VSTD::integer_sequence<size_t>> {
+struct __standard_layout_psa<_Tag,
+                             _Tp,
+                             _static_t,
+                             _CUDA_VSTD::integer_sequence<_static_t>,
+                             __sentinal,
+                             _CUDA_VSTD::integer_sequence<size_t>>
+{
   //--------------------------------------------------------------------------
 
-  static constexpr auto __size = 0;
+  static constexpr auto __size         = 0;
   static constexpr auto __size_dynamic = 0;
 
   //--------------------------------------------------------------------------
@@ -539,68 +568,66 @@ struct __standard_layout_psa<_Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __standard_layout_psa() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const &) noexcept = default;
+  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa &&) noexcept = default;
+  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa &
-  operator=(__standard_layout_psa &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__standard_layout_psa() noexcept = default;
 
   __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(
-      __construct_psa_from_all_exts_values_tag_t) noexcept {}
+  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t) noexcept {}
 
   template <class... _Ts>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_values_tag_t) noexcept {}
+  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(__construct_psa_from_dynamic_exts_values_tag_t) noexcept
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      array<_Up, _Np> const &) noexcept {}
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const&) noexcept
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t,
-      array<_Up, _NStatic> const &) noexcept {}
+    __construct_psa_from_all_exts_array_tag_t, array<_Up, _NStatic> const&) noexcept
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>,
-      array<_Up, _NDynamic> const &) noexcept {}
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, array<_Up, _NDynamic> const&) noexcept
+  {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      _CUDA_VSTD::span<_Up, _Np> const &) noexcept {}
+  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const&) noexcept
+  {}
 
   template <class _Up, size_t _NStatic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_all_exts_array_tag_t,
-      _CUDA_VSTD::span<_Up, _NStatic> const &) noexcept {}
+    __construct_psa_from_all_exts_array_tag_t, _CUDA_VSTD::span<_Up, _NStatic> const&) noexcept
+  {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
   __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
-      __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>,
-      _CUDA_VSTD::span<_Up, _NDynamic> const &) noexcept {}
+    __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, _CUDA_VSTD::span<_Up, _NDynamic> const&) noexcept
+  {}
 
-  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal,
-            class _UIdxsSeq>
+  template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _UIdxsSeq>
   __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
-      __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const&) noexcept {}
+    __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const&) noexcept
+  {}
 
   // See comment in the previous partial specialization for why this is
   // necessary.  Or just trust me that it's messy.
   __MDSPAN_FORCE_INLINE_FUNCTION
-  constexpr __standard_layout_psa const &__enable_psa_conversion() const
-      noexcept {
+  constexpr __standard_layout_psa const& __enable_psa_conversion() const noexcept
+  {
     return *this;
   }
 
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t /*n*/) const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp __get(size_t /*n*/) const noexcept
+  {
     return 0;
   }
 };
@@ -609,88 +636,91 @@ struct __standard_layout_psa<_Tag, _Tp, _static_t, _CUDA_VSTD::integer_sequence<
 // a loss of standard-layout-ness.
 template <class _Tag, class T, class _static_t, _static_t... __values_or_sentinals>
 struct __partially_static_sizes_tagged
-    : __standard_layout_psa<
-          _Tag, T, _static_t,
-          _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>> {
+    : __standard_layout_psa<_Tag, T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>
+{
   using __tag_t = _Tag;
-  using __psa_impl_t = __standard_layout_psa<
-      _Tag, T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
-#if defined(_CCCL_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __psa_impl_t, _Args...), int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr
-  __partially_static_sizes_tagged(_Args&&... __args) noexcept(noexcept(__psa_impl_t(_CUDA_VSTD::declval<_Args>()...)))
+  using __psa_impl_t =
+    __standard_layout_psa<_Tag, T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
+#    if defined(_CCCL_COMPILER_NVRTC) || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+  template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __psa_impl_t, _Args...), int> = 0>
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes_tagged(_Args&&... __args) noexcept(
+    noexcept(__psa_impl_t(_CUDA_VSTD::declval<_Args>()...)))
       : __psa_impl_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#    else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __psa_impl_t::__psa_impl_t;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
-#ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
+#    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+#    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   __MDSPAN_INLINE_FUNCTION
-#endif
+#    endif
   constexpr __partially_static_sizes_tagged() noexcept
-#ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
-    : __psa_impl_t() { }
-#else
+#    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
+      : __psa_impl_t(){}
+#    else
     = default;
-#endif
+#    endif
+      // This line seems to be unstable under clang-format
+      // clang-format off
+      __MDSPAN_INLINE_FUNCTION_DEFAULTED
+      constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
+  //clang-format on
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_sizes_tagged(
-      __partially_static_sizes_tagged const &) noexcept = default;
+  constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_sizes_tagged(
-      __partially_static_sizes_tagged &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
+  operator=(__partially_static_sizes_tagged const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged &
-  operator=(__partially_static_sizes_tagged const &) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged &
-  operator=(__partially_static_sizes_tagged &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
+  operator=(__partially_static_sizes_tagged&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__partially_static_sizes_tagged() noexcept = default;
 
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr explicit __partially_static_sizes_tagged(
-    __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...> const& __vals
-  ) noexcept : __psa_impl_t(__vals.__enable_psa_conversion()) { }
+    __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...> const& __vals) noexcept
+      : __psa_impl_t(__vals.__enable_psa_conversion())
+  {}
 };
 
-struct __no_tag {};
+struct __no_tag
+{};
 template <class T, class _static_t, _static_t... __values_or_sentinals>
-struct __partially_static_sizes
-    : __partially_static_sizes_tagged<__no_tag, T, _static_t, __values_or_sentinals...> {
+struct __partially_static_sizes : __partially_static_sizes_tagged<__no_tag, T, _static_t, __values_or_sentinals...>
+{
 private:
-  using __base_t =
-      __partially_static_sizes_tagged<__no_tag, T, _static_t, __values_or_sentinals...>;
+  using __base_t = __partially_static_sizes_tagged<__no_tag, T, _static_t, __values_or_sentinals...>;
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(
-    __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>&& __vals
-  ) noexcept : __base_t(_CUDA_VSTD::move(__vals)) { }
+    __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>&& __vals) noexcept
+      : __base_t(_CUDA_VSTD::move(__vals))
+  {}
+
 public:
-#if defined(_CCCL_COMPILER_NVRTC) \
- || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
-  template<class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr
-  __partially_static_sizes(_Args&&... __args) noexcept(noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
+#    if defined(_CCCL_COMPILER_NVRTC) || defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+  template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(
+    noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#    else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+#    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
-#ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
+#    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
   __MDSPAN_INLINE_FUNCTION
-  constexpr __partially_static_sizes() noexcept : __base_t() { }
-#endif
+  constexpr __partially_static_sizes() noexcept
+      : __base_t()
+  {}
+#    endif
   template <class _UTag>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes_tagged<
-      _UTag, T, _static_t, __values_or_sentinals...>
-  __with_tag() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>
+  __with_tag() const noexcept
+  {
     return __partially_static_sizes_tagged<_UTag, T, _static_t, __values_or_sentinals...>(*this);
   }
 };
 
-#endif // __MDSPAN_PRESERVE_STATIC_LAYOUT
+#  endif // __MDSPAN_PRESERVE_STATIC_LAYOUT
 
 } // end namespace __detail
 

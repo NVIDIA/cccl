@@ -24,10 +24,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __nat
 {
-    __nat() = delete;
-    __nat(const __nat&) = delete;
-    __nat& operator=(const __nat&) = delete;
-    ~__nat() = delete;
+  __nat()                        = delete;
+  __nat(const __nat&)            = delete;
+  __nat& operator=(const __nat&) = delete;
+  ~__nat()                       = delete;
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

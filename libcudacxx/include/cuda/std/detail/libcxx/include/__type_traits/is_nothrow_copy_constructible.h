@@ -26,13 +26,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_copy_constructible
-    : public is_nothrow_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_copy_constructible
+    : public is_nothrow_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
+{};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_copy_constructible_v
-    = is_nothrow_copy_constructible<_Tp>::value;
+_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

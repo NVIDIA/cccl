@@ -31,7 +31,7 @@ template <class _ForwardIterator, class _Compare>
 _LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 is_sorted(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
-  return _CUDA_VSTD::__is_sorted_until<__comp_ref_type<_Compare> >(__first, __last, __comp) == __last;
+  return _CUDA_VSTD::__is_sorted_until<__comp_ref_type<_Compare>>(__first, __last, __comp) == __last;
 }
 
 template <class _ForwardIterator>

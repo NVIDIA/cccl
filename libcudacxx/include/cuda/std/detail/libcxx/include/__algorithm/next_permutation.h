@@ -68,7 +68,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
 next_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__next_permutation<_ClassicAlgPolicy>(
-           _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), static_cast<__comp_ref_type<_Compare> >(__comp))
+           _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), static_cast<__comp_ref_type<_Compare>>(__comp))
     .second;
 }
 

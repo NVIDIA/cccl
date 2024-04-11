@@ -144,7 +144,7 @@ DeviceSpmvSearchKernel(int num_merge_tiles, CoordinateT* d_tile_coordinates, Spm
     TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
   };
 
-  typedef CacheModifiedInputIterator< SpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
+  typedef CacheModifiedInputIterator<SpmvPolicyT::ROW_OFFSETS_SEARCH_LOAD_MODIFIER, OffsetT, OffsetT>
     RowOffsetsSearchIteratorT;
 
   // Find the starting coordinate for all tiles (plus the end coordinate of the last one)
@@ -227,7 +227,7 @@ __launch_bounds__(int(SpmvPolicyT::BLOCK_THREADS)) CUB_DETAIL_KERNEL_ATTRIBUTES 
   int num_segment_fixup_tiles)
 {
   // Spmv agent type specialization
-  typedef AgentSpmv< SpmvPolicyT, ValueT, OffsetT, HAS_ALPHA, HAS_BETA> AgentSpmvT;
+  typedef AgentSpmv<SpmvPolicyT, ValueT, OffsetT, HAS_ALPHA, HAS_BETA> AgentSpmvT;
 
   // Shared memory for AgentSpmv
   __shared__ typename AgentSpmvT::TempStorage temp_storage;
@@ -313,12 +313,12 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
     ScanTileStateT tile_state)
 {
   // Thread block type for reducing tiles of value segments
-  typedef AgentSegmentFixup< AgentSegmentFixupPolicyT,
-                             PairsInputIteratorT,
-                             AggregatesOutputIteratorT,
-                             cub::Equality,
-                             cub::Sum,
-                             OffsetT>
+  typedef AgentSegmentFixup<AgentSegmentFixupPolicyT,
+                            PairsInputIteratorT,
+                            AggregatesOutputIteratorT,
+                            cub::Equality,
+                            cub::Sum,
+                            OffsetT>
     AgentSegmentFixupT;
 
   // Shared memory for AgentSegmentFixup
@@ -374,70 +374,70 @@ struct DispatchSpmv
   /// SM35
   struct Policy350
   {
-    typedef AgentSpmvPolicy< (sizeof(ValueT) > 4) ? 96 : 128,
-                             (sizeof(ValueT) > 4) ? 4 : 7,
-                             LOAD_LDG,
-                             LOAD_CA,
-                             LOAD_LDG,
-                             LOAD_LDG,
-                             LOAD_LDG,
-                             (sizeof(ValueT) > 4) ? true : false,
-                             BLOCK_SCAN_WARP_SCANS>
+    typedef AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 96 : 128,
+                            (sizeof(ValueT) > 4) ? 4 : 7,
+                            LOAD_LDG,
+                            LOAD_CA,
+                            LOAD_LDG,
+                            LOAD_LDG,
+                            LOAD_LDG,
+                            (sizeof(ValueT) > 4) ? true : false,
+                            BLOCK_SCAN_WARP_SCANS>
       SpmvPolicyT;
 
-    typedef AgentSegmentFixupPolicy< 128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
+    typedef AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
   };
 
   /// SM37
   struct Policy370
   {
-    typedef AgentSpmvPolicy< (sizeof(ValueT) > 4) ? 128 : 128,
-                             (sizeof(ValueT) > 4) ? 9 : 14,
-                             LOAD_LDG,
-                             LOAD_CA,
-                             LOAD_LDG,
-                             LOAD_LDG,
-                             LOAD_LDG,
-                             false,
-                             BLOCK_SCAN_WARP_SCANS>
+    typedef AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 128 : 128,
+                            (sizeof(ValueT) > 4) ? 9 : 14,
+                            LOAD_LDG,
+                            LOAD_CA,
+                            LOAD_LDG,
+                            LOAD_LDG,
+                            LOAD_LDG,
+                            false,
+                            BLOCK_SCAN_WARP_SCANS>
       SpmvPolicyT;
 
-    typedef AgentSegmentFixupPolicy< 128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
+    typedef AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
   };
 
   /// SM50
   struct Policy500
   {
-    typedef AgentSpmvPolicy< (sizeof(ValueT) > 4) ? 64 : 128,
-                             (sizeof(ValueT) > 4) ? 6 : 7,
-                             LOAD_LDG,
-                             LOAD_DEFAULT,
-                             (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
-                             (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
-                             LOAD_LDG,
-                             (sizeof(ValueT) > 4) ? true : false,
-                             (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>
+    typedef AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
+                            (sizeof(ValueT) > 4) ? 6 : 7,
+                            LOAD_LDG,
+                            LOAD_DEFAULT,
+                            (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
+                            (sizeof(ValueT) > 4) ? LOAD_LDG : LOAD_DEFAULT,
+                            LOAD_LDG,
+                            (sizeof(ValueT) > 4) ? true : false,
+                            (sizeof(ValueT) > 4) ? BLOCK_SCAN_WARP_SCANS : BLOCK_SCAN_RAKING_MEMOIZE>
       SpmvPolicyT;
 
-    typedef AgentSegmentFixupPolicy< 128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>
+    typedef AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_VECTORIZE, LOAD_LDG, BLOCK_SCAN_RAKING_MEMOIZE>
       SegmentFixupPolicyT;
   };
 
   /// SM60
   struct Policy600
   {
-    typedef AgentSpmvPolicy< (sizeof(ValueT) > 4) ? 64 : 128,
-                             (sizeof(ValueT) > 4) ? 5 : 7,
-                             LOAD_DEFAULT,
-                             LOAD_DEFAULT,
-                             LOAD_DEFAULT,
-                             LOAD_DEFAULT,
-                             LOAD_DEFAULT,
-                             false,
-                             BLOCK_SCAN_WARP_SCANS>
+    typedef AgentSpmvPolicy<(sizeof(ValueT) > 4) ? 64 : 128,
+                            (sizeof(ValueT) > 4) ? 5 : 7,
+                            LOAD_DEFAULT,
+                            LOAD_DEFAULT,
+                            LOAD_DEFAULT,
+                            LOAD_DEFAULT,
+                            LOAD_DEFAULT,
+                            false,
+                            BLOCK_SCAN_WARP_SCANS>
       SpmvPolicyT;
 
-    typedef AgentSegmentFixupPolicy< 128, 3, BLOCK_LOAD_DIRECT, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
+    typedef AgentSegmentFixupPolicy<128, 3, BLOCK_LOAD_DIRECT, LOAD_LDG, BLOCK_SCAN_WARP_SCANS> SegmentFixupPolicyT;
   };
 
   //---------------------------------------------------------------------

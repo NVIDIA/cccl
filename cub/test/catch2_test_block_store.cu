@@ -134,20 +134,20 @@ using a_block_size          = c2h::enum_type_list<int, 256>;
 
 using items_per_thread = c2h::enum_type_list<int, IPT>;
 using store_algorithm =
-  c2h::enum_type_list< cub::BlockStoreAlgorithm,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_STRIPED,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_TRANSPOSE,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>;
+  c2h::enum_type_list<cub::BlockStoreAlgorithm,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_STRIPED,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_TRANSPOSE,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED>;
 
 using odd_store_algorithm =
-  c2h::enum_type_list< cub::BlockStoreAlgorithm,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_STRIPED,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE,
-                       cub::BlockStoreAlgorithm::BLOCK_STORE_TRANSPOSE>;
+  c2h::enum_type_list<cub::BlockStoreAlgorithm,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_DIRECT,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_STRIPED,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE,
+                      cub::BlockStoreAlgorithm::BLOCK_STORE_TRANSPOSE>;
 
 template <class TestType>
 struct params_t

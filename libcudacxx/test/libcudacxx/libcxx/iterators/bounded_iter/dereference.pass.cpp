@@ -22,16 +22,21 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-struct Foo {
+struct Foo
+{
   int x;
-  __host__ __device__ TEST_CONSTEXPR bool operator==(Foo const& other) const { return x == other.x; }
+  __host__ __device__ TEST_CONSTEXPR bool operator==(Foo const& other) const
+  {
+    return x == other.x;
+  }
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
-  Foo array[]                           = {Foo{40}, Foo{41}, Foo{42}, Foo{43}, Foo{44}};
-  Foo* b                                = array + 0;
-  Foo* e                                = array + 5;
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+{
+  Foo array[]                                 = {Foo{40}, Foo{41}, Foo{42}, Foo{43}, Foo{44}};
+  Foo* b                                      = array + 0;
+  Foo* e                                      = array + 5;
   cuda::std::__bounded_iter<Iter> const iter1 = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
   cuda::std::__bounded_iter<Iter> const iter2 = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
 
@@ -50,10 +55,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests() {
 }
 
 template <class Iter>
-__host__ __device__ void test_death() {
-  Foo array[]                          = {Foo{0}, Foo{1}, Foo{2}, Foo{3}, Foo{4}};
-  Foo* b                               = array + 0;
-  Foo* e                               = array + 5;
+__host__ __device__ void test_death()
+{
+  Foo array[]                                = {Foo{0}, Foo{1}, Foo{2}, Foo{3}, Foo{4}};
+  Foo* b                                     = array + 0;
+  Foo* e                                     = array + 5;
   cuda::std::__bounded_iter<Iter> const iter = cuda::std::__make_bounded_iter(Iter(b), Iter(b), Iter(e));
   cuda::std::__bounded_iter<Iter> const oob  = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
 
@@ -69,7 +75,8 @@ __host__ __device__ void test_death() {
   TEST_LIBCUDACXX_ASSERT_FAILURE(oob[-6], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   tests<Foo*>();
   test_death<Foo*>();
 #if TEST_STD_VER > 2011
@@ -77,9 +84,9 @@ int main(int, char**) {
 #endif
 
 #if TEST_STD_VER > 2017
-  tests<contiguous_iterator<Foo*> >();
-  test_death<contiguous_iterator<Foo*> >();
-  static_assert(tests<contiguous_iterator<Foo*> >(), "");
+  tests<contiguous_iterator<Foo*>>();
+  test_death<contiguous_iterator<Foo*>>();
+  static_assert(tests<contiguous_iterator<Foo*>>(), "");
 #endif
 
   return 0;

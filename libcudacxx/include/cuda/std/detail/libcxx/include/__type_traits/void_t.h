@@ -23,7 +23,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
-template <class...> using void_t = void;
+template <class...>
+using void_t = void;
 #endif
 
 template <class...>

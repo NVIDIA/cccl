@@ -20,11 +20,12 @@
 #include <cuda/std/expected>
 #include <cuda/std/utility>
 
-template<class T, class = void>
+template <class T, class = void>
 constexpr bool WhatNoexcept = false;
 
-template<class T>
-constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&&>().error())>> = noexcept(cuda::std::declval<T&&>().error());
+template <class T>
+constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<T&&>().error())>> =
+  noexcept(cuda::std::declval<T&&>().error());
 
 static_assert(!ErrorNoexcept<int>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int>&>);
@@ -32,7 +33,8 @@ static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int>&&>);
 static_assert(ErrorNoexcept<cuda::std::bad_expected_access<int> const&&>);
 
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   // &
   {
     cuda::std::bad_expected_access<int> e(5);
@@ -66,7 +68,8 @@ __host__ __device__ void test() {
   }
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   return 0;
 }

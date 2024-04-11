@@ -15,43 +15,45 @@
 //   binary_search(Iter first, Iter last, const T& value, Compare comp);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/functional>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "../cases.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last,
-                                                   const T& value, bool x) {
-
-  assert(cuda::std::binary_search(first, last, value,
-                                  cuda::std::less<int>()) == x);
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, const T& value, bool x)
+{
+  assert(cuda::std::binary_search(first, last, value, cuda::std::less<int>()) == x);
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   constexpr int M = 10;
-  auto v = get_data(M);
-  for (int x = 0; x < M; ++x) {
+  auto v          = get_data(M);
+  for (int x = 0; x < M; ++x)
+  {
     test(Iter(cuda::std::begin(v)), Iter(cuda::std::end(v)), x, true);
   }
   test(Iter(cuda::std::begin(v)), Iter(cuda::std::end(v)), -1, false);
   test(Iter(cuda::std::begin(v)), Iter(cuda::std::end(v)), M, false);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<forward_iterator<const int*> >();
-  test<bidirectional_iterator<const int*> >();
-  test<random_access_iterator<const int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<forward_iterator<const int*>>();
+  test<bidirectional_iterator<const int*>>();
+  test<random_access_iterator<const int*>>();
   test<const int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");

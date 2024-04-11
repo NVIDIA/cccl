@@ -25,22 +25,23 @@
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_MSVC)
-#pragma warning(disable: 4324) // structure was padded due to alignment specifier
+#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif // TEST_COMPILER_MSVC
 
 #if !defined(TEST_COMPILER_NVRTC)
-#include <vector>
+#  include <vector>
 #endif // !TEST_COMPILER_NVRTC
 
-struct A {};
+struct A
+{};
 
 struct test_iterator
 {
-    typedef int                       difference_type;
-    typedef A                         value_type;
-    typedef A*                        pointer;
-    typedef A&                        reference;
-    typedef cuda::std::forward_iterator_tag iterator_category;
+  typedef int difference_type;
+  typedef A value_type;
+  typedef A* pointer;
+  typedef A& reference;
+  typedef cuda::std::forward_iterator_tag iterator_category;
 };
 
 int main(int, char**)

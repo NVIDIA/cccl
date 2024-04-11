@@ -131,14 +131,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    cub::detail::conditional_t< ALT_DIGIT_BITS,
-                                typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                                typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    cub::detail::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    cub::detail::conditional_t< ALT_DIGIT_BITS,
-                                typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                                typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    cub::detail::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   enum
   {
@@ -147,7 +147,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUp
   };
 
   // Parameterize AgentRadixSortUpsweep type for the current configuration
-  typedef AgentRadixSortUpsweep< ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT> AgentRadixSortUpsweepT;
+  typedef AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT> AgentRadixSortUpsweepT;
 
   // Shared memory storage
   __shared__ typename AgentRadixSortUpsweepT::TempStorage temp_storage;
@@ -187,7 +187,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
   CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* d_spine, int num_counts)
 {
   // Parameterize the AgentScan type for the current configuration
-  typedef AgentScan< typename ChainedPolicyT::ActivePolicy::ScanPolicy, OffsetT*, OffsetT*, cub::Sum, OffsetT, OffsetT, OffsetT>
+  typedef AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy, OffsetT*, OffsetT*, cub::Sum, OffsetT, OffsetT, OffsetT>
     AgentScanT;
 
   // Shared memory storage
@@ -284,14 +284,14 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
     DecomposerT decomposer = {})
 {
   using ActiveUpsweepPolicyT =
-    cub::detail::conditional_t< ALT_DIGIT_BITS,
-                                typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                                typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
+    cub::detail::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
 
   using ActiveDownsweepPolicyT =
-    cub::detail::conditional_t< ALT_DIGIT_BITS,
-                                typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                                typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
+    cub::detail::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
+                               typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
 
   enum
   {
@@ -300,7 +300,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDo
   };
 
   // Parameterize AgentRadixSortDownsweep type for the current configuration
-  typedef AgentRadixSortDownsweep< ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>
+  typedef AgentRadixSortDownsweep<ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>
     AgentRadixSortDownsweepT;
 
   // Shared memory storage
@@ -381,21 +381,21 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   };
 
   // BlockRadixSort type
-  typedef BlockRadixSort< KeyT,
-                          BLOCK_THREADS,
-                          ITEMS_PER_THREAD,
-                          ValueT,
-                          ChainedPolicyT::ActivePolicy::SingleTilePolicy::RADIX_BITS,
-                          (ChainedPolicyT::ActivePolicy::SingleTilePolicy::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
-                          ChainedPolicyT::ActivePolicy::SingleTilePolicy::SCAN_ALGORITHM>
+  typedef BlockRadixSort<KeyT,
+                         BLOCK_THREADS,
+                         ITEMS_PER_THREAD,
+                         ValueT,
+                         ChainedPolicyT::ActivePolicy::SingleTilePolicy::RADIX_BITS,
+                         (ChainedPolicyT::ActivePolicy::SingleTilePolicy::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
+                         ChainedPolicyT::ActivePolicy::SingleTilePolicy::SCAN_ALGORITHM>
     BlockRadixSortT;
 
   // BlockLoad type (keys)
-  typedef BlockLoad< KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>
+  typedef BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>
     BlockLoadKeys;
 
   // BlockLoad type (values)
-  typedef BlockLoad< ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>
+  typedef BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>
     BlockLoadValues;
 
   // Unsigned word for key bits
@@ -547,9 +547,9 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
   //
 
   using SegmentedPolicyT =
-    cub::detail::conditional_t< ALT_DIGIT_BITS,
-                                typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
-                                typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
+    cub::detail::conditional_t<ALT_DIGIT_BITS,
+                               typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
+                               typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
 
   enum
   {
@@ -967,7 +967,7 @@ struct DeviceRadixSortPolicy
       AltDownsweepPolicyPairs;
 
     // Downsweep policies
-    using DownsweepPolicy = cub::detail::conditional_t< KEYS_ONLY, DownsweepPolicyKeys, DownsweepPolicyPairs>;
+    using DownsweepPolicy = cub::detail::conditional_t<KEYS_ONLY, DownsweepPolicyKeys, DownsweepPolicyPairs>;
 
     using AltDownsweepPolicy = cub::detail::conditional_t<KEYS_ONLY, AltDownsweepPolicyKeys, AltDownsweepPolicyPairs>;
 
@@ -2194,7 +2194,7 @@ struct DispatchRadixSort : SelectedPolicy
 
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
-      auto histogram_kernel = DeviceRadixSortHistogramKernel< MaxPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+      auto histogram_kernel = DeviceRadixSortHistogramKernel<MaxPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -2414,18 +2414,18 @@ struct DispatchRadixSort : SelectedPolicy
 
       // Init regular and alternate-digit kernel configurations
       PassConfig<UpsweepKernelT, ScanKernelT, DownsweepKernelT> pass_config, alt_pass_config;
-      error = pass_config.template InitPassConfig< typename ActivePolicyT::UpsweepPolicy,
-                                                   typename ActivePolicyT::ScanPolicy,
-                                                   typename ActivePolicyT::DownsweepPolicy>(
+      error = pass_config.template InitPassConfig<typename ActivePolicyT::UpsweepPolicy,
+                                                  typename ActivePolicyT::ScanPolicy,
+                                                  typename ActivePolicyT::DownsweepPolicy>(
         upsweep_kernel, scan_kernel, downsweep_kernel, ptx_version, sm_count, num_items);
       if (error)
       {
         break;
       }
 
-      error = alt_pass_config.template InitPassConfig< typename ActivePolicyT::AltUpsweepPolicy,
-                                                       typename ActivePolicyT::ScanPolicy,
-                                                       typename ActivePolicyT::AltDownsweepPolicy>(
+      error = alt_pass_config.template InitPassConfig<typename ActivePolicyT::AltUpsweepPolicy,
+                                                      typename ActivePolicyT::ScanPolicy,
+                                                      typename ActivePolicyT::AltDownsweepPolicy>(
         alt_upsweep_kernel, scan_kernel, alt_downsweep_kernel, ptx_version, sm_count, num_items);
       if (error)
       {
@@ -2547,11 +2547,11 @@ struct DispatchRadixSort : SelectedPolicy
     // Invoke upsweep-downsweep
     typedef typename DispatchRadixSort::MaxPolicy MaxPolicyT;
     return InvokePasses<ActivePolicyT>(
-      DeviceRadixSortUpsweepKernel< MaxPolicyT, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      DeviceRadixSortUpsweepKernel< MaxPolicyT, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      RadixSortScanBinsKernel< MaxPolicyT, OffsetT>,
-      DeviceRadixSortDownsweepKernel< MaxPolicyT, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
-      DeviceRadixSortDownsweepKernel< MaxPolicyT, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+      DeviceRadixSortUpsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      DeviceRadixSortUpsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      RadixSortScanBinsKernel<MaxPolicyT, OffsetT>,
+      DeviceRadixSortDownsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
+      DeviceRadixSortDownsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>

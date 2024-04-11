@@ -19,34 +19,43 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 int factorial(int x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 int factorial(int x)
+{
   int r = 1;
   for (; x; --x)
+  {
     r *= x;
+  }
   return r;
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
-  int ia[] = {1, 2, 3, 4, 5, 6};
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
+  int ia[]     = {1, 2, 3, 4, 5, 6};
   const int sa = sizeof(ia) / sizeof(ia[0]);
   int prev[sa] = {};
-  for (int e = 0; e <= sa; ++e) {
+  for (int e = 0; e <= sa; ++e)
+  {
     int count = 0;
-    bool x = false;
-    do {
+    bool x    = false;
+    do
+    {
       cuda::std::copy(ia, ia + e, prev);
       x = cuda::std::next_permutation(Iter(ia), Iter(ia + e));
-      if (e > 1) {
+      if (e > 1)
+      {
         if (x)
-          assert(
-              cuda::std::lexicographical_compare(prev, prev + e, ia, ia + e));
+        {
+          assert(cuda::std::lexicographical_compare(prev, prev + e, ia, ia + e));
+        }
         else
-          assert(
-              cuda::std::lexicographical_compare(ia, ia + e, prev, prev + e));
+        {
+          assert(cuda::std::lexicographical_compare(ia, ia + e, prev, prev + e));
+        }
       }
       ++count;
     } while (x);
@@ -54,15 +63,17 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<bidirectional_iterator<int*> >();
-  test<random_access_iterator<int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<bidirectional_iterator<int*>>();
+  test<random_access_iterator<int*>>();
   test<int*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");

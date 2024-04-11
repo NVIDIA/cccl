@@ -9,45 +9,43 @@
 
 // test rel_ops
 
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
 struct A
 {
-    int data_;
+  int data_;
 
-    __host__ __device__ explicit A(int data = -1) : data_(data) {}
+  __host__ __device__ explicit A(int data = -1)
+      : data_(data)
+  {}
 };
 
-inline __host__ __device__
-bool
-operator == (const A& x, const A& y)
+inline __host__ __device__ bool operator==(const A& x, const A& y)
 {
-    return x.data_ == y.data_;
+  return x.data_ == y.data_;
 }
 
-inline __host__ __device__
-bool
-operator < (const A& x, const A& y)
+inline __host__ __device__ bool operator<(const A& x, const A& y)
 {
-    return x.data_ < y.data_;
+  return x.data_ < y.data_;
 }
 
 int main(int, char**)
 {
-    using namespace cuda::std::rel_ops;
-    A a1(1);
-    A a2(2);
-    assert(a1 == a1);
-    assert(a1 != a2);
-    assert(a1 < a2);
-    assert(a2 > a1);
-    assert(a1 <= a1);
-    assert(a1 <= a2);
-    assert(a2 >= a2);
-    assert(a2 >= a1);
+  using namespace cuda::std::rel_ops;
+  A a1(1);
+  A a2(2);
+  assert(a1 == a1);
+  assert(a1 != a2);
+  assert(a1 < a2);
+  assert(a2 > a1);
+  assert(a1 <= a1);
+  assert(a1 <= a2);
+  assert(a2 >= a2);
+  assert(a2 >= a1);
 
   return 0;
 }

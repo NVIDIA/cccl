@@ -24,8 +24,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_abstract
-    : public integral_constant<bool, __is_abstract(_Tp)> {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_abstract : public integral_constant<bool, __is_abstract(_Tp)>
+{};
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

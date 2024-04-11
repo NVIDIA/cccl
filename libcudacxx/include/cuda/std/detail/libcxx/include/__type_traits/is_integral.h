@@ -28,51 +28,89 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_integral
-    : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)>
-    {};
+struct _LIBCUDACXX_TEMPLATE_VIS is_integral : public integral_constant<bool, _LIBCUDACXX_IS_INTEGRAL(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = _LIBCUDACXX_IS_INTEGRAL(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct __libcpp_is_integral                     : public false_type {};
-template <>          struct __libcpp_is_integral<bool>               : public true_type {};
-template <>          struct __libcpp_is_integral<char>               : public true_type {};
-template <>          struct __libcpp_is_integral<signed char>        : public true_type {};
-template <>          struct __libcpp_is_integral<unsigned char>      : public true_type {};
-template <>          struct __libcpp_is_integral<wchar_t>            : public true_type {};
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
-template <>          struct __libcpp_is_integral<char8_t>            : public true_type {};
-#endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-template <>          struct __libcpp_is_integral<char16_t>           : public true_type {};
-template <>          struct __libcpp_is_integral<char32_t>           : public true_type {};
-#endif  // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-template <>          struct __libcpp_is_integral<short>              : public true_type {};
-template <>          struct __libcpp_is_integral<unsigned short>     : public true_type {};
-template <>          struct __libcpp_is_integral<int>                : public true_type {};
-template <>          struct __libcpp_is_integral<unsigned int>       : public true_type {};
-template <>          struct __libcpp_is_integral<long>               : public true_type {};
-template <>          struct __libcpp_is_integral<unsigned long>      : public true_type {};
-template <>          struct __libcpp_is_integral<long long>          : public true_type {};
-template <>          struct __libcpp_is_integral<unsigned long long> : public true_type {};
-#ifndef _LIBCUDACXX_HAS_NO_INT128
-template <>          struct __libcpp_is_integral<__int128_t>         : public true_type {};
-template <>          struct __libcpp_is_integral<__uint128_t>        : public true_type {};
-#endif
+template <class _Tp>
+struct __libcpp_is_integral : public false_type
+{};
+template <>
+struct __libcpp_is_integral<bool> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<char> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<signed char> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<unsigned char> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<wchar_t> : public true_type
+{};
+#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+template <>
+struct __libcpp_is_integral<char8_t> : public true_type
+{};
+#  endif
+#  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+template <>
+struct __libcpp_is_integral<char16_t> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<char32_t> : public true_type
+{};
+#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+template <>
+struct __libcpp_is_integral<short> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<unsigned short> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<int> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<unsigned int> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<long> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<unsigned long> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<long long> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<unsigned long long> : public true_type
+{};
+#  ifndef _LIBCUDACXX_HAS_NO_INT128
+template <>
+struct __libcpp_is_integral<__int128_t> : public true_type
+{};
+template <>
+struct __libcpp_is_integral<__uint128_t> : public true_type
+{};
+#  endif
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_integral
-    : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp> >::value>
-    {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_integral
+    : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp>>::value>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_integral_v = is_integral<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 

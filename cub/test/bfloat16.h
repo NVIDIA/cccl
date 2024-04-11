@@ -32,10 +32,11 @@
  * Utilities for interacting with the opaque CUDA __nv_bfloat16 type
  */
 
+#include <cuda_bf16.h>
+
 #include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>
-#include <cuda_bf16.h>
 
 #include <cstdint>
 #include <iosfwd>

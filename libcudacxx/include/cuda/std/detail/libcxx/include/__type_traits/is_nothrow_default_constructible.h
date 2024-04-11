@@ -29,23 +29,23 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp, class... _Args>
 struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_default_constructible
     : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp, class ..._Args>
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_default_constructible_v = _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_default_constructible
-    : public is_nothrow_constructible<_Tp>
-    {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_nothrow_default_constructible : public is_nothrow_constructible<_Tp>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_default_constructible_v = is_nothrow_constructible<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 

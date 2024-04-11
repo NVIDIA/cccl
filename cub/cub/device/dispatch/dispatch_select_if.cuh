@@ -80,23 +80,23 @@ struct agent_select_if_wrapper_t
             typename EqualityOpT,
             typename OffsetT>
   struct agent_t
-      : public AgentSelectIf< AgentSelectIfPolicyT,
-                              InputIteratorT,
-                              FlagsInputIteratorT,
-                              SelectedOutputIteratorT,
-                              SelectOpT,
-                              EqualityOpT,
-                              OffsetT,
-                              KeepRejects>
+      : public AgentSelectIf<AgentSelectIfPolicyT,
+                             InputIteratorT,
+                             FlagsInputIteratorT,
+                             SelectedOutputIteratorT,
+                             SelectOpT,
+                             EqualityOpT,
+                             OffsetT,
+                             KeepRejects>
   {
-    using AgentSelectIf< AgentSelectIfPolicyT,
-                         InputIteratorT,
-                         FlagsInputIteratorT,
-                         SelectedOutputIteratorT,
-                         SelectOpT,
-                         EqualityOpT,
-                         OffsetT,
-                         KeepRejects>::AgentSelectIf;
+    using AgentSelectIf<AgentSelectIfPolicyT,
+                        InputIteratorT,
+                        FlagsInputIteratorT,
+                        SelectedOutputIteratorT,
+                        SelectOpT,
+                        EqualityOpT,
+                        OffsetT,
+                        KeepRejects>::AgentSelectIf;
   };
 };
 } // namespace detail

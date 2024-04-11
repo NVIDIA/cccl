@@ -15,25 +15,25 @@
 //     explicit constexpr complex(const complex<double>&);
 // };
 
-#include <cuda/std/complex>
 #include <cuda/std/cassert>
+#include <cuda/std/complex>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    {
+  {
     const cuda::std::complex<double> cd(2.5, 3.5);
     cuda::std::complex<float> cf(cd);
     assert(cf.real() == cd.real());
     assert(cf.imag() == cd.imag());
-    }
-    {
+  }
+  {
     constexpr cuda::std::complex<double> cd(2.5, 3.5);
     constexpr cuda::std::complex<float> cf(cd);
     static_assert(cf.real() == cd.real(), "");
     static_assert(cf.imag() == cd.imag(), "");
-    }
+  }
 
   return 0;
 }

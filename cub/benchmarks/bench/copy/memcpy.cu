@@ -101,15 +101,15 @@ struct offset_to_size_t
 #if !TUNE_BASE
 template <unsigned int MagicNs, unsigned int L2W, unsigned int DCID>
 using delay_constructor_t =
-  nvbench::tl::get< DCID,
-                    nvbench::type_list<cub::detail::no_delay_constructor_t<L2W>,
-                                       cub::detail::fixed_delay_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backoff_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
-                                       cub::detail::exponential_backon_constructor_t<MagicNs, L2W>>>;
+  nvbench::tl::get<DCID,
+                   nvbench::type_list<cub::detail::no_delay_constructor_t<L2W>,
+                                      cub::detail::fixed_delay_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backoff_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
+                                      cub::detail::exponential_backon_constructor_t<MagicNs, L2W>>>;
 
 using buff_delay_constructor_t =
   delay_constructor_t<TUNE_BUFF_MAGIC_NS, TUNE_BUFF_L2_WRITE_LATENCY_NS, TUNE_BUFF_DELAY_CONSTRUCTOR_ID>;

@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__utility/integer_sequence.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

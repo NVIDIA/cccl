@@ -23,7 +23,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, bool>
-struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp {};
+struct _LIBCUDACXX_TEMPLATE_VIS __dependent_type : public _Tp
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

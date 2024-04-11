@@ -34,35 +34,44 @@
 #include "../../types.h"
 #include "test_macros.h"
 
-struct NotCopyConstructible {
+struct NotCopyConstructible
+{
   NotCopyConstructible(const NotCopyConstructible&)            = delete;
   NotCopyConstructible& operator=(const NotCopyConstructible&) = default;
 };
 
-struct NotCopyAssignable {
+struct NotCopyAssignable
+{
   NotCopyAssignable(const NotCopyAssignable&)            = default;
   NotCopyAssignable& operator=(const NotCopyAssignable&) = delete;
 };
 
-struct MoveMayThrow {
+struct MoveMayThrow
+{
   MoveMayThrow(MoveMayThrow const&)            = default;
   MoveMayThrow& operator=(const MoveMayThrow&) = default;
   __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false) {}
-  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false) { return *this; }
+  __host__ __device__ MoveMayThrow& operator=(MoveMayThrow&&) noexcept(false)
+  {
+    return *this;
+  }
 };
 
 // Test constraints
 static_assert(cuda::std::is_assignable_v<cuda::std::expected<void, int>&, const cuda::std::unexpected<int>&>, "");
 
 // !is_constructible_v<E, GF>
-static_assert(
-    !cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyConstructible>&, const cuda::std::unexpected<NotCopyConstructible>&>, "");
+static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyConstructible>&,
+                                          const cuda::std::unexpected<NotCopyConstructible>&>,
+              "");
 
 // !is_assignable_v<E&, GF>
-static_assert(
-    !cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyAssignable>&, const cuda::std::unexpected<NotCopyAssignable>&>, "");
+static_assert(!cuda::std::is_assignable_v<cuda::std::expected<void, NotCopyAssignable>&,
+                                          const cuda::std::unexpected<NotCopyAssignable>&>,
+              "");
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // - If has_value() is true, equivalent to:
   //   construct_at(addressof(unex), cuda::std::forward<GF>(e.error()));
   //   has_val = false;
@@ -97,20 +106,25 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
+__host__ __device__ void testException()
+{
 #ifndef TEST_HAS_NO_EXCEPTIONS
   cuda::std::expected<void, ThrowOnCopyConstruct> e1(cuda::std::in_place);
   cuda::std::unexpected<ThrowOnCopyConstruct> un(cuda::std::in_place);
-  try {
+  try
+  {
     e1 = un;
     assert(false);
-  } catch (Except) {
+  }
+  catch (Except)
+  {
     assert(e1.has_value());
   }
 #endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());

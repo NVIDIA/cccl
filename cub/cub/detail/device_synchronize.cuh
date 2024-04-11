@@ -26,9 +26,11 @@
 #  pragma system_header
 #endif // no system header
 
+// clang-format off
 #include <cub/detail/detect_cuda_runtime.cuh>
 
 #include <cuda_runtime_api.h>
+// clang-format on
 
 #include <nv/target>
 

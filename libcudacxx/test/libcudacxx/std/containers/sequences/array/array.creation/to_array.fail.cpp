@@ -13,12 +13,13 @@
 
 #include <cuda/std/array>
 
-#include "test_macros.h"
 #include "MoveOnly.h"
+#include "test_macros.h"
 
 // expected-warning@array:* 0-1 {{suggest braces around initialization of subobject}}
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     char source[3][6] = {"hi", "world"};
     // expected-error@array:* {{to_array does not accept multidimensional arrays}}
@@ -30,14 +31,16 @@ int main(int, char**) {
   {
     MoveOnly mo[] = {MoveOnly{3}};
     // expected-error@array:* {{to_array requires copy constructible elements}}
-    // expected-error-re@array:* {{{{(call to implicitly-deleted copy constructor of 'MoveOnly')|(call to deleted constructor of 'MoveOnly')}}}}
+    // expected-error-re@array:* {{{{(call to implicitly-deleted copy constructor of 'MoveOnly')|(call to deleted
+    // constructor of 'MoveOnly')}}}}
     cuda::std::to_array(mo); // expected-note {{requested here}}
   }
 
   {
     const MoveOnly cmo[] = {MoveOnly{3}};
     // expected-error@array:* {{to_array requires move constructible elements}}
-    // expected-error-re@array:* {{{{(call to implicitly-deleted copy constructor of 'MoveOnly')|(call to deleted constructor of 'MoveOnly')}}}}
+    // expected-error-re@array:* {{{{(call to implicitly-deleted copy constructor of 'MoveOnly')|(call to deleted
+    // constructor of 'MoveOnly')}}}}
     cuda::std::to_array(cuda::std::move(cmo)); // expected-note {{requested here}}
   }
 

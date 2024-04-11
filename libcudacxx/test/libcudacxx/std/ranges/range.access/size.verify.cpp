@@ -18,7 +18,8 @@
 extern int arr[];
 
 // Verify that for an array of unknown bound `ranges::size` is ill-formed.
-void test() {
+void test()
+{
   cuda::std::ranges::size(arr);
   // expected-error-re@-1 {{{{no matching function for call to object of type 'const (std::ranges::)?__size::__fn'}}}}
 }

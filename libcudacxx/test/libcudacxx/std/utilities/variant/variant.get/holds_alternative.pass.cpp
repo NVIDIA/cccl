@@ -19,7 +19,8 @@
 
 #include "test_macros.h"
 
-int main(int, char**) {
+int main(int, char**)
+{
   {
     using V = cuda::std::variant<int>;
     constexpr V v;

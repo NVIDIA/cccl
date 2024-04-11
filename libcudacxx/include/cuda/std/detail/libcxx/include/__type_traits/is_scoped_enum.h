@@ -28,16 +28,17 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2020
-template <class _Tp, bool = is_enum_v<_Tp> >
-struct __is_scoped_enum_helper : false_type {};
+template <class _Tp, bool = is_enum_v<_Tp>>
+struct __is_scoped_enum_helper : false_type
+{};
 
 template <class _Tp>
-struct __is_scoped_enum_helper<_Tp, true>
-    : public bool_constant<!is_convertible_v<_Tp, underlying_type_t<_Tp> > > {};
+struct __is_scoped_enum_helper<_Tp, true> : public bool_constant<!is_convertible_v<_Tp, underlying_type_t<_Tp>>>
+{};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scoped_enum
-    : public __is_scoped_enum_helper<_Tp> {};
+struct _LIBCUDACXX_TEMPLATE_VIS is_scoped_enum : public __is_scoped_enum_helper<_Tp>
+{};
 
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;

@@ -28,27 +28,29 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
     : public integral_constant<bool, _LIBCUDACXX_IS_LITERAL(_Tp)>
-    {};
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v = __is_literal_type(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
-    : public integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value ||
-                                     is_reference<__remove_all_extents_t<_Tp>>::value>
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type
+    : public integral_constant<bool,
+                               is_scalar<__remove_all_extents_t<_Tp>>::value
+                                 || is_reference<__remove_all_extents_t<_Tp>>::value>
 {};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v
-    = is_literal_type<_Tp>::value;
-#endif
+_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VAR constexpr bool is_literal_type_v = is_literal_type<_Tp>::value;
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 

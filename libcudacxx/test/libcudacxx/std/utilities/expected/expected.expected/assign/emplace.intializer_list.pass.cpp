@@ -33,50 +33,59 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  CanEmplace_,
-  requires(T t, Args&&... args)(
-    (t.emplace(cuda::std::forward<Args>(args)...))
-  ));
+_LIBCUDACXX_CONCEPT_FRAGMENT(CanEmplace_, requires(T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...))));
 template <class T, class... Args>
 constexpr bool CanEmplace = _LIBCUDACXX_FRAGMENT(CanEmplace_, T, Args...);
 
 static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 
 template <bool Noexcept>
-struct CtorFromInitalizerList {
+struct CtorFromInitalizerList
+{
   __host__ __device__ CtorFromInitalizerList(cuda::std::initializer_list<int>&) noexcept(Noexcept);
   __host__ __device__ CtorFromInitalizerList(cuda::std::initializer_list<int>&, int) noexcept(Noexcept);
 };
 
-static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>, "");
+static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>,
+              "");
 #ifndef TEST_COMPILER_ICC
-static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>, "");
+static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>,
+              "");
 #endif // TEST_COMPILER_ICC
-static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>, "");
+static_assert(
+  CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>, "");
 #ifndef TEST_COMPILER_ICC
-static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>, "");
+static_assert(
+  !CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>, "");
 #endif // TEST_COMPILER_ICC
 
-struct Data {
+struct Data
+{
   cuda::std::initializer_list<int> il;
   int i;
 
-  __host__ __device__ constexpr Data(cuda::std::initializer_list<int>& l, int ii) noexcept : il(l), i(ii) {}
+  __host__ __device__ constexpr Data(cuda::std::initializer_list<int>& l, int ii) noexcept
+      : il(l)
+      , i(ii)
+  {}
 };
 
-__host__ __device__ constexpr bool equal(const cuda::std::initializer_list<int>& lhs, const cuda::std::initializer_list<int>& rhs) {
-  auto* left = lhs.begin();
+__host__ __device__ constexpr bool
+equal(const cuda::std::initializer_list<int>& lhs, const cuda::std::initializer_list<int>& rhs)
+{
+  auto* left  = lhs.begin();
   auto* right = rhs.begin();
 
-  for (; left != rhs.end(); ++left, ++right) {
+  for (; left != rhs.end(); ++left, ++right)
+  {
     assert(*left == *right);
   }
   assert(right == rhs.end());
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // has_value
   {
     auto list1 = {1, 2, 3};
@@ -107,7 +116,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");

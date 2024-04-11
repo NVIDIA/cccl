@@ -12,7 +12,6 @@
 // template<class T>
 // concept copy_constructible;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
@@ -24,7 +23,8 @@ using cuda::std::copy_constructible;
 // Tests in this namespace are shared with moveconstructible.pass.cpp
 // There are some interesting differences, so it's best if they're tested here
 // too.
-namespace MoveConstructibleTests {
+namespace MoveConstructibleTests
+{
 static_assert(copy_constructible<int>, "");
 static_assert(copy_constructible<int*>, "");
 static_assert(copy_constructible<int&>, "");
@@ -85,101 +85,112 @@ static_assert(!copy_constructible<const ImplicitlyDeletedMoveAssign&&>, "");
 static_assert(!copy_constructible<MemberRvalueReference>, "");
 } // namespace MoveConstructibleTests
 
-namespace CopyConstructibleTests {
-struct CopyCtorUserDefined {
+namespace CopyConstructibleTests
+{
+struct CopyCtorUserDefined
+{
   CopyCtorUserDefined(CopyCtorUserDefined&&) noexcept = default;
   __host__ __device__ CopyCtorUserDefined(const CopyCtorUserDefined&);
 };
 static_assert(copy_constructible<CopyCtorUserDefined>, "");
 
-struct CopyAssignUserDefined {
+struct CopyAssignUserDefined
+{
   CopyAssignUserDefined& operator=(CopyAssignUserDefined&&) noexcept = default;
   __host__ __device__ CopyAssignUserDefined& operator=(const CopyAssignUserDefined&);
 };
 static_assert(!copy_constructible<CopyAssignUserDefined>, "");
 
-struct CopyCtorAndAssignUserDefined {
-  CopyCtorAndAssignUserDefined(CopyCtorAndAssignUserDefined&&) noexcept =
-      default;
+struct CopyCtorAndAssignUserDefined
+{
+  CopyCtorAndAssignUserDefined(CopyCtorAndAssignUserDefined&&) noexcept = default;
   __host__ __device__ CopyCtorAndAssignUserDefined(const CopyCtorAndAssignUserDefined&);
-  CopyCtorAndAssignUserDefined&
-  operator=(CopyCtorAndAssignUserDefined&&) noexcept = default;
+  CopyCtorAndAssignUserDefined& operator=(CopyCtorAndAssignUserDefined&&) noexcept = default;
   __host__ __device__ CopyCtorAndAssignUserDefined& operator=(const CopyCtorAndAssignUserDefined&);
 };
 static_assert(copy_constructible<CopyCtorAndAssignUserDefined>, "");
 
-struct CopyCtorDeleted {
+struct CopyCtorDeleted
+{
   CopyCtorDeleted(CopyCtorDeleted&&) noexcept = default;
-  CopyCtorDeleted(const CopyCtorDeleted&) = delete;
+  CopyCtorDeleted(const CopyCtorDeleted&)     = delete;
 };
 static_assert(!copy_constructible<CopyCtorDeleted>, "");
 
-struct CopyAssignDeleted {
+struct CopyAssignDeleted
+{
   CopyAssignDeleted(CopyAssignDeleted&&) noexcept = default;
-  CopyAssignDeleted(const CopyAssignDeleted&) = delete;
+  CopyAssignDeleted(const CopyAssignDeleted&)     = delete;
 };
 static_assert(!copy_constructible<CopyAssignDeleted>, "");
 
-struct CopyCtorHasMutableRef {
+struct CopyCtorHasMutableRef
+{
   CopyCtorHasMutableRef(CopyCtorHasMutableRef&&) noexcept = default;
-  CopyCtorHasMutableRef(CopyCtorHasMutableRef&) = default;
+  CopyCtorHasMutableRef(CopyCtorHasMutableRef&)           = default;
 };
 static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy constructor
-struct CopyCtorProhibitsMutableRef {
+struct CopyCtorProhibitsMutableRef
+{
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&&) noexcept = default;
-  CopyCtorProhibitsMutableRef(const CopyCtorProhibitsMutableRef&) = default;
-  CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&) = delete;
+  CopyCtorProhibitsMutableRef(const CopyCtorProhibitsMutableRef&)     = default;
+  CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&)           = delete;
 };
 static_assert(!copy_constructible<CopyCtorProhibitsMutableRef>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
-struct CopyAssignHasMutableRef {
-  CopyAssignHasMutableRef&
-  operator=(CopyAssignHasMutableRef&&) noexcept = default;
-  CopyAssignHasMutableRef& operator=(CopyAssignHasMutableRef&) = default;
+struct CopyAssignHasMutableRef
+{
+  CopyAssignHasMutableRef& operator=(CopyAssignHasMutableRef&&) noexcept = default;
+  CopyAssignHasMutableRef& operator=(CopyAssignHasMutableRef&)           = default;
 };
 static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy assignment
-struct CopyAssignProhibitsMutableRef {
-  CopyAssignProhibitsMutableRef&
-  operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;
-  CopyAssignProhibitsMutableRef&
-  operator=(const CopyAssignProhibitsMutableRef&) = default;
-  CopyAssignProhibitsMutableRef&
-  operator=(CopyAssignProhibitsMutableRef&) = delete;
+struct CopyAssignProhibitsMutableRef
+{
+  CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;
+  CopyAssignProhibitsMutableRef& operator=(const CopyAssignProhibitsMutableRef&)     = default;
+  CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&)           = delete;
 };
 static_assert(!copy_constructible<CopyAssignProhibitsMutableRef>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
-struct CopyCtorOnly {
+struct CopyCtorOnly
+{
   CopyCtorOnly(CopyCtorOnly&&) noexcept = delete;
-  CopyCtorOnly(const CopyCtorOnly&) = default;
+  CopyCtorOnly(const CopyCtorOnly&)     = default;
 };
 static_assert(!copy_constructible<CopyCtorOnly>, "");
 
-struct CopyAssignOnly {
+struct CopyAssignOnly
+{
   CopyAssignOnly& operator=(CopyAssignOnly&&) noexcept = delete;
-  CopyAssignOnly& operator=(const CopyAssignOnly&) = default;
+  CopyAssignOnly& operator=(const CopyAssignOnly&)     = default;
 };
 static_assert(!copy_constructible<CopyAssignOnly>, "");
 
-struct CopyOnly {
+struct CopyOnly
+{
   CopyOnly(CopyOnly&&) noexcept = delete;
-  CopyOnly(const CopyOnly&) = default;
+  CopyOnly(const CopyOnly&)     = default;
 
   CopyOnly& operator=(CopyOnly&&) noexcept = delete;
-  CopyOnly& operator=(const CopyOnly&) = default;
+  CopyOnly& operator=(const CopyOnly&)     = default;
 };
 static_assert(!copy_constructible<CopyOnly>, "");
 
-struct ExplicitlyCopyable {
+struct ExplicitlyCopyable
+{
   ExplicitlyCopyable(ExplicitlyCopyable&&) = default;
   __host__ __device__ explicit ExplicitlyCopyable(const ExplicitlyCopyable&);
 };
 static_assert(!copy_constructible<ExplicitlyCopyable>, "");
 } // namespace CopyConstructibleTests
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

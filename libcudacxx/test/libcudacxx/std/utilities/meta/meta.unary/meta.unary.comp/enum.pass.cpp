@@ -15,33 +15,35 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__
-void test_enum_imp()
+__host__ __device__ void test_enum_imp()
 {
-    static_assert(!cuda::std::is_reference<T>::value, "");
-    static_assert(!cuda::std::is_arithmetic<T>::value, "");
-    static_assert(!cuda::std::is_fundamental<T>::value, "");
-    static_assert( cuda::std::is_object<T>::value, "");
-    static_assert( cuda::std::is_scalar<T>::value, "");
-    static_assert( cuda::std::is_compound<T>::value, "");
-    static_assert(!cuda::std::is_member_pointer<T>::value, "");
+  static_assert(!cuda::std::is_reference<T>::value, "");
+  static_assert(!cuda::std::is_arithmetic<T>::value, "");
+  static_assert(!cuda::std::is_fundamental<T>::value, "");
+  static_assert(cuda::std::is_object<T>::value, "");
+  static_assert(cuda::std::is_scalar<T>::value, "");
+  static_assert(cuda::std::is_compound<T>::value, "");
+  static_assert(!cuda::std::is_member_pointer<T>::value, "");
 }
 
 template <class T>
-__host__ __device__
-void test_enum()
+__host__ __device__ void test_enum()
 {
-    test_enum_imp<T>();
-    test_enum_imp<const T>();
-    test_enum_imp<volatile T>();
-    test_enum_imp<const volatile T>();
+  test_enum_imp<T>();
+  test_enum_imp<const T>();
+  test_enum_imp<volatile T>();
+  test_enum_imp<const volatile T>();
 }
 
-enum Enum {zero, one};
+enum Enum
+{
+  zero,
+  one
+};
 
 int main(int, char**)
 {
-    test_enum<Enum>();
+  test_enum<Enum>();
 
   return 0;
 }

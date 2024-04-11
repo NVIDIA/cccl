@@ -1,48 +1,40 @@
 #pragma once
 
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-
 #include <string>
 
-static void platform_exec(char const* process, char ** args, size_t nargs) {
-    std::string cl{};
+#include <windows.h>
 
-    STARTUPINFOA si{};
-    PROCESS_INFORMATION pi{};
+static void platform_exec(char const* process, char** args, size_t nargs)
+{
+  std::string cl{};
 
-    si.cb = sizeof(si);
+  STARTUPINFOA si{};
+  PROCESS_INFORMATION pi{};
 
-    cl.append(process);
+  si.cb = sizeof(si);
 
-    for (auto iter = args; iter < (args + nargs); iter++) {
-        cl.append(" ");
-        cl.append(*iter);
-    }
+  cl.append(process);
 
-    printf("Running command: %s\r\n", cl.data());
+  for (auto iter = args; iter < (args + nargs); iter++)
+  {
+    cl.append(" ");
+    cl.append(*iter);
+  }
 
-    bool exec_result = CreateProcess(
-        NULL,
-        (LPSTR)cl.data(),
-        NULL,
-        NULL,
-        false,
-        false,
-        NULL,
-        NULL,
-        &si,
-        &pi
-    );
+  printf("Running command: %s\r\n", cl.data());
 
-    if (!exec_result) {
-        printf("Launch error: %i",  GetLastError());
-    }
+  bool exec_result = CreateProcess(NULL, (LPSTR) cl.data(), NULL, NULL, false, false, NULL, NULL, &si, &pi);
 
-    WaitForSingleObject(pi.hProcess, INFINITE);
+  if (!exec_result)
+  {
+    printf("Launch error: %i", GetLastError());
+  }
 
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+  WaitForSingleObject(pi.hProcess, INFINITE);
 
-    ExitProcess(0);
+  CloseHandle(pi.hProcess);
+  CloseHandle(pi.hThread);
+
+  ExitProcess(0);
 }

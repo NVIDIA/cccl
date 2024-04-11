@@ -96,12 +96,12 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_ForwardIterator, _Outp
 }
 
 template <class _AlgPolicy, class _BinaryPredicate, class _InputIterator, class _Sent, class _InputAndOutputIterator>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator>
-__unique_copy(_InputIterator __first,
-              _Sent __last,
-              _InputAndOutputIterator __result,
-              _BinaryPredicate&& __pred,
-              __unique_copy_tags::__reread_from_output_tag)
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY pair<_InputIterator, _InputAndOutputIterator> __unique_copy(
+  _InputIterator __first,
+  _Sent __last,
+  _InputAndOutputIterator __result,
+  _BinaryPredicate&& __pred,
+  __unique_copy_tags::__reread_from_output_tag)
 {
   if (__first != __last)
   {
@@ -129,7 +129,7 @@ unique_copy(_InputIterator __first, _InputIterator __last, _OutputIterator __res
       _LIBCUDACXX_TRAIT(is_base_of, forward_iterator_tag, __iterator_category_type<_OutputIterator>)
         && _LIBCUDACXX_TRAIT(is_same, __iter_value_type<_InputIterator>, __iter_value_type<_OutputIterator>),
       __unique_copy_tags::__reread_from_output_tag,
-      __unique_copy_tags::__read_from_tmp_value_tag> >;
+      __unique_copy_tags::__read_from_tmp_value_tag>>;
   return _CUDA_VSTD::__unique_copy<_ClassicAlgPolicy>(
            _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), _CUDA_VSTD::move(__result), __pred, __algo_tag())
     .second;

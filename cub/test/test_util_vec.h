@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cub/config.cuh>
+
 #include <cub/util_type.cuh>
 
 #include <iostream>

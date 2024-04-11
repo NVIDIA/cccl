@@ -13,7 +13,6 @@
 // concept constructible_from;
 //    destructible<T> && is_constructible_v<T, Args...>;
 
-
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
@@ -22,46 +21,58 @@
 
 using cuda::std::nullptr_t;
 
-struct Empty {};
+struct Empty
+{};
 
-struct Defaulted {
+struct Defaulted
+{
   ~Defaulted() = default;
 };
-struct Deleted {
+struct Deleted
+{
   ~Deleted() = delete;
 };
 
-struct Noexcept {
+struct Noexcept
+{
   __host__ __device__ ~Noexcept() noexcept;
 };
-struct NoexceptTrue {
+struct NoexceptTrue
+{
   __host__ __device__ ~NoexceptTrue() noexcept(true);
 };
-struct NoexceptFalse {
+struct NoexceptFalse
+{
   __host__ __device__ ~NoexceptFalse() noexcept(false);
 };
 
-struct Protected {
+struct Protected
+{
 protected:
   ~Protected() = default;
 };
-struct Private {
+struct Private
+{
 private:
   ~Private() = default;
 };
 
 template <class T>
-struct NoexceptDependant {
+struct NoexceptDependant
+{
   __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
 };
 
 template <class T, class... Args>
-__host__ __device__ void test() {
-  static_assert(cuda::std::constructible_from<T, Args...> ==
-                (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>), "");
+__host__ __device__ void test()
+{
+  static_assert(cuda::std::constructible_from<T, Args...>
+                  == (cuda::std::destructible<T> && cuda::std::is_constructible_v<T, Args...>),
+                "");
 }
 
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   test<bool>();
   test<bool, bool>();
 
@@ -76,9 +87,7 @@ __host__ __device__ void test() {
   test<double, int>();
   test<double, float>();
 
-  NV_IF_TARGET(NV_IS_HOST,(
-      test<double, long double>();
-  ))
+  NV_IF_TARGET(NV_IS_HOST, (test<double, long double>();))
 
   test<void>();
   test<void, bool>();
@@ -105,8 +114,7 @@ __host__ __device__ void test() {
   test<void (Empty::*)(const int&) const>();
   test<void (Empty::*)(const int&) const, void (Empty::*)(const int&)>();
   test<void (Empty::*)(const int&) volatile>();
-  test<void (Empty::*)(const int&) volatile,
-       void (Empty::*)(const int&) const volatile>();
+  test<void (Empty::*)(const int&) volatile, void (Empty::*)(const int&) const volatile>();
   test<void (Empty::*)(const int&) const volatile>();
   test<void (Empty::*)(const int&) const volatile, double>();
   test<void (Empty::*)(const int&)&>();
@@ -115,13 +123,11 @@ __host__ __device__ void test() {
   test<void (Empty::*)(const int&)&&, void (Empty::*)(const int&)>();
 #if TEST_STD_VER < 2020
   test<void (Empty::*)(const int&) throw()>();
-  test<void (Empty::*)(const int&) throw(),
-       void(Empty::*)(const int&) noexcept(true)>();
+  test<void (Empty::*)(const int&) throw(), void(Empty::*)(const int&) noexcept(true)>();
 #endif // TEST_STD_VER < 2020
   test<void (Empty::*)(const int&) noexcept>();
   test<void (Empty::*)(const int&) noexcept(true)>();
-  test<void (Empty::*)(const int&) noexcept(true),
-       void (Empty::*)(const int&) noexcept(false)>();
+  test<void (Empty::*)(const int&) noexcept(true), void (Empty::*)(const int&) noexcept(false)>();
   test<void (Empty::*)(const int&) noexcept(false)>();
 
   test<int&>();
@@ -141,12 +147,15 @@ __host__ __device__ void test() {
   test<Protected>();
   test<Private>();
 
-  test<NoexceptDependant<int> >();
-  test<NoexceptDependant<double> >();
+  test<NoexceptDependant<int>>();
+  test<NoexceptDependant<double>>();
 
-  test<cuda::std::array<int, 1> >();
+  test<cuda::std::array<int, 1>>();
   test<cuda::std::array<int, 1>, int>();
   test<cuda::std::array<int, 1>, int, int>();
 }
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

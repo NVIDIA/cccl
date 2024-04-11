@@ -17,21 +17,28 @@
 
 #include <cuda/std/iterator>
 
-struct WithADL {
+struct WithADL
+{
   WithADL() = default;
   __host__ __device__ constexpr decltype(auto) operator*() const noexcept;
   __host__ __device__ constexpr WithADL& operator++() noexcept;
   __host__ __device__ constexpr void operator++(int) noexcept;
   __host__ __device__ constexpr bool operator==(WithADL const&) const noexcept;
-  __host__ __device__ friend constexpr auto iter_move(WithADL&) { return 0; }
+  __host__ __device__ friend constexpr auto iter_move(WithADL&)
+  {
+    return 0;
+  }
 };
 
-int main(int, char**) {
+int main(int, char**)
+{
   int* noADL = nullptr;
-  cuda::std::ranges::iter_move(noADL); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+  cuda::std::ranges::iter_move(noADL); // expected-warning {{ignoring return value of function declared with 'nodiscard'
+                                       // attribute}}
 
   WithADL adl;
-  cuda::std::ranges::iter_move(adl); // expected-warning {{ignoring return value of function declared with 'nodiscard' attribute}}
+  cuda::std::ranges::iter_move(adl); // expected-warning {{ignoring return value of function declared with 'nodiscard'
+                                     // attribute}}
 
   return 0;
 }

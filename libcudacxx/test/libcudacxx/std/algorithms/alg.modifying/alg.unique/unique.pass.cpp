@@ -20,42 +20,43 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "MoveOnly.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
   using iter_value_t = typename cuda::std::remove_reference<decltype(*cuda::std::declval<Iter>())>::type;
-  iter_value_t ia[] = {0};
-  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  Iter r = cuda::std::unique(Iter(ia), Iter(ia + sa));
+  iter_value_t ia[]  = {0};
+  const unsigned sa  = sizeof(ia) / sizeof(ia[0]);
+  Iter r             = cuda::std::unique(Iter(ia), Iter(ia + sa));
   assert(base(r) == ia + sa);
   assert(ia[0] == 0);
 
   iter_value_t ib[] = {0, 1};
   const unsigned sb = sizeof(ib) / sizeof(ib[0]);
-  r = cuda::std::unique(Iter(ib), Iter(ib + sb));
+  r                 = cuda::std::unique(Iter(ib), Iter(ib + sb));
   assert(base(r) == ib + sb);
   assert(ib[0] == 0);
   assert(ib[1] == 1);
 
   iter_value_t ic[] = {0, 0};
   const unsigned sc = sizeof(ic) / sizeof(ic[0]);
-  r = cuda::std::unique(Iter(ic), Iter(ic + sc));
+  r                 = cuda::std::unique(Iter(ic), Iter(ic + sc));
   assert(base(r) == ic + 1);
   assert(ic[0] == 0);
 
   iter_value_t id[] = {0, 0, 1};
   const unsigned sd = sizeof(id) / sizeof(id[0]);
-  r = cuda::std::unique(Iter(id), Iter(id + sd));
+  r                 = cuda::std::unique(Iter(id), Iter(id + sd));
   assert(base(r) == id + 2);
   assert(id[0] == 0);
   assert(id[1] == 1);
 
   iter_value_t ie[] = {0, 0, 1, 0};
   const unsigned se = sizeof(ie) / sizeof(ie[0]);
-  r = cuda::std::unique(Iter(ie), Iter(ie + se));
+  r                 = cuda::std::unique(Iter(ie), Iter(ie + se));
   assert(base(r) == ie + 3);
   assert(ie[0] == 0);
   assert(ie[1] == 1);
@@ -63,42 +64,44 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test() {
 
   iter_value_t ig[] = {0, 0, 1, 1};
   const unsigned sg = sizeof(ig) / sizeof(ig[0]);
-  r = cuda::std::unique(Iter(ig), Iter(ig + sg));
+  r                 = cuda::std::unique(Iter(ig), Iter(ig + sg));
   assert(base(r) == ig + 2);
   assert(ig[0] == 0);
   assert(ig[1] == 1);
 
   iter_value_t ih[] = {0, 1, 1};
   const unsigned sh = sizeof(ih) / sizeof(ih[0]);
-  r = cuda::std::unique(Iter(ih), Iter(ih + sh));
+  r                 = cuda::std::unique(Iter(ih), Iter(ih + sh));
   assert(base(r) == ih + 2);
   assert(ih[0] == 0);
   assert(ih[1] == 1);
 
   iter_value_t ii[] = {0, 1, 1, 1, 2, 2, 2};
   const unsigned si = sizeof(ii) / sizeof(ii[0]);
-  r = cuda::std::unique(Iter(ii), Iter(ii + si));
+  r                 = cuda::std::unique(Iter(ii), Iter(ii + si));
   assert(base(r) == ii + 3);
   assert(ii[0] == 0);
   assert(ii[1] == 1);
   assert(ii[2] == 2);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
-  test<forward_iterator<int*> >();
-  test<bidirectional_iterator<int*> >();
-  test<random_access_iterator<int*> >();
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
+  test<forward_iterator<int*>>();
+  test<bidirectional_iterator<int*>>();
+  test<random_access_iterator<int*>>();
   test<int*>();
 
-  test<forward_iterator<MoveOnly*> >();
-  test<bidirectional_iterator<MoveOnly*> >();
-  test<random_access_iterator<MoveOnly*> >();
+  test<forward_iterator<MoveOnly*>>();
+  test<bidirectional_iterator<MoveOnly*>>();
+  test<random_access_iterator<MoveOnly*>>();
   test<MoveOnly*>();
 
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

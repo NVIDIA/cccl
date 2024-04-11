@@ -60,9 +60,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-struct full_extent_t { explicit full_extent_t() = default; };
+struct full_extent_t
+{
+  explicit full_extent_t() = default;
+};
 
-_LIBCUDACXX_INLINE_VAR constexpr auto full_extent = full_extent_t{ };
+_LIBCUDACXX_INLINE_VAR constexpr auto full_extent = full_extent_t{};
 
 #endif // _CCCL_STD_VER > 2011
 

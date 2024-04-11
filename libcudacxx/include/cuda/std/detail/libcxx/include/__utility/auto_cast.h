@@ -24,9 +24,9 @@
 #include <cuda/std/detail/libcxx/include/__type_traits/decay.h>
 
 #if _CCCL_STD_VER < 2020 && defined(_CCCL_COMPILER_MSVC)
-#define _LIBCUDACXX_AUTO_CAST(expr) (_CUDA_VSTD::decay_t<decltype((expr))>)(expr)
+#  define _LIBCUDACXX_AUTO_CAST(expr) (_CUDA_VSTD::decay_t<decltype((expr))>) (expr)
 #else
-#define _LIBCUDACXX_AUTO_CAST(expr) static_cast<_CUDA_VSTD::decay_t<decltype((expr))>>(expr)
+#  define _LIBCUDACXX_AUTO_CAST(expr) static_cast<_CUDA_VSTD::decay_t<decltype((expr))>>(expr)
 #endif
 
 #endif // _LIBCUDACXX___UTILITY_AUTO_CAST_H

@@ -47,7 +47,7 @@ struct char_traits<wchar_t>;
 template <class _Tp>
 class _LIBCUDACXX_TEMPLATE_VIS allocator;
 
-template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT> >
+template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
 class _LIBCUDACXX_TEMPLATE_VIS basic_string;
 
 using string = basic_string<char>;
@@ -65,7 +65,8 @@ using u32string = basic_string<char32_t>;
 
 #if _CCCL_STD_VER >= 2017
 
-namespace pmr {
+namespace pmr
+{
 template <class _CharT, class _Traits = char_traits<_CharT>>
 using basic_string = std::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
 

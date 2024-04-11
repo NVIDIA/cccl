@@ -19,14 +19,19 @@
 
 #include "test_macros.h"
 
-struct Predicate {
-    typedef int argument_type;
-    bool operator()(argument_type) const { return true; }
+struct Predicate
+{
+  typedef int argument_type;
+  bool operator()(argument_type) const
+  {
+    return true;
+  }
 };
 
-int main(int, char**) {
-    cuda::std::unary_negate<Predicate> f((Predicate())); // expected-error{{'unary_negate<Predicate>' is deprecated}}
-    (void)f;
+int main(int, char**)
+{
+  cuda::std::unary_negate<Predicate> f((Predicate())); // expected-error{{'unary_negate<Predicate>' is deprecated}}
+  (void) f;
 
   return 0;
 }

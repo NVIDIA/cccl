@@ -20,40 +20,39 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/aligned_storage.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <size_t _I0, size_t ..._In>
+template <size_t _I0, size_t... _In>
 struct __static_max;
 
 template <size_t _I0>
 struct __static_max<_I0>
 {
-    static const size_t value = _I0;
+  static const size_t value = _I0;
 };
 
-template <size_t _I0, size_t _I1, size_t ..._In>
+template <size_t _I0, size_t _I1, size_t... _In>
 struct __static_max<_I0, _I1, _In...>
 {
-    static const size_t value = _I0 >= _I1 ? __static_max<_I0, _In...>::value :
-                                             __static_max<_I1, _In...>::value;
+  static const size_t value = _I0 >= _I1 ? __static_max<_I0, _In...>::value : __static_max<_I1, _In...>::value;
 };
 
-template <size_t _Len, class _Type0, class ..._Types>
+template <size_t _Len, class _Type0, class... _Types>
 struct aligned_union
 {
-    static const size_t alignment_value = __static_max<_LIBCUDACXX_PREFERRED_ALIGNOF(_Type0),
-                                                       _LIBCUDACXX_PREFERRED_ALIGNOF(_Types)...>::value;
-    static const size_t __len = __static_max<_Len, sizeof(_Type0),
-                                             sizeof(_Types)...>::value;
-    typedef typename aligned_storage<__len, alignment_value>::type type;
+  static const size_t alignment_value =
+    __static_max<_LIBCUDACXX_PREFERRED_ALIGNOF(_Type0), _LIBCUDACXX_PREFERRED_ALIGNOF(_Types)...>::value;
+  static const size_t __len = __static_max<_Len, sizeof(_Type0), sizeof(_Types)...>::value;
+  typedef typename aligned_storage<__len, alignment_value>::type type;
 };
 
 #if _CCCL_STD_VER > 2011
-template <size_t _Len, class ..._Types> using aligned_union_t = typename aligned_union<_Len, _Types...>::type;
+template <size_t _Len, class... _Types>
+using aligned_union_t = typename aligned_union<_Len, _Types...>::type;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -16,29 +16,29 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
 int main(int, char**)
 {
-    {
-        cuda::std::ostringstream outf;
-        cuda::std::ostreambuf_iterator<char> i(outf);
-        cuda::std::ostreambuf_iterator<char>& iref = ++i;
-        assert(&iref == &i);
-        cuda::std::ostreambuf_iterator<char>& iref2 = i++;
-        assert(&iref2 == &i);
-    }
-    {
-        cuda::std::wostringstream outf;
-        cuda::std::ostreambuf_iterator<wchar_t> i(outf);
-        cuda::std::ostreambuf_iterator<wchar_t>& iref = ++i;
-        assert(&iref == &i);
-        cuda::std::ostreambuf_iterator<wchar_t>& iref2 = i++;
-        assert(&iref2 == &i);
-    }
+  {
+    cuda::std::ostringstream outf;
+    cuda::std::ostreambuf_iterator<char> i(outf);
+    cuda::std::ostreambuf_iterator<char>& iref = ++i;
+    assert(&iref == &i);
+    cuda::std::ostreambuf_iterator<char>& iref2 = i++;
+    assert(&iref2 == &i);
+  }
+  {
+    cuda::std::wostringstream outf;
+    cuda::std::ostreambuf_iterator<wchar_t> i(outf);
+    cuda::std::ostreambuf_iterator<wchar_t>& iref = ++i;
+    assert(&iref == &i);
+    cuda::std::ostreambuf_iterator<wchar_t>& iref2 = i++;
+    assert(&iref2 == &i);
+  }
 
   return 0;
 }

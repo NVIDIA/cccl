@@ -13,34 +13,36 @@
 // template <class T, class U> constexpr bool operator==(const optional<T>& x, const U& v);
 // template <class T, class U> constexpr bool operator==(const U& v, const optional<T>& x);
 
-#include <cuda/std/optional>
 #include <cuda/std/cassert>
+#include <cuda/std/optional>
 
 #include "test_macros.h"
 
 using cuda::std::optional;
 
-struct X {
+struct X
+{
   int i_;
 
-  __host__ __device__
-  constexpr X(int i) : i_(i) {}
+  __host__ __device__ constexpr X(int i)
+      : i_(i)
+  {}
 };
 
-__host__ __device__
-constexpr bool operator==(const X& lhs, const X& rhs) {
+__host__ __device__ constexpr bool operator==(const X& lhs, const X& rhs)
+{
   return lhs.i_ == rhs.i_;
 }
 
-__host__ __device__
-constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   {
     typedef X T;
     typedef optional<T> O;
 
     constexpr T val(2);
-    O o1;      // disengaged
-    O o2{1};   // engaged
+    O o1; // disengaged
+    O o2{1}; // engaged
     O o3{val}; // engaged
 
     assert(!(o1 == T(1)));
@@ -71,12 +73,13 @@ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2017
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #endif
 
   return 0;

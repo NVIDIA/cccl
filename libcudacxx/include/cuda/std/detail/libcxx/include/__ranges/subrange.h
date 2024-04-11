@@ -38,9 +38,9 @@
 #include <cuda/std/detail/libcxx/include/__ranges/enable_borrowed_range.h>
 #include <cuda/std/detail/libcxx/include/__ranges/size.h>
 #include <cuda/std/detail/libcxx/include/__ranges/view_interface.h>
+#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
 #include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
 #include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_size.h>
-#include <cuda/std/detail/libcxx/include/__tuple_dir/structured_bindings.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/conditional.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
@@ -403,7 +403,7 @@ public:
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-    (void)__d;
+    (void) __d;
     return *this;
   }
 };
@@ -467,7 +467,7 @@ template <
   class _Iter,
   class _Sent,
   subrange_kind _Kind,
-  enable_if_t<_Index< 2, int>>
+  enable_if_t<_Index<2, int>>
 #  endif // _CCCL_STD_VER <= 2017
 _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __subrange)
 {

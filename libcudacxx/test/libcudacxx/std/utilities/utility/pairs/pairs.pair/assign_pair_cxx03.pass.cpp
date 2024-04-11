@@ -21,8 +21,10 @@
 
 #include "test_macros.h"
 
-struct NonAssignable {
+struct NonAssignable
+{
   __host__ __device__ NonAssignable() {}
+
 private:
   __host__ __device__ NonAssignable& operator=(NonAssignable const&);
 };
@@ -32,22 +34,23 @@ extern Incomplete inc_obj;
 
 int main(int, char**)
 {
-    {
+  {
     // Test that we don't constrain the assignment operator in C++03 mode.
     // Since we don't have access control SFINAE having pair evaluate SFINAE
     // may cause a hard error.
     typedef cuda::std::pair<int, NonAssignable> P;
     static_assert(cuda::std::is_copy_assignable<P>::value, "");
-    }
-    {
+  }
+  {
     typedef cuda::std::pair<int, Incomplete&> P;
     static_assert(cuda::std::is_copy_assignable<P>::value, "");
     P p(42, inc_obj);
     assert(&p.second == &inc_obj);
-    }
+  }
 
   return 0;
 }
 
-struct Incomplete {};
+struct Incomplete
+{};
 Incomplete inc_obj;

@@ -15,16 +15,21 @@
 #include <cuda/std/expected>
 #include <cuda/std/utility>
 
-template<class T, class = void>
+template <class T, class = void>
 constexpr bool WhatNoexcept = false;
 
-template<class T>
-constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<const T&>().what())>> = noexcept(cuda::std::declval<const T&>().what());
+template <class T>
+constexpr bool WhatNoexcept<T, cuda::std::void_t<decltype(cuda::std::declval<const T&>().what())>> =
+  noexcept(cuda::std::declval<const T&>().what());
 
-struct foo{};
+struct foo
+{};
 
 static_assert(!WhatNoexcept<foo>, "");
 static_assert(WhatNoexcept<cuda::std::bad_expected_access<int>>, "");
 static_assert(WhatNoexcept<cuda::std::bad_expected_access<foo>>, "");
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

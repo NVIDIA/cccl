@@ -25,42 +25,38 @@
 
 #  include <cuda_fp16.h>
 
-#  include <nv/target>
-
 #  include <cuda/std/cstdint>
+
+#  include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // trigonometric functions
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sin(__half __v)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
-    return ::hsin(__v);
-  ), (
-    {
-      float __vf            = __v;
-      __vf                  = ::sin(__vf);
-      __half_raw __ret_repr = ::__float2half_rn(__vf);
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (return ::hsin(__v);), ({
+                      float __vf            = __v;
+                      __vf                  = ::sin(__vf);
+                      __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-      uint16_t __repr = __half_raw(__v).x;
-      switch (__repr)
-      {
-        case 12979:
-        case 45747:
-          __ret_repr.x += 1;
-          break;
+                      uint16_t __repr = __half_raw(__v).x;
+                      switch (__repr)
+                      {
+                        case 12979:
+                        case 45747:
+                          __ret_repr.x += 1;
+                          break;
 
-        case 23728:
-        case 56496:
-          __ret_repr.x -= 1;
-          break;
+                        case 23728:
+                        case 56496:
+                          __ret_repr.x -= 1;
+                          break;
 
-        default:;
-      }
+                        default:;
+                      }
 
-      return __ret_repr;
-  }
-))
+                      return __ret_repr;
+                    }))
 }
 
 inline _LIBCUDACXX_INLINE_VISIBILITY __half sinh(__half __v)

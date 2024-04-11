@@ -19,9 +19,8 @@
 //   Test the example from LWG 3470,
 //   qualification conversions in __convertible_to_non_slicing
 
-#include <cuda/std/ranges>
-
 #include <cuda/std/cassert>
+#include <cuda/std/ranges>
 
 #include "test_macros.h"
 
@@ -30,8 +29,8 @@ using gcc_needs_help_type = cuda::std::ranges::subrange<int**>;
 __host__ __device__ constexpr bool test()
 {
   // The example from LWG3470, using implicit conversion.
-  int a[3] = { 1, 2, 3 };
-  int* b[3] = { &a[2], &a[0], &a[1] };
+  int a[3]                                         = {1, 2, 3};
+  int* b[3]                                        = {&a[2], &a[0], &a[1]};
   cuda::std::ranges::subrange<const int* const*> c = b;
   assert(c.begin() == b + 0);
   assert(c.end() == b + 3);

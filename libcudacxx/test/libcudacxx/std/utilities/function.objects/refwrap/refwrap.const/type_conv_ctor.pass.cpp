@@ -15,24 +15,36 @@
 //   reference_wrapper(U&&) noexcept(see below);
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-struct convertible_to_int_ref {
+struct convertible_to_int_ref
+{
   int val = 0;
-  __host__ __device__ operator int&() { return val; }
-  __host__ __device__ operator int const&() const { return val; }
+  __host__ __device__ operator int&()
+  {
+    return val;
+  }
+  __host__ __device__ operator int const&() const
+  {
+    return val;
+  }
 };
 
 template <bool IsNothrow>
-struct nothrow_convertible {
+struct nothrow_convertible
+{
   int val = 0;
-  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow) { return val; }
+  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow)
+  {
+    return val;
+  }
 };
 
-struct convertible_from_int {
+struct convertible_from_int
+{
   __host__ __device__ convertible_from_int(int) {}
 };
 
@@ -68,16 +80,16 @@ int main(int, char**)
   }
 #endif // !defined(TEST_COMPILER_MSVC)
 #if TEST_STD_VER > 2014
-#if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
+#  if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
   {
     int i = 0;
     cuda::std::reference_wrapper ri(i);
-    static_assert((cuda::std::is_same<decltype(ri), cuda::std::reference_wrapper<int>>::value), "" );
+    static_assert((cuda::std::is_same<decltype(ri), cuda::std::reference_wrapper<int>>::value), "");
     const int j = 0;
     cuda::std::reference_wrapper rj(j);
-    static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "" );
+    static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "");
   }
-#endif
+#  endif
 #endif
 
   return 0;
