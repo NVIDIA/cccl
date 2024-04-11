@@ -32,14 +32,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
  */
 _LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_alignment = 256;
 
-/// \struct device_accessible
-/// \brief The \c device_accessible property signals that the allocated memory is device accessible
+/**
+ * @brief The \c device_accessible property signals that the allocated memory is device accessible
+ */
 struct device_accessible
 {};
 
-/// \struct host_accessible
-/// \brief The \c host_accessible property signals that the allocated memory is host accessible
+/**
+ * @brief The \c host_accessible property signals that the allocated memory is host accessible
+ */
 struct host_accessible
+{};
+
+/**
+ * @brief The \c managed_memory property signals that the allocated memory is managed
+ */
+struct managed_memory
 {};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
