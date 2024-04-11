@@ -66,9 +66,9 @@ int main()
 
   std::vector<std::string> cv_qualifier{"volatile ", ""};
 
-  std::ofstream out("atomic_cuda_generated.h");
+  std::ofstream out("atomic_cuda_ptx_generated.h");
 
-  out << R"XXX(//===----------------------------------------------------------------------===//
+    out << R"XXX(//===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.

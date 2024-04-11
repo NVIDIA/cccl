@@ -19,8 +19,8 @@ target_compile_features(
 
 add_dependencies(libcudacxx.atomics.codegen codegen)
 
-set(atomic_generated_output "${libcudacxx_BINARY_DIR}/codegen/atomic_cuda_generated.h")
-set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include/support/atomic")
+set(atomic_generated_output "${libcudacxx_BINARY_DIR}/codegen/atomic_cuda_ptx_generated.h")
+set(atomic_install_location "${libcudacxx_SOURCE_DIR}/include/cuda/std/__atomic")
 
 add_custom_target(
     libcudacxx.atomics.codegen.execute
@@ -32,13 +32,13 @@ add_dependencies(libcudacxx.atomics.codegen libcudacxx.atomics.codegen.execute)
 
 add_custom_target(
     libcudacxx.atomics.codegen.install
-    COMMAND ${CMAKE_COMMAND} -E copy "${atomic_generated_output}" "${atomic_install_location}/atomic_cuda_generated.h"
-    BYPRODUCTS "${atomic_install_location}/atomic_cuda_generated.h"
+    COMMAND ${CMAKE_COMMAND} -E copy "${atomic_generated_output}" "${atomic_install_location}/atomic_cuda_ptx_generated.h"
+    BYPRODUCTS "${atomic_install_location}/atomic_cuda_ptx_generated.h"
 )
 
 add_dependencies(libcudacxx.atomics.codegen.install libcudacxx.atomics.codegen.execute)
 
 add_test(
     NAME libcudacxx.atomics.codegen.diff
-    COMMAND ${CMAKE_COMMAND} -E compare_files "${atomic_install_location}/atomic_cuda_generated.h" "${atomic_generated_output}"
+    COMMAND ${CMAKE_COMMAND} -E compare_files "${atomic_install_location}/atomic_cuda_ptx_generated.h" "${atomic_generated_output}"
 )
