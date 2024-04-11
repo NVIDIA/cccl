@@ -26,43 +26,49 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/generic/logical.h>
 #include <thrust/system/detail/adl/logical.h>
+#include <thrust/system/detail/generic/logical.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool all_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+all_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       Predicate pred)
 {
   using thrust::system::detail::generic::all_of;
   return all_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end all_of()
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool any_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+any_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       Predicate pred)
 {
   using thrust::system::detail::generic::any_of;
   return any_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end any_of()
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename DerivedPolicy, typename InputIterator, typename Predicate>
-_CCCL_HOST_DEVICE
-bool none_of(const thrust::detail::execution_policy_base<DerivedPolicy> &exec, InputIterator first, InputIterator last, Predicate pred)
+template <typename DerivedPolicy, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE bool
+none_of(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+        InputIterator first,
+        InputIterator last,
+        Predicate pred)
 {
   using thrust::system::detail::generic::none_of;
   return none_of(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end none_of()
 
-
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool all_of(InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::select_system;
@@ -74,8 +80,7 @@ bool all_of(InputIterator first, InputIterator last, Predicate pred)
   return thrust::all_of(select_system(system), first, last, pred);
 }
 
-
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool any_of(InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::select_system;
@@ -87,8 +92,7 @@ bool any_of(InputIterator first, InputIterator last, Predicate pred)
   return thrust::any_of(select_system(system), first, last, pred);
 }
 
-
-template<typename InputIterator, typename Predicate>
+template <typename InputIterator, typename Predicate>
 bool none_of(InputIterator first, InputIterator last, Predicate pred)
 {
   using thrust::system::detail::generic::select_system;

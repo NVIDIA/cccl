@@ -35,23 +35,25 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <cub/block/block_load.cuh>
+#include <cub/block/block_scan.cuh>
+#include <cub/block/block_store.cuh>
+#include <cub/util_temporary_storage.cuh>
+
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/cuda/config.h>
 #include <thrust/system/cuda/detail/util.h>
 #include <thrust/system/system_error.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#include <cub/block/block_load.cuh>
-#include <cub/block/block_scan.cuh>
-#include <cub/block/block_store.cuh>
-#include <cub/util_temporary_storage.cuh>
-
 #include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace cuda_cub {
-namespace core {
+namespace cuda_cub
+{
+namespace core
+{
 
 #ifdef _NVHPC_CUDA
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
@@ -72,309 +74,357 @@ namespace core {
 #    define THRUST_TUNING_ARCH sm35
 #  elif (__CUDA_ARCH__ >= 300)
 #    define THRUST_TUNING_ARCH sm30
-#  elif !defined (__CUDA_ARCH__)
+#  elif !defined(__CUDA_ARCH__)
 #    define THRUST_TUNING_ARCH sm30
 #  endif
 #endif
 
-  // Typelist - a container of types, supports up to 10 types
-  // --------------------------------------------------------------------------
+// Typelist - a container of types, supports up to 10 types
+// --------------------------------------------------------------------------
 
-  class _;
-  template <class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _>
-  struct typelist;
+class _;
+template <class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _, class = _>
+struct typelist;
 
-  // -------------------------------------
+// -------------------------------------
 
-  // supported SM arch
-  // ---------------------
-  struct sm30  { enum { ver = 300, warpSize = 32 }; };
-  struct sm35  { enum { ver = 350, warpSize = 32 }; };
-  struct sm52  { enum { ver = 520, warpSize = 32 }; };
-  struct sm60  { enum { ver = 600, warpSize = 32 }; };
-
-  // list of sm, checked from left to right order
-  // the rightmost is the lowest sm arch supported
-  // --------------------------------------------
-  typedef typelist<sm60,sm52,sm35,sm30> sm_list;
-
-  // lowest supported SM arch
-  // --------------------------------------------------------------------------
-
-  template<class, class>
-  struct lowest_supported_sm_arch_impl;
-
-  template <class SM, class _0, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-  struct lowest_supported_sm_arch_impl<SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9> >
-       : lowest_supported_sm_arch_impl<_0, typelist<    _1, _2, _3, _4, _5, _6, _7, _8, _9> > {};
-  template <class SM>
-  struct lowest_supported_sm_arch_impl<SM, typelist<> >
+// supported SM arch
+// ---------------------
+struct sm30
+{
+  enum
   {
-    typedef SM type;
+    ver      = 300,
+    warpSize = 32
   };
+};
+struct sm35
+{
+  enum
+  {
+    ver      = 350,
+    warpSize = 32
+  };
+};
+struct sm52
+{
+  enum
+  {
+    ver      = 520,
+    warpSize = 32
+  };
+};
+struct sm60
+{
+  enum
+  {
+    ver      = 600,
+    warpSize = 32
+  };
+};
 
-  typedef typename lowest_supported_sm_arch_impl<_,sm_list>::type lowest_supported_sm_arch;
+// list of sm, checked from left to right order
+// the rightmost is the lowest sm arch supported
+// --------------------------------------------
+typedef typelist<sm60, sm52, sm35, sm30> sm_list;
 
-  // metafunction to match next viable PtxPlan specialization
-  // --------------------------------------------------------------------------
+// lowest supported SM arch
+// --------------------------------------------------------------------------
 
-  __THRUST_DEFINE_HAS_NESTED_TYPE(has_tuning_t, tuning)
-  __THRUST_DEFINE_HAS_NESTED_TYPE(has_type_t, type)
+template <class, class>
+struct lowest_supported_sm_arch_impl;
 
-  template <template <class> class, class, class>
-  struct specialize_plan_impl_loop;
-  template <template <class> class, class>
-  struct specialize_plan_impl_match;
+template <class SM, class _0, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
+struct lowest_supported_sm_arch_impl<SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+    : lowest_supported_sm_arch_impl<_0, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+{};
+template <class SM>
+struct lowest_supported_sm_arch_impl<SM, typelist<>>
+{
+  typedef SM type;
+};
 
-  // we loop through the sm_list
-  template <template <class> class P, class SM, class _0, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-  struct specialize_plan_impl_loop<P, SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9> >
-       : specialize_plan_impl_loop<P, SM, typelist<    _1, _2, _3, _4, _5, _6, _7, _8, _9> > {};
+typedef typename lowest_supported_sm_arch_impl<_, sm_list>::type lowest_supported_sm_arch;
 
-  // until we find first lowest match
-  template <template <class> class P, class SM, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-  struct specialize_plan_impl_loop <P, SM,  typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9> >
-       : specialize_plan_impl_match<P,      typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9> > {};
+// metafunction to match next viable PtxPlan specialization
+// --------------------------------------------------------------------------
 
-  template<class, class>
-  struct has_sm_tuning_impl;
+__THRUST_DEFINE_HAS_NESTED_TYPE(has_tuning_t, tuning)
+__THRUST_DEFINE_HAS_NESTED_TYPE(has_type_t, type)
 
-  // specializing for Tunig which needs 1 arg
-  template <class SM,
-            template <class, class> class Tuning,
-            class _0>
-  struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0> > : has_type_t<Tuning<SM, _0> > {};
+template <template <class> class, class, class>
+struct specialize_plan_impl_loop;
+template <template <class> class, class>
+struct specialize_plan_impl_match;
 
-  // specializing for Tunig which needs 2 args
-  template <class SM,
-            template <class, class,class> class Tuning,
-            class _0, class _1>
-  struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0, _1> > : has_type_t<Tuning<SM, _0, _1> > {};
+// we loop through the sm_list
+template <template <class> class P,
+          class SM,
+          class _0,
+          class _1,
+          class _2,
+          class _3,
+          class _4,
+          class _5,
+          class _6,
+          class _7,
+          class _8,
+          class _9>
+struct specialize_plan_impl_loop<P, SM, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+    : specialize_plan_impl_loop<P, SM, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+{};
 
-  template <template <class> class P, class SM>
-  struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arch>::tuning > {};
+// until we find first lowest match
+template <template <class> class P,
+          class SM,
+          class _1,
+          class _2,
+          class _3,
+          class _4,
+          class _5,
+          class _6,
+          class _7,
+          class _8,
+          class _9>
+struct specialize_plan_impl_loop<P, SM, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+    : specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+{};
 
-  // once first match is found in sm_list, all remaining sm are possible
-  // candidate for tuning, so pick the first available
-  //   if the plan P has SM-level tuning then pick it,
-  //   otherwise move on to the next sm in the sm_list
-  template <template <class> class P, class SM, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-  struct specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9> >
-      : thrust::detail::conditional<
-            has_sm_tuning<P, SM>::value,
-            P<SM>,
-            specialize_plan_impl_match<P, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9> > >::type {};
+template <class, class>
+struct has_sm_tuning_impl;
 
-    template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
-    struct specialize_plan_msvc10_war
+// specializing for Tunig which needs 1 arg
+template <class SM, template <class, class> class Tuning, class _0>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0>> : has_type_t<Tuning<SM, _0>>
+{};
+
+// specializing for Tunig which needs 2 args
+template <class SM, template <class, class, class> class Tuning, class _0, class _1>
+struct has_sm_tuning_impl<SM, Tuning<lowest_supported_sm_arch, _0, _1>> : has_type_t<Tuning<SM, _0, _1>>
+{};
+
+template <template <class> class P, class SM>
+struct has_sm_tuning : has_sm_tuning_impl<SM, typename P<lowest_supported_sm_arch>::tuning>
+{};
+
+// once first match is found in sm_list, all remaining sm are possible
+// candidate for tuning, so pick the first available
+//   if the plan P has SM-level tuning then pick it,
+//   otherwise move on to the next sm in the sm_list
+template <template <class> class P,
+          class SM,
+          class _1,
+          class _2,
+          class _3,
+          class _4,
+          class _5,
+          class _6,
+          class _7,
+          class _8,
+          class _9>
+struct specialize_plan_impl_match<P, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+    : thrust::detail::conditional<has_sm_tuning<P, SM>::value,
+                                  P<SM>,
+                                  specialize_plan_impl_match<P, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>>::type
+{};
+
+template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
+struct specialize_plan_msvc10_war
+{
+  // if Plan has tuning type, this means it has SM-specific tuning
+  // so loop through sm_list to find match,
+  // otherwise just specialize on provided SM
+  typedef thrust::detail::conditional<has_tuning_t<Plan<lowest_supported_sm_arch>>::value,
+                                      specialize_plan_impl_loop<Plan, SM, sm_list>,
+                                      Plan<SM>>
+    type;
+};
+
+template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
+struct specialize_plan : specialize_plan_msvc10_war<Plan, SM>::type::type
+{};
+
+/////////////////////////
+/////////////////////////
+/////////////////////////
+
+// retrieve temp storage size from an Agent
+// ---------------------------------------------------------------------------
+// metafunction introspects Agent, and if it finds TempStorage type
+// it will return its size
+
+__THRUST_DEFINE_HAS_NESTED_TYPE(has_temp_storage, TempStorage)
+
+template <class Agent, class U>
+struct temp_storage_size_impl;
+
+template <class Agent>
+struct temp_storage_size_impl<Agent, thrust::detail::false_type>
+{
+  enum
+  {
+    value = 0
+  };
+};
+
+template <class Agent>
+struct temp_storage_size_impl<Agent, thrust::detail::true_type>
+{
+  enum
+  {
+    value = sizeof(typename Agent::TempStorage)
+  };
+};
+
+template <class Agent>
+struct temp_storage_size : temp_storage_size_impl<Agent, typename has_temp_storage<Agent>::type>
+{};
+
+// check whether all Agents requires < MAX_SHMEM shared memory
+// ---------------------------------------------------------------------------
+// if so, we can use simpler kernel for dispatch, which assumes that all
+// shared memory is on chip.
+// Otherwise, a kernel will be compiled which can also accept virtualized
+// shared memory, in case there is not enough on chip. This kernel is about
+// 10% slower
+
+template <bool, class, size_t, class>
+struct has_enough_shmem_impl;
+
+template <bool V,
+          class A,
+          size_t S,
+          class _0,
+          class _1,
+          class _2,
+          class _3,
+          class _4,
+          class _5,
+          class _6,
+          class _7,
+          class _8,
+          class _9>
+struct has_enough_shmem_impl<V, A, S, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+    : has_enough_shmem_impl<V && (temp_storage_size<specialize_plan<A::template PtxPlan, _0>>::value <= S),
+                            A,
+                            S,
+                            typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>
+{};
+template <bool V, class A, size_t S>
+struct has_enough_shmem_impl<V, A, S, typelist<>>
+{
+  enum
+  {
+    value = V
+  };
+  typedef typename thrust::detail::conditional<value, thrust::detail::true_type, thrust::detail::false_type>::type type;
+};
+
+template <class Agent, size_t MAX_SHMEM>
+struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
+{};
+
+/////////////////////////
+/////////////////////////
+/////////////////////////
+
+// AgentPlan structure and helpers
+// --------------------------------
+
+struct AgentPlan
+{
+  int block_threads;
+  int items_per_thread;
+  int items_per_tile;
+  int shared_memory_size;
+  int grid_size;
+
+  THRUST_RUNTIME_FUNCTION AgentPlan() {}
+
+  THRUST_RUNTIME_FUNCTION
+  AgentPlan(int block_threads_, int items_per_thread_, int shared_memory_size_, int grid_size_ = 0)
+      : block_threads(block_threads_)
+      , items_per_thread(items_per_thread_)
+      , items_per_tile(items_per_thread * block_threads)
+      , shared_memory_size(shared_memory_size_)
+      , grid_size(grid_size_)
+  {}
+
+  THRUST_RUNTIME_FUNCTION AgentPlan(AgentPlan const& plan)
+      : block_threads(plan.block_threads)
+      , items_per_thread(plan.items_per_thread)
+      , items_per_tile(plan.items_per_tile)
+      , shared_memory_size(plan.shared_memory_size)
+      , grid_size(plan.grid_size)
+  {}
+
+  template <class PtxPlan>
+  THRUST_RUNTIME_FUNCTION
+  AgentPlan(PtxPlan, typename thrust::detail::disable_if_convertible<PtxPlan, AgentPlan>::type* = NULL)
+      : block_threads(PtxPlan::BLOCK_THREADS)
+      , items_per_thread(PtxPlan::ITEMS_PER_THREAD)
+      , items_per_tile(PtxPlan::ITEMS_PER_TILE)
+      , shared_memory_size(temp_storage_size<PtxPlan>::value)
+      , grid_size(0)
+  {}
+}; // struct AgentPlan
+
+__THRUST_DEFINE_HAS_NESTED_TYPE(has_Plan, Plan)
+
+template <class Agent>
+struct return_Plan
+{
+  typedef typename Agent::Plan type;
+};
+
+template <class Agent>
+struct get_plan
+    : thrust::detail::conditional<has_Plan<Agent>::value, return_Plan<Agent>, thrust::detail::identity_<AgentPlan>>::type
+{};
+
+// returns AgentPlan corresponding to a given ptx version
+// ------------------------------------------------------
+
+template <class, class>
+struct get_agent_plan_impl;
+
+template <class Agent, class SM, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
+struct get_agent_plan_impl<Agent, typelist<SM, _1, _2, _3, _4, _5, _6, _7, _8, _9>>
+{
+  typedef typename get_plan<Agent>::type Plan;
+  Plan THRUST_RUNTIME_FUNCTION static get(int ptx_version)
+  {
+    if (ptx_version >= SM::ver)
     {
-      // if Plan has tuning type, this means it has SM-specific tuning
-      // so loop through sm_list to find match,
-      // otherwise just specialize on provided SM
-      typedef thrust::detail::conditional<has_tuning_t<Plan<lowest_supported_sm_arch> >::value,
-                                  specialize_plan_impl_loop<Plan, SM, sm_list>,
-                                  Plan<SM> >
-          type;
-    };
-
-    template <template <class> class Plan, class SM = THRUST_TUNING_ARCH>
-    struct specialize_plan : specialize_plan_msvc10_war<Plan,SM>::type::type {};
-
-
-    /////////////////////////
-    /////////////////////////
-    /////////////////////////
-
-    // retrieve temp storage size from an Agent
-    // ---------------------------------------------------------------------------
-    // metafunction introspects Agent, and if it finds TempStorage type
-    // it will return its size
-
-    __THRUST_DEFINE_HAS_NESTED_TYPE(has_temp_storage, TempStorage)
-
-    template <class Agent, class U>
-    struct temp_storage_size_impl;
-
-    template <class Agent>
-    struct temp_storage_size_impl<Agent, thrust::detail::false_type>
-    {
-      enum
-      {
-        value = 0
-      };
-    };
-
-    template <class Agent>
-    struct temp_storage_size_impl<Agent, thrust::detail::true_type>
-    {
-      enum
-      {
-        value = sizeof(typename Agent::TempStorage)
-      };
-    };
-
-    template <class Agent>
-    struct temp_storage_size
-        : temp_storage_size_impl<Agent, typename has_temp_storage<Agent>::type>
-    {
-    };
-
-    // check whether all Agents requires < MAX_SHMEM shared memory
-    // ---------------------------------------------------------------------------
-    // if so, we can use simpler kernel for dispatch, which assumes that all
-    // shared memory is on chip.
-    // Otherwise, a kernel will be compiled which can also accept virtualized
-    // shared memory, in case there is not enough on chip. This kernel is about
-    // 10% slower
-
-    template <bool, class, size_t, class>
-    struct has_enough_shmem_impl;
-
-    template <bool V, class A, size_t S, class _0, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-    struct has_enough_shmem_impl<V, A, S, typelist<_0, _1, _2, _3, _4, _5, _6, _7, _8, _9> >
-        : has_enough_shmem_impl<
-              V && (temp_storage_size<specialize_plan<A::template PtxPlan, _0> >::value <= S),
-              A,
-              S,
-              typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9> >
-    {
-    };
-    template <bool V, class A, size_t S>
-    struct has_enough_shmem_impl<V, A, S, typelist<> >
-    {
-      enum
-      {
-        value = V
-      };
-      typedef typename thrust::detail::conditional<value,
-                                           thrust::detail::true_type,
-                                           thrust::detail::false_type>::type type;
-    };
-
-    template <class Agent, size_t MAX_SHMEM>
-    struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
-    {
-    };
-
-    /////////////////////////
-    /////////////////////////
-    /////////////////////////
-
-    // AgentPlan structure and helpers
-    // --------------------------------
-
-    struct AgentPlan
-    {
-      int block_threads;
-      int items_per_thread;
-      int items_per_tile;
-      int shared_memory_size;
-      int grid_size;
-
-      THRUST_RUNTIME_FUNCTION
-      AgentPlan() {}
-
-      THRUST_RUNTIME_FUNCTION
-      AgentPlan(int block_threads_,
-                int items_per_thread_,
-                int shared_memory_size_,
-                int grid_size_ = 0)
-          : block_threads(block_threads_),
-            items_per_thread(items_per_thread_),
-            items_per_tile(items_per_thread * block_threads),
-            shared_memory_size(shared_memory_size_),
-            grid_size(grid_size_)
-      {
-      }
-
-      THRUST_RUNTIME_FUNCTION
-      AgentPlan(AgentPlan const& plan)
-          : block_threads(plan.block_threads),
-            items_per_thread(plan.items_per_thread),
-            items_per_tile(plan.items_per_tile),
-            shared_memory_size(plan.shared_memory_size),
-            grid_size(plan.grid_size) {}
-
-      template <class PtxPlan>
-      THRUST_RUNTIME_FUNCTION
-      AgentPlan(PtxPlan,
-                typename thrust::detail::disable_if_convertible<
-                    PtxPlan,
-                    AgentPlan>::type* = NULL)
-          : block_threads(PtxPlan::BLOCK_THREADS),
-            items_per_thread(PtxPlan::ITEMS_PER_THREAD),
-            items_per_tile(PtxPlan::ITEMS_PER_TILE),
-            shared_memory_size(temp_storage_size<PtxPlan>::value),
-            grid_size(0)
-      {
-      }
-    };    // struct AgentPlan
-
-
-    __THRUST_DEFINE_HAS_NESTED_TYPE(has_Plan, Plan)
-
-    template <class Agent>
-    struct return_Plan
-    {
-      typedef typename Agent::Plan type;
-    };
-
-    template <class Agent>
-    struct get_plan : thrust::detail::conditional<
-                          has_Plan<Agent>::value,
-                          return_Plan<Agent>,
-                          thrust::detail::identity_<AgentPlan> >::type
-    {
-    };
-
-    // returns AgentPlan corresponding to a given ptx version
-    // ------------------------------------------------------
-
-    template<class, class>
-    struct get_agent_plan_impl;
-
-    template<class Agent, class SM, class _1, class _2, class _3, class _4, class _5, class _6, class _7, class _8, class _9>
-    struct get_agent_plan_impl<Agent,typelist<SM,_1,_2,_3,_4,_5,_6,_7,_8,_9> >
-    {
-      typedef typename get_plan<Agent>::type Plan;
-      Plan THRUST_RUNTIME_FUNCTION
-      static get(int ptx_version)
-      {
-        if (ptx_version >= SM::ver)
-          return Plan(specialize_plan<Agent::template PtxPlan, SM>());
-        else
-          return get_agent_plan_impl<Agent,
-                                     typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9> >::
-              get(ptx_version);
-      }
-    };
-
-    template<class Agent>
-    struct get_agent_plan_impl<Agent,typelist<lowest_supported_sm_arch> >
-    {
-      typedef typename get_plan<Agent>::type Plan;
-      Plan THRUST_RUNTIME_FUNCTION
-      static get(int /* ptx_version */)
-      {
-        typedef typename get_plan<Agent>::type Plan;
-        return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
-      }
-    };
-
-    template <class Agent>
-    THRUST_RUNTIME_FUNCTION
-    typename get_plan<Agent>::type get_agent_plan(int ptx_version)
-    {
-      NV_IF_TARGET(
-        NV_IS_DEVICE,
-        (
-          THRUST_UNUSED_VAR(ptx_version);
-          using plan_type = typename get_plan<Agent>::type;
-          using ptx_plan  = typename Agent::ptx_plan;
-          return plan_type{ptx_plan{}};
-        ), // NV_IS_HOST:
-        ( return get_agent_plan_impl<Agent, sm_list>::get(ptx_version); ));
+      return Plan(specialize_plan<Agent::template PtxPlan, SM>());
     }
+    else
+    {
+      return get_agent_plan_impl<Agent, typelist<_1, _2, _3, _4, _5, _6, _7, _8, _9>>::get(ptx_version);
+    }
+  }
+};
+
+template <class Agent>
+struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
+{
+  typedef typename get_plan<Agent>::type Plan;
+  Plan THRUST_RUNTIME_FUNCTION static get(int /* ptx_version */)
+  {
+    typedef typename get_plan<Agent>::type Plan;
+    return Plan(specialize_plan<Agent::template PtxPlan, lowest_supported_sm_arch>());
+  }
+};
+
+template <class Agent>
+THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_version)
+{
+  NV_IF_TARGET(NV_IS_DEVICE,
+               (THRUST_UNUSED_VAR(ptx_version); using plan_type = typename get_plan<Agent>::type;
+                using ptx_plan                                  = typename Agent::ptx_plan;
+                return plan_type{ptx_plan{}};), // NV_IS_HOST:
+               (return get_agent_plan_impl<Agent, sm_list>::get(ptx_version);));
+}
 
 // XXX keep this dead-code for now as a gentle reminder
 //     that kernel luunch which reats plan values is the most robust
@@ -387,9 +437,9 @@ namespace core {
 //       If launched from device, this is just a device-function call
 //       no caching is required.
 // ----------------------------------------------------------------------------
-  // if we don't know ptx version, we can call kernel
-  // to retrieve AgentPlan from device code. Slower, but guaranteed to work
-  // -----------------------------------------------------------------------
+// if we don't know ptx version, we can call kernel
+// to retrieve AgentPlan from device code. Slower, but guaranteed to work
+// -----------------------------------------------------------------------
 #if 0
   template<class Agent>
   void __global__ get_agent_plan_kernel(AgentPlan *plan);
@@ -412,9 +462,9 @@ namespace core {
   xget_agent_plan_impl(F f, cudaStream_t s, void* d_ptr)
   {
     AgentPlan plan;
-#ifdef __CUDA_ARCH__
+#  ifdef __CUDA_ARCH__
     plan = get_agent_plan_dev<Agent>();
-#else
+#  else
     static cub::Mutex mutex;
     bool lock = false;
     if (d_ptr == 0)
@@ -433,7 +483,7 @@ namespace core {
     if (lock)
       mutex.Unlock();
     cudaStreamSynchronize(s);
-#endif
+#  endif
     return plan;
   }
 
@@ -453,359 +503,420 @@ namespace core {
   }
 #endif
 
-  /////////////////////////
-  /////////////////////////
-  /////////////////////////
+/////////////////////////
+/////////////////////////
+/////////////////////////
 
-  THRUST_RUNTIME_FUNCTION
-  inline int get_sm_count()
+THRUST_RUNTIME_FUNCTION inline int get_sm_count()
+{
+  int dev_id;
+  cuda_cub::throw_on_error(cudaGetDevice(&dev_id),
+                           "get_sm_count :"
+                           "failed to cudaGetDevice");
+
+  cudaError_t status;
+  int i32value;
+  status = cudaDeviceGetAttribute(&i32value, cudaDevAttrMultiProcessorCount, dev_id);
+  cuda_cub::throw_on_error(status,
+                           "get_sm_count:"
+                           "failed to sm_count");
+  return i32value;
+}
+
+THRUST_RUNTIME_FUNCTION inline size_t get_max_shared_memory_per_block()
+{
+  int dev_id;
+  cuda_cub::throw_on_error(cudaGetDevice(&dev_id),
+                           "get_max_shared_memory_per_block :"
+                           "failed to cudaGetDevice");
+
+  cudaError_t status;
+  int i32value;
+  status = cudaDeviceGetAttribute(&i32value, cudaDevAttrMaxSharedMemoryPerBlock, dev_id);
+  cuda_cub::throw_on_error(status,
+                           "get_max_shared_memory_per_block :"
+                           "failed to get max shared memory per block");
+
+  return static_cast<size_t>(i32value);
+}
+
+THRUST_RUNTIME_FUNCTION inline size_t virtual_shmem_size(size_t shmem_per_block)
+{
+  size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
+  if (shmem_per_block > max_shmem_per_block)
   {
-    int dev_id;
-    cuda_cub::throw_on_error(cudaGetDevice(&dev_id),
-                             "get_sm_count :"
-                             "failed to cudaGetDevice");
+    return shmem_per_block;
+  }
+  else
+  {
+    return 0;
+  }
+}
 
-    cudaError_t status;
-    int         i32value;
-    status = cudaDeviceGetAttribute(&i32value,
-                                    cudaDevAttrMultiProcessorCount,
-                                    dev_id);
-    cuda_cub::throw_on_error(status,
-                             "get_sm_count:"
-                             "failed to sm_count");
-    return i32value;
+THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
+{
+  size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
+  if (shmem_per_block > max_shmem_per_block)
+  {
+    return shmem_per_block * num_blocks;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+// LoadIterator
+// ------------
+// if trivial iterator is passed, wrap loads into LDG
+//
+template <class PtxPlan, class It>
+struct LoadIterator
+{
+  typedef typename iterator_traits<It>::value_type value_type;
+  typedef typename iterator_traits<It>::difference_type size_type;
+
+  typedef
+    typename thrust::detail::conditional<is_contiguous_iterator<It>::value,
+                                         cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                                         It>::type type;
+}; // struct Iterator
+
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
+{
+  return raw_pointer_cast(&*it);
+}
+
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
+make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
+{
+  return it;
+}
+
+template <class PtxPlan, class It>
+typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE make_load_iterator(PtxPlan const&, It it)
+{
+  return make_load_iterator_impl<PtxPlan>(it, typename is_contiguous_iterator<It>::type());
+}
+
+template <class>
+struct get_arch;
+
+template <template <class> class Plan, class Arch>
+struct get_arch<Plan<Arch>>
+{
+  typedef Arch type;
+};
+
+// BlockLoad
+// -----------
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
+struct BlockLoad
+{
+  using type =
+    cub::BlockLoad<T,
+                   PtxPlan::BLOCK_THREADS,
+                   PtxPlan::ITEMS_PER_THREAD,
+                   PtxPlan::LOAD_ALGORITHM,
+                   1,
+                   1,
+                   get_arch<PtxPlan>::type::ver>;
+};
+
+// BlockStore
+// -----------
+// a helper metaprogram that returns type of a block loader
+template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
+struct BlockStore
+{
+  using type =
+    cub::BlockStore<T,
+                    PtxPlan::BLOCK_THREADS,
+                    PtxPlan::ITEMS_PER_THREAD,
+                    PtxPlan::STORE_ALGORITHM,
+                    1,
+                    1,
+                    get_arch<PtxPlan>::type::ver>;
+};
+
+// cuda_optional
+// --------------
+// used for function that return cudaError_t along with the result
+//
+template <class T>
+class cuda_optional
+{
+  cudaError_t status_{cudaSuccess};
+  T value_{};
+
+public:
+  cuda_optional() = default;
+
+  _CCCL_HOST_DEVICE cuda_optional(T v, cudaError_t status = cudaSuccess)
+      : status_(status)
+      , value_(v)
+  {}
+
+  bool _CCCL_HOST_DEVICE isValid() const
+  {
+    return cudaSuccess == status_;
   }
 
-  THRUST_RUNTIME_FUNCTION
-  inline size_t get_max_shared_memory_per_block()
+  cudaError_t _CCCL_HOST_DEVICE status() const
   {
-    int dev_id;
-    cuda_cub::throw_on_error(cudaGetDevice(&dev_id),
-                             "get_max_shared_memory_per_block :"
-                             "failed to cudaGetDevice");
-
-    cudaError_t status;
-    int         i32value;
-    status = cudaDeviceGetAttribute(&i32value,
-                                    cudaDevAttrMaxSharedMemoryPerBlock,
-                                    dev_id);
-    cuda_cub::throw_on_error(status,
-                             "get_max_shared_memory_per_block :"
-                             "failed to get max shared memory per block");
-
-    return static_cast<size_t>(i32value);
+    return status_;
   }
 
-  THRUST_RUNTIME_FUNCTION
-  inline size_t virtual_shmem_size(size_t shmem_per_block)
+  _CCCL_HOST_DEVICE T const& value() const
   {
-    size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
-    if (shmem_per_block > max_shmem_per_block)
-      return shmem_per_block;
-    else
-      return 0;
+    return value_;
   }
 
-  THRUST_RUNTIME_FUNCTION
-  inline size_t vshmem_size(size_t shmem_per_block, size_t num_blocks)
+  _CCCL_HOST_DEVICE operator T const&() const
   {
-    size_t max_shmem_per_block = core::get_max_shared_memory_per_block();
-    if (shmem_per_block > max_shmem_per_block)
-      return shmem_per_block*num_blocks;
-    else
-      return 0;
+    return value_;
   }
+};
 
-  // LoadIterator
-  // ------------
-  // if trivial iterator is passed, wrap loads into LDG
-  //
-  template <class PtxPlan, class It>
-  struct LoadIterator
+THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
+{
+  int ptx_version = 0;
+  if (cub::PtxVersion(ptx_version) != cudaSuccess)
   {
-    typedef typename iterator_traits<It>::value_type      value_type;
-    typedef typename iterator_traits<It>::difference_type size_type;
-
-    typedef typename thrust::detail::conditional<
-        is_contiguous_iterator<It>::value,
-        cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER,
-                                        value_type,
-                                        size_type>,
-                                        It>::type type;
-  };    // struct Iterator
-
-  template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-  make_load_iterator_impl(It it, thrust::detail::true_type /* is_trivial */)
-  {
-    return raw_pointer_cast(&*it);
-  }
-
-  template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-  make_load_iterator_impl(It it, thrust::detail::false_type /* is_trivial */)
-  {
-    return it;
-  }
-
-  template <class PtxPlan, class It>
-  typename LoadIterator<PtxPlan, It>::type _CCCL_DEVICE _CCCL_FORCEINLINE
-  make_load_iterator(PtxPlan const&, It it)
-  {
-    return make_load_iterator_impl<PtxPlan>(
-        it, typename is_contiguous_iterator<It>::type());
-  }
-
-  template<class>
-  struct get_arch;
-
-  template<template<class> class Plan, class Arch>
-  struct get_arch<Plan<Arch> > { typedef Arch type; };
-
-  // BlockLoad
-  // -----------
-  // a helper metaprogram that returns type of a block loader
-  template <class PtxPlan,
-            class It,
-            class T    = typename iterator_traits<It>::value_type>
-  struct BlockLoad
-  {
-    using type = cub::BlockLoad<T,
-                                PtxPlan::BLOCK_THREADS,
-                                PtxPlan::ITEMS_PER_THREAD,
-                                PtxPlan::LOAD_ALGORITHM,
-                                1,
-                                1,
-                                get_arch<PtxPlan>::type::ver>;
-  };
-
-  // BlockStore
-  // -----------
-  // a helper metaprogram that returns type of a block loader
-  template <class PtxPlan,
-            class It,
-            class T = typename iterator_traits<It>::value_type>
-  struct BlockStore
-  {
-    using type = cub::BlockStore<T,
-                                 PtxPlan::BLOCK_THREADS,
-                                 PtxPlan::ITEMS_PER_THREAD,
-                                 PtxPlan::STORE_ALGORITHM,
-                                 1,
-                                 1,
-                                 get_arch<PtxPlan>::type::ver>;
-  };
-
-  // cuda_optional
-  // --------------
-  // used for function that return cudaError_t along with the result
-  //
-  template <class T>
-  class cuda_optional
-  {
-    cudaError_t status_{cudaSuccess};
-    T           value_{};
-
-  public:
-    cuda_optional() = default;
-
-    _CCCL_HOST_DEVICE
-    cuda_optional(T v, cudaError_t status = cudaSuccess) : status_(status), value_(v) {}
-
-    bool _CCCL_HOST_DEVICE
-    isValid() const { return cudaSuccess == status_; }
-
-    cudaError_t _CCCL_HOST_DEVICE
-    status() const { return status_; }
-
-    _CCCL_HOST_DEVICE T const &
-    value() const { return value_; }
-
-    _CCCL_HOST_DEVICE operator T const &() const { return value_; }
-  };
-
-  THRUST_RUNTIME_FUNCTION
-  inline int get_ptx_version()
-  {
-    int ptx_version = 0;
-    if (cub::PtxVersion(ptx_version) != cudaSuccess)
+    // Failure might mean that there's no device found
+    const int current_device = cub::CurrentDevice();
+    if (current_device < 0)
     {
-      // Failure might mean that there's no device found
-      const int current_device = cub::CurrentDevice();
-      if (current_device < 0)
-      {
-        cuda_cub::throw_on_error(cudaErrorNoDevice, "No GPU is available\n");
-      }
-
-      // Any subsequent failure means the provided device binary does not match
-      // the generated function code
-      int major = 0, minor = 0;
-      cudaError_t attr_status;
-
-      attr_status = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, current_device);
-      cuda_cub::throw_on_error(attr_status,
-                              "get_ptx_version :"
-                              "failed to get major CUDA device compute capability version.");
-
-      attr_status = cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, current_device);
-      cuda_cub::throw_on_error(attr_status,
-                              "get_ptx_version :"
-                              "failed to get minor CUDA device compute capability version.");
-
-      // Index from which SM code has to start in the message below
-      int code_offset = 37;
-      char str[] = "This program was not compiled for SM     \n";
-
-      auto print_1_helper = [&](int v) {
-        str[code_offset] = static_cast<char>(v) + '0';
-        code_offset++;
-      };
-
-      // Assume two digits will be enough
-      auto print_2_helper = [&](int v) {
-        if (v / 10 != 0) {
-          print_1_helper(v / 10);
-        }
-        print_1_helper(v % 10);
-      };
-
-      print_2_helper(major);
-      print_2_helper(minor);
-
-      cuda_cub::throw_on_error(cudaErrorInvalidDevice, str);
+      cuda_cub::throw_on_error(cudaErrorNoDevice, "No GPU is available\n");
     }
 
-    return ptx_version;
-  }
+    // Any subsequent failure means the provided device binary does not match
+    // the generated function code
+    int major = 0, minor = 0;
+    cudaError_t attr_status;
 
-  THRUST_RUNTIME_FUNCTION
-  inline cudaError_t sync_stream(cudaStream_t stream)
-  {
-    return cub::SyncStream(stream);
-  }
+    attr_status = cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, current_device);
+    cuda_cub::throw_on_error(attr_status,
+                             "get_ptx_version :"
+                             "failed to get major CUDA device compute capability version.");
 
-  inline void _CCCL_DEVICE sync_threadblock()
-  {
-    cub::CTA_SYNC();
-  }
+    attr_status = cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, current_device);
+    cuda_cub::throw_on_error(attr_status,
+                             "get_ptx_version :"
+                             "failed to get minor CUDA device compute capability version.");
 
-#define CUDA_CUB_RET_IF_FAIL(e) \
-  {                             \
-    auto const error = (e);     \
-    if (cub::Debug(error, __FILE__, __LINE__)) return error; \
-  }
+    // Index from which SM code has to start in the message below
+    int code_offset = 37;
+    char str[]      = "This program was not compiled for SM     \n";
 
-  // uninitialized
-  // -------
-  // stores type in uninitialized form
-  //
-  template <class T>
-  struct uninitialized
-  {
-    typedef typename cub::UnitWord<T>::DeviceWord DeviceWord;
-
-    enum
-    {
-      WORDS = sizeof(T) / sizeof(DeviceWord)
+    auto print_1_helper = [&](int v) {
+      str[code_offset] = static_cast<char>(v) + '0';
+      code_offset++;
     };
 
-    DeviceWord storage[WORDS];
+    // Assume two digits will be enough
+    auto print_2_helper = [&](int v) {
+      if (v / 10 != 0)
+      {
+        print_1_helper(v / 10);
+      }
+      print_1_helper(v % 10);
+    };
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
-    {
-      return reinterpret_cast<T&>(*this);
-    }
+    print_2_helper(major);
+    print_2_helper(minor);
 
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&() { return get(); }
-  };
-
-  // uninitialized_array
-  // --------------
-  // allocates uninitialized data on stack
-  template<class T, size_t N>
-  struct array
-  {
-    typedef T value_type;
-    typedef T ref[N];
-    enum {SIZE = N};
-    private:
-      T data_[N];
-
-    public:
-      _CCCL_HOST_DEVICE T* data() { return data_; }
-      _CCCL_HOST_DEVICE const T* data() const { return data_; }
-      _CCCL_HOST_DEVICE T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE unsigned int size() const { return N; }
-      _CCCL_HOST_DEVICE operator ref&() { return data_; }
-  };
-
-
-  // uninitialized_array
-  // --------------
-  // allocates uninitialized data on stack
-  template<class T, size_t N>
-  struct uninitialized_array
-  {
-    typedef T value_type;
-    typedef T ref[N];
-    enum {SIZE = N};
-    private:
-      char data_[N * sizeof(T)];
-
-    public:
-      _CCCL_HOST_DEVICE T* data() { return data_; }
-      _CCCL_HOST_DEVICE const T* data() const { return data_; }
-      _CCCL_HOST_DEVICE T& operator[](unsigned int idx) { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE T& operator[](int idx) { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE T const& operator[](int idx) const { return ((T*)data_)[idx]; }
-      _CCCL_HOST_DEVICE unsigned int size() const { return N; }
-      _CCCL_HOST_DEVICE operator ref&() { return *reinterpret_cast<ref*>(data_); }
-      _CCCL_HOST_DEVICE ref& get_ref() { return (ref&)*this; }
-  };
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t align_to(size_t n, size_t align)
-  {
-    return ((n+align-1)/align) * align;
+    cuda_cub::throw_on_error(cudaErrorInvalidDevice, str);
   }
 
-  namespace host {
-    inline cuda_optional<size_t> get_max_shared_memory_per_block()
-    {
-      cudaError_t status = cudaSuccess;
-      int         dev_id = 0;
-      status             = cudaGetDevice(&dev_id);
-      if (status != cudaSuccess) return cuda_optional<size_t>(0, status);
+  return ptx_version;
+}
 
-      int max_shmem = 0;
-      status        = cudaDeviceGetAttribute(&max_shmem,
-                                      cudaDevAttrMaxSharedMemoryPerBlock,
-                                      dev_id);
-      if (status != cudaSuccess) return cuda_optional<size_t>(0, status);
-      return cuda_optional<size_t>(max_shmem, status);
-    }
+THRUST_RUNTIME_FUNCTION inline cudaError_t sync_stream(cudaStream_t stream)
+{
+  return cub::SyncStream(stream);
+}
+
+inline void _CCCL_DEVICE sync_threadblock()
+{
+  cub::CTA_SYNC();
+}
+
+#define CUDA_CUB_RET_IF_FAIL(e)                \
+  {                                            \
+    auto const error = (e);                    \
+    if (cub::Debug(error, __FILE__, __LINE__)) \
+      return error;                            \
   }
 
-  template <int           ALLOCATIONS>
-  THRUST_RUNTIME_FUNCTION cudaError_t
-  alias_storage(void*   storage_ptr,
-                size_t& storage_size,
-                void* (&allocations)[ALLOCATIONS],
-                size_t (&allocation_sizes)[ALLOCATIONS])
+// uninitialized
+// -------
+// stores type in uninitialized form
+//
+template <class T>
+struct uninitialized
+{
+  typedef typename cub::UnitWord<T>::DeviceWord DeviceWord;
+
+  enum
   {
-    return cub::AliasTemporaries(storage_ptr,
-                                 storage_size,
-                                 allocations,
-                                 allocation_sizes);
+    WORDS = sizeof(T) / sizeof(DeviceWord)
+  };
+
+  DeviceWord storage[WORDS];
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE T& get()
+  {
+    return reinterpret_cast<T&>(*this);
   }
 
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE operator T&()
+  {
+    return get();
+  }
+};
 
-}    // namespace core
-using core::sm60;
-using core::sm52;
-using core::sm35;
+// uninitialized_array
+// --------------
+// allocates uninitialized data on stack
+template <class T, size_t N>
+struct array
+{
+  typedef T value_type;
+  typedef T ref[N];
+  enum
+  {
+    SIZE = N
+  };
+
+private:
+  T data_[N];
+
+public:
+  _CCCL_HOST_DEVICE T* data()
+  {
+    return data_;
+  }
+  _CCCL_HOST_DEVICE const T* data() const
+  {
+    return data_;
+  }
+  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE unsigned int size() const
+  {
+    return N;
+  }
+  _CCCL_HOST_DEVICE operator ref&()
+  {
+    return data_;
+  }
+};
+
+// uninitialized_array
+// --------------
+// allocates uninitialized data on stack
+template <class T, size_t N>
+struct uninitialized_array
+{
+  typedef T value_type;
+  typedef T ref[N];
+  enum
+  {
+    SIZE = N
+  };
+
+private:
+  char data_[N * sizeof(T)];
+
+public:
+  _CCCL_HOST_DEVICE T* data()
+  {
+    return data_;
+  }
+  _CCCL_HOST_DEVICE const T* data() const
+  {
+    return data_;
+  }
+  _CCCL_HOST_DEVICE T& operator[](unsigned int idx)
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE T const& operator[](unsigned int idx) const
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE T& operator[](int idx)
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE T const& operator[](int idx) const
+  {
+    return ((T*) data_)[idx];
+  }
+  _CCCL_HOST_DEVICE unsigned int size() const
+  {
+    return N;
+  }
+  _CCCL_HOST_DEVICE operator ref&()
+  {
+    return *reinterpret_cast<ref*>(data_);
+  }
+  _CCCL_HOST_DEVICE ref& get_ref()
+  {
+    return (ref&) *this;
+  }
+};
+
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t align_to(size_t n, size_t align)
+{
+  return ((n + align - 1) / align) * align;
+}
+
+namespace host
+{
+inline cuda_optional<size_t> get_max_shared_memory_per_block()
+{
+  cudaError_t status = cudaSuccess;
+  int dev_id         = 0;
+  status             = cudaGetDevice(&dev_id);
+  if (status != cudaSuccess)
+  {
+    return cuda_optional<size_t>(0, status);
+  }
+
+  int max_shmem = 0;
+  status        = cudaDeviceGetAttribute(&max_shmem, cudaDevAttrMaxSharedMemoryPerBlock, dev_id);
+  if (status != cudaSuccess)
+  {
+    return cuda_optional<size_t>(0, status);
+  }
+  return cuda_optional<size_t>(max_shmem, status);
+}
+} // namespace host
+
+template <int ALLOCATIONS>
+THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
+  void* storage_ptr, size_t& storage_size, void* (&allocations)[ALLOCATIONS], size_t (&allocation_sizes)[ALLOCATIONS])
+{
+  return cub::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
+}
+
+} // namespace core
 using core::sm30;
-} // namespace cuda_
+using core::sm35;
+using core::sm52;
+using core::sm60;
+} // namespace cuda_cub
 
 THRUST_NAMESPACE_END

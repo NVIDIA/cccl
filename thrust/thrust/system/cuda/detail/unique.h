@@ -38,792 +38,642 @@
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#include <thrust/advance.h>
-#include <thrust/detail/cstdint.h>
-#include <thrust/detail/minmax.h>
-#include <thrust/distance.h>
-#include <thrust/functional.h>
-#include <thrust/system/cuda/config.h>
-#include <thrust/system/cuda/detail/cdp_dispatch.h>
-#include <thrust/system/cuda/detail/core/agent_launcher.h>
-#include <thrust/system/cuda/detail/get_value.h>
-#include <thrust/system/cuda/detail/par_to_seq.h>
-#include <thrust/system/cuda/detail/util.h>
+#  include <cub/device/device_select.cuh>
+#  include <cub/util_math.cuh>
 
-#include <cub/device/device_select.cuh>
-#include <cub/util_math.cuh>
+#  include <thrust/advance.h>
+#  include <thrust/count.h>
+#  include <thrust/detail/cstdint.h>
+#  include <thrust/detail/minmax.h>
+#  include <thrust/distance.h>
+#  include <thrust/functional.h>
+#  include <thrust/system/cuda/config.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/get_value.h>
+#  include <thrust/system/cuda/detail/par_to_seq.h>
+#  include <thrust/system/cuda/detail/util.h>
 
 THRUST_NAMESPACE_BEGIN
 
-template <typename DerivedPolicy,
-          typename ForwardIterator,
-          typename BinaryPredicate>
-_CCCL_HOST_DEVICE ForwardIterator
-unique(
-    const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-    ForwardIterator                                             first,
-    ForwardIterator                                             last,
-    BinaryPredicate                                             binary_pred);
+template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+_CCCL_HOST_DEVICE ForwardIterator unique(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  BinaryPredicate binary_pred);
 
-template <typename DerivedPolicy,
-          typename InputIterator,
-          typename OutputIterator,
-          typename BinaryPredicate>
-_CCCL_HOST_DEVICE OutputIterator
-unique_copy(
-    const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-    InputIterator                                               first,
-    InputIterator                                               last,
-    OutputIterator                                              result,
-    BinaryPredicate                                             binary_pred);
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename BinaryPredicate>
+_CCCL_HOST_DEVICE OutputIterator unique_copy(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  BinaryPredicate binary_pred);
 
-template <typename DerivedPolicy,
-          typename ForwardIterator,
-          typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type
-unique_count(
-    const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-    ForwardIterator                                             first,
-    ForwardIterator                                             last,
-    BinaryPredicate                                             binary_pred);
+template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
+_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  BinaryPredicate binary_pred);
 
-namespace cuda_cub {
+namespace cuda_cub
+{
 
 // XXX  it should be possible to unify unique & unique_by_key into a single
 //      agent with various specializations, similar to what is done
 //      with partition
-namespace __unique {
+namespace __unique
+{
 
-  template <int                     _BLOCK_THREADS,
-            int                     _ITEMS_PER_THREAD = 1,
-            cub::BlockLoadAlgorithm _LOAD_ALGORITHM   = cub::BLOCK_LOAD_DIRECT,
-            cub::CacheLoadModifier  _LOAD_MODIFIER    = cub::LOAD_LDG,
-            cub::BlockScanAlgorithm _SCAN_ALGORITHM   = cub::BLOCK_SCAN_WARP_SCANS>
-  struct PtxPolicy
+template <int _BLOCK_THREADS,
+          int _ITEMS_PER_THREAD                   = 1,
+          cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
+          cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
+          cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS>
+struct PtxPolicy
+{
+  enum
   {
-    enum
-    {
-      BLOCK_THREADS    = _BLOCK_THREADS,
-      ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
-      ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD,
-    };
-    static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
-    static const cub::CacheLoadModifier  LOAD_MODIFIER  = _LOAD_MODIFIER;
-    static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
-  };    // struct PtxPolicy
+    BLOCK_THREADS    = _BLOCK_THREADS,
+    ITEMS_PER_THREAD = _ITEMS_PER_THREAD,
+    ITEMS_PER_TILE   = _BLOCK_THREADS * _ITEMS_PER_THREAD,
+  };
+  static const cub::BlockLoadAlgorithm LOAD_ALGORITHM = _LOAD_ALGORITHM;
+  static const cub::CacheLoadModifier LOAD_MODIFIER   = _LOAD_MODIFIER;
+  static const cub::BlockScanAlgorithm SCAN_ALGORITHM = _SCAN_ALGORITHM;
+}; // struct PtxPolicy
 
-  template<class,class>
-  struct Tuning;
+template <class, class>
+struct Tuning;
 
-  namespace mpl = thrust::detail::mpl::math;
+namespace mpl = thrust::detail::mpl::math;
 
-  template<class T, int NOMINAL_4B_ITEMS_PER_THREAD>
-  struct items_per_thread
+template <class T, int NOMINAL_4B_ITEMS_PER_THREAD>
+struct items_per_thread
+{
+  enum
   {
-    enum
-    {
-      value = mpl::min<
-          int,
-          NOMINAL_4B_ITEMS_PER_THREAD,
-          mpl::max<int,
-                   1,
-                   static_cast<int>(NOMINAL_4B_ITEMS_PER_THREAD * 4 /
-                    sizeof(T))>::value>::value
-    };
+    value = mpl::min<int,
+                     NOMINAL_4B_ITEMS_PER_THREAD,
+                     mpl::max<int, 1, static_cast<int>(NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(T))>::value>::value
+  };
+};
+
+template <class T>
+struct Tuning<sm52, T>
+{
+  const static int INPUT_SIZE = sizeof(T);
+  enum
+  {
+    NOMINAL_4B_ITEMS_PER_THREAD = 11,
+    //
+    ITEMS_PER_THREAD = items_per_thread<T, NOMINAL_4B_ITEMS_PER_THREAD>::value
   };
 
-  template<class T>
-  struct Tuning<sm52,T>
+  typedef PtxPolicy<64, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>
+    type;
+}; // Tuning for sm52
+
+template <class T>
+struct Tuning<sm35, T>
+{
+  const static int INPUT_SIZE = sizeof(T);
+  enum
   {
-    const static int INPUT_SIZE = sizeof(T);
-    enum
-    {
-      NOMINAL_4B_ITEMS_PER_THREAD = 11,
-      //
-      ITEMS_PER_THREAD = items_per_thread<T,
-                                          NOMINAL_4B_ITEMS_PER_THREAD>::value
-    };
+    NOMINAL_4B_ITEMS_PER_THREAD = 9,
+    //
+    ITEMS_PER_THREAD = items_per_thread<T, NOMINAL_4B_ITEMS_PER_THREAD>::value
+  };
 
-    typedef PtxPolicy<64,
-                      ITEMS_PER_THREAD,
-                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                      cub::LOAD_LDG,
-                      cub::BLOCK_SCAN_WARP_SCANS>
-        type;
-  };    // Tuning for sm52
+  typedef PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_LDG, cub::BLOCK_SCAN_WARP_SCANS>
+    type;
+}; // Tuning for sm35
 
-
-  template <class T>
-  struct Tuning<sm35, T>
+template <class T>
+struct Tuning<sm30, T>
+{
+  const static int INPUT_SIZE = sizeof(T);
+  enum
   {
-    const static int INPUT_SIZE = sizeof(T);
-    enum
-    {
-      NOMINAL_4B_ITEMS_PER_THREAD = 9,
-      //
-      ITEMS_PER_THREAD = items_per_thread<T,
-                                          NOMINAL_4B_ITEMS_PER_THREAD>::value
-    };
+    NOMINAL_4B_ITEMS_PER_THREAD = 7,
+    //
+    ITEMS_PER_THREAD = items_per_thread<T, NOMINAL_4B_ITEMS_PER_THREAD>::value
+  };
 
-    typedef PtxPolicy<128,
-                      ITEMS_PER_THREAD,
-                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                      cub::LOAD_LDG,
-                      cub::BLOCK_SCAN_WARP_SCANS>
-        type;
-  };    // Tuning for sm35
+  typedef PtxPolicy<128, ITEMS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_SCAN_WARP_SCANS>
+    type;
+}; // Tuning for sm30
 
-  template<class T>
-  struct Tuning<sm30,T>
+template <class ItemsIt, class ItemsOutputIt, class BinaryPred, class Size, class NumSelectedOutIt>
+struct UniqueAgent
+{
+  typedef typename iterator_traits<ItemsIt>::value_type item_type;
+
+  typedef cub::ScanTileState<Size> ScanTileState;
+
+  template <class Arch>
+  struct PtxPlan : Tuning<Arch, item_type>::type
   {
-    const static int INPUT_SIZE = sizeof(T);
-    enum
+    typedef Tuning<Arch, item_type> tuning;
+
+    typedef typename core::LoadIterator<PtxPlan, ItemsIt>::type ItemsLoadIt;
+
+    typedef typename core::BlockLoad<PtxPlan, ItemsLoadIt>::type BlockLoadItems;
+
+    typedef cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver> BlockDiscontinuityItems;
+
+    typedef cub::TilePrefixCallbackOp<Size, cub::Sum, ScanTileState, Arch::ver> TilePrefixCallback;
+    typedef cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver> BlockScan;
+
+    typedef core::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE> shared_items_t;
+
+    union TempStorage
     {
-      NOMINAL_4B_ITEMS_PER_THREAD = 7,
-      //
-      ITEMS_PER_THREAD = items_per_thread<T,
-                                          NOMINAL_4B_ITEMS_PER_THREAD>::value
-    };
-
-    typedef PtxPolicy<128,
-                      ITEMS_PER_THREAD,
-                      cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                      cub::LOAD_DEFAULT,
-                      cub::BLOCK_SCAN_WARP_SCANS>
-        type;
-  };    // Tuning for sm30
-
-  template <class ItemsIt,
-            class ItemsOutputIt,
-            class BinaryPred,
-            class Size,
-            class NumSelectedOutIt>
-  struct UniqueAgent
-  {
-    typedef typename iterator_traits<ItemsIt>::value_type item_type;
-
-    typedef cub::ScanTileState<Size> ScanTileState;
-
-    template <class Arch>
-    struct PtxPlan : Tuning<Arch, item_type>::type
-    {
-      typedef Tuning<Arch, item_type> tuning;
-
-      typedef typename core::LoadIterator<PtxPlan, ItemsIt>::type ItemsLoadIt;
-
-      typedef typename core::BlockLoad<PtxPlan, ItemsLoadIt>::type BlockLoadItems;
-
-      typedef cub::BlockDiscontinuity<item_type,
-                                      PtxPlan::BLOCK_THREADS,
-                                      1,
-                                      1,
-                                      Arch::ver>
-          BlockDiscontinuityItems;
-
-      typedef cub::TilePrefixCallbackOp<Size,
-                                        cub::Sum,
-                                        ScanTileState,
-                                        Arch::ver>
-          TilePrefixCallback;
-      typedef cub::BlockScan<Size,
-                             PtxPlan::BLOCK_THREADS,
-                             PtxPlan::SCAN_ALGORITHM,
-                             1,
-                             1,
-                             Arch::ver>
-          BlockScan;
-
-      typedef core::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>
-          shared_items_t;
-
-      union TempStorage
+      struct ScanStorage
       {
-        struct ScanStorage
+        typename BlockScan::TempStorage scan;
+        typename TilePrefixCallback::TempStorage prefix;
+        typename BlockDiscontinuityItems::TempStorage discontinuity;
+      } scan_storage;
+
+      typename BlockLoadItems::TempStorage load_items;
+      shared_items_t shared_items;
+
+    }; // union TempStorage
+  }; // struct PtxPlan
+
+  typedef typename core::specialize_plan_msvc10_war<PtxPlan>::type::type ptx_plan;
+
+  typedef typename ptx_plan::ItemsLoadIt ItemsLoadIt;
+  typedef typename ptx_plan::BlockLoadItems BlockLoadItems;
+  typedef typename ptx_plan::BlockDiscontinuityItems BlockDiscontinuityItems;
+  typedef typename ptx_plan::TilePrefixCallback TilePrefixCallback;
+  typedef typename ptx_plan::BlockScan BlockScan;
+  typedef typename ptx_plan::shared_items_t shared_items_t;
+  typedef typename ptx_plan::TempStorage TempStorage;
+
+  enum
+  {
+    BLOCK_THREADS    = ptx_plan::BLOCK_THREADS,
+    ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD,
+    ITEMS_PER_TILE   = ptx_plan::ITEMS_PER_TILE
+  };
+
+  struct impl
+  {
+    //---------------------------------------------------------------------
+    // Per-thread fields
+    //---------------------------------------------------------------------
+
+    TempStorage& temp_storage;
+    ScanTileState& tile_state;
+    ItemsLoadIt items_in;
+    ItemsOutputIt items_out;
+    cub::InequalityWrapper<BinaryPred> predicate;
+    Size num_items;
+
+    //---------------------------------------------------------------------
+    // Utility functions
+    //---------------------------------------------------------------------
+
+    THRUST_DEVICE_FUNCTION
+    shared_items_t& get_shared()
+    {
+      return temp_storage.shared_items;
+    }
+
+    void THRUST_DEVICE_FUNCTION scatter(
+      item_type (&items)[ITEMS_PER_THREAD],
+      Size (&selection_flags)[ITEMS_PER_THREAD],
+      Size (&selection_indices)[ITEMS_PER_THREAD],
+      int /*num_tile_items*/,
+      int num_tile_selections,
+      Size num_selections_prefix,
+      Size /*num_selections*/)
+    {
+      using core::sync_threadblock;
+
+#  pragma unroll
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      {
+        int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
+        if (selection_flags[ITEM])
         {
-          typename BlockScan::TempStorage               scan;
-          typename TilePrefixCallback::TempStorage      prefix;
-          typename BlockDiscontinuityItems::TempStorage discontinuity;
-        } scan_storage;
-
-        typename BlockLoadItems::TempStorage  load_items;
-        shared_items_t shared_items;
-
-      };    // union TempStorage
-    };      // struct PtxPlan
-
-    typedef typename core::specialize_plan_msvc10_war<PtxPlan>::type::type ptx_plan;
-
-    typedef typename ptx_plan::ItemsLoadIt             ItemsLoadIt;
-    typedef typename ptx_plan::BlockLoadItems          BlockLoadItems;
-    typedef typename ptx_plan::BlockDiscontinuityItems BlockDiscontinuityItems;
-    typedef typename ptx_plan::TilePrefixCallback      TilePrefixCallback;
-    typedef typename ptx_plan::BlockScan               BlockScan;
-    typedef typename ptx_plan::shared_items_t          shared_items_t;
-    typedef typename ptx_plan::TempStorage             TempStorage;
-
-    enum
-    {
-      BLOCK_THREADS    = ptx_plan::BLOCK_THREADS,
-      ITEMS_PER_THREAD = ptx_plan::ITEMS_PER_THREAD,
-      ITEMS_PER_TILE   = ptx_plan::ITEMS_PER_TILE
-    };
-
-    struct impl
-    {
-      //---------------------------------------------------------------------
-      // Per-thread fields
-      //---------------------------------------------------------------------
-
-      TempStorage &                      temp_storage;
-      ScanTileState &                    tile_state;
-      ItemsLoadIt                        items_in;
-      ItemsOutputIt                      items_out;
-      cub::InequalityWrapper<BinaryPred> predicate;
-      Size                               num_items;
-
-      //---------------------------------------------------------------------
-      // Utility functions
-      //---------------------------------------------------------------------
-
-      THRUST_DEVICE_FUNCTION
-      shared_items_t &get_shared()
-      {
-        return temp_storage.shared_items;
+          get_shared()[local_scatter_offset] = items[ITEM];
+        }
       }
 
-      void THRUST_DEVICE_FUNCTION
-      scatter(item_type (&items)[ITEMS_PER_THREAD],
-              Size (&selection_flags)[ITEMS_PER_THREAD],
-              Size (&selection_indices)[ITEMS_PER_THREAD],
-              int  /*num_tile_items*/,
-              int  num_tile_selections,
-              Size num_selections_prefix,
-              Size /*num_selections*/)
-      {
-        using core::sync_threadblock;
+      sync_threadblock();
 
-#pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
+      {
+        items_out[num_selections_prefix + item] = get_shared()[item];
+      }
+
+      sync_threadblock();
+    }
+
+    //---------------------------------------------------------------------
+    // Tile processing
+    //---------------------------------------------------------------------
+
+    template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+    Size THRUST_DEVICE_FUNCTION consume_tile_impl(int num_tile_items, int tile_idx, Size tile_base)
+    {
+      using core::sync_threadblock;
+      using core::uninitialized_array;
+
+      item_type items_loc[ITEMS_PER_THREAD];
+      Size selection_flags[ITEMS_PER_THREAD];
+      Size selection_idx[ITEMS_PER_THREAD];
+
+      if (IS_LAST_TILE)
+      {
+        BlockLoadItems(temp_storage.load_items)
+          .Load(items_in + tile_base, items_loc, num_tile_items, *(items_in + tile_base));
+      }
+      else
+      {
+        BlockLoadItems(temp_storage.load_items).Load(items_in + tile_base, items_loc);
+      }
+
+      sync_threadblock();
+
+      if (IS_FIRST_TILE)
+      {
+        BlockDiscontinuityItems(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items_loc, predicate);
+      }
+      else
+      {
+        item_type tile_predecessor = items_in[tile_base - 1];
+        BlockDiscontinuityItems(temp_storage.scan_storage.discontinuity)
+          .FlagHeads(selection_flags, items_loc, predicate, tile_predecessor);
+      }
+
+#  pragma unroll
+      for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
+      {
+        // Set selection_flags for out-of-bounds items
+        if ((IS_LAST_TILE) && (Size(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
         {
-          int local_scatter_offset = selection_indices[ITEM] -
-                                     num_selections_prefix;
-          if (selection_flags[ITEM])
+          selection_flags[ITEM] = 1;
+        }
+      }
+
+      sync_threadblock();
+
+      Size num_tile_selections   = 0;
+      Size num_selections        = 0;
+      Size num_selections_prefix = 0;
+      if (IS_FIRST_TILE)
+      {
+        BlockScan(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, num_tile_selections);
+
+        if (threadIdx.x == 0)
+        {
+          // Update tile status if this is not the last tile
+          if (!IS_LAST_TILE)
           {
-            get_shared()[local_scatter_offset] = items[ITEM];
+            tile_state.SetInclusive(0, num_tile_selections);
           }
         }
 
-        sync_threadblock();
-
-        for (int item = threadIdx.x;
-             item < num_tile_selections;
-             item += BLOCK_THREADS)
+        // Do not count any out-of-bounds selections
+        if (IS_LAST_TILE)
         {
-          items_out[num_selections_prefix + item] = get_shared()[item];
+          int num_discount = ITEMS_PER_TILE - num_tile_items;
+          num_tile_selections -= num_discount;
         }
-
-        sync_threadblock();
+        num_selections = num_tile_selections;
       }
-
-      //---------------------------------------------------------------------
-      // Tile processing
-      //---------------------------------------------------------------------
-
-      template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
-      Size THRUST_DEVICE_FUNCTION
-      consume_tile_impl(int  num_tile_items,
-                        int  tile_idx,
-                        Size tile_base)
+      else
       {
-        using core::sync_threadblock;
-        using core::uninitialized_array;
+        TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+        BlockScan(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, prefix_cb);
 
-        item_type items_loc[ITEMS_PER_THREAD];
-        Size      selection_flags[ITEMS_PER_THREAD];
-        Size      selection_idx[ITEMS_PER_THREAD];
+        num_selections        = prefix_cb.GetInclusivePrefix();
+        num_tile_selections   = prefix_cb.GetBlockAggregate();
+        num_selections_prefix = prefix_cb.GetExclusivePrefix();
 
         if (IS_LAST_TILE)
         {
-          BlockLoadItems(temp_storage.load_items)
-              .Load(items_in + tile_base,
-                    items_loc,
-                    num_tile_items,
-                    *(items_in + tile_base));
+          int num_discount = ITEMS_PER_TILE - num_tile_items;
+          num_tile_selections -= num_discount;
+          num_selections -= num_discount;
         }
-        else
-        {
-          BlockLoadItems(temp_storage.load_items)
-              .Load(items_in + tile_base, items_loc);
-        }
-
-
-        sync_threadblock();
-
-        if (IS_FIRST_TILE)
-        {
-          BlockDiscontinuityItems(temp_storage.scan_storage.discontinuity)
-              .FlagHeads(selection_flags, items_loc, predicate);
-        }
-        else
-        {
-          item_type tile_predecessor = items_in[tile_base - 1];
-          BlockDiscontinuityItems(temp_storage.scan_storage.discontinuity)
-              .FlagHeads(selection_flags, items_loc, predicate, tile_predecessor);
-        }
-
-#pragma unroll
-        for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-        {
-          // Set selection_flags for out-of-bounds items
-          if ((IS_LAST_TILE) &&
-              (Size(threadIdx.x * ITEMS_PER_THREAD) + ITEM >= num_tile_items))
-            selection_flags[ITEM] = 1;
-        }
-
-        sync_threadblock();
-
-        Size num_tile_selections   = 0;
-        Size num_selections        = 0;
-        Size num_selections_prefix = 0;
-        if (IS_FIRST_TILE)
-        {
-          BlockScan(temp_storage.scan_storage.scan)
-              .ExclusiveSum(selection_flags,
-                            selection_idx,
-                            num_tile_selections);
-
-          if (threadIdx.x == 0)
-          {
-            // Update tile status if this is not the last tile
-            if (!IS_LAST_TILE)
-              tile_state.SetInclusive(0, num_tile_selections);
-          }
-
-          // Do not count any out-of-bounds selections
-          if (IS_LAST_TILE)
-          {
-            int num_discount = ITEMS_PER_TILE - num_tile_items;
-            num_tile_selections -= num_discount;
-          }
-          num_selections = num_tile_selections;
-        }
-        else
-        {
-          TilePrefixCallback prefix_cb(tile_state,
-                                       temp_storage.scan_storage.prefix,
-                                       cub::Sum(),
-                                       tile_idx);
-          BlockScan(temp_storage.scan_storage.scan)
-              .ExclusiveSum(selection_flags,
-                            selection_idx,
-                            prefix_cb);
-
-          num_selections        = prefix_cb.GetInclusivePrefix();
-          num_tile_selections   = prefix_cb.GetBlockAggregate();
-          num_selections_prefix = prefix_cb.GetExclusivePrefix();
-
-          if (IS_LAST_TILE)
-          {
-            int num_discount = ITEMS_PER_TILE - num_tile_items;
-            num_tile_selections -= num_discount;
-            num_selections -= num_discount;
-          }
-        }
-
-        sync_threadblock();
-
-        scatter(items_loc,
-                selection_flags,
-                selection_idx,
-                num_tile_items,
-                num_tile_selections,
-                num_selections_prefix,
-                num_selections);
-
-        return num_selections;
       }
 
+      sync_threadblock();
 
-      template <bool IS_LAST_TILE>
-      Size THRUST_DEVICE_FUNCTION
-      consume_tile(int  num_tile_items,
-                   int  tile_idx,
-                   Size tile_base)
+      scatter(items_loc,
+              selection_flags,
+              selection_idx,
+              num_tile_items,
+              num_tile_selections,
+              num_selections_prefix,
+              num_selections);
+
+      return num_selections;
+    }
+
+    template <bool IS_LAST_TILE>
+    Size THRUST_DEVICE_FUNCTION consume_tile(int num_tile_items, int tile_idx, Size tile_base)
+    {
+      if (tile_idx == 0)
       {
-        if (tile_idx == 0)
-        {
-          return consume_tile_impl<IS_LAST_TILE, true>(num_tile_items,
-                                                       tile_idx,
-                                                       tile_base);
-        }
-        else
-        {
-          return consume_tile_impl<IS_LAST_TILE, false>(num_tile_items,
-                                                        tile_idx,
-                                                        tile_base);
-        }
+        return consume_tile_impl<IS_LAST_TILE, true>(num_tile_items, tile_idx, tile_base);
       }
-
-      //---------------------------------------------------------------------
-      // Constructor
-      //---------------------------------------------------------------------
-
-      THRUST_DEVICE_FUNCTION
-      impl(TempStorage &    temp_storage_,
-           ScanTileState &  tile_state_,
-           ItemsLoadIt      items_in_,
-           ItemsOutputIt    items_out_,
-           BinaryPred       binary_pred_,
-           Size             num_items_,
-           int              num_tiles,
-           NumSelectedOutIt num_selected_out)
-          : temp_storage(temp_storage_),
-            tile_state(tile_state_),
-            items_in(items_in_),
-            items_out(items_out_),
-            predicate(binary_pred_),
-            num_items(num_items_)
+      else
       {
-        int  tile_idx  = blockIdx.x;
-        Size tile_base = tile_idx * ITEMS_PER_TILE;
+        return consume_tile_impl<IS_LAST_TILE, false>(num_tile_items, tile_idx, tile_base);
+      }
+    }
 
-        if (tile_idx < num_tiles - 1)
+    //---------------------------------------------------------------------
+    // Constructor
+    //---------------------------------------------------------------------
+
+    THRUST_DEVICE_FUNCTION
+    impl(TempStorage& temp_storage_,
+         ScanTileState& tile_state_,
+         ItemsLoadIt items_in_,
+         ItemsOutputIt items_out_,
+         BinaryPred binary_pred_,
+         Size num_items_,
+         int num_tiles,
+         NumSelectedOutIt num_selected_out)
+        : temp_storage(temp_storage_)
+        , tile_state(tile_state_)
+        , items_in(items_in_)
+        , items_out(items_out_)
+        , predicate(binary_pred_)
+        , num_items(num_items_)
+    {
+      int tile_idx   = blockIdx.x;
+      Size tile_base = tile_idx * ITEMS_PER_TILE;
+
+      if (tile_idx < num_tiles - 1)
+      {
+        consume_tile<false>(ITEMS_PER_TILE, tile_idx, tile_base);
+      }
+      else
+      {
+        int num_remaining   = static_cast<int>(num_items - tile_base);
+        Size num_selections = consume_tile<true>(num_remaining, tile_idx, tile_base);
+        if (threadIdx.x == 0)
         {
-          consume_tile<false>(ITEMS_PER_TILE,
-                              tile_idx,
-                              tile_base);
-        }
-        else
-        {
-          int  num_remaining  = static_cast<int>(num_items - tile_base);
-          Size num_selections = consume_tile<true>(num_remaining,
-                                                   tile_idx,
-                                                   tile_base);
-          if (threadIdx.x == 0)
-          {
-            *num_selected_out = num_selections;
-          }
+          *num_selected_out = num_selections;
         }
       }
-    };    // struct impl
-
-    //---------------------------------------------------------------------
-    // Agent entry point
-    //---------------------------------------------------------------------
-
-    THRUST_AGENT_ENTRY(ItemsIt          items_in,
-                       ItemsOutputIt    items_out,
-                       BinaryPred       binary_pred,
-                       NumSelectedOutIt num_selected_out,
-                       Size             num_items,
-                       ScanTileState    tile_state,
-                       int              num_tiles,
-                       char *           shmem)
-    {
-      TempStorage &storage = *reinterpret_cast<TempStorage *>(shmem);
-
-      impl(storage,
-           tile_state,
-           core::make_load_iterator(ptx_plan(), items_in),
-           items_out,
-           binary_pred,
-           num_items,
-           num_tiles,
-           num_selected_out);
     }
-  };    // struct UniqueAgent
+  }; // struct impl
 
-  template <class ScanTileState,
-            class NumSelectedIt,
-            class Size>
-  struct InitAgent
+  //---------------------------------------------------------------------
+  // Agent entry point
+  //---------------------------------------------------------------------
+
+  THRUST_AGENT_ENTRY(
+    ItemsIt items_in,
+    ItemsOutputIt items_out,
+    BinaryPred binary_pred,
+    NumSelectedOutIt num_selected_out,
+    Size num_items,
+    ScanTileState tile_state,
+    int num_tiles,
+    char* shmem)
   {
-    template <class Arch>
-    struct PtxPlan : PtxPolicy<128> {};
-    typedef core::specialize_plan<PtxPlan> ptx_plan;
+    TempStorage& storage = *reinterpret_cast<TempStorage*>(shmem);
 
-    //---------------------------------------------------------------------
-    // Agent entry point
-    //---------------------------------------------------------------------
+    impl(storage,
+         tile_state,
+         core::make_load_iterator(ptx_plan(), items_in),
+         items_out,
+         binary_pred,
+         num_items,
+         num_tiles,
+         num_selected_out);
+  }
+}; // struct UniqueAgent
 
-    THRUST_AGENT_ENTRY(ScanTileState tile_state,
-                       Size          num_tiles,
-                       NumSelectedIt num_selected_out,
-                       char * /*shmem*/)
-    {
-      tile_state.InitializeStatus(num_tiles);
-      if (blockIdx.x == 0 && threadIdx.x == 0)
-        *num_selected_out = 0;
-    }
+template <class ScanTileState, class NumSelectedIt, class Size>
+struct InitAgent
+{
+  template <class Arch>
+  struct PtxPlan : PtxPolicy<128>
+  {};
+  typedef core::specialize_plan<PtxPlan> ptx_plan;
 
-  }; // struct InitAgent
+  //---------------------------------------------------------------------
+  // Agent entry point
+  //---------------------------------------------------------------------
 
-  template <class ItemsInputIt,
-            class ItemsOutputIt,
-            class BinaryPred,
-            class Size,
-            class NumSelectedOutIt>
-  static cudaError_t THRUST_RUNTIME_FUNCTION
-  doit_step(void *           d_temp_storage,
-            size_t &         temp_storage_bytes,
-            ItemsInputIt     items_in,
-            ItemsOutputIt    items_out,
-            BinaryPred       binary_pred,
-            NumSelectedOutIt num_selected_out,
-            Size             num_items,
-            cudaStream_t     stream)
+  THRUST_AGENT_ENTRY(ScanTileState tile_state, Size num_tiles, NumSelectedIt num_selected_out, char* /*shmem*/)
   {
-    using core::AgentLauncher;
-    using core::AgentPlan;
-    using core::get_agent_plan;
-
-    typedef AgentLauncher<
-        UniqueAgent<ItemsInputIt,
-                    ItemsOutputIt,
-                    BinaryPred,
-                    Size,
-                    NumSelectedOutIt> >
-        unique_agent;
-
-    typedef typename unique_agent::ScanTileState ScanTileState;
-
-    typedef AgentLauncher<
-        InitAgent<ScanTileState, NumSelectedOutIt, Size> >
-        init_agent;
-
-    using core::get_plan;
-    typename get_plan<init_agent>::type   init_plan   = init_agent::get_plan();
-    typename get_plan<unique_agent>::type unique_plan = unique_agent::get_plan(stream);
-
-
-    int tile_size = unique_plan.items_per_tile;
-    size_t num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
-
-    size_t vshmem_size = core::vshmem_size(unique_plan.shared_memory_size,
-                                           num_tiles);
-
-    cudaError_t status = cudaSuccess;
-    size_t      allocation_sizes[2] = {0, vshmem_size};
-    status = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
-    CUDA_CUB_RET_IF_FAIL(status);
-
-    void *allocations[2] = {NULL, NULL};
-    //
-    status = cub::AliasTemporaries(d_temp_storage,
-                                   temp_storage_bytes,
-                                   allocations,
-                                   allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
-
-    if (d_temp_storage == NULL)
+    tile_state.InitializeStatus(num_tiles);
+    if (blockIdx.x == 0 && threadIdx.x == 0)
     {
-      return status;
+      *num_selected_out = 0;
     }
+  }
 
-    ScanTileState tile_status;
-    status =  tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-    CUDA_CUB_RET_IF_FAIL(status);
+}; // struct InitAgent
 
-    num_tiles = max<size_t>(1,num_tiles);
-    init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
-    ia.launch(tile_status, num_tiles, num_selected_out);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+template <class ItemsInputIt, class ItemsOutputIt, class BinaryPred, class Size, class NumSelectedOutIt>
+static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  ItemsInputIt items_in,
+  ItemsOutputIt items_out,
+  BinaryPred binary_pred,
+  NumSelectedOutIt num_selected_out,
+  Size num_items,
+  cudaStream_t stream)
+{
+  using core::AgentLauncher;
+  using core::AgentPlan;
+  using core::get_agent_plan;
 
-    if (num_items == 0) { return status; }
+  typedef AgentLauncher<UniqueAgent<ItemsInputIt, ItemsOutputIt, BinaryPred, Size, NumSelectedOutIt>> unique_agent;
 
-    char *vshmem_ptr = vshmem_size > 0 ? (char *)allocations[1] : NULL;
+  typedef typename unique_agent::ScanTileState ScanTileState;
 
-    unique_agent ua(unique_plan, num_items, stream, vshmem_ptr, "unique_by_key::unique_agent");
-    ua.launch(items_in,
-              items_out,
-              binary_pred,
-              num_selected_out,
-              num_items,
-              tile_status,
-              num_tiles);
-    CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  typedef AgentLauncher<InitAgent<ScanTileState, NumSelectedOutIt, Size>> init_agent;
+
+  using core::get_plan;
+  typename get_plan<init_agent>::type init_plan     = init_agent::get_plan();
+  typename get_plan<unique_agent>::type unique_plan = unique_agent::get_plan(stream);
+
+  int tile_size    = unique_plan.items_per_tile;
+  size_t num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
+
+  size_t vshmem_size = core::vshmem_size(unique_plan.shared_memory_size, num_tiles);
+
+  cudaError_t status         = cudaSuccess;
+  size_t allocation_sizes[2] = {0, vshmem_size};
+  status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
+  CUDA_CUB_RET_IF_FAIL(status);
+
+  void* allocations[2] = {NULL, NULL};
+  //
+  status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+  CUDA_CUB_RET_IF_FAIL(status);
+
+  if (d_temp_storage == NULL)
+  {
     return status;
   }
 
-  template <typename Derived,
-            typename ItemsInputIt,
-            typename ItemsOutputIt,
-            typename BinaryPred>
-  THRUST_RUNTIME_FUNCTION
-  ItemsOutputIt unique(execution_policy<Derived>& policy,
-                       ItemsInputIt               items_first,
-                       ItemsInputIt               items_last,
-                       ItemsOutputIt              items_result,
-                       BinaryPred                 binary_pred)
+  ScanTileState tile_status;
+  status = tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
+  CUDA_CUB_RET_IF_FAIL(status);
+
+  num_tiles = max<size_t>(1, num_tiles);
+  init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
+  ia.launch(tile_status, num_tiles, num_selected_out);
+  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+
+  if (num_items == 0)
   {
-    //  typedef typename iterator_traits<ItemsInputIt>::difference_type size_type;
-    typedef int size_type;
-
-    size_type    num_items          = static_cast<size_type>(thrust::distance(items_first, items_last));
-    size_t       temp_storage_bytes = 0;
-    cudaStream_t stream             = cuda_cub::stream(policy);
-
-    cudaError_t status;
-    status = doit_step(NULL,
-                       temp_storage_bytes,
-                       items_first,
-                       items_result,
-                       binary_pred,
-                       reinterpret_cast<size_type*>(NULL),
-                       num_items,
-                       stream);
-    cuda_cub::throw_on_error(status, "unique: failed on 1st step");
-
-    size_t allocation_sizes[2] = {sizeof(size_type), temp_storage_bytes};
-    void * allocations[2]      = {NULL, NULL};
-
-    size_t storage_size = 0;
-    status = core::alias_storage(NULL,
-                                 storage_size,
-                                 allocations,
-                                 allocation_sizes);
-    cuda_cub::throw_on_error(status, "unique: failed on 1st step");
-
-    // Allocate temporary storage.
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived>
-      tmp(policy, storage_size);
-    void *ptr = static_cast<void*>(tmp.data().get());
-
-    status = core::alias_storage(ptr,
-                                 storage_size,
-                                 allocations,
-                                 allocation_sizes);
-    cuda_cub::throw_on_error(status, "unique: failed on 2nd step");
-
-    size_type* d_num_selected_out
-      = thrust::detail::aligned_reinterpret_cast<size_type*>(allocations[0]);
-
-    status = doit_step(allocations[1],
-                       temp_storage_bytes,
-                       items_first,
-                       items_result,
-                       binary_pred,
-                       d_num_selected_out,
-                       num_items,
-                       stream);
-    cuda_cub::throw_on_error(status, "unique: failed on 2nd step");
-
-    status = cuda_cub::synchronize(policy);
-    cuda_cub::throw_on_error(status, "unique: failed to synchronize");
-
-    size_type num_selected = get_value(policy, d_num_selected_out);
-
-    return items_result + num_selected;
+    return status;
   }
-}    // namespace __unique
+
+  char* vshmem_ptr = vshmem_size > 0 ? (char*) allocations[1] : NULL;
+
+  unique_agent ua(unique_plan, num_items, stream, vshmem_ptr, "unique_by_key::unique_agent");
+  ua.launch(items_in, items_out, binary_pred, num_selected_out, num_items, tile_status, num_tiles);
+  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  return status;
+}
+
+template <typename Derived, typename ItemsInputIt, typename ItemsOutputIt, typename BinaryPred>
+THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
+  execution_policy<Derived>& policy,
+  ItemsInputIt items_first,
+  ItemsInputIt items_last,
+  ItemsOutputIt items_result,
+  BinaryPred binary_pred)
+{
+  //  typedef typename iterator_traits<ItemsInputIt>::difference_type size_type;
+  typedef int size_type;
+
+  size_type num_items       = static_cast<size_type>(thrust::distance(items_first, items_last));
+  size_t temp_storage_bytes = 0;
+  cudaStream_t stream       = cuda_cub::stream(policy);
+
+  cudaError_t status;
+  status = doit_step(
+    NULL,
+    temp_storage_bytes,
+    items_first,
+    items_result,
+    binary_pred,
+    reinterpret_cast<size_type*>(NULL),
+    num_items,
+    stream);
+  cuda_cub::throw_on_error(status, "unique: failed on 1st step");
+
+  size_t allocation_sizes[2] = {sizeof(size_type), temp_storage_bytes};
+  void* allocations[2]       = {NULL, NULL};
+
+  size_t storage_size = 0;
+  status              = core::alias_storage(NULL, storage_size, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "unique: failed on 1st step");
+
+  // Allocate temporary storage.
+  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  void* ptr = static_cast<void*>(tmp.data().get());
+
+  status = core::alias_storage(ptr, storage_size, allocations, allocation_sizes);
+  cuda_cub::throw_on_error(status, "unique: failed on 2nd step");
+
+  size_type* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<size_type*>(allocations[0]);
+
+  status = doit_step(
+    allocations[1], temp_storage_bytes, items_first, items_result, binary_pred, d_num_selected_out, num_items, stream);
+  cuda_cub::throw_on_error(status, "unique: failed on 2nd step");
+
+  status = cuda_cub::synchronize(policy);
+  cuda_cub::throw_on_error(status, "unique: failed to synchronize");
+
+  size_type num_selected = get_value(policy, d_num_selected_out);
+
+  return items_result + num_selected;
+}
+} // namespace __unique
 
 //-------------------------
 // Thrust API entry points
 //-------------------------
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived,
-          class InputIt,
-          class OutputIt,
-          class BinaryPred>
+template <class Derived, class InputIt, class OutputIt, class BinaryPred>
 OutputIt _CCCL_HOST_DEVICE
-unique_copy(execution_policy<Derived> &policy,
-            InputIt                    first,
-            InputIt                    last,
-            OutputIt                   result,
-            BinaryPred                 binary_pred)
+unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryPred binary_pred)
 {
   THRUST_CDP_DISPATCH(
     (result = __unique::unique(policy, first, last, result, binary_pred);),
-    (result = thrust::unique_copy(cvt_to_seq(derived_cast(policy)),
-                                  first,
-                                  last,
-                                  result,
-                                  binary_pred);));
+    (result = thrust::unique_copy(cvt_to_seq(derived_cast(policy)), first, last, result, binary_pred);));
   return result;
 }
 
-template <class Derived,
-          class InputIt,
-          class OutputIt>
-OutputIt _CCCL_HOST_DEVICE
-unique_copy(execution_policy<Derived> &policy,
-            InputIt                    first,
-            InputIt                    last,
-            OutputIt                   result)
+template <class Derived, class InputIt, class OutputIt>
+OutputIt _CCCL_HOST_DEVICE unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   typedef typename iterator_traits<InputIt>::value_type input_type;
   return cuda_cub::unique_copy(policy, first, last, result, equal_to<input_type>());
 }
 
-
-
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived,
-          class ForwardIt,
-          class BinaryPred>
+template <class Derived, class ForwardIt, class BinaryPred>
 ForwardIt _CCCL_HOST_DEVICE
-unique(execution_policy<Derived> &policy,
-       ForwardIt                  first,
-       ForwardIt                  last,
-       BinaryPred                 binary_pred)
+unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
   ForwardIt ret = first;
-  THRUST_CDP_DISPATCH(
-    (ret = cuda_cub::unique_copy(policy, first, last, first, binary_pred);),
-    (ret = thrust::unique(cvt_to_seq(derived_cast(policy)),
-                          first,
-                          last,
-                          binary_pred);));
+  THRUST_CDP_DISPATCH((ret = cuda_cub::unique_copy(policy, first, last, first, binary_pred);),
+                      (ret = thrust::unique(cvt_to_seq(derived_cast(policy)), first, last, binary_pred);));
   return ret;
 }
 
-template <class Derived,
-          class ForwardIt>
-ForwardIt _CCCL_HOST_DEVICE
-unique(execution_policy<Derived> &policy,
-       ForwardIt                  first,
-       ForwardIt                  last)
+template <class Derived, class ForwardIt>
+ForwardIt _CCCL_HOST_DEVICE unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last)
 {
   typedef typename iterator_traits<ForwardIt>::value_type input_type;
   return cuda_cub::unique(policy, first, last, equal_to<input_type>());
 }
 
-
 template <typename BinaryPred>
-struct zip_adj_not_predicate {
+struct zip_adj_not_predicate
+{
   template <typename TupleType>
-  bool _CCCL_HOST_DEVICE operator()(TupleType&& tuple) {
-      return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
+  bool _CCCL_HOST_DEVICE operator()(TupleType&& tuple)
+  {
+    return !binary_pred(thrust::get<0>(tuple), thrust::get<1>(tuple));
   }
 
   BinaryPred binary_pred;
 };
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived,
-          class ForwardIt,
-          class BinaryPred>
-typename thrust::iterator_traits<ForwardIt>::difference_type
-_CCCL_HOST_DEVICE
-unique_count(execution_policy<Derived> &policy,
-       ForwardIt                  first,
-       ForwardIt                  last,
-       BinaryPred                 binary_pred)
+template <class Derived, class ForwardIt, class BinaryPred>
+typename thrust::iterator_traits<ForwardIt>::difference_type _CCCL_HOST_DEVICE
+unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
-  if (first == last) {
+  if (first == last)
+  {
     return 0;
   }
   auto size = thrust::distance(first, last);
-  auto it = thrust::make_zip_iterator(thrust::make_tuple(first, thrust::next(first)));
+  auto it   = thrust::make_zip_iterator(thrust::make_tuple(first, thrust::next(first)));
   return 1 + thrust::count_if(policy, it, thrust::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
 
-}    // namespace cuda_cub
+} // namespace cuda_cub
 THRUST_NAMESPACE_END
 
 //
-#include <thrust/memory.h>
-#include <thrust/unique.h>
+#  include <thrust/memory.h>
+#  include <thrust/unique.h>
 #endif

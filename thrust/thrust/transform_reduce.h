@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file transform_reduce.h
  *  \brief Fused transform / reduction
  */
@@ -41,7 +40,6 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-
 /*! \p transform_reduce fuses the \p transform and \p reduce operations.
  *  \p transform_reduce is equivalent to performing a transformation defined by
  *  \p unary_op into a temporary sequence and then performing \p reduce on the
@@ -67,14 +65,14 @@ THRUST_NAMESPACE_BEGIN
  *  \return The result of the transformed reduction.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction's \c result_type is convertible to \c OutputType.
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and is convertible to \p BinaryFunction's \c first_argument_type and \c second_argument_type.
- *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction's \c result_type is convertible to \p OutputType.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
+ * Function</a>, and \p UnaryFunction's \c result_type is convertible to \c OutputType. \tparam OutputType is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
+ * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction's \c result_type is convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p transform_reduce
  *  to compute the maximum value of the absolute value of the elements
@@ -108,19 +106,18 @@ THRUST_NAMESPACE_BEGIN
  *  \see \c transform
  *  \see \c reduce
  */
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename UnaryFunction,
-         typename OutputType,
-         typename BinaryFunction>
-_CCCL_HOST_DEVICE
-  OutputType transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                              InputIterator first,
-                              InputIterator last,
-                              UnaryFunction unary_op,
-                              OutputType init,
-                              BinaryFunction binary_op);
-
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename UnaryFunction,
+          typename OutputType,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputType transform_reduce(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  UnaryFunction unary_op,
+  OutputType init,
+  BinaryFunction binary_op);
 
 /*! \p transform_reduce fuses the \p transform and \p reduce operations.
  *  \p transform_reduce is equivalent to performing a transformation defined by
@@ -143,14 +140,14 @@ _CCCL_HOST_DEVICE
  *  \param binary_op The reduction operation.
  *  \return The result of the transformed reduction.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type.
- *  \tparam UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary Function</a>,
- *          and \p UnaryFunction's \c result_type is convertible to \c OutputType.
- *  \tparam OutputType is a model of <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>,
- *          and is convertible to \p BinaryFunction's \c first_argument_type and \c second_argument_type.
- *  \tparam BinaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>,
- *          and \p BinaryFunction's \c result_type is convertible to \p OutputType.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
+ * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
+ * Function</a>, and \p UnaryFunction's \c result_type is convertible to \c OutputType. \tparam OutputType is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
+ * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
+ * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
+ * BinaryFunction's \c result_type is convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p transform_reduce
  *  to compute the maximum value of the absolute value of the elements
@@ -182,16 +179,9 @@ _CCCL_HOST_DEVICE
  *  \see \c transform
  *  \see \c reduce
  */
-template<typename InputIterator,
-         typename UnaryFunction,
-         typename OutputType,
-         typename BinaryFunction>
-  OutputType transform_reduce(InputIterator first,
-                              InputIterator last,
-                              UnaryFunction unary_op,
-                              OutputType init,
-                              BinaryFunction binary_op);
-
+template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
+OutputType transform_reduce(
+  InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op);
 
 /*! \} // end transformed_reductions
  *  \} // end reductions

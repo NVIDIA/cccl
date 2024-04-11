@@ -27,73 +27,64 @@
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
 
-#include <nv/target>
-
 #include <limits>
+
+#include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-Integer clz(Integer x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer clz(Integer x)
 {
   Integer result;
 
-  NV_IF_TARGET(NV_IS_DEVICE, (
-    result = ::__clz(x);
-  ), (
-    int num_bits = 8 * sizeof(Integer);
-    int num_bits_minus_one = num_bits - 1;
-    result = num_bits;
-    for (int i = num_bits_minus_one; i >= 0; --i)
-    {
-      if ((Integer(1) << i) & x)
-      {
-        result = num_bits_minus_one - i;
-        break;
-      }
-    }
-  ));
+  NV_IF_TARGET(NV_IS_DEVICE,
+               (result = ::__clz(x);),
+               (int num_bits = 8 * sizeof(Integer); int num_bits_minus_one = num_bits - 1; result = num_bits;
+                for (int i = num_bits_minus_one; i >= 0; --i) {
+                  if ((Integer(1) << i) & x)
+                  {
+                    result = num_bits_minus_one - i;
+                    break;
+                  }
+                }));
 
   return result;
 }
 
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-bool is_power_of_2(Integer x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_power_of_2(Integer x)
 {
   return 0 == (x & (x - 1));
 }
 
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-bool is_odd(Integer x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool is_odd(Integer x)
 {
   return 1 & x;
 }
 
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-Integer log2(Integer x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2(Integer x)
 {
-  Integer num_bits = 8 * sizeof(Integer);
+  Integer num_bits           = 8 * sizeof(Integer);
   Integer num_bits_minus_one = num_bits - 1;
 
   return num_bits_minus_one - clz(x);
 }
 
-
 template <typename Integer>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-Integer log2_ri(Integer x)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE Integer log2_ri(Integer x)
 {
   Integer result = log2(x);
 
   // This is where we round up to the nearest log.
   if (!is_power_of_2(x))
+  {
     ++result;
+  }
 
   return result;
 }
@@ -102,33 +93,25 @@ Integer log2_ri(Integer x)
 // Used to determine # of blocks/warps etc.
 template <typename Integer0, typename Integer1>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-// FIXME: Should use common_type.
-auto divide_ri(Integer0 const x, Integer1 const y)
-THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
+  // FIXME: Should use common_type.
+  auto
+  divide_ri(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS((x + (y - 1)) / y)
 
+  // x/y rounding towards zero for integers.
+  // Used to determine # of blocks/warps etc.
+  template <typename Integer0, typename Integer1>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto divide_rz(Integer0 const x, Integer1 const y) THRUST_DECLTYPE_RETURNS(x / y)
 
-// x/y rounding towards zero for integers.
-// Used to determine # of blocks/warps etc.
-template <typename Integer0, typename Integer1>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-auto divide_rz(Integer0 const x, Integer1 const y)
-THRUST_DECLTYPE_RETURNS(x / y)
+  // Round x towards infinity to the next multiple of y.
+  template <typename Integer0, typename Integer1>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_i(Integer0 const x, Integer1 const y)
+    THRUST_DECLTYPE_RETURNS(y* divide_ri(x, y))
 
+  // Round x towards 0 to the next multiple of y.
+  template <typename Integer0, typename Integer1>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto round_z(Integer0 const x, Integer1 const y)
+    THRUST_DECLTYPE_RETURNS(y* divide_rz(x, y))
 
-// Round x towards infinity to the next multiple of y.
-template <typename Integer0, typename Integer1>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-auto round_i(Integer0 const x, Integer1 const y)
-THRUST_DECLTYPE_RETURNS(y * divide_ri(x, y))
-
-
-// Round x towards 0 to the next multiple of y.
-template <typename Integer0, typename Integer1>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-auto round_z(Integer0 const x, Integer1 const y)
-THRUST_DECLTYPE_RETURNS(y * divide_rz(x, y))
-
-
-} // end detail
+} // namespace detail
 
 THRUST_NAMESPACE_END

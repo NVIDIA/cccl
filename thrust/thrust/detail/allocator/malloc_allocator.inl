@@ -26,20 +26,18 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/malloc_allocator.h>
-#include <thrust/system/detail/generic/select_system.h>
-#include <thrust/system/detail/bad_alloc.h>
-#include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/detail/malloc_and_free.h>
+#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/system/detail/bad_alloc.h>
+#include <thrust/system/detail/generic/select_system.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-
-template<typename T, typename System, typename Pointer>
-  typename malloc_allocator<T,System,Pointer>::pointer
-    malloc_allocator<T,System,Pointer>
-      ::allocate(typename malloc_allocator<T,System,Pointer>::size_type cnt)
+template <typename T, typename System, typename Pointer>
+typename malloc_allocator<T, System, Pointer>::pointer
+malloc_allocator<T, System, Pointer>::allocate(typename malloc_allocator<T, System, Pointer>::size_type cnt)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -48,7 +46,7 @@ template<typename T, typename System, typename Pointer>
 
   pointer result = thrust::malloc<T>(select_system(system), cnt);
 
-  if(result.get() == 0)
+  if (result.get() == 0)
   {
     throw thrust::system::detail::bad_alloc("malloc_allocator::allocate: malloc failed");
   } // end if
@@ -56,10 +54,9 @@ template<typename T, typename System, typename Pointer>
   return result;
 } // end malloc_allocator::allocate()
 
-
-template<typename T, typename System, typename Pointer>
-  void malloc_allocator<T,System,Pointer>
-    ::deallocate(typename malloc_allocator<T,System,Pointer>::pointer p, typename malloc_allocator<T,System,Pointer>::size_type)
+template <typename T, typename System, typename Pointer>
+void malloc_allocator<T, System, Pointer>::deallocate(
+  typename malloc_allocator<T, System, Pointer>::pointer p, typename malloc_allocator<T, System, Pointer>::size_type)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -67,7 +64,5 @@ template<typename T, typename System, typename Pointer>
   thrust::free(select_system(system), p);
 } // end malloc_allocator
 
-
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
-

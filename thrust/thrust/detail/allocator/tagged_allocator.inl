@@ -26,87 +26,61 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/tagged_allocator.h>
+
 #include <limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-
-template<typename T, typename Tag, typename Pointer>
-  _CCCL_HOST_DEVICE
-  tagged_allocator<T,Tag,Pointer>
-    ::tagged_allocator()
+template <typename T, typename Tag, typename Pointer>
+_CCCL_HOST_DEVICE tagged_allocator<T, Tag, Pointer>::tagged_allocator()
 {}
 
-
-template<typename T, typename Tag, typename Pointer>
-  _CCCL_HOST_DEVICE
-  tagged_allocator<T,Tag,Pointer>
-    ::tagged_allocator(const tagged_allocator<T,Tag,Pointer> &)
+template <typename T, typename Tag, typename Pointer>
+_CCCL_HOST_DEVICE tagged_allocator<T, Tag, Pointer>::tagged_allocator(const tagged_allocator<T, Tag, Pointer>&)
 {}
 
-
-template<typename T, typename Tag, typename Pointer>
-  template<typename U, typename OtherPointer>
-    _CCCL_HOST_DEVICE
-    tagged_allocator<T,Tag,Pointer>
-      ::tagged_allocator(const tagged_allocator<U,Tag,OtherPointer> &)
+template <typename T, typename Tag, typename Pointer>
+template <typename U, typename OtherPointer>
+_CCCL_HOST_DEVICE tagged_allocator<T, Tag, Pointer>::tagged_allocator(const tagged_allocator<U, Tag, OtherPointer>&)
 {}
 
-
-template<typename T, typename Tag, typename Pointer>
-  _CCCL_HOST_DEVICE
-  tagged_allocator<T,Tag,Pointer>
-    ::~tagged_allocator()
+template <typename T, typename Tag, typename Pointer>
+_CCCL_HOST_DEVICE tagged_allocator<T, Tag, Pointer>::~tagged_allocator()
 {}
 
-
-template<typename T, typename Tag, typename Pointer>
-  _CCCL_HOST_DEVICE
-  typename tagged_allocator<T,Tag,Pointer>::pointer
-    tagged_allocator<T,Tag,Pointer>
-      ::address(reference x) const
+template <typename T, typename Tag, typename Pointer>
+_CCCL_HOST_DEVICE typename tagged_allocator<T, Tag, Pointer>::pointer
+tagged_allocator<T, Tag, Pointer>::address(reference x) const
 {
   return &x;
 }
 
-
-template<typename T, typename Tag, typename Pointer>
-  _CCCL_HOST_DEVICE
-  typename tagged_allocator<T,Tag,Pointer>::const_pointer
-    tagged_allocator<T,Tag,Pointer>
-      ::address(const_reference x) const
+template <typename T, typename Tag, typename Pointer>
+_CCCL_HOST_DEVICE typename tagged_allocator<T, Tag, Pointer>::const_pointer
+tagged_allocator<T, Tag, Pointer>::address(const_reference x) const
 {
   return &x;
 }
 
-
-template<typename T, typename Tag, typename Pointer>
-  typename tagged_allocator<T,Tag,Pointer>::size_type
-    tagged_allocator<T,Tag,Pointer>
-      ::max_size() const
+template <typename T, typename Tag, typename Pointer>
+typename tagged_allocator<T, Tag, Pointer>::size_type tagged_allocator<T, Tag, Pointer>::max_size() const
 {
   return (std::numeric_limits<size_type>::max)() / sizeof(T);
 }
 
-
-template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-_CCCL_HOST_DEVICE
-bool operator==(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &)
+template <typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
+_CCCL_HOST_DEVICE bool operator==(const tagged_allocator<T1, Pointer1, Tag>&, const tagged_allocator<T2, Pointer2, Tag>&)
 {
   return true;
 }
 
-
-template<typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
-_CCCL_HOST_DEVICE
-bool operator!=(const tagged_allocator<T1,Pointer1,Tag> &, const tagged_allocator<T2,Pointer2,Tag> &)
+template <typename T1, typename Pointer1, typename T2, typename Pointer2, typename Tag>
+_CCCL_HOST_DEVICE bool operator!=(const tagged_allocator<T1, Pointer1, Tag>&, const tagged_allocator<T2, Pointer2, Tag>&)
 {
   return false;
 }
 
-
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
-

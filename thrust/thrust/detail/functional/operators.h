@@ -26,8 +26,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/functional/operators/arithmetic_operators.h>
-#include <thrust/detail/functional/operators/relational_operators.h>
-#include <thrust/detail/functional/operators/logical_operators.h>
 #include <thrust/detail/functional/operators/bitwise_operators.h>
 #include <thrust/detail/functional/operators/compound_assignment_operators.h>
-
+#include <thrust/detail/functional/operators/logical_operators.h>
+#include <thrust/detail/functional/operators/relational_operators.h>

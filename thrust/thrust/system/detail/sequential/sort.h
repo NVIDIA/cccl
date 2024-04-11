@@ -39,28 +39,23 @@ namespace detail
 namespace sequential
 {
 
+template <typename DerivedPolicy, typename RandomAccessIterator, typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE void stable_sort(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator first,
+  RandomAccessIterator last,
+  StrictWeakOrdering comp);
 
-template<typename DerivedPolicy,
-         typename RandomAccessIterator,
-         typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-void stable_sort(sequential::execution_policy<DerivedPolicy> &exec,
-                 RandomAccessIterator first,
-                 RandomAccessIterator last,
-                 StrictWeakOrdering comp);
-
-
-template<typename DerivedPolicy,
-         typename RandomAccessIterator1,
-         typename RandomAccessIterator2,
-         typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-void stable_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
-                        RandomAccessIterator1 first1,
-                        RandomAccessIterator1 last1,
-                        RandomAccessIterator2 first2,
-                        StrictWeakOrdering comp);
-
+template <typename DerivedPolicy,
+          typename RandomAccessIterator1,
+          typename RandomAccessIterator2,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE void stable_sort_by_key(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator1 first1,
+  RandomAccessIterator1 last1,
+  RandomAccessIterator2 first2,
+  StrictWeakOrdering comp);
 
 } // end namespace sequential
 } // end namespace detail
@@ -68,4 +63,3 @@ void stable_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/sort.inl>
-

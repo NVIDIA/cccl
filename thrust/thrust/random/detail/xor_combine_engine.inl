@@ -26,116 +26,88 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/random/xor_combine_engine.h>
 #include <thrust/random/detail/random_core_access.h>
+#include <thrust/random/xor_combine_engine.h>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace random
 {
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::xor_combine_engine(void)
-      :m_b1(),m_b2()
-{
-} // end xor_combine_engine::xor_combine_engine()
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engine(void)
+    : m_b1()
+    , m_b2()
+{} // end xor_combine_engine::xor_combine_engine()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::xor_combine_engine(const base1_type &urng1, const base2_type &urng2)
-      :m_b1(urng1),m_b2(urng2)
-{
-} // end xor_combine_engine::xor_combine_engine()
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE
+xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engine(const base1_type& urng1, const base2_type& urng2)
+    : m_b1(urng1)
+    , m_b2(urng2)
+{} // end xor_combine_engine::xor_combine_engine()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::xor_combine_engine(result_type s)
-      :m_b1(s),m_b2(s)
-{
-} // end xor_combine_engine::xor_combine_engine()
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE xor_combine_engine<Engine1, s1, Engine2, s2>::xor_combine_engine(result_type s)
+    : m_b1(s)
+    , m_b2(s)
+{} // end xor_combine_engine::xor_combine_engine()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  void xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::seed(void)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::seed(void)
 {
   m_b1.seed();
   m_b2.seed();
 } // end xor_combine_engine::seed()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  void xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::seed(result_type s)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::seed(result_type s)
 {
   m_b1.seed(s);
   m_b2.seed(s);
 } // end xor_combine_engine::seed()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  const typename xor_combine_engine<Engine1,s1,Engine2,s2>::base1_type &
-    xor_combine_engine<Engine1,s1,Engine2,s2>
-      ::base1(void) const
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE const typename xor_combine_engine<Engine1, s1, Engine2, s2>::base1_type&
+xor_combine_engine<Engine1, s1, Engine2, s2>::base1(void) const
 {
   return m_b1;
 } // end xor_combine_engine::base1()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  const typename xor_combine_engine<Engine1,s1,Engine2,s2>::base2_type &
-    xor_combine_engine<Engine1,s1,Engine2,s2>
-      ::base2(void) const
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE const typename xor_combine_engine<Engine1, s1, Engine2, s2>::base2_type&
+xor_combine_engine<Engine1, s1, Engine2, s2>::base2(void) const
 {
   return m_b2;
 } // end xor_combine_engine::base2()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  typename xor_combine_engine<Engine1,s1,Engine2,s2>::result_type
-    xor_combine_engine<Engine1,s1,Engine2,s2>
-      ::operator()(void)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE typename xor_combine_engine<Engine1, s1, Engine2, s2>::result_type
+xor_combine_engine<Engine1, s1, Engine2, s2>::operator()(void)
 {
-  return (result_type(m_b1() - base1_type::min) << shift1) ^
-         (result_type(m_b2() - base2_type::min) << shift2);
+  return (result_type(m_b1() - base1_type::min) << shift1) ^ (result_type(m_b2() - base2_type::min) << shift2);
 } // end xor_combine_engine::operator()()
 
-template<typename Engine1, size_t s1,
-         typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  void xor_combine_engine<Engine1, s1, Engine2, s2>
-    ::discard(unsigned long long z)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE void xor_combine_engine<Engine1, s1, Engine2, s2>::discard(unsigned long long z)
 {
-  for(; z > 0; --z)
+  for (; z > 0; --z)
   {
     this->operator()();
   } // end for
 } // end xor_combine_engine::discard()
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-  template<typename CharT, typename Traits>
-    std::basic_ostream<CharT,Traits>& xor_combine_engine<Engine1,s1,Engine2,s2>
-      ::stream_out(std::basic_ostream<CharT,Traits> &os) const
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+template <typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&
+xor_combine_engine<Engine1, s1, Engine2, s2>::stream_out(std::basic_ostream<CharT, Traits>& os) const
 {
-  typedef std::basic_ostream<CharT,Traits> ostream_type;
-  typedef typename ostream_type::ios_base  ios_base;
+  typedef std::basic_ostream<CharT, Traits> ostream_type;
+  typedef typename ostream_type::ios_base ios_base;
 
   // save old flags and fill character
   const typename ios_base::fmtflags flags = os.flags();
-  const CharT fill = os.fill();
+  const CharT fill                        = os.fill();
 
   const CharT space = os.widen(' ');
   os.flags(ios_base::dec | ios_base::fixed | ios_base::left);
@@ -150,14 +122,13 @@ template<typename Engine1, size_t s1, typename Engine2, size_t s2>
   return os;
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-  template<typename CharT, typename Traits>
-    std::basic_istream<CharT,Traits>& xor_combine_engine<Engine1,s1,Engine2,s2>
-      ::stream_in(std::basic_istream<CharT,Traits> &is)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+template <typename CharT, typename Traits>
+std::basic_istream<CharT, Traits>&
+xor_combine_engine<Engine1, s1, Engine2, s2>::stream_in(std::basic_istream<CharT, Traits>& is)
 {
-  typedef std::basic_istream<CharT,Traits> istream_type;
-  typedef typename istream_type::ios_base  ios_base;
+  typedef std::basic_istream<CharT, Traits> istream_type;
+  typedef typename istream_type::ios_base ios_base;
 
   // save old flags
   const typename ios_base::fmtflags flags = is.flags();
@@ -172,55 +143,41 @@ template<typename Engine1, size_t s1, typename Engine2, size_t s2>
   return is;
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-  _CCCL_HOST_DEVICE
-  bool xor_combine_engine<Engine1,s1,Engine2,s2>
-    ::equal(const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs) const
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE bool
+xor_combine_engine<Engine1, s1, Engine2, s2>::equal(const xor_combine_engine<Engine1, s1, Engine2, s2>& rhs) const
 {
   return (m_b1 == rhs.m_b1) && (m_b2 == rhs.m_b2);
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2,
-         typename CharT, typename Traits>
-std::basic_ostream<CharT,Traits>&
-operator<<(std::basic_ostream<CharT,Traits> &os,
-           const xor_combine_engine<Engine1,s1,Engine2,s2> &e)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2, typename CharT, typename Traits>
+std::basic_ostream<CharT, Traits>&
+operator<<(std::basic_ostream<CharT, Traits>& os, const xor_combine_engine<Engine1, s1, Engine2, s2>& e)
 {
-  return thrust::random::detail::random_core_access::stream_out(os,e);
+  return thrust::random::detail::random_core_access::stream_out(os, e);
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2,
-         typename CharT, typename Traits>
-std::basic_istream<CharT,Traits>&
-operator>>(std::basic_istream<CharT,Traits> &is,
-           xor_combine_engine<Engine1,s1,Engine2,s2> &e)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2, typename CharT, typename Traits>
+std::basic_istream<CharT, Traits>&
+operator>>(std::basic_istream<CharT, Traits>& is, xor_combine_engine<Engine1, s1, Engine2, s2>& e)
 {
-  return thrust::random::detail::random_core_access::stream_in(is,e);
+  return thrust::random::detail::random_core_access::stream_in(is, e);
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-_CCCL_HOST_DEVICE
-bool operator==(const xor_combine_engine<Engine1,s1,Engine2,s2> &lhs,
-                const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE bool operator==(const xor_combine_engine<Engine1, s1, Engine2, s2>& lhs,
+                                  const xor_combine_engine<Engine1, s1, Engine2, s2>& rhs)
 {
-  return thrust::random::detail::random_core_access::equal(lhs,rhs);
+  return thrust::random::detail::random_core_access::equal(lhs, rhs);
 }
 
-
-template<typename Engine1, size_t s1, typename Engine2, size_t s2>
-_CCCL_HOST_DEVICE
-bool operator!=(const xor_combine_engine<Engine1,s1,Engine2,s2> &lhs,
-                const xor_combine_engine<Engine1,s1,Engine2,s2> &rhs)
+template <typename Engine1, size_t s1, typename Engine2, size_t s2>
+_CCCL_HOST_DEVICE bool operator!=(const xor_combine_engine<Engine1, s1, Engine2, s2>& lhs,
+                                  const xor_combine_engine<Engine1, s1, Engine2, s2>& rhs)
 {
   return !(lhs == rhs);
 }
 
-
-} // end random
+} // namespace random
 
 THRUST_NAMESPACE_END
-

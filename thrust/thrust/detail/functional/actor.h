@@ -34,12 +34,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/tuple.h>
-#include <thrust/detail/functional/value.h>
 #include <thrust/detail/functional/composite.h>
 #include <thrust/detail/functional/operators/assignment_operator.h>
+#include <thrust/detail/functional/value.h>
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/detail/type_traits/result_of_adaptable_function.h>
+#include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -52,108 +52,87 @@ namespace functional
 // - T& otherwise
 // This is used to let thrust::references pass through actor evaluations.
 template <typename T>
-using eval_ref = typename std::conditional<
-  thrust::detail::is_wrapped_reference<T>::value, T, T&>::type;
+using eval_ref = typename std::conditional<thrust::detail::is_wrapped_reference<T>::value, T, T&>::type;
 
-template<typename Action, typename Env>
-  struct apply_actor
+template <typename Action, typename Env>
+struct apply_actor
 {
   typedef typename Action::template result<Env>::type type;
 };
 
-template<typename Eval>
-  struct actor
-    : Eval
+template <typename Eval>
+struct actor : Eval
 {
   typedef Eval eval_type;
 
-  _CCCL_HOST_DEVICE
-  constexpr actor();
+  _CCCL_HOST_DEVICE constexpr actor();
 
-  _CCCL_HOST_DEVICE
-  actor(const Eval &base);
+  _CCCL_HOST_DEVICE actor(const Eval& base);
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE
-  typename apply_actor<eval_type, thrust::tuple<eval_ref<Ts>...>>::type
-  operator()(Ts&&... ts) const;
+  _CCCL_HOST_DEVICE typename apply_actor<eval_type, thrust::tuple<eval_ref<Ts>...>>::type operator()(Ts&&... ts) const;
 
-  template<typename T>
-  _CCCL_HOST_DEVICE
-  typename assign_result<Eval,T>::type
-  operator=(const T &_1) const;
+  template <typename T>
+  _CCCL_HOST_DEVICE typename assign_result<Eval, T>::type operator=(const T& _1) const;
 }; // end actor
 
 // in general, as_actor should turn things into values
-template<typename T>
-  struct as_actor
+template <typename T>
+struct as_actor
 {
   typedef value<T> type;
 
-  static inline _CCCL_HOST_DEVICE type convert(const T &x)
+  static inline _CCCL_HOST_DEVICE type convert(const T& x)
   {
     return val(x);
   } // end convert()
 }; // end as_actor
 
 // specialization for things which are already actors
-template<typename Eval>
-  struct as_actor<actor<Eval> >
+template <typename Eval>
+struct as_actor<actor<Eval>>
 {
   typedef actor<Eval> type;
 
-  static inline _CCCL_HOST_DEVICE const type &convert(const actor<Eval> &x)
+  static inline _CCCL_HOST_DEVICE const type& convert(const actor<Eval>& x)
   {
     return x;
   } // end convert()
 }; // end as_actor
 
-template<typename T>
-  typename as_actor<T>::type
-  _CCCL_HOST_DEVICE
-    make_actor(const T &x)
+template <typename T>
+typename as_actor<T>::type _CCCL_HOST_DEVICE make_actor(const T& x)
 {
   return as_actor<T>::convert(x);
 } // end make_actor()
 
-} // end functional
+} // namespace functional
 
 // provide specializations for result_of for nullary, unary, and binary invocations of actor
-template<typename Eval>
-  struct result_of_adaptable_function<
-    thrust::detail::functional::actor<Eval>()
-  >
+template <typename Eval>
+struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>()>
 {
-  typedef typename thrust::detail::functional::apply_actor<
-    thrust::detail::functional::actor<Eval>,
-    thrust::tuple<>
-  >::type type;
+  typedef
+    typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>, thrust::tuple<>>::type
+      type;
 }; // end result_of
 
-template<typename Eval, typename Arg1>
-  struct result_of_adaptable_function<
-    thrust::detail::functional::actor<Eval>(Arg1)
-  >
+template <typename Eval, typename Arg1>
+struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>(Arg1)>
 {
-  typedef typename thrust::detail::functional::apply_actor<
-    thrust::detail::functional::actor<Eval>,
-    thrust::tuple<Arg1>
-  >::type type;
+  typedef
+    typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>, thrust::tuple<Arg1>>::type
+      type;
 }; // end result_of
 
-template<typename Eval, typename Arg1, typename Arg2>
-  struct result_of_adaptable_function<
-    thrust::detail::functional::actor<Eval>(Arg1,Arg2)
-  >
+template <typename Eval, typename Arg1, typename Arg2>
+struct result_of_adaptable_function<thrust::detail::functional::actor<Eval>(Arg1, Arg2)>
 {
-  typedef typename thrust::detail::functional::apply_actor<
-    thrust::detail::functional::actor<Eval>,
-    thrust::tuple<Arg1,Arg2>
-  >::type type;
+  typedef typename thrust::detail::functional::apply_actor<thrust::detail::functional::actor<Eval>,
+                                                           thrust::tuple<Arg1, Arg2>>::type type;
 }; // end result_of
 
-} // end detail
+} // namespace detail
 THRUST_NAMESPACE_END
 
 #include <thrust/detail/functional/actor.inl>
-

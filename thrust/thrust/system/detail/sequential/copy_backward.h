@@ -34,14 +34,10 @@ namespace detail
 namespace sequential
 {
 
-
 _CCCL_EXEC_CHECK_DISABLE
-template<typename BidirectionalIterator1,
-         typename BidirectionalIterator2>
-_CCCL_HOST_DEVICE
-BidirectionalIterator2 copy_backward(BidirectionalIterator1 first,
-                                     BidirectionalIterator1 last,
-                                     BidirectionalIterator2 result)
+template <typename BidirectionalIterator1, typename BidirectionalIterator2>
+_CCCL_HOST_DEVICE BidirectionalIterator2
+copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last, BidirectionalIterator2 result)
 {
   while (first != last)
   {
@@ -53,9 +49,7 @@ BidirectionalIterator2 copy_backward(BidirectionalIterator1 first,
   return result;
 }
 
-
 } // end namespace sequential
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

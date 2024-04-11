@@ -44,42 +44,36 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
-#include <thrust/system/cuda/config.h>
+#    include <thrust/distance.h>
+#    include <thrust/iterator/iterator_traits.h>
+#    include <thrust/system/cuda/config.h>
+#    include <thrust/system/cuda/detail/async/customization.h>
+#    include <thrust/system/cuda/detail/reduce.h>
+#    include <thrust/system/cuda/future.h>
+#    include <thrust/type_traits/remove_cvref.h>
 
-#include <thrust/system/cuda/detail/async/customization.h>
-#include <thrust/system/cuda/detail/reduce.h>
-#include <thrust/system/cuda/future.h>
-#include <thrust/type_traits/remove_cvref.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/distance.h>
-
-#include <type_traits>
+#    include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
-namespace system { namespace cuda { namespace detail
+namespace system
+{
+namespace cuda
+{
+namespace detail
 {
 
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Size, typename T, typename BinaryOp
->
-unique_eager_future<remove_cvref_t<T>> async_reduce_n(
-  execution_policy<DerivedPolicy>& policy
-, ForwardIt                        first
-, Size                             n
-, T                                init
-, BinaryOp                         op
-) {
+template <typename DerivedPolicy, typename ForwardIt, typename Size, typename T, typename BinaryOp>
+unique_eager_future<remove_cvref_t<T>>
+async_reduce_n(execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, T init, BinaryOp op)
+{
   using U = remove_cvref_t<T>;
 
   auto const device_alloc = get_async_device_allocator(policy);
 
-  using pointer
-    = typename thrust::detail::allocator_traits<decltype(device_alloc)>::
-      template rebind_traits<U>::pointer;
+  using pointer = typename thrust::detail::allocator_traits<decltype(device_alloc)>::template rebind_traits<U>::pointer;
 
   unique_eager_future_promise_pair<U, pointer> fp;
 
@@ -87,35 +81,22 @@ unique_eager_future<remove_cvref_t<T>> async_reduce_n(
 
   size_t tmp_size = 0;
   thrust::cuda_cub::throw_on_error(
-    cub::DeviceReduce::Reduce(
-      nullptr
-    , tmp_size
-    , first
-    , static_cast<U*>(nullptr)
-    , n
-    , op
-    , init
-    , nullptr // Null stream, just for sizing.
-    )
-  , "after reduction sizing"
-  );
+    cub::DeviceReduce::Reduce(nullptr, tmp_size, first, static_cast<U*>(nullptr), n, op, init, nullptr // Null stream,
+                                                                                                       // just for
+                                                                                                       // sizing.
+                              ),
+    "after reduction sizing");
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(
-    device_alloc, sizeof(U) + tmp_size
-  );
+  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, sizeof(U) + tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
   auto const content_ptr = content.get();
-  U* const ret_ptr = thrust::detail::aligned_reinterpret_cast<U*>(
-    raw_pointer_cast(content_ptr)
-  );
-  void* const tmp_ptr = static_cast<void*>(
-    raw_pointer_cast(content_ptr + sizeof(U))
-  );
+  U* const ret_ptr       = thrust::detail::aligned_reinterpret_cast<U*>(raw_pointer_cast(content_ptr));
+  void* const tmp_ptr    = static_cast<void*>(raw_pointer_cast(content_ptr + sizeof(U)));
 
   // Set up stream with dependencies.
 
@@ -124,109 +105,58 @@ unique_eager_future<remove_cvref_t<T>> async_reduce_n(
   if (thrust::cuda_cub::default_stream() != user_raw_stream)
   {
     fp = make_dependent_future<U, pointer>(
-      [] (decltype(content) const& c)
-      {
-        return pointer(
-          thrust::detail::aligned_reinterpret_cast<U*>(
-            raw_pointer_cast(c.get())
-          )
-        );
-      }
-    , std::tuple_cat(
-        std::make_tuple(
-          std::move(content)
-        , unique_stream(nonowning, user_raw_stream)
-        )
-      , extract_dependencies(
-          std::move(thrust::detail::derived_cast(policy))
-        )
-      )
-    );
+      [](decltype(content) const& c) {
+        return pointer(thrust::detail::aligned_reinterpret_cast<U*>(raw_pointer_cast(c.get())));
+      },
+      std::tuple_cat(std::make_tuple(std::move(content), unique_stream(nonowning, user_raw_stream)),
+                     extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
   }
   else
   {
     fp = make_dependent_future<U, pointer>(
-      [] (decltype(content) const& c)
-      {
-        return pointer(
-          thrust::detail::aligned_reinterpret_cast<U*>(
-            raw_pointer_cast(c.get())
-          )
-        );
-      }
-    , std::tuple_cat(
-        std::make_tuple(
-          std::move(content)
-        )
-      , extract_dependencies(
-          std::move(thrust::detail::derived_cast(policy))
-        )
-      )
-    );
+      [](decltype(content) const& c) {
+        return pointer(thrust::detail::aligned_reinterpret_cast<U*>(raw_pointer_cast(c.get())));
+      },
+      std::tuple_cat(std::make_tuple(std::move(content)),
+                     extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
   }
 
   // Run reduction.
 
   thrust::cuda_cub::throw_on_error(
-    cub::DeviceReduce::Reduce(
-      tmp_ptr
-    , tmp_size
-    , first
-    , ret_ptr
-    , n
-    , op
-    , init
-    , fp.future.stream().native_handle()
-    )
-  , "after reduction launch"
-  );
+    cub::DeviceReduce::Reduce(tmp_ptr, tmp_size, first, ret_ptr, n, op, init, fp.future.stream().native_handle()),
+    "after reduction launch");
 
   return std::move(fp.future);
 }
 
-}}} // namespace system::cuda::detail
+} // namespace detail
+} // namespace cuda
+} // namespace system
 
 namespace cuda_cub
 {
 
 // ADL entry point.
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp
->
-auto async_reduce(
-  execution_policy<DerivedPolicy>& policy
-, ForwardIt                        first
-, Sentinel                         last
-, T                                init
-, BinaryOp                         op
-)
-THRUST_RETURNS(
-  thrust::system::cuda::detail::async_reduce_n(
-    policy, first, distance(first, last), init, op
-  )
-)
+template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename T, typename BinaryOp>
+auto async_reduce(execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, T init, BinaryOp op)
+  THRUST_RETURNS(thrust::system::cuda::detail::async_reduce_n(policy, first, distance(first, last), init, op))
 
-} // cuda_cub
+} // namespace cuda_cub
 
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace system { namespace cuda { namespace detail
+namespace system
+{
+namespace cuda
+{
+namespace detail
 {
 
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Size, typename OutputIt
-, typename T, typename BinaryOp
->
+template <typename DerivedPolicy, typename ForwardIt, typename Size, typename OutputIt, typename T, typename BinaryOp>
 unique_eager_event async_reduce_into_n(
-  execution_policy<DerivedPolicy>& policy
-, ForwardIt                        first
-, Size                             n
-, OutputIt                         output
-, T                                init
-, BinaryOp                         op
-) {
+  execution_policy<DerivedPolicy>& policy, ForwardIt first, Size n, OutputIt output, T init, BinaryOp op)
+{
   using U = remove_cvref_t<T>;
 
   auto const device_alloc = get_async_device_allocator(policy);
@@ -237,33 +167,22 @@ unique_eager_event async_reduce_into_n(
 
   size_t tmp_size = 0;
   thrust::cuda_cub::throw_on_error(
-    cub::DeviceReduce::Reduce(
-      nullptr
-    , tmp_size
-    , first
-    , static_cast<U*>(nullptr)
-    , n
-    , op
-    , init
-    , nullptr // Null stream, just for sizing.
-    )
-  , "after reduction sizing"
-  );
+    cub::DeviceReduce::Reduce(nullptr, tmp_size, first, static_cast<U*>(nullptr), n, op, init, nullptr // Null stream,
+                                                                                                       // just for
+                                                                                                       // sizing.
+                              ),
+    "after reduction sizing");
 
   // Allocate temporary storage.
 
-  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(
-    device_alloc, tmp_size
-  );
+  auto content = uninitialized_allocate_unique_n<thrust::detail::uint8_t>(device_alloc, tmp_size);
 
   // The array was dynamically allocated, so we assume that it's suitably
   // aligned for any type of data. `malloc`/`cudaMalloc`/`new`/`std::allocator`
   // make this guarantee.
   auto const content_ptr = content.get();
 
-  void* const tmp_ptr = static_cast<void*>(
-    raw_pointer_cast(content_ptr)
-  );
+  void* const tmp_ptr = static_cast<void*>(raw_pointer_cast(content_ptr));
 
   // Set up stream with dependencies.
 
@@ -272,80 +191,42 @@ unique_eager_event async_reduce_into_n(
   if (thrust::cuda_cub::default_stream() != user_raw_stream)
   {
     e = make_dependent_event(
-      std::tuple_cat(
-        std::make_tuple(
-          std::move(content)
-        , unique_stream(nonowning, user_raw_stream)
-        )
-      , extract_dependencies(
-          std::move(thrust::detail::derived_cast(policy))
-        )
-      )
-    );
+      std::tuple_cat(std::make_tuple(std::move(content), unique_stream(nonowning, user_raw_stream)),
+                     extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
   }
   else
   {
-    e = make_dependent_event(
-      std::tuple_cat(
-        std::make_tuple(
-          std::move(content)
-        )
-      , extract_dependencies(
-          std::move(thrust::detail::derived_cast(policy))
-        )
-      )
-    );
+    e = make_dependent_event(std::tuple_cat(
+      std::make_tuple(std::move(content)), extract_dependencies(std::move(thrust::detail::derived_cast(policy)))));
   }
 
   // Run reduction.
 
   thrust::cuda_cub::throw_on_error(
-    cub::DeviceReduce::Reduce(
-      tmp_ptr
-    , tmp_size
-    , first
-    , output
-    , n
-    , op
-    , init
-    , e.stream().native_handle()
-    )
-  , "after reduction launch"
-  );
+    cub::DeviceReduce::Reduce(tmp_ptr, tmp_size, first, output, n, op, init, e.stream().native_handle()),
+    "after reduction launch");
 
   return e;
 }
 
-}}} // namespace system::cuda::detail
+} // namespace detail
+} // namespace cuda
+} // namespace system
 
 namespace cuda_cub
 {
 
 // ADL entry point.
-template <
-  typename DerivedPolicy
-, typename ForwardIt, typename Sentinel, typename OutputIt
-, typename T, typename BinaryOp
->
+template <typename DerivedPolicy, typename ForwardIt, typename Sentinel, typename OutputIt, typename T, typename BinaryOp>
 auto async_reduce_into(
-  execution_policy<DerivedPolicy>& policy
-, ForwardIt                        first
-, Sentinel                         last
-, OutputIt                         output
-, T                                init
-, BinaryOp                         op
-)
-THRUST_RETURNS(
-  thrust::system::cuda::detail::async_reduce_into_n(
-    policy, first, distance(first, last), output, init, op
-  )
-)
+  execution_policy<DerivedPolicy>& policy, ForwardIt first, Sentinel last, OutputIt output, T init, BinaryOp op)
+  THRUST_RETURNS(
+    thrust::system::cuda::detail::async_reduce_into_n(policy, first, distance(first, last), output, init, op))
 
-} // cuda_cub
+} // namespace cuda_cub
 
 THRUST_NAMESPACE_END
 
-#endif // THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
+#  endif // THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
 
 #endif
-

@@ -28,4 +28,3 @@
 
 // omp inherits transform
 #include <thrust/system/cpp/detail/transform.h>
-

@@ -39,4 +39,3 @@
 #    define __THRUST_SYNCHRONOUS 1
 #  endif // __THRUST_SYNCHRONOUS
 #endif // THRUST_DEBUG
-

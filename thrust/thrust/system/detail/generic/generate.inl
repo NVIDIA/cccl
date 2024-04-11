@@ -25,10 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/generate.h>
-#include <thrust/iterator/iterator_traits.h>
 #include <thrust/detail/internal_functional.h>
+#include <thrust/detail/static_assert.h>
 #include <thrust/for_each.h>
+#include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/generate.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -38,14 +39,9 @@ namespace detail
 namespace generic
 {
 
-template<typename ExecutionPolicy,
-         typename ForwardIterator,
-         typename Generator>
-_CCCL_HOST_DEVICE
-  void generate(thrust::execution_policy<ExecutionPolicy> &exec,
-                ForwardIterator first,
-                ForwardIterator last,
-                Generator gen)
+template <typename ExecutionPolicy, typename ForwardIterator, typename Generator>
+_CCCL_HOST_DEVICE void
+generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen)
 {
   // this static assert is necessary due to a workaround in generate_functor
   // it takes a const reference to accept temporaries from proxy iterators
@@ -58,26 +54,15 @@ _CCCL_HOST_DEVICE
   // operator() of the function object, but until we support pre-11, this is a
   // nice solution that validates the const_cast and doesn't take away any
   // functionality.
-  THRUST_STATIC_ASSERT_MSG(
-    !thrust::detail::is_const<
-      typename thrust::detail::remove_reference<
-        typename thrust::iterator_traits<ForwardIterator>::reference
-      >::type
-    >::value
-  , "generating to `const` iterators is not allowed"
-  );
-  thrust::for_each(exec, first, last, typename thrust::detail::generate_functor<ExecutionPolicy,Generator>::type(gen));
+  THRUST_STATIC_ASSERT_MSG(!thrust::detail::is_const<typename thrust::detail::remove_reference<
+                             typename thrust::iterator_traits<ForwardIterator>::reference>::type>::value,
+                           "generating to `const` iterators is not allowed");
+  thrust::for_each(exec, first, last, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));
 } // end generate()
 
-template<typename ExecutionPolicy,
-         typename OutputIterator,
-         typename Size,
-         typename Generator>
-_CCCL_HOST_DEVICE
-  OutputIterator generate_n(thrust::execution_policy<ExecutionPolicy> &exec,
-                            OutputIterator first,
-                            Size n,
-                            Generator gen)
+template <typename ExecutionPolicy, typename OutputIterator, typename Size, typename Generator>
+_CCCL_HOST_DEVICE OutputIterator
+generate_n(thrust::execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen)
 {
   // this static assert is necessary due to a workaround in generate_functor
   // it takes a const reference to accept temporaries from proxy iterators
@@ -90,19 +75,14 @@ _CCCL_HOST_DEVICE
   // operator() of the function object, but until we support pre-11, this is a
   // nice solution that validates the const_cast and doesn't take away any
   // functionality.
-  THRUST_STATIC_ASSERT_MSG(
-    !thrust::detail::is_const<
-      typename thrust::detail::remove_reference<
-        typename thrust::iterator_traits<OutputIterator>::reference
-      >::type
-    >::value
-  , "generating to `const` iterators is not allowed"
-  );
-  return thrust::for_each_n(exec, first, n, typename thrust::detail::generate_functor<ExecutionPolicy,Generator>::type(gen));
+  THRUST_STATIC_ASSERT_MSG(!thrust::detail::is_const<typename thrust::detail::remove_reference<
+                             typename thrust::iterator_traits<OutputIterator>::reference>::type>::value,
+                           "generating to `const` iterators is not allowed");
+  return thrust::for_each_n(
+    exec, first, n, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));
 } // end generate()
 
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

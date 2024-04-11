@@ -26,8 +26,8 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/system/cpp/detail/execution_policy.h>
-#include <thrust/system/omp/memory.h>
 #include <thrust/system/cpp/memory.h>
+#include <thrust/system/omp/memory.h>
 
 #include <limits>
 
@@ -43,8 +43,8 @@ namespace detail
 //     is not defined
 //     WAR the problem by using adl to call cpp::malloc, which requires it to depend
 //     on a template parameter
-template<typename Tag>
-  pointer<void> malloc_workaround(Tag t, std::size_t n)
+template <typename Tag>
+pointer<void> malloc_workaround(Tag t, std::size_t n)
 {
   return pointer<void>(malloc(t, n));
 } // end malloc_workaround()
@@ -53,13 +53,13 @@ template<typename Tag>
 //     is not defined
 //     WAR the problem by using adl to call cpp::free, which requires it to depend
 //     on a template parameter
-template<typename Tag>
-  void free_workaround(Tag t, pointer<void> ptr)
+template <typename Tag>
+void free_workaround(Tag t, pointer<void> ptr)
 {
   free(t, ptr.get());
 } // end free_workaround()
 
-} // end detail
+} // namespace detail
 
 inline pointer<void> malloc(std::size_t n)
 {
@@ -71,7 +71,7 @@ inline pointer<void> malloc(std::size_t n)
   return detail::malloc_workaround(cpp::tag(), n);
 } // end malloc()
 
-template<typename T>
+template <typename T>
 pointer<T> malloc(std::size_t n)
 {
   pointer<void> raw_ptr = thrust::system::omp::malloc(sizeof(T) * n);
@@ -88,7 +88,6 @@ inline void free(pointer<void> ptr)
   detail::free_workaround(cpp::tag(), ptr);
 } // end free()
 
-} // end omp
-} // end system
+} // namespace omp
+} // namespace system
 THRUST_NAMESPACE_END
-

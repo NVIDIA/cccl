@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file binary_search.h
  *  \brief Generic implementations of binary search functions.
  */
@@ -40,137 +39,125 @@ namespace detail
 namespace generic
 {
 
-
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-ForwardIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator begin,
-                            ForwardIterator end,
-                            const T& value);
+_CCCL_HOST_DEVICE ForwardIterator
+lower_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-ForwardIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator begin,
-                            ForwardIterator end,
-                            const T& value,
-                            StrictWeakOrdering comp);
-
-
-template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-ForwardIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator begin,
-                            ForwardIterator end,
-                            const T& value);
-
-template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-ForwardIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                            ForwardIterator begin,
-                            ForwardIterator end,
-                            const T& value,
-                            StrictWeakOrdering comp);
-
+_CCCL_HOST_DEVICE ForwardIterator lower_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  const T& value,
+  StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-bool binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                   ForwardIterator begin,
-                   ForwardIterator end,
-                   const T& value);
+_CCCL_HOST_DEVICE ForwardIterator
+upper_bound(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-bool binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                   ForwardIterator begin,
-                   ForwardIterator end,
-                   const T& value,
-                   StrictWeakOrdering comp);
+_CCCL_HOST_DEVICE ForwardIterator upper_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  const T& value,
+  StrictWeakOrdering comp);
 
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE bool binary_search(
+  thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator begin, ForwardIterator end, const T& value);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE
-OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin,
-                           ForwardIterator end,
-                           InputIterator values_begin,
-                           InputIterator values_end,
-                           OutputIterator output);
-
-
-template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-OutputIterator lower_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin,
-                           ForwardIterator end,
-                           InputIterator values_begin,
-                           InputIterator values_end,
-                           OutputIterator output,
-                           StrictWeakOrdering comp);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename T, typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE bool binary_search(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  const T& value,
+  StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE
-OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin,
-                           ForwardIterator end,
-                           InputIterator values_begin,
-                           InputIterator values_end,
-                           OutputIterator output);
+_CCCL_HOST_DEVICE OutputIterator lower_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output);
 
-
-template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-OutputIterator upper_bound(thrust::execution_policy<DerivedPolicy> &exec,
-                           ForwardIterator begin,
-                           ForwardIterator end,
-                           InputIterator values_begin,
-                           InputIterator values_end,
-                           OutputIterator output,
-                           StrictWeakOrdering comp);
-
+template <typename DerivedPolicy,
+          typename ForwardIterator,
+          typename InputIterator,
+          typename OutputIterator,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE OutputIterator lower_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output,
+  StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
-_CCCL_HOST_DEVICE
-OutputIterator binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                             ForwardIterator begin,
-                             ForwardIterator end,
-                             InputIterator values_begin,
-                             InputIterator values_end,
-                             OutputIterator output);
+_CCCL_HOST_DEVICE OutputIterator upper_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output);
 
+template <typename DerivedPolicy,
+          typename ForwardIterator,
+          typename InputIterator,
+          typename OutputIterator,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE OutputIterator upper_bound(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output,
+  StrictWeakOrdering comp);
 
-template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-OutputIterator binary_search(thrust::execution_policy<DerivedPolicy> &exec,
-                             ForwardIterator begin,
-                             ForwardIterator end,
-                             InputIterator values_begin,
-                             InputIterator values_end,
-                             OutputIterator output,
-                             StrictWeakOrdering comp);
+template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator binary_search(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output);
 
+template <typename DerivedPolicy,
+          typename ForwardIterator,
+          typename InputIterator,
+          typename OutputIterator,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE OutputIterator binary_search(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator begin,
+  ForwardIterator end,
+  InputIterator values_begin,
+  InputIterator values_end,
+  OutputIterator output,
+  StrictWeakOrdering comp);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable>
-_CCCL_HOST_DEVICE
-thrust::pair<ForwardIterator,ForwardIterator>
-equal_range(thrust::execution_policy<DerivedPolicy> &exec,
-            ForwardIterator first,
-            ForwardIterator last,
-            const LessThanComparable &value);
-
+_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  const LessThanComparable& value);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename LessThanComparable, typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-thrust::pair<ForwardIterator,ForwardIterator>
-equal_range(thrust::execution_policy<DerivedPolicy> &exec,
-            ForwardIterator first,
-            ForwardIterator last,
-            const LessThanComparable &value,
-            StrictWeakOrdering comp);
-
-
+_CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  const LessThanComparable& value,
+  StrictWeakOrdering comp);
 
 } // end namespace generic
 } // end namespace detail
@@ -178,4 +165,3 @@ equal_range(thrust::execution_policy<DerivedPolicy> &exec,
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/binary_search.inl>
-

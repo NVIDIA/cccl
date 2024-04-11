@@ -38,32 +38,23 @@ namespace detail
 namespace generic
 {
 
-
-template<typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
-_CCCL_HOST_DEVICE
-  OutputIterator fill_n(thrust::execution_policy<DerivedPolicy> &exec,
-                        OutputIterator first,
-                        Size n,
-                        const T &value)
+template <typename DerivedPolicy, typename OutputIterator, typename Size, typename T>
+_CCCL_HOST_DEVICE OutputIterator
+fill_n(thrust::execution_policy<DerivedPolicy>& exec, OutputIterator first, Size n, const T& value)
 {
   // XXX consider using the placeholder expression _1 = value
   return thrust::generate_n(exec, first, n, thrust::detail::fill_functor<T>(value));
 }
 
-template<typename DerivedPolicy, typename ForwardIterator, typename T>
-_CCCL_HOST_DEVICE
-  void fill(thrust::execution_policy<DerivedPolicy> &exec,
-            ForwardIterator first,
-            ForwardIterator last,
-            const T &value)
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE void
+fill(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, const T& value)
 {
   // XXX consider using the placeholder expression _1 = value
   thrust::generate(exec, first, last, thrust::detail::fill_functor<T>(value));
 }
 
-
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

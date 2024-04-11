@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file mismatch.h
  *  \brief Search for differences between ranges
  */
@@ -43,7 +42,6 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
  *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
  *  \p mismatch use different tests for whether elements differ.
@@ -63,9 +61,10 @@ THRUST_NAMESPACE_BEGIN
  *  \return The first position where the sequences differ.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
- *          and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
  *
  *  \code
  *  #include <thrust/mismatch.h>
@@ -92,13 +91,12 @@ THRUST_NAMESPACE_BEGIN
  *  \see find
  *  \see find_if
  */
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
-_CCCL_HOST_DEVICE
-thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                                      InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2);
-
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2>
+_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2>
+mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+         InputIterator1 first1,
+         InputIterator1 last1,
+         InputIterator2 first2);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
  * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
@@ -115,9 +113,10 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  \param first2 The beginning of the second sequence.
  *  \return The first position where the sequences differ.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>
- *          and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a> and \p InputIterator1's \c value_type is equality comparable to \p InputIterator2's \c value_type.
+ *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>.
  *
  *  \code
  *  #include <thrust/mismatch.h>
@@ -144,10 +143,8 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  \see find_if
  */
 template <typename InputIterator1, typename InputIterator2>
-thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2);
-
+thrust::pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
  *  and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
@@ -169,9 +166,10 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
  *  \return The first position where the sequences differ.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Input Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam Predicate is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Input Iterator</a>.
  *
  *  \code
  *  #include <thrust/mismatch.h>
@@ -198,14 +196,13 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
  *  \see find
  *  \see find_if
  */
-template<typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                                      InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2,
-                                                      BinaryPredicate pred);
-
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
+_CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  BinaryPredicate pred);
 
 /*! \p mismatch finds the first position where the two ranges <tt>[first1, last1)</tt>
  * and <tt>[first2, first2 + (last1 - first1))</tt> differ. The two versions of
@@ -223,9 +220,10 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  \param pred   The binary predicate to compare elements.
  *  \return The first position where the sequences differ.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Input Iterator</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>. \tparam Predicate is a model of
+ * <a href="https://en.cppreference.com/w/cpp/named_req/BinaryPredicate">Input Iterator</a>.
  *
  *  \code
  *  #include <thrust/mismatch.h>
@@ -252,10 +250,8 @@ thrust::pair<InputIterator1, InputIterator2> mismatch(const thrust::detail::exec
  *  \see find_if
  */
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
-thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1,
-                                                      InputIterator1 last1,
-                                                      InputIterator2 first2,
-                                                      BinaryPredicate pred);
+thrust::pair<InputIterator1, InputIterator2>
+mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred);
 
 /*! \} // end searching
  */

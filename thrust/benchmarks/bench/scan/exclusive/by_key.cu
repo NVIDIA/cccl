@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <class KeyT, class ValueT>
-static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
+static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -46,27 +46,24 @@ static void scan(nvbench::state &state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<ValueT>(elements);
 
   caching_allocator_t alloc;
-  thrust::exclusive_scan_by_key(policy(alloc), keys.cbegin(), keys.cend(),
-                                in_vals.cbegin(), out_vals.begin());
+  thrust::exclusive_scan_by_key(policy(alloc), keys.cbegin(), keys.cend(), in_vals.cbegin(), out_vals.begin());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::exclusive_scan_by_key(
-                   policy(alloc, launch), keys.cbegin(), keys.cend(),
-                   in_vals.cbegin(), out_vals.begin());
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::exclusive_scan_by_key(policy(alloc, launch), keys.cbegin(), keys.cend(), in_vals.cbegin(), out_vals.begin());
+  });
 }
 
 using key_types = all_types;
-using value_types = nvbench::type_list<int8_t,
-                                       int16_t,
-                                       int32_t,
-                                       int64_t
+using value_types =
+  nvbench::type_list<int8_t,
+                     int16_t,
+                     int32_t,
+                     int64_t
 #if NVBENCH_HELPER_HAS_I128
-                                       ,
-                                       int128_t
+                     ,
+                     int128_t
 #endif
-                                       >;
+                     >;
 
 NVBENCH_BENCH_TYPES(scan, NVBENCH_TYPE_AXES(key_types, value_types))
   .set_name("base")
