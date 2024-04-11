@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thrust/detail/config.h>
+#include "thrust/iterator/constant_iterator.h"
+#include "thrust/iterator/detail/iterator_traits.inl"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -499,6 +501,44 @@ template<typename InputIterator1,
   typedef typename thrust::iterator_system<InputIterator4>::type  System4;
   typedef typename thrust::iterator_system<OutputIterator1>::type System5;
   typedef typename thrust::iterator_system<OutputIterator2>::type System6;
+
+  System1 system1;
+  System2 system2;
+  System3 system3;
+  System4 system4;
+  System5 system5;
+  System6 system6;
+
+  return thrust::set_difference_by_key(select_system(system1,system2,system3,system4,system5,system6), keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
+} // end set_difference_by_key()
+
+template<typename InputIterator1,
+         typename InputIterator2,
+         typename InputIterator3,
+         typename OutputIterator1,
+         typename OutputIterator2>
+  thrust::pair<OutputIterator1,OutputIterator2>
+    set_difference_by_key(InputIterator1 keys_first1,
+                          InputIterator1 keys_last1,
+                          InputIterator2 keys_first2,
+                          InputIterator2 keys_last2,
+                          InputIterator3 values_first1,
+                          OutputIterator1 keys_result,
+                          OutputIterator2 values_result)
+{
+  using thrust::system::detail::generic::select_system;
+  typedef typename thrust::iterator_value<InputIterator3>::type value_type1;
+  typedef thrust::constant_iterator<value_type1>                constant_iterator;
+  // fabricate a values_first2 by repeating a default-constructed value_type1
+  // XXX assumes value_type1 is default-constructible
+  constant_iterator values_first2 = thrust::make_constant_iterator(value_type1());
+
+  typedef typename thrust::iterator_system<InputIterator1>::type    System1;
+  typedef typename thrust::iterator_system<InputIterator2>::type    System2;
+  typedef typename thrust::iterator_system<InputIterator3>::type    System3;
+  typedef typename thrust::iterator_system<constant_iterator>::type System4;
+  typedef typename thrust::iterator_system<OutputIterator1>::type  System5;
+  typedef typename thrust::iterator_system<OutputIterator2>::type  System6;
 
   System1 system1;
   System2 system2;
