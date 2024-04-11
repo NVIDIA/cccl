@@ -647,15 +647,16 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 }  // std
 
 */
-#ifndef __cuda_std__
-#include <__config>
-#include <typeinfo>
-#include <stdexcept>
-#include <cstring>
-#if !defined(_LIBCUDACXX_HAS_NO_ATOMIC_HEADER)
-#  include <atomic>
-#endif
-#endif //__cuda_std__
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__functional_base>
@@ -700,17 +701,7 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space);
 // standard-mandated includes
 #include <cuda/std/version>
 
-#ifndef __cuda_std__
-#include <__pragma_push>
-#endif //__cuda_std__
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
+#include <cuda/std/detail/libcxx/include/__pragma_push>
 
 #ifndef __cuda_std__
 
@@ -5029,9 +5020,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // __cuda_std__
 
-#ifndef __cuda_std__
-#include <__pragma_pop>
-#endif //__cuda_std__
+#include <cuda/std/detail/libcxx/include/__pragma_pop> //__cuda_std__
 
 #if defined(_LIBCUDACXX_HAS_PARALLEL_ALGORITHMS) && _CCCL_STD_VER >= 2017
 #   include <__pstl_memory>

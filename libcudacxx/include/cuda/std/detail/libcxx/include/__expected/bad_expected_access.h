@@ -9,9 +9,7 @@
 #ifndef _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H
 #define _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -99,7 +97,7 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expec
 #  else
   (void) __arg;
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

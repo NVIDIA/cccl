@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 #define _LIBCUDACXX___FUNCTIONAL_FUNCTION_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -47,11 +45,6 @@
 #include <cuda/std/detail/libcxx/include/exception>
 #include <cuda/std/detail/libcxx/include/new>
 #include <cuda/std/tuple>
-
-#ifndef __cuda_std__
-#  include <memory>
-#  include <typeinfo>
-#endif // __cuda_std__
 
 #ifndef __cuda_std__
 

@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_STANDARD_LAYOUT_STATIC_ARRAY_HPP
 #define _LIBCUDACXX___MDSPAN_STANDARD_LAYOUT_STATIC_ARRAY_HPP
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -661,10 +659,11 @@ struct __partially_static_sizes_tagged
 #    else
     = default;
 #    endif
+      // This line seems to be unstable under clang-format
       // clang-format off
       __MDSPAN_INLINE_FUNCTION_DEFAULTED
       constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
-  // clang-format on
+  //clang-format on
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED

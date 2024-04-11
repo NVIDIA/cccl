@@ -12,9 +12,7 @@
 #ifndef _LIBCUDACXX___EXCEPTION_TERMINATE_H
 #define _LIBCUDACXX___EXCEPTION_TERMINATE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

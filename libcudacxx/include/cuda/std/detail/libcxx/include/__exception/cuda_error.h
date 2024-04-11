@@ -61,7 +61,7 @@ __throw_cuda_error(::cudaError_t __status, const char* __msg)
   (void) __status;
   (void) __msg;
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !_LIBCUDACXX_NO_EXCEPTIONS
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

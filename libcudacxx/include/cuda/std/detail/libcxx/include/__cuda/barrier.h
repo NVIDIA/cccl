@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___CUDA_BARRIER_H
 #define _LIBCUDACXX___CUDA_BARRIER_H
 
-#ifndef __cuda_std__
-#  error "<__cuda/barrier> should only be included in from <cuda/std/barrier>"
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(__CUDA_MINIMUM_ARCH__) && __CUDA_MINIMUM_ARCH__ < 700
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."

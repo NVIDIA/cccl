@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX__LIBCUDACXX_NO_UNIQUE_ADDRESS_HPP
 #define _LIBCUDACXX__LIBCUDACXX_NO_UNIQUE_ADDRESS_HPP
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
