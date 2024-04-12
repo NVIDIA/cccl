@@ -1231,7 +1231,7 @@ typedef __char32_t char32_t;
 
 #ifndef _LIBCUDACXX_FUNC_VIS
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#    define _LIBCUDACXX_FUNC_VIS __attribute__ ((__visibility__("default")))
+#    define _LIBCUDACXX_FUNC_VIS _CCCL_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_FUNC_VIS
 #  endif
@@ -1239,7 +1239,7 @@ typedef __char32_t char32_t;
 
 #ifndef _LIBCUDACXX_TYPE_VIS
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#    define _LIBCUDACXX_TYPE_VIS __attribute__ ((__visibility__("default")))
+#    define _LIBCUDACXX_TYPE_VIS _CCCL_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_TYPE_VIS
 #  endif
@@ -1248,9 +1248,9 @@ typedef __char32_t char32_t;
 #ifndef _LIBCUDACXX_TEMPLATE_VIS
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
 #    if __has_attribute(__type_visibility__)
-#      define _LIBCUDACXX_TEMPLATE_VIS __attribute__ ((__type_visibility__("default")))
+#      define _LIBCUDACXX_TEMPLATE_VIS _CCCL_TYPE_VISIBILITY_DEFAULT
 #    else
-#      define _LIBCUDACXX_TEMPLATE_VIS __attribute__ ((__visibility__("default")))
+#      define _LIBCUDACXX_TEMPLATE_VIS _CCCL_VISIBILITY_DEFAULT
 #    endif
 #  else
 #    define _LIBCUDACXX_TEMPLATE_VIS
@@ -1259,7 +1259,7 @@ typedef __char32_t char32_t;
 
 #ifndef _LIBCUDACXX_EXPORTED_FROM_ABI
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#    define _LIBCUDACXX_EXPORTED_FROM_ABI __attribute__((__visibility__("default")))
+#    define _LIBCUDACXX_EXPORTED_FROM_ABI _CCCL_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_EXPORTED_FROM_ABI
 #  endif
@@ -1271,15 +1271,15 @@ typedef __char32_t char32_t;
 
 #ifndef _LIBCUDACXX_EXCEPTION_ABI
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
-#    define _LIBCUDACXX_EXCEPTION_ABI __attribute__ ((__visibility__("default")))
+#    define _LIBCUDACXX_EXCEPTION_ABI _CCCL_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_EXCEPTION_ABI
 #  endif
 #endif
 
 #ifndef _LIBCUDACXX_ENUM_VIS
-#  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS) && __has_attribute(__type_visibility__)
-#    define _LIBCUDACXX_ENUM_VIS __attribute__ ((__type_visibility__("default")))
+#  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS)
+#    define _LIBCUDACXX_ENUM_VIS _CCCL_TYPE_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_ENUM_VIS
 #  endif
@@ -1287,7 +1287,7 @@ typedef __char32_t char32_t;
 
 #ifndef _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
 #  if !defined(_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS) && __has_attribute(__type_visibility__)
-#    define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS __attribute__ ((__visibility__("default")))
+#    define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS _CCCL_VISIBILITY_DEFAULT
 #  else
 #    define _LIBCUDACXX_EXTERN_TEMPLATE_TYPE_VIS
 #  endif
