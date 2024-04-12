@@ -127,7 +127,7 @@ public:
   }
 
   /// Returns the wrapped `cudaStream_t` handle.
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE constexpr value_type get() const noexcept { return __stream; }
+  _CCCL_NODISCARD constexpr value_type get() const noexcept { return __stream; }
 
   /**
    * \brief Synchronizes the wrapped stream.
@@ -147,7 +147,7 @@ public:
    *
    * \return `true` if all operations have completed, or `false` if not.
    */
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE bool ready() const
+  _CCCL_NODISCARD bool ready() const
   {
     const auto __result = ::cudaStreamQuery(get());
     if (__result == ::cudaErrorNotReady) {

@@ -34,7 +34,7 @@ struct __debug_less
   {}
 
   template <class _Tp, class _Up>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(const _Tp& __x, const _Up& __y)
   {
     bool __r = __comp_(__x, __y);
@@ -46,7 +46,7 @@ struct __debug_less
   }
 
   template <class _Tp, class _Up>
-  _LIBCUDACXX_NODISCARD_EXT _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
   operator()(_Tp& __x, _Up& __y)
   {
     bool __r = __comp_(__x, __y);

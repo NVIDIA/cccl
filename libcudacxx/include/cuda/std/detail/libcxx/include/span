@@ -448,7 +448,7 @@ public:
   {
     return _Extent * sizeof(element_type);
   }
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
   {
     return _Extent == 0;
   }
@@ -676,7 +676,7 @@ public:
   {
     return __size_ * sizeof(element_type);
   }
-  _LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }

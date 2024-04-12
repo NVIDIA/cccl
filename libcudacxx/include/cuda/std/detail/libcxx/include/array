@@ -454,7 +454,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     return 0;
   }
-  _LIBCUDACXX_NODISCARD_AFTER_CXX17 _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY constexpr bool empty() const noexcept
   {
     return true;
   }

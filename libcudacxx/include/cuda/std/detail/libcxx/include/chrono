@@ -3103,7 +3103,7 @@ inline constexpr year_month_weekday_last& year_month_weekday_last::operator+=(co
 _LIBCUDACXX_INLINE_VISIBILITY
 inline constexpr year_month_weekday_last& year_month_weekday_last::operator-=(const years& __dy)  noexcept { *this = *this - __dy; return *this; }
 
-_LIBCUDACXX_NODISCARD_ATTRIBUTE inline _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY
 constexpr unsigned __hh_mm_ss_width(uint64_t __n, uint64_t __d = 10, unsigned __w = 0)
 {
     if (__n >= 2 && __d != 0 && __w < 19)
