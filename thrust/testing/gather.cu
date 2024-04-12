@@ -18,24 +18,11 @@ void TestGatherSimple(void)
   Vector src(8); // source vector
   Vector dst(5); // destination vector
 
-  map[0] = 6;
-  map[1] = 2;
-  map[2] = 1;
-  map[3] = 7;
-  map[4] = 2;
-  src[0] = 0;
-  src[1] = 1;
-  src[2] = 2;
-  src[3] = 3;
-  src[4] = 4;
-  src[5] = 5;
-  src[6] = 6;
-  src[7] = 7;
-  dst[0] = 0;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 0;
-  dst[4] = 0;
+  // clang-format off
+  map[0] = 6; map[1] = 2; map[2] = 1; map[3] = 7; map[4] = 2;
+  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4; src[5] = 5; src[6] = 6; src[7] = 7;
+  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0;
+  // clang-format on
 
   thrust::gather(map.begin(), map.end(), src.begin(), dst.begin());
 
@@ -155,29 +142,13 @@ void TestGatherIfSimple(void)
   Vector src(8); // source vector
   Vector dst(5); // destination vector
 
-  flg[0] = 0;
-  flg[1] = 1;
-  flg[2] = 0;
-  flg[3] = 1;
-  flg[4] = 0;
-  map[0] = 6;
-  map[1] = 2;
-  map[2] = 1;
-  map[3] = 7;
-  map[4] = 2;
-  src[0] = 0;
-  src[1] = 1;
-  src[2] = 2;
-  src[3] = 3;
-  src[4] = 4;
-  src[5] = 5;
-  src[6] = 6;
-  src[7] = 7;
-  dst[0] = 0;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 0;
-  dst[4] = 0;
+
+  // clang-format off
+  flg[0] = 0; flg[1] = 1; flg[2] = 0; flg[3] = 1; flg[4] = 0;
+  map[0] = 6; map[1] = 2; map[2] = 1; map[3] = 7; map[4] = 2;
+  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4; src[5] = 5; src[6] = 6; src[7] = 7;
+  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0;
+  // clang-format on
 
   thrust::gather_if(map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
 

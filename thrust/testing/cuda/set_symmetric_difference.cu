@@ -23,24 +23,15 @@ void TestSetSymmetricDifferenceDevice(ExecutionPolicy exec)
   typedef thrust::device_vector<int> Vector;
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a(4), b(5);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  a[3] = 6;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-  b[4] = 7;
+  a[0] = 0; a[1] = 2; a[2] = 4; a[3] = 6;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4; b[4] = 7;
 
   Vector ref(5);
-  ref[0] = 2;
-  ref[1] = 3;
-  ref[2] = 3;
-  ref[3] = 6;
-  ref[4] = 7;
+  ref[0] = 2; ref[1] = 3; ref[2] = 3; ref[3] = 6; ref[4] = 7;
+  // clang-format on
 
   Vector result(5);
   thrust::device_vector<Iterator> end_vec(1);
@@ -74,24 +65,15 @@ void TestSetSymmetricDifferenceCudaStreams()
   typedef thrust::device_vector<int> Vector;
   typedef Vector::iterator Iterator;
 
+  // clang-format off
   Vector a(4), b(5);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  a[3] = 6;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-  b[4] = 7;
+  a[0] = 0; a[1] = 2; a[2] = 4; a[3] = 6;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4; b[4] = 7;
 
   Vector ref(5);
-  ref[0] = 2;
-  ref[1] = 3;
-  ref[2] = 3;
-  ref[3] = 6;
-  ref[4] = 7;
+  ref[0] = 2; ref[1] = 3; ref[2] = 3; ref[3] = 6; ref[4] = 7;
+  // clang-format on
 
   Vector result(5);
 

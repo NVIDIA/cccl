@@ -10,24 +10,15 @@ void TestSetSymmetricDifferenceDescendingSimple(void)
   typedef typename Vector::value_type T;
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a(4), b(5);
 
-  a[0] = 6;
-  a[1] = 4;
-  a[2] = 2;
-  a[3] = 0;
-  b[0] = 7;
-  b[1] = 4;
-  b[2] = 3;
-  b[3] = 3;
-  b[4] = 0;
+  a[0] = 6; a[1] = 4; a[2] = 2; a[3] = 0;
+  b[0] = 7; b[1] = 4; b[2] = 3; b[3] = 3; b[4] = 0;
 
   Vector ref(5);
-  ref[0] = 7;
-  ref[1] = 6;
-  ref[2] = 3;
-  ref[3] = 3;
-  ref[4] = 2;
+  ref[0] = 7; ref[1] = 6; ref[2] = 3; ref[3] = 3; ref[4] = 2;
+  // clang-format on
 
   Vector result(5);
 

@@ -77,26 +77,19 @@ void TestSetIntersectionByKeySimple(void)
 {
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a_key(3), b_key(4);
   Vector a_val(3);
 
-  a_key[0] = 0;
-  a_key[1] = 2;
-  a_key[2] = 4;
-  a_val[0] = 0;
-  a_val[1] = 0;
-  a_val[2] = 0;
+  a_key[0] = 0; a_key[1] = 2; a_key[2] = 4;
+  a_val[0] = 0; a_val[1] = 0; a_val[2] = 0;
 
-  b_key[0] = 0;
-  b_key[1] = 3;
-  b_key[2] = 3;
-  b_key[3] = 4;
+  b_key[0] = 0; b_key[1] = 3; b_key[2] = 3; b_key[3] = 4;
 
   Vector ref_key(2), ref_val(2);
-  ref_key[0] = 0;
-  ref_key[1] = 4;
-  ref_val[0] = 0;
-  ref_val[1] = 0;
+  ref_key[0] = 0; ref_key[1] = 4;
+  ref_val[0] = 0; ref_val[1] = 0;
+  // clang-format on
 
   Vector result_key(2), result_val(2);
 

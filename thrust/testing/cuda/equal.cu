@@ -95,18 +95,8 @@ DECLARE_VARIABLE_UNITTEST(TestEqualDeviceDevice);
 
 void TestEqualCudaStreams()
 {
-  thrust::device_vector<int> v1(5);
-  thrust::device_vector<int> v2(5);
-  v1[0] = 5;
-  v1[1] = 2;
-  v1[2] = 0;
-  v1[3] = 0;
-  v1[4] = 0;
-  v2[0] = 5;
-  v2[1] = 2;
-  v2[2] = 0;
-  v2[3] = 6;
-  v2[4] = 1;
+  thrust::device_vector<int> v1 = {5, 2, 0, 0, 0};
+  thrust::device_vector<int> v2 = {5, 2, 0, 6, 1};
 
   cudaStream_t s;
   cudaStreamCreate(&s);

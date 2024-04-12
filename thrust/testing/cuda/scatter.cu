@@ -141,24 +141,11 @@ void TestScatterCudaStreams()
   Vector src(5); // source vector
   Vector dst(8); // destination vector
 
-  map[0] = 6;
-  map[1] = 3;
-  map[2] = 1;
-  map[3] = 7;
-  map[4] = 2;
-  src[0] = 0;
-  src[1] = 1;
-  src[2] = 2;
-  src[3] = 3;
-  src[4] = 4;
-  dst[0] = 0;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 0;
-  dst[4] = 0;
-  dst[5] = 0;
-  dst[6] = 0;
-  dst[7] = 0;
+  // clang-format off
+  map[0] = 6; map[1] = 3; map[2] = 1; map[3] = 7; map[4] = 2;
+  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4;
+  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0; dst[5] = 0; dst[6] = 0; dst[7] = 0;
+  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -189,29 +176,12 @@ void TestScatterIfCudaStreams()
   Vector src(5); // source vector
   Vector dst(8); // destination vector
 
-  flg[0] = 0;
-  flg[1] = 1;
-  flg[2] = 0;
-  flg[3] = 1;
-  flg[4] = 0;
-  map[0] = 6;
-  map[1] = 3;
-  map[2] = 1;
-  map[3] = 7;
-  map[4] = 2;
-  src[0] = 0;
-  src[1] = 1;
-  src[2] = 2;
-  src[3] = 3;
-  src[4] = 4;
-  dst[0] = 0;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 0;
-  dst[4] = 0;
-  dst[5] = 0;
-  dst[6] = 0;
-  dst[7] = 0;
+  // clang-format off
+  flg[0] = 0; flg[1] = 1; flg[2] = 0; flg[3] = 1; flg[4] = 0;
+  map[0] = 6; map[1] = 3; map[2] = 1; map[3] = 7; map[4] = 2;
+  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4;
+  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0; dst[5] = 0; dst[6] = 0; dst[7] = 0;
+  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);

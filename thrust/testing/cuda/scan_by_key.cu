@@ -140,20 +140,15 @@ void TestInclusiveScanByKeyCudaStreams()
 
   Vector output(7, 0);
 
-  keys[0] = 0;
-  vals[0] = 1;
-  keys[1] = 1;
-  vals[1] = 2;
-  keys[2] = 1;
-  vals[2] = 3;
-  keys[3] = 1;
-  vals[3] = 4;
-  keys[4] = 2;
-  vals[4] = 5;
-  keys[5] = 3;
-  vals[5] = 6;
-  keys[6] = 3;
-  vals[6] = 7;
+  // clang-format off
+  keys[0] = 0; vals[0] = 1;
+  keys[1] = 1; vals[1] = 2;
+  keys[2] = 1; vals[2] = 3;
+  keys[3] = 1; vals[3] = 4;
+  keys[4] = 2; vals[4] = 5;
+  keys[5] = 3; vals[5] = 6;
+  keys[6] = 3; vals[6] = 7;
+  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -217,20 +212,15 @@ void TestExclusiveScanByKeyCudaStreams()
 
   Vector output(7, 0);
 
-  keys[0] = 0;
-  vals[0] = 1;
-  keys[1] = 1;
-  vals[1] = 2;
-  keys[2] = 1;
-  vals[2] = 3;
-  keys[3] = 1;
-  vals[3] = 4;
-  keys[4] = 2;
-  vals[4] = 5;
-  keys[5] = 3;
-  vals[5] = 6;
-  keys[6] = 3;
-  vals[6] = 7;
+  // clang-format off
+  keys[0] = 0; vals[0] = 1;
+  keys[1] = 1; vals[1] = 2;
+  keys[2] = 1; vals[2] = 3;
+  keys[3] = 1; vals[3] = 4;
+  keys[4] = 2; vals[4] = 5;
+  keys[5] = 3; vals[5] = 6;
+  keys[6] = 3; vals[6] = 7;
+  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);

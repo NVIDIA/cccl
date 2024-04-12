@@ -15,13 +15,10 @@ void TestMergeSimple(void)
 
   Vector a(3), b(4);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
+  // clang-format off
+  a[0] = 0; a[1] = 2; a[2] = 4;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4;
+  // clang-format on
 
   Vector ref(7);
   ref[0] = 0;

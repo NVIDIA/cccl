@@ -1,7 +1,8 @@
-#include <thrust/generate.h>
-
 #include <unittest/runtime_static_assert.h>
 #include <unittest/unittest.h>
+
+// The runtime_static_assert header needs to come first as we are overwriting thrusts internal static assert
+#include <thrust/generate.h>
 
 template <typename T>
 struct dependent_false

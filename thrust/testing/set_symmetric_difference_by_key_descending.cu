@@ -13,37 +13,17 @@ void TestSetSymmetricDifferenceByKeyDescendingSimple(void)
   Vector a_key(4), b_key(5);
   Vector a_val(4), b_val(5);
 
-  a_key[0] = 6;
-  a_key[1] = 4;
-  a_key[2] = 2;
-  a_key[3] = 0;
-  a_val[0] = 0;
-  a_val[1] = 0;
-  a_val[2] = 0;
-  a_val[3] = 0;
+  // clang-format off
+  a_key[0] = 6; a_key[1] = 4; a_key[2] = 2; a_key[3] = 0;
+  a_val[0] = 0; a_val[1] = 0; a_val[2] = 0; a_val[3] = 0;
 
-  b_key[0] = 7;
-  b_key[1] = 4;
-  b_key[2] = 3;
-  b_key[3] = 3;
-  b_key[4] = 0;
-  b_val[0] = 1;
-  b_val[1] = 1;
-  b_val[2] = 1;
-  b_val[3] = 1;
-  b_val[4] = 1;
+  b_key[0] = 7; b_key[1] = 4; b_key[2] = 3; b_key[3] = 3; b_key[4] = 0;
+  b_val[0] = 1; b_val[1] = 1; b_val[2] = 1; b_val[3] = 1; b_val[4] = 1;
 
   Vector ref_key(5), ref_val(5);
-  ref_key[0] = 7;
-  ref_key[1] = 6;
-  ref_key[2] = 3;
-  ref_key[3] = 3;
-  ref_key[4] = 2;
-  ref_val[0] = 1;
-  ref_val[1] = 0;
-  ref_val[2] = 1;
-  ref_val[3] = 1;
-  ref_val[4] = 0;
+  ref_key[0] = 7; ref_key[1] = 6; ref_key[2] = 3; ref_key[3] = 3; ref_key[4] = 2;
+  ref_val[0] = 1; ref_val[1] = 0; ref_val[2] = 1; ref_val[3] = 1; ref_val[4] = 0;
+  // clang-format on
 
   Vector result_key(5), result_val(5);
 

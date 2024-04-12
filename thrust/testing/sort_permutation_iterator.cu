@@ -129,27 +129,19 @@ void TestSortByKeyPermutationIterator(void)
 {
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector A(10), B(10);
-  A[0] = 2;
-  B[0] = 0;
-  A[1] = 9;
-  B[1] = 1;
-  A[2] = 0;
-  B[2] = 2;
-  A[3] = 1;
-  B[3] = 3;
-  A[4] = 5;
-  B[4] = 4;
-  A[5] = 3;
-  B[5] = 5;
-  A[6] = 8;
-  B[6] = 6;
-  A[7] = 6;
-  B[7] = 7;
-  A[8] = 7;
-  B[8] = 8;
-  A[9] = 4;
-  B[9] = 9;
+  A[0] = 2; B[0] = 0;
+  A[1] = 9; B[1] = 1;
+  A[2] = 0; B[2] = 2;
+  A[3] = 1; B[3] = 3;
+  A[4] = 5; B[4] = 4;
+  A[5] = 3; B[5] = 5;
+  A[6] = 8; B[6] = 6;
+  A[7] = 6; B[7] = 7;
+  A[8] = 7; B[8] = 8;
+  A[9] = 4; B[9] = 9;
+  // clang-format on
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
   strided_range<Iterator> T(B.begin(), B.end(), 2);
@@ -185,27 +177,19 @@ void TestStableSortByKeyPermutationIterator(void)
 {
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector A(10), B(10);
-  A[0] = 2;
-  B[0] = 0;
-  A[1] = 9;
-  B[1] = 1;
-  A[2] = 0;
-  B[2] = 2;
-  A[3] = 1;
-  B[3] = 3;
-  A[4] = 5;
-  B[4] = 4;
-  A[5] = 3;
-  B[5] = 5;
-  A[6] = 8;
-  B[6] = 6;
-  A[7] = 6;
-  B[7] = 7;
-  A[8] = 7;
-  B[8] = 8;
-  A[9] = 4;
-  B[9] = 9;
+  A[0] = 2; B[0] = 0;
+  A[1] = 9; B[1] = 1;
+  A[2] = 0; B[2] = 2;
+  A[3] = 1; B[3] = 3;
+  A[4] = 5; B[4] = 4;
+  A[5] = 3; B[5] = 5;
+  A[6] = 8; B[6] = 6;
+  A[7] = 6; B[7] = 7;
+  A[8] = 7; B[8] = 8;
+  A[9] = 4; B[9] = 9;
+  // clang-format on
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
   strided_range<Iterator> T(B.begin(), B.end(), 2);

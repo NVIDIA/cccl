@@ -155,12 +155,13 @@
   THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_END      \
   /**/
 
+// auto-formatting splits -Wself-assign into -Wself - assign
+// clang-format off
 #define THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING_BEGIN \
-  THRUST_DISABLE_CLANG_WARNING_BEGIN(-Wself - assign)      \
-  /**/
+  THRUST_DISABLE_CLANG_WARNING_BEGIN(-Wself-assign)
 #define THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING_END \
-  THRUST_DISABLE_CLANG_WARNING_END(-Wself - assign)      \
-  /**/
+  THRUST_DISABLE_CLANG_WARNING_END(-Wself-assign)
+// clang-format on
 #define THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING(x) \
   THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING_BEGIN    \
   x;                                                    \

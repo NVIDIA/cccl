@@ -87,15 +87,11 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple(vo
   Vector output(3);
   Vector result(3);
 
-  input[0]  = 0;
-  input[1]  = -2;
-  input[2]  = 0;
-  output[0] = -1;
-  output[1] = -2;
-  output[2] = -3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  // clang-format off
+  input[0]   =  0; input[1]   = -2; input[2]   =  0;
+  output[0]  = -1; output[1]  = -2; output[2]  = -3;
+  result[0]  = -1; result[1]  =  2; result[2]  = -3;
+  // clang-format on
 
   iter = thrust::transform_if(input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
 
@@ -157,18 +153,12 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple(void)
   Vector output(3);
   Vector result(3);
 
-  input[0]   = 1;
-  input[1]   = -2;
-  input[2]   = 3;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  stencil[0] = 1;
-  stencil[1] = 0;
-  stencil[2] = 1;
-  result[0]  = -1;
-  result[1]  = 2;
-  result[2]  = -3;
+  // clang-format off
+  input[0]   =  1; input[1]   = -2; input[2]   =  3;
+  output[0]  =  1; output[1]  =  2; output[2]  =  3;
+  stencil[0] =  1; stencil[1] =  0; stencil[2] =  1;
+  result[0]  = -1; result[1]  =  2; result[2]  = -3;
+  // clang-format on
 
   iter = thrust::transform_if(
     input.begin(), input.end(), stencil.begin(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
@@ -237,15 +227,12 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple(void)
   Vector input2(4);
   Vector output(4);
   Vector result(4);
-  input1[0] = 1;
-  input1[1] = -2;
-  input1[2] = 3;
-  input2[0] = -4;
-  input2[1] = 5;
-  input2[2] = 6;
-  result[0] = 5;
-  result[1] = -7;
-  result[2] = -3;
+
+  // clang-format off
+  input1[0] =  1; input1[1] = -2; input1[2] =  3;
+  input2[0] = -4; input2[1] =  5; input2[2] =  6;
+  result[0] =  5; result[1] = -7; result[2] = -3;
+  // clang-format on
 
   iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>());
 
@@ -308,21 +295,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple(void)
   Vector output(3);
   Vector result(3);
 
-  input1[0]  = 1;
-  input1[1]  = -2;
-  input1[2]  = 3;
-  input2[0]  = -4;
-  input2[1]  = 5;
-  input2[2]  = 6;
-  stencil[0] = 0;
-  stencil[1] = 1;
-  stencil[2] = 0;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  result[0]  = 5;
-  result[1]  = 2;
-  result[2]  = -3;
+  // clang-format off
+  input1[0]  =  1; input1[1]  = -2; input1[2]  =  3;
+  input2[0]  = -4; input2[1]  =  5; input2[2]  =  6;
+  stencil[0] =  0; stencil[1] =  1; stencil[2] =  0;
+  output[0]  =  1; output[1]  =  2; output[2]  =  3;
+  result[0]  =  5; result[1]  =  2; result[2]  = -3;
+  // clang-format on
 
   thrust::identity<T> identity;
 
@@ -792,20 +771,16 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection(void)
   Vector input1(7);
   Vector input2(7);
   Vector output(7, 0);
-  input1[0] = 0;
-  input2[0] = 2;
-  input1[1] = 1;
-  input2[1] = 2;
-  input1[2] = 2;
-  input2[2] = 2;
-  input1[3] = 1;
-  input2[3] = 0;
-  input1[4] = 2;
-  input2[4] = 2;
-  input1[5] = 0;
-  input2[5] = 1;
-  input1[6] = 1;
-  input2[6] = 0;
+
+  // clang-format off
+  input1[0] = 0;  input2[0] = 2;
+  input1[1] = 1;  input2[1] = 2;
+  input1[2] = 2;  input2[2] = 2;
+  input1[3] = 1;  input2[3] = 0;
+  input1[4] = 2;  input2[4] = 2;
+  input1[5] = 0;  input2[5] = 1;
+  input1[6] = 1;  input2[6] = 0;
+  // clang-format on
 
   Vector table(6);
   table[0] = 0;

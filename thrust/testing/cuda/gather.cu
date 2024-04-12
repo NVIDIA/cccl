@@ -64,28 +64,9 @@ DECLARE_VARIABLE_UNITTEST(TestGatherDeviceDevice);
 
 void TestGatherCudaStreams()
 {
-  thrust::device_vector<int> map(5); // gather indices
-  thrust::device_vector<int> src(8); // source vector
-  thrust::device_vector<int> dst(5); // destination vector
-
-  map[0] = 6;
-  map[1] = 2;
-  map[2] = 1;
-  map[3] = 7;
-  map[4] = 2;
-  src[0] = 0;
-  src[1] = 1;
-  src[2] = 2;
-  src[3] = 3;
-  src[4] = 4;
-  src[5] = 5;
-  src[6] = 6;
-  src[7] = 7;
-  dst[0] = 0;
-  dst[1] = 0;
-  dst[2] = 0;
-  dst[3] = 0;
-  dst[4] = 0;
+  thrust::device_vector<int> map = {6, 2, 1, 7, 2}; // gather indices
+  thrust::device_vector<int> src = {0, 1, 2, 3, 4, 5, 6, 7}; // source vector
+  thrust::device_vector<int> dst = {0, 0, 0, 0, 0}; // destination vector
 
   cudaStream_t s;
   cudaStreamCreate(&s);

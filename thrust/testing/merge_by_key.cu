@@ -12,39 +12,24 @@ void TestMergeByKeySimple(void)
 {
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a_key(3), a_val(3), b_key(4), b_val(4);
 
-  a_key[0] = 0;
-  a_key[1] = 2;
-  a_key[2] = 4;
-  a_val[0] = 13;
-  a_val[1] = 7;
-  a_val[2] = 42;
+  a_key[0] = 0;  a_key[1] = 2; a_key[2] = 4;
+  a_val[0] = 13; a_val[1] = 7; a_val[2] = 42;
 
-  b_key[0] = 0;
-  b_key[1] = 3;
-  b_key[2] = 3;
-  b_key[3] = 4;
-  b_val[0] = 42;
-  b_val[1] = 42;
-  b_val[2] = 7;
-  b_val[3] = 13;
+  b_key[0] = 0 ; b_key[1] = 3;  b_key[2] = 3; b_key[3] = 4;
+  b_val[0] = 42; b_val[1] = 42; b_val[2] = 7; b_val[3] = 13;
 
   Vector ref_key(7), ref_val(7);
-  ref_key[0] = 0;
-  ref_val[0] = 13;
-  ref_key[1] = 0;
-  ref_val[1] = 42;
-  ref_key[2] = 2;
-  ref_val[2] = 7;
-  ref_key[3] = 3;
-  ref_val[3] = 42;
-  ref_key[4] = 3;
-  ref_val[4] = 7;
-  ref_key[5] = 4;
-  ref_val[5] = 42;
-  ref_key[6] = 4;
-  ref_val[6] = 13;
+  ref_key[0] = 0; ref_val[0] = 13;
+  ref_key[1] = 0; ref_val[1] = 42;
+  ref_key[2] = 2; ref_val[2] = 7;
+  ref_key[3] = 3; ref_val[3] = 42;
+  ref_key[4] = 3; ref_val[4] = 7;
+  ref_key[5] = 4; ref_val[5] = 42;
+  ref_key[6] = 4; ref_val[6] = 13;
+  // clang-format on
 
   Vector result_key(7), result_val(7);
 

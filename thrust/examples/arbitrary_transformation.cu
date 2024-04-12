@@ -71,22 +71,14 @@ int main(void)
   thrust::device_vector<float> C(5);
   thrust::device_vector<float> D1(5);
 
+  // clang-format off
   // initialize input vectors
-  A[0] = 3;
-  B[0] = 6;
-  C[0] = 2;
-  A[1] = 4;
-  B[1] = 7;
-  C[1] = 5;
-  A[2] = 0;
-  B[2] = 2;
-  C[2] = 7;
-  A[3] = 8;
-  B[3] = 1;
-  C[3] = 4;
-  A[4] = 2;
-  B[4] = 8;
-  C[4] = 3;
+  A[0] = 3;  B[0] = 6;  C[0] = 2;
+  A[1] = 4;  B[1] = 7;  C[1] = 5;
+  A[2] = 0;  B[2] = 2;  C[2] = 7;
+  A[3] = 8;  B[3] = 1;  C[3] = 4;
+  A[4] = 2;  B[4] = 8;  C[4] = 3;
+  // clang-format on
 
   // apply the transformation
   thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin(), D1.begin())),

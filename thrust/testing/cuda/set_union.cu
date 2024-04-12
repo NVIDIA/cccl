@@ -23,22 +23,15 @@ void TestSetUnionDevice(ExecutionPolicy exec)
   typedef thrust::device_vector<int> Vector;
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a(3), b(4);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
+  a[0] = 0; a[1] = 2; a[2] = 4;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4;
 
   Vector ref(5);
-  ref[0] = 0;
-  ref[1] = 2;
-  ref[2] = 3;
-  ref[3] = 3;
-  ref[4] = 4;
+  ref[0] = 0; ref[1] = 2; ref[2] = 3; ref[3] = 3; ref[4] = 4;
+  // clang-format on
 
   Vector result(5);
   thrust::device_vector<Iterator> end_vec(1);
@@ -71,22 +64,15 @@ void TestSetUnionCudaStreams()
   typedef thrust::device_vector<int> Vector;
   typedef Vector::iterator Iterator;
 
+  // clang-format off
   Vector a(3), b(4);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
+  a[0] = 0; a[1] = 2; a[2] = 4;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4;
 
   Vector ref(5);
-  ref[0] = 0;
-  ref[1] = 2;
-  ref[2] = 3;
-  ref[3] = 3;
-  ref[4] = 4;
+  ref[0] = 0; ref[1] = 2; ref[2] = 3; ref[3] = 3; ref[4] = 4;
+  // clang-format on
 
   Vector result(5);
 

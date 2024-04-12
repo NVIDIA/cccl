@@ -25,15 +25,10 @@ void TestSetDifferenceDevice(ExecutionPolicy exec)
 
   Vector a(4), b(5);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  a[3] = 5;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-  b[4] = 6;
+  // clang-format off
+  a[0] = 0; a[1] = 2; a[2] = 4; a[3] = 5;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4; b[4] = 6;
+  // clang-format on
 
   Vector ref(2);
   ref[0] = 2;
@@ -73,15 +68,10 @@ void TestSetDifferenceCudaStreams()
 
   Vector a(4), b(5);
 
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  a[3] = 5;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-  b[4] = 6;
+  // clang-format off
+  a[0] = 0; a[1] = 2; a[2] = 4; a[3] = 5;
+  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4; b[4] = 6;
+  // clang-format on
 
   Vector ref(2);
   ref[0] = 2;

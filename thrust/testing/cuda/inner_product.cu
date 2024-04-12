@@ -52,14 +52,8 @@ DECLARE_UNITTEST(TestInnerProductDeviceDevice);
 
 void TestInnerProductCudaStreams()
 {
-  thrust::device_vector<int> v1(3);
-  thrust::device_vector<int> v2(3);
-  v1[0] = 1;
-  v1[1] = -2;
-  v1[2] = 3;
-  v2[0] = -4;
-  v2[1] = 5;
-  v2[2] = 6;
+  thrust::device_vector<int> v1 = {1, -2, 3};
+  thrust::device_vector<int> v2 = {-4, 5, 6};
 
   cudaStream_t s;
   cudaStreamCreate(&s);

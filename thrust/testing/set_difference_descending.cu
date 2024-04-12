@@ -12,15 +12,10 @@ void TestSetDifferenceDescendingSimple(void)
 
   Vector a(4), b(5);
 
-  a[0] = 5;
-  a[1] = 4;
-  a[2] = 2;
-  a[3] = 0;
-  b[0] = 6;
-  b[1] = 4;
-  b[2] = 3;
-  b[3] = 3;
-  b[4] = 0;
+  // clang-format off
+  a[0] = 5; a[1] = 4; a[2] = 2; a[3] = 0;
+  b[0] = 6; b[1] = 4; b[2] = 3; b[3] = 3; b[4] = 0;
+  // clang-format on
 
   Vector ref(2);
   ref[0] = 5;
