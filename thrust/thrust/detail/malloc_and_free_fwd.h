@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-2013 NVIDIA Corporation
+ *  Copyright 2008-2024 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -25,24 +25,21 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <thrust/detail/execution_policy.h>
+#include <thrust/detail/pointer.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
-{
-namespace detail
-{
-namespace sequential
-{
 
-template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
-_CCCL_HOST_DEVICE void assign_value(sequential::execution_policy<DerivedPolicy>&, Pointer1 dst, Pointer2 src)
-{
-  *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src);
-} // end assign_value()
+template <typename DerivedPolicy>
+_CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n);
 
-} // namespace sequential
-} // namespace detail
-} // namespace system
+template <typename T, typename DerivedPolicy>
+_CCCL_HOST_DEVICE pointer<T, DerivedPolicy>
+malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, std::size_t n);
+
+template <typename DerivedPolicy, typename Pointer>
+_CCCL_HOST_DEVICE void free(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, Pointer ptr);
+
 THRUST_NAMESPACE_END
