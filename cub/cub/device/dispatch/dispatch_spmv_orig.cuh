@@ -583,7 +583,7 @@ struct DispatchSpmv
             typename SpmvKernelT,
             typename SegmentFixupKernelT,
             typename SpmvEmptyMatrixKernelT>
-  CUB_RUNTIME_FUNCTION _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t Dispatch(
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     SpmvParamsT& spmv_params,
@@ -898,20 +898,19 @@ struct DispatchSpmv
             typename SpmvKernelT,
             typename SegmentFixupKernelT,
             typename SpmvEmptyMatrixKernelT>
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION
-    _CCCL_ATTRIBUTE_HIDDEN _CCCL_FORCEINLINE static cudaError_t
-    Dispatch(void* d_temp_storage,
-             size_t& temp_storage_bytes,
-             SpmvParamsT& spmv_params,
-             cudaStream_t stream,
-             bool debug_synchronous,
-             Spmv1ColKernelT spmv_1col_kernel,
-             SpmvSearchKernelT spmv_search_kernel,
-             SpmvKernelT spmv_kernel,
-             SegmentFixupKernelT segment_fixup_kernel,
-             SpmvEmptyMatrixKernelT spmv_empty_matrix_kernel,
-             KernelConfig spmv_config,
-             KernelConfig segment_fixup_config)
+  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE static cudaError_t
+  Dispatch(void* d_temp_storage,
+           size_t& temp_storage_bytes,
+           SpmvParamsT& spmv_params,
+           cudaStream_t stream,
+           bool debug_synchronous,
+           Spmv1ColKernelT spmv_1col_kernel,
+           SpmvSearchKernelT spmv_search_kernel,
+           SpmvKernelT spmv_kernel,
+           SegmentFixupKernelT segment_fixup_kernel,
+           SpmvEmptyMatrixKernelT spmv_empty_matrix_kernel,
+           KernelConfig spmv_config,
+           KernelConfig segment_fixup_config)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 

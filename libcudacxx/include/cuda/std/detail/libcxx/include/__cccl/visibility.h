@@ -34,16 +34,14 @@
 #endif // _CCCL_COMPILER_NVHPC
 
 // Enable us to hide kernels
-#if defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_ATTRIBUTE_HIDDEN
-#elif defined(_CCCL_COMPILER_NVRTC)
-#  define _CCCL_ATTRIBUTE_HIDDEN
+#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#  define _CCCL_VISIBILITY_HIDDEN
 #else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
-#  define _CCCL_ATTRIBUTE_HIDDEN __attribute__((__visibility__("hidden")))
+#  define _CCCL_VISIBILITY_HIDDEN __attribute__((__visibility__("hidden")))
 #endif // !_CCCL_COMPILER_NVRTC
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)
-#  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_ATTRIBUTE_HIDDEN
+#  define CCCL_DETAIL_KERNEL_ATTRIBUTES __global__ _CCCL_VISIBILITY_HIDDEN
 #endif // !CCCL_DETAIL_KERNEL_ATTRIBUTES
 
 #endif // __CCCL_VISIBILITY_H
