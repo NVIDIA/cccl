@@ -16,15 +16,25 @@
 // constexpr subrange(R&& r, make-unsigned-like-t<iter_difference_t<I>> n)
 //   requires (K == subrange_kind::sized);
 
-#include <cuda/std/ranges>
 #include <cuda/std/cassert>
+#include <cuda/std/ranges>
 
 #include "test_macros.h"
 
-struct BorrowedRange {
-  __host__ __device__ constexpr explicit BorrowedRange(int* b, int* e) : begin_(b), end_(e) { }
-  __host__ __device__ constexpr int* begin() const { return begin_; }
-  __host__ __device__ constexpr int* end() const { return end_; }
+struct BorrowedRange
+{
+  __host__ __device__ constexpr explicit BorrowedRange(int* b, int* e)
+      : begin_(b)
+      , end_(e)
+  {}
+  __host__ __device__ constexpr int* begin() const
+  {
+    return begin_;
+  }
+  __host__ __device__ constexpr int* end() const
+  {
+    return end_;
+  }
 
 private:
   int* begin_;
@@ -34,8 +44,9 @@ private:
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<::BorrowedRange> = true;
 
-__host__ __device__ constexpr bool test() {
-  int buff[] = {1, 2, 3, 4, 5, 6, 7, 8};
+__host__ __device__ constexpr bool test()
+{
+  int buff[]     = {1, 2, 3, 4, 5, 6, 7, 8};
   using Subrange = cuda::std::ranges::subrange<int*, int*, cuda::std::ranges::subrange_kind::sized>;
 
   // Test with an empty range
@@ -72,7 +83,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test());
 

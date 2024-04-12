@@ -250,25 +250,25 @@ private:
   using bit_ordered_conversion = typename traits::bit_ordered_conversion_policy;
 
   /// Ascending BlockRadixRank utility type
-  typedef BlockRadixRank< BLOCK_DIM_X,
-                          RADIX_BITS,
-                          false,
-                          MEMOIZE_OUTER_SCAN,
-                          INNER_SCAN_ALGORITHM,
-                          SMEM_CONFIG,
-                          BLOCK_DIM_Y,
-                          BLOCK_DIM_Z>
+  typedef BlockRadixRank<BLOCK_DIM_X,
+                         RADIX_BITS,
+                         false,
+                         MEMOIZE_OUTER_SCAN,
+                         INNER_SCAN_ALGORITHM,
+                         SMEM_CONFIG,
+                         BLOCK_DIM_Y,
+                         BLOCK_DIM_Z>
     AscendingBlockRadixRank;
 
   /// Descending BlockRadixRank utility type
-  typedef BlockRadixRank< BLOCK_DIM_X,
-                          RADIX_BITS,
-                          true,
-                          MEMOIZE_OUTER_SCAN,
-                          INNER_SCAN_ALGORITHM,
-                          SMEM_CONFIG,
-                          BLOCK_DIM_Y,
-                          BLOCK_DIM_Z>
+  typedef BlockRadixRank<BLOCK_DIM_X,
+                         RADIX_BITS,
+                         true,
+                         MEMOIZE_OUTER_SCAN,
+                         INNER_SCAN_ALGORITHM,
+                         SMEM_CONFIG,
+                         BLOCK_DIM_Y,
+                         BLOCK_DIM_Z>
     DescendingBlockRadixRank;
 
   /// Digit extractor type

@@ -14,40 +14,42 @@
 //   count_if(Iter first, Iter last, Pred pred);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-struct eq {
-    __host__ __device__ constexpr eq (int val) : v(val) {}
-    __host__ __device__ constexpr bool operator () (int v2) const { return v == v2; }
-    int v;
+struct eq
+{
+  __host__ __device__ constexpr eq(int val)
+      : v(val)
+  {}
+  __host__ __device__ constexpr bool operator()(int v2) const
+  {
+    return v == v2;
+  }
+  int v;
 };
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    int ia[] = {0, 1, 2, 2, 0, 1, 2, 3};
-    const unsigned sa = sizeof(ia)/sizeof(ia[0]);
-    assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia),
-                               cpp17_input_iterator<const int*>(ia + sa),
-                               eq(2)) == 3);
-    assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia),
-                               cpp17_input_iterator<const int*>(ia + sa),
-                               eq(7)) == 0);
-    assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia),
-                               cpp17_input_iterator<const int*>(ia),
-                               eq(2)) == 0);
+  int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
+  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
+  assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia + sa), eq(2))
+         == 3);
+  assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia + sa), eq(7))
+         == 0);
+  assert(cuda::std::count_if(cpp17_input_iterator<const int*>(ia), cpp17_input_iterator<const int*>(ia), eq(2)) == 0);
 
-    return true;
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 #if TEST_STD_VER > 2011
-    static_assert(test(), "");
+  static_assert(test(), "");
 #endif
 
   return 0;

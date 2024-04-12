@@ -31,35 +31,53 @@
 static_assert(cuda::std::constructible_from<cuda::std::unexpected<int>, int>, "");
 
 // is_same_v<remove_cvref_t<Err>, unexpected>
-struct CstrFromUnexpected {
+struct CstrFromUnexpected
+{
   __host__ __device__ CstrFromUnexpected(CstrFromUnexpected const&) = delete;
   __host__ __device__ CstrFromUnexpected(cuda::std::unexpected<CstrFromUnexpected> const&);
 };
-static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>, "");
+static_assert(
+  !cuda::std::constructible_from<cuda::std::unexpected<CstrFromUnexpected>, cuda::std::unexpected<CstrFromUnexpected>>,
+  "");
 
 // is_same_v<remove_cvref_t<Err>, in_place_t>
-struct CstrFromInplace {
+struct CstrFromInplace
+{
   __host__ __device__ CstrFromInplace(cuda::std::in_place_t);
 };
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<CstrFromInplace>, cuda::std::in_place_t>, "");
 
 // !is_constructible_v<E, Err>
-struct Foo {};
+struct Foo
+{};
 static_assert(!cuda::std::constructible_from<cuda::std::unexpected<Foo>, int>, "");
 
 // test explicit
 static_assert(cuda::std::convertible_to<int, int>, "");
 static_assert(!cuda::std::convertible_to<int, cuda::std::unexpected<int>>, "");
 
-struct Error {
+struct Error
+{
   int i;
-  __host__ __device__ constexpr Error(int ii) : i(ii) {}
-  __host__ __device__ constexpr Error(const Error& other) : i(other.i) {}
-  __host__ __device__ constexpr Error(Error&& other) : i(other.i) { other.i = 0; }
-  __host__ __device__ Error(cuda::std::initializer_list<Error>) { assert(false); }
+  __host__ __device__ constexpr Error(int ii)
+      : i(ii)
+  {}
+  __host__ __device__ constexpr Error(const Error& other)
+      : i(other.i)
+  {}
+  __host__ __device__ constexpr Error(Error&& other)
+      : i(other.i)
+  {
+    other.i = 0;
+  }
+  __host__ __device__ Error(cuda::std::initializer_list<Error>)
+  {
+    assert(false);
+  }
 };
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // lvalue
   {
     Error e(5);
@@ -86,10 +104,14 @@ __host__ __device__ constexpr bool test() {
   // Test default template argument.
   // Without it, the template parameter cannot be deduced from an initializer list
   {
-    struct Bar {
+    struct Bar
+    {
       int i;
       int j;
-      __host__ __device__ constexpr Bar(int ii, int jj) : i(ii), j(jj) {}
+      __host__ __device__ constexpr Bar(int ii, int jj)
+          : i(ii)
+          , j(jj)
+      {}
     };
     cuda::std::unexpected<Bar> ue({5, 6});
     assert(ue.error().i == 5);
@@ -99,27 +121,38 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
+void test_exceptions()
+{
+  struct Except
+  {};
 
-  struct Throwing {
+  struct Throwing
+  {
     Throwing() = default;
-    Throwing(const Throwing&) { throw Except{}; }
+    Throwing(const Throwing&)
+    {
+      throw Except{};
+    }
   };
 
   Throwing t;
-  try {
+  try
+  {
     cuda::std::unexpected<Throwing> u(t);
     assert(false);
-  } catch (Except) {
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+  catch (Except)
+  {}
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
   static_assert(test(), "");
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

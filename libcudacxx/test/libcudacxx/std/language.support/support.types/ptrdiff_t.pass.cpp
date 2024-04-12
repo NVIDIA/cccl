@@ -19,12 +19,10 @@
 
 int main(int, char**)
 {
-    static_assert(sizeof(cuda::std::ptrdiff_t) == sizeof(void*),
-                  "sizeof(cuda::std::ptrdiff_t) == sizeof(void*)");
-    static_assert(cuda::std::is_signed<cuda::std::ptrdiff_t>::value,
-                  "cuda::std::is_signed<cuda::std::ptrdiff_t>::value");
-    static_assert(cuda::std::is_integral<cuda::std::ptrdiff_t>::value,
-                  "cuda::std::is_integral<cuda::std::ptrdiff_t>::value");
+  static_assert(sizeof(cuda::std::ptrdiff_t) == sizeof(void*), "sizeof(cuda::std::ptrdiff_t) == sizeof(void*)");
+  static_assert(cuda::std::is_signed<cuda::std::ptrdiff_t>::value, "cuda::std::is_signed<cuda::std::ptrdiff_t>::value");
+  static_assert(cuda::std::is_integral<cuda::std::ptrdiff_t>::value,
+                "cuda::std::is_integral<cuda::std::ptrdiff_t>::value");
 
   return 0;
 }

@@ -18,10 +18,11 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "test_iterators.h"
+#include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   typedef random_access_iterator<int*> RI;
   int i1[] = {0, 0};
   assert(cuda::std::is_heap_until(i1, i1) == i1);
@@ -34,12 +35,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   assert(cuda::std::is_heap_until(i1, i1 + 2) == i1 + 2);
   assert(cuda::std::is_heap_until(i2, i2 + 2) == i2 + 1);
   assert(cuda::std::is_heap_until(i3, i3 + 2) == i3 + 2);
-  int i4[] = {0, 0, 0};
-  int i5[] = {0, 0, 1};
-  int i6[] = {0, 1, 0};
-  int i7[] = {0, 1, 1};
-  int i8[] = {1, 0, 0};
-  int i9[] = {1, 0, 1};
+  int i4[]  = {0, 0, 0};
+  int i5[]  = {0, 0, 1};
+  int i6[]  = {0, 1, 0};
+  int i7[]  = {0, 1, 1};
+  int i8[]  = {1, 0, 0};
+  int i9[]  = {1, 0, 1};
   int i10[] = {1, 1, 0};
   assert(cuda::std::is_heap_until(i4, i4 + 3) == i4 + 3);
   assert(cuda::std::is_heap_until(i5, i5 + 3) == i5 + 2);
@@ -140,49 +141,49 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   assert(cuda::std::is_heap_until(i54, i54 + 5) == i54 + 5);
   assert(cuda::std::is_heap_until(i55, i55 + 5) == i55 + 5);
   assert(cuda::std::is_heap_until(i56, i56 + 5) == i56 + 5);
-  int i57[] = {0, 0, 0, 0, 0, 0};
-  int i58[] = {0, 0, 0, 0, 0, 1};
-  int i59[] = {0, 0, 0, 0, 1, 0};
-  int i60[] = {0, 0, 0, 0, 1, 1};
-  int i61[] = {0, 0, 0, 1, 0, 0};
-  int i62[] = {0, 0, 0, 1, 0, 1};
-  int i63[] = {0, 0, 0, 1, 1, 0};
-  int i64[] = {0, 0, 0, 1, 1, 1};
-  int i65[] = {0, 0, 1, 0, 0, 0};
-  int i66[] = {0, 0, 1, 0, 0, 1};
-  int i67[] = {0, 0, 1, 0, 1, 0};
-  int i68[] = {0, 0, 1, 0, 1, 1};
-  int i69[] = {0, 0, 1, 1, 0, 0};
-  int i70[] = {0, 0, 1, 1, 0, 1};
-  int i71[] = {0, 0, 1, 1, 1, 0};
-  int i72[] = {0, 0, 1, 1, 1, 1};
-  int i73[] = {0, 1, 0, 0, 0, 0};
-  int i74[] = {0, 1, 0, 0, 0, 1};
-  int i75[] = {0, 1, 0, 0, 1, 0};
-  int i76[] = {0, 1, 0, 0, 1, 1};
-  int i77[] = {0, 1, 0, 1, 0, 0};
-  int i78[] = {0, 1, 0, 1, 0, 1};
-  int i79[] = {0, 1, 0, 1, 1, 0};
-  int i80[] = {0, 1, 0, 1, 1, 1};
-  int i81[] = {0, 1, 1, 0, 0, 0};
-  int i82[] = {0, 1, 1, 0, 0, 1};
-  int i83[] = {0, 1, 1, 0, 1, 0};
-  int i84[] = {0, 1, 1, 0, 1, 1};
-  int i85[] = {0, 1, 1, 1, 0, 0};
-  int i86[] = {0, 1, 1, 1, 0, 1};
-  int i87[] = {0, 1, 1, 1, 1, 0};
-  int i88[] = {0, 1, 1, 1, 1, 1};
-  int i89[] = {1, 0, 0, 0, 0, 0};
-  int i90[] = {1, 0, 0, 0, 0, 1};
-  int i91[] = {1, 0, 0, 0, 1, 0};
-  int i92[] = {1, 0, 0, 0, 1, 1};
-  int i93[] = {1, 0, 0, 1, 0, 0};
-  int i94[] = {1, 0, 0, 1, 0, 1};
-  int i95[] = {1, 0, 0, 1, 1, 0};
-  int i96[] = {1, 0, 0, 1, 1, 1};
-  int i97[] = {1, 0, 1, 0, 0, 0};
-  int i98[] = {1, 0, 1, 0, 0, 1};
-  int i99[] = {1, 0, 1, 0, 1, 0};
+  int i57[]  = {0, 0, 0, 0, 0, 0};
+  int i58[]  = {0, 0, 0, 0, 0, 1};
+  int i59[]  = {0, 0, 0, 0, 1, 0};
+  int i60[]  = {0, 0, 0, 0, 1, 1};
+  int i61[]  = {0, 0, 0, 1, 0, 0};
+  int i62[]  = {0, 0, 0, 1, 0, 1};
+  int i63[]  = {0, 0, 0, 1, 1, 0};
+  int i64[]  = {0, 0, 0, 1, 1, 1};
+  int i65[]  = {0, 0, 1, 0, 0, 0};
+  int i66[]  = {0, 0, 1, 0, 0, 1};
+  int i67[]  = {0, 0, 1, 0, 1, 0};
+  int i68[]  = {0, 0, 1, 0, 1, 1};
+  int i69[]  = {0, 0, 1, 1, 0, 0};
+  int i70[]  = {0, 0, 1, 1, 0, 1};
+  int i71[]  = {0, 0, 1, 1, 1, 0};
+  int i72[]  = {0, 0, 1, 1, 1, 1};
+  int i73[]  = {0, 1, 0, 0, 0, 0};
+  int i74[]  = {0, 1, 0, 0, 0, 1};
+  int i75[]  = {0, 1, 0, 0, 1, 0};
+  int i76[]  = {0, 1, 0, 0, 1, 1};
+  int i77[]  = {0, 1, 0, 1, 0, 0};
+  int i78[]  = {0, 1, 0, 1, 0, 1};
+  int i79[]  = {0, 1, 0, 1, 1, 0};
+  int i80[]  = {0, 1, 0, 1, 1, 1};
+  int i81[]  = {0, 1, 1, 0, 0, 0};
+  int i82[]  = {0, 1, 1, 0, 0, 1};
+  int i83[]  = {0, 1, 1, 0, 1, 0};
+  int i84[]  = {0, 1, 1, 0, 1, 1};
+  int i85[]  = {0, 1, 1, 1, 0, 0};
+  int i86[]  = {0, 1, 1, 1, 0, 1};
+  int i87[]  = {0, 1, 1, 1, 1, 0};
+  int i88[]  = {0, 1, 1, 1, 1, 1};
+  int i89[]  = {1, 0, 0, 0, 0, 0};
+  int i90[]  = {1, 0, 0, 0, 0, 1};
+  int i91[]  = {1, 0, 0, 0, 1, 0};
+  int i92[]  = {1, 0, 0, 0, 1, 1};
+  int i93[]  = {1, 0, 0, 1, 0, 0};
+  int i94[]  = {1, 0, 0, 1, 0, 1};
+  int i95[]  = {1, 0, 0, 1, 1, 0};
+  int i96[]  = {1, 0, 0, 1, 1, 1};
+  int i97[]  = {1, 0, 1, 0, 0, 0};
+  int i98[]  = {1, 0, 1, 0, 0, 1};
+  int i99[]  = {1, 0, 1, 0, 1, 0};
   int i100[] = {1, 0, 1, 0, 1, 1};
   int i101[] = {1, 0, 1, 1, 0, 0};
   int i102[] = {1, 0, 1, 1, 0, 1};
@@ -524,7 +525,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

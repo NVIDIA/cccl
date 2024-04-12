@@ -222,7 +222,7 @@ struct reduce_by_key_delay_constructor_t
         NV_IS_EXACTLY_SM_80,
         (delay<Delay, GridThreshold>();),
         NV_PROVIDES_SM_70,
-        (delay< 0, GridThreshold>();),
+        (delay<0, GridThreshold>();),
         NV_IS_DEVICE,
         (__threadfence_block();));
     }
@@ -506,13 +506,13 @@ struct ScanTileState<T, true>
   using StatusWord = cub::detail::conditional_t<
     sizeof(T) == 8,
     unsigned long long,
-    cub::detail::conditional_t< sizeof(T) == 4,
-                                unsigned int,
-                                cub::detail::conditional_t<sizeof(T) == 2, unsigned short, unsigned char>>>;
+    cub::detail::conditional_t<sizeof(T) == 4,
+                               unsigned int,
+                               cub::detail::conditional_t<sizeof(T) == 2, unsigned short, unsigned char>>>;
 
   // Unit word type
   using TxnWord = cub::detail::
-    conditional_t< sizeof(T) == 8, ulonglong2, cub::detail::conditional_t< sizeof(T) == 4, uint2, unsigned int>>;
+    conditional_t<sizeof(T) == 8, ulonglong2, cub::detail::conditional_t<sizeof(T) == 4, uint2, unsigned int>>;
 
   // Device word type
   struct TileDescriptor
@@ -861,7 +861,7 @@ struct ReduceByKeyScanTileState;
 template <typename ValueT, typename KeyT>
 struct ReduceByKeyScanTileState<ValueT, KeyT, false> : ScanTileState<KeyValuePair<KeyT, ValueT>>
 {
-  typedef ScanTileState<KeyValuePair<KeyT, ValueT> > SuperClass;
+  typedef ScanTileState<KeyValuePair<KeyT, ValueT>> SuperClass;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ReduceByKeyScanTileState()
@@ -892,15 +892,15 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
   using StatusWord = cub::detail::conditional_t<
     STATUS_WORD_SIZE == 8,
     unsigned long long,
-    cub::detail::conditional_t< STATUS_WORD_SIZE == 4,
-                                unsigned int,
-                                cub::detail::conditional_t<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
+    cub::detail::conditional_t<STATUS_WORD_SIZE == 4,
+                               unsigned int,
+                               cub::detail::conditional_t<STATUS_WORD_SIZE == 2, unsigned short, unsigned char>>>;
 
   // Status word type
   using TxnWord =
-    cub::detail::conditional_t< TXN_WORD_SIZE == 16,
-                                ulonglong2,
-                                cub::detail::conditional_t<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
+    cub::detail::conditional_t<TXN_WORD_SIZE == 16,
+                               ulonglong2,
+                               cub::detail::conditional_t<TXN_WORD_SIZE == 8, unsigned long long, unsigned int>>;
 
   // Device word type (for when sizeof(ValueT) == sizeof(KeyT))
   struct TileDescriptorBigStatus

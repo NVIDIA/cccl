@@ -19,18 +19,19 @@
 
 #include <cuda/std/chrono>
 #include <cuda/std/type_traits>
+
 #include <iostream>
 
 #include "test_macros.h"
 
 int main(int, char**)
 {
-    using month_weekday   = cuda::std::chrono::month_weekday;
-    using month           = cuda::std::chrono::month;
-    using weekday_indexed = cuda::std::chrono::weekday_indexed;
-    using weekday         = cuda::std::chrono::weekday;
+  using month_weekday   = cuda::std::chrono::month_weekday;
+  using month           = cuda::std::chrono::month;
+  using weekday_indexed = cuda::std::chrono::weekday_indexed;
+  using weekday         = cuda::std::chrono::weekday;
 
-    std::cout << month_weekday{month{1}, weekday_indexed{weekday{3}, 3}};
+  std::cout << month_weekday{month{1}, weekday_indexed{weekday{3}, 3}};
 
   return 0;
 }

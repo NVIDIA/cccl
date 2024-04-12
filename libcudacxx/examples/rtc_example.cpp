@@ -22,22 +22,25 @@ THE SOFTWARE.
 
 */
 
-#include <nvrtc.h>
 #include <cuda.h>
+
 #include <iostream>
 
-#define NVRTC_SAFE_CALL(x)                                        \
-  do {                                                            \
-    nvrtcResult result = x;                                       \
-    if (result != NVRTC_SUCCESS) {                                \
-      std::cerr << "\nerror: " #x " failed with error "           \
-                << nvrtcGetErrorString(result) << '\n';           \
-      exit(1);                                                    \
-    }                                                             \
-  } while(0)
+#include <nvrtc.h>
 
-const char *trie =
-R"xxx(
+#define NVRTC_SAFE_CALL(x)                                                                      \
+  do                                                                                            \
+  {                                                                                             \
+    nvrtcResult result = x;                                                                     \
+    if (result != NVRTC_SUCCESS)                                                                \
+    {                                                                                           \
+      std::cerr << "\nerror: " #x " failed with error " << nvrtcGetErrorString(result) << '\n'; \
+      exit(1);                                                                                  \
+    }                                                                                           \
+  } while (0)
+
+const char* trie =
+  R"xxx(
 
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -112,33 +115,35 @@ void call_make_trie(trie* t, cuda::std::atomic<trie*>* bump, const char* begin, 
 
 )xxx";
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-  size_t numBlocks = 32;
+  size_t numBlocks  = 32;
   size_t numThreads = 128;
   // Create an instance of nvrtcProgram with the code string.
   nvrtcProgram prog;
-  NVRTC_SAFE_CALL(
-    nvrtcCreateProgram(&prog,                       // prog
-                       trie,         // buffer
-                       "trie.cu",    // name
-                       0,            // numHeaders
-                       NULL,         // headers
-                       NULL));       // includeNames
-  
-  const char *opts[] = {"-std=c++11",
-                        "-I/usr/local/cuda/include",
-                        "-I../../include",
-                        "--gpu-architecture=compute_70",
-                        "--relocatable-device-code=true",
-                        "-default-device"};
-  nvrtcResult compileResult = nvrtcCompileProgram(prog,  // prog
-                                                  6,     // numOptions
-                                                  opts); // options
+  NVRTC_SAFE_CALL(nvrtcCreateProgram(
+    &prog, // prog
+    trie, // buffer
+    "trie.cu", // name
+    0, // numHeaders
+    NULL, // headers
+    NULL)); // includeNames
+
+  const char* opts[] = {
+    "-std=c++11",
+    "-I/usr/local/cuda/include",
+    "-I../../include",
+    "--gpu-architecture=compute_70",
+    "--relocatable-device-code=true",
+    "-default-device"};
+  nvrtcResult compileResult = nvrtcCompileProgram(
+    prog, // prog
+    6, // numOptions
+    opts); // options
   // Obtain compilation log from the program.
   size_t logSize;
   NVRTC_SAFE_CALL(nvrtcGetProgramLogSize(prog, &logSize));
-  char *log = new char[logSize];
+  char* log = new char[logSize];
   NVRTC_SAFE_CALL(nvrtcGetProgramLog(prog, log));
   std::cout << log << '\n';
   delete[] log;

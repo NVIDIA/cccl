@@ -12,49 +12,59 @@
 // template<class T>
 // concept destructible = is_nothrow_destructible_v<T>;
 
-
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-struct Empty {};
+struct Empty
+{};
 
-struct Defaulted {
+struct Defaulted
+{
   ~Defaulted() = default;
 };
-struct Deleted {
+struct Deleted
+{
   ~Deleted() = delete;
 };
 
-struct Noexcept {
+struct Noexcept
+{
   __host__ __device__ ~Noexcept() noexcept;
 };
-struct NoexceptTrue {
+struct NoexceptTrue
+{
   __host__ __device__ ~NoexceptTrue() noexcept(true);
 };
-struct NoexceptFalse {
+struct NoexceptFalse
+{
   __host__ __device__ ~NoexceptFalse() noexcept(false);
 };
 
-struct Protected {
+struct Protected
+{
 protected:
   ~Protected() = default;
 };
-struct Private {
+struct Private
+{
 private:
   ~Private() = default;
 };
 
 template <class T>
-struct NoexceptDependant {
+struct NoexceptDependant
+{
   __host__ __device__ ~NoexceptDependant() noexcept(cuda::std::is_same_v<T, int>);
 };
 
 template <class T>
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   static_assert(cuda::std::destructible<T> == cuda::std::is_nothrow_destructible_v<T>, "");
 }
 
-__host__ __device__ void test() {
+__host__ __device__ void test()
+{
   test<Empty>();
 
   test<Defaulted>();
@@ -67,8 +77,8 @@ __host__ __device__ void test() {
   test<Protected>();
   test<Private>();
 
-  test<NoexceptDependant<int> >();
-  test<NoexceptDependant<double> >();
+  test<NoexceptDependant<int>>();
+  test<NoexceptDependant<double>>();
 
   test<bool>();
   test<char>();
@@ -77,4 +87,7 @@ __host__ __device__ void test() {
 }
 
 // Required for MSVC internal test runner compatibility.
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

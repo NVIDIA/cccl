@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TYPE_TRAITS_IS_SCALAR_H
 #define _LIBCUDACXX___TYPE_TRAITS_IS_SCALAR_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,49 +20,53 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__type_traits/integral_constant.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_arithmetic.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_enum.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_member_pointer.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_null_pointer.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_pointer.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
-template<class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
-    : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)>
-    {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_scalar : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)>
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = _LIBCUDACXX_IS_SCALAR(_Tp);
-#endif
+#  endif
 
 #else
 
-template <class _Tp> struct __is_block : false_type {};
-#if defined(_LIBCUDACXX_HAS_EXTENSION_BLOCKS)
-template <class _Rp, class ..._Args> struct __is_block<_Rp (^)(_Args...)> : true_type {};
-#endif
+template <class _Tp>
+struct __is_block : false_type
+{};
+#  if defined(_LIBCUDACXX_HAS_EXTENSION_BLOCKS)
+template <class _Rp, class... _Args>
+struct __is_block<_Rp (^)(_Args...)> : true_type
+{};
+#  endif
 
-template <class _Tp> struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
-    : public integral_constant<bool, is_arithmetic<_Tp>::value     ||
-                                     is_member_pointer<_Tp>::value ||
-                                     is_pointer<_Tp>::value        ||
-                                     __is_nullptr_t<_Tp>::value    ||
-                                     __is_block<_Tp>::value        ||
-                                     is_enum<_Tp>::value           > {};
+template <class _Tp>
+struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
+    : public integral_constant<bool,
+                               is_arithmetic<_Tp>::value || is_member_pointer<_Tp>::value || is_pointer<_Tp>::value
+                                 || __is_nullptr_t<_Tp>::value || __is_block<_Tp>::value || is_enum<_Tp>::value>
+{};
 
-template <> struct _LIBCUDACXX_TEMPLATE_VIS is_scalar<nullptr_t> : public true_type {};
+template <>
+struct _LIBCUDACXX_TEMPLATE_VIS is_scalar<nullptr_t> : public true_type
+{};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
-#endif
+#  endif
 
 #endif // defined(_LIBCUDACXX_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 

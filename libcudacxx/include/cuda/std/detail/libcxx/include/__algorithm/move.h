@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_MOVE_H
 #define _LIBCUDACXX___ALGORITHM_MOVE_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -25,8 +23,8 @@
 #include <cuda/std/detail/libcxx/include/__algorithm/iterator_operations.h>
 #include <cuda/std/detail/libcxx/include/__algorithm/unwrap_iter.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
-#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_copy_constructible.h>
+#include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_trivially_move_assignable.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_const.h>
 #include <cuda/std/detail/libcxx/include/__utility/pair.h>

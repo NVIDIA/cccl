@@ -23,8 +23,8 @@
 
 int main(int, char**)
 {
-    cuda::std::initializer_list<int> c = { 4 };
-    cuda::std::empty(c);  // expected-error {{ignoring return value of function declared with 'nodiscard' attribute}}
+  cuda::std::initializer_list<int> c = {4};
+  cuda::std::empty(c); // expected-error {{ignoring return value of function declared with 'nodiscard' attribute}}
 
   return 0;
 }

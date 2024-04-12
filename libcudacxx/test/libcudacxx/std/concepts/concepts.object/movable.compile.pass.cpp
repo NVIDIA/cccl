@@ -12,13 +12,12 @@
 // template<class T>
 // concept movable = see below;
 
+#include "type_classification/movable.h"
 
 #include <cuda/std/concepts>
 
 #include "test_macros.h"
-
 #include "type_classification/moveconstructible.h"
-#include "type_classification/movable.h"
 
 using cuda::std::movable;
 
@@ -31,7 +30,8 @@ static_assert(movable<int volatile*>, "");
 static_assert(movable<int const volatile*>, "");
 static_assert(movable<int (*)()>, "");
 
-struct S {};
+struct S
+{};
 static_assert(movable<S>, "");
 static_assert(movable<int S::*>, "");
 static_assert(movable<int (S::*)()>, "");
@@ -39,25 +39,25 @@ static_assert(movable<int (S::*)() noexcept>, "");
 static_assert(movable<int (S::*)() &>, "");
 static_assert(movable<int (S::*)() & noexcept>, "");
 static_assert(movable<int (S::*)() &&>, "");
-static_assert(movable<int (S::*)() && noexcept>, "");
+static_assert(movable < int(S::*)() && noexcept >, "");
 static_assert(movable<int (S::*)() const>, "");
 static_assert(movable<int (S::*)() const noexcept>, "");
 static_assert(movable<int (S::*)() const&>, "");
 static_assert(movable<int (S::*)() const & noexcept>, "");
 static_assert(movable<int (S::*)() const&&>, "");
-static_assert(movable<int (S::*)() const && noexcept>, "");
+static_assert(movable < int(S::*)() const&& noexcept >, "");
 static_assert(movable<int (S::*)() volatile>, "");
 static_assert(movable<int (S::*)() volatile noexcept>, "");
 static_assert(movable<int (S::*)() volatile&>, "");
 static_assert(movable<int (S::*)() volatile & noexcept>, "");
 static_assert(movable<int (S::*)() volatile&&>, "");
-static_assert(movable<int (S::*)() volatile && noexcept>, "");
+static_assert(movable < int(S::*)() volatile&& noexcept >, "");
 static_assert(movable<int (S::*)() const volatile>, "");
 static_assert(movable<int (S::*)() const volatile noexcept>, "");
 static_assert(movable<int (S::*)() const volatile&>, "");
 static_assert(movable<int (S::*)() const volatile & noexcept>, "");
 static_assert(movable<int (S::*)() const volatile&&>, "");
-static_assert(movable<int (S::*)() const volatile && noexcept>, "");
+static_assert(movable < int(S::*)() const volatile&& noexcept >, "");
 
 static_assert(movable<has_volatile_member>, "");
 static_assert(movable<has_array_member>, "");
@@ -97,8 +97,7 @@ static_assert(movable<multi_param_move_ctor>, "");
 static_assert(!movable<not_quite_multi_param_move_ctor>, "");
 
 #if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on multiple definitions of SMF
-static_assert(!cuda::std::assignable_from<copy_with_mutable_parameter&,
-                                    copy_with_mutable_parameter>, "");
+static_assert(!cuda::std::assignable_from<copy_with_mutable_parameter&, copy_with_mutable_parameter>, "");
 static_assert(!movable<copy_with_mutable_parameter>, "");
 #endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
 
@@ -126,4 +125,7 @@ static_assert(movable<deleted_assignment_from_const_rvalue>, "");
 // `move_constructible and assignable_from<T&, T>` implies `swappable<T>`,
 // so there's nothing to test for the case of non-swappable.
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

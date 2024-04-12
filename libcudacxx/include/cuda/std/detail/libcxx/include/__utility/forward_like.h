@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___UTILITY_FORWARD_LIKE_H
 #define _LIBCUDACXX___UTILITY_FORWARD_LIKE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -42,8 +40,9 @@ template <class _Ap, class _Bp>
 using _ForwardLike = _OverrideRef<_Ap&&, _CopyConst<remove_reference_t<_Ap>, remove_reference_t<_Bp>>>;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up> {
+_LIBCUDACXX_NODISCARD_ATTRIBUTE _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>
+{
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
 

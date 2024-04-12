@@ -14,9 +14,8 @@
 // template<class T>
 // concept input_iterator;
 
-#include <cuda/std/iterator>
-
 #include <cuda/std/concepts>
+#include <cuda/std/iterator>
 
 // clang-format off
 template<cuda::std::input_or_output_iterator I>

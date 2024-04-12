@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_ITERATOR_OPERATIONS_H
 #define _LIBCUDACXX___ALGORITHM_ITERATOR_OPERATIONS_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -97,9 +95,8 @@ struct _IterOps<_ClassicAlgPolicy>
 
   // distance
   template <class _Iter>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
-    typename iterator_traits<_Iter>::difference_type
-    distance(_Iter __first, _Iter __last)
+  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static typename iterator_traits<_Iter>::difference_type
+  distance(_Iter __first, _Iter __last)
   {
     return _CUDA_VSTD::distance(__first, __last);
   }
@@ -114,14 +111,14 @@ struct _IterOps<_ClassicAlgPolicy>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static void __validate_iter_reference()
   {
     static_assert(
-      is_same<__deref_t<_Iter>, typename iterator_traits<__remove_cvref_t<_Iter> >::reference>::value,
+      is_same<__deref_t<_Iter>, typename iterator_traits<__remove_cvref_t<_Iter>>::reference>::value,
       "It looks like your iterator's `iterator_traits<It>::reference` does not match the return type of "
       "dereferencing the iterator, i.e., calling `*it`. This is undefined behavior according to [input.iterators] "
       "and can lead to dangling reference issues at runtime, so we are flagging this.");
   }
 
   // iter_move
-  template <class _Iter, __enable_if_t<is_reference<__deref_t<_Iter> >::value, int> = 0>
+  template <class _Iter, __enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `_CUDA_VSTD::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
@@ -133,7 +130,7 @@ struct _IterOps<_ClassicAlgPolicy>
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Iter>(__i));
   }
 
-  template <class _Iter, __enable_if_t<!is_reference<__deref_t<_Iter> >::value, int> = 0>
+  template <class _Iter, __enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to

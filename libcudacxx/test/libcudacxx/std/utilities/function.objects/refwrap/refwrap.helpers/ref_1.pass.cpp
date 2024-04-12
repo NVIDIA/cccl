@@ -14,14 +14,14 @@
 // template <ObjectType T> reference_wrapper<T> ref(T& t);
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  int i = 0;
+  int i                               = 0;
   cuda::std::reference_wrapper<int> r = cuda::std::ref(i);
   assert(&r.get() == &i);
   return true;

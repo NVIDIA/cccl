@@ -13,16 +13,17 @@
 
 // ranges::less_equal
 
+#include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
-#include <cuda/std/cassert>
 
-#include "test_macros.h"
 #include "compare_types.h"
 #include "MoveOnly.h"
 #include "pointer_comparison_test_helper.h"
+#include "test_macros.h"
 
-struct NotTotallyOrdered {
+struct NotTotallyOrdered
+{
   __host__ __device__ friend bool operator<(const NotTotallyOrdered&, const NotTotallyOrdered&);
 };
 
@@ -42,7 +43,8 @@ inline constexpr bool is_transparent<T, cuda::std::void_t<typename T::is_transpa
 static_assert(is_transparent<cuda::std::ranges::less_equal>);
 #endif
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   auto fn = cuda::std::ranges::less_equal();
 
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_MSVC_2017)
@@ -64,8 +66,8 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
-
+int main(int, char**)
+{
   test();
   static_assert(test());
 

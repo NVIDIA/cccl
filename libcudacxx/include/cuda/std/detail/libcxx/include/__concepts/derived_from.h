@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H
 #define _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -33,22 +31,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.derived]
 
-template<class _Dp, class _Bp>
-concept derived_from =
-  is_base_of_v<_Bp, _Dp> &&
-  is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
+template <class _Dp, class _Bp>
+concept derived_from = is_base_of_v<_Bp, _Dp> && is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
 
 #elif _CCCL_STD_VER > 2011
 
-template<class _Dp, class _Bp>
+template <class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __derived_from_,
   requires()(
     requires(_LIBCUDACXX_TRAIT(is_base_of, _Bp, _Dp)),
-    requires(_LIBCUDACXX_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))
-  ));
+    requires(_LIBCUDACXX_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
 
-template<class _Dp, class _Bp>
+template <class _Dp, class _Bp>
 _LIBCUDACXX_CONCEPT derived_from = _LIBCUDACXX_FRAGMENT(__derived_from_, _Dp, _Bp);
 
 #endif // _CCCL_STD_VER > 2011

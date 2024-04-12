@@ -187,7 +187,7 @@ struct DeviceScan
     // Initial value
     InitT init_value{};
 
-    return DispatchScan< InputIteratorT, OutputIteratorT, Sum, detail::InputValue<InitT>, OffsetT>::Dispatch(
+    return DispatchScan<InputIteratorT, OutputIteratorT, Sum, detail::InputValue<InitT>, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, Sum(), detail::InputValue<InitT>(init_value), num_items, stream);
   }
 

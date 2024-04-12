@@ -116,7 +116,7 @@ using value_t =
 template <typename It,
           typename FallbackT,
           bool = ::cuda::std::
-            is_same< typename ::cuda::std::remove_cv<typename ::cuda::std::remove_pointer<It>::type>::type, void>::value>
+            is_same<typename ::cuda::std::remove_cv<typename ::cuda::std::remove_pointer<It>::type>::type, void>::value>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -519,9 +519,9 @@ struct UnitWord
   /// Biggest texture reference word that T is a whole multiple of and is not
   /// larger than the alignment of T
   using TextureWord =
-    cub::detail::conditional_t< IsMultiple<int4>::IS_MULTIPLE,
-                                uint4,
-                                cub::detail::conditional_t<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
+    cub::detail::conditional_t<IsMultiple<int4>::IS_MULTIPLE,
+                               uint4,
+                               cub::detail::conditional_t<IsMultiple<int2>::IS_MULTIPLE, uint2, ShuffleWord>>;
 };
 
 // float2 specialization workaround (for SM10-SM13)

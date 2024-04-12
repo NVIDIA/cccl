@@ -114,9 +114,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
   using BufferSizeT   = cub::detail::value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT =
-    typename ::cuda::std::conditional< IsMemcpy,
-                                       std::iterator_traits<char*>,
-                                       std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+    typename ::cuda::std::conditional<IsMemcpy,
+                                      std::iterator_traits<char*>,
+                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
   /// Types of the input and output buffers
   using InputBufferT  = cub::detail::value_t<InputBufferIt>;
   using OutputBufferT = cub::detail::value_t<OutputBufferIt>;

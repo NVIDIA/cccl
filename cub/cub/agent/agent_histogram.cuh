@@ -225,9 +225,9 @@ struct AgentHistogram
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedSampleIteratorT =
-    cub::detail::conditional_t< std::is_pointer<SampleIteratorT>::value,
-                                CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
-                                SampleIteratorT>;
+    cub::detail::conditional_t<std::is_pointer<SampleIteratorT>::value,
+                               CacheModifiedInputIterator<LOAD_MODIFIER, SampleT, OffsetT>,
+                               SampleIteratorT>;
 
   /// Pixel input iterator type (for applying cache modifier)
   typedef CacheModifiedInputIterator<LOAD_MODIFIER, PixelT, OffsetT> WrappedPixelIteratorT;
@@ -236,13 +236,13 @@ struct AgentHistogram
   typedef CacheModifiedInputIterator<LOAD_MODIFIER, VecT, OffsetT> WrappedVecsIteratorT;
 
   /// Parameterized BlockLoad type for samples
-  typedef BlockLoad< SampleT, BLOCK_THREADS, SAMPLES_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadSampleT;
+  typedef BlockLoad<SampleT, BLOCK_THREADS, SAMPLES_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadSampleT;
 
   /// Parameterized BlockLoad type for pixels
-  typedef BlockLoad< PixelT, BLOCK_THREADS, PIXELS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadPixelT;
+  typedef BlockLoad<PixelT, BLOCK_THREADS, PIXELS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadPixelT;
 
   /// Parameterized BlockLoad type for vecs
-  typedef BlockLoad< VecT, BLOCK_THREADS, VECS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadVecT;
+  typedef BlockLoad<VecT, BLOCK_THREADS, VECS_PER_THREAD, AgentHistogramPolicyT::LOAD_ALGORITHM> BlockLoadVecT;
 
   /// Shared memory type required by this thread block
   struct _TempStorage

@@ -231,9 +231,9 @@ struct AgentRle
   // Wrap the native input pointer with CacheModifiedVLengthnputIterator
   // Directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    cub::detail::conditional_t< std::is_pointer<InputIteratorT>::value,
-                                CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
-                                InputIteratorT>;
+    cub::detail::conditional_t<std::is_pointer<InputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentRlePolicyT::LOAD_MODIFIER, T, OffsetT>,
+                               InputIteratorT>;
 
   // Parameterized BlockLoad type for data
   using BlockLoadT =

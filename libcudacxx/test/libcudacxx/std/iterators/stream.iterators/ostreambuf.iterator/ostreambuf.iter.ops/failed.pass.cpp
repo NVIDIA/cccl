@@ -15,34 +15,38 @@
 
 #include <cuda/std/iterator>
 #if defined(_LIBCUDACXX_HAS_SSTREAM)
-#include <cuda/std/sstream>
-#include <cuda/std/cassert>
+#  include <cuda/std/cassert>
+#  include <cuda/std/sstream>
 
-#include "test_macros.h"
+#  include "test_macros.h"
 
-template <typename Char, typename Traits = cuda::std::char_traits<Char> >
-struct my_streambuf : public cuda::std::basic_streambuf<Char,Traits> {
-    typedef typename cuda::std::basic_streambuf<Char,Traits>::int_type  int_type;
-    typedef typename cuda::std::basic_streambuf<Char,Traits>::char_type char_type;
+template <typename Char, typename Traits = cuda::std::char_traits<Char>>
+struct my_streambuf : public cuda::std::basic_streambuf<Char, Traits>
+{
+  typedef typename cuda::std::basic_streambuf<Char, Traits>::int_type int_type;
+  typedef typename cuda::std::basic_streambuf<Char, Traits>::char_type char_type;
 
-    my_streambuf() {}
-    int_type sputc(char_type) { return Traits::eof(); }
-    };
+  my_streambuf() {}
+  int_type sputc(char_type)
+  {
+    return Traits::eof();
+  }
+};
 
 int main(int, char**)
 {
-    {
-        my_streambuf<char> buf;
-        cuda::std::ostreambuf_iterator<char> i(&buf);
-        i = 'a';
-        assert(i.failed());
-    }
-    {
-        my_streambuf<wchar_t> buf;
-        cuda::std::ostreambuf_iterator<wchar_t> i(&buf);
-        i = L'a';
-        assert(i.failed());
-    }
+  {
+    my_streambuf<char> buf;
+    cuda::std::ostreambuf_iterator<char> i(&buf);
+    i = 'a';
+    assert(i.failed());
+  }
+  {
+    my_streambuf<wchar_t> buf;
+    cuda::std::ostreambuf_iterator<wchar_t> i(&buf);
+    i = L'a';
+    assert(i.failed());
+  }
 
   return 0;
 }

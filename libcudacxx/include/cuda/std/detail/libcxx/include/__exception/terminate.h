@@ -12,9 +12,7 @@
 #ifndef _LIBCUDACXX___EXCEPTION_TERMINATE_H
 #define _LIBCUDACXX___EXCEPTION_TERMINATE_H
 
-#ifndef __cuda_std__
-#  include <__config>
-#endif //__cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -45,9 +43,9 @@ _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __cccl_terminate(
 
 typedef void (*terminate_handler)();
 
-#ifdef __CUDA_ARCH__
+#  ifdef __CUDA_ARCH__
 __device__
-#endif // __CUDA_ARCH__
+#  endif // __CUDA_ARCH__
   static _LIBCUDACXX_SAFE_STATIC _CUDA_VSTD::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 
@@ -64,21 +62,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler get_terminate() noexcept
 
 _LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void terminate() noexcept
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  try
-  {
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
-    __cccl_terminate();
-    // handler should not return
-    // NV_IF_ELSE_TARGET(NV_IS_HOST, (::abort();), (__trap();))
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-  }
-  catch (...)
-  {
-    // handler should not throw exception
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (::abort();), (__trap();))
-  }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+  __cccl_terminate();
   _LIBCUDACXX_UNREACHABLE();
 }
 

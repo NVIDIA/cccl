@@ -23,78 +23,82 @@
 #include <cuda/std/__algorithm>
 #include <cuda/std/cassert>
 
-#include "test_macros.h"
-#include "test_iterators.h"
 #include "../../sortable_helpers.h"
+#include "test_iterators.h"
+#include "test_macros.h"
 
-template<class T, class Iter1, class Iter2, class OutIter>
+template <class T, class Iter1, class Iter2, class OutIter>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test4()
 {
-    const T a[] = {11, 33, 31, 41};
-    const T b[] = {22, 32, 43, 42, 52};
+  const T a[] = {11, 33, 31, 41};
+  const T b[] = {22, 32, 43, 42, 52};
+  {
+    T result[20] = {};
+    T expected[] = {11, 31};
+    OutIter end  = cuda::std::set_difference(
+      Iter1(a), Iter1(a + 4), Iter2(b), Iter2(b + 5), OutIter(result), typename T::Comparator());
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 2, T::less) == 0);
+    for (const T* it = base(end); it != result + 20; ++it)
     {
-        T result[20] = {};
-        T expected[] = {11, 31};
-        OutIter end = cuda::std::set_difference(Iter1(a), Iter1(a+4), Iter2(b), Iter2(b+5), OutIter(result), typename T::Comparator());
-        assert(cuda::std::lexicographical_compare(result, base(end), expected, expected+2, T::less) == 0);
-        for (const T *it = base(end); it != result+20; ++it) {
-            assert(it->value == 0);
-        }
+      assert(it->value == 0);
     }
+  }
+  {
+    T result[20] = {};
+    T expected[] = {22, 42, 52};
+    OutIter end  = cuda::std::set_difference(
+      Iter1(b), Iter1(b + 5), Iter2(a), Iter2(a + 4), OutIter(result), typename T::Comparator());
+    assert(cuda::std::lexicographical_compare(result, base(end), expected, expected + 3, T::less) == 0);
+    for (const T* it = base(end); it != result + 20; ++it)
     {
-        T result[20] = {};
-        T expected[] = {22, 42, 52};
-        OutIter end = cuda::std::set_difference(Iter1(b), Iter1(b+5), Iter2(a), Iter2(a+4), OutIter(result), typename T::Comparator());
-        assert(cuda::std::lexicographical_compare(result, base(end), expected, expected+3, T::less) == 0);
-        for (const T *it = base(end); it != result+20; ++it) {
-            assert(it->value == 0);
-        }
+      assert(it->value == 0);
     }
+  }
 }
 
-template<class T, class Iter1, class Iter2>
+template <class T, class Iter1, class Iter2>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test3()
 {
-    test4<T, Iter1, Iter2, cpp17_output_iterator<T*> >();
-    test4<T, Iter1, Iter2, forward_iterator<T*> >();
-    test4<T, Iter1, Iter2, bidirectional_iterator<T*> >();
-    test4<T, Iter1, Iter2, random_access_iterator<T*> >();
-    test4<T, Iter1, Iter2, T*>();
+  test4<T, Iter1, Iter2, cpp17_output_iterator<T*>>();
+  test4<T, Iter1, Iter2, forward_iterator<T*>>();
+  test4<T, Iter1, Iter2, bidirectional_iterator<T*>>();
+  test4<T, Iter1, Iter2, random_access_iterator<T*>>();
+  test4<T, Iter1, Iter2, T*>();
 }
 
-template<class T, class Iter1>
+template <class T, class Iter1>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 {
-    test3<T, Iter1, cpp17_input_iterator<const T*> >();
-    test3<T, Iter1, forward_iterator<const T*> >();
-    test3<T, Iter1, bidirectional_iterator<const T*> >();
-    test3<T, Iter1, random_access_iterator<const T*> >();
-    test3<T, Iter1, const T*>();
+  test3<T, Iter1, cpp17_input_iterator<const T*>>();
+  test3<T, Iter1, forward_iterator<const T*>>();
+  test3<T, Iter1, bidirectional_iterator<const T*>>();
+  test3<T, Iter1, random_access_iterator<const T*>>();
+  test3<T, Iter1, const T*>();
 }
 
-template<class T>
+template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
 {
-    test2<T, cpp17_input_iterator<const T*> >();
-    test2<T, forward_iterator<const T*> >();
-    test2<T, bidirectional_iterator<const T*> >();
-    test2<T, random_access_iterator<const T*> >();
-    test2<T, const T*>();
+  test2<T, cpp17_input_iterator<const T*>>();
+  test2<T, forward_iterator<const T*>>();
+  test2<T, bidirectional_iterator<const T*>>();
+  test2<T, random_access_iterator<const T*>>();
+  test2<T, const T*>();
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-    test1<TrivialSortableWithComp>();
-    test1<NonTrivialSortableWithComp>();
-    return true;
+  test1<TrivialSortableWithComp>();
+  test1<NonTrivialSortableWithComp>();
+  return true;
 }
 
 int main(int, char**)
 {
-    test();
+  test();
 #if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014 && _LIBCUDACXX_IS_CONSTANT_EVALUATED
 
-    return 0;
+  return 0;
 }

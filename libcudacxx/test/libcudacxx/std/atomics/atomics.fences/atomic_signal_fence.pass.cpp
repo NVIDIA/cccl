@@ -19,7 +19,7 @@
 
 int main(int, char**)
 {
-    cuda::std::atomic_signal_fence(cuda::std::memory_order_seq_cst);
+  cuda::std::atomic_signal_fence(cuda::std::memory_order_seq_cst);
 
   return 0;
 }

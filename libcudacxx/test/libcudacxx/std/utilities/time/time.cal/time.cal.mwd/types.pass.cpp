@@ -17,10 +17,10 @@
 
 int main(int, char**)
 {
-    using month_weekday = cuda::std::chrono::month_weekday;
+  using month_weekday = cuda::std::chrono::month_weekday;
 
-    static_assert(cuda::std::is_trivially_copyable_v<month_weekday>, "");
-    static_assert(cuda::std::is_standard_layout_v<month_weekday>, "");
+  static_assert(cuda::std::is_trivially_copyable_v<month_weekday>, "");
+  static_assert(cuda::std::is_standard_layout_v<month_weekday>, "");
 
   return 0;
 }

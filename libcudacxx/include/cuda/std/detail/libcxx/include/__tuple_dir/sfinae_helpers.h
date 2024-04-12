@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
 #define _LIBCUDACXX___TUPLE_SFINAE_HELPERS_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -22,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/__fwd/tuple.h>
 #include <cuda/std/detail/libcxx/include/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/detail/libcxx/include/__tuple_dir/tuple_element.h>
@@ -36,7 +35,6 @@
 #include <cuda/std/detail/libcxx/include/__type_traits/is_same.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_cvref.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/remove_reference.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -75,8 +73,10 @@ struct __tuple_sfinae_base
 
 // __tuple_convertible
 
-template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-    bool = __tuple_like_ext<_Up>::value>
+template <class _Tp,
+          class _Up,
+          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<_Up>::value>
 struct __tuple_convertible : public false_type
 {};
 
@@ -87,8 +87,10 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 // __tuple_constructible
 
-template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-    bool = __tuple_like_ext<_Up>::value>
+template <class _Tp,
+          class _Up,
+          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<_Up>::value>
 struct __tuple_constructible : public false_type
 {};
 
@@ -99,8 +101,10 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 // __tuple_assignable
 
-template <class _Tp, class _Up, bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
-    bool = __tuple_like_ext<_Up>::value>
+template <class _Tp,
+          class _Up,
+          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<_Up>::value>
 struct __tuple_assignable : public false_type
 {};
 
@@ -110,7 +114,7 @@ struct __tuple_assignable<_Tp, _Up, true, true>
 {};
 
 template <size_t _Ip, class... _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, tuple<_Tp...> >
+struct _LIBCUDACXX_TEMPLATE_VIS tuple_element<_Ip, tuple<_Tp...>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
 };
@@ -123,8 +127,7 @@ template <class _SizeTrait, size_t _Expected>
 struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_constant<bool, _SizeTrait::value == _Expected>
 {};
 
-template <class _Tuple, size_t _ExpectedSize,
-          class _RawTuple = __remove_cvref_t<_Tuple>>
+template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t<_Tuple>>
 using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
 

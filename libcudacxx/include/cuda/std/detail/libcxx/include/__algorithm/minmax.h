@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_MINMAX_H
 #define _LIBCUDACXX___ALGORITHM_MINMAX_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -32,17 +30,15 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Compare>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<const _Tp&, const _Tp&>
-  minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<const _Tp&, const _Tp&>
+minmax(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__b, __a) ? pair<const _Tp&, const _Tp&>(__b, __a) : pair<const _Tp&, const _Tp&>(__a, __b);
 }
 
 template <class _Tp>
-_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14
-  pair<const _Tp&, const _Tp&>
-  minmax(const _Tp& __a, const _Tp& __b)
+_LIBCUDACXX_NODISCARD_EXT inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<const _Tp&, const _Tp&>
+minmax(const _Tp& __a, const _Tp& __b)
 {
   return _CUDA_VSTD::minmax(__a, __b, __less{});
 }

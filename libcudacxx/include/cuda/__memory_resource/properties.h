@@ -23,9 +23,14 @@
 
 #if !defined(_CCCL_COMPILER_MSVC_2017)
 
-#if _CCCL_STD_VER >= 2014
+#  if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
+
+/**
+ * @brief The default alignment by a cudaMalloc{...} call
+ */
+_LIBCUDACXX_INLINE_VAR constexpr size_t default_cuda_malloc_alignment = 256;
 
 /// \struct device_accessible
 /// \brief The \c device_accessible property signals that the allocated memory is device accessible
@@ -39,7 +44,7 @@ struct host_accessible
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#endif // _CCCL_STD_VER >= 2014
+#  endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER_MSVC_2017
 

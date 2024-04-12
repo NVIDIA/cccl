@@ -12,11 +12,11 @@
 // template<class T>
 // concept copyable = see below;
 
+#include "type_classification/copyable.h"
 
 #include <cuda/std/concepts>
 #include <cuda/std/type_traits>
 
-#include "type_classification/copyable.h"
 #include "test_macros.h"
 
 using cuda::std::copyable;
@@ -29,7 +29,8 @@ static_assert(copyable<int volatile*>, "");
 static_assert(copyable<int volatile const*>, "");
 static_assert(copyable<int (*)()>, "");
 
-struct S {};
+struct S
+{};
 static_assert(copyable<S>, "");
 static_assert(copyable<int S::*>, "");
 static_assert(copyable<int (S::*)()>, "");
@@ -37,25 +38,25 @@ static_assert(copyable<int (S::*)() noexcept>, "");
 static_assert(copyable<int (S::*)() &>, "");
 static_assert(copyable<int (S::*)() & noexcept>, "");
 static_assert(copyable<int (S::*)() &&>, "");
-static_assert(copyable<int (S::*)() && noexcept>, "");
+static_assert(copyable < int(S::*)() && noexcept >, "");
 static_assert(copyable<int (S::*)() const>, "");
 static_assert(copyable<int (S::*)() const noexcept>, "");
 static_assert(copyable<int (S::*)() const&>, "");
 static_assert(copyable<int (S::*)() const & noexcept>, "");
 static_assert(copyable<int (S::*)() const&&>, "");
-static_assert(copyable<int (S::*)() const && noexcept>, "");
+static_assert(copyable < int(S::*)() const&& noexcept >, "");
 static_assert(copyable<int (S::*)() volatile>, "");
 static_assert(copyable<int (S::*)() volatile noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&>, "");
 static_assert(copyable<int (S::*)() volatile & noexcept>, "");
 static_assert(copyable<int (S::*)() volatile&&>, "");
-static_assert(copyable<int (S::*)() volatile && noexcept>, "");
+static_assert(copyable < int(S::*)() volatile&& noexcept >, "");
 static_assert(copyable<int (S::*)() const volatile>, "");
 static_assert(copyable<int (S::*)() const volatile noexcept>, "");
 static_assert(copyable<int (S::*)() const volatile&>, "");
 static_assert(copyable<int (S::*)() const volatile & noexcept>, "");
 static_assert(copyable<int (S::*)() const volatile&&>, "");
-static_assert(copyable<int (S::*)() const volatile && noexcept>, "");
+static_assert(copyable < int(S::*)() const volatile&& noexcept >, "");
 
 static_assert(copyable<has_volatile_member>, "");
 static_assert(copyable<has_array_member>, "");
@@ -97,8 +98,10 @@ static_assert(!copyable<has_rvalue_reference_member>, "");
 static_assert(!copyable<has_function_ref_member>, "");
 
 static_assert(
-    !cuda::std::assignable_from<deleted_assignment_from_const_rvalue&,
-                          deleted_assignment_from_const_rvalue const>, "");
+  !cuda::std::assignable_from<deleted_assignment_from_const_rvalue&, deleted_assignment_from_const_rvalue const>, "");
 static_assert(!copyable<deleted_assignment_from_const_rvalue>, "");
 
-int main(int, char**) { return 0; }
+int main(int, char**)
+{
+  return 0;
+}

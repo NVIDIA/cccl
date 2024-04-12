@@ -14,29 +14,27 @@
 // check for member typedef type
 
 // #include <cuda/std/functional>
-#include <cuda/std/utility>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-class C {};
+class C
+{};
 
 int main(int, char**)
 {
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type,
-                                                       C>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void ()>::type,
-                                                       void ()>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (double*)>::type,
-                                                       int* (double*)>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void(*)()>::type,
-                                                       void(*)()>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(*)(double*)>::type,
-                                                       int*(*)(double*)>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(C::*)(double*)>::type,
-                                                       int*(C::*)(double*)>::value), "");
-    static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int (C::*)(double*) const volatile>::type,
-                                                       int (C::*)(double*) const volatile>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<C>::type, C>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void()>::type, void()>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int*(double*)>::type, int*(double*)>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<void (*)()>::type, void (*)()>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int* (*) (double*)>::type, int* (*) (double*)>::value),
+                "");
+  static_assert(
+    (cuda::std::is_same<cuda::std::reference_wrapper<int* (C::*) (double*)>::type, int* (C::*) (double*)>::value), "");
+  static_assert((cuda::std::is_same<cuda::std::reference_wrapper<int (C::*)(double*) const volatile>::type,
+                                    int (C::*)(double*) const volatile>::value),
+                "");
 
   return 0;
 }

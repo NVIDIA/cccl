@@ -16,18 +16,19 @@
 //   max(const T& a, const T& b, Compare comp);
 
 #include <cuda/std/__algorithm>
-#include <cuda/std/functional>
 #include <cuda/std/cassert>
+#include <cuda/std/functional>
 
 #include "test_macros.h"
 
 template <class T, class C>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& a, const T& b, C c,
-                                                   const T& x) {
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& a, const T& b, C c, const T& x)
+{
   assert(&cuda::std::max(a, b, c) == &x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+{
   {
     int x = 0;
     int y = 0;
@@ -49,7 +50,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");

@@ -21,7 +21,8 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test() {
+__host__ __device__ constexpr bool test()
+{
   // const &, has_value()
   {
     const cuda::std::expected<int, int> e(5);
@@ -57,10 +58,11 @@ __host__ __device__ constexpr bool test() {
   return true;
 }
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  static_assert(test(),"");
+  static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   return 0;
 }

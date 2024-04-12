@@ -11,9 +11,7 @@
 #ifndef _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H
 #define _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -35,21 +33,26 @@ template <class _Predicate>
 class _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate
     : public __unary_function<typename _Predicate::argument_type, bool>
 {
-    _Predicate __pred_;
+  _Predicate __pred_;
+
 public:
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    explicit unary_negate(const _Predicate& __pred)
-        : __pred_(__pred) {}
-    _CCCL_EXEC_CHECK_DISABLE
-    _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-    bool operator()(const typename _Predicate::argument_type& __x) const
-        {return !__pred_(__x);}
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY explicit unary_negate(const _Predicate& __pred)
+      : __pred_(__pred)
+  {}
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY bool
+  operator()(const typename _Predicate::argument_type& __x) const
+  {
+    return !__pred_(__x);
+  }
 };
 
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY
-unary_negate<_Predicate>
-not1(const _Predicate& __pred) {return unary_negate<_Predicate>(__pred);}
+_LIBCUDACXX_DEPRECATED_IN_CXX17 inline _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_INLINE_VISIBILITY unary_negate<_Predicate>
+not1(const _Predicate& __pred)
+{
+  return unary_negate<_Predicate>(__pred);
+}
 
 _CCCL_SUPPRESS_DEPRECATED_POP
 

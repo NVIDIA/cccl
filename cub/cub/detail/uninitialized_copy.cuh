@@ -55,7 +55,7 @@ _CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 #else
 template <typename T,
           typename U,
-          typename ::cuda::std::enable_if< ::cuda::std::is_trivially_copyable<T>::value, int >::type = 0>
+          typename ::cuda::std::enable_if<::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
 _CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 {
   *ptr = ::cuda::std::forward<U>(val);
@@ -63,7 +63,7 @@ _CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 
 template <typename T,
           typename U,
-          typename ::cuda::std::enable_if< !::cuda::std::is_trivially_copyable<T>::value, int >::type = 0>
+          typename ::cuda::std::enable_if<!::cuda::std::is_trivially_copyable<T>::value, int>::type = 0>
 _CCCL_HOST_DEVICE void uninitialized_copy(T* ptr, U&& val)
 {
   new (ptr) T(::cuda::std::forward<U>(val));

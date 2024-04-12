@@ -20,5 +20,5 @@ static_assert(cuda::std::is_trivially_copyable<cuda::std::span<int, 3>>::value, 
 
 int main(int, char**)
 {
-    return 0;
+  return 0;
 }

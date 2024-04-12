@@ -93,7 +93,7 @@ struct SelectOp
 /**
  * Test random access input iterator
  */
-template < typename InputIteratorT, typename T>
+template <typename InputIteratorT, typename T>
 __global__ void Kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
 {
   d_out[0] = *d_in; // Value at offset 0
@@ -123,7 +123,7 @@ __global__ void Kernel(InputIteratorT d_in, T* d_out, InputIteratorT* d_itrs)
 /**
  * Run iterator test on device
  */
-template < typename InputIteratorT, typename T, int TEST_VALUES>
+template <typename InputIteratorT, typename T, int TEST_VALUES>
 void Test(InputIteratorT d_in, T (&h_reference)[TEST_VALUES])
 {
   // Allocate device arrays

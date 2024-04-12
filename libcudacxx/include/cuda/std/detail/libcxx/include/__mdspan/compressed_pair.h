@@ -44,9 +44,7 @@
 #ifndef _LIBCUDACXX___MDSPAN_COMPRESSED_PAIR_HPP
 #define _LIBCUDACXX___MDSPAN_COMPRESSED_PAIR_HPP
 
-#ifndef __cuda_std__
-#include <__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -58,7 +56,7 @@
 
 #include <cuda/std/detail/libcxx/include/__mdspan/macros.h>
 #ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
+#  include <cuda/std/detail/libcxx/include/__mdspan/no_unique_address.h>
 #endif
 #include <cuda/std/detail/libcxx/include/__type_traits/enable_if.h>
 #include <cuda/std/detail/libcxx/include/__type_traits/is_empty.h>
@@ -67,173 +65,203 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-namespace __detail {
+namespace __detail
+{
 
 // For no unique address emulation, this is the case taken when neither are empty.
 // For real `[[no_unique_address]]`, this case is always taken.
-template <class _Tp, class _Up, class _Enable = void> struct __compressed_pair {
+template <class _Tp, class _Up, class _Enable = void>
+struct __compressed_pair
+{
   _LIBCUDACXX_NO_UNIQUE_ADDRESS _Tp __t_val;
   _LIBCUDACXX_NO_UNIQUE_ADDRESS _Up __u_val;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept { return __t_val; }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__first() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __first() noexcept
+  {
     return __t_val;
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up &__second() noexcept { return __u_val; }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const &__second() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __first() const noexcept
+  {
+    return __t_val;
+  }
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up& __second() noexcept
+  {
+    return __u_val;
+  }
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const& __second() const noexcept
+  {
     return __u_val;
   }
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __compressed_pair() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair const &) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair &&) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike &&__t, _ULike &&__u)
-      : __t_val((_TLike &&) __t), __u_val((_ULike &&) __u) {}
+  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+      : __t_val((_TLike&&) __t)
+      , __u_val((_ULike&&) __u)
+  {}
 };
 
-#ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  ifdef _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 // First empty.
 template <class _Tp, class _Up>
 struct __compressed_pair<
-    _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
-    : private _Tp {
+  _Tp,
+  _Up,
+  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && !_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+    : private _Tp
+{
   _Up __u_val;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept {
-    return *static_cast<_Tp *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __first() noexcept
+  {
+    return *static_cast<_Tp*>(this);
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__first() const noexcept {
-    return *static_cast<_Tp const *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __first() const noexcept
+  {
+    return *static_cast<_Tp const*>(this);
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up &__second() noexcept { return __u_val; }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const &__second() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up& __second() noexcept
+  {
+    return __u_val;
+  }
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const& __second() const noexcept
+  {
     return __u_val;
   }
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __compressed_pair() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair const &) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair &&) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike &&__t, _ULike &&__u)
-      : _Tp((_TLike &&) __t), __u_val((_ULike &&) __u) {}
+  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+      : _Tp((_TLike&&) __t)
+      , __u_val((_ULike&&) __u)
+  {}
 };
 
 // Second empty.
 template <class _Tp, class _Up>
 struct __compressed_pair<
-    _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<!_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
-    : private _Up {
+  _Tp,
+  _Up,
+  _CUDA_VSTD::enable_if_t<!_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+    : private _Up
+{
   _Tp __t_val;
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept { return __t_val; }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__first() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __first() noexcept
+  {
     return __t_val;
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up &__second() noexcept {
-    return *static_cast<_Up *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __first() const noexcept
+  {
+    return __t_val;
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const &__second() const noexcept {
-    return *static_cast<_Up const *>(this);
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up& __second() noexcept
+  {
+    return *static_cast<_Up*>(this);
+  }
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const& __second() const noexcept
+  {
+    return *static_cast<_Up const*>(this);
   }
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __compressed_pair() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair const &) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair &&) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__compressed_pair() noexcept = default;
 
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike &&__t, _ULike &&__u)
-      : _Up((_ULike &&) __u), __t_val((_TLike &&) __t) {}
+  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u)
+      : _Up((_ULike&&) __u)
+      , __t_val((_TLike&&) __t)
+  {}
 };
 
 // Both empty.
 template <class _Tp, class _Up>
 struct __compressed_pair<
-    _Tp, _Up,
-    _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
-    // We need to use the __no_unique_address_emulation wrapper here to avoid
-    // base class ambiguities.
-#ifdef __MDSPAN_COMPILER_MSVC
-// MSVC doesn't allow you to access public static member functions of a type
-// when you *happen* to privately inherit from that type.
-    : protected __no_unique_address_emulation<_Tp, 0>,
-      protected __no_unique_address_emulation<_Up, 1>
-#else
-    : private __no_unique_address_emulation<_Tp, 0>,
-      private __no_unique_address_emulation<_Up, 1>
-#endif
+  _Tp,
+  _Up,
+  _CUDA_VSTD::enable_if_t<_LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Tp) && _LIBCUDACXX_TRAIT(_CUDA_VSTD::is_empty, _Up)>>
+// We need to use the __no_unique_address_emulation wrapper here to avoid
+// base class ambiguities.
+#    ifdef __MDSPAN_COMPILER_MSVC
+    // MSVC doesn't allow you to access public static member functions of a type
+    // when you *happen* to privately inherit from that type.
+    : protected __no_unique_address_emulation<_Tp, 0>
+    , protected __no_unique_address_emulation<_Up, 1>
+#    else
+    : private __no_unique_address_emulation<_Tp, 0>
+    , private __no_unique_address_emulation<_Up, 1>
+#    endif
 {
-  using __first_base_t = __no_unique_address_emulation<_Tp, 0>;
+  using __first_base_t  = __no_unique_address_emulation<_Tp, 0>;
   using __second_base_t = __no_unique_address_emulation<_Up, 1>;
 
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp &__first() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp& __first() noexcept
+  {
     return this->__first_base_t::__ref();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const &__first() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Tp const& __first() const noexcept
+  {
     return this->__first_base_t::__ref();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up &__second() noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up& __second() noexcept
+  {
     return this->__second_base_t::__ref();
   }
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const &__second() const noexcept {
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _Up const& __second() const noexcept
+  {
     return this->__second_base_t::__ref();
   }
 
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __compressed_pair() noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair const &) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __compressed_pair(__compressed_pair &&) noexcept = default;
+  constexpr __compressed_pair(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair const &) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair const&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair &
-  operator=(__compressed_pair &&) noexcept = default;
+  __MDSPAN_CONSTEXPR_14_DEFAULTED __compressed_pair& operator=(__compressed_pair&&) noexcept = default;
   __MDSPAN_INLINE_FUNCTION_DEFAULTED
   ~__compressed_pair() noexcept = default;
   template <class _TLike, class _ULike>
-  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike &&__t, _ULike &&__u) noexcept
-    : __first_base_t(_Tp((_TLike &&) __t)),
-      __second_base_t(_Up((_ULike &&) __u))
-  { }
+  __MDSPAN_INLINE_FUNCTION constexpr __compressed_pair(_TLike&& __t, _ULike&& __u) noexcept
+      : __first_base_t(_Tp((_TLike&&) __t))
+      , __second_base_t(_Up((_ULike&&) __u))
+  {}
 };
 
-#endif // !_LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  endif // !_LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 
 } // end namespace __detail
 

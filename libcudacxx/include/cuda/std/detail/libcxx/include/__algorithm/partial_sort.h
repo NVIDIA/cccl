@@ -10,9 +10,7 @@
 #ifndef _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_H
 #define _LIBCUDACXX___ALGORITHM_PARTIAL_SORT_H
 
-#ifndef __cuda_std__
-#  include <cuda/std/detail/__config>
-#endif // __cuda_std__
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -71,7 +69,7 @@ __partial_sort(_RandomAccessIterator __first, _RandomAccessIterator __middle, _S
   }
 
   return _CUDA_VSTD::__partial_sort_impl<_AlgPolicy>(
-    __first, __middle, __last, static_cast<__comp_ref_type<_Compare> >(__comp));
+    __first, __middle, __last, static_cast<__comp_ref_type<_Compare>>(__comp));
 }
 
 template <class _RandomAccessIterator, class _Compare>

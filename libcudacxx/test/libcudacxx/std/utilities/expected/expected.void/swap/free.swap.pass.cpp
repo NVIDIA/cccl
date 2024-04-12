@@ -25,7 +25,8 @@
 // Test constraint
 static_assert(cuda::std::is_swappable_v<cuda::std::expected<void, int>>, "");
 
-struct NotSwappable {
+struct NotSwappable
+{
   __host__ __device__ NotSwappable& operator=(const NotSwappable&) = delete;
 };
 __host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
@@ -33,7 +34,8 @@ __host__ __device__ void swap(NotSwappable&, NotSwappable&) = delete;
 // !is_swappable_v<E>
 static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotSwappable>>, "");
 
-struct NotMoveContructible {
+struct NotMoveContructible
+{
   NotMoveContructible(NotMoveContructible&&) = delete;
   __host__ __device__ friend void swap(NotMoveContructible&, NotMoveContructible&) {}
 };
@@ -42,7 +44,8 @@ struct NotMoveContructible {
 static_assert(!cuda::std::is_swappable_v<cuda::std::expected<void, NotMoveContructible>>, "");
 
 // Test noexcept
-struct MoveMayThrow {
+struct MoveMayThrow
+{
   __host__ __device__ MoveMayThrow(MoveMayThrow&&) noexcept(false);
   __host__ __device__ friend void swap(MoveMayThrow&, MoveMayThrow&) noexcept {}
 };
@@ -52,13 +55,15 @@ static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>,
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, MoveMayThrow>>, "");
 
-struct SwapMayThrow {
+struct SwapMayThrow
+{
   __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, SwapMayThrow>>, "");
 #endif // TEST_COMPILER_ICC
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // this->has_value() && rhs.has_value()
   {
     cuda::std::expected<void, int> x;
@@ -118,17 +123,21 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_exceptions()
+{
   // !e1.has_value() && e2.has_value()
   {
     bool e1Destroyed = false;
     cuda::std::expected<void, ThrowOnMove> e1(cuda::std::unexpect, e1Destroyed);
     cuda::std::expected<void, ThrowOnMove> e2(cuda::std::in_place);
-    try {
+    try
+    {
       swap(e1, e2);
       assert(false);
-    } catch (Except) {
+    }
+    catch (Except)
+    {
       assert(!e1.has_value());
       assert(e2.has_value());
       assert(!e1Destroyed);
@@ -140,23 +149,29 @@ __host__ __device__ void testException() {
     bool e2Destroyed = false;
     cuda::std::expected<void, ThrowOnMove> e1(cuda::std::in_place);
     cuda::std::expected<void, ThrowOnMove> e2(cuda::std::unexpect, e2Destroyed);
-    try {
+    try
+    {
       swap(e1, e2);
       assert(false);
-    } catch (Except) {
+    }
+    catch (Except)
+    {
       assert(e1.has_value());
       assert(!e2.has_value());
       assert(!e2Destroyed);
     }
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test());
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

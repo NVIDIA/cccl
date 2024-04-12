@@ -584,7 +584,7 @@ void Sample(T& datum, LevelT max_level, int entropy_reduction)
 /**
  * Initialize histogram samples
  */
-template < int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename LevelT, typename SampleT, typename OffsetT>
+template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename LevelT, typename SampleT, typename OffsetT>
 void InitializeSamples(
   LevelT max_level,
   int entropy_reduction,
@@ -621,12 +621,12 @@ void InitializeSamples(
 /**
  * Initialize histogram solutions
  */
-template < int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename CounterT,
-           typename SampleIteratorT,
-           typename TransformOp,
-           typename OffsetT>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename CounterT,
+          typename SampleIteratorT,
+          typename TransformOp,
+          typename OffsetT>
 void InitializeBins(
   SampleIteratorT h_samples,
   int num_levels[NUM_ACTIVE_CHANNELS], ///< [in] The number of boundaries (levels) for delineating histogram samples in
@@ -699,14 +699,14 @@ void InitializeBins(
 /**
  * Test histogram-even
  */
-template < Backend BACKEND,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename SampleT,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT,
-           typename SampleIteratorT>
+template <Backend BACKEND,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          typename SampleIteratorT>
 void TestEven(
   LevelT max_level,
   int entropy_reduction,
@@ -941,13 +941,13 @@ void TestEven(
 /**
  * Test histogram-even (native pointer input)
  */
-template < Backend BACKEND,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename SampleT,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT>
+template <Backend BACKEND,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT>
 void TestEvenNative(
   LevelT max_level,
   int entropy_reduction,
@@ -1002,13 +1002,13 @@ void TestEvenNative(
 /**
  * Test histogram-even (iterator input)
  */
-template < Backend BACKEND,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename SampleT,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT>
+template <Backend BACKEND,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT>
 void TestEvenIterator(
   Int2Type<false> /*is_half*/,
   LevelT max_level,
@@ -1059,13 +1059,13 @@ void TestEvenIterator(
 /**
  * Test histogram-range
  */
-template < Backend BACKEND,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename SampleT,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT>
+template <Backend BACKEND,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT>
 void TestRange(LevelT max_level,
                int entropy_reduction,
                int num_levels[NUM_ACTIVE_CHANNELS], ///< [in] The number of boundaries (levels) for delineating
@@ -1313,13 +1313,13 @@ void TestRange(LevelT max_level,
 /**
  * Test histogram-even
  */
-template < Backend BACKEND,
-           typename SampleT,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT>
+template <Backend BACKEND,
+          typename SampleT,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT>
 void TestEven(OffsetT num_row_pixels,
               OffsetT num_rows,
               OffsetT row_stride_bytes,
@@ -1365,13 +1365,13 @@ void TestEven(OffsetT num_row_pixels,
 /**
  * Test histogram-range
  */
-template < Backend BACKEND,
-           typename SampleT,
-           int NUM_CHANNELS,
-           int NUM_ACTIVE_CHANNELS,
-           typename CounterT,
-           typename LevelT,
-           typename OffsetT>
+template <Backend BACKEND,
+          typename SampleT,
+          int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT>
 void TestRange(OffsetT num_row_pixels,
                OffsetT num_rows,
                OffsetT row_stride_bytes,
@@ -1410,7 +1410,7 @@ void TestRange(OffsetT num_row_pixels,
 /**
  * Test different entrypoints
  */
-template < typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
 void Test(OffsetT num_row_pixels,
           OffsetT num_rows,
           OffsetT row_stride_bytes,
@@ -1429,7 +1429,7 @@ void Test(OffsetT num_row_pixels,
 /**
  * Test different number of levels
  */
-template < typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
 void Test(OffsetT num_row_pixels,
           OffsetT num_rows,
           OffsetT row_stride_bytes,
@@ -1452,7 +1452,7 @@ void Test(OffsetT num_row_pixels,
 /**
  * Test different entropy-levels
  */
-template < typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
 void Test(OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_bytes, LevelT max_level, int max_num_levels)
 {
   // entropy_reduction = -1 -> all samples == 0
@@ -1469,7 +1469,7 @@ void Test(OffsetT num_row_pixels, OffsetT num_rows, OffsetT row_stride_bytes, Le
 /**
  * Test different row strides
  */
-template < typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
 void Test(OffsetT num_row_pixels, OffsetT num_rows, LevelT max_level, int max_num_levels)
 {
   OffsetT row_stride_bytes = num_row_pixels * NUM_CHANNELS * sizeof(SampleT);
@@ -1486,7 +1486,7 @@ void Test(OffsetT num_row_pixels, OffsetT num_rows, LevelT max_level, int max_nu
 /**
  * Test different problem sizes
  */
-template < typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
+template <typename SampleT, int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename CounterT, typename LevelT, typename OffsetT>
 void Test(LevelT max_level, int max_num_levels)
 {
   // 0 row/col images

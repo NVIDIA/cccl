@@ -38,15 +38,18 @@
 
 // Test Constraints:
 template <class T1, class Err1, class T2, class Err2>
-constexpr bool canCstrFromExpected = cuda::std::is_constructible<cuda::std::expected<T1, Err1>, const cuda::std::expected<T2, Err2>&>::value;
+constexpr bool canCstrFromExpected =
+  cuda::std::is_constructible<cuda::std::expected<T1, Err1>, const cuda::std::expected<T2, Err2>&>::value;
 
-struct CtorFromInt {
+struct CtorFromInt
+{
   __host__ __device__ CtorFromInt(int);
 };
 
 static_assert(canCstrFromExpected<void, CtorFromInt, void, int>, "");
 
-struct NoCtorFromInt {};
+struct NoCtorFromInt
+{};
 
 // !is_void_v<E>
 static_assert(!canCstrFromExpected<void, int, int, int>, "");
@@ -55,12 +58,13 @@ static_assert(!canCstrFromExpected<void, int, int, int>, "");
 static_assert(!canCstrFromExpected<void, NoCtorFromInt, void, int>, "");
 
 template <class T>
-struct CtorFrom {
+struct CtorFrom
+{
   _LIBCUDACXX_TEMPLATE(class T2 = T)
-    _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>))
+  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ explicit CtorFrom(int);
   __host__ __device__ explicit CtorFrom(T);
-  template<class U>
+  template <class U>
   __host__ __device__ explicit CtorFrom(U&&) = delete;
 };
 
@@ -82,15 +86,21 @@ static_assert(!canCstrFromExpected<void, CtorFrom<cuda::std::expected<void, int>
 static_assert(cuda::std::is_convertible_v<const cuda::std::expected<void, int>&, cuda::std::expected<void, long>>, "");
 
 // !is_convertible_v<GF, E>.
-static_assert(cuda::std::is_constructible_v<cuda::std::expected<void, CtorFrom<int>>, const cuda::std::expected<void, int>&>, "");
-static_assert(!cuda::std::is_convertible_v<const cuda::std::expected<void, int>&, cuda::std::expected<void, CtorFrom<int>>>, "");
+static_assert(
+  cuda::std::is_constructible_v<cuda::std::expected<void, CtorFrom<int>>, const cuda::std::expected<void, int>&>, "");
+static_assert(
+  !cuda::std::is_convertible_v<const cuda::std::expected<void, int>&, cuda::std::expected<void, CtorFrom<int>>>, "");
 
-struct Data {
+struct Data
+{
   int i;
-  __host__ __device__ constexpr Data(int ii) : i(ii) {}
+  __host__ __device__ constexpr Data(int ii)
+      : i(ii)
+  {}
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
+{
   // convert the error
   {
     const cuda::std::expected<void, int> e1(cuda::std::unexpect, 5);
@@ -104,33 +114,43 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test() {
   return true;
 }
 
-__host__ __device__ void testException() {
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except {};
+void test_exceptions()
+{
+  struct Except
+  {};
 
-  struct ThrowingInt {
-    __host__ __device__ ThrowingInt(int) { throw Except{}; }
+  struct ThrowingInt
+  {
+    __host__ __device__ ThrowingInt(int)
+    {
+      throw Except{};
+    }
   };
 
   // throw on converting error
   {
     const cuda::std::expected<void, int> e1(cuda::std::unexpect);
-    try {
+    try
+    {
       cuda::std::expected<void, ThrowingInt> e2 = e1;
       unused(e2);
       assert(false);
-    } catch (Except) {
     }
+    catch (Except)
+    {}
   }
-
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-int main(int, char**) {
+int main(int, char**)
+{
   test();
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

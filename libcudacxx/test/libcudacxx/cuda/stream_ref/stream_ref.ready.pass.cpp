@@ -10,29 +10,31 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <cuda/stream_ref>
 #include <cuda/std/cassert>
+#include <cuda/stream_ref>
 
-void test_ready(cuda::stream_ref& ref) {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
-    try {
-      assert(ref.ready());
-    } catch (...) {
-      assert(false && "Should not have thrown");
-    }
-#else
+void test_ready(cuda::stream_ref& ref)
+{
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  try
+  {
     assert(ref.ready());
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+  }
+  catch (...)
+  {
+    assert(false && "Should not have thrown");
+  }
+#else
+  assert(ref.ready());
+#endif // !TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int argc, char** argv) {
-    NV_IF_TARGET(NV_IS_HOST,( // passing case
-        cudaStream_t stream;
-        cudaStreamCreate(&stream);
-        cuda::stream_ref ref{stream};
-        test_ready(ref);
-        cudaStreamDestroy(stream);
-    ))
+int main(int argc, char** argv)
+{
+  NV_IF_TARGET(NV_IS_HOST,
+               ( // passing case
+                 cudaStream_t stream; cudaStreamCreate(&stream); cuda::stream_ref ref{stream}; test_ready(ref);
+                 cudaStreamDestroy(stream);))
 
-    return 0;
+  return 0;
 }

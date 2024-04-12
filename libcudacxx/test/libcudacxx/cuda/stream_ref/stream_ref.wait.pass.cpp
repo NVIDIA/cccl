@@ -10,8 +10,9 @@
 
 // UNSUPPORTED: nvrtc
 
-#include <cuda/stream_ref>
 #include <cuda/std/cassert>
+#include <cuda/stream_ref>
+
 #include <atomic>
 #include <chrono>
 #include <thread>
@@ -23,29 +24,33 @@ void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
   assert(!reinterpret_cast<std::atomic_flag*>(flag)->test_and_set());
 }
 
-void test_wait(cuda::stream_ref& ref) {
-  #ifndef _LIBCUDACXX_NO_EXCEPTIONS
-      try {
-        ref.wait();
-      } catch (...) {
-        assert(false && "Should not have thrown");
-      }
-  #else
-      ref.wait();
-  #endif // _LIBCUDACXX_NO_EXCEPTIONS
+void test_wait(cuda::stream_ref& ref)
+{
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  try
+  {
+    ref.wait();
+  }
+  catch (...)
+  {
+    assert(false && "Should not have thrown");
+  }
+#else
+  ref.wait();
+#endif // !TEST_HAS_NO_EXCEPTIONS
 }
 
-int main(int argc, char** argv) {
-    NV_IF_TARGET(NV_IS_HOST,( // passing case
-        cudaStream_t stream;
-        cudaStreamCreate(&stream);
-        std::atomic_flag flag = ATOMIC_FLAG_INIT;
-        cudaStreamAddCallback(stream, callback, &flag, 0);
-        cuda::stream_ref ref{stream};
-        test_wait(ref);
-        assert(flag.test_and_set());
-        cudaStreamDestroy(stream);
-    ))
+int main(int argc, char** argv)
+{
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    ( // passing case
+      cudaStream_t stream; cudaStreamCreate(&stream); std::atomic_flag flag = ATOMIC_FLAG_INIT;
+      cudaStreamAddCallback(stream, callback, &flag, 0);
+      cuda::stream_ref ref{stream};
+      test_wait(ref);
+      assert(flag.test_and_set());
+      cudaStreamDestroy(stream);))
 
-    return 0;
+  return 0;
 }
