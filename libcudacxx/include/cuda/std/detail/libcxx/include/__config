@@ -404,14 +404,14 @@ extern "C++" {
 #define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  define _ALIGNAS_TYPE(x) alignas(x)
-#  define _ALIGNAS(x) __declspec(align(x))
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x) __declspec(align(x))
 #elif __has_feature(cxx_alignas)
-#  define _ALIGNAS_TYPE(x) alignas(x)
-#  define _ALIGNAS(x) alignas(x)
+#  define _CCCL_ALIGNAS_TYPE(x) alignas(x)
+#  define _CCCL_ALIGNAS(x) alignas(x)
 #else
-#  define _ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
-#  define _ALIGNAS(x) __attribute__((__aligned__(x)))
+#  define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
+#  define _CCCL_ALIGNAS(x) __attribute__((__aligned__(x)))
 #endif // !_CCCL_COMPILER_MSVC && !__has_feature(cxx_alignas)
 
 #define _LIBCUDACXX_TOSTRING2(_STR) #_STR

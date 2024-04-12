@@ -360,7 +360,7 @@ struct _LIBCUDACXX_TEMPLATE_VIS array<_Tp, 0>
   {
     _Tp __data_[1];
   };
-  _ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
+  _CCCL_ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 value_type* data() noexcept
   {

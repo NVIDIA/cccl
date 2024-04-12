@@ -23,6 +23,8 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
+                  '_CCCL_ALIGNAS_TYPE',
+                  '_CCCL_ALIGNAS',
                   '_CCCL_CONSTEXPR_CXX14',
                   '_CCCL_CONSTEXPR_CXX17',
                   '_CCCL_CONSTEXPR_CXX20',
@@ -41,8 +43,6 @@ AttributeMacros: [
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',
                   'THRUST_RUNTIME_FUNCTION',
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
-                  '_ALIGNAS_TYPE',
-                  '_ALIGNAS',
                   '_LIBCUDACXX_ALIGNOF',
                   '_LIBCUDACXX_ALWAYS_INLINE',
                   '_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS',

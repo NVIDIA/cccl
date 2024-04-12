@@ -1006,7 +1006,7 @@ __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, 
 template <size_t _Copy_size>
 struct __copy_chunk
 {
-  _ALIGNAS(_Copy_size) char data[_Copy_size];
+  _CCCL_ALIGNAS(_Copy_size) char data[_Copy_size];
 };
 
 template <size_t _Alignment, typename _Group>

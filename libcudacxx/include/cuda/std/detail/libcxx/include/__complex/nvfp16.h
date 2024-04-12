@@ -61,7 +61,7 @@ struct __libcpp_complex_overload_traits<__half, false, false>
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS _ALIGNAS(alignof(__half2)) complex<__half>
+class _LIBCUDACXX_TEMPLATE_VIS _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
 {
   __half2 __repr_;
 

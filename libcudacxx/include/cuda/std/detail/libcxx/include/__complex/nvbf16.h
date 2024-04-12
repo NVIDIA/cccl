@@ -64,7 +64,7 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
 };
 
 template <>
-class _LIBCUDACXX_TEMPLATE_VIS _ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
+class _LIBCUDACXX_TEMPLATE_VIS _CCCL_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
 {
   __nv_bfloat162 __repr_;
 
