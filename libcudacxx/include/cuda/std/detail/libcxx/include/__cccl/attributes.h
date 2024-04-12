@@ -76,4 +76,12 @@
 #  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
 #endif // !_CCCL_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
 
+#if defined(_CCCL_COMPILER_MSVC)
+#  define _CCCL_NORETURN __declspec(noreturn)
+#elif __has_cpp_attribute(noreturn)
+#  define _CCCL_NORETURN [[noreturn]]
+#else
+#  define _CCCL_NORETURN __attribute__((noreturn))
+#endif
+
 #endif // __CCCL_ATTRIBUTES_H

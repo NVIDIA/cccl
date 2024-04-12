@@ -1169,14 +1169,6 @@ typedef __char32_t char32_t;
 #endif
 #endif // !_LIBCUDACXX_NODEBUG_TYPE
 
-#if defined(_CCCL_COMPILER_MSVC)
-#  define _LIBCUDACXX_NORETURN __declspec(noreturn)
-#elif __has_feature(cxx_attributes)
-#  define _LIBCUDACXX_NORETURN [[noreturn]]
-#else
-#  define _LIBCUDACXX_NORETURN __attribute__ ((noreturn))
-#endif
-
 #if defined(_LIBCUDACXX_OBJECT_FORMAT_COFF)
 
 #ifdef _DLL

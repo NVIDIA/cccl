@@ -2028,7 +2028,7 @@ public:
     virtual const char* what() const  noexcept;
 };
 
-_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
+_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY
 void __throw_bad_weak_ptr()
 {
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
