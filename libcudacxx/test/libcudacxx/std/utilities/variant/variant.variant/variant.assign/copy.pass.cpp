@@ -17,7 +17,9 @@
 // constexpr variant& operator=(variant const&);
 
 #include <cuda/std/cassert>
-// #include <cuda/std/string>
+#if defined(_LIBCUDACXX_HAS_STRING)
+#  include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
 
@@ -266,7 +268,7 @@ struct MakeEmptyT
 
 int MakeEmptyT::alive = 0;
 
-__host__ __device__ template <class Variant>
+template <class Variant>
 void makeEmpty(Variant& v)
 {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
@@ -280,7 +282,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 __host__ __device__ void test_copy_assignment_not_noexcept()
 {
@@ -343,9 +345,9 @@ __host__ __device__ void test_copy_assignment_sfinae()
   }
 }
 
-__host__ __device__ void test_copy_assignment_empty_empty()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_copy_assignment_empty_empty()
+{
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, long, MET>;
@@ -358,12 +360,10 @@ __host__ __device__ void test_copy_assignment_empty_empty()
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__ void test_copy_assignment_non_empty_empty()
+void test_copy_assignment_non_empty_empty()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -375,22 +375,22 @@ __host__ __device__ void test_copy_assignment_non_empty_empty()
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<2>, "hello");
     V v2(cuda::std::in_place_index<0>);
     makeEmpty(v2);
-    V &vref = (v1 = v2);
+    V& vref = (v1 = v2);
     assert(&vref == &v1);
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
 }
 
-__host__ __device__ void test_copy_assignment_empty_non_empty()
+void test_copy_assignment_empty_non_empty()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -402,18 +402,20 @@ __host__ __device__ void test_copy_assignment_empty_non_empty()
     assert(v1.index() == 0);
     assert(cuda::std::get<0>(v1) == 42);
   }
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<0>);
     makeEmpty(v1);
     V v2(cuda::std::in_place_type<cuda::std::string>, "hello");
-    V &vref = (v1 = v2);
+    V& vref = (v1 = v2);
     assert(&vref == &v1);
     assert(v1.index() == 2);
     assert(cuda::std::get<2>(v1) == "hello");
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <typename T>
 struct Result
@@ -463,21 +465,25 @@ __host__ __device__ void test_copy_assignment_same_index()
 #endif // !TEST_COMPILER_MSVC
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
+#  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
-  /*{
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_type<MET>);
-    MET &mref = cuda::std::get<1>(v1);
+    MET& mref = cuda::std::get<1>(v1);
     V v2(cuda::std::in_place_type<MET>);
-    try {
+    try
+    {
       v1 = v2;
       assert(false);
-    } catch (...) {
     }
+    catch (...)
+    {}
     assert(v1.index() == 1);
     assert(&cuda::std::get<1>(v1) == &mref);
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -582,14 +588,19 @@ __host__ __device__ void test_copy_assignment_different_index()
 #endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_ICC
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, CopyThrows, cuda::std::string>;
     V v1(cuda::std::in_place_type<cuda::std::string>, "hello");
     V v2(cuda::std::in_place_type<CopyThrows>);
-    try {
+    try
+    {
       v1 = v2;
       assert(false);
-    } catch (...) { / * ... * /
+    }
+    catch (...)
+    {
+      / *...* /
     }
     // Test that copy construction is used directly if move construction may throw,
     // resulting in a valueless variant if copy throws.
@@ -621,7 +632,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     using V = cuda::std::variant<int, CopyThrows, cuda::std::string>;
     V v1(cuda::std::in_place_type<CopyThrows>);
     V v2(cuda::std::in_place_type<cuda::std::string>, "hello");
-    V &vref = (v1 = v2);
+    V& vref = (v1 = v2);
     assert(&vref == &v1);
     assert(v1.index() == 2);
     assert(cuda::std::get<2>(v1) == "hello");
@@ -632,14 +643,15 @@ __host__ __device__ void test_copy_assignment_different_index()
     using V = cuda::std::variant<int, MoveThrows, cuda::std::string>;
     V v1(cuda::std::in_place_type<MoveThrows>);
     V v2(cuda::std::in_place_type<cuda::std::string>, "hello");
-    V &vref = (v1 = v2);
+    V& vref = (v1 = v2);
     assert(&vref == &v1);
     assert(v1.index() == 2);
     assert(cuda::std::get<2>(v1) == "hello");
     assert(v2.index() == 2);
     assert(cuda::std::get<2>(v2) == "hello");
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -699,9 +711,11 @@ __host__ __device__ void test_constexpr_copy_assignment()
 
 int main(int, char**)
 {
-  test_copy_assignment_empty_empty();
-  test_copy_assignment_non_empty_empty();
-  test_copy_assignment_empty_non_empty();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_non_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_non_empty();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   test_copy_assignment_same_index();
   test_copy_assignment_different_index();
   test_copy_assignment_sfinae();

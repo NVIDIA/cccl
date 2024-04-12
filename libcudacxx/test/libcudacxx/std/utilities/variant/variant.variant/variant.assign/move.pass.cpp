@@ -17,7 +17,9 @@
 // constexpr variant& operator=(variant&&) noexcept(see below);
 
 #include <cuda/std/cassert>
+#if defined(_LIBCUDACXX_HAS_STRING)
 // #include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 #include <cuda/std/variant>
@@ -249,9 +251,9 @@ __host__ __device__ void test_move_assignment_sfinae()
   }
 }
 
-__host__ __device__ void test_move_assignment_empty_empty()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
+void test_move_assignment_empty_empty()
+{
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, long, MET>;
@@ -264,12 +266,10 @@ __host__ __device__ void test_move_assignment_empty_empty()
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
 
-__host__ __device__ void test_move_assignment_non_empty_empty()
+void test_move_assignment_non_empty_empty()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -281,22 +281,22 @@ __host__ __device__ void test_move_assignment_non_empty_empty()
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<2>, "hello");
     V v2(cuda::std::in_place_index<0>);
     makeEmpty(v2);
-    V &vref = (v1 = cuda::std::move(v2));
+    V& vref = (v1 = cuda::std::move(v2));
     assert(&vref == &v1);
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
 }
 
-__host__ __device__ void test_move_assignment_empty_non_empty()
+void test_move_assignment_empty_non_empty()
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
   using MET = MakeEmptyT;
   {
     using V = cuda::std::variant<int, MET>;
@@ -308,18 +308,20 @@ __host__ __device__ void test_move_assignment_empty_non_empty()
     assert(v1.index() == 0);
     assert(cuda::std::get<0>(v1) == 42);
   }
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_index<0>);
     makeEmpty(v1);
     V v2(cuda::std::in_place_type<cuda::std::string>, "hello");
-    V &vref = (v1 = cuda::std::move(v2));
+    V& vref = (v1 = cuda::std::move(v2));
     assert(&vref == &v1);
     assert(v1.index() == 2);
     assert(cuda::std::get<2>(v1) == "hello");
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 template <typename T>
 struct Result
@@ -361,21 +363,25 @@ __host__ __device__ void test_move_assignment_same_index()
     assert(MoveAssign::move_assign() == 1);
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
+#  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
-  /*{
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_type<MET>);
-    MET &mref = cuda::std::get<1>(v1);
+    MET& mref = cuda::std::get<1>(v1);
     V v2(cuda::std::in_place_type<MET>);
-    try {
+    try
+    {
       v1 = cuda::std::move(v2);
       assert(false);
-    } catch (...) {
     }
+    catch (...)
+    {}
     assert(v1.index() == 1);
     assert(&cuda::std::get<1>(v1) == &mref);
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -452,16 +458,19 @@ __host__ __device__ void test_move_assignment_different_index()
     assert(MoveAssign::move_assign() == 0);
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
+#  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
-  /*{
+  {
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_type<int>);
     V v2(cuda::std::in_place_type<MET>);
-    try {
+    try
+    {
       v1 = cuda::std::move(v2);
       assert(false);
-    } catch (...) {
     }
+    catch (...)
+    {}
     assert(v1.valueless_by_exception());
     assert(v1.index() == cuda::std::variant_npos);
   }
@@ -469,12 +478,13 @@ __host__ __device__ void test_move_assignment_different_index()
     using V = cuda::std::variant<int, MET, cuda::std::string>;
     V v1(cuda::std::in_place_type<MET>);
     V v2(cuda::std::in_place_type<cuda::std::string>, "hello");
-    V &vref = (v1 = cuda::std::move(v2));
+    V& vref = (v1 = cuda::std::move(v2));
     assert(&vref == &v1);
     assert(v1.index() == 2);
     assert(cuda::std::get<2>(v1) == "hello");
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -535,9 +545,12 @@ __host__ __device__ void test_constexpr_move_assignment()
 
 int main(int, char**)
 {
-  test_move_assignment_empty_empty();
-  test_move_assignment_non_empty_empty();
-  test_move_assignment_empty_non_empty();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_non_empty_empty();))
+  NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_non_empty();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
+
   test_move_assignment_same_index();
   test_move_assignment_different_index();
   test_move_assignment_sfinae();

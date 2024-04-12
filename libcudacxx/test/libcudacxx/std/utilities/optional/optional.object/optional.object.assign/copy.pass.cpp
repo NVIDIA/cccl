@@ -21,25 +21,6 @@
 
 using cuda::std::optional;
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
-struct X
-{
-  static bool throw_now;
-
-  X() = default;
-  X(const X&)
-  {
-    if (throw_now)
-    {
-      TEST_THROW(6);
-    }
-  }
-  X& operator=(X const&) = default;
-};
-
-bool X::throw_now = false;
-#endif
-
 template <class Tp>
 __host__ __device__ constexpr bool assign_empty(optional<Tp>&& lhs)
 {
@@ -55,6 +36,41 @@ __host__ __device__ constexpr bool assign_value(optional<Tp>&& lhs)
   lhs = rhs;
   return lhs.has_value() && rhs.has_value() && *lhs == *rhs;
 }
+
+#ifndef TEST_HAS_NO_EXCEPTIONS
+struct X
+{
+  STATIC_MEMBER_VAR(throw_now, bool);
+
+  X() = default;
+  X(const X&)
+  {
+    if (throw_now())
+    {
+      TEST_THROW(6);
+    }
+  }
+  X& operator=(X const&) = default;
+};
+
+void test_exceptions()
+{
+  optional<X> opt;
+  optional<X> opt2(X{});
+  assert(static_cast<bool>(opt2) == true);
+  try
+  {
+    X::throw_now() = true;
+    opt            = opt2;
+    assert(false);
+  }
+  catch (int i)
+  {
+    assert(i == 6);
+    assert(static_cast<bool>(opt) == false);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -97,23 +113,8 @@ int main(int, char**)
     assert(!opt.has_value());
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  {
-    optional<X> opt;
-    optional<X> opt2(X{});
-    assert(static_cast<bool>(opt2) == true);
-    try
-    {
-      X::throw_now = true;
-      opt          = opt2;
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 6);
-      assert(static_cast<bool>(opt) == false);
-    }
-  }
-#endif
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

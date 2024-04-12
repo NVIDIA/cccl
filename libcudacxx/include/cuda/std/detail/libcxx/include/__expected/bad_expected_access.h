@@ -19,8 +19,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/detail/libcxx/include/__exception/exception.h>
+#include <cuda/std/detail/libcxx/include/__exception/terminate.h>
+#include <cuda/std/detail/libcxx/include/__utility/forward.h>
 #include <cuda/std/detail/libcxx/include/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/exception>
+
+#include <nv/target>
 
 #if _CCCL_STD_VER > 2011
 
@@ -47,7 +51,7 @@ public:
   // it adds deployment target restrictions.
   _LIBCUDACXX_INLINE_VISIBILITY const char* what() const noexcept override
   {
-    return "bad access to std::expected";
+    return "bad access to cuda::std::expected";
   }
 };
 
@@ -82,6 +86,19 @@ public:
 private:
   _Err __unex_;
 };
+
+template <class _Err, class _Arg>
+_LIBCUDACXX_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_expected_access(_Arg&& __arg)
+{
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+  NV_IF_ELSE_TARGET(NV_IS_HOST,
+                    (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
+                    ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
+#  else
+  (void) __arg;
+  _CUDA_VSTD_NOVERSION::terminate();
+#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

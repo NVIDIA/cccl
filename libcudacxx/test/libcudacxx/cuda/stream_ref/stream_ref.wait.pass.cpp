@@ -26,7 +26,7 @@ void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 
 void test_wait(cuda::stream_ref& ref)
 {
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef TEST_HAS_NO_EXCEPTIONS
   try
   {
     ref.wait();
@@ -37,7 +37,7 @@ void test_wait(cuda::stream_ref& ref)
   }
 #else
   ref.wait();
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !TEST_HAS_NO_EXCEPTIONS
 }
 
 int main(int argc, char** argv)

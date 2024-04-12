@@ -85,34 +85,29 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void testException()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-  struct Except
-  {};
-
-  struct Throwing
+struct Except
+{};
+struct Throwing
+{
+  __host__ __device__ Throwing(int)
   {
-    __host__ __device__ Throwing(int)
-    {
-      throw Except{};
-    }
-  };
-
-  {
-    const cuda::std::unexpected<int> u(5);
-    try
-    {
-      cuda::std::expected<int, Throwing> e(u);
-      unused(e);
-      assert(false);
-    }
-    catch (Except)
-    {}
+    throw Except{};
   }
-
-#endif // TEST_HAS_NO_EXCEPTIONS
+};
+void test_exceptions()
+{
+  const cuda::std::unexpected<int> u(5);
+  try
+  {
+    cuda::std::expected<int, Throwing> e(u);
+    unused(e);
+    assert(false);
+  }
+  catch (const Except&)
+  {}
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -120,6 +115,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }

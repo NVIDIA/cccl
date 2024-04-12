@@ -18,10 +18,14 @@
 // variant& operator=(T&&) noexcept(see below);
 
 #include <cuda/std/cassert>
-// #include <cuda/std/string>
+#if defined(_LIBCUDACXX_HAS_STRING)
+#  include <cuda/std/string>
+#endif // _LIBCUDACXX_HAS_STRING
 #include <cuda/std/type_traits>
 #include <cuda/std/variant>
-// #include <cuda/std/memory>
+#if defined(_LIBCUDACXX_HAS_MEMORY)
+#  include <cuda/std/memory>
+#endif // _LIBCUDACXX_HAS_MEMORY
 
 #include "test_macros.h"
 #include "variant_test_helpers.h"
@@ -186,31 +190,34 @@ __host__ __device__ void test_T_assignment_sfinae()
     using V = cuda::std::variant<long, long long>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "ambiguous");
   }
-  /*{
+
+#if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<cuda::std::string, cuda::std::string>;
-    static_assert(!cuda::std::is_assignable<V, const char *>::value, "ambiguous");
+    static_assert(!cuda::std::is_assignable<V, const char*>::value, "ambiguous");
   }
   {
-    using V = cuda::std::variant<cuda::std::string, void *>;
+    using V = cuda::std::variant<cuda::std::string, void*>;
     static_assert(!cuda::std::is_assignable<V, int>::value, "no matching operator=");
   }
   {
     using V = cuda::std::variant<cuda::std::string, float>;
     static_assert(cuda::std::is_assignable<V, int>::value == VariantAllowsNarrowingConversions,
-    "no matching operator=");
+                  "no matching operator=");
   }
+#endif // _LIBCUDACXX_HAS_STRING
+#if defined(_LIBCUDACXX_HAS_MEMORY)
   {
     using V = cuda::std::variant<cuda::std::unique_ptr<int>, bool>;
-    static_assert(!cuda::std::is_assignable<V, cuda::std::unique_ptr<char>>::value,
-                  "no explicit bool in operator=");
-    struct X {
+    static_assert(!cuda::std::is_assignable<V, cuda::std::unique_ptr<char>>::value, "no explicit bool in operator=");
+    struct X
+    {
       operator void*();
     };
-    static_assert(!cuda::std::is_assignable<V, X>::value,
-                  "no boolean conversion in operator=");
-    static_assert(!cuda::std::is_assignable<V, cuda::std::false_type>::value,
-                  "no converted to bool in operator=");
-  }*/
+    static_assert(!cuda::std::is_assignable<V, X>::value, "no boolean conversion in operator=");
+    static_assert(!cuda::std::is_assignable<V, cuda::std::false_type>::value, "no converted to bool in operator=");
+  }
+#endif // _LIBCUDACXX_HAS_MEMORY
   {
     // mdominiak: this was originally not an aggregate and we should probably bring that back
     // eventually, except... https://www.godbolt.org/z/oanheq7bv
@@ -265,18 +272,22 @@ __host__ __device__ void test_T_assignment_basic()
     assert(cuda::std::get<0>(v) == 43);
   }
 #endif
-  /*{
+#if defined(_LIBCUDACXX_HAS_STRING)
+  {
     cuda::std::variant<cuda::std::string, bool> v = true;
-    v = "bar";
+    v                                             = "bar";
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v) == "bar");
   }
+#endif // _LIBCUDACXX_HAS_STRING
+#if defined(_LIBCUDACXX_HAS_MEMORY)
   {
     cuda::std::variant<bool, cuda::std::unique_ptr<int>> v;
     v = nullptr;
     assert(v.index() == 1);
     assert(cuda::std::get<1>(v) == nullptr);
-  }*/
+  }
+#endif // _LIBCUDACXX_HAS_MEMORY
 #if !defined(TEST_VARIANT_HAS_NO_REFERENCES)
   {
     using V = cuda::std::variant<int&, int&&, long>;
@@ -298,17 +309,22 @@ __host__ __device__ void test_T_assignment_basic()
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-__host__ __device__ void test_T_assignment_performs_construction()
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_T_assignment_performs_construction()
 {
   using namespace RuntimeHelpers;
-#ifndef TEST_HAS_NO_EXCEPTIONS
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<cuda::std::string, ThrowsCtorT>;
     V v(cuda::std::in_place_type<cuda::std::string>, "hello");
-    try {
+    try
+    {
       v = 42;
       assert(false);
-    } catch (...) { / * ... * /
+    }
+    catch (...)
+    {
+      / *...* /
     }
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v) == "hello");
@@ -319,14 +335,15 @@ __host__ __device__ void test_T_assignment_performs_construction()
     v = 42;
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 42);
-  }*/
-#endif // TEST_HAS_NO_EXCEPTIONS
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__ void test_T_assignment_performs_assignment()
+#ifndef TEST_HAS_NO_EXCEPTIONS
+void test_T_assignment_performs_assignment()
 {
   using namespace RuntimeHelpers;
-#ifndef TEST_HAS_NO_EXCEPTIONS
   {
     using V = cuda::std::variant<ThrowsCtorT>;
     V v;
@@ -334,13 +351,15 @@ __host__ __device__ void test_T_assignment_performs_assignment()
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 42);
   }
-  /*{
+#  if defined(_LIBCUDACXX_HAS_STRING)
+  {
     using V = cuda::std::variant<ThrowsCtorT, cuda::std::string>;
     V v;
     v = 42;
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 42);
-  }*/
+  }
+#  endif // _LIBCUDACXX_HAS_STRING
   {
     using V = cuda::std::variant<ThrowsAssignT>;
     V v(100);
@@ -355,6 +374,7 @@ __host__ __device__ void test_T_assignment_performs_assignment()
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v).value == 100);
   }
+#  if defined(_LIBCUDACXX_HAS_STRING)
   {
     using V = cuda::std::variant<cuda::std::string, ThrowsAssignT>;
     V v(100);
@@ -369,14 +389,17 @@ __host__ __device__ void test_T_assignment_performs_assignment()
     assert(v.index() == 1);
     assert(cuda::std::get<1>(v).value == 100);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#  endif // _LIBCUDACXX_HAS_STRING
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
   test_T_assignment_basic();
-  test_T_assignment_performs_construction();
-  test_T_assignment_performs_assignment();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_T_assignment_performs_construction();))
+  NV_IF_TARGET(NV_IS_HOST, (test_T_assignment_performs_assignment();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   test_T_assignment_noexcept();
   test_T_assignment_sfinae();
 

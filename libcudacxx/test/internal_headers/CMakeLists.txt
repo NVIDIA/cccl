@@ -4,6 +4,8 @@
 # even if we never exercise them in the current support matrix
 add_custom_target(libcudacxx.test.internal_headers)
 
+find_package(CUDAToolkit)
+
 # Grep all internal headers
 file(GLOB_RECURSE internal_headers
   RELATIVE "${libcudacxx_SOURCE_DIR}/include/cuda/std/detail/libcxx/include"
@@ -31,6 +33,7 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:${headertest_warning_levels_device}>
     $<$<COMPILE_LANGUAGE:CXX>:${headertest_warning_levels_host}>)
+  target_link_libraries(headertest_${header_name} CUDA::cudart)
 
   if(fallback)
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")

@@ -22,15 +22,31 @@
 
 using cuda::std::optional;
 
+#ifndef TEST_HAS_NO_EXCEPTIONS
 class Z
 {
 public:
-  __host__ __device__ Z(int) {}
-  __host__ __device__ Z(Z&&)
+  Z(int) {}
+  Z(Z&&)
   {
     TEST_THROW(6);
   }
 };
+
+void test_exceptions()
+{
+  try
+  {
+    Z z(3);
+    optional<Z> opt(cuda::std::move(z));
+    assert(false);
+  }
+  catch (int i)
+  {
+    assert(i == 6);
+  }
+}
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -131,18 +147,9 @@ int main(int, char**)
 #endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {
-    try
-    {
-      Z z(3);
-      optional<Z> opt(cuda::std::move(z));
-      assert(false);
-    }
-    catch (int i)
-    {
-      assert(i == 6);
-    }
+    NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
   }
-#endif
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
   return 0;
 }

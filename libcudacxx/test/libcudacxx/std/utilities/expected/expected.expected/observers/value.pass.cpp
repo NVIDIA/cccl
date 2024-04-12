@@ -64,10 +64,9 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-__host__ __device__ void testException()
-{
 #ifndef TEST_HAS_NO_EXCEPTIONS
-
+void test_exceptions()
+{
   // int
   {
     const cuda::std::expected<int, int> e(cuda::std::unexpect, 5);
@@ -95,9 +94,8 @@ __host__ __device__ void testException()
       assert(ex.error() == 5);
     }
   }
-
-#endif // TEST_HAS_NO_EXCEPTIONS
 }
+#endif // !TEST_HAS_NO_EXCEPTIONS
 
 int main(int, char**)
 {
@@ -105,6 +103,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
   static_assert(test(), "");
 #endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
-  testException();
+#ifndef TEST_HAS_NO_EXCEPTIONS
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // !TEST_HAS_NO_EXCEPTIONS
   return 0;
 }
