@@ -62,36 +62,11 @@
 #endif
 
 #if defined(__CUDACC__) || defined(_CCCL_CUDA_COMPILER_NVHPC)
-#  define _LIBCUDACXX_CUDACC
-#  define _LIBCUDACXX_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
-#  define _LIBCUDACXX_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
-#  define _LIBCUDACXX_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
-#  define _LIBCUDACXX_CUDACC_VER                                                  \
-      _LIBCUDACXX_CUDACC_VER_MAJOR * 100000 + _LIBCUDACXX_CUDACC_VER_MINOR * 1000 + \
-      _LIBCUDACXX_CUDACC_VER_BUILD
-
 // TODO: Determine if this is necessary, I don't know why we automatically include this in <config>
 #  if defined(__clang__) || defined(__FLT16_MANT_DIG__)
 #    include <cuda_fp16.h>
 #  endif
 #endif
-
-// Some convenience macros to filter CUDACC versions
-#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1102000
-#define _LIBCUDACXX_CUDACC_BELOW_11_2
-#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1102000
-#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1103000
-#define _LIBCUDACXX_CUDACC_BELOW_11_3
-#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1103000
-#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
-#define _LIBCUDACXX_CUDACC_BELOW_11_8
-#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1108000
-#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1202000
-#define _LIBCUDACXX_CUDACC_BELOW_12_2
-#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
-#if defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
-#define _LIBCUDACXX_CUDACC_BELOW_12_3
-#endif // defined(_LIBCUDACXX_CUDACC) && _LIBCUDACXX_CUDACC_VER < 1203000
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  define _LIBCUDACXX_HAS_PRAGMA_MSVC_WARNING
@@ -450,7 +425,7 @@ extern "C++" {
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #  define _LIBCUDACXX_PRAGMA_UNROLL(_N) _Pragma(_LIBCUDACXX_TOSTRING(unroll _N))
 #endif // !_CCCL_COMPILER_MSVC
-#else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv !_LIBCUDACXX_CUDACCvvv
+#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _LIBCUDACXX_PRAGMA_UNROLL(_N)
 #endif // !__CUDA_ARCH__
 
@@ -496,7 +471,7 @@ extern "C++" {
 
 #if __check_builtin(builtin_is_constant_evaluated)           \
  || (defined(_CCCL_COMPILER_GCC)  && _GNUC_VER >= 900)       \
- || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER  > 1924 && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3))
+ || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER  > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
 #define _LIBCUDACXX_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // __check_builtin(builtin_is_constant_evaluated)
 
@@ -659,7 +634,7 @@ extern "C++" {
 #endif // __check_builtin(is_lvalue_reference)
 
 #ifndef _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
-#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+#if defined(_CCCL_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
 #endif // nvcc < 11.3
 #endif // !_LIBCUDACXX_USE_IS_LVALUE_REFERENCE_FALLBACK
@@ -687,7 +662,7 @@ extern "C++" {
 #endif // __check_builtin(is_object)
 
 #ifndef _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
-#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+#if defined(_CCCL_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_OBJECT_FALLBACK
 #endif // nvcc < 11.3
 #endif // !_LIBCUDACXX_USE_IS_OBJECT_FALLBACK
@@ -790,7 +765,7 @@ extern "C++" {
 #endif // __check_builtin(is_unsigned)
 
 #ifndef _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
-#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+#if defined(_CCCL_CUDACC_BELOW_11_3)
 #define _LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
 #endif // nvcc < 11.3
 #endif // !_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK
@@ -1096,14 +1071,14 @@ typedef __char32_t char32_t;
 #ifndef _LIBCUDACXX_HAS_NO_INT128
 #if defined(_CCCL_COMPILER_MSVC)                                          \
  || (defined(_CCCL_COMPILER_NVRTC) && !defined(__CUDACC_RTC_INT128__))    \
- || (defined(_CCCL_CUDA_COMPILER_NVCC)  && (_LIBCUDACXX_CUDACC_VER < 1105000)) \
+ || (defined(_CCCL_CUDA_COMPILER_NVCC)  && (_CCCL_CUDACC_VER < 1105000)) \
  || !defined(__SIZEOF_INT128__)
 #  define _LIBCUDACXX_HAS_NO_INT128
 #endif
 #endif // !_LIBCUDACXX_HAS_NO_INT128
 
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#if defined(_LIBCUDACXX_CUDACC)
+#if defined(_CCCL_CUDACC)
 #  define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #endif
 #endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
@@ -1111,9 +1086,9 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_HAS_NVFP16
 #    if __has_include(<cuda_fp16.h>)                                                           \
       && defined(__cuda_std__)                                                                 \
-      && (defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || !defined(_LIBCUDACXX_CUDACC_BELOW_12_2)) \
+      && (defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || !defined(_CCCL_CUDACC_BELOW_12_2)) \
       && (!defined(_LIBCUDACXX_COMPILER_CLANG_CUDA) || CUDA_VERSION >= 12020)                  \
-      && (defined(_LIBCUDACXX_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+      && (defined(_CCCL_CUDACC) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #      define _LIBCUDACXX_HAS_NVFP16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVFP16
@@ -1138,7 +1113,7 @@ typedef __char32_t char32_t;
 // [[msvc::no_unique_address]] though. If/when it does implement
 // [[msvc::no_unique_address]], this should be preferred though.
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
-#elif defined(_LIBCUDACXX_CUDACC_BELOW_11_3) \
+#elif defined(_CCCL_CUDACC_BELOW_11_3) \
  || (__has_cpp_attribute(no_unique_address) < 201803L)
 #  define _LIBCUDACXX_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _LIBCUDACXX_NO_UNIQUE_ADDRESS
@@ -1410,17 +1385,17 @@ typedef __char32_t char32_t;
 #  define _LIBCUDACXX_HIDE_FROM_ABI_AFTER_V1 _LIBCUDACXX_HIDE_FROM_ABI
 #endif
 
-#ifdef _LIBCUDACXX_CUDACC
+#ifdef _CCCL_CUDACC
 #  define _LIBCUDACXX_HOST __host__
 #  define _LIBCUDACXX_DEVICE __device__
 #  define _LIBCUDACXX_HOST_DEVICE __host__ __device__
 #  define _LIBCUDACXX_FORCE_INLINE __forceinline__
-#else // ^^^ _LIBCUDACXX_CUDACC ^^^ / vvv !_LIBCUDACXX_CUDACC
+#else // ^^^ _CCCL_CUDACC ^^^ / vvv !_CCCL_CUDACC
 #  define _LIBCUDACXX_HOST
 #  define _LIBCUDACXX_DEVICE
 #  define _LIBCUDACXX_HOST_DEVICE
 #  define _LIBCUDACXX_FORCE_INLINE
-#endif // !_LIBCUDACXX_CUDACC
+#endif // !_CCCL_CUDACC
 
 // Just so we can migrate to the new macros gradually.
 
@@ -1648,7 +1623,7 @@ typedef unsigned int   char32_t;
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
 #if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) \
- && !defined(_LIBCUDACXX_CUDACC_BELOW_11_3)
+ && !defined(_CCCL_CUDACC_BELOW_11_3)
 #  if __has_attribute(deprecated)
 #    define _LIBCUDACXX_DEPRECATED __attribute__ ((deprecated))
 #  elif _CCCL_STD_VER > 2011
@@ -1688,12 +1663,12 @@ typedef unsigned int   char32_t;
 
 // NVCC below 11.3 does not support nodiscard on friend functions
 // It always fails with clang
-#if defined(_LIBCUDACXX_CUDACC_BELOW_11_3) \
+#if defined(_CCCL_CUDACC_BELOW_11_3) \
  || defined(_CCCL_COMPILER_CLANG)
 #  define _LIBCUDACXX_NODISCARD_FRIEND friend
-#else // ^^^ _LIBCUDACXX_CUDACC_BELOW_11_3 ^^^ / vvv !_LIBCUDACXX_CUDACC_BELOW_11_3 vvv
+#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
 #  define _LIBCUDACXX_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif // !_LIBCUDACXX_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
+#endif // !_CCCL_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
 
 #if _CCCL_STD_VER > 2014 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
 #  define _LIBCUDACXX_INLINE_VAR inline
@@ -1878,7 +1853,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) || defined(_LIBCUDACXX_CUDACC)
+#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_CUDACC)
 #  define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #endif
 
@@ -1993,7 +1968,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #elif defined(_MSC_VER)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#elif defined(_LIBCUDACXX_CUDACC_BELOW_11_8)
+#elif defined(_CCCL_CUDACC_BELOW_11_8)
 #define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #endif
 
@@ -2140,7 +2115,7 @@ extern "C" _LIBCUDACXX_FUNC_VIS void __sanitizer_annotate_contiguous_container(
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_LIBCUDACXX_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
+#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                                       \
       using __base = __baseclass<__VA_ARGS__>;                                                                 \
       template <class... _Args, __enable_if_t<_LIBCUDACXX_TRAIT(is_constructible, __base, _Args...), int> = 0> \
