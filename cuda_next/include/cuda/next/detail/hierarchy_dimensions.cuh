@@ -254,7 +254,7 @@ _CCCL_HOST_DEVICE constexpr auto get_levels_range(const Levels&... levels) noexc
 
 template <typename T, size_t... Extents, size_t... Ids>
 _CCCL_HOST_DEVICE constexpr auto
-dims_to_count_helper(const dimensions<T, Extents...> ex, ::cuda::std::integer_sequence<size_t, Ids...> sq)
+dims_to_count_helper(const dimensions<T, Extents...> ex, ::cuda::std::integer_sequence<size_t, Ids...>)
 {
   return (ex.extent(Ids) * ...);
 }
@@ -378,10 +378,10 @@ struct hierarchy_dimensions_fragment
   constexpr _CCCL_HOST_DEVICE hierarchy_dimensions_fragment(Levels&&... ls) noexcept
       : levels(::cuda::std::forward<Levels>(ls)...)
   {}
-  constexpr _CCCL_HOST_DEVICE hierarchy_dimensions_fragment(const BottomUnit& unit, const Levels&... ls) noexcept
+  constexpr _CCCL_HOST_DEVICE hierarchy_dimensions_fragment(const BottomUnit& /* unit */, const Levels&... ls) noexcept
       : levels(ls...)
   {}
-  constexpr _CCCL_HOST_DEVICE hierarchy_dimensions_fragment(const BottomUnit& unit, Levels&&... ls) noexcept
+  constexpr _CCCL_HOST_DEVICE hierarchy_dimensions_fragment(const BottomUnit& /* unit */, Levels&&... ls) noexcept
       : levels(::cuda::std::forward<Levels>(ls)...)
   {}
 
@@ -477,7 +477,7 @@ public:
   }
 
   template <typename Level>
-  _CCCL_HOST_DEVICE constexpr auto level(const Level& level)
+  _CCCL_HOST_DEVICE constexpr auto level(const Level& /*level*/)
   {
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
 

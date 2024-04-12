@@ -201,19 +201,20 @@ TEST_CASE("Different constructions", "[hierarchy]")
   const auto block_cnt   = 512;
   const auto cluster_cnt = 8;
   const auto grid_cnt    = 256;
-  const auto dimensions2 =
+
+  [[maybe_unused]] const auto dimensions2 =
     cuda_next::block_dims<block_cnt>() & cuda_next::cluster_dims<cluster_cnt>() & cuda_next::grid_dims(grid_cnt);
-  const auto dimensions3 =
+  [[maybe_unused]] const auto dimensions3 =
     cuda_next::grid_dims(grid_cnt) & cuda_next::cluster_dims<cluster_cnt>() & cuda_next::block_dims<block_cnt>();
 
-  const auto dimensions4 =
+  [[maybe_unused]] const auto dimensions4 =
     cuda_next::cluster_dims<cluster_cnt>() & cuda_next::grid_dims(grid_cnt) & cuda_next::block_dims<block_cnt>();
-  const auto dimensions5 =
+  [[maybe_unused]] const auto dimensions5 =
     cuda_next::cluster_dims<cluster_cnt>() & cuda_next::block_dims<block_cnt>() & cuda_next::grid_dims(grid_cnt);
 
-  const auto dimensions6 = cuda_next::make_hierarchy(
+  [[maybe_unused]] const auto dimensions6 = cuda_next::make_hierarchy(
     cuda_next::block_dims<block_cnt>(), cuda_next::cluster_dims<cluster_cnt>(), cuda_next::grid_dims(grid_cnt));
-  const auto dimensions7 = cuda_next::make_hierarchy(
+  [[maybe_unused]] const auto dimensions7 = cuda_next::make_hierarchy(
     cuda_next::grid_dims(grid_cnt), cuda_next::cluster_dims<cluster_cnt>(), cuda_next::block_dims<block_cnt>());
 
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions3)>);
@@ -222,7 +223,7 @@ TEST_CASE("Different constructions", "[hierarchy]")
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions6)>);
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dimensions7)>);
 
-  const auto dims_weird_order =
+  [[maybe_unused]] const auto dims_weird_order =
     cuda_next::grid_dims(grid_cnt) & (cuda_next::cluster_dims<cluster_cnt>() & cuda_next::block_dims<block_cnt>());
   static_assert(std::is_same_v<decltype(dimensions2), decltype(dims_weird_order)>);
 

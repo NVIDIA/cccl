@@ -49,7 +49,7 @@ bool arch_filter(const cudaDeviceProp& props)
   return false;
 }
 
-static bool skip_host_exec(bool (*filter)(const cudaDeviceProp&))
+static bool skip_host_exec(bool (* /* filter */)(const cudaDeviceProp&))
 {
   return false;
 }
@@ -81,7 +81,8 @@ void test_host_dev(const Dims& dims, const Lambda& lambda, const Filters&... fil
       return;
     }
 
-    cudaLaunchConfig_t config = {0};
+    cudaLaunchConfig_t config = {};
+    config.gridDim = {0};
     cudaLaunchAttribute attrs[1];
     config.attrs = &attrs[0];
 
