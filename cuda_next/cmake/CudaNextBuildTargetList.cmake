@@ -128,6 +128,7 @@ function(_cn_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     CudaNext::CudaNext
+    CudaNext.compiler_interface
   )
 
   set(CudaNext_TARGETS ${CudaNext_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)
