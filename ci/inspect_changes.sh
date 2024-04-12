@@ -24,6 +24,7 @@ subprojects=(
   libcudacxx
   cub
   thrust
+  cuda_next
 )
 
 # ...and their dependencies:
@@ -31,6 +32,8 @@ declare -A dependencies=(
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
+  [cuda_next]="cccl"
+)
 
 # Usage checks:
 for subproject in "${subprojects[@]}"; do
