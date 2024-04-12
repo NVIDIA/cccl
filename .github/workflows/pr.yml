@@ -42,6 +42,7 @@ jobs:
       LIBCUDACXX_DIRTY: ${{ steps.set-outputs.outputs.LIBCUDACXX_DIRTY }}
       CUB_DIRTY: ${{ steps.set-outputs.outputs.CUB_DIRTY }}
       THRUST_DIRTY: ${{ steps.set-outputs.outputs.THRUST_DIRTY }}
+      CUDA_NEXT_DIRTY: ${{ steps.set-outputs.outputs.CUDA_NEXT_DIRTY }}
     steps:
       - name: Get Base Branch from PR
         id: get-pr-info
@@ -80,6 +81,7 @@ jobs:
           THRUST_DIRTY: ${{ needs.inspect-changes.outputs.THRUST_DIRTY }}
           CUB_DIRTY: ${{ needs.inspect-changes.outputs.CUB_DIRTY }}
           LIBCUDACXX_DIRTY: ${{ needs.inspect-changes.outputs.LIBCUDACXX_DIRTY }}
+          CUDA_NEXT_DIRTY: ${{ needs.inspect-changes.outputs.CUDA_NEXT_DIRTY }}
 
   nvrtc:
     name: libcudacxx NVRTC CUDA${{matrix.cuda}}
@@ -167,7 +169,10 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    needs: compute-matrix
+    needs:
+      - compute-matrix
+      - inspect-changes
+    if: ${{ needs.inspect-changes.outputs.CUDA_NEXT_DIRTY == 'true' }}
     uses: ./.github/workflows/dispatch-build-and-test.yml
     strategy:
       fail-fast: false
