@@ -42,45 +42,26 @@ struct plus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) += THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) += THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) += THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) += THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) += THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<plus_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator+=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<plus_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator+=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<plus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<plus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator+=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<plus_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator+=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<plus_equal>, actor<T1>, actor<T2>>>
+operator+=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<plus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<plus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator+=()
 
 // there's no standard minus_equal functional, so roll an ad hoc one here
@@ -90,45 +71,26 @@ struct minus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) -= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) -= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) -= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) -= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) -= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<minus_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator-=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<minus_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator-=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<minus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<minus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator-=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<minus_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator-=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<minus_equal>, actor<T1>, actor<T2>>>
+operator-=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<minus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<minus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator-=()
 
 // there's no standard multiplies_equal functional, so roll an ad hoc one here
@@ -138,45 +100,26 @@ struct multiplies_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) *= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) *= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) *= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) *= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) *= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<multiplies_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator*=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<multiplies_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator*=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<multiplies_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<multiplies_equal>(), make_actor(_1), make_actor(_2));
 } // end operator*=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<multiplies_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator*=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<multiplies_equal>, actor<T1>, actor<T2>>>
+operator*=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<multiplies_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<multiplies_equal>(), make_actor(_1), make_actor(_2));
 } // end operator*=()
 
 // there's no standard divides_equal functional, so roll an ad hoc one here
@@ -186,45 +129,26 @@ struct divides_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) /= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) /= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) /= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) /= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) /= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<divides_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator/=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<divides_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator/=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<divides_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<divides_equal>(), make_actor(_1), make_actor(_2));
 } // end operator/=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<divides_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator/=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<divides_equal>, actor<T1>, actor<T2>>>
+operator/=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<divides_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<divides_equal>(), make_actor(_1), make_actor(_2));
 } // end operator/=()
 
 // there's no standard modulus_equal functional, so roll an ad hoc one here
@@ -234,45 +158,26 @@ struct modulus_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) %= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) %= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) %= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) %= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) %= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<modulus_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator%=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<modulus_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator%=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<modulus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<modulus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator%=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<modulus_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator%=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<modulus_equal>, actor<T1>, actor<T2>>>
+operator%=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<modulus_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<modulus_equal>(), make_actor(_1), make_actor(_2));
 } // end operator%=()
 
 // there's no standard bit_and_equal functional, so roll an ad hoc one here
@@ -282,45 +187,26 @@ struct bit_and_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) &= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) &= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) &= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) &= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) &= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_and_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator&=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_and_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator&=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_and_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_and_equal>(), make_actor(_1), make_actor(_2));
 } // end operator&=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_and_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator&=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_and_equal>, actor<T1>, actor<T2>>>
+operator&=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_and_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_and_equal>(), make_actor(_1), make_actor(_2));
 } // end operator&=()
 
 // there's no standard bit_or_equal functional, so roll an ad hoc one here
@@ -330,45 +216,26 @@ struct bit_or_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) |= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) |= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) |= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) |= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) |= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_or_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator|=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_or_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator|=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_or_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_or_equal>(), make_actor(_1), make_actor(_2));
 } // end operator|=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_or_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator|=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_or_equal>, actor<T1>, actor<T2>>>
+operator|=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_or_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_or_equal>(), make_actor(_1), make_actor(_2));
 } // end operator|=()
 
 // there's no standard bit_xor_equal functional, so roll an ad hoc one here
@@ -378,45 +245,26 @@ struct bit_xor_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) ^= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) ^= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) ^= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) ^= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) ^= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_xor_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator^=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_xor_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator^=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_xor_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_xor_equal>(), make_actor(_1), make_actor(_2));
 } // end operator|=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_xor_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator^=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_xor_equal>, actor<T1>, actor<T2>>>
+operator^=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_xor_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_xor_equal>(), make_actor(_1), make_actor(_2));
 } // end operator|=()
 
 // there's no standard bit_lshift_equal functional, so roll an ad hoc one here
@@ -426,44 +274,25 @@ struct bit_lshift_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) <<= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) <<= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) <<= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) <<= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) <<= THRUST_FWD(t2);
   }
 };
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_lshift_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator<<=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_lshift_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator<<=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_lshift_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_lshift_equal>(), make_actor(_1), make_actor(_2));
 } // end operator<<=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_lshift_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator<<=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_lshift_equal>, actor<T1>, actor<T2>>>
+operator<<=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_lshift_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_lshift_equal>(), make_actor(_1), make_actor(_2));
 } // end operator<<=()
 
 // there's no standard bit_rshift_equal functional, so roll an ad hoc one here
@@ -473,48 +302,28 @@ struct bit_rshift_equal
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) >>= THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) >>= THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) >>= THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) >>= THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) >>= THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_rshift_equal>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator>>=(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_rshift_equal>, actor<T1>, typename as_actor<T2>::type>>
+operator>>=(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_rshift_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_rshift_equal>(), make_actor(_1), make_actor(_2));
 } // end operator>>=()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_rshift_equal>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator>>=(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_rshift_equal>, actor<T1>, actor<T2>>>
+operator>>=(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_rshift_equal>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_rshift_equal>(), make_actor(_1), make_actor(_2));
 } // end operator>>=()
 
-} // end functional
-} // end detail
+} // namespace functional
+} // namespace detail
 THRUST_NAMESPACE_END
-

@@ -25,14 +25,14 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/copy.h>
-#include <thrust/functional.h>
 #include <thrust/detail/internal_functional.h>
-#include <thrust/transform.h>
 #include <thrust/for_each.h>
-#include <thrust/tuple.h>
-#include <thrust/iterator/zip_iterator.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/detail/minimum_system.h>
+#include <thrust/iterator/zip_iterator.h>
+#include <thrust/system/detail/generic/copy.h>
+#include <thrust/transform.h>
+#include <thrust/tuple.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -42,47 +42,32 @@ namespace detail
 namespace generic
 {
 
-
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename OutputIterator>
-_CCCL_HOST_DEVICE
-  OutputIterator copy(thrust::execution_policy<DerivedPolicy> &exec,
-                      InputIterator                            first,
-                      InputIterator                            last,
-                      OutputIterator                           result)
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator
+copy(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   typedef typename thrust::iterator_value<InputIterator>::type T;
   return thrust::transform(exec, first, last, result, thrust::identity<T>());
 } // end copy()
 
-
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename Size,
-         typename OutputIterator>
-_CCCL_HOST_DEVICE
-  OutputIterator copy_n(thrust::execution_policy<DerivedPolicy> &exec,
-                        InputIterator                            first,
-                        Size                                     n,
-                        OutputIterator                           result)
+template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator
+copy_n(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
   typedef typename thrust::iterator_value<InputIterator>::type value_type;
-  typedef thrust::identity<value_type>                         xfrm_type;
+  typedef thrust::identity<value_type> xfrm_type;
 
   typedef thrust::detail::unary_transform_functor<xfrm_type> functor_type;
 
-  typedef thrust::tuple<InputIterator,OutputIterator> iterator_tuple;
-  typedef thrust::zip_iterator<iterator_tuple>        zip_iter;
+  typedef thrust::tuple<InputIterator, OutputIterator> iterator_tuple;
+  typedef thrust::zip_iterator<iterator_tuple> zip_iter;
 
-  zip_iter zipped = thrust::make_zip_iterator(thrust::make_tuple(first,result));
+  zip_iter zipped = thrust::make_zip_iterator(thrust::make_tuple(first, result));
 
   return thrust::get<1>(thrust::for_each_n(exec, zipped, n, functor_type(xfrm_type())).get_iterator_tuple());
 } // end copy_n()
 
-
-} // end generic
-} // end detail
-} // end system
+} // namespace generic
+} // namespace detail
+} // namespace system
 THRUST_NAMESPACE_END
-

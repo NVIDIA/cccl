@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <class T>
-struct square_t 
+struct square_t
 {
   __host__ __device__ T operator()(const T& x) const
   {
@@ -41,7 +41,7 @@ struct square_t
 };
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -52,16 +52,12 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(1);
 
   caching_allocator_t alloc;
-  do_not_optimize(thrust::transform_reduce(policy(alloc), in.begin(), in.end(),
-                                           square_t<T>{}, T{},
-                                           thrust::plus<T>{}));
+  do_not_optimize(thrust::transform_reduce(policy(alloc), in.begin(), in.end(), square_t<T>{}, T{}, thrust::plus<T>{}));
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               do_not_optimize(thrust::transform_reduce(
-                   policy(alloc, launch), in.begin(), in.end(), square_t<T>{},
-                   T{}, thrust::plus<T>{}));
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    do_not_optimize(
+      thrust::transform_reduce(policy(alloc, launch), in.begin(), in.end(), square_t<T>{}, T{}, thrust::plus<T>{}));
+  });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

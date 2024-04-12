@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file merge.h
  *  \brief Sequential implementation of merge algorithms.
  */
@@ -40,43 +39,39 @@ namespace detail
 namespace sequential
 {
 
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE OutputIterator merge(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 first1,
+  InputIterator1 last1,
+  InputIterator2 first2,
+  InputIterator2 last2,
+  OutputIterator result,
+  StrictWeakOrdering comp);
 
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-OutputIterator merge(sequential::execution_policy<DerivedPolicy> &exec,
-                     InputIterator1 first1,
-                     InputIterator1 last1,
-                     InputIterator2 first2,
-                     InputIterator2 last2,
-                     OutputIterator result,
-                     StrictWeakOrdering comp);
-
-
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename InputIterator3,
-         typename InputIterator4,
-         typename OutputIterator1,
-         typename OutputIterator2,
-         typename StrictWeakOrdering>
-_CCCL_HOST_DEVICE
-thrust::pair<OutputIterator1,OutputIterator2>
-  merge_by_key(sequential::execution_policy<DerivedPolicy> &exec,
-               InputIterator1 keys_first1,
-               InputIterator1 keys_last1,
-               InputIterator2 keys_first2,
-               InputIterator2 keys_last2,
-               InputIterator3 values_first1,
-               InputIterator4 values_first2,
-               OutputIterator1 keys_result,
-               OutputIterator2 values_result,
-               StrictWeakOrdering comp);
-
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename InputIterator3,
+          typename InputIterator4,
+          typename OutputIterator1,
+          typename OutputIterator2,
+          typename StrictWeakOrdering>
+_CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  InputIterator1 keys_first1,
+  InputIterator1 keys_last1,
+  InputIterator2 keys_first2,
+  InputIterator2 keys_last2,
+  InputIterator3 values_first1,
+  InputIterator4 values_first2,
+  OutputIterator1 keys_result,
+  OutputIterator2 values_result,
+  StrictWeakOrdering comp);
 
 } // end namespace sequential
 } // end namespace detail
@@ -84,4 +79,3 @@ thrust::pair<OutputIterator1,OutputIterator2>
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/merge.inl>
-

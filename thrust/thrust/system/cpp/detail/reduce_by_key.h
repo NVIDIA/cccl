@@ -28,4 +28,3 @@
 
 // this system inherits reduce_by_key
 #include <thrust/system/detail/sequential/reduce_by_key.h>
-

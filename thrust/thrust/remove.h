@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 /*! \file remove.h
  *  \brief Functions for removing elements from a range
  */
@@ -40,7 +39,6 @@ THRUST_NAMESPACE_BEGIN
  *
  */
 
-
 /*! \p remove removes from the range <tt>[first, last)</tt> all elements that are
  *  equal to \p value. That is, \p remove returns an iterator \p new_last such
  *  that the range <tt>[first, new_last)</tt> contains no elements equal to
@@ -60,10 +58,10 @@ THRUST_NAMESPACE_BEGIN
  *          elements which are not equal to \p value.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
- *          and \p ForwardIterator is mutable.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>,
- *          and objects of type \p T can be compared for equality with objects of \p ForwardIterator's \c value_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a>, and \p ForwardIterator is mutable. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>, and objects of type \p
+ * T can be compared for equality with objects of \p ForwardIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p remove to remove a number
  *  of interest from a range using the \p thrust::host execution policy for parallelization:
@@ -98,15 +96,12 @@ THRUST_NAMESPACE_BEGIN
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename T>
-_CCCL_HOST_DEVICE
-  ForwardIterator remove(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                         ForwardIterator first,
-                         ForwardIterator last,
-                         const T &value);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename T>
+_CCCL_HOST_DEVICE ForwardIterator remove(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  const T& value);
 
 /*! \p remove removes from the range <tt>[first, last)</tt> all elements that are
  *  equal to \p value. That is, \p remove returns an iterator \p new_last such
@@ -123,10 +118,10 @@ _CCCL_HOST_DEVICE
  *  \return A \p ForwardIterator pointing to the end of the resulting range of
  *          elements which are not equal to \p value.
  *
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
- *          and \p ForwardIterator is mutable.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>,
- *          and objects of type \p T can be compared for equality with objects of \p ForwardIterator's \c value_type.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a>, and \p ForwardIterator is mutable. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>, and objects of type \p
+ * T can be compared for equality with objects of \p ForwardIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p remove to remove a number
  *  of interest from a range.
@@ -160,12 +155,8 @@ _CCCL_HOST_DEVICE
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename ForwardIterator,
-         typename T>
-  ForwardIterator remove(ForwardIterator first,
-                         ForwardIterator last,
-                         const T &value);
-
+template <typename ForwardIterator, typename T>
+ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& value);
 
 /*! \p remove_copy copies elements that are not equal to \p value from the range
  *  <tt>[first, last)</tt> to a range beginning at \p result. The return value is
@@ -185,11 +176,12 @@ template<typename ForwardIterator,
  *          which are not equal to \p value.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>,
- *          and objects of type \p T can be compared for equality with objects of \p InputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c
+ * value_types. \tparam OutputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>, and objects of type \p
+ * T can be compared for equality with objects of \p InputIterator's \c value_type.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
  *
@@ -214,17 +206,13 @@ template<typename ForwardIterator,
  *  \see remove_if
  *  \see remove_copy_if
  */
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename OutputIterator,
-         typename T>
-_CCCL_HOST_DEVICE
-  OutputIterator remove_copy(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                             InputIterator first,
-                             InputIterator last,
-                             OutputIterator result,
-                             const T &value);
-
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE OutputIterator remove_copy(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  const T& value);
 
 /*! \p remove_copy copies elements that are not equal to \p value from the range
  *  <tt>[first, last)</tt> to a range beginning at \p result. The return value is
@@ -240,11 +228,12 @@ _CCCL_HOST_DEVICE
  *  \return An OutputIterator pointing to the end of the resulting range of elements
  *          which are not equal to \p value.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam T is a model of <a href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>,
- *          and objects of type \p T can be compared for equality with objects of \p InputIterator's \c value_type.
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c
+ * value_types. \tparam OutputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam T is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/equality_comparable">Equality Comparable</a>, and objects of type \p
+ * T can be compared for equality with objects of \p InputIterator's \c value_type.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
  *
@@ -267,14 +256,8 @@ _CCCL_HOST_DEVICE
  *  \see remove_if
  *  \see remove_copy_if
  */
-template<typename InputIterator,
-         typename OutputIterator,
-         typename T>
-  OutputIterator remove_copy(InputIterator first,
-                             InputIterator last,
-                             OutputIterator result,
-                             const T &value);
-
+template <typename InputIterator, typename OutputIterator, typename T>
+OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value);
 
 /*! \p remove_if removes from the range <tt>[first, last)</tt> every element \p x
  *  such that <tt>pred(x)</tt> is \c true. That is, \p remove_if returns an
@@ -296,10 +279,10 @@ template<typename InputIterator,
  *          elements for which \p pred evaluated to \c true.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
- *          \p ForwardIterator is mutable,
- *          and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
+ * \c argument_type. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
  *  all even numbers from an array of integers using the \p thrust::host execution policy for
@@ -345,15 +328,12 @@ template<typename InputIterator,
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  ForwardIterator remove_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                            ForwardIterator first,
-                            ForwardIterator last,
-                            Predicate pred);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator remove_if(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  Predicate pred);
 
 /*! \p remove_if removes from the range <tt>[first, last)</tt> every element \p x
  *  such that <tt>pred(x)</tt> is \c true. That is, \p remove_if returns an
@@ -371,10 +351,10 @@ _CCCL_HOST_DEVICE
  *  \return A ForwardIterator pointing to the end of the resulting range of
  *          elements for which \p pred evaluated to \c true.
  *
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>,
- *          \p ForwardIterator is mutable,
- *          and \p ForwardIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a>, \p ForwardIterator is mutable, and \p ForwardIterator's \c value_type is convertible to \p Predicate's
+ * \c argument_type. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
  *  all even numbers from an array of integers.
@@ -418,12 +398,8 @@ _CCCL_HOST_DEVICE
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename ForwardIterator,
-         typename Predicate>
-  ForwardIterator remove_if(ForwardIterator first,
-                            ForwardIterator last,
-                            Predicate pred);
-
+template <typename ForwardIterator, typename Predicate>
+ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred);
 
 /*! \p remove_copy_if copies elements from the range <tt>[first,last)</tt> to a
  *  range beginning at \p result, except that elements for which \p pred is
@@ -444,11 +420,12 @@ template<typename ForwardIterator,
  *  \return An OutputIterator pointing to the end of the resulting range.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
  *
@@ -482,17 +459,13 @@ template<typename ForwardIterator,
  *  \see remove_copy
  *  \see remove_if
  */
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename OutputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  OutputIterator remove_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                InputIterator first,
-                                InputIterator last,
-                                OutputIterator result,
-                                Predicate pred);
-
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  Predicate pred);
 
 /*! \p remove_copy_if copies elements from the range <tt>[first,last)</tt> to a
  *  range beginning at \p result, except that elements for which \p pred is
@@ -509,11 +482,12 @@ _CCCL_HOST_DEVICE
  *              to the resulting sequence.
  *  \return An OutputIterator pointing to the end of the resulting range.
  *
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
+ *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \p InputIterator's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types,
  *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output
+ * Iterator</a>. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
  *
@@ -545,14 +519,8 @@ _CCCL_HOST_DEVICE
  *  \see remove_copy
  *  \see remove_if
  */
-template<typename InputIterator,
-         typename OutputIterator,
-         typename Predicate>
-  OutputIterator remove_copy_if(InputIterator first,
-                                InputIterator last,
-                                OutputIterator result,
-                                Predicate pred);
-
+template <typename InputIterator, typename OutputIterator, typename Predicate>
+OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred);
 
 /*! \p remove_if removes from the range <tt>[first, last)</tt> every element \p x
  *  such that <tt>pred(x)</tt> is \c true. That is, \p remove_if returns an
@@ -575,14 +543,15 @@ template<typename InputIterator,
  *          elements for which \p pred evaluated to \c true.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>
- *          and \p ForwardIterator is mutable.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a> and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
+ * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
- *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
+ *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last
+ * - first))</tt>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
  *  specific elements from an array of integers using the \p thrust::host execution policy for
@@ -601,24 +570,21 @@ template<typename InputIterator,
  *  // Values beyond new_end are unspecified
  *  \endcode
  *
- *  \note The range <tt>[first, last)</tt> is not permitted to overlap with the range <tt>[stencil, stencil + (last - first))</tt>.
+ *  \note The range <tt>[first, last)</tt> is not permitted to overlap with the range <tt>[stencil, stencil + (last -
+ * first))</tt>.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/remove
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename DerivedPolicy,
-         typename ForwardIterator,
-         typename InputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  ForwardIterator remove_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                            ForwardIterator first,
-                            ForwardIterator last,
-                            InputIterator stencil,
-                            Predicate pred);
-
+template <typename DerivedPolicy, typename ForwardIterator, typename InputIterator, typename Predicate>
+_CCCL_HOST_DEVICE ForwardIterator remove_if(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  ForwardIterator first,
+  ForwardIterator last,
+  InputIterator stencil,
+  Predicate pred);
 
 /*! \p remove_if removes from the range <tt>[first, last)</tt> every element \p x
  *  such that <tt>pred(x)</tt> is \c true. That is, \p remove_if returns an
@@ -637,14 +603,15 @@ _CCCL_HOST_DEVICE
  *  \return A ForwardIterator pointing to the end of the resulting range of
  *          elements for which \p pred evaluated to \c true.
  *
- *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward Iterator</a>
- *          and \p ForwardIterator is mutable.
- *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam ForwardIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/forward_iterator">Forward
+ * Iterator</a> and \p ForwardIterator is mutable. \tparam InputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator's \c
+ * value_type is convertible to \p Predicate's \c argument_type. \tparam Predicate is a model of <a
+ * href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
  *  \pre The range <tt>[first, last)</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
- *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
+ *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last
+ * - first))</tt>.
  *
  *  The following code snippet demonstrates how to use \p remove_if to remove
  *  specific elements from an array of integers.
@@ -661,21 +628,16 @@ _CCCL_HOST_DEVICE
  *  // Values beyond new_end are unspecified
  *  \endcode
  *
- *  \note The range <tt>[first, last)</tt> is not permitted to overlap with the range <tt>[stencil, stencil + (last - first))</tt>.
+ *  \note The range <tt>[first, last)</tt> is not permitted to overlap with the range <tt>[stencil, stencil + (last -
+ * first))</tt>.
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/remove
  *  \see remove
  *  \see remove_copy
  *  \see remove_copy_if
  */
-template<typename ForwardIterator,
-         typename InputIterator,
-         typename Predicate>
-  ForwardIterator remove_if(ForwardIterator first,
-                            ForwardIterator last,
-                            InputIterator stencil,
-                            Predicate pred);
-
+template <typename ForwardIterator, typename InputIterator, typename Predicate>
+ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
 
 /*! \p remove_copy_if copies elements from the range <tt>[first,last)</tt> to a
  *  range beginning at \p result, except that elements for which \p pred of the
@@ -698,14 +660,16 @@ template<typename ForwardIterator,
  *  \return An OutputIterator pointing to the end of the resulting range.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator2's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c
+ * value_types. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
+ * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
+ * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
+ *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last
+ * - first))</tt>.
  *
  *  The following code snippet demonstrates how to use \p remove_copy_if to copy
  *  a sequence of numbers to an output range while omitting specific elements using the \p thrust::host
@@ -730,19 +694,18 @@ template<typename ForwardIterator,
  *  \see remove_if
  *  \see copy_if
  */
-template<typename DerivedPolicy,
-         typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-_CCCL_HOST_DEVICE
-  OutputIterator remove_copy_if(const thrust::detail::execution_policy_base<DerivedPolicy> &exec,
-                                InputIterator1 first,
-                                InputIterator1 last,
-                                InputIterator2 stencil,
-                                OutputIterator result,
-                                Predicate pred);
-
+template <typename DerivedPolicy,
+          typename InputIterator1,
+          typename InputIterator2,
+          typename OutputIterator,
+          typename Predicate>
+_CCCL_HOST_DEVICE OutputIterator remove_copy_if(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator1 first,
+  InputIterator1 last,
+  InputIterator2 stencil,
+  OutputIterator result,
+  Predicate pred);
 
 /*! \p remove_copy_if copies elements from the range <tt>[first,last)</tt> to a
  *  range beginning at \p result, except that elements for which \p pred of the
@@ -761,14 +724,16 @@ _CCCL_HOST_DEVICE
  *              to the resulting sequence.
  *  \return An OutputIterator pointing to the end of the resulting range.
  *
- *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c value_types.
- *  \tparam InputIterator2 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>,
- *          and \p InputIterator2's \c value_type is convertible to \p Predicate's \c argument_type.
- *  \tparam OutputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>.
- *  \tparam Predicate is a model of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
+ *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
+ * Iterator</a>, \p InputIterator1's \c value_type is convertible to a type in \p OutputIterator's set of \c
+ * value_types. \tparam InputIterator2 is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a>, and \p InputIterator2's \c
+ * value_type is convertible to \p Predicate's \c argument_type. \tparam OutputIterator is a model of <a
+ * href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam Predicate is a model
+ * of <a href="https://en.cppreference.com/w/cpp/concepts/predicate">Predicate</a>.
  *
- *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last - first))</tt>.
+ *  \pre The range <tt>[stencil, stencil + (last - first))</tt> shall not overlap the range <tt>[result, result + (last
+ * - first))</tt>.
  *
  *  The following code snippet demonstrates how to use \p remove_copy_if to copy
  *  a sequence of numbers to an output range while omitting specific elements.
@@ -791,16 +756,9 @@ _CCCL_HOST_DEVICE
  *  \see remove_if
  *  \see copy_if
  */
-template<typename InputIterator1,
-         typename InputIterator2,
-         typename OutputIterator,
-         typename Predicate>
-  OutputIterator remove_copy_if(InputIterator1 first,
-                                InputIterator1 last,
-                                InputIterator2 stencil,
-                                OutputIterator result,
-                                Predicate pred);
-
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename Predicate>
+OutputIterator remove_copy_if(
+  InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred);
 
 /*! \} // end stream_compaction
  */

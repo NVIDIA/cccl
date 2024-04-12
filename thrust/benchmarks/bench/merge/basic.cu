@@ -33,13 +33,12 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
-  const auto elements   = static_cast<std::size_t>(state.get_int64("Elements"));
-  const auto size_ratio = static_cast<std::size_t>(state.get_int64("InputSizeRatio"));
-  const auto entropy    = str_to_entropy(state.get_string("Entropy"));
-  const auto elements_in_lhs =
-    static_cast<std::size_t>(static_cast<double>(size_ratio * elements) / 100.0);
+  const auto elements        = static_cast<std::size_t>(state.get_int64("Elements"));
+  const auto size_ratio      = static_cast<std::size_t>(state.get_int64("InputSizeRatio"));
+  const auto entropy         = str_to_entropy(state.get_string("Entropy"));
+  const auto elements_in_lhs = static_cast<std::size_t>(static_cast<double>(size_ratio * elements) / 100.0);
 
   thrust::device_vector<T> out(elements);
   thrust::device_vector<T> in = generate(elements, entropy);
@@ -51,16 +50,18 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
-  thrust::merge(policy(alloc), in.cbegin(), in.cbegin() + elements_in_lhs,
-                in.cbegin() + elements_in_lhs, in.cend(), out.begin());
+  thrust::merge(
+    policy(alloc), in.cbegin(), in.cbegin() + elements_in_lhs, in.cbegin() + elements_in_lhs, in.cend(), out.begin());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
-             [&](nvbench::launch &launch) {
-               thrust::merge(policy(alloc, launch), in.cbegin(),
-                             in.cbegin() + elements_in_lhs,
-                             in.cbegin() + elements_in_lhs, in.cend(),
-                             out.begin());
-             });
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::merge(
+      policy(alloc, launch),
+      in.cbegin(),
+      in.cbegin() + elements_in_lhs,
+      in.cbegin() + elements_in_lhs,
+      in.cend(),
+      out.begin());
+  });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))

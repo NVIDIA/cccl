@@ -37,574 +37,406 @@
 #endif // no system header
 
 #if THRUST_DEVICE_COMPILER == THRUST_DEVICE_COMPILER_NVCC
-#include <thrust/distance.h>
-#include <thrust/extrema.h>
-#include <thrust/sequence.h>
-#include <thrust/sort.h>
+#  include <thrust/system/cuda/config.h>
 
-#include <thrust/system/cuda/config.h>
-#include <thrust/system/cuda/detail/cdp_dispatch.h>
-#include <thrust/system/cuda/detail/core/agent_launcher.h>
-#include <thrust/system/cuda/detail/core/util.h>
-#include <thrust/system/cuda/detail/execution_policy.h>
-#include <thrust/system/cuda/detail/par_to_seq.h>
-#include <thrust/system/cuda/detail/util.h>
+#  include <cub/device/device_merge_sort.cuh>
+#  include <cub/device/device_radix_sort.cuh>
 
-#include <thrust/detail/alignment.h>
-#include <thrust/detail/cstdint.h>
-#include <thrust/detail/integer_math.h>
-#include <thrust/detail/temporary_array.h>
-#include <thrust/detail/trivial_sequence.h>
-
-#include <thrust/type_traits/is_contiguous_iterator.h>
-
-#include <cub/device/device_radix_sort.cuh>
-#include <cub/device/device_merge_sort.cuh>
+#  include <thrust/detail/alignment.h>
+#  include <thrust/detail/cstdint.h>
+#  include <thrust/detail/integer_math.h>
+#  include <thrust/detail/temporary_array.h>
+#  include <thrust/detail/trivial_sequence.h>
+#  include <thrust/distance.h>
+#  include <thrust/extrema.h>
+#  include <thrust/sequence.h>
+#  include <thrust/sort.h>
+#  include <thrust/system/cuda/detail/cdp_dispatch.h>
+#  include <thrust/system/cuda/detail/core/agent_launcher.h>
+#  include <thrust/system/cuda/detail/core/util.h>
+#  include <thrust/system/cuda/detail/execution_policy.h>
+#  include <thrust/system/cuda/detail/par_to_seq.h>
+#  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/type_traits/is_contiguous_iterator.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace cuda_cub {
+namespace cuda_cub
+{
 
-namespace __merge_sort {
+namespace __merge_sort
+{
 
-  template <class KeysIt,
-            class ItemsIt,
-            class Size,
-            class CompareOp>
-  THRUST_RUNTIME_FUNCTION cudaError_t
-  doit_step(void*        d_temp_storage,
-            size_t&      temp_storage_bytes,
-            KeysIt       keys,
-            ItemsIt      ,
-            Size         keys_count,
-            CompareOp    compare_op,
-            cudaStream_t stream,
-            thrust::detail::integral_constant<bool, false> /* sort_keys */)
+template <class KeysIt, class ItemsIt, class Size, class CompareOp>
+THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeysIt keys,
+  ItemsIt,
+  Size keys_count,
+  CompareOp compare_op,
+  cudaStream_t stream,
+  thrust::detail::integral_constant<bool, false> /* sort_keys */)
+{
+  using ItemsInputIt = cub::NullType*;
+  ItemsInputIt items = nullptr;
+
+  using DispatchMergeSortT = cub::DispatchMergeSort<KeysIt, ItemsInputIt, KeysIt, ItemsInputIt, Size, CompareOp>;
+
+  return DispatchMergeSortT::Dispatch(
+    d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count, compare_op, stream);
+}
+
+template <class KeysIt, class ItemsIt, class Size, class CompareOp>
+THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeysIt keys,
+  ItemsIt items,
+  Size keys_count,
+  CompareOp compare_op,
+  cudaStream_t stream,
+  thrust::detail::integral_constant<bool, true> /* sort_items */)
+{
+  using DispatchMergeSortT = cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, Size, CompareOp>;
+
+  return DispatchMergeSortT::Dispatch(
+    d_temp_storage, temp_storage_bytes, keys, items, keys, items, keys_count, compare_op, stream);
+}
+
+template <class SORT_ITEMS, class /* STABLE */, class KeysIt, class ItemsIt, class Size, class CompareOp>
+THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  KeysIt keys,
+  ItemsIt items,
+  Size keys_count,
+  CompareOp compare_op,
+  cudaStream_t stream)
+{
+  if (keys_count == 0)
   {
-    using ItemsInputIt = cub::NullType *;
-    ItemsInputIt items = nullptr;
-
-    using DispatchMergeSortT = cub::DispatchMergeSort<KeysIt,
-                                                      ItemsInputIt,
-                                                      KeysIt,
-                                                      ItemsInputIt,
-                                                      Size,
-                                                      CompareOp>;
-
-
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        keys,
-                                        items,
-                                        keys,
-                                        items,
-                                        keys_count,
-                                        compare_op,
-                                        stream);
+    return cudaSuccess;
   }
 
-  template <class KeysIt,
-            class ItemsIt,
-            class Size,
-            class CompareOp>
-  THRUST_RUNTIME_FUNCTION cudaError_t
-  doit_step(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            KeysIt keys,
-            ItemsIt items,
-            Size keys_count,
-            CompareOp compare_op,
-            cudaStream_t stream,
-            thrust::detail::integral_constant<bool, true> /* sort_items */)
-  {
-    using DispatchMergeSortT =
-      cub::DispatchMergeSort<KeysIt, ItemsIt, KeysIt, ItemsIt, Size, CompareOp>;
+  thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
 
-    return DispatchMergeSortT::Dispatch(d_temp_storage,
-                                        temp_storage_bytes,
-                                        keys,
-                                        items,
-                                        keys,
-                                        items,
-                                        keys_count,
-                                        compare_op,
-                                        stream);
+  return doit_step(d_temp_storage, temp_storage_bytes, keys, items, keys_count, compare_op, stream, sort_items);
+}
+
+template <typename SORT_ITEMS, typename STABLE, typename Derived, typename KeysIt, typename ItemsIt, typename CompareOp>
+THRUST_RUNTIME_FUNCTION void merge_sort(
+  execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+
+{
+  typedef typename iterator_traits<KeysIt>::difference_type size_type;
+
+  size_type count = static_cast<size_type>(thrust::distance(keys_first, keys_last));
+
+  size_t storage_size = 0;
+  cudaStream_t stream = cuda_cub::stream(policy);
+
+  cudaError_t status;
+  status = doit_step<SORT_ITEMS, STABLE>(NULL, storage_size, keys_first, items_first, count, compare_op, stream);
+  cuda_cub::throw_on_error(status, "merge_sort: failed on 1st step");
+
+  // Allocate temporary storage.
+  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+  void* ptr = static_cast<void*>(tmp.data().get());
+
+  status = doit_step<SORT_ITEMS, STABLE>(ptr, storage_size, keys_first, items_first, count, compare_op, stream);
+  cuda_cub::throw_on_error(status, "merge_sort: failed on 2nd step");
+
+  status = cuda_cub::synchronize_optional(policy);
+  cuda_cub::throw_on_error(status, "merge_sort: failed to synchronize");
+}
+} // namespace __merge_sort
+
+namespace __radix_sort
+{
+
+template <class SORT_ITEMS, class Comparator>
+struct dispatch;
+
+// sort keys in ascending order
+template <class K>
+struct dispatch<thrust::detail::false_type, thrust::less<K>>
+{
+  template <class Key, class Item, class Size>
+  THRUST_RUNTIME_FUNCTION static cudaError_t
+  doit(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       cub::DoubleBuffer<Key>& keys_buffer,
+       cub::DoubleBuffer<Item>& /*items_buffer*/,
+       Size count,
+       cudaStream_t stream)
+  {
+    return cub::DeviceRadixSort::SortKeys(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_buffer,
+      static_cast<int>(count),
+      0,
+      static_cast<int>(sizeof(Key) * 8),
+      stream);
   }
+}; // struct dispatch -- sort keys in ascending order;
 
-  template <class SORT_ITEMS,
-            class /* STABLE */,
-            class KeysIt,
-            class ItemsIt,
-            class Size,
-            class CompareOp>
-  THRUST_RUNTIME_FUNCTION cudaError_t
-  doit_step(void *d_temp_storage,
-            size_t &temp_storage_bytes,
-            KeysIt keys,
-            ItemsIt items,
-            Size keys_count,
-            CompareOp compare_op,
-            cudaStream_t stream)
+// sort keys in descending order
+template <class K>
+struct dispatch<thrust::detail::false_type, thrust::greater<K>>
+{
+  template <class Key, class Item, class Size>
+  THRUST_RUNTIME_FUNCTION static cudaError_t
+  doit(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       cub::DoubleBuffer<Key>& keys_buffer,
+       cub::DoubleBuffer<Item>& /*items_buffer*/,
+       Size count,
+       cudaStream_t stream)
   {
-    if (keys_count == 0)
-    {
-      return cudaSuccess;
-    }
-
-    thrust::detail::integral_constant<bool, SORT_ITEMS::value> sort_items{};
-
-    return doit_step(d_temp_storage,
-                     temp_storage_bytes,
-                     keys,
-                     items,
-                     keys_count,
-                     compare_op,
-                     stream,
-                     sort_items);
+    return cub::DeviceRadixSort::SortKeysDescending(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_buffer,
+      static_cast<int>(count),
+      0,
+      static_cast<int>(sizeof(Key) * 8),
+      stream);
   }
+}; // struct dispatch -- sort keys in descending order;
 
-  template <typename SORT_ITEMS,
-            typename STABLE,
-            typename Derived,
-            typename KeysIt,
-            typename ItemsIt,
-            typename CompareOp>
-  THRUST_RUNTIME_FUNCTION
-  void merge_sort(execution_policy<Derived>& policy,
-                  KeysIt                     keys_first,
-                  KeysIt                     keys_last,
-                  ItemsIt                    items_first,
-                  CompareOp                  compare_op)
-
+// sort pairs in ascending order
+template <class K>
+struct dispatch<thrust::detail::true_type, thrust::less<K>>
+{
+  template <class Key, class Item, class Size>
+  THRUST_RUNTIME_FUNCTION static cudaError_t
+  doit(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       cub::DoubleBuffer<Key>& keys_buffer,
+       cub::DoubleBuffer<Item>& items_buffer,
+       Size count,
+       cudaStream_t stream)
   {
-    typedef typename iterator_traits<KeysIt>::difference_type size_type;
-
-    size_type count = static_cast<size_type>(thrust::distance(keys_first, keys_last));
-
-    size_t       storage_size = 0;
-    cudaStream_t stream       = cuda_cub::stream(policy);
-
-    cudaError_t status;
-    status = doit_step<SORT_ITEMS, STABLE>(NULL,
-                                           storage_size,
-                                           keys_first,
-                                           items_first,
-                                           count,
-                                           compare_op,
-                                           stream);
-    cuda_cub::throw_on_error(status, "merge_sort: failed on 1st step");
-
-    // Allocate temporary storage.
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived>
-      tmp(policy, storage_size);
-    void *ptr = static_cast<void*>(tmp.data().get());
-
-    status = doit_step<SORT_ITEMS, STABLE>(ptr,
-                                           storage_size,
-                                           keys_first,
-                                           items_first,
-                                           count,
-                                           compare_op,
-                                           stream);
-    cuda_cub::throw_on_error(status, "merge_sort: failed on 2nd step");
-
-    status = cuda_cub::synchronize_optional(policy);
-    cuda_cub::throw_on_error(status, "merge_sort: failed to synchronize");
+    return cub::DeviceRadixSort::SortPairs(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_buffer,
+      items_buffer,
+      static_cast<int>(count),
+      0,
+      static_cast<int>(sizeof(Key) * 8),
+      stream);
   }
-}    // namespace __merge_sort
+}; // struct dispatch -- sort pairs in ascending order;
 
-namespace __radix_sort {
-
-  template <class SORT_ITEMS, class Comparator>
-  struct dispatch;
-
-  // sort keys in ascending order
-  template <class K>
-  struct dispatch<thrust::detail::false_type, thrust::less<K> >
+// sort pairs in descending order
+template <class K>
+struct dispatch<thrust::detail::true_type, thrust::greater<K>>
+{
+  template <class Key, class Item, class Size>
+  THRUST_RUNTIME_FUNCTION static cudaError_t
+  doit(void* d_temp_storage,
+       size_t& temp_storage_bytes,
+       cub::DoubleBuffer<Key>& keys_buffer,
+       cub::DoubleBuffer<Item>& items_buffer,
+       Size count,
+       cudaStream_t stream)
   {
-    template <class Key, class Item, class Size>
-    THRUST_RUNTIME_FUNCTION static cudaError_t
-    doit(void*                    d_temp_storage,
-         size_t&                  temp_storage_bytes,
-         cub::DoubleBuffer<Key>&  keys_buffer,
-         cub::DoubleBuffer<Item>& /*items_buffer*/,
-         Size                     count,
-         cudaStream_t             stream)
-    {
-      return cub::DeviceRadixSort::SortKeys(d_temp_storage,
-                                            temp_storage_bytes,
-                                            keys_buffer,
-                                            static_cast<int>(count),
-                                            0,
-                                            static_cast<int>(sizeof(Key) * 8),
-                                            stream);
-    }
-  }; // struct dispatch -- sort keys in ascending order;
+    return cub::DeviceRadixSort::SortPairsDescending(
+      d_temp_storage,
+      temp_storage_bytes,
+      keys_buffer,
+      items_buffer,
+      static_cast<int>(count),
+      0,
+      static_cast<int>(sizeof(Key) * 8),
+      stream);
+  }
+}; // struct dispatch -- sort pairs in descending order;
 
-  // sort keys in descending order
-  template <class K>
-  struct dispatch<thrust::detail::false_type, thrust::greater<K> >
+template <typename SORT_ITEMS, typename Derived, typename Key, typename Item, typename Size, typename CompareOp>
+THRUST_RUNTIME_FUNCTION void radix_sort(execution_policy<Derived>& policy, Key* keys, Item* items, Size count, CompareOp)
+{
+  size_t temp_storage_bytes = 0;
+  cudaStream_t stream       = cuda_cub::stream(policy);
+
+  cub::DoubleBuffer<Key> keys_buffer(keys, NULL);
+  cub::DoubleBuffer<Item> items_buffer(items, NULL);
+
+  Size keys_count  = count;
+  Size items_count = SORT_ITEMS::value ? count : 0;
+
+  cudaError_t status;
+
+  status =
+    dispatch<SORT_ITEMS, CompareOp>::doit(NULL, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
+  cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
+
+  size_t keys_temp_storage  = core::align_to(sizeof(Key) * keys_count, 128);
+  size_t items_temp_storage = core::align_to(sizeof(Item) * items_count, 128);
+
+  size_t storage_size = keys_temp_storage + items_temp_storage + temp_storage_bytes;
+
+  // Allocate temporary storage.
+  thrust::detail::temporary_array<thrust::detail::uint8_t, Derived> tmp(policy, storage_size);
+
+  keys_buffer.d_buffers[1]  = thrust::detail::aligned_reinterpret_cast<Key*>(tmp.data().get());
+  items_buffer.d_buffers[1] = thrust::detail::aligned_reinterpret_cast<Item*>(tmp.data().get() + keys_temp_storage);
+  void* ptr                 = static_cast<void*>(tmp.data().get() + keys_temp_storage + items_temp_storage);
+
+  status =
+    dispatch<SORT_ITEMS, CompareOp>::doit(ptr, temp_storage_bytes, keys_buffer, items_buffer, keys_count, stream);
+  cuda_cub::throw_on_error(status, "radix_sort: failed on 2nd step");
+
+  if (keys_buffer.selector != 0)
   {
-    template <class Key, class Item, class Size>
-    THRUST_RUNTIME_FUNCTION static cudaError_t
-    doit(void*                    d_temp_storage,
-         size_t&                  temp_storage_bytes,
-         cub::DoubleBuffer<Key>&  keys_buffer,
-         cub::DoubleBuffer<Item>& /*items_buffer*/,
-         Size                     count,
-         cudaStream_t             stream)
-    {
-      return cub::DeviceRadixSort::SortKeysDescending(d_temp_storage,
-                                                      temp_storage_bytes,
-                                                      keys_buffer,
-                                                      static_cast<int>(count),
-                                                      0,
-                                                      static_cast<int>(sizeof(Key) * 8),
-                                                      stream);
-    }
-  }; // struct dispatch -- sort keys in descending order;
-
-  // sort pairs in ascending order
-  template <class K>
-  struct dispatch<thrust::detail::true_type, thrust::less<K> >
+    Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
+    cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
+  }
+  _CCCL_IF_CONSTEXPR (SORT_ITEMS::value)
   {
-    template <class Key, class Item, class Size>
-    THRUST_RUNTIME_FUNCTION static cudaError_t
-    doit(void*                    d_temp_storage,
-         size_t&                  temp_storage_bytes,
-         cub::DoubleBuffer<Key>&  keys_buffer,
-         cub::DoubleBuffer<Item>& items_buffer,
-         Size                     count,
-         cudaStream_t             stream)
+    if (items_buffer.selector != 0)
     {
-      return cub::DeviceRadixSort::SortPairs(d_temp_storage,
-                                             temp_storage_bytes,
-                                             keys_buffer,
-                                             items_buffer,
-                                             static_cast<int>(count),
-                                             0,
-                                             static_cast<int>(sizeof(Key) * 8),
-                                             stream);
-    }
-  }; // struct dispatch -- sort pairs in ascending order;
-
-  // sort pairs in descending order
-  template <class K>
-  struct dispatch<thrust::detail::true_type, thrust::greater<K> >
-  {
-    template <class Key, class Item, class Size>
-    THRUST_RUNTIME_FUNCTION static cudaError_t
-    doit(void*                    d_temp_storage,
-         size_t&                  temp_storage_bytes,
-         cub::DoubleBuffer<Key>&  keys_buffer,
-         cub::DoubleBuffer<Item>& items_buffer,
-         Size                     count,
-         cudaStream_t             stream)
-    {
-      return cub::DeviceRadixSort::SortPairsDescending(d_temp_storage,
-                                                       temp_storage_bytes,
-                                                       keys_buffer,
-                                                       items_buffer,
-                                                       static_cast<int>(count),
-                                                       0,
-                                                       static_cast<int>(sizeof(Key) * 8),
-                                                       stream);
-    }
-  }; // struct dispatch -- sort pairs in descending order;
-
-  template <typename SORT_ITEMS,
-            typename Derived,
-            typename Key,
-            typename Item,
-            typename Size,
-            typename CompareOp>
-  THRUST_RUNTIME_FUNCTION
-  void radix_sort(execution_policy<Derived>& policy,
-                  Key*                       keys,
-                  Item*                      items,
-                  Size                       count,
-                  CompareOp)
-  {
-    size_t       temp_storage_bytes = 0;
-    cudaStream_t stream             = cuda_cub::stream(policy);
-
-    cub::DoubleBuffer<Key>  keys_buffer(keys, NULL);
-    cub::DoubleBuffer<Item> items_buffer(items, NULL);
-
-    Size keys_count = count;
-    Size items_count = SORT_ITEMS::value ? count : 0;
-
-    cudaError_t status;
-
-    status = dispatch<SORT_ITEMS, CompareOp>::doit(NULL,
-                                                   temp_storage_bytes,
-                                                   keys_buffer,
-                                                   items_buffer,
-                                                   keys_count,
-                                                   stream);
-    cuda_cub::throw_on_error(status, "radix_sort: failed on 1st step");
-
-    size_t keys_temp_storage  = core::align_to(sizeof(Key) * keys_count, 128);
-    size_t items_temp_storage = core::align_to(sizeof(Item) * items_count, 128);
-
-    size_t storage_size = keys_temp_storage
-                        + items_temp_storage
-                        + temp_storage_bytes;
-
-    // Allocate temporary storage.
-    thrust::detail::temporary_array<thrust::detail::uint8_t, Derived>
-      tmp(policy, storage_size);
-
-    keys_buffer.d_buffers[1]  = thrust::detail::aligned_reinterpret_cast<Key*>(
-      tmp.data().get()
-    );
-    items_buffer.d_buffers[1] = thrust::detail::aligned_reinterpret_cast<Item*>(
-      tmp.data().get() + keys_temp_storage
-    );
-    void *ptr = static_cast<void*>(
-      tmp.data().get() + keys_temp_storage + items_temp_storage
-    );
-
-    status = dispatch<SORT_ITEMS, CompareOp>::doit(ptr,
-                                                   temp_storage_bytes,
-                                                   keys_buffer,
-                                                   items_buffer,
-                                                   keys_count,
-                                                   stream);
-    cuda_cub::throw_on_error(status, "radix_sort: failed on 2nd step");
-
-    if (keys_buffer.selector != 0)
-    {
-      Key* temp_ptr = reinterpret_cast<Key*>(keys_buffer.d_buffers[1]);
-      cuda_cub::copy_n(policy, temp_ptr, keys_count, keys);
-    }
-    _CCCL_IF_CONSTEXPR(SORT_ITEMS::value)
-    {
-      if (items_buffer.selector != 0)
-      {
-        Item *temp_ptr = reinterpret_cast<Item *>(items_buffer.d_buffers[1]);
-        cuda_cub::copy_n(policy, temp_ptr, items_count, items);
-      }
+      Item* temp_ptr = reinterpret_cast<Item*>(items_buffer.d_buffers[1]);
+      cuda_cub::copy_n(policy, temp_ptr, items_count, items);
     }
   }
-}    // __radix_sort
+}
+} // namespace __radix_sort
 
 //---------------------------------------------------------------------
 // Smart sort picks at compile-time whether to dispatch radix or merge sort
 //---------------------------------------------------------------------
 
-namespace __smart_sort {
+namespace __smart_sort
+{
 
-  template <class Key, class CompareOp>
-  struct can_use_primitive_sort
-      : thrust::detail::and_<
-            thrust::detail::is_arithmetic<Key>,
-            thrust::detail::or_<
-                thrust::detail::is_same<CompareOp, thrust::less<Key> >,
-                thrust::detail::is_same<CompareOp, thrust::greater<Key> > > > {};
+template <class Key, class CompareOp>
+struct can_use_primitive_sort
+    : thrust::detail::and_<thrust::detail::is_arithmetic<Key>,
+                           thrust::detail::or_<thrust::detail::is_same<CompareOp, thrust::less<Key>>,
+                                               thrust::detail::is_same<CompareOp, thrust::greater<Key>>>>
+{};
 
-  template <class Iterator, class CompareOp>
-  struct enable_if_primitive_sort
-      : thrust::detail::enable_if<
-            can_use_primitive_sort<typename iterator_value<Iterator>::type,
-                                   CompareOp>::value> {};
+template <class Iterator, class CompareOp>
+struct enable_if_primitive_sort
+    : thrust::detail::enable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
+{};
 
-  template <class Iterator, class CompareOp>
-  struct enable_if_comparison_sort
-      : thrust::detail::disable_if<
-            can_use_primitive_sort<typename iterator_value<Iterator>::type,
-                                   CompareOp>::value> {};
+template <class Iterator, class CompareOp>
+struct enable_if_comparison_sort
+    : thrust::detail::disable_if<can_use_primitive_sort<typename iterator_value<Iterator>::type, CompareOp>::value>
+{};
 
+template <class SORT_ITEMS, class STABLE, class Policy, class KeysIt, class ItemsIt, class CompareOp>
+THRUST_RUNTIME_FUNCTION typename enable_if_comparison_sort<KeysIt, CompareOp>::type
+smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+{
+  __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy, keys_first, keys_last, items_first, compare_op);
+}
 
-  template <class SORT_ITEMS,
-            class STABLE,
-            class Policy,
-            class KeysIt,
-            class ItemsIt,
-            class CompareOp>
-  THRUST_RUNTIME_FUNCTION typename enable_if_comparison_sort<KeysIt, CompareOp>::type
-  smart_sort(Policy&   policy,
-             KeysIt    keys_first,
-             KeysIt    keys_last,
-             ItemsIt   items_first,
-             CompareOp compare_op)
+template <class SORT_ITEMS, class STABLE, class Policy, class KeysIt, class ItemsIt, class CompareOp>
+THRUST_RUNTIME_FUNCTION typename enable_if_primitive_sort<KeysIt, CompareOp>::type smart_sort(
+  execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
+{
+  // ensure sequences have trivial iterators
+  thrust::detail::trivial_sequence<KeysIt, Policy> keys(policy, keys_first, keys_last);
+
+  if (SORT_ITEMS::value)
   {
-    __merge_sort::merge_sort<SORT_ITEMS, STABLE>(policy,
-                                                 keys_first,
-                                                 keys_last,
-                                                 items_first,
-                                                 compare_op);
+    thrust::detail::trivial_sequence<ItemsIt, Policy> values(
+      policy, items_first, items_first + (keys_last - keys_first));
 
+    __radix_sort::radix_sort<SORT_ITEMS>(
+      policy,
+      thrust::raw_pointer_cast(&*keys.begin()),
+      thrust::raw_pointer_cast(&*values.begin()),
+      keys_last - keys_first,
+      compare_op);
+
+    if (!is_contiguous_iterator<ItemsIt>::value)
+    {
+      cuda_cub::copy(policy, values.begin(), values.end(), items_first);
+    }
+  }
+  else
+  {
+    __radix_sort::radix_sort<SORT_ITEMS>(
+      policy,
+      thrust::raw_pointer_cast(&*keys.begin()),
+      thrust::raw_pointer_cast(&*keys.begin()),
+      keys_last - keys_first,
+      compare_op);
   }
 
-  template <class SORT_ITEMS,
-            class STABLE,
-            class Policy,
-            class KeysIt,
-            class ItemsIt,
-            class CompareOp>
-  THRUST_RUNTIME_FUNCTION typename enable_if_primitive_sort<KeysIt, CompareOp>::type
-  smart_sort(execution_policy<Policy>& policy,
-             KeysIt                    keys_first,
-             KeysIt                    keys_last,
-             ItemsIt                   items_first,
-             CompareOp                 compare_op)
+  // copy results back, if necessary
+  if (!is_contiguous_iterator<KeysIt>::value)
   {
-    // ensure sequences have trivial iterators
-    thrust::detail::trivial_sequence<KeysIt, Policy>
-        keys(policy, keys_first, keys_last);
-
-    if (SORT_ITEMS::value)
-    {
-      thrust::detail::trivial_sequence<ItemsIt, Policy>
-          values(policy, items_first, items_first + (keys_last - keys_first));
-
-      __radix_sort::radix_sort<SORT_ITEMS>(
-          policy,
-          thrust::raw_pointer_cast(&*keys.begin()),
-          thrust::raw_pointer_cast(&*values.begin()),
-          keys_last - keys_first,
-          compare_op);
-
-      if (!is_contiguous_iterator<ItemsIt>::value)
-      {
-        cuda_cub::copy(policy, values.begin(), values.end(), items_first);
-      }
-    }
-    else
-    {
-      __radix_sort::radix_sort<SORT_ITEMS>(
-          policy,
-          thrust::raw_pointer_cast(&*keys.begin()),
-          thrust::raw_pointer_cast(&*keys.begin()),
-          keys_last - keys_first,
-          compare_op);
-    }
-
-    // copy results back, if necessary
-    if (!is_contiguous_iterator<KeysIt>::value)
-    {
-      cuda_cub::copy(policy, keys.begin(), keys.end(), keys_first);
-    }
-
-    cuda_cub::throw_on_error(
-      cuda_cub::synchronize_optional(policy),
-      "smart_sort: failed to synchronize");
+    cuda_cub::copy(policy, keys.begin(), keys.end(), keys_first);
   }
-}    // namespace __smart_sort
 
+  cuda_cub::throw_on_error(cuda_cub::synchronize_optional(policy), "smart_sort: failed to synchronize");
+}
+} // namespace __smart_sort
 
 //-------------------------
 // Thrust API entry points
 //-------------------------
 
-
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
-void _CCCL_HOST_DEVICE
-sort(execution_policy<Derived>& policy,
-     ItemsIt                    first,
-     ItemsIt                    last,
-     CompareOp                  compare_op)
+void _CCCL_HOST_DEVICE sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, CompareOp compare_op)
 {
-  THRUST_CDP_DISPATCH(
-    (using item_t = thrust::iterator_value_t<ItemsIt>; item_t *null_ = nullptr;
-     __smart_sort::smart_sort<thrust::detail::false_type,
-                              thrust::detail::false_type>(policy,
-                                                          first,
-                                                          last,
-                                                          null_,
-                                                          compare_op);),
-    (thrust::sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
+  THRUST_CDP_DISPATCH((using item_t = thrust::iterator_value_t<ItemsIt>; item_t* null_ = nullptr;
+                       __smart_sort::smart_sort<thrust::detail::false_type, thrust::detail::false_type>(
+                         policy, first, last, null_, compare_op);),
+                      (thrust::sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ItemsIt, class CompareOp>
-void _CCCL_HOST_DEVICE
-stable_sort(execution_policy<Derived>& policy,
-            ItemsIt                    first,
-            ItemsIt                    last,
-            CompareOp                  compare_op)
+void _CCCL_HOST_DEVICE stable_sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last, CompareOp compare_op)
 {
-  THRUST_CDP_DISPATCH(
-    (using item_t = thrust::iterator_value_t<ItemsIt>; item_t *null_ = nullptr;
-     __smart_sort::smart_sort<thrust::detail::false_type,
-                              thrust::detail::true_type>(policy,
-                                                         first,
-                                                         last,
-                                                         null_,
-                                                         compare_op);),
-    (thrust::stable_sort(cvt_to_seq(derived_cast(policy)),
-                         first,
-                         last,
-                         compare_op);));
+  THRUST_CDP_DISPATCH((using item_t = thrust::iterator_value_t<ItemsIt>; item_t* null_ = nullptr;
+                       __smart_sort::smart_sort<thrust::detail::false_type, thrust::detail::true_type>(
+                         policy, first, last, null_, compare_op);),
+                      (thrust::stable_sort(cvt_to_seq(derived_cast(policy)), first, last, compare_op);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class KeysIt, class ValuesIt, class CompareOp>
-void _CCCL_HOST_DEVICE
-sort_by_key(execution_policy<Derived>& policy,
-            KeysIt                     keys_first,
-            KeysIt                     keys_last,
-            ValuesIt                   values,
-            CompareOp                  compare_op)
+void _CCCL_HOST_DEVICE sort_by_key(
+  execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values, CompareOp compare_op)
 {
   THRUST_CDP_DISPATCH(
-    (__smart_sort::smart_sort<thrust::detail::true_type,
-                              thrust::detail::false_type>(policy,
-                                                          keys_first,
-                                                          keys_last,
-                                                          values,
-                                                          compare_op);),
-    (thrust::sort_by_key(cvt_to_seq(derived_cast(policy)),
-                         keys_first,
-                         keys_last,
-                         values,
-                         compare_op);));
+    (__smart_sort::smart_sort<thrust::detail::true_type, thrust::detail::false_type>(
+       policy, keys_first, keys_last, values, compare_op);),
+    (thrust::sort_by_key(cvt_to_seq(derived_cast(policy)), keys_first, keys_last, values, compare_op);));
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class Derived,
-          class KeysIt,
-          class ValuesIt,
-          class CompareOp>
-void _CCCL_HOST_DEVICE
-stable_sort_by_key(execution_policy<Derived> &policy,
-            KeysIt                     keys_first,
-            KeysIt                     keys_last,
-            ValuesIt                   values,
-            CompareOp                  compare_op)
+template <class Derived, class KeysIt, class ValuesIt, class CompareOp>
+void _CCCL_HOST_DEVICE stable_sort_by_key(
+  execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values, CompareOp compare_op)
 {
   THRUST_CDP_DISPATCH(
-    (__smart_sort::smart_sort<thrust::detail::true_type,
-                              thrust::detail::true_type>(policy,
-                                                         keys_first,
-                                                         keys_last,
-                                                         values,
-                                                         compare_op);),
-    (thrust::stable_sort_by_key(cvt_to_seq(derived_cast(policy)),
-                                keys_first,
-                                keys_last,
-                                values,
-                                compare_op);));
+    (__smart_sort::smart_sort<thrust::detail::true_type, thrust::detail::true_type>(
+       policy, keys_first, keys_last, values, compare_op);),
+    (thrust::stable_sort_by_key(cvt_to_seq(derived_cast(policy)), keys_first, keys_last, values, compare_op);));
 }
 
 // API with default comparator
 
 template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE
-sort(execution_policy<Derived>& policy,
-     ItemsIt                    first,
-     ItemsIt                    last)
+void _CCCL_HOST_DEVICE sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   typedef typename thrust::iterator_value<ItemsIt>::type item_type;
   cuda_cub::sort(policy, first, last, less<item_type>());
 }
 
 template <class Derived, class ItemsIt>
-void _CCCL_HOST_DEVICE
-stable_sort(execution_policy<Derived>& policy,
-            ItemsIt                    first,
-            ItemsIt                    last)
+void _CCCL_HOST_DEVICE stable_sort(execution_policy<Derived>& policy, ItemsIt first, ItemsIt last)
 {
   typedef typename thrust::iterator_value<ItemsIt>::type item_type;
   cuda_cub::stable_sort(policy, first, last, less<item_type>());
@@ -612,10 +444,7 @@ stable_sort(execution_policy<Derived>& policy,
 
 template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
-sort_by_key(execution_policy<Derived>& policy,
-            KeysIt                     keys_first,
-            KeysIt                     keys_last,
-            ValuesIt                   values)
+sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
   typedef typename thrust::iterator_value<KeysIt>::type key_type;
   cuda_cub::sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
@@ -623,14 +452,12 @@ sort_by_key(execution_policy<Derived>& policy,
 
 template <class Derived, class KeysIt, class ValuesIt>
 void _CCCL_HOST_DEVICE
-stable_sort_by_key(
-    execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
+stable_sort_by_key(execution_policy<Derived>& policy, KeysIt keys_first, KeysIt keys_last, ValuesIt values)
 {
   typedef typename thrust::iterator_value<KeysIt>::type key_type;
   cuda_cub::stable_sort_by_key(policy, keys_first, keys_last, values, less<key_type>());
 }
 
-
-}    // namespace cuda_cub
+} // namespace cuda_cub
 THRUST_NAMESPACE_END
 #endif

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -26,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/tag.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -37,25 +36,21 @@ namespace detail
 namespace generic
 {
 
+template <typename DerivedPolicy, typename InputIterator>
+_CCCL_HOST_DEVICE typename thrust::iterator_traits<InputIterator>::value_type
+reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
-template<typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE
-  typename thrust::iterator_traits<InputIterator>::value_type
-    reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last);
+template <typename DerivedPolicy, typename InputIterator, typename T>
+_CCCL_HOST_DEVICE T
+reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
-
-template<typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE
-  T reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, T init);
-
-
-template<typename DerivedPolicy,
-         typename InputIterator,
-         typename T,
-         typename BinaryFunction>
-_CCCL_HOST_DEVICE
-  T reduce(thrust::execution_policy<DerivedPolicy> &exec, InputIterator first, InputIterator last, T init, BinaryFunction binary_op);
-
+template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE T reduce(
+  thrust::execution_policy<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  T init,
+  BinaryFunction binary_op);
 
 } // end namespace generic
 } // end namespace detail
@@ -63,4 +58,3 @@ _CCCL_HOST_DEVICE
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/reduce.inl>
-

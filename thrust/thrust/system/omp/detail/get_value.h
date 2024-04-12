@@ -28,4 +28,3 @@
 
 // this system inherits get_value
 #include <thrust/system/cpp/detail/get_value.h>
-

@@ -31,4 +31,3 @@
 #    error C++11 is required for this Thrust feature; please upgrade your compiler or pass the appropriate -std=c++XX flag to it.
 #  endif
 #endif
-

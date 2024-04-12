@@ -1,18 +1,16 @@
-#include <unittest/unittest.h>
-#include <thrust/sort.h>
 #include <thrust/execution_policy.h>
+#include <thrust/sort.h>
 
+#include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template<typename ExecutionPolicy, typename Iterator, typename Iterator2>
-__global__
-void is_sorted_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Iterator2 result)
+template <typename ExecutionPolicy, typename Iterator, typename Iterator2>
+__global__ void is_sorted_kernel(ExecutionPolicy exec, Iterator first, Iterator last, Iterator2 result)
 {
   *result = thrust::is_sorted(exec, first, last);
 }
 
-
-template<typename ExecutionPolicy>
+template <typename ExecutionPolicy>
 void TestIsSortedDevice(ExecutionPolicy exec)
 {
   size_t n = 1000;
@@ -24,7 +22,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
   v[0] = 1;
   v[1] = 0;
 
-  is_sorted_kernel<<<1,1>>>(exec, v.begin(), v.end(), result.begin());
+  is_sorted_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
 
   {
     cudaError_t const err = cudaDeviceSynchronize();
@@ -35,7 +33,7 @@ void TestIsSortedDevice(ExecutionPolicy exec)
 
   thrust::sort(v.begin(), v.end());
 
-  is_sorted_kernel<<<1,1>>>(exec, v.begin(), v.end(), result.begin());
+  is_sorted_kernel<<<1, 1>>>(exec, v.begin(), v.end(), result.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -50,7 +48,6 @@ void TestIsSortedDeviceSeq()
 }
 DECLARE_UNITTEST(TestIsSortedDeviceSeq);
 
-
 void TestIsSortedDeviceDevice()
 {
   TestIsSortedDevice(thrust::device);
@@ -58,18 +55,20 @@ void TestIsSortedDeviceDevice()
 DECLARE_UNITTEST(TestIsSortedDeviceDevice);
 #endif
 
-
 void TestIsSortedCudaStreams()
 {
   thrust::device_vector<int> v(4);
-  v[0] = 0; v[1] = 5; v[2] = 8; v[3] = 0;
+  v[0] = 0;
+  v[1] = 5;
+  v[2] = 8;
+  v[3] = 0;
 
   cudaStream_t s;
   cudaStreamCreate(&s);
-  
+
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 0), true);
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1), true);
-  
+
   // the following line crashes gcc 4.3
 #if (__GNUC__ == 4) && (__GNUC_MINOR__ == 3)
   // do nothing
@@ -80,15 +79,14 @@ void TestIsSortedCudaStreams()
 
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3), true);
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4), false);
-  
-  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3, thrust::less<int>()),    true);
-  
+
+  ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 3, thrust::less<int>()), true);
+
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 1, thrust::greater<int>()), true);
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.begin() + 4, thrust::greater<int>()), false);
-  
+
   ASSERT_EQUAL(thrust::is_sorted(thrust::cuda::par.on(s), v.begin(), v.end()), false);
 
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestIsSortedCudaStreams);
-

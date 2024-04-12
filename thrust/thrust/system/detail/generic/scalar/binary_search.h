@@ -41,52 +41,38 @@ namespace generic
 namespace scalar
 {
 
-template<typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-RandomAccessIterator lower_bound_n(RandomAccessIterator first,
-                                   Size n,
-                                   const T &val,
-                                   BinaryPredicate comp);
+template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
+_CCCL_HOST_DEVICE RandomAccessIterator
+lower_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp);
 
-template<typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-RandomAccessIterator lower_bound(RandomAccessIterator first, RandomAccessIterator last,
-                                 const T &val,
-                                 BinaryPredicate comp);
+template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
+_CCCL_HOST_DEVICE RandomAccessIterator
+lower_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
-template<typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-RandomAccessIterator upper_bound_n(RandomAccessIterator first,
-                                   Size n,
-                                   const T &val,
-                                   BinaryPredicate comp);
+template <typename RandomAccessIterator, typename Size, typename T, typename BinaryPredicate>
+_CCCL_HOST_DEVICE RandomAccessIterator
+upper_bound_n(RandomAccessIterator first, Size n, const T& val, BinaryPredicate comp);
 
-template<typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-RandomAccessIterator upper_bound(RandomAccessIterator first, RandomAccessIterator last,
-                                 const T &val,
-                                 BinaryPredicate comp);
+template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
+_CCCL_HOST_DEVICE RandomAccessIterator
+upper_bound(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
-template<typename RandomAccessIterator, typename T, typename BinaryPredicate>
-_CCCL_HOST_DEVICE
-  pair<RandomAccessIterator,RandomAccessIterator>
-    equal_range(RandomAccessIterator first, RandomAccessIterator last,
-                const T &val,
-                BinaryPredicate comp);
+template <typename RandomAccessIterator, typename T, typename BinaryPredicate>
+_CCCL_HOST_DEVICE pair<RandomAccessIterator, RandomAccessIterator>
+equal_range(RandomAccessIterator first, RandomAccessIterator last, const T& val, BinaryPredicate comp);
 
-template<typename RandomAccessIterator, typename T, typename Compare>
-_CCCL_HOST_DEVICE
-bool binary_search(RandomAccessIterator first, RandomAccessIterator last, const T &value, Compare comp);
+template <typename RandomAccessIterator, typename T, typename Compare>
+_CCCL_HOST_DEVICE bool
+binary_search(RandomAccessIterator first, RandomAccessIterator last, const T& value, Compare comp);
 
-} // end scalar
+} // namespace scalar
 
-} // end generic
+} // namespace generic
 
-} // end detail
+} // namespace detail
 
-} // end system
+} // namespace system
 
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/generic/scalar/binary_search.inl>
-

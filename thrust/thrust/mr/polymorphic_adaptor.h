@@ -32,34 +32,32 @@ THRUST_NAMESPACE_BEGIN
 namespace mr
 {
 
-template<typename Pointer = void *>
+template <typename Pointer = void*>
 class polymorphic_adaptor_resource final : public memory_resource<Pointer>
 {
 public:
-    polymorphic_adaptor_resource(memory_resource<Pointer> * t) : upstream_resource(t)
-    {
-    }
+  polymorphic_adaptor_resource(memory_resource<Pointer>* t)
+      : upstream_resource(t)
+  {}
 
-    virtual Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
-    {
-        return upstream_resource->allocate(bytes, alignment);
-    }
+  virtual Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  {
+    return upstream_resource->allocate(bytes, alignment);
+  }
 
-    virtual void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
-    {
-        return upstream_resource->deallocate(p, bytes, alignment);
-    }
+  virtual void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  {
+    return upstream_resource->deallocate(p, bytes, alignment);
+  }
 
-    _CCCL_HOST_DEVICE
-    virtual bool do_is_equal(const memory_resource<Pointer> & other) const noexcept override
-    {
-        return upstream_resource->is_equal(other);
-    }
+  _CCCL_HOST_DEVICE virtual bool do_is_equal(const memory_resource<Pointer>& other) const noexcept override
+  {
+    return upstream_resource->is_equal(other);
+  }
 
 private:
-    memory_resource<Pointer> * upstream_resource;
+  memory_resource<Pointer>* upstream_resource;
 };
 
-} // end mr
+} // namespace mr
 THRUST_NAMESPACE_END
-

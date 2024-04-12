@@ -32,7 +32,7 @@
 #include "nvbench_helper.cuh"
 
 template <typename T>
-static void basic(nvbench::state &state, nvbench::type_list<T>)
+static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements"));
 
@@ -45,7 +45,7 @@ static void basic(nvbench::state &state, nvbench::type_list<T>)
   caching_allocator_t alloc;
   do_not_optimize(thrust::reduce(policy(alloc), in.begin(), in.end()));
 
-  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch & launch) {
+  state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     do_not_optimize(thrust::reduce(policy(alloc, launch), in.begin(), in.end()));
   });
 }

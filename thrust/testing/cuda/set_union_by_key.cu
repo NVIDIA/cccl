@@ -1,30 +1,40 @@
-#include <unittest/unittest.h>
-#include <thrust/set_operations.h>
 #include <thrust/execution_policy.h>
+#include <thrust/set_operations.h>
 
+#include <unittest/unittest.h>
 
 #ifdef THRUST_TEST_DEVICE_SIDE
-template<typename ExecutionPolicy, typename Iterator1, typename Iterator2, typename Iterator3, typename Iterator4, typename Iterator5, typename Iterator6, typename Iterator7>
-__global__
-void set_union_by_key_kernel(ExecutionPolicy exec,
-                             Iterator1 keys_first1, Iterator1 keys_last1,
-                             Iterator2 keys_first2, Iterator2 keys_last2,
-                             Iterator3 values_first1,
-                             Iterator4 values_first2,
-                             Iterator5 keys_result,
-                             Iterator6 values_result,
-                             Iterator7 result)
+template <typename ExecutionPolicy,
+          typename Iterator1,
+          typename Iterator2,
+          typename Iterator3,
+          typename Iterator4,
+          typename Iterator5,
+          typename Iterator6,
+          typename Iterator7>
+__global__ void set_union_by_key_kernel(
+  ExecutionPolicy exec,
+  Iterator1 keys_first1,
+  Iterator1 keys_last1,
+  Iterator2 keys_first2,
+  Iterator2 keys_last2,
+  Iterator3 values_first1,
+  Iterator4 values_first2,
+  Iterator5 keys_result,
+  Iterator6 values_result,
+  Iterator7 result)
 {
-  *result = thrust::set_union_by_key(exec, keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
+  *result = thrust::set_union_by_key(
+    exec, keys_first1, keys_last1, keys_first2, keys_last2, values_first1, values_first2, keys_result, values_result);
 }
 
-
-template<typename ExecutionPolicy>
+template <typename ExecutionPolicy>
 void TestSetUnionByKeyDevice(ExecutionPolicy exec)
 {
   typedef thrust::device_vector<int> Vector;
   typedef typename Vector::iterator Iterator;
 
+  // clang-format off
   Vector a_key(3), b_key(4);
   Vector a_val(3), b_val(4);
 
@@ -37,23 +47,27 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
   Vector ref_key(5), ref_val(5);
   ref_key[0] = 0; ref_key[1] = 2; ref_key[2] = 3; ref_key[3] = 3; ref_key[4] = 4;
   ref_val[0] = 0; ref_val[1] = 0; ref_val[2] = 1; ref_val[3] = 1; ref_val[4] = 0;
+  // clang-format on
 
   Vector result_key(5), result_val(5);
 
-  thrust::device_vector<thrust::pair<Iterator,Iterator> > end_vec(1);
+  thrust::device_vector<thrust::pair<Iterator, Iterator>> end_vec(1);
 
-  set_union_by_key_kernel<<<1,1>>>(exec,
-                                   a_key.begin(), a_key.end(),
-                                   b_key.begin(), b_key.end(),
-                                   a_val.begin(),
-                                   b_val.begin(),
-                                   result_key.begin(),
-                                   result_val.begin(),
-                                   end_vec.begin());
+  set_union_by_key_kernel<<<1, 1>>>(
+    exec,
+    a_key.begin(),
+    a_key.end(),
+    b_key.begin(),
+    b_key.end(),
+    a_val.begin(),
+    b_val.begin(),
+    result_key.begin(),
+    result_val.begin(),
+    end_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
-  thrust::pair<Iterator,Iterator> end = end_vec[0];
+  thrust::pair<Iterator, Iterator> end = end_vec[0];
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
@@ -61,13 +75,11 @@ void TestSetUnionByKeyDevice(ExecutionPolicy exec)
   ASSERT_EQUAL(ref_val, result_val);
 }
 
-
 void TestSetUnionByKeyDeviceSeq()
 {
   TestSetUnionByKeyDevice(thrust::seq);
 }
 DECLARE_UNITTEST(TestSetUnionByKeyDeviceSeq);
-
 
 void TestSetUnionByKeyDeviceDevice()
 {
@@ -75,7 +87,6 @@ void TestSetUnionByKeyDeviceDevice()
 }
 DECLARE_UNITTEST(TestSetUnionByKeyDeviceDevice);
 #endif
-
 
 void TestSetUnionByKeyCudaStreams()
 {
@@ -85,6 +96,7 @@ void TestSetUnionByKeyCudaStreams()
   Vector a_key(3), b_key(4);
   Vector a_val(3), b_val(4);
 
+  // clang-format off
   a_key[0] = 0; a_key[1] = 2; a_key[2] = 4;
   a_val[0] = 0; a_val[1] = 0; a_val[2] = 0;
 
@@ -94,20 +106,23 @@ void TestSetUnionByKeyCudaStreams()
   Vector ref_key(5), ref_val(5);
   ref_key[0] = 0; ref_key[1] = 2; ref_key[2] = 3; ref_key[3] = 3; ref_key[4] = 4;
   ref_val[0] = 0; ref_val[1] = 0; ref_val[2] = 1; ref_val[3] = 1; ref_val[4] = 0;
+  // clang-format on
 
   Vector result_key(5), result_val(5);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::pair<Iterator,Iterator> end =
-    thrust::set_union_by_key(thrust::cuda::par.on(s),
-                             a_key.begin(), a_key.end(),
-                             b_key.begin(), b_key.end(),
-                             a_val.begin(),
-                             b_val.begin(),
-                             result_key.begin(),
-                             result_val.begin());
+  thrust::pair<Iterator, Iterator> end = thrust::set_union_by_key(
+    thrust::cuda::par.on(s),
+    a_key.begin(),
+    a_key.end(),
+    b_key.begin(),
+    b_key.end(),
+    a_val.begin(),
+    b_val.begin(),
+    result_key.begin(),
+    result_val.begin());
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
@@ -118,4 +133,3 @@ void TestSetUnionByKeyCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestSetUnionByKeyCudaStreams);
-

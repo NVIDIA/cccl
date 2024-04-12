@@ -25,8 +25,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/advance.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/system/detail/generic/advance.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -39,11 +39,10 @@ namespace detail
 {
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename InputIterator, typename Distance>
-_CCCL_HOST_DEVICE
-void advance(InputIterator& i, Distance n, thrust::incrementable_traversal_tag)
+template <typename InputIterator, typename Distance>
+_CCCL_HOST_DEVICE void advance(InputIterator& i, Distance n, thrust::incrementable_traversal_tag)
 {
-  while(n)
+  while (n)
   {
     ++i;
     --n;
@@ -51,26 +50,22 @@ void advance(InputIterator& i, Distance n, thrust::incrementable_traversal_tag)
 } // end advance()
 
 _CCCL_EXEC_CHECK_DISABLE
-template<typename InputIterator, typename Distance>
-_CCCL_HOST_DEVICE
-void advance(InputIterator& i, Distance n, thrust::random_access_traversal_tag)
+template <typename InputIterator, typename Distance>
+_CCCL_HOST_DEVICE void advance(InputIterator& i, Distance n, thrust::random_access_traversal_tag)
 {
   i += n;
 } // end advance()
 
-} // end detail
+} // namespace detail
 
-template<typename InputIterator, typename Distance>
-_CCCL_HOST_DEVICE
-void advance(InputIterator& i, Distance n)
+template <typename InputIterator, typename Distance>
+_CCCL_HOST_DEVICE void advance(InputIterator& i, Distance n)
 {
   // dispatch on iterator traversal
-  thrust::system::detail::generic::detail::advance(i, n,
-    typename thrust::iterator_traversal<InputIterator>::type());
+  thrust::system::detail::generic::detail::advance(i, n, typename thrust::iterator_traversal<InputIterator>::type());
 } // end advance()
 
-} // end namespace detail
-} // end namespace generic
+} // namespace generic
+} // namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-

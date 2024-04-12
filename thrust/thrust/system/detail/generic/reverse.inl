@@ -25,13 +25,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/system/detail/generic/reverse.h>
 #include <thrust/advance.h>
-#include <thrust/distance.h>
 #include <thrust/detail/copy.h>
-#include <thrust/swap.h>
+#include <thrust/distance.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/reverse_iterator.h>
+#include <thrust/swap.h>
+#include <thrust/system/detail/generic/reverse.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -41,12 +41,9 @@ namespace detail
 namespace generic
 {
 
-
-template<typename ExecutionPolicy, typename BidirectionalIterator>
-_CCCL_HOST_DEVICE
-  void reverse(thrust::execution_policy<ExecutionPolicy> &exec,
-               BidirectionalIterator first,
-               BidirectionalIterator last)
+template <typename ExecutionPolicy, typename BidirectionalIterator>
+_CCCL_HOST_DEVICE void
+reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator first, BidirectionalIterator last)
 {
   typedef typename thrust::iterator_difference<BidirectionalIterator>::type difference_type;
 
@@ -59,26 +56,17 @@ _CCCL_HOST_DEVICE
   thrust::swap_ranges(exec, first, mid, thrust::make_reverse_iterator(last));
 } // end reverse()
 
-
-template<typename ExecutionPolicy,
-         typename BidirectionalIterator,
-         typename OutputIterator>
-_CCCL_HOST_DEVICE
-  OutputIterator reverse_copy(thrust::execution_policy<ExecutionPolicy> &exec,
-                              BidirectionalIterator first,
-                              BidirectionalIterator last,
-                              OutputIterator result)
+template <typename ExecutionPolicy, typename BidirectionalIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE OutputIterator reverse_copy(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  BidirectionalIterator first,
+  BidirectionalIterator last,
+  OutputIterator result)
 {
-  return thrust::copy(exec,
-                      thrust::make_reverse_iterator(last),
-                      thrust::make_reverse_iterator(first),
-                      result);
+  return thrust::copy(exec, thrust::make_reverse_iterator(last), thrust::make_reverse_iterator(first), result);
 } // end reverse_copy()
-
 
 } // end namespace generic
 } // end namespace detail
 } // end namespace system
 THRUST_NAMESPACE_END
-
-

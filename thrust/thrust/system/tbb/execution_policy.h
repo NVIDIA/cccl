@@ -80,7 +80,6 @@
 #include <thrust/system/tbb/detail/unique.h>
 #include <thrust/system/tbb/detail/unique_by_key.h>
 
-
 // define these entities here for the purpose of Doxygenating them
 // they are actually defined elsewhere
 #if 0
@@ -159,5 +158,3 @@ static const unspecified par;
 } // end system
 THRUST_NAMESPACE_END
 #endif
-
-

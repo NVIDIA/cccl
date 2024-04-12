@@ -28,4 +28,3 @@
 
 // this system inherits equal
 #include <thrust/system/cpp/detail/equal.h>
-

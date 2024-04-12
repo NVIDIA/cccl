@@ -36,150 +36,68 @@ namespace detail
 namespace functional
 {
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_and<>>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator&(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_and<>>, actor<T1>, typename as_actor<T2>::type>>
+operator&(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_and<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_and<>>(), make_actor(_1), make_actor(_2));
 } // end operator&()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_and<>>,
-    typename as_actor<T1>::type,
-    actor<T2>
-  >
->
-operator&(const T1 &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_and<>>, typename as_actor<T1>::type, actor<T2>>>
+operator&(const T1& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_and<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_and<>>(), make_actor(_1), make_actor(_2));
 } // end operator&()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_and<>>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator&(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_and<>>, actor<T1>, actor<T2>>>
+operator&(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_and<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_and<>>(), make_actor(_1), make_actor(_2));
 } // end operator&()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_or<>>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator|(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_or<>>, actor<T1>, typename as_actor<T2>::type>>
+operator|(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_or<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_or<>>(), make_actor(_1), make_actor(_2));
 } // end operator|()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_or<>>,
-    typename as_actor<T1>::type,
-    actor<T2>
-  >
->
-operator|(const T1 &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_or<>>, typename as_actor<T1>::type, actor<T2>>>
+operator|(const T1& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_or<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_or<>>(), make_actor(_1), make_actor(_2));
 } // end operator|()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_or<>>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator|(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_or<>>, actor<T1>, actor<T2>>>
+operator|(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_or<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_or<>>(), make_actor(_1), make_actor(_2));
 } // end operator|()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_xor<>>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator^(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_xor<>>, actor<T1>, typename as_actor<T2>::type>>
+operator^(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_xor<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_xor<>>(), make_actor(_1), make_actor(_2));
 } // end operator^()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_xor<>>,
-    typename as_actor<T1>::type,
-    actor<T2>
-  >
->
-operator^(const T1 &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_xor<>>, typename as_actor<T1>::type, actor<T2>>>
+operator^(const T1& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_xor<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_xor<>>(), make_actor(_1), make_actor(_2));
 } // end operator^()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_xor<>>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator^(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_xor<>>, actor<T1>, actor<T2>>>
+operator^(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_xor<>>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_xor<>>(), make_actor(_1), make_actor(_2));
 } // end operator^()
-
 
 // there's no standard bit_not functional, so roll an ad hoc one here
 struct bit_not
@@ -188,25 +106,16 @@ struct bit_not
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1) const
-  noexcept(noexcept(~THRUST_FWD(t1)))
-  THRUST_TRAILING_RETURN(decltype(~THRUST_FWD(t1)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1) const noexcept(noexcept(~THRUST_FWD(t1)))
+    THRUST_TRAILING_RETURN(decltype(~THRUST_FWD(t1)))
   {
     return ~THRUST_FWD(t1);
   }
 }; // end prefix_increment
 
-template<typename Eval>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_unary_operator<bit_not>,
-    actor<Eval>
-  >
->
-_CCCL_HOST_DEVICE
-operator~(const actor<Eval> &_1)
+template <typename Eval>
+_CCCL_HOST_DEVICE actor<composite<transparent_unary_operator<bit_not>, actor<Eval>>> _CCCL_HOST_DEVICE
+operator~(const actor<Eval>& _1)
 {
   return compose(transparent_unary_operator<bit_not>(), _1);
 } // end operator~()
@@ -218,61 +127,33 @@ struct bit_lshift
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1&& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) << THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) << THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) << THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) << THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) << THRUST_FWD(t2);
   }
 };
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_lshift>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator<<(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_lshift>, actor<T1>, typename as_actor<T2>::type>>
+operator<<(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_lshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_lshift>(), make_actor(_1), make_actor(_2));
 } // end operator<<()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_lshift>,
-    typename as_actor<T1>::type,
-    actor<T2>
-  >
->
-operator<<(const T1 &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_lshift>, typename as_actor<T1>::type, actor<T2>>>
+operator<<(const T1& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_lshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_lshift>(), make_actor(_1), make_actor(_2));
 } // end operator<<()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_lshift>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator<<(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_lshift>, actor<T1>, actor<T2>>>
+operator<<(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_lshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_lshift>(), make_actor(_1), make_actor(_2));
 } // end operator<<()
 
 // there's no standard bit_rshift functional, so roll an ad hoc one here
@@ -282,65 +163,35 @@ struct bit_rshift
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE
-  constexpr auto operator()(T1& t1, T2&& t2) const
-  noexcept(noexcept(THRUST_FWD(t1) >> THRUST_FWD(t2)))
-  THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) >> THRUST_FWD(t2)))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1& t1, T2&& t2) const
+    noexcept(noexcept(THRUST_FWD(t1) >> THRUST_FWD(t2)))
+      THRUST_TRAILING_RETURN(decltype(THRUST_FWD(t1) >> THRUST_FWD(t2)))
   {
     return THRUST_FWD(t1) >> THRUST_FWD(t2);
   }
 };
 
-
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_rshift>,
-    actor<T1>,
-    typename as_actor<T2>::type
-  >
->
-operator>>(const actor<T1> &_1, const T2 &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_rshift>, actor<T1>, typename as_actor<T2>::type>>
+operator>>(const actor<T1>& _1, const T2& _2)
 {
-  return compose(transparent_binary_operator<bit_rshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_rshift>(), make_actor(_1), make_actor(_2));
 } // end operator>>()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_rshift>,
-    typename as_actor<T1>::type,
-    actor<T2>
-  >
->
-operator>>(const T1 &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_rshift>, typename as_actor<T1>::type, actor<T2>>>
+operator>>(const T1& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_rshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_rshift>(), make_actor(_1), make_actor(_2));
 } // end operator>>()
 
-template<typename T1, typename T2>
-_CCCL_HOST_DEVICE
-actor<
-  composite<
-    transparent_binary_operator<bit_rshift>,
-    actor<T1>,
-    actor<T2>
-  >
->
-operator>>(const actor<T1> &_1, const actor<T2> &_2)
+template <typename T1, typename T2>
+_CCCL_HOST_DEVICE actor<composite<transparent_binary_operator<bit_rshift>, actor<T1>, actor<T2>>>
+operator>>(const actor<T1>& _1, const actor<T2>& _2)
 {
-  return compose(transparent_binary_operator<bit_rshift>(),
-                 make_actor(_1),
-                 make_actor(_2));
+  return compose(transparent_binary_operator<bit_rshift>(), make_actor(_1), make_actor(_2));
 } // end operator>>()
 
-} // end functional
-} // end detail
+} // namespace functional
+} // namespace detail
 THRUST_NAMESPACE_END
-

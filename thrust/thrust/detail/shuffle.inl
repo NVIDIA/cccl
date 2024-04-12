@@ -26,8 +26,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/cpp11_required.h>
-
-
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/shuffle.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -38,17 +36,15 @@ THRUST_NAMESPACE_BEGIN
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(
-    const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-    RandomIterator first, RandomIterator last, URBG&& g) {
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g)
+{
   using thrust::system::detail::generic::shuffle;
-  return shuffle(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-      first, last, g);
+  return shuffle(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, g);
 }
 
 template <typename RandomIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
-                                 URBG&& g) {
+_CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g)
+{
   using thrust::system::detail::generic::select_system;
 
   typedef typename thrust::iterator_system<RandomIterator>::type System;
@@ -58,21 +54,21 @@ _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last,
 }
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename RandomIterator,
-          typename OutputIterator, typename URBG>
+template <typename DerivedPolicy, typename RandomIterator, typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(
-    const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-    RandomIterator first, RandomIterator last, OutputIterator result,
-    URBG&& g) {
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  RandomIterator first,
+  RandomIterator last,
+  OutputIterator result,
+  URBG&& g)
+{
   using thrust::system::detail::generic::shuffle_copy;
-  return shuffle_copy(
-      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
-      first, last, result, g);
+  return shuffle_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, g);
 }
 
 template <typename RandomIterator, typename OutputIterator, typename URBG>
-_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
-                                      OutputIterator result, URBG&& g) {
+_CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g)
+{
   using thrust::system::detail::generic::select_system;
 
   typedef typename thrust::iterator_system<RandomIterator>::type System1;
@@ -81,9 +77,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last,
   System1 system1;
   System2 system2;
 
-  return thrust::shuffle_copy(select_system(system1, system2), first, last,
-                              result, g);
+  return thrust::shuffle_copy(select_system(system1, system2), first, last, result, g);
 }
 
 THRUST_NAMESPACE_END
-

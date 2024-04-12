@@ -29,7 +29,7 @@
 
 // don't attempt to #include this file without omp support
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-#include <omp.h>
+#  include <omp.h>
 #endif // omp support
 
 THRUST_NAMESPACE_BEGIN
@@ -49,11 +49,8 @@ thrust::system::detail::internal::uniform_decomposition<IndexType> default_decom
   // X you need to OpenMP support in your compiler.                         X
   // ========================================================================
   THRUST_STATIC_ASSERT_MSG(
-    (thrust::detail::depend_on_instantiation<
-      IndexType, (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
-    >::value)
-  , "OpenMP compiler support is not enabled"
-  );
+    (thrust::detail::depend_on_instantiation<IndexType, (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)>::value),
+    "OpenMP compiler support is not enabled");
 
 #if (THRUST_DEVICE_COMPILER_IS_OMP_CAPABLE == THRUST_TRUE)
   return thrust::system::detail::internal::uniform_decomposition<IndexType>(n, 1, omp_get_num_procs());
@@ -66,4 +63,3 @@ thrust::system::detail::internal::uniform_decomposition<IndexType> default_decom
 } // end namespace omp
 } // end namespace system
 THRUST_NAMESPACE_END
-

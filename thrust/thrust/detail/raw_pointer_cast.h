@@ -29,27 +29,21 @@
 
 THRUST_NAMESPACE_BEGIN
 
-template<typename Pointer>
-_CCCL_HOST_DEVICE
-typename thrust::detail::pointer_traits<Pointer>::raw_pointer
-raw_pointer_cast(Pointer ptr)
+template <typename Pointer>
+_CCCL_HOST_DEVICE typename thrust::detail::pointer_traits<Pointer>::raw_pointer raw_pointer_cast(Pointer ptr)
 {
   return thrust::detail::pointer_traits<Pointer>::get(ptr);
 }
 
 template <typename ToPointer, typename FromPointer>
-_CCCL_HOST_DEVICE
-ToPointer
-reinterpret_pointer_cast(FromPointer ptr)
+_CCCL_HOST_DEVICE ToPointer reinterpret_pointer_cast(FromPointer ptr)
 {
   typedef typename thrust::detail::pointer_element<ToPointer>::type to_element;
   return ToPointer(reinterpret_cast<to_element*>(thrust::raw_pointer_cast(ptr)));
 }
 
 template <typename ToPointer, typename FromPointer>
-_CCCL_HOST_DEVICE
-ToPointer
-static_pointer_cast(FromPointer ptr)
+_CCCL_HOST_DEVICE ToPointer static_pointer_cast(FromPointer ptr)
 {
   typedef typename thrust::detail::pointer_element<ToPointer>::type to_element;
   return ToPointer(static_cast<to_element*>(thrust::raw_pointer_cast(ptr)));

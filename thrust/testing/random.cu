@@ -1,18 +1,18 @@
-#include <unittest/unittest.h>
-#include <thrust/random.h>
 #include <thrust/generate.h>
+#include <thrust/random.h>
+
 #include <sstream>
 
-template<typename Engine>
-  struct ValidateEngine
+#include <unittest/unittest.h>
+
+template <typename Engine>
+struct ValidateEngine
 {
-  __host__ __device__
-  ValidateEngine(const typename Engine::result_type value_10000)
-    : m_value_10000(value_10000)
+  __host__ __device__ ValidateEngine(const typename Engine::result_type value_10000)
+      : m_value_10000(value_10000)
   {}
 
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     Engine e;
     e.discard(9999);
@@ -24,19 +24,16 @@ template<typename Engine>
   const typename Engine::result_type m_value_10000;
 }; // end ValidateEngine
 
-
-template<typename Engine,
-         bool trivial_min = (Engine::min == 0)>
-  struct ValidateEngineMin
+template <typename Engine, bool trivial_min = (Engine::min == 0)>
+struct ValidateEngineMin
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     Engine e;
 
     bool result = true;
 
-    for(int i = 0; i < 10000; ++i)
+    for (int i = 0; i < 10000; ++i)
     {
       result &= (e() >= Engine::min);
     }
@@ -45,28 +42,25 @@ template<typename Engine,
   }
 }; // end ValidateEngineMin
 
-template<typename Engine>
-  struct ValidateEngineMin<Engine,true>
+template <typename Engine>
+struct ValidateEngineMin<Engine, true>
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     return true;
   }
 };
 
-
-template<typename Engine>
-  struct ValidateEngineMax
+template <typename Engine>
+struct ValidateEngineMax
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     Engine e;
 
     bool result = true;
 
-    for(int i = 0; i < 10000; ++i)
+    for (int i = 0; i < 10000; ++i)
     {
       result &= (e() <= Engine::max);
     }
@@ -75,12 +69,10 @@ template<typename Engine>
   }
 }; // end ValidateEngineMax
 
-
-template<typename Engine>
-  struct ValidateEngineEqual
+template <typename Engine>
+struct ValidateEngineEqual
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     bool result = true;
 
@@ -109,12 +101,10 @@ template<typename Engine>
   }
 };
 
-
-template<typename Engine>
-  struct ValidateEngineUnequal
+template <typename Engine>
+struct ValidateEngineUnequal
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     bool result = true;
 
@@ -149,25 +139,22 @@ template<typename Engine>
   }
 };
 
-
-template<typename Distribution, typename Engine>
-  struct ValidateDistributionMin
+template <typename Distribution, typename Engine>
+struct ValidateDistributionMin
 {
   typedef Engine random_engine;
 
-  __host__ __device__
-  ValidateDistributionMin(const Distribution &dd)
-    : d(dd)
+  __host__ __device__ ValidateDistributionMin(const Distribution& dd)
+      : d(dd)
   {}
 
-  __host__ __device__
-  bool operator()(void)
+  __host__ __device__ bool operator()(void)
   {
     Engine e;
 
     bool result = true;
 
-    for(int i = 0; i < 10000; ++i)
+    for (int i = 0; i < 10000; ++i)
     {
       result &= (d(e) >= d.min());
     }
@@ -178,25 +165,22 @@ template<typename Distribution, typename Engine>
   Distribution d;
 };
 
-
-template<typename Distribution, typename Engine>
-  struct ValidateDistributionMax
+template <typename Distribution, typename Engine>
+struct ValidateDistributionMax
 {
   typedef Engine random_engine;
 
-  __host__ __device__
-  ValidateDistributionMax(const Distribution &dd)
-    : d(dd)
+  __host__ __device__ ValidateDistributionMax(const Distribution& dd)
+      : d(dd)
   {}
 
-  __host__ __device__
-  bool operator()(void)
+  __host__ __device__ bool operator()(void)
   {
     Engine e;
 
     bool result = true;
 
-    for(int i = 0; i < 10000; ++i)
+    for (int i = 0; i < 10000; ++i)
     {
       result &= (d(e) <= d.max());
     }
@@ -207,12 +191,10 @@ template<typename Distribution, typename Engine>
   Distribution d;
 };
 
-
-template<typename Distribution>
-  struct ValidateDistributionEqual
+template <typename Distribution>
+struct ValidateDistributionEqual
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     return d0 == d1;
   }
@@ -220,12 +202,10 @@ template<typename Distribution>
   Distribution d0, d1;
 };
 
-
-template<typename Distribution>
-  struct ValidateDistributionUnqual
+template <typename Distribution>
+struct ValidateDistributionUnqual
 {
-  __host__ __device__
-  bool operator()(void) const
+  __host__ __device__ bool operator()(void) const
   {
     return d0 != d1;
   }
@@ -233,8 +213,7 @@ template<typename Distribution>
   Distribution d0, d1;
 };
 
-
-template<typename Engine, thrust::detail::uint64_t value_10000>
+template <typename Engine, thrust::detail::uint64_t value_10000>
 void TestEngineValidation(void)
 {
   // test host
@@ -250,8 +229,7 @@ void TestEngineValidation(void)
   ASSERT_EQUAL(true, d[0]);
 }
 
-
-template<typename Engine>
+template <typename Engine>
 void TestEngineMax(void)
 {
   // test host
@@ -267,8 +245,7 @@ void TestEngineMax(void)
   ASSERT_EQUAL(true, d[0]);
 }
 
-
-template<typename Engine>
+template <typename Engine>
 void TestEngineMin(void)
 {
   // test host
@@ -284,8 +261,7 @@ void TestEngineMin(void)
   ASSERT_EQUAL(true, d[0]);
 }
 
-
-template<typename Engine>
+template <typename Engine>
 void TestEngineSaveRestore(void)
 {
   // create a default engine
@@ -313,8 +289,7 @@ void TestEngineSaveRestore(void)
   ASSERT_EQUAL(e0(), e1());
 }
 
-
-template<typename Engine>
+template <typename Engine>
 void TestEngineEqual(void)
 {
   ValidateEngineEqual<Engine> f;
@@ -332,8 +307,7 @@ void TestEngineEqual(void)
   ASSERT_EQUAL(true, d[0]);
 }
 
-
-template<typename Engine>
+template <typename Engine>
 void TestEngineUnequal(void)
 {
   ValidateEngineUnequal<Engine> f;
@@ -355,10 +329,9 @@ void TestRanlux24BaseValidation(void)
 {
   typedef thrust::random::ranlux24_base Engine;
 
-  TestEngineValidation<Engine,7937952u>();
+  TestEngineValidation<Engine, 7937952u>();
 }
 DECLARE_UNITTEST(TestRanlux24BaseValidation);
-
 
 void TestRanlux24BaseMin(void)
 {
@@ -368,7 +341,6 @@ void TestRanlux24BaseMin(void)
 }
 DECLARE_UNITTEST(TestRanlux24BaseMin);
 
-
 void TestRanlux24BaseMax(void)
 {
   typedef thrust::random::ranlux24_base Engine;
@@ -376,7 +348,6 @@ void TestRanlux24BaseMax(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux24BaseMax);
-
 
 void TestRanlux24BaseSaveRestore(void)
 {
@@ -386,7 +357,6 @@ void TestRanlux24BaseSaveRestore(void)
 }
 DECLARE_UNITTEST(TestRanlux24BaseSaveRestore);
 
-
 void TestRanlux24BaseEqual(void)
 {
   typedef thrust::random::ranlux24_base Engine;
@@ -394,7 +364,6 @@ void TestRanlux24BaseEqual(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux24BaseEqual);
-
 
 void TestRanlux24BaseUnequal(void)
 {
@@ -404,15 +373,13 @@ void TestRanlux24BaseUnequal(void)
 }
 DECLARE_UNITTEST(TestRanlux24BaseUnequal);
 
-
 void TestRanlux48BaseValidation(void)
 {
   typedef thrust::random::ranlux48_base Engine;
 
-  TestEngineValidation<Engine,192113843633948ull>();
+  TestEngineValidation<Engine, 192113843633948ull>();
 }
 DECLARE_UNITTEST(TestRanlux48BaseValidation);
-
 
 void TestRanlux48BaseMin(void)
 {
@@ -422,7 +389,6 @@ void TestRanlux48BaseMin(void)
 }
 DECLARE_UNITTEST(TestRanlux48BaseMin);
 
-
 void TestRanlux48BaseMax(void)
 {
   typedef thrust::random::ranlux48_base Engine;
@@ -430,7 +396,6 @@ void TestRanlux48BaseMax(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux48BaseMax);
-
 
 void TestRanlux48BaseSaveRestore(void)
 {
@@ -440,7 +405,6 @@ void TestRanlux48BaseSaveRestore(void)
 }
 DECLARE_UNITTEST(TestRanlux48BaseSaveRestore);
 
-
 void TestRanlux48BaseEqual(void)
 {
   typedef thrust::random::ranlux48_base Engine;
@@ -449,13 +413,12 @@ void TestRanlux48BaseEqual(void)
 }
 DECLARE_UNITTEST(TestRanlux48BaseEqual);
 
-
 #if defined(__INTEL_COMPILER) && 1800 >= __INTEL_COMPILER
 void TestRanlux48BaseUnequal(void)
 {
-    // ICPC has a known failure with this test.
-    // See nvbug 200414000.
-    KNOWN_FAILURE;
+  // ICPC has a known failure with this test.
+  // See nvbug 200414000.
+  KNOWN_FAILURE;
 }
 #else
 void TestRanlux48BaseUnequal(void)
@@ -467,15 +430,13 @@ void TestRanlux48BaseUnequal(void)
 #endif
 DECLARE_UNITTEST(TestRanlux48BaseUnequal);
 
-
 void TestMinstdRandValidation(void)
 {
   typedef thrust::random::minstd_rand Engine;
 
-  TestEngineValidation<Engine,399268537u>();
+  TestEngineValidation<Engine, 399268537u>();
 }
 DECLARE_UNITTEST(TestMinstdRandValidation);
-
 
 void TestMinstdRandMin(void)
 {
@@ -485,7 +446,6 @@ void TestMinstdRandMin(void)
 }
 DECLARE_UNITTEST(TestMinstdRandMin);
 
-
 void TestMinstdRandMax(void)
 {
   typedef thrust::random::minstd_rand Engine;
@@ -493,7 +453,6 @@ void TestMinstdRandMax(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestMinstdRandMax);
-
 
 void TestMinstdRandSaveRestore(void)
 {
@@ -503,7 +462,6 @@ void TestMinstdRandSaveRestore(void)
 }
 DECLARE_UNITTEST(TestMinstdRandSaveRestore);
 
-
 void TestMinstdRandEqual(void)
 {
   typedef thrust::random::minstd_rand Engine;
@@ -511,7 +469,6 @@ void TestMinstdRandEqual(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestMinstdRandEqual);
-
 
 void TestMinstdRandUnequal(void)
 {
@@ -521,15 +478,13 @@ void TestMinstdRandUnequal(void)
 }
 DECLARE_UNITTEST(TestMinstdRandUnequal);
 
-
 void TestMinstdRand0Validation(void)
 {
   typedef thrust::random::minstd_rand0 Engine;
 
-  TestEngineValidation<Engine,1043618065u>();
+  TestEngineValidation<Engine, 1043618065u>();
 }
 DECLARE_UNITTEST(TestMinstdRand0Validation);
-
 
 void TestMinstdRand0Min(void)
 {
@@ -539,7 +494,6 @@ void TestMinstdRand0Min(void)
 }
 DECLARE_UNITTEST(TestMinstdRand0Min);
 
-
 void TestMinstdRand0Max(void)
 {
   typedef thrust::random::minstd_rand0 Engine;
@@ -547,7 +501,6 @@ void TestMinstdRand0Max(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestMinstdRand0Max);
-
 
 void TestMinstdRand0SaveRestore(void)
 {
@@ -557,7 +510,6 @@ void TestMinstdRand0SaveRestore(void)
 }
 DECLARE_UNITTEST(TestMinstdRand0SaveRestore);
 
-
 void TestMinstdRand0Equal(void)
 {
   typedef thrust::random::minstd_rand0 Engine;
@@ -565,7 +517,6 @@ void TestMinstdRand0Equal(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestMinstdRand0Equal);
-
 
 void TestMinstdRand0Unequal(void)
 {
@@ -575,15 +526,13 @@ void TestMinstdRand0Unequal(void)
 }
 DECLARE_UNITTEST(TestMinstdRand0Unequal);
 
-
 void TestTaus88Validation(void)
 {
   typedef thrust::random::taus88 Engine;
 
-  TestEngineValidation<Engine,3535848941ull>();
+  TestEngineValidation<Engine, 3535848941ull>();
 }
 DECLARE_UNITTEST(TestTaus88Validation);
-
 
 void TestTaus88Min(void)
 {
@@ -593,7 +542,6 @@ void TestTaus88Min(void)
 }
 DECLARE_UNITTEST(TestTaus88Min);
 
-
 void TestTaus88Max(void)
 {
   typedef thrust::random::taus88 Engine;
@@ -601,7 +549,6 @@ void TestTaus88Max(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestTaus88Max);
-
 
 void TestTaus88SaveRestore(void)
 {
@@ -611,7 +558,6 @@ void TestTaus88SaveRestore(void)
 }
 DECLARE_UNITTEST(TestTaus88SaveRestore);
 
-
 void TestTaus88Equal(void)
 {
   typedef thrust::random::taus88 Engine;
@@ -619,7 +565,6 @@ void TestTaus88Equal(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestTaus88Equal);
-
 
 void TestTaus88Unequal(void)
 {
@@ -629,15 +574,13 @@ void TestTaus88Unequal(void)
 }
 DECLARE_UNITTEST(TestTaus88Unequal);
 
-
 void TestRanlux24Validation(void)
 {
   typedef thrust::random::ranlux24 Engine;
 
-  TestEngineValidation<Engine,9901578>();
+  TestEngineValidation<Engine, 9901578>();
 }
 DECLARE_UNITTEST(TestRanlux24Validation);
-
 
 void TestRanlux24Min(void)
 {
@@ -647,7 +590,6 @@ void TestRanlux24Min(void)
 }
 DECLARE_UNITTEST(TestRanlux24Min);
 
-
 void TestRanlux24Max(void)
 {
   typedef thrust::random::ranlux24 Engine;
@@ -655,7 +597,6 @@ void TestRanlux24Max(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux24Max);
-
 
 void TestRanlux24SaveRestore(void)
 {
@@ -665,7 +606,6 @@ void TestRanlux24SaveRestore(void)
 }
 DECLARE_UNITTEST(TestRanlux24SaveRestore);
 
-
 void TestRanlux24Equal(void)
 {
   typedef thrust::random::ranlux24 Engine;
@@ -673,7 +613,6 @@ void TestRanlux24Equal(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux24Equal);
-
 
 void TestRanlux24Unequal(void)
 {
@@ -683,16 +622,13 @@ void TestRanlux24Unequal(void)
 }
 DECLARE_UNITTEST(TestRanlux24Unequal);
 
-
-
 void TestRanlux48Validation(void)
 {
   typedef thrust::random::ranlux48 Engine;
 
-  TestEngineValidation<Engine,88229545517833ull>();
+  TestEngineValidation<Engine, 88229545517833ull>();
 }
 DECLARE_UNITTEST(TestRanlux48Validation);
-
 
 void TestRanlux48Min(void)
 {
@@ -702,7 +638,6 @@ void TestRanlux48Min(void)
 }
 DECLARE_UNITTEST(TestRanlux48Min);
 
-
 void TestRanlux48Max(void)
 {
   typedef thrust::random::ranlux48 Engine;
@@ -710,7 +645,6 @@ void TestRanlux48Max(void)
   TestEngineMax<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux48Max);
-
 
 void TestRanlux48SaveRestore(void)
 {
@@ -720,7 +654,6 @@ void TestRanlux48SaveRestore(void)
 }
 DECLARE_UNITTEST(TestRanlux48SaveRestore);
 
-
 void TestRanlux48Equal(void)
 {
   typedef thrust::random::ranlux48 Engine;
@@ -728,7 +661,6 @@ void TestRanlux48Equal(void)
   TestEngineEqual<Engine>();
 }
 DECLARE_UNITTEST(TestRanlux48Equal);
-
 
 void TestRanlux48Unequal(void)
 {
@@ -738,10 +670,9 @@ void TestRanlux48Unequal(void)
 }
 DECLARE_UNITTEST(TestRanlux48Unequal);
 
-
 THRUST_DISABLE_MSVC_WARNING_BEGIN(4305) // truncation warning
-template<typename Distribution, typename Validator>
-  void ValidateDistributionCharacteristic(void)
+template <typename Distribution, typename Validator>
+void ValidateDistributionCharacteristic(void)
 {
   typedef typename Validator::random_engine Engine;
 
@@ -759,24 +690,19 @@ template<typename Distribution, typename Validator>
 
   ASSERT_EQUAL(true, d[0]);
 
-
   // test distribution & engine with comparable ranges
   // only do this if they have the same result_type
-  if(thrust::detail::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
+  if (thrust::detail::is_same<typename Distribution::result_type, typename Engine::result_type>::value)
   {
     // test Distribution with same range as engine
 
     // test host
-    thrust::generate(h.begin(), h.end(), Validator(
-        Distribution(Engine::min, Engine::max)
-    ));
+    thrust::generate(h.begin(), h.end(), Validator(Distribution(Engine::min, Engine::max)));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(
-        Distribution(Engine::min, Engine::max)
-    ));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution(Engine::min, Engine::max)));
 
     ASSERT_EQUAL(true, d[0]);
 
@@ -784,34 +710,32 @@ template<typename Distribution, typename Validator>
 
     // test host
     typename Distribution::result_type engine_range = Engine::max - Engine::min;
-    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range/3, (2 * engine_range)/3)));
+    thrust::generate(h.begin(), h.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
 
     ASSERT_EQUAL(true, h[0]);
 
     // test device
-    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range/3, (2 * engine_range)/3)));
+    thrust::generate(d.begin(), d.end(), Validator(Distribution(engine_range / 3, (2 * engine_range) / 3)));
 
     ASSERT_EQUAL(true, d[0]);
   }
 
-
   // test Distribution with a very small range
 
   // test host
-  thrust::generate(h.begin(), h.end(), Validator(Distribution(1,6)));
+  thrust::generate(h.begin(), h.end(), Validator(Distribution(1, 6)));
 
   ASSERT_EQUAL(true, h[0]);
 
   // test device
-  thrust::generate(d.begin(), d.end(), Validator(Distribution(1,6)));
+  thrust::generate(d.begin(), d.end(), Validator(Distribution(1, 6)));
 
   ASSERT_EQUAL(true, d[0]);
 }
 THRUST_DISABLE_MSVC_WARNING_END(4305)
 
-
-template<typename Distribution>
-  void TestDistributionSaveRestore(void)
+template <typename Distribution>
+void TestDistributionSaveRestore(void)
 {
   // create a default distribution
   Distribution d0(7, 13);
@@ -827,32 +751,29 @@ template<typename Distribution>
   ASSERT_EQUAL(d0, d1);
 }
 
-
 void TestUniformIntDistributionMin(void)
 {
-  typedef thrust::random::uniform_int_distribution<int>          int_dist;
+  typedef thrust::random::uniform_int_distribution<int> int_dist;
   typedef thrust::random::uniform_int_distribution<unsigned int> uint_dist;
 
-  ValidateDistributionCharacteristic<int_dist,  ValidateDistributionMin<int_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<int_dist, ValidateDistributionMin<int_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMin<uint_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestUniformIntDistributionMin);
 
-
 void TestUniformIntDistributionMax(void)
 {
-  typedef thrust::random::uniform_int_distribution<int>          int_dist;
+  typedef thrust::random::uniform_int_distribution<int> int_dist;
   typedef thrust::random::uniform_int_distribution<unsigned int> uint_dist;
 
-  ValidateDistributionCharacteristic<int_dist,  ValidateDistributionMax<int_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<int_dist, ValidateDistributionMax<int_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<uint_dist, ValidateDistributionMax<uint_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestUniformIntDistributionMax);
 
-
 void TestUniformIntDistributionSaveRestore(void)
 {
-  typedef thrust::random::uniform_int_distribution<int>          int_dist;
+  typedef thrust::random::uniform_int_distribution<int> int_dist;
   typedef thrust::random::uniform_int_distribution<unsigned int> uint_dist;
 
   TestDistributionSaveRestore<int_dist>();
@@ -860,32 +781,29 @@ void TestUniformIntDistributionSaveRestore(void)
 }
 DECLARE_UNITTEST(TestUniformIntDistributionSaveRestore);
 
-
 void TestUniformRealDistributionMin(void)
 {
-  typedef thrust::random::uniform_real_distribution<float>  float_dist;
+  typedef thrust::random::uniform_real_distribution<float> float_dist;
   typedef thrust::random::uniform_real_distribution<double> double_dist;
 
-  ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMin<float_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestUniformRealDistributionMin);
 
-
 void TestUniformRealDistributionMax(void)
 {
-  typedef thrust::random::uniform_real_distribution<float>  float_dist;
+  typedef thrust::random::uniform_real_distribution<float> float_dist;
   typedef thrust::random::uniform_real_distribution<double> double_dist;
 
-  ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMax<float_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestUniformRealDistributionMax);
 
-
 void TestUniformRealDistributionSaveRestore(void)
 {
-  typedef thrust::random::uniform_real_distribution<float>  float_dist;
+  typedef thrust::random::uniform_real_distribution<float> float_dist;
   typedef thrust::random::uniform_real_distribution<double> double_dist;
 
   TestDistributionSaveRestore<float_dist>();
@@ -893,36 +811,32 @@ void TestUniformRealDistributionSaveRestore(void)
 }
 DECLARE_UNITTEST(TestUniformRealDistributionSaveRestore);
 
-
 void TestNormalDistributionMin(void)
 {
-  typedef thrust::random::normal_distribution<float>  float_dist;
+  typedef thrust::random::normal_distribution<float> float_dist;
   typedef thrust::random::normal_distribution<double> double_dist;
 
-  ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMin<float_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMin<float_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMin<double_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestNormalDistributionMin);
 
-
 void TestNormalDistributionMax(void)
 {
-  typedef thrust::random::normal_distribution<float>  float_dist;
+  typedef thrust::random::normal_distribution<float> float_dist;
   typedef thrust::random::normal_distribution<double> double_dist;
 
-  ValidateDistributionCharacteristic<float_dist,  ValidateDistributionMax<float_dist,  thrust::minstd_rand> >();
-  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand> >();
+  ValidateDistributionCharacteristic<float_dist, ValidateDistributionMax<float_dist, thrust::minstd_rand>>();
+  ValidateDistributionCharacteristic<double_dist, ValidateDistributionMax<double_dist, thrust::minstd_rand>>();
 }
 DECLARE_UNITTEST(TestNormalDistributionMax);
 
-
 void TestNormalDistributionSaveRestore(void)
 {
-  typedef thrust::random::normal_distribution<float>  float_dist;
+  typedef thrust::random::normal_distribution<float> float_dist;
   typedef thrust::random::normal_distribution<double> double_dist;
 
   TestDistributionSaveRestore<float_dist>();
   TestDistributionSaveRestore<double_dist>();
 }
 DECLARE_UNITTEST(TestNormalDistributionSaveRestore);
-

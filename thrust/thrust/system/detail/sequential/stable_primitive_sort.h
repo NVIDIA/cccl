@@ -35,24 +35,16 @@ namespace detail
 namespace sequential
 {
 
+template <typename DerivedPolicy, typename RandomAccessIterator>
+_CCCL_HOST_DEVICE void stable_primitive_sort(
+  sequential::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last);
 
-template<typename DerivedPolicy,
-         typename RandomAccessIterator>
-_CCCL_HOST_DEVICE
-void stable_primitive_sort(sequential::execution_policy<DerivedPolicy> &exec,
-                           RandomAccessIterator first,
-                           RandomAccessIterator last);
-
-
-template<typename DerivedPolicy,
-         typename RandomAccessIterator1,
-         typename RandomAccessIterator2>
-_CCCL_HOST_DEVICE
-void stable_primitive_sort_by_key(sequential::execution_policy<DerivedPolicy> &exec,
-                                  RandomAccessIterator1 keys_first,
-                                  RandomAccessIterator1 keys_last,
-                                  RandomAccessIterator2 values_first);
-
+template <typename DerivedPolicy, typename RandomAccessIterator1, typename RandomAccessIterator2>
+_CCCL_HOST_DEVICE void stable_primitive_sort_by_key(
+  sequential::execution_policy<DerivedPolicy>& exec,
+  RandomAccessIterator1 keys_first,
+  RandomAccessIterator1 keys_last,
+  RandomAccessIterator2 values_first);
 
 } // end namespace sequential
 } // end namespace detail
@@ -60,4 +52,3 @@ void stable_primitive_sort_by_key(sequential::execution_policy<DerivedPolicy> &e
 THRUST_NAMESPACE_END
 
 #include <thrust/system/detail/sequential/stable_primitive_sort.inl>
-
